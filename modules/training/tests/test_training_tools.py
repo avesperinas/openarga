@@ -99,7 +99,7 @@ async def test_a_tool_that_does_not_exist_is_a_404(api) -> None:
 
 
 async def test_bad_arguments_are_a_422_and_not_a_500(api) -> None:
-    assert (await call(api, "get_progress", {"variant_id": "no-es-un-uuid"})).status_code == 422
+    assert (await call(api, "get_progress", {"variant_id": "not-a-uuid"})).status_code == 422
     assert (await call(api, "get_sessions", {"limit": 9999})).status_code == 422
 
 
@@ -108,7 +108,7 @@ async def test_the_index_translates_a_name_into_a_variant(api) -> None:
 
     assert response.status_code == 200, response.text
     variants = response.json()["content"]["variants"]
-    assert variants, "el catálogo sembrado trae presses"
+    assert variants, "the seeded catalogue has presses"
     found = variants[0]
     assert {"variant_id", "exercise", "variant", "implement", "pattern"} <= set(found)
     assert "press" in f"{found['exercise']} {found['variant']}".lower()
@@ -143,8 +143,8 @@ async def test_a_session_in_progress_is_not_answered_as_done(api) -> None:
 
 
 async def bench(api) -> str:
-    found = (await call(api, "find_exercises", {"query": "banca"})).json()["content"]["variants"]
-    return next(v["variant_id"] for v in found if v["variant"] == "Press banca con barra")
+    found = (await call(api, "find_exercises", {"query": "bench"})).json()["content"]["variants"]
+    return next(v["variant_id"] for v in found if v["variant"] == "Barbell bench press")
 
 
 async def test_progress_is_per_variant_and_says_how_reliable_the_estimate_is(api) -> None:
@@ -255,9 +255,9 @@ async def test_progress_says_where_each_day_was_and_whether_it_counts(api) -> No
 async def test_the_index_says_where_each_variant_was_trained(api) -> None:
     await train(api)
 
-    found = (await call(api, "find_exercises", {"query": "banca"})).json()["content"]["variants"]
+    found = (await call(api, "find_exercises", {"query": "bench"})).json()["content"]["variants"]
 
-    trained = next(v for v in found if v["variant"] == "Press banca con barra")
+    trained = next(v for v in found if v["variant"] == "Barbell bench press")
     assert trained["trained_at"] == [seed.GYM]
 
 
@@ -271,15 +271,15 @@ async def test_muscles_come_with_their_sets_and_what_trained_them(api) -> None:
     assert muscles["chest"]["sets_per_week"] == 2
     assert muscles["triceps"]["sets_per_week"] == 0
     assert {e["exercise"] for e in muscles["chest"]["exercises"]} == {
-        "Press banca con barra",
-        "Fondos lastrados",
+        "Barbell bench press",
+        "Weighted dips",
     }
     assert content["bodyweight_kg"] is None
     assert muscles["chest"]["strength_change_pct"] is None
 
 
 async def test_activities_come_with_their_count_by_type(api) -> None:
-    kind = (await api.post("/activity-types", json={"name": "Escalada"})).json()
+    kind = (await api.post("/activity-types", json={"name": "Climbing"})).json()
     await api.post(
         "/activities",
         json={
@@ -292,5 +292,5 @@ async def test_activities_come_with_their_count_by_type(api) -> None:
     activities = (await call(api, "get_activities", {})).json()["content"]
 
     assert activities["total"] == 1
-    assert activities["by_type"] == {"Escalada": 1}
+    assert activities["by_type"] == {"Climbing": 1}
     assert activities["activities"][0]["minutes"] == 90

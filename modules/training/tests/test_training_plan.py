@@ -71,11 +71,11 @@ async def test_today_brings_the_active_plan_with_its_days_slots_and_options(
         ("Leg", "leg"),
     ]
     first = plan["days"][0]["slots"][0]
-    assert first["exercise"] == "Press banca"
+    assert first["exercise"] == "Bench press"
     assert (first["target_sets"], first["rep_min"], first["rep_max"]) == (4, 6, 10)
     assert [o["name"] for o in first["options"]] == [
-        "Press banca con barra",
-        "Press banca en máquina",
+        "Barbell bench press",
+        "Machine chest press",
     ]
     leg = plan["days"][2]["slots"][0]
     assert leg["allow_both"] is True
@@ -89,7 +89,7 @@ async def test_a_published_version_cannot_be_rewritten(provisioned) -> None:
         "delete from training.training_plan_day",
         "update training.training_plan_version set number = 9",
     ):
-        with pytest.raises(DBAPIError, match="publicada"):
+        with pytest.raises(DBAPIError, match="is published"):
             await as_module(provisioned, statement)
 
 
@@ -137,14 +137,14 @@ async def test_only_one_plan_is_active(provisioned) -> None:
 
     with pytest.raises(IntegrityError):
         await as_module(
-            provisioned, "insert into training.training_plan (name, active) values ('Otro', true)"
+            provisioned, "insert into training.training_plan (name, active) values ('Other', true)"
         )
 
 
 async def test_the_synthetic_seed_refuses_to_mix_with_a_real_plan(provisioned) -> None:
     await seeded(provisioned)
 
-    with pytest.raises(RuntimeError, match="ya hay un plan"):
+    with pytest.raises(RuntimeError, match="already a plan"):
         await seeded(provisioned)
 
 

@@ -14,12 +14,12 @@ from training import links
 
 APP = "training"
 IMPLEMENTS = {
-    "barbell": "barra",
-    "dumbbell": "mancuernas",
-    "smith": "multipower",
-    "machine": "máquina",
-    "cable": "polea",
-    "bodyweight": "peso corporal",
+    "barbell": "barbell",
+    "dumbbell": "dumbbells",
+    "smith": "Smith machine",
+    "machine": "machine",
+    "cable": "cable",
+    "bodyweight": "bodyweight",
 }
 LAST_TIMES = 10
 
@@ -124,38 +124,38 @@ def session(row: Any, exercises: list[Done], names: dict[str, str]) -> dict[str,
     minutes = _minutes(row.duration_seconds)
     parts = []
     for one in exercises:
-        shown = write.link(APP, one.variant_id, names.get(one.variant_id, "Ejercicio"))
+        shown = write.link(APP, one.variant_id, names.get(one.variant_id, "Exercise"))
         series = ", ".join(item.shown for item in one.sets)
         parts.append(f"- {shown}: {series}")
     lead = [f"{row.plan_day}, {write.weekday(row.day)} {write.long_date(row.day)}"]
     if minutes is not None:
         lead.append(f"{minutes} min")
-    lead.append(f"{sets} series")
+    lead.append(f"{sets} sets")
     if volume:
-        lead.append(f"{write.number(volume)} kg levantados")
+        lead.append(f"{write.number(volume)} kg lifted")
     if row.gym:
         lead.append(row.gym)
     properties: dict[str, Any] = {
-        "fecha": row.day.isoformat(),
-        "dia_del_plan": row.plan_day,
-        "series": sets,
-        "volumen_kg": round(volume),
+        "date": row.day.isoformat(),
+        "plan_day": row.plan_day,
+        "sets": sets,
+        "volume_kg": round(volume),
     }
     if minutes is not None:
-        properties["duracion_min"] = minutes
+        properties["duration_min"] = minutes
     if row.gym:
-        properties["gimnasio"] = row.gym
+        properties["gym"] = row.gym
     return contracts.record(
         id=f"session:{row.id}",
         title=_session_title(row),
-        kind="Sesión",
-        href=f"/training/sesion/{row.id}",
-        folder=f"Sesiones/{row.day.year}",
+        kind="Session",
+        href=f"/training/session/{row.id}",
+        folder=f"Sessions/{row.day.year}",
         properties=properties,
         body=write.sections(
             " · ".join(lead) + ".",
-            "## Ejercicios\n\n" + "\n".join(parts) if parts else None,
-            f"## Notas\n\n{row.notes}" if row.notes else None,
+            "## Exercises\n\n" + "\n".join(parts) if parts else None,
+            f"## Notes\n\n{row.notes}" if row.notes else None,
         ),
     )
 
@@ -174,38 +174,38 @@ def exercise(
         default=None,
     )
     properties: dict[str, Any] = {
-        "ejercicio": row.exercise,
-        "implemento": IMPLEMENTS.get(row.implement, row.implement),
-        "musculos": list(row.muscles),
-        "veces": len(times),
-        "activo": row.active,
+        "exercise": row.exercise,
+        "implement": IMPLEMENTS.get(row.implement, row.implement),
+        "muscles": list(row.muscles),
+        "times": len(times),
+        "active": row.active,
     }
     if times:
-        properties["ultima_vez"] = times[-1][0].isoformat()
+        properties["last_time"] = times[-1][0].isoformat()
     if heaviest is not None:
-        properties["mejor_peso_kg"] = heaviest[1].kg
+        properties["best_weight_kg"] = heaviest[1].kg
     last = []
     for _day, session_id, one in reversed(times[-LAST_TIMES:]):
         shown = write.link(APP, f"session:{session_id}", _session_title(sessions[session_id]))
         last.append(f"- {shown}: " + ", ".join(item.shown for item in one.sets))
-    lead = f"{row.exercise} con {IMPLEMENTS.get(row.implement, row.implement)}"
+    lead = f"{row.exercise} with {IMPLEMENTS.get(row.implement, row.implement)}"
     if row.muscles:
         lead += " · " + ", ".join(row.muscles)
     best = None
     if heaviest is not None:
-        best = f"Lo más pesado: {heaviest[1].shown}, el {write.long_date(heaviest[0])}."
+        best = f"Heaviest: {heaviest[1].shown}, on {write.long_date(heaviest[0])}."
     return contracts.record(
         id=variant_id,
         title=name,
-        kind="Ejercicio",
-        href=f"/training/stats?variante={variant_id}",
-        folder="Ejercicios",
+        kind="Exercise",
+        href=f"/training/stats?variant={variant_id}",
+        folder="Exercises",
         properties=properties,
         body=write.sections(
             lead + ".",
             best,
-            f"## Las últimas veces\n\n{chr(10).join(last)}" if last else "Aún no lo has hecho.",
-            None if row.active else "*Ya no está en uso.*",
+            f"## Latest times\n\n{chr(10).join(last)}" if last else "Not done yet.",
+            None if row.active else "*No longer in use.*",
         ),
     )
 
@@ -221,7 +221,7 @@ async def days(
         took = _minutes(row.duration_seconds)
         shown = write.link(APP, f"session:{session_id}", row.plan_day)
         lines[row.day].append(
-            f"- Entreno: {shown}" + (f" · {took} min" if took else "") + f" · {count} series"
+            f"- Workout: {shown}" + (f" · {took} min" if took else "") + f" · {count} sets"
         )
         minutes[row.day] += took or 0
         series[row.day] += count
@@ -237,15 +237,15 @@ async def days(
     for day, told in sorted(lines.items()):
         properties: dict[str, Any] = {}
         if minutes[day]:
-            properties["entreno_min"] = minutes[day]
+            properties["training_min"] = minutes[day]
         if series[day]:
-            properties["series"] = series[day]
+            properties["sets"] = series[day]
         found.append(
             contracts.record(
                 id=f"day:{day.isoformat()}",
-                title="Entreno",
-                kind="Día",
-                href="/training/calendario",
+                title="Training",
+                kind="Day",
+                href="/training/calendar",
                 day=day,
                 properties=properties,
                 body="\n".join(told),

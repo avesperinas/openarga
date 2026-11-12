@@ -21,14 +21,14 @@ const TODAY: Today = {
   week: { done: 1, goal: 4, monday: "2026-09-14" },
 };
 
-describe("la última vez, aprendida", () => {
-  it("se queda con la más reciente de cada variante", () => {
+describe("the last time, learnt", () => {
+  it("keeps the most recent of each variant", () => {
     const older: LastTime = { ...LAST_SMITH, day: "2026-09-01" };
     expect(mergeHistory({ "v-smith": LAST_SMITH }, [older])["v-smith"]).toBe(LAST_SMITH);
     expect(mergeHistory({ "v-smith": older }, [LAST_SMITH])["v-smith"]).toBe(LAST_SMITH);
   });
 
-  it("una sesión terminada es la última vez de lo que se hizo en ella", () => {
+  it("a finished session is the last time of what was done in it", () => {
     const finished: Session = {
       ...SESSION,
       ended_at: "2026-09-15T18:00:00Z",
@@ -40,8 +40,8 @@ describe("la última vez, aprendida", () => {
   });
 });
 
-describe("la sesión de un entreno empezado sin red", () => {
-  it("es el día del plan guardado, con la última vez de sus variantes", () => {
+describe("the session of a workout started offline", () => {
+  it("is the day of the kept plan, with the last time of its variants", () => {
     const session = offlineSession(TODAY, "s-new", undefined, new Date("2026-09-16T17:00:00Z"), {
       "v-smith": LAST_SMITH,
       "v-other": { ...LAST_PRESS, variant_id: "v-other" },
@@ -54,12 +54,12 @@ describe("la sesión de un entreno empezado sin red", () => {
     expect(session?.ended_at).toBeNull();
   });
 
-  it("sin ese día en el plan guardado no se puede", () => {
+  it("without that day in the kept plan it cannot", () => {
     expect(offlineSession(TODAY, "s", "d-push", new Date(), {})).toBeNull();
   });
 });
 
-describe("empezar sin red", () => {
+describe("starting offline", () => {
   beforeEach(async () => {
     await reset();
   });
@@ -67,7 +67,7 @@ describe("empezar sin red", () => {
     vi.unstubAllGlobals();
   });
 
-  it("con Hoy visto antes, la sesión se pinta y la cola la crea al volver la red", async () => {
+  it("with Today seen before, the session is painted and the queue creates it when the network is back", async () => {
     vi.stubGlobal("fetch", async () => new Response(JSON.stringify(TODAY), { status: 200 }));
     await readTodayKept();
 
@@ -88,7 +88,7 @@ describe("empezar sin red", () => {
     });
   });
 
-  it("sin nada visto antes, dice que no", async () => {
+  it("with nothing seen before, it says no", async () => {
     vi.stubGlobal("fetch", async () => {
       throw new TypeError("Failed to fetch");
     });

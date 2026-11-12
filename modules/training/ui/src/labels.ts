@@ -1,12 +1,18 @@
+import type { Locale, Translate } from "@openarga/ui";
+
 import type { DayKind, Implement, Pattern } from "./api";
 
-export const KINDS: { value: DayKind; label: string }[] = [
-  { value: "push", label: "Empuje" },
-  { value: "pull", label: "Tirón" },
-  { value: "leg", label: "Pierna" },
-  { value: "full", label: "Cuerpo entero" },
-  { value: "other", label: "Otro" },
-];
+export interface Option<T extends string> {
+  value: T;
+  label: string;
+}
+
+const options = <T extends string>(t: Translate, prefix: string, values: readonly T[]): Option<T>[] =>
+  values.map((value) => ({ value, label: t(`${prefix}.${value}`) }));
+
+const KIND_VALUES: readonly DayKind[] = ["push", "pull", "leg", "full", "other"];
+
+export const kinds = (t: Translate) => options(t, "kind", KIND_VALUES);
 
 export const HUE_OF_KIND: Record<DayKind, number> = { push: 4, pull: 2, leg: 1, full: 5, other: 8 };
 
@@ -18,35 +24,44 @@ export const ICON_OF_KIND = {
   other: "dumbbell",
 } as const satisfies Record<DayKind, string>;
 
-export const IMPLEMENTS: { value: Implement; label: string }[] = [
-  { value: "barbell", label: "Barra" },
-  { value: "dumbbell", label: "Mancuernas" },
-  { value: "smith", label: "Smith" },
-  { value: "machine", label: "Máquina" },
-  { value: "cable", label: "Polea" },
-  { value: "bodyweight", label: "Peso corporal" },
+const IMPLEMENT_VALUES: readonly Implement[] = ["barbell", "dumbbell", "smith", "machine", "cable", "bodyweight"];
+
+export const implementsOf = (t: Translate) => options(t, "implement", IMPLEMENT_VALUES);
+
+const PATTERN_VALUES: readonly Pattern[] = [
+  "horizontal_push",
+  "vertical_push",
+  "horizontal_pull",
+  "vertical_pull",
+  "knee_dominant",
+  "hip_dominant",
+  "isolation",
 ];
 
-export const PATTERNS: { value: Pattern; label: string }[] = [
-  { value: "horizontal_push", label: "Empuje horizontal" },
-  { value: "vertical_push", label: "Empuje vertical" },
-  { value: "horizontal_pull", label: "Tirón horizontal" },
-  { value: "vertical_pull", label: "Tirón vertical" },
-  { value: "knee_dominant", label: "Dominante de rodilla" },
-  { value: "hip_dominant", label: "Dominante de cadera" },
-  { value: "isolation", label: "Aislamiento" },
-];
+export const patterns = (t: Translate) => options(t, "pattern", PATTERN_VALUES);
 
-export const REGIONS: { value: string; label: string }[] = [
-  { value: "upper", label: "Tren superior" },
-  { value: "lower", label: "Tren inferior" },
-  { value: "core", label: "Core" },
-];
+export const regions = (t: Translate) => options(t, "region", ["upper", "lower", "core"] as const);
 
-export const MUSCLE_LEVELS: { value: "primary" | "secondary"; label: string }[] = [
-  { value: "primary", label: "principal" },
-  { value: "secondary", label: "secundario" },
-];
+export type MuscleLevel = "primary" | "secondary";
+
+export const LEVEL_ORDER: { value: MuscleLevel }[] = [{ value: "primary" }, { value: "secondary" }];
+
+export function muscleName(t: Translate, muscle: { id: string; name: string }): string {
+  const key = `muscle.${muscle.id}`;
+  const found = t(key);
+  return found === key ? muscle.name : found;
+}
+
+export const muscleLevels = (t: Translate) => options(t, "muscle_level", ["primary", "secondary"] as const);
+
+export const decimal = (value: number, digits: number, locale: Locale): string =>
+  new Intl.NumberFormat(locale, { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(value);
+
+export const plural = (t: Translate, key: string, count: number, vars: Record<string, string | number> = {}) =>
+  t(`${key}.${count === 1 ? "one" : "other"}`, { count, ...vars });
+
+export const amount = (value: number, locale: Locale): string =>
+  new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(value);
 
 export const labelOf = <T extends string>(options: { value: T; label: string }[], value: T): string =>
   options.find((option) => option.value === value)?.label ?? value;
@@ -58,18 +73,18 @@ export function formatDuration(seconds: number | null): string {
   return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")} min`;
 }
 
-export function shortDate(day: string): string {
+export function shortDate(day: string, locale: Locale): string {
   const [year, month, date] = day.split("-").map(Number) as [number, number, number];
-  return new Date(year, month - 1, date).toLocaleDateString("es-ES", {
+  return new Date(year, month - 1, date).toLocaleDateString(locale, {
     weekday: "short",
     day: "numeric",
     month: "short",
   });
 }
 
-export function longDate(day: string): string {
+export function longDate(day: string, locale: Locale): string {
   const [year, month, date] = day.split("-").map(Number) as [number, number, number];
-  return new Date(year, month - 1, date).toLocaleDateString("es-ES", {
+  return new Date(year, month - 1, date).toLocaleDateString(locale, {
     weekday: "short",
     day: "numeric",
     month: "short",

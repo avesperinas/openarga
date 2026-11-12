@@ -1,4 +1,4 @@
-import { Button, ChoiceChips, Hint, Sheet } from "@openarga/ui";
+import { Button, ChoiceChips, Hint, Sheet, type Translate, useT } from "@openarga/ui";
 import { useState } from "react";
 
 export interface ConfirmStartSheetProps {
@@ -12,14 +12,15 @@ export interface ConfirmStartSheetProps {
 }
 
 export function ConfirmStartSheet({ name, detail, days, chosen, onChoose, onCancel, onStart }: ConfirmStartSheetProps) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
-    <Sheet title={`¿Empezar ${name}?`} onClose={busy ? () => undefined : onCancel}>
-      <Hint>{detail} El crono de la sesión empieza al confirmar.</Hint>
+    <Sheet title={t("start.title", { name })} onClose={busy ? () => undefined : onCancel}>
+      <Hint>{t("start.hint", { detail })}</Hint>
       {days && days.length > 1 && chosen && onChoose && (
         <ChoiceChips
-          label="Otro día"
+          label={t("today.other_day")}
           value={chosen}
           onChange={onChoose}
           options={days.map((day) => ({ value: day.id, label: day.done ? `${day.name} ✓` : day.name }))}
@@ -32,7 +33,7 @@ export function ConfirmStartSheet({ name, detail, days, chosen, onChoose, onCanc
       )}
       <div className="training-delete-actions">
         <Button variant="secondary" block onClick={onCancel} disabled={busy}>
-          Cancelar
+          {t("common.cancel")}
         </Button>
         <Button
           variant="primary"
@@ -42,18 +43,18 @@ export function ConfirmStartSheet({ name, detail, days, chosen, onChoose, onCanc
             setBusy(true);
             setError(null);
             onStart().catch((reason: unknown) => {
-              setError(reason instanceof Error ? reason.message : "No se ha podido empezar");
+              setError(reason instanceof Error ? reason.message : t("activity.start_failed"));
               setBusy(false);
             });
           }}
         >
-          {busy ? "Empezando…" : `Empezar ${name}`}
+          {busy ? t("start.starting") : t("today.start_named", { name })}
         </Button>
       </div>
     </Sheet>
   );
 }
 
-export function rotationDetail(rotationNumber: number, day: number, days: number): string {
-  return `Rotación ${rotationNumber}, día ${day} de ${days}.`;
+export function rotationDetail(t: Translate, rotationNumber: number, day: number, days: number): string {
+  return t("start.rotation", { rotation: rotationNumber, day, days });
 }

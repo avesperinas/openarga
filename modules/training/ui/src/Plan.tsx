@@ -16,6 +16,9 @@ import {
   Skeleton,
   Stepper,
   TextField,
+  type Translate,
+  useLocale,
+  useT,
 } from "@openarga/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -56,7 +59,7 @@ import {
   updateDay,
   updateSlot,
 } from "./draft";
-import { IMPLEMENTS, KINDS, PATTERNS, describeTarget, labelOf } from "./labels";
+import { describeTarget, implementsOf, kinds, labelOf, patterns } from "./labels";
 import { AppVersion } from "./AppVersion";
 import { ScreenHeader } from "./Header";
 import { MusclePicker, describeMuscles, hasPrimary } from "./Muscles";
@@ -68,6 +71,7 @@ export interface PlanScreenProps {
 }
 
 export function PlanScreen({ initial }: PlanScreenProps) {
+  const t = useT();
   const [loaded, setLoaded] = useState<Loaded | null>(initial ?? null);
   const [failed, setFailed] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -93,7 +97,7 @@ export function PlanScreen({ initial }: PlanScreenProps) {
         const editor = await action();
         setLoaded((previous) => (previous ? { ...previous, editor } : previous));
       } catch (error) {
-        setNotice(error instanceof Error ? error.message : "No se ha podido guardar");
+        setNotice(error instanceof Error ? error.message : t("common.save_failed"));
         void load();
       }
     },
@@ -102,15 +106,15 @@ export function PlanScreen({ initial }: PlanScreenProps) {
 
   return (
     <Screen wide>
-      <ScreenHeader title="Plan" />
+      <ScreenHeader title={t("tabs.plan")} />
 
       {notice && <Notice tone="negative">{notice}</Notice>}
 
       {!loaded ? (
         failed ? (
-          <EmptyState title={"No se ha podido cargar el plan"}>Comprueba la conexión y vuelve a abrir la app.</EmptyState>
+          <EmptyState title={t("plan.load_failed")}>{t("plan.load_failed_hint")}</EmptyState>
         ) : (
-          <Skeleton rows={4} label="Cargando el plan" />
+          <Skeleton rows={4} label={t("plan.loading")} />
         )
       ) : !loaded.editor.plan ? (
         <CreatePlan onCreate={(name) => run(() => createPlan(name))} />
@@ -135,6 +139,7 @@ export function PlanScreen({ initial }: PlanScreenProps) {
 }
 
 function CreatePlan({ onCreate }: { onCreate: (name: string) => Promise<void> }) {
+  const t = useT();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const submit = async () => {
@@ -145,42 +150,39 @@ function CreatePlan({ onCreate }: { onCreate: (name: string) => Promise<void> })
   };
   return (
     <section className="surface training-card">
-      <Heading>Crea tu plan</Heading>
-      <Hint>
-        Un plan son los días de tu ciclo —Push, Pull, Pierna…— con sus ejercicios. Training te propone
-        cada día el siguiente de la secuencia.
-      </Hint>
-      <TextField label="Nombre del plan" value={name} onChange={setName} placeholder="Push Pull Leg" onSubmit={submit} />
+      <Heading>{t("plan.create_title")}</Heading>
+      <Hint>{t("plan.create_hint")}</Hint>
+      <TextField label={t("plan.name")} value={name} onChange={setName} placeholder="Push Pull Leg" onSubmit={submit} />
       <Button variant="primary" block disabled={!name.trim() || busy} onClick={() => void submit()}>
-        Crear plan
+        {t("plan.create")}
       </Button>
     </section>
   );
 }
 
 function PublishedPlan({ editor, onEdit }: { editor: Editor; onEdit: () => void }) {
+  const t = useT();
+  const locale = useLocale();
   const version = editor.published;
   const since = version?.valid_from ? new Date(`${version.valid_from}T12:00:00`) : null;
   return (
     <Panes
       asideFirst
-      asideLabel="El plan"
+      asideLabel={t("plan.the_plan")}
       main={version ? <DaysView version={version} /> : null}
       aside={
         <section className="surface training-card">
           <p className="training-eyebrow">
             {editor.plan?.name}
-            {version ? ` · versión ${version.number}` : ""}
-            {since ? ` · desde el ${since.toLocaleDateString("es-ES", { day: "numeric", month: "long" })}` : ""}
+            {version ? ` · ${t("plan.version", { number: version.number })}` : ""}
+            {since ? ` · ${t("plan.since", { day: since.toLocaleDateString(locale, { day: "numeric", month: "long" }) })}` : ""}
           </p>
-          {!version && <Hint>El plan no tiene ninguna versión publicada.</Hint>}
+          {!version && <Hint>{t("plan.no_published")}</Hint>}
           {version && editor.rotation_version !== null && editor.rotation_version !== version.number && (
-            <Hint>
-              La rotación en curso sigue con la versión {editor.rotation_version}. Esta entra en la siguiente.
-            </Hint>
+            <Hint>{t("plan.rotation_keeps", { version: editor.rotation_version })}</Hint>
           )}
           <Button variant="primary" block icon="edit" onClick={onEdit}>
-            Editar plan
+            {t("plan.edit")}
           </Button>
         </section>
       }
@@ -189,6 +191,7 @@ function PublishedPlan({ editor, onEdit }: { editor: Editor; onEdit: () => void 
 }
 
 function DaysView({ version }: { version: Version }) {
+  const t = useT();
   return (
     <ol className="training-plan-days">
       {version.days.map((day, index) => (
@@ -198,7 +201,7 @@ function DaysView({ version }: { version: Version }) {
               <span className="training-kind-dot" aria-hidden="true" />
               {day.name}
             </span>
-            <span className="training-plan-day-detail">Día {index + 1}</span>
+            <span className="training-plan-day-detail">{t("plan.day_number", { number: index + 1 })}</span>
           </div>
           <ul className="training-plan-slots">
             {day.slots.map((slot) => (
@@ -207,7 +210,7 @@ function DaysView({ version }: { version: Version }) {
                   {[...slot.options]
                     .sort((a, b) => a.priority - b.priority)
                     .map((option) => option.name)
-                    .join(" o ")}
+                    .join(t("plan.or"))}
                 </span>
                 <span className="training-plan-slot-detail">{describeTarget(slot)}</span>
               </li>
@@ -236,6 +239,7 @@ interface DraftEditorProps {
 }
 
 function DraftEditor({ editor, draft, catalogue, onCatalogue, onPublish, onDiscard, onError }: DraftEditorProps) {
+  const t = useT();
   const [days, setDays] = useState<DayInput[]>(() => toInput(draft.days));
   const [editing, setEditing] = useState<Editing | null>(null);
   const [saving, setSaving] = useState<"idle" | "saving" | "saved">("idle");
@@ -249,7 +253,7 @@ function DraftEditor({ editor, draft, catalogue, onCatalogue, onPublish, onDisca
     for (const exercise of catalogue.exercises) for (const variant of exercise.variants) map.set(variant.id, variant);
     return map;
   }, [catalogue, draft]);
-  const nameOf = (id: string) => names.get(id)?.name ?? "Ejercicio";
+  const nameOf = (id: string) => names.get(id)?.name ?? t("plan.exercise");
   const exerciseOf = (variantId: string) =>
     catalogue.exercises.find((exercise) => exercise.variants.some((variant) => variant.id === variantId));
   const missingMuscles = (slot: DayInput["slots"][number]) =>
@@ -269,20 +273,20 @@ function DraftEditor({ editor, draft, catalogue, onCatalogue, onPublish, onDisca
         await saveDraft(next);
         if (latest.current === next) setSaving("saved");
       } catch (error) {
-        onError(error instanceof Error ? error.message : "No se ha podido guardar el borrador");
+        onError(error instanceof Error ? error.message : t("plan.draft_save_failed"));
         setSaving("idle");
       }
     });
   }
 
-  const problems = publishProblems(days);
+  const problems = publishProblems(days, t);
   const current = editing?.sheet === "slot" ? days[editing.day]?.slots[editing.slot] : undefined;
 
   return (
     <>
       <Panes
         asideFirst
-        asideLabel="El borrador"
+        asideLabel={t("plan.the_draft")}
         main={
           <>
             <ol className="training-plan-days">
@@ -298,11 +302,11 @@ function DraftEditor({ editor, draft, catalogue, onCatalogue, onPublish, onDisca
                       {day.name}
                     </span>
                     <span className="training-plan-day-detail">
-                      Día {dayIndex + 1} · {labelOf(KINDS, day.kind)}
+                      {t("plan.day_number", { number: dayIndex + 1 })} · {labelOf(kinds(t), day.kind)}
                     </span>
                   </button>
                   {day.slots.length === 0 ? (
-                    <p className="training-plan-empty">Sin ejercicios todavía.</p>
+                    <p className="training-plan-empty">{t("plan.no_exercises")}</p>
                   ) : (
                     <ol className="training-plan-slots">
                       {day.slots.map((slot, slotIndex) => (
@@ -312,11 +316,11 @@ function DraftEditor({ editor, draft, catalogue, onCatalogue, onPublish, onDisca
                             className="training-plan-slot training-pressable"
                             onClick={() => setEditing({ sheet: "slot", day: dayIndex, slot: slotIndex })}
                           >
-                            <span className="training-plan-slot-name">{slot.variant_ids.map(nameOf).join(" o ")}</span>
+                            <span className="training-plan-slot-name">{slot.variant_ids.map(nameOf).join(t("plan.or"))}</span>
                             <span className="training-plan-slot-detail">
                               {describeTarget(slot)}
-                              {slot.allow_both ? " · las dos" : ""}
-                              {missingMuscles(slot) && <span className="training-warning"> · faltan músculos</span>}
+                              {slot.allow_both ? ` · ${t("plan.both")}` : ""}
+                              {missingMuscles(slot) && <span className="training-warning"> · {t("plan.muscles_missing")}</span>}
                             </span>
                             <Icon name="chevron-right" />
                           </button>
@@ -331,7 +335,7 @@ function DraftEditor({ editor, draft, catalogue, onCatalogue, onPublish, onDisca
                       icon="plus"
                       onClick={() => setEditing({ sheet: "pick", day: dayIndex, slot: null })}
                     >
-                      Añadir ejercicio
+                      {t("plan.add_exercise")}
                     </Button>
                   </div>
                 </li>
@@ -339,25 +343,24 @@ function DraftEditor({ editor, draft, catalogue, onCatalogue, onPublish, onDisca
             </ol>
 
             <Button variant="secondary" block icon="plus" onClick={() => setEditing({ sheet: "day", index: null })}>
-              Añadir día
+              {t("plan.add_day")}
             </Button>
           </>
         }
         aside={
           <section className="surface training-card">
             <p className="training-eyebrow">
-              {editor.plan?.name} · borrador de la versión {draft.number}
+              {editor.plan?.name} · {t("plan.draft_of", { number: draft.number })}
             </p>
-            <Hint>
-              Los cambios se guardan solos. Al publicar, lo ya entrenado sigue con su versión.
-            </Hint>
+            <Hint>{t("plan.autosave")}</Hint>
             <p className="training-saving" role="status">
-              {saving === "saving" ? "Guardando…" : saving === "saved" ? "Guardado" : ""}
+              {saving === "saving" ? t("common.saving") : saving === "saved" ? t("common.saved") : ""}
             </p>
             {withoutMuscles > 0 && (
               <Hint tone="warning">
-                {withoutMuscles === 1 ? "Un ejercicio no tiene" : `${withoutMuscles} ejercicios no tienen`} los
-                músculos que trabaja. Tócalo para completarlos: sin ellos no hay estadísticas por grupo.
+                {withoutMuscles === 1
+                  ? t("plan.without_muscles.one")
+                  : t("plan.without_muscles.other", { count: withoutMuscles })}
               </Hint>
             )}
             {problems.length > 0 && (
@@ -373,20 +376,20 @@ function DraftEditor({ editor, draft, catalogue, onCatalogue, onPublish, onDisca
               disabled={problems.length > 0 || saving === "saving"}
               onClick={() => void queue.current.then(onPublish)}
             >
-              Publicar versión {draft.number}
+              {t("plan.publish", { number: draft.number })}
             </Button>
             <Button variant="plain" block onClick={() => setConfirmDiscard(true)}>
-              Descartar cambios
+              {t("plan.discard")}
             </Button>
           </section>
         }
       />
       {confirmDiscard && (
         <ConfirmDelete
-          title="¿Descartar los cambios?"
-          subject={`Borrador de la versión ${draft.number}`}
-          consequence="Se pierde todo lo cambiado en el borrador. La versión publicada sigue como está."
-          action="Descartar cambios"
+          title={t("plan.discard_title")}
+          subject={t("plan.draft_subject", { number: draft.number })}
+          consequence={t("plan.discard_consequence")}
+          action={t("plan.discard")}
           onCancel={() => setConfirmDiscard(false)}
           onConfirm={onDiscard}
         />
@@ -426,7 +429,7 @@ function DraftEditor({ editor, draft, catalogue, onCatalogue, onPublish, onDisca
             const exercise = exerciseOf(id);
             if (!exercise) return null;
             return {
-              summary: hasPrimary(exercise.muscles) ? describeMuscles(exercise.muscles, catalogue) : null,
+              summary: hasPrimary(exercise.muscles) ? describeMuscles(exercise.muscles, catalogue, t) : null,
               edit: () => setEditing({ sheet: "muscles", exercise: exercise.id, day: editing.day, slot: editing.slot }),
             };
           }}
@@ -463,7 +466,11 @@ function DraftEditor({ editor, draft, catalogue, onCatalogue, onPublish, onDisca
       {editing?.sheet === "pick" && (
         <PickerSheet
           catalogue={catalogue}
-          title={editing.slot === null ? `Añadir a ${days[editing.day]?.name ?? "el día"}` : "Añadir alternativa"}
+          title={
+            editing.slot === null
+              ? t("plan.add_to", { name: days[editing.day]?.name ?? t("plan.the_day") })
+              : t("plan.add_alternative")
+          }
           exclude={editing.slot === null ? [] : (days[editing.day]?.slots[editing.slot]?.variant_ids ?? [])}
           onCatalogue={onCatalogue}
           onClose={() => setEditing(editing.slot === null ? null : { sheet: "slot", day: editing.day, slot: editing.slot })}
@@ -493,6 +500,7 @@ interface DaySheetProps {
 }
 
 function DaySheet({ day, position, count, onClose, onSave, onMove, onRemove }: DaySheetProps) {
+  const t = useT();
   const [name, setName] = useState(day?.name ?? "");
   const [kind, setKind] = useState<DayKind>(day?.kind ?? "push");
   const [confirm, setConfirm] = useState(false);
@@ -501,14 +509,14 @@ function DaySheet({ day, position, count, onClose, onSave, onMove, onRemove }: D
     const exercises = day.slots.length;
     return (
       <ConfirmDelete
-        title="¿Quitar este día?"
+        title={t("plan.remove_day_title")}
         subject={day.name}
         consequence={
           exercises > 0
-            ? `Se quitan del borrador sus ${exercises} ${exercises === 1 ? "ejercicio" : "ejercicios"}. Lo ya entrenado no cambia.`
-            : "Se quita del borrador. Lo ya entrenado no cambia."
+            ? t(exercises === 1 ? "plan.remove_day_exercises.one" : "plan.remove_day_exercises.other", { count: exercises })
+            : t("plan.removed_from_draft")
         }
-        action="Quitar día"
+        action={t("plan.remove_day")}
         onCancel={() => setConfirm(false)}
         onConfirm={onRemove}
       />
@@ -516,25 +524,25 @@ function DaySheet({ day, position, count, onClose, onSave, onMove, onRemove }: D
   }
   return (
     <Sheet
-      title={day ? "Editar día" : "Nuevo día"}
+      title={day ? t("plan.edit_day") : t("plan.new_day")}
       onClose={onClose}
-      action={{ label: day ? "Guardar" : "Añadir día", onClick: () => valid && onSave(name, kind), disabled: !valid }}
+      action={{ label: day ? t("common.save") : t("plan.add_day"), onClick: () => valid && onSave(name, kind), disabled: !valid }}
     >
-      <TextField label="Nombre" value={name} onChange={setName} placeholder="Push" autoFocus={!day} onSubmit={() => valid && onSave(name, kind)} />
+      <TextField label={t("common.name")} value={name} onChange={setName} placeholder="Push" autoFocus={!day} onSubmit={() => valid && onSave(name, kind)} />
       <div className="training-field">
-        <span className="training-field-label">Tipo</span>
-        <ChoiceChips label="Tipo" value={kind} onChange={setKind} options={KINDS} />
+        <span className="training-field-label">{t("plan.kind")}</span>
+        <ChoiceChips label={t("plan.kind")} value={kind} onChange={setKind} options={kinds(t)} />
       </div>
       {day && position !== null && (
         <div className="training-sheet-row">
           <Button size="small" icon="chevron-up" disabled={position === 0} onClick={() => onMove(-1)}>
-            Antes
+            {t("plan.before")}
           </Button>
           <Button size="small" icon="chevron-down" disabled={position >= count - 1} onClick={() => onMove(1)}>
-            Después
+            {t("plan.after")}
           </Button>
           <Button size="small" variant="destructive" icon="trash" onClick={() => setConfirm(true)}>
-            Quitar
+            {t("plan.remove")}
           </Button>
         </div>
       )}
@@ -569,19 +577,20 @@ function SlotSheet({
   onMove,
   onRemove,
 }: SlotSheetProps) {
+  const t = useT();
   const [asking, setAsking] = useState<{ option: string | null } | null>(null);
   if (asking) {
     const option = asking.option;
     return (
       <ConfirmDelete
-        title={option === null ? "¿Quitar este ejercicio del día?" : "¿Quitar esta alternativa?"}
+        title={option === null ? t("plan.remove_exercise_title") : t("plan.remove_alternative_title")}
         subject={nameOf(option ?? slot.variant_ids[0] ?? "")}
         consequence={
           option === null
-            ? "Se quita del borrador con sus alternativas. Lo ya entrenado no cambia."
-            : "Se quita del borrador. Lo ya entrenado no cambia."
+            ? t("plan.removed_with_alternatives")
+            : t("plan.removed_from_draft")
         }
-        action={option === null ? "Quitar ejercicio" : "Quitar alternativa"}
+        action={option === null ? t("plan.remove_exercise") : t("plan.remove_alternative")}
         onCancel={() => setAsking(null)}
         onConfirm={() => {
           setAsking(null);
@@ -592,25 +601,25 @@ function SlotSheet({
     );
   }
   return (
-    <Sheet title={nameOf(slot.variant_ids[0] ?? "")} onClose={onClose} action={{ label: "Hecho", onClick: onClose }}>
+    <Sheet title={nameOf(slot.variant_ids[0] ?? "")} onClose={onClose} action={{ label: t("common.done"), onClick: onClose }}>
       <div className="training-field-grid">
         <div className="training-field">
-          <span className="training-field-label">Series</span>
-          <Stepper label="Series" value={slot.target_sets} step={1} min={1} max={20} inputMode="numeric" onChange={(v) => v && onChange({ target_sets: v })} />
+          <span className="training-field-label">{t("history.sets_title")}</span>
+          <Stepper label={t("history.sets_title")} value={slot.target_sets} step={1} min={1} max={20} inputMode="numeric" onChange={(v) => v && onChange({ target_sets: v })} />
         </div>
         <div className="training-field">
-          <span className="training-field-label">Reps mínimas</span>
-          <Stepper label="Reps mínimas" value={slot.rep_min} step={1} min={1} max={100} inputMode="numeric" onChange={(v) => v && onChange({ rep_min: v })} />
+          <span className="training-field-label">{t("plan.rep_min")}</span>
+          <Stepper label={t("plan.rep_min")} value={slot.rep_min} step={1} min={1} max={100} inputMode="numeric" onChange={(v) => v && onChange({ rep_min: v })} />
         </div>
         <div className="training-field">
-          <span className="training-field-label">Reps máximas</span>
-          <Stepper label="Reps máximas" value={slot.rep_max} step={1} min={1} max={100} inputMode="numeric" onChange={(v) => v && onChange({ rep_max: v })} />
+          <span className="training-field-label">{t("plan.rep_max")}</span>
+          <Stepper label={t("plan.rep_max")} value={slot.rep_max} step={1} min={1} max={100} inputMode="numeric" onChange={(v) => v && onChange({ rep_max: v })} />
         </div>
       </div>
 
       <div className="training-field">
-        <span className="training-field-label">Variantes</span>
-        <p className="training-field-hint">La primera es la que se propone si nunca has hecho ninguna.</p>
+        <span className="training-field-label">{t("plan.variants")}</span>
+        <p className="training-field-hint">{t("plan.variants_hint")}</p>
         <ul className="training-options">
           {slot.variant_ids.map((id) => {
             const muscles = musclesOf(id);
@@ -620,32 +629,32 @@ function SlotSheet({
                   <span>{nameOf(id)}</span>
                   {muscles && (
                     <button type="button" className="training-option-muscles training-pressable" onClick={muscles.edit}>
-                      {muscles.summary ?? <span className="training-warning">Faltan los músculos · completar</span>}
+                      {muscles.summary ?? <span className="training-warning">{t("plan.complete_muscles")}</span>}
                     </button>
                   )}
                 </span>
                 {slot.variant_ids.length > 1 && (
-                  <IconButton icon="close" label={`Quitar ${nameOf(id)}`} size="small" variant="plain" onClick={() => setAsking({ option: id })} />
+                  <IconButton icon="close" label={t("plan.remove_named", { name: nameOf(id) })} size="small" variant="plain" onClick={() => setAsking({ option: id })} />
                 )}
               </li>
             );
           })}
         </ul>
         <Button variant="tinted" size="small" icon="plus" onClick={onAddOption}>
-          Añadir alternativa
+          {t("plan.add_alternative")}
         </Button>
       </div>
 
       {slot.variant_ids.length > 1 && (
         <div className="training-field">
-          <span className="training-field-label">En una sesión</span>
+          <span className="training-field-label">{t("plan.in_a_session")}</span>
           <ChoiceChips
-            label="En una sesión"
+            label={t("plan.in_a_session")}
             value={slot.allow_both ? "both" : "one"}
             onChange={(value) => onChange({ allow_both: value === "both" })}
             options={[
-              { value: "one", label: "Solo una" },
-              { value: "both", label: "Pueden ir las dos" },
+              { value: "one", label: t("plan.only_one") },
+              { value: "both", label: t("plan.both_allowed") },
             ]}
           />
         </div>
@@ -653,13 +662,13 @@ function SlotSheet({
 
       <div className="training-sheet-row">
         <Button size="small" icon="chevron-up" disabled={position === 0} onClick={() => onMove(-1)}>
-          Antes
+          {t("plan.before")}
         </Button>
         <Button size="small" icon="chevron-down" disabled={position >= count - 1} onClick={() => onMove(1)}>
-          Después
+          {t("plan.after")}
         </Button>
         <Button size="small" variant="destructive" icon="trash" onClick={() => setAsking({ option: null })}>
-          Quitar
+          {t("plan.remove")}
         </Button>
       </div>
     </Sheet>
@@ -683,6 +692,7 @@ interface PickerSheetProps {
 }
 
 function PickerSheet({ catalogue, title, exclude, onCatalogue, onClose, onPick }: PickerSheetProps) {
+  const t = useT();
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(catalogue.exercises.length === 0);
 
@@ -715,12 +725,12 @@ function PickerSheet({ catalogue, title, exclude, onCatalogue, onClose, onPick }
 
   return (
     <Sheet title={title} onClose={onClose}>
-      <TextField label="Buscar" type="search" value={query} onChange={setQuery} placeholder="Press, remo, sentadilla…" />
+      <TextField label={t("common.search")} type="search" value={query} onChange={setQuery} placeholder={t("plan.search_placeholder")} />
       <Button variant="tinted" icon="plus" block onClick={() => setCreating(true)}>
-        {query.trim() ? `Crear «${query.trim()}»` : "Crear ejercicio nuevo"}
+        {query.trim() ? t("plan.create_named", { name: query.trim() }) : t("plan.create_exercise")}
       </Button>
       {matches.length === 0 ? (
-        <Hint>Nada con ese nombre. Créalo con el botón de arriba.</Hint>
+        <Hint>{t("plan.nothing_found")}</Hint>
       ) : (
         matches.map(({ exercise, variants }) => (
           <div key={exercise.id} className="training-field">
@@ -730,7 +740,7 @@ function PickerSheet({ catalogue, title, exclude, onCatalogue, onClose, onPick }
                 <ListRow
                   key={variant.id}
                   title={variant.name}
-                  detail={labelOf(IMPLEMENTS, variant.implement)}
+                  detail={labelOf(implementsOf(t), variant.implement)}
                   accessory="plus"
                   onClick={() => onPick(variant.id)}
                 />
@@ -751,10 +761,11 @@ interface CreateExerciseSheetProps {
   onCreated: (variantId: string) => Promise<void>;
 }
 
-export const defaultVariantName = (exercise: string, implement: Implement) =>
-  `${exercise.trim()} (${labelOf(IMPLEMENTS, implement).toLowerCase()})`;
+export const defaultVariantName = (exercise: string, implement: Implement, t: Translate) =>
+  `${exercise.trim()} (${labelOf(implementsOf(t), implement).toLowerCase()})`;
 
 function CreateExerciseSheet({ catalogue, initialName, onClose, onBack, onCreated }: CreateExerciseSheetProps) {
+  const t = useT();
   const [name, setName] = useState(initialName);
   const [variant, setVariant] = useState("");
   const [implement, setImplement] = useState<Implement>("barbell");
@@ -770,57 +781,57 @@ function CreateExerciseSheet({ catalogue, initialName, onClose, onBack, onCreate
     if (!valid) return;
     setBusy(true);
     setError(null);
-    const body = { name: variant.trim() || defaultVariantName(name, implement), implement };
+    const body = { name: variant.trim() || defaultVariantName(name, implement, t), implement };
     try {
       const variantId = existing
         ? (await createVariant(existing.id, body)).id
         : (await createExercise({ name: name.trim(), pattern, muscles, variant: body })).variants[0]!.id;
       await onCreated(variantId);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "No se ha podido crear");
+      setError(reason instanceof Error ? reason.message : t("common.create_failed"));
       setBusy(false);
     }
   }
 
   return (
     <Sheet
-      title="Nuevo ejercicio"
+      title={t("plan.new_exercise")}
       onClose={onClose}
-      action={{ label: existing ? "Añadir variante" : "Crear y añadir", onClick: () => void submit(), disabled: !valid }}
+      action={{ label: existing ? t("plan.add_variant") : t("plan.create_and_add"), onClick: () => void submit(), disabled: !valid }}
     >
       {onBack && (
         <Button variant="plain" size="small" icon="chevron-left" onClick={onBack}>
-          Volver a la lista
+          {t("plan.back_to_list")}
         </Button>
       )}
       <TextField
-        label="Ejercicio"
+        label={t("plan.exercise")}
         value={name}
         onChange={setName}
-        placeholder="Press banca"
+        placeholder={t("plan.exercise_placeholder")}
         autoFocus
-        hint={existing ? `Ya existe: se añade como otra variante de «${existing.name}».` : undefined}
+        hint={existing ? t("plan.exists", { name: existing.name }) : undefined}
       />
       <div className="training-field">
-        <span className="training-field-label">Implemento</span>
-        <ChoiceChips label="Implemento" value={implement} onChange={setImplement} options={IMPLEMENTS} />
+        <span className="training-field-label">{t("plan.implement")}</span>
+        <ChoiceChips label={t("plan.implement")} value={implement} onChange={setImplement} options={implementsOf(t)} />
       </div>
       <TextField
-        label="Nombre de la variante"
+        label={t("plan.variant_name")}
         value={variant}
         onChange={setVariant}
-        placeholder={name.trim() ? defaultVariantName(name, implement) : "Press banca (barra)"}
-        hint="La carga solo se compara dentro de la misma variante, y en el mismo centro."
+        placeholder={name.trim() ? defaultVariantName(name, implement, t) : t("plan.variant_placeholder")}
+        hint={t("plan.variant_hint")}
       />
       {!existing && (
         <div className="training-field">
-          <span className="training-field-label">Patrón</span>
-          <ChoiceChips label="Patrón" value={pattern} onChange={setPattern} options={PATTERNS} />
+          <span className="training-field-label">{t("plan.pattern")}</span>
+          <ChoiceChips label={t("plan.pattern")} value={pattern} onChange={setPattern} options={patterns(t)} />
         </div>
       )}
       {!existing && <MusclePicker catalogue={catalogue} value={muscles} onChange={setMuscles} />}
       {!existing && name.trim() && !hasPrimary(muscles) && (
-        <p className="training-field-hint">Marca al menos un músculo principal para crearlo.</p>
+        <p className="training-field-hint">{t("plan.mark_primary")}</p>
       )}
       {error && (
         <p className="training-field-error" role="alert">
@@ -839,6 +850,7 @@ interface MusclesSheetProps {
 }
 
 function MusclesSheet({ catalogue, exerciseId, onClose, onSaved }: MusclesSheetProps) {
+  const t = useT();
   const exercise = catalogue.exercises.find((candidate) => candidate.id === exerciseId);
   const [muscles, setMuscles] = useState<Record<string, number>>(exercise?.muscles ?? {});
   const [busy, setBusy] = useState(false);
@@ -851,18 +863,18 @@ function MusclesSheet({ catalogue, exerciseId, onClose, onSaved }: MusclesSheetP
     try {
       onSaved(await updateMuscles(exerciseId, muscles as Muscles));
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "No se ha podido guardar");
+      setError(reason instanceof Error ? reason.message : t("common.save_failed"));
       setBusy(false);
     }
   }
 
   return (
     <Sheet
-      title={exercise ? `Músculos · ${exercise.name}` : "Músculos"}
+      title={exercise ? `${t("muscles.label")} · ${exercise.name}` : t("muscles.label")}
       onClose={onClose}
-      action={{ label: "Guardar", onClick: () => void save(), disabled: !valid }}
+      action={{ label: t("common.save"), onClick: () => void save(), disabled: !valid }}
     >
-      <p className="training-field-hint">Vale para todas las variantes de este ejercicio.</p>
+      <p className="training-field-hint">{t("plan.all_variants")}</p>
       <MusclePicker catalogue={catalogue} value={muscles} onChange={setMuscles} />
       {error && (
         <p className="training-field-error" role="alert">

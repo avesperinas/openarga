@@ -374,7 +374,7 @@ async def test_last_time_is_the_one_in_the_same_gym_when_there_is_one(api) -> No
     push = next(day for day in days if day["kind"] == "push")
     variant = push["slots"][0]["options"][0]["variant_id"]
     here = (await api.get("/catalogue")).json()["gyms"][0]
-    there = (await api.post("/gyms", json={"name": "Otro centro"})).json()
+    there = (await api.post("/gyms", json={"name": "Other gym"})).json()
 
     async def bench_at(gym: dict, offset: int, weight: str) -> str:
         started = T0 + timedelta(days=offset)
@@ -480,7 +480,7 @@ async def test_with_the_kernel_down_sets_are_kept_and_published_when_it_returns(
     def down(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/internal/users":
             return httpx.Response(200, json=[person])
-        raise httpx.ConnectError("el kernel no contesta", request=request)
+        raise httpx.ConnectError("the kernel does not answer", request=request)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(down)) as client:
         failed = await publisher.run_once(client)
@@ -634,7 +634,7 @@ async def test_the_widgets_say_the_week_and_what_comes_next(api) -> None:
 
 
 async def test_a_widget_that_does_not_exist_is_a_404(api) -> None:
-    assert (await api.get("/widgets/nada")).status_code == 404
+    assert (await api.get("/widgets/nothing")).status_code == 404
 
 
 def test_the_desktop_paints_a_day_in_the_same_tone_as_the_app() -> None:

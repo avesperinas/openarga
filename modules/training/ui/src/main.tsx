@@ -9,14 +9,17 @@ import { mountApp } from "@openarga/app";
 
 import { App } from "./App";
 import { Backdrop, applyRemembered } from "./Backdrop";
+import { Localized } from "./i18n/Localized";
 import { sharedQueue } from "./offline";
 
 applyRemembered();
 
 void mountApp(
   "training",
-  <Backdrop>
-    <App />
-  </Backdrop>,
+  <Localized>
+    <Backdrop>
+      <App />
+    </Backdrop>
+  </Localized>,
   { onPerson: (person) => sharedQueue().bindPerson(person) },
 );

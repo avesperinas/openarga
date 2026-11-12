@@ -3,27 +3,30 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import type { Machine, MuscleSummary, Stats, VariantPoint } from "./api";
+import { english, inLocale, spanish } from "./i18n/testing";
 import { ExerciseSummary, StatsScreen, VolumeCard, exerciseLabel, periodLabel, signed, sparkline, whyNot } from "./Stats";
 
-describe("cómo se leen los números de Stats", () => {
-  it("el signo va en el texto, no solo en el color", () => {
-    expect(signed(2.1)).toBe("+2,1 %");
-    expect(signed(-2.1)).toBe("−2,1 %");
-    expect(signed(0)).toBe("+0,0 %");
+describe("how the Stats numbers read", () => {
+  it("the sign goes in the text, not only in the colour", () => {
+    expect(signed(2.1, "en")).toBe("+2.1 %");
+    expect(signed(-2.1, "en")).toBe("−2.1 %");
+    expect(signed(0, "en")).toBe("+0.0 %");
   });
 
-  it("la coma decimal es la de aquí", () => {
-    expect(signed(12.35)).toContain(",");
-    expect(signed(12.35)).not.toContain(".");
+  it("the decimal mark is the one of the person", () => {
+    expect(signed(12.35, "es")).toContain(",");
+    expect(signed(12.35, "es")).not.toContain(".");
+    expect(signed(12.35, "en")).toContain(".");
   });
 
-  it("cada periodo tiene su nombre escrito", () => {
-    expect(periodLabel("4w")).toBe("4 semanas");
-    expect(periodLabel("all")).toBe("Desde el principio");
+  it("each period has its name written", () => {
+    expect(periodLabel("4w", english)).toBe("4 weeks");
+    expect(periodLabel("all", english)).toBe("Since the beginning");
+    expect(periodLabel("all", spanish)).toBe(spanish("stats.period.all"));
   });
 });
 
-describe("la línea del índice", () => {
+describe("the index line", () => {
   const coords = (values: number[]): { x: number; y: number }[] =>
     sparkline(values)
       .split(" ")
@@ -33,7 +36,7 @@ describe("la línea del índice", () => {
         return { x: x ?? 0, y: y ?? 0 };
       });
 
-  it("empieza a la izquierda y acaba a la derecha, dentro de la caja", () => {
+  it("starts on the left and ends on the right, inside the box", () => {
     const points = coords([100, 102, 104]);
 
     expect(points).toHaveLength(3);
@@ -42,13 +45,13 @@ describe("la línea del índice", () => {
     expect(points.every((point) => point.y >= 0 && point.y <= 64)).toBe(true);
   });
 
-  it("lo más alto se pinta arriba", () => {
+  it("the highest is painted on top", () => {
     const points = coords([100, 101, 105]);
 
     expect(points[2]?.y).toBeLessThan(points[0]?.y ?? 0);
   });
 
-  it("una línea plana no se sale de la caja", () => {
+  it("a flat line does not leave the box", () => {
     const points = coords([100, 100, 100]);
 
     expect(points.every((point) => Number.isFinite(point.y) && point.y >= 0 && point.y <= 64)).toBe(
@@ -56,15 +59,15 @@ describe("la línea del índice", () => {
     );
   });
 
-  it("con un solo punto no hay línea que dibujar", () => {
+  it("with a single point there is no line to draw", () => {
     expect(sparkline([100])).toBe("");
   });
 });
 
-describe("cómo se nombra y se explica", () => {
-  it("una variante que ya lleva el ejercicio en el nombre no lo repite", () => {
-    expect(exerciseLabel({ exercise: "Press banca", variant: "Press banca con barra" })).toBe("Press banca con barra");
-    expect(exerciseLabel({ exercise: "Jalón", variant: "Polea alta" })).toBe("Jalón · Polea alta");
+describe("how it is named and explained", () => {
+  it("a variant that already carries the exercise in its name does not repeat it", () => {
+    expect(exerciseLabel({ exercise: "Bench press", variant: "Barbell bench press" })).toBe("Barbell bench press");
+    expect(exerciseLabel({ exercise: "Lat pulldown", variant: "High cable" })).toBe("Lat pulldown · High cable");
   });
 
   const point: VariantPoint = {
@@ -80,17 +83,16 @@ describe("cómo se nombra y se explica", () => {
     verdict: null,
   };
 
-  it("un día apartado dice cuánto se aleja y de qué", () => {
-    expect(whyNot(point)).toBe(
-      "Un 33 % por encima de las sesiones de alrededor en esta máquina (lo habitual, 115,5 kg)",
-    );
-    expect(whyNot({ ...point, status: "excluded", verdict: "excluded" })).toBe("Lo apartaste tú");
-    expect(whyNot({ ...point, status: "counted", verdict: "counted" })).toBe("Cuenta porque lo dijiste tú");
-    expect(whyNot({ ...point, status: "counted" })).toBeNull();
+  it("a day set aside says how far it is and from what", () => {
+    expect(whyNot(point, english, "en")).toBe("33 % above the surrounding sessions on this machine (the usual, 115.5 kg)");
+    expect(whyNot(point, spanish, "es")).toContain("115,5 kg");
+    expect(whyNot({ ...point, status: "excluded", verdict: "excluded" }, english, "en")).toBe("You set it aside");
+    expect(whyNot({ ...point, status: "counted", verdict: "counted" }, english, "en")).toBe("It counts because you said so");
+    expect(whyNot({ ...point, status: "counted" }, english, "en")).toBeNull();
   });
 });
 
-describe("la tarjeta de músculos", () => {
+describe("the muscles card", () => {
   const muscle = (id: string, name: string, region: string, delta: number | null): MuscleSummary => ({
     muscle: id,
     name,
@@ -112,57 +114,56 @@ describe("la tarjeta de músculos", () => {
     sessions: 30,
     index: { value: 102, delta: 2, direction: "up", muscles: 1, trend: [] },
     frequency: { done: 2, goal: 5, average: 4, streak: 0 },
-    muscles: [muscle("chest", "Pecho", "upper", 4.2), muscle("calves", "Gemelo", "lower", null)],
+    muscles: [muscle("chest", "Chest", "upper", 4.2), muscle("calves", "Calves", "lower", null)],
     movers: [],
     excluded: 0,
     bodyweight,
   });
 
-  it("enseña todos los grupos, también los que no tienen datos de fuerza", () => {
-    const html = renderToString(<VolumeCard stats={stats(80)} onOpen={() => undefined} />).replaceAll("<!-- -->", "");
+  it("shows every group, also those without strength data", () => {
+    const html = renderToString(inLocale(<VolumeCard stats={stats(80)} onOpen={() => undefined} />)).replaceAll("<!-- -->", "");
 
-    expect(html).toContain("Pecho");
-    expect(html).toContain("+4,2 %");
-    expect(html).toContain("Gemelo");
-    expect(html).toContain("Tren inferior");
-    expect(html).not.toContain("Sin tu peso");
+    expect(html).toContain("Chest");
+    expect(html).toContain("+4.2 %");
+    expect(html).toContain("Calves");
+    expect(html).toContain("Lower body");
+    expect(html).not.toContain("Without your weight");
   });
 
-  it("pinta el cuerpo de frente y de espalda, cada músculo un botón con su nombre (T-B05)", () => {
-    const html = renderToString(<VolumeCard stats={stats(80)} onOpen={() => undefined} />);
+  it("paints the body front and back, each muscle a button with its name (T-B05)", () => {
+    const html = renderToString(inLocale(<VolumeCard stats={stats(80)} onOpen={() => undefined} />));
 
-    expect(html).toContain('aria-label="Fuerza por músculo en el periodo, de frente"');
-    expect(html).toContain('aria-label="Fuerza por músculo en el periodo, de espalda"');
-    expect(html).toMatch(/data-muscle="chest"[^>]*role="button"[^>]*aria-label="Pecho"/);
+    expect(html.match(/aria-label="Strength by muscle in the period, /g)).toHaveLength(2);
+    expect(html).toMatch(/data-muscle="chest"[^>]*role="button"[^>]*aria-label="Chest"/);
     expect(html).toContain("var(--positive)");
   });
 
-  it("sin peso corporal avisa de que dominadas y fondos no cuentan", () => {
-    const html = renderToString(<VolumeCard stats={stats(null)} onOpen={() => undefined} />);
+  it("without bodyweight it warns that pull-ups and dips do not count", () => {
+    const html = renderToString(inLocale(<VolumeCard stats={stats(null)} onOpen={() => undefined} />));
 
-    expect(html).toContain("Sin tu peso");
+    expect(html).toContain("Without your weight");
   });
 
-  it("se pinta al momento con lo último que se vio, sin esperar a la red (T-B10)", async () => {
+  it("paints at once with the last thing seen, without waiting for the network (T-B10)", async () => {
     await reset();
     remember("stats:3m", stats(80));
 
-    const html = renderToString(<StatsScreen />).replaceAll("<!-- -->", "");
+    const html = renderToString(inLocale(<StatsScreen />)).replaceAll("<!-- -->", "");
 
-    expect(html).toContain("Pecho");
+    expect(html).toContain("Chest");
     expect(html).not.toContain('aria-busy="true"');
     await reset();
   });
 
-  it("la pantalla va en secciones, con el cuerpo primero (T-B05)", () => {
-    const html = renderToString(<StatsScreen initial={stats(80)} />).replaceAll("<!-- -->", "");
+  it("the screen goes in sections, with the body first (T-B05)", () => {
+    const html = renderToString(inLocale(<StatsScreen initial={stats(80)} />)).replaceAll("<!-- -->", "");
     const titles = [...html.matchAll(/<h2 class="section-title">([^<]+)</g)].map((match) => match[1]);
 
-    expect(titles).toEqual(["Músculos", "Rendimiento", "Constancia"]);
+    expect(titles).toEqual(["Muscles", "Performance", "Consistency"]);
   });
 });
 
-describe("un ejercicio (T-B05)", () => {
+describe("an exercise (T-B05)", () => {
   const point = (id: string, day: string, e1rm: number): VariantPoint => ({
     id,
     session_id: `s-${id}`,
@@ -184,7 +185,7 @@ describe("un ejercicio (T-B05)", () => {
   ];
   const machine: Machine = {
     gym_id: "g",
-    gym: "Centro",
+    gym: "Gym",
     first_day: "2026-07-01",
     last_day: "2026-07-29",
     points,
@@ -198,29 +199,29 @@ describe("un ejercicio (T-B05)", () => {
     without_pr: 0,
     excluded: 0,
   };
-  const html = renderToString(<ExerciseSummary machine={machine} increment={2.5} external period="3m" />).replaceAll(
+  const html = renderToString(inLocale(<ExerciseSummary machine={machine} increment={2.5} external period="3m" />)).replaceAll(
     "<!-- -->",
     "",
   );
 
-  it("dice el máximo estimado y cuánto cambió en el periodo", () => {
+  it("says the estimated max and how much it changed in the period", () => {
     expect(html).toContain("106<span");
-    expect(html).toContain("+6 kg en 3 meses");
+    expect(html).toContain("+6 kg in 3 months");
   });
 
-  it("la línea marca los récords y sombrea el rango normal", () => {
+  it("the line marks the records and shades the normal range", () => {
     expect(html.match(/data-highlight=""/g)).toHaveLength(3);
     expect(html).toContain("trend-chart-band");
-    expect(html).toContain("Tu rango normal");
+    expect(html).toContain("Your normal range");
   });
 
-  it("dice qué hacer la próxima vez", () => {
-    expect(html).toContain("Dos sesiones seguidas con récord.");
-    expect(html).toContain("Para un récord la próxima vez: 5 × 92,5 kg.");
+  it("says what to do next time", () => {
+    expect(html).toContain("2 sessions in a row with a record.");
+    expect(html).toContain("For a record next time: 5 × 92.5 kg.");
   });
 
-  it("los récords por repeticiones, con lo poco fiable apagado", () => {
-    expect(html).toContain("Récord por repeticiones");
+  it("the records by reps, with the unreliable ones dimmed", () => {
+    expect(html).toContain("Records by reps");
     expect(html).toContain('<div data-muted=""><dt>11+ reps</dt>');
   });
 });

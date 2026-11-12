@@ -1,10 +1,10 @@
 import { signIn } from "./api";
 
-describe("la sesión de arga caducada", () => {
-  it("lleva a entrar y vuelve a la misma pantalla de Training", () => {
+describe("an expired arga session", () => {
+  it("leads to sign in and comes back to the same Training screen", () => {
     const assigned: string[] = [];
-    signIn({ pathname: "/training/sesion/42", search: "", assign: (url) => void assigned.push(String(url)) });
+    signIn({ pathname: "/training/session/42", search: "", assign: (url) => void assigned.push(String(url)) });
 
-    expect(assigned).toEqual(["/login?next=%2Ftraining%2Fsesion%2F42"]);
+    expect(assigned).toEqual(["/login?next=%2Ftraining%2Fsession%2F42"]);
   });
 });

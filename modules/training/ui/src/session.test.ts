@@ -1,6 +1,6 @@
 import { SESSION } from "./fixtures";
 import type { Op } from "./queue";
-import { madridTime, overlay, remap, restSince, sessionTimes } from "./session";
+import { localTime, overlay, remap, restSince, sessionTimes } from "./session";
 
 const queued: Op[] = [
   {
@@ -21,24 +21,24 @@ const queued: Op[] = [
   },
 ];
 
-describe("la sesión tras recargar", () => {
-  it("lleva lo que el servidor no tiene todavía", () => {
+describe("the session after reloading", () => {
+  it("carries what the server does not have yet", () => {
     const [exercise] = overlay(SESSION, queued);
 
-    expect(exercise?.variant).toBe("Prensa");
+    expect(exercise?.variant).toBe("Leg press");
     expect(exercise?.sets.map((set) => [set.number, set.reps])).toEqual([[1, 10]]);
   });
 
-  it("no mezcla la cola de otra sesión", () => {
-    expect(overlay(SESSION, queued.map((op) => ({ ...op, session: "otra" })))).toEqual([]);
+  it("does not mix the queue of another session", () => {
+    expect(overlay(SESSION, queued.map((op) => ({ ...op, session: "other" })))).toEqual([]);
   });
 
-  it("el descanso cuenta desde la última serie", () => {
+  it("rest counts from the last set", () => {
     expect(restSince(overlay(SESSION, queued))).toBe("2026-09-15T17:05:00Z");
     expect(restSince([])).toBeNull();
   });
 
-  it("reapuntar un ejercicio junta sus series con el que ya existía", () => {
+  it("re-pointing an exercise joins its sets with the one that already existed", () => {
     const mine = overlay(SESSION, queued);
     const theirs = [{ ...mine[0]!, id: "e2", sets: [{ ...mine[0]!.sets[0]!, number: 2 }] }];
 
@@ -49,28 +49,29 @@ describe("la sesión tras recargar", () => {
   });
 });
 
-describe("la nota de un ejercicio", () => {
-  it("tras recargar, la nota que no llegó al servidor sigue ahí", () => {
+describe("the note of an exercise", () => {
+  it("after reloading, the note that did not reach the server is still there", () => {
     const note: Op = {
       key: "notes:e1",
       session: "s1",
       method: "PUT",
       path: "/sessions/s1/exercises/e1/notes",
-      body: { notes: "polea rara" },
+      body: { notes: "odd cable" },
       attempts: 1,
     };
     const [exercise] = overlay(SESSION, [...queued, note]);
-    expect(exercise?.notes).toBe("polea rara");
+    expect(exercise?.notes).toBe("odd cable");
   });
 });
 
-describe("las horas de un entreno terminado", () => {
-  it("se leen en hora de Madrid", () => {
-    expect(madridTime("2026-09-25T17:05:00Z")).toBe("19:05");
-    expect(madridTime("2026-01-15T17:05:00Z")).toBe("18:05");
+describe("the times of a finished workout", () => {
+  it("read in the time zone of the person", () => {
+    expect(localTime("2026-09-25T17:05:00Z", "Europe/Madrid", "en")).toBe("19:05");
+    expect(localTime("2026-01-15T17:05:00Z", "Europe/Madrid", "en")).toBe("18:05");
+    expect(localTime("2026-09-25T17:05:00Z", "America/New_York", "es")).toBe("13:05");
   });
 
-  it("se mandan sin zona sobre el día de la sesión, con su duración", () => {
+  it("are sent without zone on the day of the session, with its duration", () => {
     expect(sessionTimes("2026-09-25", "19:05", "20:15")).toEqual({
       started_at: "2026-09-25T19:05:00",
       ended_at: "2026-09-25T20:15:00",
@@ -78,7 +79,7 @@ describe("las horas de un entreno terminado", () => {
     });
   });
 
-  it("un fin antes del inicio es que cruzó la medianoche", () => {
+  it("an end before the start means it crossed midnight", () => {
     expect(sessionTimes("2026-09-30", "23:30", "00:40")).toEqual({
       started_at: "2026-09-30T23:30:00",
       ended_at: "2026-10-01T00:40:00",
@@ -86,7 +87,7 @@ describe("las horas de un entreno terminado", () => {
     });
   });
 
-  it("sin una de las dos horas no hay nada que guardar", () => {
+  it("without one of the two times there is nothing to save", () => {
     expect(sessionTimes("2026-09-25", "", "20:15")).toBeNull();
   });
 });

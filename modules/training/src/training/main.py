@@ -20,6 +20,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_contracts as contracts
+from arga_module import preferences
 from arga_tenancy import UserFromHeader, require_person, user_headers
 from training import (
     activities,
@@ -46,6 +47,15 @@ app = FastAPI(title="Training", version=os.environ.get("APP_VERSION", "dev"))
 app.add_middleware(UserFromHeader)
 
 
+@app.middleware("http")
+async def person_preferences(request: Request, call_next):
+    token = preferences.use(preferences.from_headers(request.headers))
+    try:
+        return await call_next(request)
+    finally:
+        preferences.reset(token)
+
+
 def ui_dist() -> Path:
     default = Path(__file__).resolve().parents[2] / "ui" / "dist"
     return Path(os.environ.get("UI_DIST", default))
@@ -64,17 +74,17 @@ async def readyz() -> dict:
                 text("select 1 from information_schema.schemata where schema_name = :schema"),
                 {"schema": SCHEMA},
             )
-    except Exception as error:  # noqa: BLE001 -- cualquier fallo de conexión es "no listo"
-        raise HTTPException(status_code=503, detail=f"sin base de datos: {error}") from error
+    except Exception as error:  # noqa: BLE001 -- any connection failure means "not ready"
+        raise HTTPException(status_code=503, detail=f"no database: {error}") from error
 
     if not found:
         raise HTTPException(
             status_code=503,
-            detail=f"el schema '{SCHEMA}' no existe todavía; lo aprovisiona el kernel al "
-            f"registrar el manifiesto",
+            detail=f"schema '{SCHEMA}' does not exist yet; the kernel provisions it when it "
+            f"registers the manifest",
         )
     if not (ui_dist() / "index.html").is_file():
-        raise HTTPException(status_code=503, detail=f"la app no está construida en {ui_dist()}")
+        raise HTTPException(status_code=503, detail=f"the app is not built in {ui_dist()}")
     return {"status": "ready", "module": MODULE_ID, "schema": SCHEMA}
 
 
@@ -95,7 +105,7 @@ READER_ROLE = f"mod_{MODULE_ID}_read"
 async def widget(widget_id: str) -> dict:
     renderer = widgets.RENDERERS.get(widget_id)
     if renderer is None:
-        raise HTTPException(status_code=404, detail=f"training no tiene el widget '{widget_id}'")
+        raise HTTPException(status_code=404, detail=f"training has no widget '{widget_id}'")
     async with engine().begin() as connection:
         await connection.execute(text(f'set local role "{READER_ROLE}"'))
         return await renderer(connection)
@@ -123,11 +133,11 @@ async def list_tools() -> list[dict]:
 async def call_tool(name: str, request: Request, x_arga_scopes: str = Header(default="")) -> dict:
     tool = tools.TOOLS.get(name)
     if tool is None:
-        raise HTTPException(status_code=404, detail=f"training no tiene la tool '{name}'")
+        raise HTTPException(status_code=404, detail=f"training has no tool '{name}'")
 
     role = tools.role_for_scopes(set(x_arga_scopes.split()))
     if role is None:
-        raise HTTPException(status_code=403, detail=f"ningún scope de {MODULE_ID} en la llamada")
+        raise HTTPException(status_code=403, detail=f"no {MODULE_ID} scope in the call")
 
     try:
         arguments = tool.arguments.model_validate(await request.json())
@@ -159,8 +169,8 @@ async def warm_stats() -> None:
     try:
         async with as_app() as connection:
             await stats.warm(connection, training.local_day(datetime.now(UTC)))
-    except Exception:  # noqa: BLE001 — precalentar es un favor, nunca un error de la petición
-        log.exception("no se pudo dejar calculado Stats")
+    except Exception:  # noqa: BLE001 -- warming up is a favour, never a request error
+        log.exception("could not precompute Stats")
 
 
 @app.get("/today")
@@ -179,7 +189,7 @@ async def today(background: BackgroundTasks) -> Today:
 
 def _translate(error: Exception) -> HTTPException:
     if isinstance(error, training.NotFound):
-        return HTTPException(status_code=404, detail=f"no existe: {error}")
+        return HTTPException(status_code=404, detail=f"not found: {error}")
     return HTTPException(status_code=409, detail=str(error))
 
 
@@ -203,7 +213,7 @@ async def list_sessions(
     last = until or training.local_day(datetime.now(UTC))
     first = since or last - timedelta(days=366)
     if first > last:
-        raise HTTPException(status_code=422, detail="`since` va antes que `until`")
+        raise HTTPException(status_code=422, detail="`since` must come before `until`")
     async with as_app() as connection:
         return await training.sessions_between(connection, first, last)
 
@@ -247,7 +257,7 @@ async def read_outcome(session_id: UUID) -> outcome.Outcome:
         async with as_app() as connection:
             return await outcome.read(connection, str(session_id))
     except outcome.NotFound as error:
-        raise HTTPException(status_code=404, detail=f"no existe la sesión {error}") from error
+        raise HTTPException(status_code=404, detail=f"session {error} does not exist") from error
 
 
 @app.post("/sessions/{session_id}/finish")
@@ -478,7 +488,7 @@ async def read_muscle_stats(muscle_id: str, period: stats.Period = "3m") -> stat
             connection, muscle_id, period, training.local_day(datetime.now(UTC))
         )
     if found is None:
-        raise HTTPException(status_code=404, detail=f"no existe el músculo {muscle_id}")
+        raise HTTPException(status_code=404, detail=f"muscle {muscle_id} does not exist")
     return found
 
 
@@ -491,7 +501,7 @@ async def read_variant_stats(variant_id: UUID, period: stats.Period = "3m") -> s
         if found is not None:
             found.notes = await links.notes_about(connection, str(variant_id))
     if found is None:
-        raise HTTPException(status_code=404, detail=f"no existe la variante {variant_id}")
+        raise HTTPException(status_code=404, detail=f"variant {variant_id} does not exist")
     return found
 
 
@@ -499,7 +509,7 @@ async def read_variant_stats(variant_id: UUID, period: stats.Period = "3m") -> s
 async def judge_point(point_id: UUID, request: stats.VerdictIn) -> None:
     async with as_app() as connection:
         if not await stats.set_verdict(connection, str(point_id), request):
-            raise HTTPException(status_code=404, detail=f"no existe el ejercicio {point_id}")
+            raise HTTPException(status_code=404, detail=f"exercise {point_id} does not exist")
 
 
 @app.delete("/stats/points/{point_id}", status_code=204)
@@ -516,7 +526,7 @@ async def mark_machine(request: stats.MarkIn) -> Created:
     except DBAPIError as error:
         raise HTTPException(status_code=409, detail=str(error.orig).splitlines()[0]) from error
     if found is None:
-        raise HTTPException(status_code=404, detail=f"no existe la variante {request.variant_id}")
+        raise HTTPException(status_code=404, detail=f"variant {request.variant_id} does not exist")
     return Created(id=found)
 
 
@@ -550,7 +560,7 @@ async def list_activities(
     last = until or training.local_day(datetime.now(UTC))
     first = since or last - timedelta(days=366)
     if first > last:
-        raise HTTPException(status_code=422, detail="`since` va antes que `until`")
+        raise HTTPException(status_code=422, detail="`since` must come before `until`")
     return await _edit(activities.between, first, last)
 
 
@@ -615,7 +625,7 @@ async def capability(
 ) -> dict:
     expected = os.environ.get("MODULE_REGISTRATION_TOKEN", "")
     if not expected:
-        raise HTTPException(status_code=503, detail="Training no tiene MODULE_REGISTRATION_TOKEN")
+        raise HTTPException(status_code=503, detail="Training has no MODULE_REGISTRATION_TOKEN")
     if not hmac.compare_digest(x_module_token, expected):
         raise HTTPException(status_code=401, detail="solo el kernel pide cosas a Training")
     if capability != contracts.AGENDA_MOVE:
@@ -626,7 +636,7 @@ async def capability(
     except (ValidationError, ValueError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     answer = await _edit(moving.move, asked)
-    print(f"calendario {asked.uid} movido por {x_arga_module}", flush=True)
+    print(f"calendar {asked.uid} moved by {x_arga_module}", flush=True)
     return answer
 
 
@@ -649,8 +659,8 @@ async def ui(path: str = "") -> FileResponse:
             },
         )
     if path.startswith("assets/") or "." in path.rsplit("/", 1)[-1]:
-        raise HTTPException(status_code=404, detail=f"no existe: {path}")
+        raise HTTPException(status_code=404, detail=f"not found: {path}")
     index = root / "index.html"
     if not index.is_file():
-        raise HTTPException(status_code=503, detail="la app no está construida")
+        raise HTTPException(status_code=503, detail="the app is not built")
     return FileResponse(index, headers={"cache-control": "no-cache"})

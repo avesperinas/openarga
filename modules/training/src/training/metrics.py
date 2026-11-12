@@ -26,23 +26,23 @@ def _point(key: str, label: str, unit: str, kind: str, day: Any, value: float) -
 async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
     found: list[dict[str, Any]] = []
     for key, label, query in (
-        ("sessions", "Sesiones de fuerza", SESSION_DAYS),
-        ("activities", "Actividades", ACTIVITY_DAYS),
+        ("sessions", "Strength sessions", SESSION_DAYS),
+        ("activities", "Activities", ACTIVITY_DAYS),
     ):
         per_day = Counter(row.day for row in (await connection.execute(query)).all())
         found += [_point(key, label, "count", "amount", day, n) for day, n in per_day.items()]
 
     analysis = await stats.analyse(connection, training.local_day(datetime.now(UTC)))
     best: dict[tuple[str, Any], float] = {}
-    for serie in analysis.series:
-        for point in serie.counted:
-            at = (serie.variant_id, point.day)
+    for segment in analysis.series:
+        for point in segment.counted:
+            at = (segment.variant_id, point.day)
             best[at] = max(best.get(at, 0.0), point.e1rm)
     for (variant_id, day), e1rm in best.items():
         name = analysis.names.get(variant_id)
         if name is None:
             continue
-        label = f"Marca estimada · {name.label}"[:LABEL]
+        label = f"Estimated max · {name.label}"[:LABEL]
         found.append(_point(f"e1rm:{variant_id}", label, "kg", "peak", day, e1rm))
     found += records(analysis)
     return found
@@ -59,7 +59,7 @@ def heaviest(entry: strength.Entry) -> float | None:
 
 
 def records(analysis: stats.Analysis) -> list[dict]:
-    counted = {point.id for serie in analysis.series for point in serie.counted}
+    counted = {point.id for segment in analysis.series for point in segment.counted}
     day_best: dict[tuple[str, Any], float] = {}
     days: dict[str, set] = {}
     kinds: dict[str, str] = {}
@@ -75,7 +75,7 @@ def records(analysis: stats.Analysis) -> list[dict]:
         name = analysis.names.get(variant_id)
         if name is None:
             continue
-        word = "Peso máximo" if kinds[variant_id] == "external" else "Lastre máximo"
+        word = "Top weight" if kinds[variant_id] == "external" else "Top added load"
         label = f"{word} · {name.label}"[:LABEL]
         last = None
         for day in sorted(seen):

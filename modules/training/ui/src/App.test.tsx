@@ -4,6 +4,7 @@ import { route } from "./App";
 import { TodayScreen } from "./Today";
 import type { Today } from "./api";
 import { todayLabel } from "./today";
+import { inLocale } from "./i18n/testing";
 
 const SETTINGS = { weekly_goal: 5, unit: "kg", default_increments: {} };
 
@@ -38,7 +39,7 @@ const WITH_PLAN: Today = {
           {
             id: "s",
             position: 1,
-            exercise: "Remo",
+            exercise: "Row",
             target_sets: 4,
             rep_min: 6,
             rep_max: 10,
@@ -51,43 +52,50 @@ const WITH_PLAN: Today = {
   },
 };
 
-describe("Hoy", () => {
-  it("sin plan dice por qué está vacía en vez de enseñar un hueco", () => {
+describe("Today", () => {
+  it("without a plan it says why it is empty instead of showing a gap", () => {
     const html = renderToString(
-      <TodayScreen onOpenSession={() => undefined} onOpenPlan={() => undefined} now={new Date(2026, 8, 15)} initial={{
-        status: "ready",
-        today: { plan: null, settings: SETTINGS, next: null, in_progress: null, week: WEEK },
-      }} />,
+      inLocale(
+        <TodayScreen
+          onOpenSession={() => undefined}
+          onOpenPlan={() => undefined}
+          now={new Date(2026, 8, 15)}
+          initial={{
+            status: "ready",
+            today: { plan: null, settings: SETTINGS, next: null, in_progress: null, week: WEEK },
+          }}
+        />,
+      ),
     );
 
-    expect(html).toContain("Todavía no hay plan");
-    expect(html).toContain("Crear el plan");
+    expect(html).toContain("No plan yet");
+    expect(html).toContain("Create the plan");
   });
 
-  it("enseña la siguiente sesión y la semana contra el objetivo", () => {
-    const html = renderToString(<TodayScreen onOpenSession={() => undefined} initial={{ status: "ready", today: WITH_PLAN }} />).replaceAll(
+  it("shows the next session and the week against the goal", () => {
+    const html = renderToString(inLocale(<TodayScreen onOpenSession={() => undefined} initial={{ status: "ready", today: WITH_PLAN }} />)).replaceAll(
       "<!-- -->",
       "",
     );
 
-    expect(html).toMatch(/Toca ·\s*rotación 3, día 2 de 3/);
-    expect(html).toContain("Empezar Pull");
-    expect(html).not.toContain("¿Empezar Pull?");
-    expect(html).toContain("Esta semana");
-    expect(html).toMatch(/class="hint">\d+ de 5 · este mes/);
-    expect(html).toMatch(/class="goal-week" role="img" aria-label="Esta semana: L, /);
+    expect(html).toMatch(/Up next ·\s*rotation 3, day 2 of 3/);
+    expect(html).toContain("Start Pull");
+    expect(html).not.toContain("Start Pull?");
+    expect(html).toContain("This week");
+    expect(html).toMatch(/class="hint">\d+ of 5 · this month/);
+    expect(html).toMatch(/class="goal-week" role="img" aria-label="This week: M, /);
   });
 
-  it("si la API falla lo dice, y el resto de la pantalla sigue ahí", () => {
-    const html = renderToString(<TodayScreen onOpenSession={() => undefined} initial={{ status: "error" }} />);
+  it("if the API fails it says so, and the rest of the screen stays", () => {
+    const html = renderToString(inLocale(<TodayScreen onOpenSession={() => undefined} initial={{ status: "error" }} />));
 
-    expect(html).toContain("No se ha podido cargar");
-    expect(html).toContain("Calendario");
+    expect(html).toContain("Could not load");
+    expect(html).toContain("Calendar");
   });
 
-  it("sin plan ni histórico ya se ven el calendario, la semana, el mes y lo último", () => {
+  it("without plan or history the calendar, the week, the month and the latest already show", () => {
     const html = renderToString(
-      <TodayScreen
+      inLocale(<TodayScreen
         onOpenSession={() => undefined}
         now={new Date(2026, 8, 16)}
         initialSessions={[]}
@@ -95,50 +103,54 @@ describe("Hoy", () => {
           status: "ready",
           today: { plan: null, settings: SETTINGS, next: null, in_progress: null, week: WEEK },
         }}
-      />,
+      />),
     ).replaceAll("<!-- -->", "");
 
-    for (const title of ["Esta semana", "Calendario", "Últimos entrenos", "Actividades"]) {
+    for (const title of ["This week", "Calendar", "Latest workouts", "Activities"]) {
       expect(html).toMatch(new RegExp(`>${title}(<span[^>]*>[^<]*</span>)?</h2>`));
     }
-    expect(html).toContain("este mes, 0 sesiones");
-    expect(html).toContain("Septiembre de 2026");
-    expect(html).toContain("Todavía no hay entrenos");
-    expect(html).toContain(">Anotar<");
+    expect(html).toContain("this month, 0 sessions");
+    expect(html).toContain("No workouts yet");
+    expect(html).toContain(">Log<");
   });
 
-  it("la fecha va como en el escritorio de arga", () => {
-    expect(todayLabel(new Date(2026, 8, 15))).toBe("Martes, 15 de septiembre");
+  it("the date reads like on the arga desktop, in the language of the person", () => {
+    expect(todayLabel(new Date(2026, 8, 15), "en")).toBe("Tuesday, September 15");
+    expect(todayLabel(new Date(2026, 8, 15), "es")).toBe(
+      new Intl.DateTimeFormat("es", { weekday: "long", day: "numeric", month: "long" })
+        .format(new Date(2026, 8, 15))
+        .replace(/^./, (first) => first.toUpperCase()),
+    );
   });
 });
 
-describe("Hoy con una sesión a medias", () => {
-  it("ofrece continuarla en vez de empezar otra", () => {
+describe("Today with a session half done", () => {
+  it("offers to continue it instead of starting another", () => {
     const html = renderToString(
-      <TodayScreen
+      inLocale(<TodayScreen
         onOpenSession={() => undefined}
         initial={{ status: "ready", today: { ...WITH_PLAN, in_progress: "s1" } }}
-      />,
+      />),
     ).replaceAll("<!-- -->", "");
 
-    expect(html).toContain("Continuar entreno");
-    expect(html).not.toContain("Empezar Pull");
+    expect(html).toContain("Continue workout");
+    expect(html).not.toContain("Start Pull");
   });
 });
 
-describe("rutas", () => {
-  it("la sesión tiene su dirección, para recargar a mitad sin perderla", () => {
-    expect(route("/training/sesion/5b0e8f7e-4c1a-4d53-9a53-0d3f0c1e2a11")).toEqual({
+describe("routes", () => {
+  it("the session has its address, to reload halfway without losing it", () => {
+    expect(route("/training/session/5b0e8f7e-4c1a-4d53-9a53-0d3f0c1e2a11")).toEqual({
       screen: "session",
       id: "5b0e8f7e-4c1a-4d53-9a53-0d3f0c1e2a11",
     });
     expect(route("/training/")).toEqual({ screen: "today" });
-    expect(route("/training/sesion/otra-cosa")).toEqual({ screen: "today" });
+    expect(route("/training/session/something-else")).toEqual({ screen: "today" });
   });
 });
 
-describe("Hoy recomienda y deja elegir", () => {
-  it("con la rotación empezada, se puede empezar otro día que no toca (T-B05)", () => {
+describe("Today recommends and lets you choose", () => {
+  it("with the rotation started, another day than the due one can be started (T-B05)", () => {
     const today: Today = {
       ...WITH_PLAN,
       rotation: {
@@ -151,18 +163,18 @@ describe("Hoy recomienda y deja elegir", () => {
       },
     };
     const html = renderToString(
-      <TodayScreen onOpenSession={() => undefined} initial={{ status: "ready", today }} />,
+      inLocale(<TodayScreen onOpenSession={() => undefined} initial={{ status: "ready", today }} />),
     ).replaceAll("<!-- -->", "");
 
-    expect(html).toContain("Empezar Pull");
-    expect(html).toContain(">Otro día<");
+    expect(html).toContain("Start Pull");
+    expect(html).toContain(">Another day<");
   });
 });
 
-describe("las pestañas tienen dirección", () => {
-  it("calendario y plan", () => {
-    expect(route("/training/calendario")).toEqual({ screen: "history" });
+describe("the tabs have an address", () => {
+  it("calendar and plan", () => {
+    expect(route("/training/calendar")).toEqual({ screen: "history" });
     expect(route("/training/plan/")).toEqual({ screen: "plan" });
-    expect(route("/training/siguiente")).toEqual({ screen: "next" });
+    expect(route("/training/next")).toEqual({ screen: "next" });
   });
 });

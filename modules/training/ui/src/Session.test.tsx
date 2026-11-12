@@ -2,52 +2,55 @@ import { renderToString } from "react-dom/server";
 
 import { DeleteSessionSheet, SessionScreen, TimesSheet, slotAfter } from "./Session";
 import { LAST_PRESS, SESSION } from "./fixtures";
+import { inLocale } from "./i18n/testing";
 import { SyncQueue } from "./queue";
 
 function render(session = SESSION, queue = new SyncQueue({ storage: null })) {
-  return renderToString(<SessionScreen id={session.id} initial={session} queue={queue} onExit={() => undefined} />).replaceAll(
+  return renderToString(
+    inLocale(<SessionScreen id={session.id} initial={session} queue={queue} onExit={() => undefined} />),
+  ).replaceAll(
     "<!-- -->",
     "",
   );
 }
 
-describe("la pantalla de sesión", () => {
-  it("todos los ejercicios en una lista; el primero abierto, con la variante y la carga de la última vez", () => {
+describe("the session screen", () => {
+  it("all exercises in one list; the first open, with the variant and the load of last time", () => {
     const html = render();
 
-    expect(html).toContain('class="surface disclosure-list" aria-label="Ejercicios"');
+    expect(html).toContain('class="surface disclosure-list" aria-label="Exercises"');
     expect(html.match(/aria-expanded="true"/g)).toHaveLength(1);
     expect(html.match(/aria-expanded="false"/g)).toHaveLength(1);
-    expect(html).toMatch(/role="radio"[^>]*aria-checked="true"[^>]*>Prensa</);
-    expect(html).toContain("La última vez, 12 sept: 10, 9 × 140 kg");
+    expect(html).toMatch(/role="radio"[^>]*aria-checked="true"[^>]*>Leg press</);
+    expect(html).toContain("Last time, Sep 12: 10, 9 × 140 kg");
     expect(html).toContain(">140<");
     expect(html).toContain(">10<");
-    expect(html).toContain('aria-label="Confirmar serie 1"');
+    expect(html).toContain('aria-label="Confirm set 1"');
   });
 
-  it("cada ejercicio cerrado dice su objetivo y la última vez", () => {
+  it("each closed exercise says its target and the last time", () => {
     const html = render();
 
-    expect(html).toContain("2 × 8–12 · primera vez");
+    expect(html).toContain("2 × 8–12 · first time");
   });
 
-  it("si la última vez fue en otro centro, lo dice: allí era otra máquina", () => {
-    const elsewhere = { ...LAST_PRESS, gym_id: "g2", gym: "Otro centro" };
+  it("if last time was at another gym, it says so: it was another machine there", () => {
+    const elsewhere = { ...LAST_PRESS, gym_id: "g2", gym: "Other gym" };
     const html = render({ ...SESSION, history: [elsewhere] });
 
-    expect(html).toContain("La última vez, 12 sept en Otro centro: 10, 9 × 140 kg");
+    expect(html).toContain("Last time, Sep 12 at Other gym: 10, 9 × 140 kg");
   });
 
-  it("con mancuernas se apunta el peso de una", () => {
+  it("with dumbbells the weight of one is logged", () => {
     const [first, ...rest] = SESSION.slots;
     const dumbbells = { ...first!, options: first!.options.map((option) => ({ ...option, implement: "dumbbell" })) };
     const html = render({ ...SESSION, slots: [dumbbells, ...rest] });
 
-    expect(html).toContain("kg por mancuerna");
-    expect(html).toContain('aria-label="Peso por mancuerna"');
+    expect(html).toContain("kg per dumbbell");
+    expect(html).toContain('aria-label="Weight per dumbbell"');
   });
 
-  it("la serie que toca, en su fila; las que faltan, con lo propuesto en gris", () => {
+  it("the set due, in its row; the missing ones, with the proposal in grey", () => {
     const html = render();
 
     expect(html).toMatch(/class="sequence-row" data-state="now"><span class="sequence-number">1</);
@@ -55,15 +58,15 @@ describe("la pantalla de sesión", () => {
     expect(html).toContain('data-size="small"');
   });
 
-  it("lo secundario no estorba: la nota plegada, la superserie a mano y borrar al final", () => {
+  it("secondary things stay out of the way: the note folded, the superset at hand and delete at the end", () => {
     const html = render();
 
-    expect(html).toContain(">Añadir nota<");
-    expect(html).toContain(">Superserie<");
-    expect(html).toContain("Borrar entreno");
+    expect(html).toContain(">Add note<");
+    expect(html).toContain(">Superset<");
+    expect(html).toContain("Delete workout");
   });
 
-  it("una serie que no llegó al servidor se ve pendiente tras recargar", () => {
+  it("a set that did not reach the server shows pending after reloading", () => {
     const storage = new Map<string, string>();
     const persisted = new SyncQueue({
       storage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => void storage.set(key, value) },
@@ -86,75 +89,79 @@ describe("la pantalla de sesión", () => {
 
     const html = render(SESSION, persisted);
 
-    expect(html).toContain("1 sin enviar");
-    expect(html).toContain("Serie 1: 10 × 140 kg");
-    expect(html).toContain('aria-label="Confirmar serie 2"');
+    expect(html).toContain("1 not sent");
+    expect(html).toContain("Set 1: 10 × 140 kg");
+    expect(html).toContain('aria-label="Confirm set 2"');
   });
 
-  it("los planner: descanso grande y sesión", () => {
+  it("the timers: rest, large, and session", () => {
     const html = render();
 
-    expect(html).toContain("Descanso");
-    expect(html).toContain("Sesión");
+    expect(html).toContain("Rest");
+    expect(html).toContain("Session");
   });
 });
 
-describe("una sesión ya terminada", () => {
-  it("enseña lo que duró y su fecha, no planner que siguen contando", () => {
+describe("a session already finished", () => {
+  it("shows how long it took and its date, not timers that keep counting", () => {
     const html = render({ ...SESSION, ended_at: "2022-03-31T17:30:00Z", duration_seconds: 5400, day: "2022-03-31" });
 
-    expect(html).toContain("Duración");
+    expect(html).toContain("Duration");
     expect(html).toContain("1 h 30 min");
-    expect(html).not.toContain("Descanso");
+    expect(html).not.toContain("Rest");
     expect(html).toContain("2022");
   });
 });
 
-describe("borrar un entreno", () => {
-  it("un entreno terminado lo ofrece y la confirmación dice qué se pierde, con cancelar a mano", () => {
-    expect(render({ ...SESSION, ended_at: "2026-09-16T07:00:00Z", duration_seconds: 3600 })).toContain("Borrar entreno");
+describe("deleting a workout", () => {
+  it("a finished workout offers it and the confirmation says what is lost, with cancel at hand", () => {
+    expect(render({ ...SESSION, ended_at: "2026-09-16T07:00:00Z", duration_seconds: 3600 })).toContain("Delete workout");
     const html = renderToString(
-      <DeleteSessionSheet title="Push · jue, 31 mar 2022" sets={24} onCancel={() => undefined} onDelete={async () => undefined} />,
+      inLocale(
+        <DeleteSessionSheet title="Push · Thu, Mar 31, 2022" sets={24} onCancel={() => undefined} onDelete={async () => undefined} />,
+      ),
     ).replaceAll("<!-- -->", "");
-    expect(html).toContain("¿Borrar este entreno?");
-    expect(html).toContain("Push · jue, 31 mar 2022");
-    expect(html).toContain("Se borran sus 24 series y sus notas. No se puede deshacer.");
-    expect(html).toMatch(/Cancelar.*Borrar entreno/);
+    expect(html).toContain("Delete this workout?");
+    expect(html).toContain("Push · Thu, Mar 31, 2022");
+    expect(html).toContain("Its 24 sets and its notes are deleted. It cannot be undone.");
+    expect(html).toMatch(/Cancel.*Delete workout/);
   });
 });
 
-describe("un entreno terminado", () => {
+describe("a finished workout", () => {
   const finished = {
     ...SESSION,
     ended_at: "2026-09-16T07:00:00Z",
     duration_seconds: 14 * 3600,
   };
 
-  it("dice lo que duró y de qué hora a qué hora, y se puede cambiar", () => {
+  it("says how long it took and from what time to what time, in the zone of the person, and it can change", () => {
     const html = render(finished);
 
     expect(html).toContain("14 h 00 min");
-    expect(html).toContain('aria-label="Cambiar horas: de 19:00 a 09:00"');
+    expect(html).toContain('aria-label="Change times: from 17:00 to 07:00"');
   });
 
-  it("la hoja trae las horas que tiene y la duración que saldría", () => {
+  it("the sheet brings its times and the duration it would come to", () => {
     const html = renderToString(
-      <TimesSheet
+      inLocale(
+        <TimesSheet
         day={finished.day}
         startedAt={finished.started_at}
         endedAt={finished.ended_at}
         onCancel={() => undefined}
         onSave={async () => undefined}
-      />,
+        />,
+      ),
     ).replaceAll("<!-- -->", "");
 
-    expect(html).toContain('value="19:00"');
-    expect(html).toContain('value="09:00"');
-    expect(html).toContain("Duración: 14 h 00 min, terminó al día siguiente");
+    expect(html).toContain('value="17:00"');
+    expect(html).toContain('value="07:00"');
+    expect(html).toContain("Duration: 14 h 00 min, ended the next day");
   });
 });
 
-describe("al terminar (T-B05)", () => {
+describe("when finishing (T-B05)", () => {
   const set = (number: number, reps: number, weight: number) => ({
     number,
     reps,
@@ -181,39 +188,41 @@ describe("al terminar (T-B05)", () => {
   const outcome = {
     session_id: "s1",
     muscles: [
-      { muscle: "quads", name: "Cuádriceps", sets: 2 },
-      { muscle: "glutes", name: "Glúteo", sets: 1 },
+      { muscle: "quads", name: "Quads", sets: 2 },
+      { muscle: "glutes", name: "Glutes", sets: 1 },
     ],
     records: [{ variant_id: "v-smith", range: "6-10", reps: 8, load: 62.5, previous: 60 }],
   };
   const html = renderToString(
-    <SessionScreen
-      id="s1"
-      initial={finished}
-      initialOutcome={outcome}
-      queue={new SyncQueue({ storage: null })}
-      onExit={() => undefined}
-    />,
+    inLocale(
+      <SessionScreen
+        id="s1"
+        initial={finished}
+        initialOutcome={outcome}
+        queue={new SyncQueue({ storage: null })}
+        onExit={() => undefined}
+      />,
+    ),
   ).replaceAll("<!-- -->", "");
 
-  it("dice cuánto duró, cuántas series y cuántos récords", () => {
-    expect(html).toContain("<dt>minutos</dt><dd>75</dd>");
-    expect(html).toContain("<dt>series</dt><dd>2</dd>");
-    expect(html).toContain('<div data-lit=""><dt>récord</dt><dd>1</dd>');
+  it("says how long it took, how many sets and how many records", () => {
+    expect(html).toContain("<dt>minutes</dt><dd>75</dd>");
+    expect(html).toContain("<dt>sets</dt><dd>2</dd>");
+    expect(html).toContain('<div data-lit=""><dt>record</dt><dd>1</dd>');
   });
 
-  it("pinta lo trabajado sobre el cuerpo", () => {
-    expect(html).toContain('aria-label="Lo trabajado, de frente"');
-    expect(html).toContain("<title>Cuádriceps: 2 series</title>");
+  it("paints what was worked on the body", () => {
+    expect(html).toContain('aria-label="What was worked, ');
+    expect(html).toContain("<title>Quads: 2 sets</title>");
   });
 
-  it("cada ejercicio, contra la vez anterior y con su récord", () => {
-    expect(html).toContain('aria-label="Mejor serie contra la última vez: +2,5 kg, récord"');
-    expect(html).toContain(">Récord</span>");
+  it("each exercise, against the previous time and with its record", () => {
+    expect(html).toContain('aria-label="Best set against last time: +2.5 kg, record"');
+    expect(html).toContain(">Record</span>");
   });
 });
 
-describe("cambiar de ejercicio (T-B05)", () => {
+describe("switching exercise (T-B05)", () => {
   const [squat, dips] = SESSION.slots as [(typeof SESSION.slots)[number], (typeof SESSION.slots)[number]];
   const logged = (slot: string, sets: number) => ({
     id: `e-${slot}`,
@@ -231,18 +240,18 @@ describe("cambiar de ejercicio (T-B05)", () => {
     })),
   });
 
-  it("en superserie, cada serie lleva al otro ejercicio mientras le queden", () => {
+  it("in a superset, each set leads to the other exercise while it has sets left", () => {
     const pair = [squat.id, dips.id];
     expect(slotAfter(SESSION, [logged(squat.id, 1)], squat.id, pair)).toBe(dips.id);
     expect(slotAfter(SESSION, [logged(squat.id, 1), logged(dips.id, 1)], dips.id, pair)).toBe(squat.id);
   });
 
-  it("si al otro ya no le quedan, sigue en este hasta cerrarlo", () => {
+  it("if the other has none left, it stays on this one until it is closed", () => {
     const pair = [squat.id, dips.id];
     expect(slotAfter(SESSION, [logged(squat.id, 1), logged(dips.id, dips.target_sets)], squat.id, pair)).toBeNull();
   });
 
-  it("sin superserie, solo al cerrar un ejercicio se pasa al siguiente que falte", () => {
+  it("without a superset, only closing an exercise moves to the next missing one", () => {
     expect(slotAfter(SESSION, [logged(squat.id, 1)], squat.id, null)).toBeNull();
     expect(slotAfter(SESSION, [logged(squat.id, squat.target_sets)], squat.id, null)).toBe(dips.id);
   });

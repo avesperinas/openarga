@@ -115,19 +115,19 @@ async def loop() -> None:
                 result = await run_once(client)
                 if result["pending"]:
                     failures += 1
-                    print(f"publisher · {result['pending']} pendiente(s), reintento", flush=True)
+                    print(f"publisher · {result['pending']} pending, retrying", flush=True)
                 else:
                     failures = 0
                     if result["published"]:
-                        print(f"publisher · {result['published']} publicado(s)", flush=True)
-            except Exception as error:  # noqa: BLE001 - un fallo de base no tumba el proceso
+                        print(f"publisher · {result['published']} published", flush=True)
+            except Exception as error:  # noqa: BLE001 - a database failure does not bring the process down
                 failures += 1
                 print(f"publisher · {type(error).__name__}: {error}", file=sys.stderr, flush=True)
             await asyncio.sleep(min(60.0, INTERVAL_SECONDS * (2 ** min(failures, 4))))
 
 
 def main() -> int:
-    print(f"publisher · training → {kernel_url()} cada {INTERVAL_SECONDS:g} s", flush=True)
+    print(f"publisher · training → {kernel_url()} every {INTERVAL_SECONDS:g} s", flush=True)
     with contextlib.suppress(KeyboardInterrupt):
         asyncio.run(loop())
     return 0

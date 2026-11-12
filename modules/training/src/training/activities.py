@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_contracts as contracts
 from training import agenda
-from training.training import MADRID, Conflict, NotFound, enqueue
+from training.training import Conflict, NotFound, enqueue, zone
 
 Name = Annotated[str, Field(min_length=1, max_length=60, pattern=r"\S")]
 Notes = Annotated[str, Field(max_length=2000)]
@@ -172,7 +172,7 @@ async def log(connection: AsyncConnection, request: ActivityIn, *, source: str =
         {"id": request.activity_type_id},
     )
     if not exists:
-        raise Conflict("esa actividad no existe; créala primero")
+        raise Conflict("that activity does not exist; create it first")
     if source == "app":
         start = request.start_time or DEFAULT_START
         twin = await _twin(
@@ -259,19 +259,19 @@ async def one(connection: AsyncConnection, activity_id: str) -> Activity:
 
 
 def _minute(moment: datetime) -> time:
-    return moment.astimezone(MADRID).time().replace(second=0, microsecond=0, tzinfo=None)
+    return moment.astimezone(zone()).time().replace(second=0, microsecond=0, tzinfo=None)
 
 
 async def start_now(
     connection: AsyncConnection, activity_type_id: str, now: datetime | None = None
 ) -> Activity:
-    now = (now or datetime.now(UTC)).astimezone(MADRID)
+    now = (now or datetime.now(UTC)).astimezone(zone())
     exists = await connection.scalar(
         text("select 1 from training.training_activity_type where id = cast(:id as uuid)"),
         {"id": activity_type_id},
     )
     if not exists:
-        raise Conflict("esa actividad no existe; créala primero")
+        raise Conflict("that activity does not exist; create it first")
     activity_id = await connection.scalar(
         text(
             "insert into training.training_activity "
@@ -291,8 +291,8 @@ async def finish(
     found = await one(connection, activity_id)
     if not found.ongoing:
         return found
-    now = (now or datetime.now(UTC)).astimezone(MADRID)
-    began = datetime.combine(found.day, found.start_time, MADRID)
+    now = (now or datetime.now(UTC)).astimezone(zone())
+    began = datetime.combine(found.day, found.start_time, zone())
     seconds = max(0, min(86400, int((now - began).total_seconds())))
     await connection.execute(
         text(
@@ -420,36 +420,35 @@ BIKES = frozenset({"BIKING", "OUTDOOR_BIKE", "MOUNTAIN_BIKE", "STATIONARY_BIKE",
 GENERIC = frozenset({"SPORT", "OTHER", "WORKOUT", "UNKNOWN"})
 
 NAMES = {
-    "RUNNING": "Correr",
-    "TRAIL_RUN": "Correr",
-    "TREADMILL": "Cinta",
-    "BIKING": "Bici",
-    "OUTDOOR_BIKE": "Bici",
-    "MOUNTAIN_BIKE": "Bici",
-    "STATIONARY_BIKE": "Bici estática",
-    "SPINNING": "Bici estática",
-    "SWIMMING": "Natación",
-    "SWIMMING_POOL": "Natación",
-    "SWIMMING_OPEN_WATER": "Natación",
-    "HIKING": "Senderismo",
+    "RUNNING": "Running",
+    "TRAIL_RUN": "Running",
+    "TREADMILL": "Treadmill",
+    "BIKING": "Cycling",
+    "OUTDOOR_BIKE": "Cycling",
+    "MOUNTAIN_BIKE": "Cycling",
+    "STATIONARY_BIKE": "Indoor cycling",
+    "SPINNING": "Indoor cycling",
+    "SWIMMING": "Swimming",
+    "SWIMMING_POOL": "Swimming",
+    "SWIMMING_OPEN_WATER": "Swimming",
+    "HIKING": "Hiking",
     "YOGA": "Yoga",
     "PILATES": "Pilates",
-    "PADEL": "Pádel",
-    "TENNIS": "Tenis",
-    "CLIMBING": "Escalada",
-    "ROCK_CLIMBING": "Escalada",
-    "INDOOR_CLIMBING": "Escalada",
-    "ELLIPTICAL": "Elíptica",
-    "ROWING_MACHINE": "Remo",
+    "PADEL": "Padel",
+    "TENNIS": "Tennis",
+    "CLIMBING": "Climbing",
+    "ROCK_CLIMBING": "Climbing",
+    "INDOOR_CLIMBING": "Climbing",
+    "ELLIPTICAL": "Elliptical",
+    "ROWING_MACHINE": "Rowing",
     "HIIT": "HIIT",
-    "SOCCER": "Fútbol",
+    "SOCCER": "Football",
 }
 
 ALSO = {
-    "Bici estática": ("Bici", "Spinning"),
-    "Bici": ("Bici estática",),
-    "Pádel": ("Padel",),
-    "Natación": ("Nadar", "Piscina"),
+    "Indoor cycling": ("Cycling", "Spinning"),
+    "Cycling": ("Indoor cycling",),
+    "Swimming": ("Swim", "Pool"),
 }
 
 NEAR = timedelta(minutes=60)
@@ -515,7 +514,7 @@ async def _twin(
     *,
     band: bool,
 ) -> str | None:
-    began = datetime.combine(day, start, MADRID)
+    began = datetime.combine(day, start, zone())
     ended = began + timedelta(seconds=seconds or 3600)
     rows = (
         await connection.execute(
@@ -530,7 +529,7 @@ async def _twin(
     ).all()
     best = None
     for row in rows:
-        other = datetime.combine(row.day, row.start_time, MADRID)
+        other = datetime.combine(row.day, row.start_time, zone())
         other_end = other + timedelta(seconds=row.duration_seconds or 3600)
         gap = abs(other - began)
         same = (other < ended and began < other_end) or gap < NEAR
@@ -590,8 +589,8 @@ async def receive_exercises(connection: AsyncConnection, now: datetime | None = 
         if kind in WALKS:
             continue
         try:
-            start = datetime.fromisoformat(found["start"]).astimezone(MADRID)
-            end = datetime.fromisoformat(found["end"]).astimezone(MADRID)
+            start = datetime.fromisoformat(found["start"]).astimezone(zone())
+            end = datetime.fromisoformat(found["end"]).astimezone(zone())
             name = (NAMES.get(kind) or str(found["name"]).strip())[:60]
         except (KeyError, ValueError, TypeError):
             continue
@@ -726,10 +725,10 @@ async def move(
     ).one_or_none()
     if found is None:
         raise NotFound(activity_id)
-    local = start.astimezone(MADRID)
+    local = start.astimezone(zone())
     seconds = int((end - start).total_seconds())
     if seconds < 0 or seconds > 86400:
-        raise Conflict("una actividad dura entre nada y un día")
+        raise Conflict("an activity lasts between zero and one day")
     stays_open = found.duration_seconds is None and not found.ongoing and seconds == 3600
     duration = None if stays_open else seconds
     await connection.execute(

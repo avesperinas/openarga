@@ -1,4 +1,4 @@
-import { EmptyState, Screen, Skeleton } from "@openarga/ui";
+import { EmptyState, Screen, Skeleton, useT } from "@openarga/ui";
 import { useEffect, useState } from "react";
 
 import { ApiError, type NextSession, type Today } from "./api";
@@ -34,6 +34,7 @@ export async function startNext(
 }
 
 export function NextRedirect({ onSession, onToday }: { onSession: (id: string) => void; onToday: () => void }) {
+  const t = useT();
   const [failed, setFailed] = useState(false);
   const [confirm, setConfirm] = useState<NextSession | null>(null);
   const [days, setDays] = useState<{ id: string; name: string; done: boolean }[] | undefined>();
@@ -53,9 +54,9 @@ export function NextRedirect({ onSession, onToday }: { onSession: (id: string) =
   return (
     <Screen>
       {failed ? (
-        <EmptyState title={"No se ha podido abrir el entreno"}>Comprueba la conexión y vuelve a intentarlo.</EmptyState>
+        <EmptyState title={t("next.open_failed")}>{t("next.open_failed_hint")}</EmptyState>
       ) : (
-        <Skeleton rows={3} label="Abriendo el entreno" />
+        <Skeleton rows={3} label={t("next.opening")} />
       )}
       {confirm && (
         <ConfirmStartSheet
@@ -64,6 +65,7 @@ export function NextRedirect({ onSession, onToday }: { onSession: (id: string) =
           chosen={chosen ?? confirm.plan_day_id}
           onChoose={setChosen}
           detail={rotationDetail(
+            t,
             confirm.rotation_number,
             confirm.days_in_rotation - confirm.remaining + 1,
             confirm.days_in_rotation,
