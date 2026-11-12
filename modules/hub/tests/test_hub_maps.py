@@ -16,14 +16,14 @@ from hub import capabilities, worker
 from hub.providers import maps, routes
 
 TOKEN = secrets.token_hex(16)
-NAVARRA = Path(__file__).resolve().parents[2] / "outings/ui/public/map/navarra.pmtiles"
+REGION = Path(__file__).resolve().parents[2] / "outings/ui/public/map/pamplona/region.pmtiles"
 PAMPLONA = {"z": 9, "x": 253, "y": 188}
 PAMPLONA_BYTES = 344_760
 
 
 class Protomaps:
     def __init__(self) -> None:
-        self.data = NAVARRA.read_bytes()
+        self.data = REGION.read_bytes()
         self.builds = ["20261001.pmtiles"]
         self.builds_status = 200
         self.gone: set[str] = set()
