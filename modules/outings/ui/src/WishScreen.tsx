@@ -15,6 +15,7 @@ import {
   signIn,
 } from "./api";
 import { ScreenHeader } from "./Header";
+import { t } from "./lang";
 import { Pending, changed, useLoad } from "./Loads";
 import { MiniMap } from "./MiniMap";
 import { SharePicker } from "./SharePicker";
@@ -30,7 +31,7 @@ export function WishScreen({ id, onBack, onEvent }: { id: string; onBack: () => 
 
   const fail = useCallback((error: unknown) => {
     if (error instanceof Unauthorised) return signIn();
-    setProblem(error instanceof Error ? error.message : "No se ha podido guardar.");
+    setProblem(error instanceof Error ? error.message : t("problem.save"));
   }, []);
 
   async function toggleDone() {
@@ -43,7 +44,7 @@ export function WishScreen({ id, onBack, onEvent }: { id: string; onBack: () => 
     }
   }
 
-  const back = { label: "Ganas", onClick: onBack };
+  const back = { label: t("tab.wishes"), onClick: onBack };
   if (!wish) {
     return (
       <Screen>
@@ -80,7 +81,7 @@ export function WishScreen({ id, onBack, onEvent }: { id: string; onBack: () => 
         <List>
           <ListRow
             title={span({ starts_on: wish.starts_on, ends_on: wish.ends_on ?? wish.starts_on })}
-            subtitle={wish.event_id ? "De la agenda" : undefined}
+            subtitle={wish.event_id ? t("wish.from_agenda") : undefined}
             icon="calendar"
             hue={kind.hue}
             accessory={wish.event_id && wish.mine && onEvent ? "chevron-right" : undefined}
@@ -92,13 +93,13 @@ export function WishScreen({ id, onBack, onEvent }: { id: string; onBack: () => 
       {wish.place && (
         <Card flush>
           {wish.place.lat != null && wish.place.lon != null && (
-            <MiniMap point={{ id: wish.id, lon: wish.place.lon, lat: wish.place.lat, kind: "photo", image: photoUrl(wish, "thumb"), icon: kind.icon, hue: kind.hue, title: wish.name }} label={`Dónde está: ${wish.place.name}`} />
+            <MiniMap point={{ id: wish.id, lon: wish.place.lon, lat: wish.place.lat, kind: "photo", image: photoUrl(wish, "thumb"), icon: kind.icon, hue: kind.hue, title: wish.name }} label={t("wish.where", { place: wish.place.name })} />
           )}
         <List>
           <ListRow
             title={wish.place.name}
             subtitle={where === wish.place.name ? undefined : where}
-            detail={wish.place.lat == null ? "Sin situar en el mapa" : undefined}
+            detail={wish.place.lat == null ? t("place.unplaced") : undefined}
             icon="pin"
             hue={kind.hue}
           />
@@ -120,10 +121,10 @@ export function WishScreen({ id, onBack, onEvent }: { id: string; onBack: () => 
 
       <div className="outings-actions">
         <Button variant="tinted" icon={wish.done_at ? "undo" : "done"} onClick={() => void toggleDone()}>
-          {wish.done_at ? "Devolver a la lista" : "Hecho"}
+          {wish.done_at ? t("wishes.restore") : t("wishes.done")}
         </Button>
         <Button variant="secondary" icon="edit" onClick={() => setEditing(true)}>
-          Editar
+          {t("action.edit")}
         </Button>
         {wish.kind === "trip" && !wish.done_at && (
           <Button
@@ -138,12 +139,12 @@ export function WishScreen({ id, onBack, onEvent }: { id: string; onBack: () => 
               }
             }}
           >
-            Pasar a idea
+            {t("wish.to_idea")}
           </Button>
         )}
         {wish.mine && (
           <Button variant="plain" icon="trash" onClick={() => setDeleting(true)}>
-            Borrar
+            {t("action.delete")}
           </Button>
         )}
       </div>
@@ -162,10 +163,10 @@ export function WishScreen({ id, onBack, onEvent }: { id: string; onBack: () => 
       )}
       {deleting && (
         <ConfirmDelete
-          title="¿Borrar esta gana?"
+          title={t("wish.delete_title")}
           subject={wish.name}
-          consequence="Se borra con su foto y su texto. Si solo está hecha, mejor Hecho: queda en el Archivo."
-          action="Borrar gana"
+          consequence={t("wish.delete_consequence")}
+          action={t("wish.delete_action")}
           onCancel={() => setDeleting(false)}
           onConfirm={async () => {
             await deleteWish(wish.id);

@@ -9,12 +9,15 @@ import { mountApp } from "@openarga/app";
 
 import { App } from "./App";
 import { Backdrop, applyRemembered } from "./Backdrop";
+import { Localised } from "./Localised";
 
 applyRemembered();
 
 void mountApp(
   "outings",
-  <Backdrop>
-    <App />
-  </Backdrop>,
+  <Localised>
+    <Backdrop>
+      <App />
+    </Backdrop>
+  </Localised>,
 );

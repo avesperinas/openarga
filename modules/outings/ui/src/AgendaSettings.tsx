@@ -10,6 +10,7 @@ import {
   removeInterest,
   unplugSource,
 } from "./api";
+import { t } from "./lang";
 import { Pending, changed, useLoad } from "./Loads";
 import { UpdateSheet } from "./UpdateSheet";
 import { since } from "./words";
@@ -34,7 +35,7 @@ export function AgendaSettings() {
       else setMuted("");
       refresh();
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : "No se ha podido guardar.");
+      setProblem(error instanceof Error ? error.message : t("problem.save"));
     }
   }
 
@@ -43,7 +44,7 @@ export function AgendaSettings() {
       await removeInterest(one.id);
       refresh();
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : "No se ha podido quitar.");
+      setProblem(error instanceof Error ? error.message : t("problem.remove"));
     }
   }
 
@@ -52,31 +53,24 @@ export function AgendaSettings() {
   return (
     <>
       <OfflineNotice />
-      <Section title="Agenda">
-        <Hint>
-          La llena tu Claude con tu suscripción: una tarea programada cada semana, o tú cuando quieras desde Actualizar.
-          Apunta las fiestas y los festivales enteros, con su programa, y deja fuera congresos, festivos y lo que no es
-          ocio.
-        </Hint>
+      <Section title={t("tab.agenda")}>
+        <Hint>{t("settings.agenda_hint")}</Hint>
         <Button variant="secondary" icon="copy" onClick={() => setUpdating(true)}>
-          Actualizar con Claude
+          {t("settings.update")}
         </Button>
         {plugged.length > 0 && (
           <>
-            <Hint tone="warning">
-              Esta agenda sigue enchufada con tu clave de la API y gasta cada madrugada. Quítala: lo que guardaste se
-              queda.
-            </Hint>
+            <Hint tone="warning">{t("settings.plugged_warning")}</Hint>
             <List>
               {plugged.map((source) => (
                 <ListRow
                   key={source.connection}
                   title={source.label}
-                  subtitle={source.last_run_at ? `Leída ${since(source.last_run_at)}` : undefined}
+                  subtitle={source.last_run_at ? t("settings.read", { when: since(source.last_run_at) }) : undefined}
                   tone="warning"
                   icon="calendar"
                   hue={5}
-                  action={{ icon: "trash", label: `Quitar ${source.label}`, onClick: () => setRemoving(source) }}
+                  action={{ icon: "trash", label: t("action.remove_named", { name: source.label }), onClick: () => setRemoving(source) }}
                 />
               ))}
             </List>
@@ -86,24 +80,24 @@ export function AgendaSettings() {
 
       {interests === null && <Pending found={found} rows={3} />}
 
-      <Section title="Me interesa" count={of("like").length || undefined}>
-        <Hint>Sube en Explorar y tu Claude lo busca a propósito.</Hint>
+      <Section title={t("settings.likes")} count={of("like").length || undefined}>
+        <Hint>{t("settings.likes_hint")}</Hint>
         {of("like").length > 0 && <Terms terms={of("like")} onRemove={(one) => void remove(one)} />}
-        <TextField label="Añadir" value={liked} onChange={setLiked} onSubmit={() => void add("like", liked)} placeholder="Jazz, Baluarte, setas…" />
+        <TextField label={t("action.add")} value={liked} onChange={setLiked} onSubmit={() => void add("like", liked)} placeholder={t("settings.likes_placeholder")} />
         {liked.trim() && (
           <Button variant="secondary" icon="plus" onClick={() => void add("like", liked)}>
-            Añadir
+            {t("action.add")}
           </Button>
         )}
       </Section>
 
-      <Section title="No me interesa" count={of("mute").length || undefined}>
-        <Hint>Lo que lo lleve no sale en Explorar ni en la Agenda, ni lo apunta tu Claude.</Hint>
+      <Section title={t("settings.mutes")} count={of("mute").length || undefined}>
+        <Hint>{t("settings.mutes_hint")}</Hint>
         {of("mute").length > 0 && <Terms terms={of("mute")} onRemove={(one) => void remove(one)} />}
-        <TextField label="Silenciar" value={muted} onChange={setMuted} onSubmit={() => void add("mute", muted)} placeholder="Congreso, cuentacuentos…" />
+        <TextField label={t("action.mute")} value={muted} onChange={setMuted} onSubmit={() => void add("mute", muted)} placeholder={t("settings.mutes_placeholder")} />
         {muted.trim() && (
           <Button variant="secondary" icon="plus" onClick={() => void add("mute", muted)}>
-            Silenciar
+            {t("action.mute")}
           </Button>
         )}
       </Section>
@@ -114,10 +108,10 @@ export function AgendaSettings() {
 
       {removing && (
         <ConfirmDelete
-          title="¿Quitar esta agenda?"
+          title={t("settings.unplug_title")}
           subject={removing.label}
-          consequence="Deja de leerse con tu clave, y lo que trajo y no guardaste deja de salir. Lo que apunta tu Claude se queda."
-          action="Quitar agenda"
+          consequence={t("settings.unplug_consequence")}
+          action={t("settings.unplug_action")}
           onCancel={() => setRemoving(null)}
           onConfirm={async () => {
             await unplugSource(removing.connection);
@@ -139,7 +133,7 @@ function Terms({ terms, onRemove }: { terms: Interest[]; onRemove: (one: Interes
           title={one.term}
           icon={one.kind === "like" ? "heart" : "eye-off"}
           hue={one.kind === "like" ? 7 : 8}
-          action={{ icon: "close", label: `Quitar ${one.term}`, onClick: () => onRemove(one) }}
+          action={{ icon: "close", label: t("action.remove_named", { name: one.term }), onClick: () => onRemove(one) }}
         />
       ))}
     </List>

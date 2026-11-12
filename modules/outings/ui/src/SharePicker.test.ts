@@ -13,25 +13,25 @@ const casa: Space = {
   ],
 };
 
-describe("con quién se comparte una gana", () => {
-  it("solo tuyo, sin espacio", () => {
+describe("who a wish is shared with", () => {
+  it("only yours, without a space", () => {
     const trip = { space_id: null, mine: true };
-    expect(sharedTitle(trip, [casa])).toBe("Solo tuya");
-    expect(sharedSubtitle(trip, [casa])).toBe("Solo la ves tú");
+    expect(sharedTitle(trip, [casa])).toBe("Only yours");
+    expect(sharedSubtitle(trip, [casa])).toBe("Only you see it");
   });
 
-  it("compartido por ti, con quién lo ve", () => {
+  it("shared by you, with who sees it", () => {
     const trip = { space_id: "casa", mine: true };
     expect(sharedTitle(trip, [casa])).toBe("Casa");
-    expect(sharedSubtitle(trip, [casa])).toBe("La ven y la editan: Tú y Luis");
+    expect(sharedSubtitle(trip, [casa])).toBe("Seen and edited by: You and Luis");
   });
 
-  it("compartido contigo, dicho", () => {
+  it("shared with you, said", () => {
     const trip = { space_id: "casa", mine: false };
-    expect(sharedSubtitle(trip, [casa])).toBe("La ven y la editan: Tú y Luis. Te la compartieron");
+    expect(sharedSubtitle(trip, [casa])).toBe("Seen and edited by: You and Luis. Shared with you");
   });
 
-  it("sin nadie más en el espacio", () => {
-    expect(withWhom({ ...casa, members: [{ user_id: "ana", name: "Ana" }] })).toBe("Solo tú, de momento");
+  it("with nobody else in the space", () => {
+    expect(withWhom({ ...casa, members: [{ user_id: "ana", name: "Ana" }] })).toBe("Only you, for now");
   });
 });

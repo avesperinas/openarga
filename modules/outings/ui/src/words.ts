@@ -1,22 +1,26 @@
 import type { DayMark, IconName } from "@openarga/ui";
 
 import type { AgendaEvent, Area, Category, Kind, Period, Place, Planned, When, Wish, Zone } from "./api";
+import { currentLocale, intl, t } from "./lang";
 
-export const KINDS: { value: Kind; label: string; plural: string; icon: IconName; hue: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 }[] = [
-  { value: "eat", label: "Restaurante", plural: "Restaurantes", icon: "food", hue: 4 },
-  { value: "plan", label: "Plan", plural: "Planes", icon: "calendar", hue: 1 },
-  { value: "getaway", label: "Escapada", plural: "Escapadas", icon: "mountain", hue: 2 },
-  { value: "trip", label: "Viaje", plural: "Viajes", icon: "plane", hue: 6 },
+const KIND_LOOK: { value: Kind; icon: IconName; hue: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 }[] = [
+  { value: "eat", icon: "food", hue: 4 },
+  { value: "plan", icon: "calendar", hue: 1 },
+  { value: "getaway", icon: "mountain", hue: 2 },
+  { value: "trip", icon: "plane", hue: 6 },
 ];
 
-export const kindOf = (kind: Kind) => KINDS.find((one) => one.value === kind)!;
+export const kinds = () =>
+  KIND_LOOK.map((one) => ({ ...one, label: t(`kind.${one.value}`), plural: t(`kind.${one.value}.plural`) }));
+
+export const kindOf = (kind: Kind) => kinds().find((one) => one.value === kind)!;
 
 export type WishTab = "outings" | "eat" | "trips";
 
-export const WISH_TABS: { value: WishTab; label: string }[] = [
-  { value: "outings", label: "Excursiones" },
-  { value: "eat", label: "Restaurantes" },
-  { value: "trips", label: "Viajes" },
+export const wishTabs = (): { value: WishTab; label: string }[] => [
+  { value: "outings", label: t("tab.outings") },
+  { value: "eat", label: t("tab.eat") },
+  { value: "trips", label: t("tab.trips") },
 ];
 
 const TAB_KINDS: Record<WishTab, Kind[]> = {
@@ -40,7 +44,7 @@ export function placeLine(place: Place | null | undefined): string | undefined {
 
 export function wishLine(wish: Wish): string | undefined {
   const line = placeOrText(wish);
-  if (wish.space_id) return line ? `${line} · Compartida` : "Compartida";
+  if (wish.space_id) return line ? `${line} · ${t("wish.shared")}` : t("wish.shared");
   return line;
 }
 
@@ -68,49 +72,46 @@ export function groups(wishes: Wish[], tab: WishTab): WishGroup[] {
   const of = (kind: Kind) => wishes.filter((one) => one.kind === kind);
   const all: Record<WishTab, WishGroup[]> = {
     outings: [
-      { id: "getaway", title: "Escapadas", layout: "cards", wishes: of("getaway") },
-      { id: "plan", title: "Planes cerca", layout: "rows", wishes: of("plan") },
+      { id: "getaway", title: t("kind.getaway.plural"), layout: "cards", wishes: of("getaway") },
+      { id: "plan", title: t("group.plans_near"), layout: "rows", wishes: of("plan") },
     ],
-    eat: [{ id: "eat", title: "Restaurantes", layout: "rows", wishes: of("eat") }],
-    trips: [{ id: "trip", title: "Viajes", layout: "cards", wishes: of("trip") }],
+    eat: [{ id: "eat", title: t("kind.eat.plural"), layout: "rows", wishes: of("eat") }],
+    trips: [{ id: "trip", title: t("kind.trip.plural"), layout: "cards", wishes: of("trip") }],
   };
   return all[tab].filter((group) => group.wishes.length > 0);
 }
 
-const DAY = new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "long", year: "numeric" });
+const format = (options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(intl(), { timeZone: "UTC", ...options });
+const WEEKDAY = { format: (date: Date) => format({ weekday: "long" }).format(date) };
+const DAY_MONTH = { format: (date: Date) => format({ day: "numeric", month: "long" }).format(date) };
+const SHORT_DAY = { format: (date: Date) => format({ weekday: "short", day: "numeric" }).format(date) };
 
 export function doneLine(wish: Wish): string | undefined {
   if (!wish.done_at) return undefined;
-  return `Hecha el ${DAY.format(new Date(wish.done_at))}`;
+  const day = new Intl.DateTimeFormat(intl(), { day: "numeric", month: "long", year: "numeric" }).format(new Date(wish.done_at));
+  return t("wish.done_on", { day });
 }
 
-export const PLACEHOLDERS: Record<Kind, { name: string; body: string; place: string }> = {
-  eat: { name: "Asador en la Ribera", body: "Qué pedir, quién lo recomendó…", place: "Un bar, un restaurante, una calle" },
-  plan: { name: "Subir a San Cristóbal", body: "Cuándo, con quién, qué hace falta…", place: "Dónde es" },
-  getaway: { name: "Selva de Irati", body: "Ir en noviembre, con el hayedo rojo…", place: "Un pueblo, un parque, una sierra" },
-  trip: { name: "Japón", body: "Cuándo, qué ver…", place: "Un país o una ciudad (opcional)" },
-};
+export const placeholders = (kind: Kind): { name: string; body: string; place: string } => ({
+  name: t(`placeholder.${kind}.name`),
+  body: t(`placeholder.${kind}.body`),
+  place: t(`placeholder.${kind}.place`),
+});
 
-export const CATEGORIES: { value: Category; label: string; icon: IconName; hue: 1 | 2 | 3 | 4 | 5 }[] = [
-  { value: "eat", label: "Comer", icon: "food", hue: 4 },
-  { value: "stage", label: "Escena", icon: "music", hue: 5 },
-  { value: "culture", label: "Cultura", icon: "landmark", hue: 1 },
-  { value: "festival", label: "Fiestas", icon: "party", hue: 3 },
-  { value: "outdoors", label: "Fuera", icon: "mountain", hue: 2 },
+const CATEGORY_LOOK: { value: Category; icon: IconName; hue: 1 | 2 | 3 | 4 | 5 }[] = [
+  { value: "eat", icon: "food", hue: 4 },
+  { value: "stage", icon: "music", hue: 5 },
+  { value: "culture", icon: "landmark", hue: 1 },
+  { value: "festival", icon: "party", hue: 3 },
+  { value: "outdoors", icon: "mountain", hue: 2 },
 ];
 
-export const categoryOf = (category: Category) => CATEGORIES.find((one) => one.value === category)!;
+export const categories = () => CATEGORY_LOOK.map((one) => ({ ...one, label: t(`category.${one.value}`) }));
 
-export const PERIODS: { value: Period; label: string }[] = [
-  { value: "weekend", label: "Finde" },
-  { value: "week", label: "Semana" },
-  { value: "month", label: "Mes" },
-  { value: "year", label: "Año" },
-];
+export const categoryOf = (category: Category) => categories().find((one) => one.value === category)!;
 
-const WEEKDAY = new Intl.DateTimeFormat("es-ES", { weekday: "long", timeZone: "UTC" });
-const DAY_MONTH = new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "long", timeZone: "UTC" });
-const SHORT_DAY = new Intl.DateTimeFormat("es-ES", { weekday: "short", day: "numeric", timeZone: "UTC" });
+export const periods = (): { value: Period; label: string }[] =>
+  (["weekend", "week", "month", "year"] as const).map((value) => ({ value, label: t(`when.${value}`) }));
 
 const at = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00Z`);
 const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
@@ -159,7 +160,7 @@ export function arrange(events: AgendaEvent[], from: string, today: string): { n
 
 export function until(event: Pick<AgendaEvent, "starts_on" | "ends_on">): string | undefined {
   if (event.ends_on === event.starts_on) return undefined;
-  return `hasta el ${WEEKDAY.format(at(event.ends_on))} ${at(event.ends_on).getUTCDate()}`;
+  return t("event.until", { day: `${WEEKDAY.format(at(event.ends_on))} ${at(event.ends_on).getUTCDate()}` });
 }
 
 export function eventLine(event: AgendaEvent): string | undefined {
@@ -167,36 +168,29 @@ export function eventLine(event: AgendaEvent): string | undefined {
   return [where, until(event)].filter(Boolean).join(" · ") || undefined;
 }
 
-const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-
-export const monthName = (month: number) => MONTHS[(month - 1 + 12) % 12]!;
+export const monthName = (month: number) =>
+  format({ month: "long" }).format(new Date(Date.UTC(2000, (month - 1 + 12) % 12, 1)));
 
 export function since(iso: string, now = new Date()): string {
   const days = Math.floor((now.getTime() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return "hoy";
-  if (days === 1) return "ayer";
-  return `hace ${days} días`;
+  if (days <= 0) return t("since.today");
+  if (days === 1) return t("since.yesterday");
+  return t("since.days", { days });
 }
 
-export const WHENS: { value: When; label: string }[] = [
-  { value: "weekend", label: "Finde" },
-  { value: "week", label: "Semana" },
-  { value: "month", label: "Mes" },
-  { value: "quarter", label: "3 meses" },
-  { value: "year", label: "Año" },
-];
+export const WHEN_VALUES: When[] = ["weekend", "week", "month", "quarter", "year"];
+
+export const whens = (): { value: When; label: string }[] => WHEN_VALUES.map((value) => ({ value, label: t(`when.${value}`) }));
 
 export type ZoneFilter = "all" | Zone;
 
 export const zones = (area: Area | null): { value: ZoneFilter; label: string }[] => [
-  { value: "all", label: "Todo" },
-  { value: "near", label: area?.near ?? "Cerca" },
-  { value: "region", label: area ? `Resto de ${area.region}` : "Resto" },
+  { value: "all", label: t("filter.all") },
+  { value: "near", label: area?.near ?? t("zone.near") },
+  { value: "region", label: area ? t("zone.rest_of", { region: area.region }) : t("zone.rest") },
 ];
 
-const MONTH_YEAR = new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric", timeZone: "UTC" });
-
-export const monthTitle = (iso: string) => capital(MONTH_YEAR.format(at(iso)));
+export const monthTitle = (iso: string) => capital(format({ month: "long", year: "numeric" }).format(at(iso)));
 
 export function marksOf(events: AgendaEvent[]): Record<string, DayMark[]> {
   const marks: Record<string, DayMark[]> = {};
@@ -214,17 +208,10 @@ export function marksOf(events: AgendaEvent[]): Record<string, DayMark[]> {
 export const onDay = (events: AgendaEvent[], day: string) =>
   events.filter((one) => one.starts_on <= day && one.ends_on >= day);
 
-export const PLANNED_PHASE: Record<Planned["phase"], string> = {
-  idea: "Idea",
-  plan: "Plan",
-  upcoming: "Confirmado",
-  ongoing: "En curso",
-};
-
-const SHORT = new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", timeZone: "UTC" });
+export const plannedPhase = (phase: Planned["phase"]) => t(`phase.${phase}`);
 
 export function plannedLine(trip: Pick<Planned, "starts_on" | "ends_on" | "detail">): string {
-  const day = (iso: string) => SHORT.format(new Date(`${iso}T00:00:00Z`));
+  const day = (iso: string) => format({ day: "numeric", month: "short" }).format(new Date(`${iso}T00:00:00Z`));
   const dates = trip.starts_on && trip.ends_on ? `${day(trip.starts_on)} – ${day(trip.ends_on)}` : "";
   return [dates, trip.detail].filter(Boolean).join(" · ");
 }
@@ -237,7 +224,8 @@ export function freshSince(param: string | null, today: string): { since: string
 }
 
 export function freshTitle(since: string, fromNotice: boolean, today: string): string {
-  if (!fromNotice) return "Lo nuevo esta semana";
-  if (since === today) return "Lo nuevo de hoy";
-  return `Lo nuevo desde el ${dayTitle(since).toLowerCase()}`;
+  if (!fromNotice) return t("fresh.week");
+  if (since === today) return t("fresh.today");
+  const day = dayTitle(since);
+  return t("fresh.since", { day: currentLocale() === "en" ? day : day.toLowerCase() });
 }

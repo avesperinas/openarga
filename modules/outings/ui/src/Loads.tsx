@@ -2,6 +2,8 @@ import { Unauthorised, invalidate, mutate, signIn, useResource } from "@openarga
 import { EmptyState, ErrorState, Skeleton } from "@openarga/ui";
 import { useCallback, useEffect } from "react";
 
+import { t } from "./lang";
+
 export const changed = () => invalidate("");
 
 const gone = (error: Error | null) => Boolean(error?.message.startsWith("not found"));
@@ -31,10 +33,10 @@ export function Pending({
   if (!found.error || found.error instanceof Unauthorised) return <Skeleton rows={rows} />;
   if (gone(found.error)) {
     return (
-      <EmptyState icon="search" title="Ya no está">
-        Se borró o no es tuyo.
+      <EmptyState icon="search" title={t("gone.title")}>
+        {t("gone.body")}
       </EmptyState>
     );
   }
-  return <ErrorState title="Outings no contesta" detail={found.error.message} onRetry={() => void found.refresh()} />;
+  return <ErrorState title={t("down.title")} detail={found.error.message} onRetry={() => void found.refresh()} />;
 }

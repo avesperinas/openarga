@@ -1,3 +1,5 @@
+import { t } from "./lang";
+
 export async function shrink(file: File, side = 2048): Promise<Blob> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, side / Math.max(bitmap.width, bitmap.height));
@@ -10,5 +12,5 @@ export async function shrink(file: File, side = 2048): Promise<Blob> {
     const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, "image/jpeg", quality));
     if (blob && blob.size <= 6 * 1024 * 1024) return blob;
   }
-  throw new Error("La foto no baja de 6 MB");
+  throw new Error(t("problem.photo_size"));
 }
