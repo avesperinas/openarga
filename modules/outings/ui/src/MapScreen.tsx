@@ -1,17 +1,22 @@
 import { Button, Card, Hint, type IconName, List, ListRow, OfflineNotice, SegmentedControl } from "@openarga/ui";
-import { AreaMap, type AreaPoint, type AreaView } from "@openarga/ui/area-map";
+import { AreaMap, type AreaPoint } from "@openarga/ui/area-map";
 import { WorldMap } from "@openarga/ui/world-map";
 import { useMemo, useState } from "react";
 
-import { GEO_BASE, MAP_BASE, type MapPoints, photoUrl, readMap } from "./api";
+import { type Area, GEO_BASE, type MapPoints, type Zone, photoUrl, readMap } from "./api";
+import { VIEW, mapBase, useArea } from "./area";
 import { Pending, useLoad } from "./Loads";
 import { categoryOf, kindOf, shortDay } from "./words";
 
-type Scope = AreaView | "world";
+type Scope = Zone | "world";
 
-const SCOPES: { value: Scope; label: string }[] = [
-  { value: "comarca", label: "Comarca" },
-  { value: "navarra", label: "Navarra" },
+export const scopes = (area: Area | null): { value: Scope; label: string }[] => [
+  ...(area?.map
+    ? [
+        { value: "near" as Scope, label: area.near },
+        { value: "region" as Scope, label: area.region },
+      ]
+    : []),
   { value: "world", label: "Mundo" },
 ];
 
@@ -48,7 +53,9 @@ export function MapScreen({
   onEvent: (id: string) => void;
   onAdd: () => void;
 }) {
-  const [scope, setScope] = useState<Scope>("comarca");
+  const area = useArea();
+  const [chosen, setScope] = useState<Scope>("near");
+  const scope: Scope = area && !area.map ? "world" : chosen;
   const { data: found, found: loading } = useLoad("map", () => readMap());
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -68,12 +75,12 @@ export function MapScreen({
           onSelectPlace={setSelected}
           label="Tus ganas en el mundo"
         />
-      ) : (
-        <AreaMap base={MAP_BASE} view={scope} points={points} selected={selected} onSelect={setSelected} label="Mapa de la Comarca de Pamplona" />
-      )}
+      ) : area ? (
+        <AreaMap base={mapBase(area)} view={VIEW[scope]} points={points} selected={selected} onSelect={setSelected} label={`Mapa de ${area.near}`} />
+      ) : null}
 
       <div className="outings-map-top">
-        <SegmentedControl label="Alcance" options={SCOPES} value={scope} onChange={(value) => { setScope(value); setSelected(null); }} />
+        <SegmentedControl label="Alcance" options={scopes(area)} value={scope} onChange={(value) => { setScope(value); setSelected(null); }} />
         <OfflineNotice />
       </div>
 

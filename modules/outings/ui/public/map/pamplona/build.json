@@ -1,0 +1,11 @@
+{
+  "area": "pamplona",
+  "source": "https://build.protomaps.com/20261001.pmtiles",
+  "built": "2026-10-02",
+  "files": {
+    "region.pmtiles": 4028806,
+    "near.pmtiles": 6906746,
+    "relief-region.json": 607187,
+    "relief-near.json": 248421
+  }
+}

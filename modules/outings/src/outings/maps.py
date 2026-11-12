@@ -8,6 +8,14 @@ from fastapi.responses import FileResponse
 IMMUTABLE = "public, max-age=31536000, immutable"
 REVALIDATE = "no-cache"
 
+# The shared AreaMap still asks for the first area's file names (needs-platform issue).
+ALIASES = {
+    "navarra.pmtiles": "region.pmtiles",
+    "comarca.pmtiles": "near.pmtiles",
+    "relieve-navarra.json": "relief-region.json",
+    "relieve-comarca.json": "relief-near.json",
+}
+
 
 def version(root: Path) -> str | None:
     try:
@@ -16,11 +24,27 @@ def version(root: Path) -> str | None:
         return None
 
 
+def has_map(root: Path, area_id: str) -> bool:
+    return (root / "map" / area_id / "region.pmtiles").is_file()
+
+
+def _file(folder: Path, path: str) -> Path | None:
+    head, _, rest = path.partition("/")
+    tried = [path]
+    if rest and (folder / head).is_dir():
+        tried = [f"{head}/{ALIASES.get(rest, rest)}", rest]
+    for one in tried:
+        candidate = (folder / one).resolve()
+        if candidate.is_relative_to(folder) and candidate.is_file():
+            return candidate
+    return None
+
+
 def serve(root: Path, asked: str, path: str) -> FileResponse:
     folder = (root / "map").resolve()
-    candidate = (folder / path).resolve()
-    if not path or not candidate.is_relative_to(folder) or not candidate.is_file():
-        raise HTTPException(status_code=404, detail=f"no existe: {path}")
+    found = _file(folder, path) if path else None
+    if found is None:
+        raise HTTPException(status_code=404, detail=f"not found: {path}")
     current = version(root)
     cache = IMMUTABLE if current is not None and asked == current else REVALIDATE
-    return FileResponse(candidate, headers={"cache-control": cache})
+    return FileResponse(found, headers={"cache-control": cache})

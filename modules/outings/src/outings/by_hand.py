@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from outings import agenda, explore
+from outings import agenda, explore, profile
 from outings.common import today
 
 
@@ -149,77 +149,10 @@ async def add(connection: AsyncConnection, items: list[EventIn]) -> list[Outcome
     return out
 
 
-AGENDAS = (
-    ("Ayuntamiento de Pamplona", "https://www.pamplona.es/actualidad/eventos"),
-    ("Turismo de Navarra", "https://www.visitnavarra.es/es/agenda"),
-    ("Cultura Navarra", "https://www.culturanavarra.es/es/agenda"),
-    ("Baluarte", "https://www.baluarte.com/es/agenda"),
-    ("Navarra Arena", "https://www.navarrarena.com/es/agenda"),
-)
-
-ALWAYS = (
-    "shopping medieval o recreación histórica en Navarra",
-    "fiestas de interés turístico de Navarra",
-    "visitas guiadas y teatralizadas en Pamplona y Navarra",
-    "festivales de teatro de calle, circo y artes de calle en Navarra",
-    "festivales de música, cine y teatro en Navarra",
-    "exposiciones importantes en Pamplona (Museo Universidad de Navarra, Museo de Navarra, "
-    "Ciudadela, Baluarte)",
-)
-
-MONTHLY = (
-    "fiestas de los pueblos de Navarra en {mes} de {año}",
-    "fiestas de los barrios de Pamplona en {mes} de {año}",
-    "mercadillos, ferias de artesanía y mercados de productores en Pamplona y Navarra en {mes} "
-    "de {año}",
-    "semanas y jornadas gastronómicas, catas y concursos populares en Pamplona y Navarra en {mes} "
-    "de {año}",
-    "teatro de calle, pasacalles, circo y espectáculos al aire libre en Pamplona en {mes} de {año}",
-    "actividades del Ayuntamiento de Pamplona y de los de su comarca (Burlada, Villava, Barañáin, "
-    "Zizur, Ansoáin, Berriozar, Egüés, Huarte) en {mes} de {año}",
-    "qué hacer en Navarra en {mes} de {año}: agenda de fin de semana",
-)
-
-YEARLY = (
-    "fiestas, ferias y tradiciones de Navarra en {mes} de {año}: fechas",
-    "jornadas gastronómicas y ferias de producto en Navarra en {mes} de {año}: fechas",
-)
-
-SEASON = {
-    1: ("trufa", "sidra y txotx", "carnavales rurales"),
-    2: ("trufa", "sidra y txotx", "carnavales rurales"),
-    3: ("alcachofa", "sidra y txotx"),
-    4: ("verdura", "alcachofa", "espárrago"),
-    5: ("espárrago", "croqueta", "pintxo"),
-    6: ("cereza", "espárrago", "queso"),
-    7: ("queso", "cordero"),
-    8: ("vino", "queso"),
-    9: ("pochas", "vendimia", "piquillo"),
-    10: ("piquillo", "setas", "caza", "vendimia"),
-    11: ("setas", "caza", "vino nuevo"),
-    12: ("trufa", "caza", "mercados de Navidad"),
-}
-
-TRADITIONS = {
-    1: ("hogueras de San Antón", "carnaval de Ituren y Zubieta"),
-    2: ("carnaval de Lantz", "carnavales de Pamplona"),
-    3: ("Javierada",),
-    4: (
-        "Fiestas de la Verdura de Tudela",
-        "Semana Santa en Tudela: el Volatín y la Bajada del Ángel",
-    ),
-    5: ("Día de la Almadía de Burgui",),
-    6: ("San Juan y la noche de las hogueras",),
-    7: ("San Fermín", "Tributo de las Tres Vacas", "Festival de Teatro de Olite"),
-    8: ("Shopping Medieval de Olite", "fiestas de Estella y Tafalla"),
-    9: ("Fiesta de la Vendimia de Olite",),
-    10: ("Exaltación del Piquillo de Lodosa",),
-    11: ("Ferias de San Andrés de Estella",),
-    12: ("Olentzero", "Feria de Navidad de Pamplona"),
-}
-
 NEAR_DAYS = 90
 FAR_DAYS = 365
+
+LANGUAGES = {"es": "Spanish", "de": "German", "en": "English", "fr": "French", "it": "Italian"}
 
 
 def months_between(first: date, last: date) -> list[tuple[int, int]]:
@@ -231,33 +164,33 @@ def months_between(first: date, last: date) -> list[tuple[int, int]]:
     return out
 
 
-def searches(first: date, last: date, far: date | None = None) -> list[str]:
-    out = list(ALWAYS)
+def searches(
+    first: date, last: date, far: date | None = None, area: profile.Profile | None = None
+) -> list[str]:
+    area = area or profile.current()
+    asked = area.searches
+    out = list(asked.always)
     near = months_between(first, last)
     for year, month in near:
-        name = MONTHS[month - 1]
-        out.extend(one.format(mes=name, año=year) for one in MONTHLY)
+        name = area.months[month - 1]
+        out.extend(one.format(month=name, year=year) for one in asked.monthly)
         out.extend(
-            f"{thing} en Navarra en {name} de {year}: fiestas, ferias y jornadas"
-            for thing in SEASON[month]
+            asked.season.format(thing=thing, month=name, year=year)
+            for thing in area.season.get(month, [])
         )
     for year, month in months_between(first, far or last):
         if (year, month) in near:
             continue
-        name = MONTHS[month - 1]
-        out.extend(one.format(mes=name, año=year) for one in YEARLY)
-        out.extend(f"{one} {year}: fechas" for one in TRADITIONS[month])
+        name = area.months[month - 1]
+        out.extend(one.format(month=name, year=year) for one in asked.yearly)
+        out.extend(
+            asked.tradition.format(thing=one, year=year) for one in area.traditions.get(month, [])
+        )
     return out
 
 
-MONTHS = (
-    "enero", "febrero", "marzo", "abril", "mayo", "junio",
-    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
-)  # fmt: skip
-
-
 def _day(day: date) -> str:
-    return f"{day.day} de {MONTHS[day.month - 1]} de {day.year}"
+    return day.isoformat()
 
 
 def prompt(
@@ -265,70 +198,60 @@ def prompt(
     days: int = NEAR_DAYS,
     liked: list[str] | None = None,
     muted: list[str] | None = None,
+    area: profile.Profile | None = None,
 ) -> str:
+    area = area or profile.current()
     day = day or today()
     until = day + timedelta(days=days)
     far = day + timedelta(days=FAR_DAYS)
-    agendas = "\n".join(f"- {name}: {url}" for name, url in AGENDAS)
-    looked = "\n".join(f"- {one}" for one in searches(day, until, far))
+    language = LANGUAGES.get(area.language, area.language)
+    agendas = "\n".join(f"- {one.name}: {one.url}" for one in area.agendas)
+    looked = "\n".join(f"- {one}" for one in searches(day, until, far, area))
     extra = ""
     if liked:
-        extra += "\nMe interesa especialmente: " + ", ".join(liked) + ". Búscalo a propósito.\n"
+        extra += "\nI am especially interested in: " + ", ".join(liked) + ". Look for it.\n"
     if muted:
-        extra += "\nNo me interesa nada que tenga que ver con: " + ", ".join(muted) + ".\n"
-    return f"""Rellena la agenda de Outings, en arga, con planes para salir en Pamplona y \
-Navarra: con detalle del {_day(day)} al {_day(until)}, y de ahí al {_day(far)}, lo que \
-vuelve cada año y ya tiene fecha.
+        extra += "\nI am not interested in anything to do with: " + ", ".join(muted) + ".\n"
+    return f"""Fill the Outings agenda, in OpenArga, with things to go out to in {area.name} \
+and {area.region.name}: in detail from {_day(day)} to {_day(until)}, and from then to \
+{_day(far)}, what comes back every year and already has a date.
 
-Lo que más me interesa es lo de la calle y lo de los pueblos: mercadillos y ferias, fiestas de
-pueblo y de barrio, lo que organizan los ayuntamientos, espectáculos de calle, gastronomía y
-tradiciones. Los conciertos, solo los que salgan en las agendas de Baluarte y del Navarra Arena: no
-los busques aparte.
+{area.focus}
 
-1. Mira lo que ya está con la tool find_events (when: quarter y when: year), para no repetirlo.
-2. Lee estas agendas:
+1. Look at what is already there with the find_events tool (when: quarter and when: year), so you
+   do not repeat it.
+2. Read these agendas:
 {agendas}
-3. Busca en la web, una por una (y sigue los enlaces que encuentres a otras agendas, a la del
-   pueblo, a la del barrio o a la de la feria):
+3. Search the web, one by one, in {language} (and follow the links you find to other agendas: the
+   town's, the neighbourhood's, the fair's):
 {looked}
 {extra}
-Qué apuntar: todo lo que a alguien de Pamplona le haría salir de casa, en Pamplona, en cualquier
-pueblo de Navarra y en lo de alrededor que esté a menos de dos horas si es especial.
-- Sí: mercadillos, rastros, mercados de productores y ferias de artesanía; ferias de producto y de
-  ganado; semanas y jornadas gastronómicas (de la croqueta, del pintxo, de la cazuelica, de las
-  setas), catas populares, concursos de cocina y txotx; fiestas del vino y vendimias; fiestas de
-  los pueblos y de los barrios; teatro de calle, circo, pasacalles, gigantes y cabezudos, cine al
-  aire libre; lo que el ayuntamiento organiza para el público (programas de fiestas, ciclos
-  culturales, ferias, actividades de Navidad, de verano o del Día de Navarra); mercados medievales
-  y recreaciones; carnavales; romerías y tradiciones con nombre; visitas guiadas abiertas; rutas y
-  pruebas populares conocidas; y teatro, danza y festivales.
-- Lo lejano: de los meses que no se miran con detalle, apunta lo que ya tiene la fecha de su
-  edición nueva en una página (la del organizador, la del ayuntamiento o la prensa). Si solo
-  encuentras la del año pasado, no lo apuntes: saldrá cuando se anuncie.
-- Una fiesta, un festival, una feria o una semana es UN evento, con sus fechas de principio a fin
-  y sus actos en programme ("Sáb 3, 12:00 · Concurso de tortillas"), nunca un evento por acto. Las
-  fiestas patronales de un pueblo son una fila, con lo especial (encierros, gigantes, concursos,
-  comidas populares) en su programa. Un mercadillo que se repite cada semana o cada mes es una
-  fila, con su próxima fecha y cada cuánto en el resumen.
-- highlight: true para lo grande: una fiesta famosa, una feria con nombre, un festival, lo que
-  tiene una edición con número, un concierto de alguien muy conocido.
-- No apuntes: congresos, jornadas profesionales o técnicas, cursos y talleres de biblioteca,
-  cuentacuentos, festivos (Todos los Santos, la Fiesta Nacional, Halloween), actos protocolarios
-  (plenos, inauguraciones, homenajes), conciertos de salas pequeñas ni lo que sea para un público
-  muy concreto.
+What to add: everything that would get someone from {area.name} out of the house, in \
+{area.near.name}, anywhere in {area.region.name}, and anything special less than two hours away.
+- Yes: {area.include}
+- Far ahead: for the months not looked at in detail, add what already has the date of its new
+  edition on a page (the organiser's, the town hall's or the press). If you only find last year's,
+  do not add it: it will show up when it is announced.
+- A fiesta, a festival, a fair or a week is ONE event, with its dates from start to end and its
+  acts in programme ("Sat 3, 12:00 · Contest"), never one event per act. A town's fiestas are one
+  row, with what is special in its programme. A market that repeats every week or month is one
+  row, with its next date and how often in the summary.
+- highlight: true for the big things: a famous fiesta, a named fair, a festival, anything with a
+  numbered edition, a concert by someone very well known.
+- Do not add: {area.skip}
 
-4. Apunta con la tool add_events, en tandas de hasta 40. De cada evento: título tal como lo escribe
-   su página, fechas de inicio y fin (AAAA-MM-DD), hora si la hay, lugar, pueblo, categoría, un
-   resumen de una frase, programme si tiene actos, highlight y, siempre, el enlace a la página que
-   lo anuncia. Categorías: eat (gastronomía), stage (música, teatro, danza, cine), culture
-   (exposiciones, charlas, visitas), festival (fiestas, ferias, mercadillos y lo de la calle) y
-   outdoors (deporte y naturaleza).
-5. Si en find_events ves actos sueltos de algo que ya está como un evento con su programa, o cosas
-   de las que no hay que apuntar, apártalas con la tool hide_events.
+4. Add them with the add_events tool, in batches of up to 40. For each event: the title as its page
+   writes it, start and end dates (YYYY-MM-DD), the time if there is one, the venue, the town, the
+   category, a one-sentence summary in {language}, programme if it has acts, highlight and, always,
+   the link to the page that announces it. Categories: eat (food and drink), stage (music,
+   theatre, dance, cinema), culture (exhibitions, talks, tours), festival (fiestas, fairs, markets
+   and street events) and outdoors (sport and nature).
+5. If find_events shows single acts of something that is already an event with its programme, or
+   things that should not be there, set them aside with the hide_events tool.
 
-Solo lo que leas en una página, nada de memoria: si no encuentras la página, no lo apuntes. Al
-final, dime cuántos has apuntado (y cuántos de ellos no son conciertos), cuántos estaban ya,
-cuántos apartaste y cuáles se descartaron y por qué."""
+Only what you read on a page, nothing from memory: if you cannot find the page, do not add it. At
+the end, tell me how many you added (and how many of them are not concerts), how many were
+already there, how many you set aside, and which were dropped and why."""
 
 
 async def brief(connection: AsyncConnection, days: int = NEAR_DAYS) -> str:

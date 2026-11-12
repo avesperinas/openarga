@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from arga_tenancy import USER_HEADER, current_user, install
-from outings import common, db
+from outings import common, db, profile
 from outings.main import MODULE_ID, app
 
 SCHEMA = db.SCHEMA
@@ -44,6 +44,12 @@ MODULES = Path(__file__).resolve().parents[2]
 TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL", "postgresql+asyncpg://openarga:changeme@localhost:5433/openarga"
 )
+
+
+@pytest.fixture(params=profile.ids())
+def area(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch) -> profile.Profile:
+    monkeypatch.setenv("OPENARGA_AREA", request.param)
+    return profile.load(request.param)
 
 
 @pytest.fixture(scope="session")

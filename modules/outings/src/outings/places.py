@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from outings import hub
+from outings import hub, profile
 
 PER_PASS = 6
 NEAR_KM = 15.0
@@ -31,10 +31,11 @@ SAVE = text("""
 
 def queries(name: str, town: str) -> list[str]:
     place = name.split("·")[0].split(" - ")[0].strip()
+    suffix = profile.current().geocoding
     asked = []
     if town and place.casefold() != town.casefold():
-        asked.append(f"{place}, {town}, Navarra")
-    asked.append(f"{town or place}, Navarra")
+        asked.append(f"{place}, {town}, {suffix}")
+    asked.append(f"{town or place}, {suffix}")
     return list(dict.fromkeys(asked))
 
 

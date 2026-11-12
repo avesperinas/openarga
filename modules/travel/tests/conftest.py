@@ -68,7 +68,7 @@ def person(request: pytest.FixtureRequest):
 
 
 class Hub:
-    STREETS = MODULES / "outings/ui/public/map/navarra.pmtiles"
+    STREETS = MODULES / "outings/ui/public/map/pamplona/region.pmtiles"
 
     def __init__(self) -> None:
         self.down = False

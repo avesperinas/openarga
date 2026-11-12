@@ -10,14 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from outings import agenda
 from outings.common import Conflict, NotFound, today
+from outings.profile import Zone
 
 When = Literal["weekend", "week", "month", "quarter", "year"]
-Zone = Literal["pamplona", "navarra"]
 Sort = Literal["best", "date"]
 
 DAYS = {"week": 6, "month": 30, "quarter": 91, "year": 365}
 
-PAMPLONA = 3
+NEAR = 3
 HIGHLIGHT = 3
 LIKED = 4
 YOURS = 1
@@ -40,8 +40,8 @@ def matches(event: agenda.Event, query: str) -> bool:
 
 def score(event: agenda.Event, liked: list[str]) -> int:
     points = 0
-    if event.zone == "pamplona":
-        points += PAMPLONA
+    if event.zone == "near":
+        points += NEAR
     if event.highlight:
         points += HIGHLIGHT
     if liked and agenda.mentions(event, liked):

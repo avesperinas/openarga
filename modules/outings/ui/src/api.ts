@@ -161,7 +161,7 @@ export interface AgendaEvent {
   zone: Zone;
 }
 
-export type Zone = "pamplona" | "navarra";
+export type Zone = "near" | "region";
 export type When = "weekend" | "week" | "month" | "quarter" | "year";
 
 export interface Explored {
@@ -299,6 +299,17 @@ export interface Near {
   km: number;
 }
 
+export interface Area {
+  id: string;
+  name: string;
+  near: string;
+  region: string;
+  near_box: [number, number, number, number];
+  region_box: [number, number, number, number];
+  map: boolean;
+}
+
+export const readArea = () => get<Area>("/area");
 export const readMap = (days = 30) => get<MapPoints>(`/map?days=${days}`);
 export const readNear = (event: string) => get<Near[]>(`/events/${event}/near`);
 
