@@ -79,7 +79,9 @@ change their internals, never their shape, without an issue that the app owners 
 - One task from `TASKS.md` per PR. Branch `p/<task>-<slug>`, `a1/<task>-<slug>` or `a2/<task>-<slug>`.
 - PR title `[<task>] <conventional summary>`, e.g. `[P6] feat(hub): ai.run agent loop`.
 - Rebase on `main` before opening and before merging. Rebase merge only, never squash.
-- A PR merges when GitHub Actions is green. Paste the task's verification in the PR body.
+- A PR merges when the full local suites are green (see Running things), with their summary
+  pasted in the PR body. GitHub Actions only runs on demand (`workflow_dispatch`) until it is
+  available for this repository again.
 - Small PRs. Two short PRs beat one long one, because the others rebase on yours.
 
 ## ADR numbers
@@ -121,4 +123,4 @@ uv run ruff check . && uv run ruff format --check .
 ```
 
 Isolation tests run as the module role against a real database, never with mocks. Anything that
-needs containers (the whole stack talking) is verified by GitHub Actions.
+needs containers (the whole stack talking) waits for a machine with Docker.
