@@ -27,7 +27,7 @@ async def test_a_getaway_without_a_photo_gets_its_place_with_its_credit(api, ker
 
     assert shown["has_photo"]
     assert shown["photo_credit"] == {
-        "author": "Autora Sintética",
+        "author": "Synthetic Author",
         "license": "CC BY-SA 4.0",
         "page": "https://commons.wikimedia.org/wiki/File:Irati.jpg",
     }
@@ -68,7 +68,7 @@ async def test_without_a_photo_of_that_place_none_and_a_new_place_is_looked_for_
 
 async def test_your_photo_is_left_alone_and_clears_the_credit(api, kernel, hub) -> None:
     hub.photos = {"Selva Irati": "Irati.jpg"}
-    mine = await make_wish(api, "Mía", place=IRATI_PLACE)
+    mine = await make_wish(api, "Mine", place=IRATI_PLACE)
     await api.put(f"/wishes/{mine['id']}/photo", content=jpeg())
     theirs = await make_wish(api, place=IRATI_PLACE)
     await fill()
@@ -81,7 +81,7 @@ async def test_your_photo_is_left_alone_and_clears_the_credit(api, kernel, hub) 
 
 async def test_only_getaways_and_trips_with_a_place(api, kernel, hub) -> None:
     hub.photos = {"Selva Irati": "Irati.jpg"}
-    await make_wish(api, "Sidrería", kind="eat", place=IRATI_PLACE)
+    await make_wish(api, "Cider house", kind="eat", place=IRATI_PLACE)
     await make_wish(api, "Sin sitio")
     trip = await make_wish(api, "Selva de Irati", kind="trip", place=IRATI_PLACE)
 
@@ -107,7 +107,7 @@ async def test_a_better_search_looks_again_for_what_was_not_found_but_not_for_wh
     await fill()
     await api.delete(f"/wishes/{removed['id']}/photo")
     hub.photos = {}
-    missing = await make_wish(api, "Robledal sintético", place=IRATI_PLACE)
+    missing = await make_wish(api, "Synthetic oak wood", place=IRATI_PLACE)
     assert await fill() == 0
 
     hub.around = ["Alrededor.jpg"]

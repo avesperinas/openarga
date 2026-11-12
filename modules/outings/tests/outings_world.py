@@ -12,7 +12,7 @@ from outings.db import engine
 
 IRATI = {
     "name": "Selva de Irati",
-    "display_name": "Selva de Irati, Orbaizeta, Navarra, 31671, España",
+    "display_name": "Selva de Irati, Orbaizeta, Navarra, 31671, Spain",
     "lat": 42.98,
     "lon": -1.17,
     "osm_type": "way",
@@ -23,7 +23,7 @@ IRATI = {
 }
 BARDENAS = {
     "name": "Bardenas Reales",
-    "display_name": "Bardenas Reales, Arguedas, Navarra, España",
+    "display_name": "Bardenas Reales, Arguedas, Navarra, Spain",
     "lat": 42.2,
     "lon": -1.48,
     "osm_type": "relation",
@@ -63,12 +63,12 @@ def leisure(title: str, starts: date, ends: date | None = None, **extra) -> dict
         "starts_on": starts.isoformat(),
         "ends_on": (ends or starts).isoformat(),
         "time": None,
-        "venue": "Sala sintética",
+        "venue": "Synthetic hall",
         "town": "Pamplona",
         "category": "stage",
-        "summary": "Un evento de prueba.",
+        "summary": "A test event.",
         "link": f"https://agenda.example/{title}",
-        "source_name": "Agenda sintética",
+        "source_name": "Synthetic agenda",
         "source_page": "https://agenda.example/agenda",
         "recurring": False,
         **extra,
@@ -110,7 +110,7 @@ class Hub:
             {
                 "connection": CONNECTION,
                 "provider": "prueba",
-                "label": "Agenda sintética",
+                "label": "Synthetic agenda",
                 "state": "removed",
                 "removed": True,
                 "paused": False,

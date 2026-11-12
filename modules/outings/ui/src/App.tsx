@@ -26,27 +26,27 @@ export type Route =
 
 export function route(pathname: string): Route {
   const path = pathname.replace(/\/+$/, "");
-  if (path === `${ROOT}/ajustes`) return { tab: "settings" };
-  if (path === `${ROOT}/ganas`) return { tab: "wishes" };
+  if (path === `${ROOT}/settings`) return { tab: "settings" };
+  if (path === `${ROOT}/wishes`) return { tab: "wishes" };
   if (path === `${ROOT}/mapa`) return { tab: "map" };
-  if (path === `${ROOT}/explorar`) return { tab: "explore" };
-  const wish = new RegExp(`^${ROOT}/ganas/${UUID}$`).exec(path);
+  if (path === `${ROOT}/explore`) return { tab: "explore" };
+  const wish = new RegExp(`^${ROOT}/wishes/${UUID}$`).exec(path);
   if (wish) return { tab: "wish", id: wish[1]! };
-  const event = new RegExp(`^${ROOT}/eventos/${UUID}$`).exec(path);
+  const event = new RegExp(`^${ROOT}/events/${UUID}$`).exec(path);
   if (event) return { tab: "event", id: event[1]! };
-  const explored = new RegExp(`^${ROOT}/explorar/${UUID}$`).exec(path);
+  const explored = new RegExp(`^${ROOT}/explore/${UUID}$`).exec(path);
   if (explored) return { tab: "event", id: explored[1]!, from: "explore" };
   return { tab: "agenda" };
 }
 
 export function pathOf(to: Route): string {
-  if (to.tab === "settings") return `${ROOT}/ajustes`;
-  if (to.tab === "wishes") return `${ROOT}/ganas`;
+  if (to.tab === "settings") return `${ROOT}/settings`;
+  if (to.tab === "wishes") return `${ROOT}/wishes`;
   if (to.tab === "map") return `${ROOT}/mapa`;
-  if (to.tab === "explore") return `${ROOT}/explorar`;
-  if (to.tab === "event" && to.from === "explore") return `${ROOT}/explorar/${to.id}`;
-  if (to.tab === "wish") return `${ROOT}/ganas/${to.id}`;
-  if (to.tab === "event") return `${ROOT}/eventos/${to.id}`;
+  if (to.tab === "explore") return `${ROOT}/explore`;
+  if (to.tab === "event" && to.from === "explore") return `${ROOT}/explore/${to.id}`;
+  if (to.tab === "wish") return `${ROOT}/wishes/${to.id}`;
+  if (to.tab === "event") return `${ROOT}/events/${to.id}`;
   return `${ROOT}/`;
 }
 

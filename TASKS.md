@@ -62,7 +62,7 @@ Suggested order: per module, A1.1 then A1.2 then A1.3; A1.4 when `money` is reac
 
 | Id | Task | Verify | Status |
 |---|---|---|---|
-| A2.1 | **English everywhere but the UI**, per module, as A1.1 | Manifest validator; MCP list test | `todo` |
+| A2.1 | **English everywhere but the UI**, per module, as A1.1 | Manifest validator; MCP list test | `doing` |
 | A2.2 | **UI in en and es**, per module, as A1.2 | Module files gone from the baseline | `todo` |
 | A2.3 | **Preferences**, as A1.3 | Tests in two time zones | `todo` |
 | A2.4 | **Outings area profile**: `modules/outings/areas/*.yaml` (Pamplona and Munich) with core towns, region, sources, search templates, seasonal hints, geocoding suffix, prompt language. Zone becomes `near` and `region`. Map built from the profile's bounding box (move `scripts/make-area-map.mjs` into the module) | The same tests pass with both profiles | `done` |

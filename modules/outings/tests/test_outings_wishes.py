@@ -22,7 +22,7 @@ async def test_a_getaway_is_noted_with_its_place_and_listed_first(api) -> None:
         "name": "Selva de Irati",
         "detail": "Orbaizeta, Navarra",
         "town": "Orbaizeta",
-        "country": "España",
+        "country": "Spain",
         "country_code": "ES",
         "lat": 42.98,
         "lon": -1.17,
@@ -33,10 +33,10 @@ async def test_a_getaway_is_noted_with_its_place_and_listed_first(api) -> None:
 
 
 async def test_a_trip_can_be_just_a_name_and_saving_without_place_works(api) -> None:
-    trip = await make_wish(api, "Japón", kind="trip", place={"name": "Japón"})
-    bare = await make_wish(api, "Pintxos por San Nicolás", kind="eat")
+    trip = await make_wish(api, "Japan", kind="trip", place={"name": "Japan"})
+    bare = await make_wish(api, "Pintxos around San Nicolas", kind="eat")
 
-    assert trip["place"]["name"] == "Japón" and trip["place"]["lat"] is None
+    assert trip["place"]["name"] == "Japan" and trip["place"]["lat"] is None
     assert bare["place"] is None
 
 
@@ -66,15 +66,17 @@ async def test_done_goes_to_the_archive_and_comes_back(api) -> None:
 
 
 async def test_patch_overwrites_what_it_sends_and_nothing_else(api) -> None:
-    wish = await make_wish(api, body="Ruta del Cubo.", place=wishes.place_of(IRATI).model_dump())
+    wish = await make_wish(api, body="Cube route.", place=wishes.place_of(IRATI).model_dump())
 
-    renamed = (await api.patch(f"/wishes/{wish['id']}", json={"name": "Irati en otoño"})).json()
+    renamed = (await api.patch(f"/wishes/{wish['id']}", json={"name": "Irati in autumn"})).json()
     cleared = (await api.patch(f"/wishes/{wish['id']}", json={"place": None, "body": None})).json()
 
-    assert renamed["name"] == "Irati en otoño" and renamed["body"] == "Ruta del Cubo."
+    assert renamed["name"] == "Irati in autumn" and renamed["body"] == "Cube route."
     assert renamed["place"]["name"] == "Selva de Irati"
     assert (
-        cleared["name"] == "Irati en otoño" and cleared["place"] is None and cleared["body"] is None
+        cleared["name"] == "Irati in autumn"
+        and cleared["place"] is None
+        and cleared["body"] is None
     )
 
 
@@ -129,7 +131,7 @@ async def test_a_place_is_searched_through_the_kernel_and_the_hub(api, hub) -> N
     hub.places = [
         {
             "name": "Selva de Irati",
-            "display_name": "Selva de Irati, Orbaizeta, Navarra, 31671, España",
+            "display_name": "Selva de Irati, Orbaizeta, Navarra, 31671, Spain",
             "lat": "42.98",
             "lon": "-1.17",
             "osm_type": "way",

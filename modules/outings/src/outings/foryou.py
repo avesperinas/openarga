@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from arga_contracts import notify
 from outings import agenda, explore, places, profile
 from outings.common import today
+from outings.words import say
 
 MADRID = ZoneInfo("Europe/Madrid")
 AHEAD_DAYS = 45
@@ -51,12 +52,12 @@ async def picks(connection: AsyncConnection, arrived_since: datetime | None = No
         reasons = []
         hit = next((term for term, one in liked if agenda.mentions(event, [one])), None)
         if hit:
-            reasons.append(f"Te interesa «{hit}»")
+            reasons.append(say("reason.liked", term=hit))
         if event.highlight and event.zone == "near":
-            reasons.append(f"De lo grande en {profile.current().near.name}")
+            reasons.append(say("reason.big", area=profile.current().near.name))
         wish = _near(event, wishes)
         if wish:
-            reasons.append(f"Cerca de «{wish}», que está en tus Ganas")
+            reasons.append(say("reason.near_wish", wish=wish))
         if not reasons:
             continue
         score = explore.score(event, folded) + (NEAR if wish else 0)
@@ -80,9 +81,15 @@ def _when(event: agenda.Event) -> str:
     where = event.town or event.venue or ""
     first, last = event.starts_on, event.ends_on
     if last != first:
-        days = f"del {first.day}/{first.month} al {last.day}/{last.month}"
+        days = say(
+            "when.range",
+            first_day=first.day,
+            first_month=first.month,
+            last_day=last.day,
+            last_month=last.month,
+        )
     else:
-        days = f"el {first.day}/{first.month}"
+        days = say("when.one", day=first.day, month=first.month)
     return f"{where}, {days}" if where else days
 
 
@@ -90,7 +97,7 @@ def _arrived_on(event: agenda.Event) -> date:
     return event.first_seen.astimezone(MADRID).date()
 
 
-HREF = "/outings/explorar"
+HREF = "/outings/explore"
 
 
 def for_you(found: list[Pick], now: date) -> list[dict[str, Any]]:
@@ -104,12 +111,12 @@ def for_you(found: list[Pick], now: date) -> list[dict[str, Any]]:
         those = by_day[day]
         if len(those) == 1:
             [one] = those
-            title = f"Te puede gustar: {one.event.title}"
+            title = say("notify.for_you.one", title=one.event.title)
             body = f"{_when(one.event)}. {one.reasons[0]}."
         else:
-            title = f"{len(those)} planes para ti"
+            title = say("notify.for_you.many", count=len(those))
             body = " · ".join(one.event.title for one in those[:SHOWN])
-        href = f"{HREF}?nuevo={day.isoformat()}"
+        href = f"{HREF}?new={day.isoformat()}"
         out.append(
             notify.notification(
                 "for_you", f"for_you:{day.isoformat()}", title, href, notify.at(day, HOUR), body
@@ -130,8 +137,8 @@ def weekend(found: list[Pick], now: date) -> list[dict[str, Any]]:
         notify.notification(
             "weekend",
             f"weekend:{friday.isoformat()}",
-            "Este finde",
-            f"{HREF}?cuando=weekend",
+            say("notify.weekend"),
+            f"{HREF}?when=weekend",
             notify.at(thursday, HOUR),
             " · ".join(one.event.title for one in those[:SHOWN]),
         )
@@ -160,10 +167,10 @@ async def saved_soon(connection: AsyncConnection, now: date) -> list[dict[str, A
             notify.notification(
                 "saved_soon",
                 f"saved:{row.id}:{row.starts_on.isoformat()}",
-                f"Mañana empieza {row.name}",
-                f"/outings/ganas/{row.id}",
+                say("notify.saved_soon", name=row.name),
+                f"/outings/wishes/{row.id}",
                 notify.at(max(eve, now), HOUR),
-                "Lo guardaste con Me apetece.",
+                say("notify.saved_soon.body"),
             )
         )
     return out

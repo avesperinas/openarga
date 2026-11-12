@@ -8,17 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from arga_widgets import envelope
 from outings import agenda, explore, wishes
 from outings.common import MADRID
+from outings.words import say
 
 KINDS = {"weekend": "upnext", "wishes": "list"}
 ROWS = 8
-CATEGORY = {
-    "eat": "comer",
-    "stage": "escena",
-    "culture": "cultura",
-    "festival": "fiestas",
-    "outdoors": "fuera",
-}
-KIND = {"eat": "comer", "plan": "plan", "getaway": "escapada", "trip": "viaje"}
 
 
 def at(event: agenda.Event) -> str:
@@ -41,10 +34,11 @@ async def weekend(connection: AsyncConnection) -> dict:
     items = []
     for event in found:
         where = event.venue or event.town
-        detail = " · ".join(part for part in (CATEGORY[event.category], where) if part)
+        category = say(f"category.{event.category}")
+        detail = " · ".join(part for part in (category, where) if part)
         items.append({"at": at(event), "title": event.title, "detail": detail})
     if not items:
-        return envelope(KINDS["weekend"], "empty", {"detail": "nada este finde"})
+        return envelope(KINDS["weekend"], "empty", {"detail": say("widget.weekend.empty")})
     return envelope(KINDS["weekend"], "ready", {"events": items[:ROWS]})
 
 
@@ -53,18 +47,21 @@ async def pending(connection: AsyncConnection) -> dict:
         one for one in await wishes.wishes(connection) if one.kind in ("getaway", "plan", "trip")
     ]
     if not found:
-        return envelope(KINDS["wishes"], "empty", {"detail": "nada apuntado"})
+        return envelope(KINDS["wishes"], "empty", {"detail": say("widget.wishes.empty")})
+    plural = "one" if len(found) == 1 else "other"
     rows = [
         {
             "label": one.name,
-            "value": one.place.town or one.place.name if one.place else KIND[one.kind],
+            "value": one.place.town or one.place.name
+            if one.place
+            else say(f"kind.{one.kind}").lower(),
         }
         for one in found[:ROWS]
     ]
     return envelope(
         KINDS["wishes"],
         "ready",
-        {"rows": rows, "detail": f"{len(found)} pendiente{'s' if len(found) != 1 else ''}"},
+        {"rows": rows, "detail": say(f"widget.wishes.pending.{plural}", count=len(found))},
     )
 
 

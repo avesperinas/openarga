@@ -42,7 +42,7 @@ def _coded(run):
             return await run(connection, arguments, **extra)
         except NotFound as error:
             raise HTTPException(
-                status_code=404, detail={"code": "NOT_FOUND", "message": f"no existe: {error}"}
+                status_code=404, detail={"code": "NOT_FOUND", "message": f"not found: {error}"}
             ) from error
         except Conflict as error:
             raise HTTPException(
@@ -127,7 +127,7 @@ async def share_wish(wish_id: UUID, request: SpaceIn) -> wishes.Wish:
         raise HTTPException(status_code=503, detail=str(error)) from error
     current_spaces.set(tuple(UUID(space["id"]) for space in found))
     if request.space_id is not None and str(request.space_id) not in {s["id"] for s in found}:
-        raise HTTPException(status_code=404, detail="no estás en ese espacio")
+        raise HTTPException(status_code=404, detail="you are not in that space")
     space = str(request.space_id) if request.space_id else None
     return await _edit(wishes.share, str(wish_id), space)
 
@@ -204,7 +204,7 @@ async def read_mine(
     first: Annotated[date, Query(alias="from")], last: Annotated[date, Query(alias="to")]
 ) -> dict:
     if (last - first).days > 120 or last < first:
-        raise HTTPException(status_code=422, detail="de uno a ciento veinte días")
+        raise HTTPException(status_code=422, detail="from one to one hundred and twenty days")
     found = await _edit(explore.mine, first, last)
     return {"from": first, "to": last, "events": found}
 

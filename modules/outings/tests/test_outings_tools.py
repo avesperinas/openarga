@@ -18,9 +18,9 @@ async def call(api, name: str, body: dict, headers: dict = WRITE):
 async def test_this_weekend_says_the_same_to_claude_and_on_the_widget(api, kernel) -> None:
     friday, sunday = agenda.window("weekend")
     await Hub(kernel).bring(
-        leisure("Orquesta del finde", friday, time="20:00"),
-        leisure("Feria del finde", sunday, category="festival", time="21:00"),
-        leisure("Lo de después", sunday + timedelta(days=3)),
+        leisure("Weekend orchestra", friday, time="20:00"),
+        leisure("Weekend fair", sunday, category="festival", time="21:00"),
+        leisure("What comes after", sunday + timedelta(days=3)),
     )
     await derive()
 
@@ -28,10 +28,10 @@ async def test_this_weekend_says_the_same_to_claude_and_on_the_widget(api, kerne
     card = (await api.get("/widgets/weekend")).json()
 
     validate("upnext", card["body"], card["state"])
-    assert [event["title"] for event in told["events"]] == ["Orquesta del finde", "Feria del finde"]
+    assert [event["title"] for event in told["events"]] == ["Weekend orchestra", "Weekend fair"]
     assert [event["title"] for event in card["body"]["events"]] == [
-        "Orquesta del finde",
-        "Feria del finde",
+        "Weekend orchestra",
+        "Weekend fair",
     ]
     assert card["body"]["events"][0]["at"].endswith("+02:00") or card["body"]["events"][0][
         "at"
@@ -42,7 +42,7 @@ async def test_note_irati_in_autumn_leaves_a_getaway_with_its_place(api, hub) ->
     hub.places = [
         {
             "name": "Selva de Irati",
-            "display_name": "Selva de Irati, Orbaizeta, Navarra, 31671, España",
+            "display_name": "Selva de Irati, Orbaizeta, Navarra, 31671, Spain",
             "lat": "42.98",
             "lon": "-1.17",
             "osm_type": "way",
@@ -56,14 +56,14 @@ async def test_note_irati_in_autumn_leaves_a_getaway_with_its_place(api, hub) ->
     ]
 
     added = await call(
-        api, "add_wish", {"kind": "getaway", "name": "Irati", "text": "En otoño.", "place": place}
+        api, "add_wish", {"kind": "getaway", "name": "Irati", "text": "In autumn.", "place": place}
     )
 
     assert added.status_code == 200, added.text
     wish = added.json()["content"]
     assert (wish["kind"], wish["text"], wish["place"]["town"]) == (
         "getaway",
-        "En otoño.",
+        "In autumn.",
         "Orbaizeta",
     )
     listed = (await call(api, "get_wishes", {"kind": "getaway"}, READ)).json()["content"]["wishes"]
@@ -83,7 +83,7 @@ async def test_edit_done_restore_and_delete_by_exact_name(api) -> None:
     wish = await make_wish(api, place=wishes.place_of(IRATI).model_dump())
 
     renamed = (
-        await call(api, "update_wish", {"wish_id": wish["id"], "name": "Irati en otoño"})
+        await call(api, "update_wish", {"wish_id": wish["id"], "name": "Irati in autumn"})
     ).json()["content"]
     done = (await call(api, "mark_wish_done", {"wish_id": wish["id"]})).json()["content"]
     pending = (await call(api, "get_wishes", {}, READ)).json()["content"]["wishes"]
@@ -92,9 +92,9 @@ async def test_edit_done_restore_and_delete_by_exact_name(api) -> None:
     ]
     back = (await call(api, "restore_wish", {"wish_id": wish["id"]})).json()["content"]
     wrong = await call(api, "delete_wish", {"wish_id": wish["id"], "name": "Irati"})
-    gone = await call(api, "delete_wish", {"wish_id": wish["id"], "name": "Irati en otoño"})
+    gone = await call(api, "delete_wish", {"wish_id": wish["id"], "name": "Irati in autumn"})
 
-    assert renamed["name"] == "Irati en otoño" and renamed["place"]["town"] == "Orbaizeta"
+    assert renamed["name"] == "Irati in autumn" and renamed["place"]["town"] == "Orbaizeta"
     assert done["done_on"] is not None and pending == [] and len(archived) == 1
     assert back["done_on"] is None
     assert wrong.status_code == 409 and wrong.json()["detail"]["code"] == "NAME_MISMATCH"
@@ -131,7 +131,7 @@ async def test_find_events_also_reads_between_two_days_and_by_town(api, kernel) 
     await Hub(kernel).bring(
         leisure("Concierto en Olite", start, town="Olite"),
         leisure("Concierto en Pamplona", start),
-        leisure("Lo de después", start + timedelta(days=10), town="Olite"),
+        leisure("What comes after", start + timedelta(days=10), town="Olite"),
     )
     await derive()
 

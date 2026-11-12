@@ -45,16 +45,16 @@ function wish(overrides: Partial<Wish>): Wish {
 describe("las direcciones", () => {
   it("cada pantalla tiene la suya y vuelve a ella", () => {
     expect(route("/outings/")).toEqual({ tab: "agenda" });
-    expect(route("/outings/ganas")).toEqual({ tab: "wishes" });
-    expect(route("/outings/ajustes")).toEqual({ tab: "settings" });
-    expect(route(`/outings/ganas/${ID}`)).toEqual({ tab: "wish", id: ID });
-    expect(route("/outings/ganas/otra-cosa")).toEqual({ tab: "agenda" });
-    expect(route(`/outings/eventos/${ID}`)).toEqual({ tab: "event", id: ID });
-    expect(route("/outings/explorar")).toEqual({ tab: "explore" });
-    expect(route(`/outings/explorar/${ID}`)).toEqual({ tab: "event", id: ID, from: "explore" });
-    expect(pathOf({ tab: "event", id: ID, from: "explore" })).toBe(`/outings/explorar/${ID}`);
-    expect(pathOf({ tab: "event", id: ID })).toBe(`/outings/eventos/${ID}`);
-    expect(pathOf({ tab: "wish", id: ID })).toBe(`/outings/ganas/${ID}`);
+    expect(route("/outings/wishes")).toEqual({ tab: "wishes" });
+    expect(route("/outings/settings")).toEqual({ tab: "settings" });
+    expect(route(`/outings/wishes/${ID}`)).toEqual({ tab: "wish", id: ID });
+    expect(route("/outings/wishes/otra-cosa")).toEqual({ tab: "agenda" });
+    expect(route(`/outings/events/${ID}`)).toEqual({ tab: "event", id: ID });
+    expect(route("/outings/explore")).toEqual({ tab: "explore" });
+    expect(route(`/outings/explore/${ID}`)).toEqual({ tab: "event", id: ID, from: "explore" });
+    expect(pathOf({ tab: "event", id: ID, from: "explore" })).toBe(`/outings/explore/${ID}`);
+    expect(pathOf({ tab: "event", id: ID })).toBe(`/outings/events/${ID}`);
+    expect(pathOf({ tab: "wish", id: ID })).toBe(`/outings/wishes/${ID}`);
   });
 });
 

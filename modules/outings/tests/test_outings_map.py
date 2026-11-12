@@ -10,7 +10,7 @@ from outings.db import engine
 
 BALUARTE = {
     "name": "Baluarte",
-    "display_name": "Baluarte, Plaza del Baluarte, Pamplona, Navarra, España",
+    "display_name": "Baluarte, Plaza del Baluarte, Pamplona, Navarra, Spain",
     "lat": "42.8136",
     "lon": "-1.6503",
     "osm_type": "way",
@@ -28,8 +28,8 @@ async def locate() -> int:
 
 def test_a_venue_is_asked_with_its_town_and_then_the_town_alone(area) -> None:
     town, other = area.near.towns[0], area.region.towns[0]
-    assert places.queries("Sala Sintética · principal", town) == [
-        f"Sala Sintética, {town}, {area.geocoding}",
+    assert places.queries("Synthetic Hall · main", town) == [
+        f"Synthetic Hall, {town}, {area.geocoding}",
         f"{town}, {area.geocoding}",
     ]
     assert places.queries(other, other) == [f"{other}, {area.geocoding}"]
@@ -39,8 +39,8 @@ def test_a_venue_is_asked_with_its_town_and_then_the_town_alone(area) -> None:
 async def test_each_venue_is_located_once_and_the_event_carries_it(api, kernel, hub) -> None:
     hub.places = [BALUARTE]
     await Hub(kernel).bring(
-        leisure("Orquesta", TODAY + timedelta(days=2), venue="Baluarte · sala principal"),
-        leisure("Danza", TODAY + timedelta(days=3), venue="Baluarte · sala principal"),
+        leisure("Orchestra", TODAY + timedelta(days=2), venue="Baluarte · main hall"),
+        leisure("Dance", TODAY + timedelta(days=3), venue="Baluarte · main hall"),
     )
     await derive()
 
@@ -48,13 +48,13 @@ async def test_each_venue_is_located_once_and_the_event_carries_it(api, kernel, 
     assert await locate() == 0
     assert hub.asked == ["Baluarte, Pamplona, Navarra"]
     shown = (await api.get("/map")).json()
-    assert {event["title"] for event in shown["events"]} == {"Orquesta", "Danza"}
+    assert {event["title"] for event in shown["events"]} == {"Orchestra", "Dance"}
     assert shown["events"][0]["lat"] == 42.8136
 
 
 async def test_with_the_hub_down_nothing_is_written_and_it_is_tried_again(api, kernel, hub) -> None:
     hub.down = True
-    await Hub(kernel).bring(leisure("Orquesta", TODAY + timedelta(days=2)))
+    await Hub(kernel).bring(leisure("Orchestra", TODAY + timedelta(days=2)))
     await derive()
 
     assert await locate() == 0
@@ -69,13 +69,13 @@ async def test_the_map_has_the_wishes_with_a_place_and_the_ones_near_an_event(
     hub.places = [BALUARTE]
     near = await make_wish(
         api,
-        "Pintxos por San Nicolás",
+        "Pintxos around San Nicolas",
         kind="eat",
-        place={"name": "San Nicolás", "lat": 42.818, "lon": -1.644},
+        place={"name": "San Nicolas", "lat": 42.818, "lon": -1.644},
     )
     await make_wish(api, place=wishes.place_of(IRATI).model_dump())
-    await make_wish(api, "Japón", kind="trip", place={"name": "Japón"})
-    await Hub(kernel).bring(leisure("Orquesta", TODAY + timedelta(days=2)))
+    await make_wish(api, "Japan", kind="trip", place={"name": "Japan"})
+    await Hub(kernel).bring(leisure("Orchestra", TODAY + timedelta(days=2)))
     await derive()
     await locate()
     [event] = (await api.get("/map")).json()["events"]
@@ -84,7 +84,7 @@ async def test_the_map_has_the_wishes_with_a_place_and_the_ones_near_an_event(
     close = (await api.get(f"/events/{event['id']}/near")).json()
 
     assert {wish["name"] for wish in shown["wishes"]} == {
-        "Pintxos por San Nicolás",
+        "Pintxos around San Nicolas",
         "Selva de Irati",
     }
     assert [(one["id"], one["km"]) for one in close] == [(near["id"], 0.7)]

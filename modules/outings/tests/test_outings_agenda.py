@@ -21,8 +21,8 @@ async def test_what_the_hub_brings_is_in_the_agenda_of_its_period(api, kernel) -
     feed = Hub(kernel)
     await feed.bring(
         leisure("Hoy mismo", TODAY, time="20:00"),
-        leisure("Dentro de diez días", TODAY + timedelta(days=10), category="eat"),
-        leisure("El año que viene", TODAY + timedelta(days=200)),
+        leisure("In ten days", TODAY + timedelta(days=10), category="eat"),
+        leisure("Next year", TODAY + timedelta(days=200)),
     )
 
     assert (await derive())["added"] == 3
@@ -32,12 +32,12 @@ async def test_what_the_hub_brings_is_in_the_agenda_of_its_period(api, kernel) -
 
     assert [event["title"] for event in week["events"]] == ["Hoy mismo"]
     assert len(year["events"]) == 3
-    assert [event["title"] for event in eat["events"]] == ["Dentro de diez días"]
+    assert [event["title"] for event in eat["events"]] == ["In ten days"]
     today = week["events"][0]
     assert today["time"] == "20:00"
     assert today["links"] == [
         {
-            "name": "Agenda sintética",
+            "name": "Synthetic agenda",
             "url": "https://agenda.example/Hoy mismo",
             "page": "https://agenda.example/agenda",
         }
@@ -75,7 +75,7 @@ async def test_i_fancy_it_is_a_dated_plan_in_wishes_once(api, kernel) -> None:
     feed = Hub(kernel)
     await feed.bring(
         leisure(
-            "Jornadas sintéticas",
+            "Synthetic food days",
             TODAY + timedelta(days=3),
             TODAY + timedelta(days=5),
             category="eat",
@@ -90,11 +90,11 @@ async def test_i_fancy_it_is_a_dated_plan_in_wishes_once(api, kernel) -> None:
     assert saved["id"] == twice["id"]
     assert (saved["kind"], saved["name"], saved["event_id"]) == (
         "plan",
-        "Jornadas sintéticas",
+        "Synthetic food days",
         event["id"],
     )
     assert saved["starts_on"] == (TODAY + timedelta(days=3)).isoformat()
-    assert saved["place"]["name"] == "Sala sintética" and saved["place"]["town"] == "Pamplona"
+    assert saved["place"]["name"] == "Synthetic hall" and saved["place"]["town"] == "Pamplona"
     assert (await api.get(f"/events/{event['id']}")).json()["wish_id"] == saved["id"]
 
 
@@ -144,7 +144,7 @@ async def test_to_planner_publishes_it_with_the_agenda_contract_and_planner_sees
     assert dated["uid"] == f"outings:event:{event['id']}"
     assert dated["all_day"] is False and dated["tz"] == "Europe/Madrid"
     assert dated["start"].startswith(f"{(TODAY + timedelta(days=1)).isoformat()}T19:30")
-    assert dated["href"] == f"/outings/eventos/{event['id']}"
+    assert dated["href"] == f"/outings/events/{event['id']}"
 
 
 async def test_plugging_from_settings_creates_the_agenda_in_hub(api, hub_app) -> None:
@@ -196,11 +196,11 @@ async def test_the_same_concert_in_two_agendas_is_one_event_with_two_links(api, 
     await feed.bring(leisure("Euskadiko Orkestra", day, time="19:30"))
     await feed.bring(
         {
-            **leisure("EUSKADIKO ORKESTRA · Temporada 26/27", day, venue="Baluarte"),
+            **leisure("EUSKADIKO ORKESTRA · Season 26/27", day, venue="Baluarte"),
             "connection": OTHER,
             "key": "otra",
             "link": "https://ayuntamiento.example/orquesta",
-            "source_name": "Ayuntamiento sintético",
+            "source_name": "Synthetic town hall",
         }
     )
     await feed.bring(leisure("Otro concierto distinto", day))
@@ -212,24 +212,24 @@ async def test_the_same_concert_in_two_agendas_is_one_event_with_two_links(api, 
     assert len(shown) == 2
     [joined] = [event for event in shown if len(event["links"]) == 2]
     assert {link["name"] for link in joined["links"]} == {
-        "Agenda sintética",
-        "Ayuntamiento sintético",
+        "Synthetic agenda",
+        "Synthetic town hall",
     }
 
     found = (await api.get(f"/events/{joined['id']}")).json()
     assert len(found["sources"]) == 2
-    other = next(one for one in found["sources"] if one["name"] == "Ayuntamiento sintético")
+    other = next(one for one in found["sources"] if one["name"] == "Synthetic town hall")
     apart = await api.post(f"/events/{joined['id']}/split/{other['id']}")
     assert apart.status_code == 200, apart.text
     assert len((await api.get("/agenda", params={"period": "month"})).json()["events"]) == 3
 
     await feed.bring(
         {
-            **leisure("EUSKADIKO ORKESTRA · Temporada 26/27", day, venue="Baluarte · sala"),
+            **leisure("EUSKADIKO ORKESTRA · Season 26/27", day, venue="Baluarte · sala"),
             "connection": OTHER,
             "key": "otra",
             "link": "https://ayuntamiento.example/orquesta",
-            "source_name": "Ayuntamiento sintético",
+            "source_name": "Synthetic town hall",
         }
     )
     await derive()
@@ -241,14 +241,14 @@ async def test_the_same_concert_in_two_agendas_is_one_event_with_two_links(api, 
 def test_titles_match_once_normalised_and_different_ones_do_not() -> None:
     assert agenda.same_title("Euskadiko Orkestra", "EUSKADIKO ORKESTRA - Temporada 26/27")
     assert agenda.same_title("Semana de la Croqueta", "Semana de la croqueta")
-    assert not agenda.same_title("Concierto de Navidad", "Concierto de Año Nuevo")
+    assert not agenda.same_title("Christmas Concert", "New Year Concert")
     assert agenda.same_town(None, "Pamplona") and not agenda.same_town("Tudela", "Pamplona")
 
 
 async def test_what_comes_back_every_year_is_gone_everywhere(api, kernel) -> None:
     await Hub(kernel).bring(
         leisure(
-            "XX Semana Sintética de la Croqueta",
+            "XX Synthetic Croquette Week",
             TODAY + timedelta(days=3),
             category="eat",
             recurring=True,

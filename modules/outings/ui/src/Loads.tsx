@@ -4,7 +4,7 @@ import { useCallback, useEffect } from "react";
 
 export const changed = () => invalidate("");
 
-const gone = (error: Error | null) => Boolean(error?.message.startsWith("no existe"));
+const gone = (error: Error | null) => Boolean(error?.message.startsWith("not found"));
 
 export function useLoad<T>(key: string | null, load: () => Promise<T>) {
   const found = useResource(key, load, { persist: true });

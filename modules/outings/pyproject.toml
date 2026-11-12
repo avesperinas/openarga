@@ -1,7 +1,7 @@
 [project]
 name = "outings"
 version = "0.1.0"
-description = "Módulo Outings de OpenArga: lo que nos apetece hacer"
+description = "OpenArga Outings module: what is on and what we want to do"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "arga-tenancy",

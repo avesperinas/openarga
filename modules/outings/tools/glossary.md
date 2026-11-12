@@ -1,29 +1,28 @@
-# Glosario de Outings
+# Outings glossary
 
-- **Gana**: algo que te apetece hacer y apuntas tú. Es de uno de cuatro tipos: **comer** (un sitio
-  para comer o beber), **plan** (algo que hacer cerca, una tarde o un día), **escapada** (salir uno o
-  dos días, normalmente por Navarra o cerca) y **viaje** (lejos y con más días, que puede ser solo
-  "Japón"). De cada una se guarda foto, nombre, texto libre y dónde está; nada más: ni valoración,
-  ni con quién, ni presupuesto, ni itinerario.
-- **Hecha**: marcar una gana como hecha la saca de la lista y la deja en el **Archivo**, de donde se
-  puede devolver. No pasa a ninguna otra app: un viaje hecho con detalle se apunta en Travel a mano.
-- **Lugar**: el sitio de una gana, elegido de OpenStreetMap con su nombre, pueblo, país y
-  coordenadas. Puede ser solo un nombre si no se pudo situar; entonces no sale en el mapa.
-- **Agenda**: lo que pasa en Pamplona y en Navarra, que llega solo. Lo leen cada madrugada las
-  agendas enchufadas (Baluarte, el Ayuntamiento, Cultura Navarra, Turismo de Navarra y las que se
-  añadan) y solo entra lo que está en la página de donde salió: cada evento lleva su enlace.
-- **Categorías** de un evento, lista cerrada: **comer** (jornadas y semanas gastronómicas, ferias de
-  producto, catas), **escena** (música, teatro, danza, cine, humor), **cultura** (exposiciones,
-  charlas, visitas guiadas, libros), **fiestas** (patronales, tradición, ferias populares) y
-  **fuera** (deporte, naturaleza, rutas).
-- **Este finde** es de viernes a domingo: el que viene de lunes a jueves, el que corre si ya es fin de
-  semana. La semana son siete días desde hoy; el mes, treinta; el año, uno.
-- **Me apetece** pasa un evento a Ganas como un plan con su fecha. **A Planner** lo pone en el
-  calendario. Son dos cosas distintas: algo puede apetecer sin estar decidido.
-- **Vuelven cada año**: lo que la página de un evento dice que se repite (la Croqueta en mayo, el
-  Piquillo en octubre), con su mes de siempre. Con **Avisarme**, cuando sale la fecha de la edición
-  nueva aparece arriba en la Agenda como "ya hay fecha".
-- **Repetidos**: el mismo evento leído en dos agendas es uno, con los enlaces de las dos.
-- **Actualizar**: la agenda se actualiza con tu Claude (copias el encargo y apunta con `add_events`,
-  con tu suscripción) o con la API (tu clave de Anthropic, lee ya las agendas enchufadas y, si lo
-  pides, busca en la web). La búsqueda en la web no corre sola.
+- **Wish**: something the person wants to do and notes down. One of four kinds: **eat** (a place
+  to eat or drink), **plan** (something nearby, an afternoon or a day), **getaway** (one or two days
+  away, usually within the region) and **trip** (far and longer, which can be just "Japan"). A wish
+  keeps a photo, a name, free text and where it is; nothing else: no rating, no company, no budget,
+  no itinerary.
+- **Done**: marking a wish done takes it off the list and leaves it in the **Archive**, from where it
+  can be restored. It goes to no other app: a detailed trip is noted in Travel by hand.
+- **Place**: where a wish is, chosen from OpenStreetMap with its name, town, country and
+  coordinates. It can be just a name if it could not be located; then it is not on the map.
+- **Area**: the person's home area, an area profile (`areas/<id>.yaml`) with its **near** towns (the
+  core, such as Pamplona and its comarca) and its **region** (the rest, such as Navarra). Every event
+  has a zone, `near` or `region`, from its town.
+- **Agenda**: what is on in the area. It comes from the plugged-in agendas and from the AI, which
+  reads the brief and adds only what is on a page: every event carries its link.
+- **Categories** of an event, a closed list: **eat** (food weeks and days, produce fairs, tastings),
+  **stage** (music, theatre, dance, cinema, comedy), **culture** (exhibitions, talks, guided tours,
+  books), **festival** (fiestas, traditions, popular fairs, markets) and **outdoors** (sport, nature,
+  routes).
+- **This weekend** is Friday to Sunday: the coming one from Monday to Thursday, the current one if it
+  is already the weekend. A week is seven days from today; a month, thirty; a year, one.
+- **Want to go** turns an event into a plan wish with its dates. **To Planner** puts it on the
+  calendar. They are different: something can appeal without being decided.
+- **Duplicates**: the same event read in two agendas is one, with the links of both.
+- **Brief**: the instructions the AI reads before searching (`get_agenda_brief`): which agendas to
+  read, what to search for in the area's language, what not to add and how to add it with
+  `add_events`.

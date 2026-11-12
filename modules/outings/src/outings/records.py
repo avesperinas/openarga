@@ -9,9 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 import arga_contracts as contracts
 from arga_contracts import records as write
 from outings import wishes
+from outings.words import say
 
 APP = "outings"
-KIND = {"eat": "comer", "plan": "plan", "getaway": "escapada", "trip": "viaje"}
 
 
 def _id(found: wishes.Wish) -> str:
@@ -28,19 +28,19 @@ def _where(place: wishes.Place) -> str:
 def ficha(found: wishes.Wish) -> dict[str, Any]:
     done = wishes.done_day(found)
     properties: dict[str, Any] = {
-        "clase": KIND[found.kind],
-        "estado": "hecha" if done else "pendiente",
+        "kind": say(f"kind.{found.kind}").lower(),
+        "status": say("record.done" if done else "record.pending"),
     }
     if found.place:
-        properties["lugar"] = _where(found.place)
+        properties["place"] = _where(found.place)
         if found.place.lat is not None and found.place.lon is not None:
-            properties["coordenadas"] = f"{found.place.lat:.5f}, {found.place.lon:.5f}"
+            properties["coordinates"] = f"{found.place.lat:.5f}, {found.place.lon:.5f}"
     if done:
-        properties["hecha"] = done.isoformat()
+        properties["done"] = done.isoformat()
     first = " · ".join(
         part
         for part in (
-            f"**{wishes.KINDS[found.kind]}**",
+            f"**{say(f'kind.{found.kind}')}**",
             _where(found.place) if found.place else None,
         )
         if part
@@ -48,14 +48,14 @@ def ficha(found: wishes.Wish) -> dict[str, Any]:
     return contracts.record(
         id=_id(found),
         title=found.name,
-        kind="Gana",
-        href=f"/outings/ganas/{found.id}",
-        folder="Ganas",
+        kind=say("record.wish"),
+        href=f"/outings/wishes/{found.id}",
+        folder=say("record.wishes"),
         properties=properties,
         body=write.sections(
             first,
             found.body,
-            f"Hecha el {write.long_date(done)}." if done else None,
+            say("record.done_on", date=done.isoformat()) if done else None,
         ),
     )
 
@@ -65,13 +65,13 @@ def days(found: list[wishes.Wish]) -> list[dict[str, Any]]:
     for one in sorted(found, key=lambda each: each.name.casefold()):
         done = wishes.done_day(one)
         if done is not None:
-            lines[done].append(f"- Hiciste {write.link(APP, _id(one), one.name)}")
+            lines[done].append(f"- {say('record.did', link=write.link(APP, _id(one), one.name))}")
     return [
         contracts.record(
             id=f"day:{day.isoformat()}",
-            title="Ganas",
-            kind="Día",
-            href="/outings/ganas",
+            title=say("record.wishes"),
+            kind=say("record.day"),
+            href="/outings/wishes",
             day=day,
             body="\n".join(said),
         )
