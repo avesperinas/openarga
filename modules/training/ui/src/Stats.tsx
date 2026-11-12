@@ -14,13 +14,16 @@ import {
   GroupLabel,
   Hint,
   Section,
-  formatDecimal,
   Icon,
   ListRow,
   Sheet,
   Sparkline,
   TrendChart,
   changeColor,
+  type Locale,
+  type Translate,
+  useLocale,
+  useT,
 } from "@openarga/ui";
 import { peek, remember } from "@openarga/app";
 import { type CSSProperties, useCallback, useEffect, useState } from "react";
@@ -44,30 +47,25 @@ import {
 import { AppVersion } from "./AppVersion";
 import { ScreenHeader } from "./Header";
 import { advice, normalRange, recordIds } from "./exercise";
-import { REGIONS, longDate } from "./labels";
+import { amount, decimal, longDate, muscleName, plural, regions } from "./labels";
 import { shortDay } from "./prefill";
 
-const PERIODS: { id: Period; label: string }[] = [
-  { id: "4w", label: "4 semanas" },
-  { id: "3m", label: "3 meses" },
-  { id: "1y", label: "Un año" },
-  { id: "all", label: "Desde el principio" },
-];
+const PERIODS: Period[] = ["4w", "3m", "1y", "all"];
 
 const statsKey = (period: Period) => `stats:${period}`;
 
-const LIGHT: Record<string, string> = { up: "Mejorando", flat: "Estable", down: "Perdiendo" };
-
-export function periodLabel(period: Period): string {
-  return PERIODS.find((entry) => entry.id === period)?.label ?? "";
+export function periodLabel(period: Period, t: Translate): string {
+  return t(`stats.period.${period}`);
 }
 
-export function signed(value: number): string {
-  const rounded = Math.abs(value).toFixed(1).replace(".", ",");
-  return `${value >= 0 ? "+" : "−"}${rounded} %`;
+export function signed(value: number, locale: Locale): string {
+  return `${value >= 0 ? "+" : "−"}${decimal(Math.abs(value), 1, locale)} %`;
 }
 
-const kg = (value: number) => `${value.toFixed(1).replace(".", ",").replace(/,0$/, "")} kg`;
+const kg = (value: number, locale: Locale) =>
+  `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value)} kg`;
+
+const tenths = (value: number, locale: Locale) => decimal(value, 1, locale);
 
 export function sparkline(values: number[], width = 320, height = 64): string {
   if (values.length < 2) return "";
@@ -84,18 +82,17 @@ export function sparkline(values: number[], width = 320, height = 64): string {
 }
 
 export function exerciseLabel(entry: { exercise: string; variant: string }): string {
-  return entry.variant.toLowerCase().startsWith(entry.exercise.toLowerCase())
+  return entry.variant.toLowerCase().includes(entry.exercise.toLowerCase())
     ? entry.variant
     : `${entry.exercise} · ${entry.variant}`;
 }
 
-export function whyNot(point: VariantPoint): string | null {
-  if (point.status === "excluded") return "Lo apartaste tú";
-  if (point.status === "counted") return point.verdict === "counted" ? "Cuenta porque lo dijiste tú" : null;
-  const reference = point.reference ? ` (lo habitual, ${kg(point.reference)})` : "";
+export function whyNot(point: VariantPoint, t: Translate, locale: Locale): string | null {
+  if (point.status === "excluded") return t("stats.why.excluded");
+  if (point.status === "counted") return point.verdict === "counted" ? t("stats.why.counted") : null;
+  const reference = point.reference ? t("stats.why.usual", { load: kg(point.reference, locale) }) : "";
   const gap = point.reference ? Math.round(Math.abs(point.e1rm / point.reference - 1) * 100) : null;
-  const how = point.status === "high" ? "por encima" : "por debajo";
-  return `Un ${gap ?? "?"} % ${how} de las sesiones de alrededor en esta máquina${reference}`;
+  return t(point.status === "high" ? "stats.why.above" : "stats.why.below", { gap: gap ?? "?", reference }).trim();
 }
 
 type Detail =
@@ -110,13 +107,14 @@ export function StatsScreen({
   onOpenSession?: (id: string) => void;
   initial?: Stats;
 }) {
+  const t = useT();
   const [period, setPeriod] = useState<Period>("3m");
   const [stats, setStats] = useState<Stats | null>(() => initial ?? peek<Stats>(statsKey("3m")) ?? null);
   const [failed, setFailed] = useState(false);
   const [choosing, setChoosing] = useState(false);
   const [stack, setStack] = useState<Detail[]>(() => {
     if (typeof window === "undefined") return [];
-    const variant = new URLSearchParams(window.location.search).get("variante");
+    const variant = new URLSearchParams(window.location.search).get("variant");
     return variant ? [{ kind: "variant", id: variant, gym: null }] : [];
   });
   const [version, setVersion] = useState(0);
@@ -148,22 +146,22 @@ export function StatsScreen({
 
   return (
     <Screen wide>
-      <ScreenHeader title="Stats" />
+      <ScreenHeader title={t("tabs.stats")} />
 
       <button type="button" className="training-period" onClick={() => setChoosing(true)}>
-        {periodLabel(period)}
+        {periodLabel(period, t)}
         <span aria-hidden="true">▾</span>
       </button>
 
       {failed ? (
-        <EmptyState title={"No se han podido cargar tus stats"}>Comprueba la conexión y vuelve a abrir la pestaña.</EmptyState>
+        <EmptyState title={t("stats.load_failed")}>{t("stats.load_failed_hint")}</EmptyState>
       ) : !stats ? (
-        <Skeleton rows={4} label="Cargando tus stats" />
+        <Skeleton rows={4} label={t("stats.loading")} />
       ) : stats.sessions === 0 ? (
-        <EmptyState title={"Todavía no hay nada que medir"}>En cuanto termines un entreno, esta pantalla empieza a contar.</EmptyState>
+        <EmptyState title={t("stats.empty")}>{t("stats.empty_hint")}</EmptyState>
       ) : (
         <Panes
-          asideLabel="Frecuencia y ejercicios"
+          asideLabel={t("stats.aside")}
           main={
             <>
               <VolumeCard stats={stats} onOpen={(id) => open({ kind: "muscle", id })} />
@@ -182,22 +180,22 @@ export function StatsScreen({
       <AppVersion />
 
       {choosing && (
-        <Sheet title="Periodo" onClose={() => setChoosing(false)}>
+        <Sheet title={t("stats.period")} onClose={() => setChoosing(false)}>
           <ul className="training-period-list">
             {PERIODS.map((entry) => (
-              <li key={entry.id}>
+              <li key={entry}>
                 <button
                   type="button"
                   className="training-period-option"
-                  aria-current={entry.id === period || undefined}
+                  aria-current={entry === period || undefined}
                   onClick={() => {
-                    setPeriod(entry.id);
+                    setPeriod(entry);
                     setChoosing(false);
                   }}
                 >
-                  {entry.label}
-                  {entry.id === "all" && stats ? (
-                    <span className="training-period-count">{stats.sessions} entrenos</span>
+                  {periodLabel(entry, t)}
+                  {entry === "all" && stats ? (
+                    <span className="training-period-count">{plural(t, "stats.workouts", stats.sessions)}</span>
                   ) : null}
                 </button>
               </li>
@@ -247,44 +245,39 @@ export function StatsScreen({
 }
 
 function IndexCard({ stats }: { stats: Stats }) {
+  const t = useT();
+  const locale = useLocale();
   const { index } = stats;
   if (index.value === null || index.delta === null) {
     return (
-      <Section title="Rendimiento">
+      <Section title={t("stats.performance")}>
         <div className="surface training-card">
-          <Hint>
-            Hace falta que algún músculo tenga sesiones en al menos dos semanas del periodo. Con otro
-            periodo más ancho, o unas semanas más, aparece.
-          </Hint>
+          <Hint>{t("stats.index_missing")}</Hint>
         </div>
       </Section>
     );
   }
   const values = index.trend.map((point) => point.value);
   return (
-    <Section title="Rendimiento">
-      <Card label="Índice de rendimiento">
+    <Section title={t("stats.performance")}>
+      <Card label={t("stats.index")}>
         <div className="training-card-head">
           <div className="training-index-figure">
             <p className="training-index-value">
-              {index.value.toFixed(1).replace(".", ",")}
+              {tenths(index.value, locale)}
               <span className="training-index-delta" data-direction={index.direction ?? "flat"}>
-                {signed(index.delta)}
+                {signed(index.delta, locale)}
               </span>
             </p>
           </div>
           <span className="training-light" data-direction={index.direction ?? "flat"}>
-            {LIGHT[index.direction ?? "flat"]}
+            {t(`stats.light.${index.direction ?? "flat"}`)}
           </span>
         </div>
-        {values.length > 1 && <Sparkline series={values} label="Evolución del índice" />}
+        {values.length > 1 && <Sparkline series={values} label={t("stats.index_trend")} />}
         <p className="training-card-note">
-          Base 100 al empezar el periodo · media de {index.muscles}{" "}
-          {index.muscles === 1 ? "grupo muscular" : "grupos musculares"}, cada uno comparando cada
-          máquina consigo misma
-          {stats.excluded > 0
-            ? ` · ${stats.excluded} ${stats.excluded === 1 ? "día apartado" : "días apartados"} por no encajar`
-            : ""}
+          {plural(t, "stats.index_note", index.muscles)}
+          {stats.excluded > 0 ? ` · ${plural(t, "stats.set_aside", stats.excluded)}` : ""}
         </p>
       </Card>
     </Section>
@@ -292,31 +285,33 @@ function IndexCard({ stats }: { stats: Stats }) {
 }
 
 function FrequencyCards({ stats }: { stats: Stats }) {
+  const t = useT();
+  const locale = useLocale();
   const { frequency } = stats;
   const met = frequency.goal > 0 && frequency.done >= frequency.goal;
-  const average = `media 4 sem: ${frequency.average.toFixed(1).replace(".", ",")}`;
+  const average = t("stats.average_4w", { value: tenths(frequency.average, locale) });
   return (
-    <Section title="Constancia">
+    <Section title={t("stats.consistency")}>
       <div className="training-stat-pair">
         <section className="surface training-card" data-done={met || undefined}>
-          <h3 className="training-card-title">Esta semana</h3>
+          <h3 className="training-card-title">{t("today.this_week")}</h3>
           <p className="training-stat-figure">
-            {frequency.done} <span className="training-stat-unit">de {frequency.goal}</span>
+            {frequency.done} <span className="training-stat-unit">{t("stats.of_goal", { goal: frequency.goal })}</span>
             {met && (
               <span className="training-stat-done">
-                <Icon name="done" label="Objetivo cumplido" />
+                <Icon name="done" label={t("stats.goal_met")} />
               </span>
             )}
           </p>
-          <p className="training-card-note">{met ? `objetivo cumplido · ${average}` : average}</p>
+          <p className="training-card-note">{met ? `${t("stats.goal_met_lower")} · ${average}` : average}</p>
         </section>
         <section className="surface training-card">
-          <h3 className="training-card-title">Racha</h3>
+          <h3 className="training-card-title">{t("stats.streak")}</h3>
           <p className="training-stat-figure">
-            {frequency.streak} <span className="training-stat-unit">sem</span>
+            {frequency.streak} <span className="training-stat-unit">{t("stats.weeks_short")}</span>
           </p>
           <p className="training-card-note">
-            {frequency.streak === 0 ? "sin semanas cumplidas" : "cumpliendo objetivo"}
+            {frequency.streak === 0 ? t("stats.no_weeks_met") : t("stats.meeting_goal")}
           </p>
         </section>
       </div>
@@ -325,21 +320,22 @@ function FrequencyCards({ stats }: { stats: Stats }) {
 }
 
 export function VolumeCard({ stats, onOpen }: { stats: Stats; onOpen: (muscle: string) => void }) {
+  const t = useT();
   const most = Math.max(...stats.muscles.map((entry) => entry.sets), 20);
   return (
-    <Section title="Músculos">
-      <div className="surface training-card" aria-label="Músculos">
+    <Section title={t("muscles.label")}>
+      <div className="surface training-card" aria-label={t("muscles.label")}>
         <BodyMaps
-          label="Fuerza por músculo en el periodo"
+          label={t("stats.strength_by_muscle")}
           colors={Object.fromEntries(stats.muscles.map((entry) => [entry.muscle, changeColor(entry.delta)]))}
-          names={Object.fromEntries(stats.muscles.map((entry) => [entry.muscle, entry.name]))}
+          names={Object.fromEntries(
+            stats.muscles.map((entry) => [entry.muscle, muscleName(t, { id: entry.muscle, name: entry.name })]),
+          )}
           onSelect={onOpen}
         />
-        <p className="training-card-note">
-          Verde, gana fuerza; rojo, pierde; gris, estable o sin datos. Toca un músculo para verlo.
-        </p>
-        <Hint>En cada músculo, la fuerza y las series por semana, con el rango de 10 a 20.</Hint>
-        {REGIONS.map((region) => {
+        <p className="training-card-note">{t("stats.colours")}</p>
+        <Hint>{t("stats.per_muscle")}</Hint>
+        {regions(t).map((region) => {
           const muscles = stats.muscles.filter((entry) => entry.region === region.value);
           if (muscles.length === 0) return null;
           return (
@@ -354,9 +350,7 @@ export function VolumeCard({ stats, onOpen }: { stats: Stats; onOpen: (muscle: s
           );
         })}
         {stats.bodyweight === null && (
-          <p className="training-card-note">
-            Sin tu peso, dominadas y fondos no cuentan para la fuerza. Se apunta en Plan, en Ajustes.
-          </p>
+          <p className="training-card-note">{t("stats.no_bodyweight")}</p>
         )}
       </div>
     </Section>
@@ -372,22 +366,27 @@ function MuscleRow({
   most: number;
   onOpen: (muscle: string) => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
+  const name = muscleName(t, { id: entry.muscle, name: entry.name });
   return (
     <li>
       <button
         type="button"
         className="training-volume-row training-pressable"
-        aria-label={`${entry.name}: ${
-          entry.delta === null ? "sin datos de fuerza" : `fuerza ${signed(entry.delta)}`
-        }, ${entry.sets.toFixed(1).replace(".", ",")} series por semana`}
+        aria-label={t("stats.muscle_row", {
+          name,
+          strength: entry.delta === null ? t("stats.no_strength") : t("stats.strength", { delta: signed(entry.delta, locale) }),
+          sets: tenths(entry.sets, locale),
+        })}
         onClick={() => onOpen(entry.muscle)}
       >
-        <span className="training-volume-name">{entry.name}</span>
+        <span className="training-volume-name">{name}</span>
         <span
           className="training-volume-delta"
           data-direction={entry.direction ?? undefined}
         >
-          {entry.delta === null ? "—" : signed(entry.delta)}
+          {entry.delta === null ? "—" : signed(entry.delta, locale)}
         </span>
         <span className="training-volume-track">
           <span
@@ -396,20 +395,22 @@ function MuscleRow({
             style={{ "--fill-to": `${Math.min((entry.sets / most) * 100, 100)}%` } as CSSProperties}
           />
         </span>
-        <span className="training-volume-value">{entry.sets.toFixed(1).replace(".", ",")}</span>
+        <span className="training-volume-value">{tenths(entry.sets, locale)}</span>
       </button>
     </li>
   );
 }
 
 function MoversCard({ stats, onOpen }: { stats: Stats; onOpen: (id: string, gym: string | null) => void }) {
+  const t = useT();
+  const locale = useLocale();
   const shown = [...stats.movers.slice(0, 3), ...stats.movers.slice(-2)].filter(
     (mover, index, all) =>
       all.findIndex((other) => other.variant_id === mover.variant_id && other.gym_id === mover.gym_id) === index,
   );
   if (shown.length === 0) return null;
   return (
-    <Section title="Qué sube y qué baja">
+    <Section title={t("stats.movers")}>
       <div className="surface training-card">
         <ul className="training-movers">
           {shown.map((mover) => (
@@ -418,12 +419,12 @@ function MoversCard({ stats, onOpen }: { stats: Stats; onOpen: (id: string, gym:
                 <span className="training-mover-text">
                   <span className="training-mover-name">{exerciseLabel(mover)}</span>
                   <span className="training-card-note">
-                    {mover.gym ? `${mover.gym} · ` : ""}e1RM {kg(mover.e1rm)}
-                    {mover.without_pr >= 3 ? ` · sin PR en ${mover.without_pr} sesiones` : ""}
+                    {mover.gym ? `${mover.gym} · ` : ""}e1RM {kg(mover.e1rm, locale)}
+                    {mover.without_pr >= 3 ? ` · ${t("stats.without_pr", { count: mover.without_pr })}` : ""}
                   </span>
                 </span>
                 <span className="training-mover-delta" data-direction={mover.delta >= 0 ? "up" : "down"}>
-                  {signed(mover.delta)}
+                  {signed(mover.delta, locale)}
                 </span>
               </button>
             </li>
@@ -451,21 +452,21 @@ function useLoad<T>(load: () => Promise<T>): { data: T | null; failed: boolean; 
   return { data, failed, reload: () => setAttempt((value) => value + 1) };
 }
 
-function since(day: string | null): string {
-  if (!day) return "nunca";
+function since(day: string | null, t: Translate, locale: Locale): string {
+  if (!day) return t("stats.never");
   const [year = 1970, month = 1, date = 1] = day.split("-").map(Number);
   const days = Math.round((Date.now() - new Date(year, month - 1, date).getTime()) / 86_400_000);
-  if (days <= 0) return "hoy";
-  if (days === 1) return "ayer";
-  if (days < 30) return `hace ${days} días`;
-  return shortDay(day);
+  if (days <= 0) return t("stats.today");
+  if (days === 1) return t("stats.yesterday");
+  if (days < 30) return t("stats.days_ago", { count: days });
+  return shortDay(day, locale);
 }
 
-const MONTH = new Intl.DateTimeFormat("es-ES", { month: "short", year: "numeric" });
-
-function month(day: string): string {
+function month(day: string, locale: Locale): string {
   const [year = 1970, value = 1] = day.split("-").map(Number);
-  return MONTH.format(new Date(year, value - 1, 1)).replace(".", "");
+  return new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" })
+    .format(new Date(year, value - 1, 1))
+    .replace(".", "");
 }
 
 function MuscleSheet({
@@ -479,50 +480,47 @@ function MuscleSheet({
   onClose: () => void;
   onOpen: (variantId: string) => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const load = useCallback(() => readMuscleStats(muscle, period), [muscle, period]);
   const { data: detail, failed } = useLoad<MuscleStats>(load);
 
   return (
-    <Sheet title={detail?.name ?? "Músculo"} onClose={onClose}>
+    <Sheet title={detail ? muscleName(t, { id: muscle, name: detail.name }) : t("stats.muscle")} onClose={onClose}>
       {failed ? (
         <p className="training-field-error" role="alert">
-          No se ha podido cargar este músculo.
+          {t("stats.muscle_failed")}
         </p>
       ) : !detail ? (
-        <Hint>
-          Cargando…
-        </Hint>
+        <Hint>{t("common.loading")}</Hint>
       ) : (
         <>
           {detail.value !== null && detail.delta !== null ? (
             <p className="training-index-value">
-              {detail.value.toFixed(1).replace(".", ",")}
+              {tenths(detail.value, locale)}
               <span className="training-index-delta" data-direction={detail.direction ?? "flat"}>
-                {signed(detail.delta)}
+                {signed(detail.delta, locale)}
               </span>
             </p>
           ) : (
-            <Hint>
-              Sin sesiones bastantes en este periodo para decir si su fuerza sube o baja.
-            </Hint>
+            <Hint>{t("stats.not_enough")}</Hint>
           )}
           {detail.trend.length > 1 && (
             <MarkedSpark
               values={detail.trend.map((point) => point.value)}
               days={detail.trend.map((point) => point.day)}
               marks={detail.changes}
-              label={`Fuerza de ${detail.name.toLowerCase()}`}
+              label={t("stats.strength_of", { name: muscleName(t, { id: muscle, name: detail.name }).toLowerCase() })}
             />
           )}
           <p className="training-card-note">
-            Base 100 al empezar el periodo · {detail.sets.toFixed(1).replace(".", ",")} series por semana ·
-            última vez {since(detail.last_day)}
-            {detail.changes.length > 0 ? " · las rayas son cambios de centro o de máquina" : ""}
+            {t("stats.muscle_note", { sets: tenths(detail.sets, locale), last: since(detail.last_day, t, locale) })}
+            {detail.changes.length > 0 ? ` · ${t("stats.lines_are_changes")}` : ""}
           </p>
 
-          <h3 className="training-card-title">Ejercicios · todo el histórico</h3>
+          <h3 className="training-card-title">{t("stats.exercises_all_time")}</h3>
           {detail.exercises.length === 0 ? (
-            <Hint>Ningún ejercicio lo tiene como músculo principal.</Hint>
+            <Hint>{t("stats.no_primary")}</Hint>
           ) : (
             <ul className="training-movers">
               {detail.exercises.map((exercise) => (
@@ -531,17 +529,17 @@ function MuscleSheet({
                     <span className="training-mover-text">
                       <span className="training-mover-name">{exerciseLabel(exercise)}</span>
                       <span className="training-card-note">
-                        {exercise.gyms.join(", ")} · {month(exercise.first_day)} – {since(exercise.last_day)} ·{" "}
-                        {exercise.sessions} {exercise.sessions === 1 ? "sesión" : "sesiones"}
-                        {exercise.excluded > 0 ? ` · ${exercise.excluded} apartadas` : ""}
+                        {exercise.gyms.join(", ")} · {month(exercise.first_day, locale)} –{" "}
+                        {since(exercise.last_day, t, locale)} · {plural(t, "stats.sessions", exercise.sessions)}
+                        {exercise.excluded > 0 ? ` · ${t("stats.excluded", { count: exercise.excluded })}` : ""}
                       </span>
                     </span>
                     {exercise.delta !== null ? (
                       <span className="training-mover-delta" data-direction={exercise.delta >= 0 ? "up" : "down"}>
-                        {signed(exercise.delta)}
+                        {signed(exercise.delta, locale)}
                       </span>
                     ) : exercise.last !== null ? (
-                      <span className="training-mover-delta">{kg(exercise.last)}</span>
+                      <span className="training-mover-delta">{kg(exercise.last, locale)}</span>
                     ) : null}
                   </button>
                 </li>
@@ -549,7 +547,7 @@ function MuscleSheet({
             </ul>
           )}
           <Button variant="secondary" block onClick={onClose}>
-            Cerrar
+            {t("common.close")}
           </Button>
         </>
       )}
@@ -590,6 +588,8 @@ function VariantSheet({
   onChanged: () => void;
   onPoint: (variant: VariantStats, machine: Machine, point: VariantPoint) => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const load = useCallback(() => readVariantStats(variantId, period), [variantId, period]);
   const { data: detail, failed, reload } = useLoad<VariantStats>(load);
   const [chosen, setChosen] = useState<string | null>(gym);
@@ -606,32 +606,30 @@ function VariantSheet({
       reload();
       onChanged();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "No se ha podido guardar");
+      setError(reason instanceof Error ? reason.message : t("common.save_failed"));
     }
   }
 
   const bodyweight = detail?.load_type !== "external";
   return (
-    <Sheet title={detail ? exerciseLabel(detail) : "Variante"} onClose={onClose}>
+    <Sheet title={detail ? exerciseLabel(detail) : t("session.variant")} onClose={onClose}>
       {failed ? (
         <p className="training-field-error" role="alert">
-          No se ha podido cargar esta variante.
+          {t("stats.variant_failed")}
         </p>
       ) : !detail ? (
-        <Hint>
-          Cargando…
-        </Hint>
+        <Hint>{t("common.loading")}</Hint>
       ) : !machine ? (
         <Hint>
           {bodyweight && detail.bodyweight === null
-            ? "Apunta tu peso en Plan, en Ajustes, para medir este ejercicio: su carga es tu cuerpo más el lastre."
-            : "Todavía no hay ninguna sesión que cuente para la fuerza con esta variante."}
+            ? t("stats.log_bodyweight")
+            : t("stats.no_counted_session")}
         </Hint>
       ) : (
         <>
           {detail.machines.length > 1 && (
             <ChoiceChips
-              label="Centro"
+              label={t("stats.gym")}
               value={key(machine)}
               onChange={(value) => {
                 setChosen(value);
@@ -639,16 +637,17 @@ function VariantSheet({
               }}
               options={detail.machines.map((candidate) => ({
                 value: key(candidate),
-                label: candidate.gym ?? "Sin centro",
+                label: candidate.gym ?? t("stats.no_gym"),
               }))}
             />
           )}
           <Hint>
             {detail.machines.length > 1
-              ? "Cada centro es otra máquina: sus kilos no se comparan entre sí."
-              : machine.gym ?? "Sin centro"}
-            {" · "}paso {detail.min_increment.toFixed(1).replace(".", ",")} kg
-            {bodyweight ? " · la carga es tu peso más el lastre" : ""}
+              ? t("stats.gyms_differ")
+              : machine.gym ?? t("stats.no_gym")}
+            {" · "}
+            {t("stats.step", { step: tenths(detail.min_increment, locale) })}
+            {bodyweight ? ` · ${t("stats.bodyweight_load")}` : ""}
           </Hint>
 
           <ExerciseSummary machine={machine} increment={detail.min_increment} external={!bodyweight} period={period} />
@@ -662,13 +661,10 @@ function VariantSheet({
           />
 
           <h3 className="training-card-title">
-            Sesiones
-            {machine.excluded > 0 ? ` · ${machine.excluded} no cuentan` : ""}
+            {t("stats.sessions_title")}
+            {machine.excluded > 0 ? ` · ${t("stats.not_counting", { count: machine.excluded })}` : ""}
           </h3>
-          <p className="training-card-note">
-            Un día que se aleja más de un 30 % de las sesiones de alrededor no cuenta para la fuerza. El
-            dato no se toca: tócalo para decir si era correcto, o ábrelo para corregirlo.
-          </p>
+          <p className="training-card-note">{t("stats.outlier_rule")}</p>
           <ul className="training-movers">
             {[...machine.points]
               .reverse()
@@ -683,12 +679,12 @@ function VariantSheet({
                   >
                     <span className="training-mover-text">
                       <span className="training-mover-name">
-                        {shortDay(point.day)} · {point.reps} × {kg(point.load)}
+                        {shortDay(point.day, locale)} · {point.reps} × {kg(point.load, locale)}
                       </span>
-                      {whyNot(point) && <span className="training-card-note">{whyNot(point)}</span>}
+                      {whyNot(point, t, locale) && <span className="training-card-note">{whyNot(point, t, locale)}</span>}
                     </span>
                     <span className="training-point-e1rm" data-status={point.status}>
-                      {kg(point.e1rm)}
+                      {kg(point.e1rm, locale)}
                     </span>
                   </button>
                 </li>
@@ -696,7 +692,7 @@ function VariantSheet({
           </ul>
           {!all && machine.points.filter((point) => point.status === "counted").length > LIMIT && (
             <Button variant="plain" size="small" onClick={() => setAll(true)}>
-              Ver todas
+              {t("stats.see_all")}
             </Button>
           )}
 
@@ -706,13 +702,13 @@ function VariantSheet({
             </p>
           )}
           <Button variant="secondary" block onClick={onClose}>
-            Cerrar
+            {t("common.close")}
           </Button>
         </>
       )}
       {detail && detail.notes.length > 0 && (
-        <section aria-label="Notas que lo mencionan">
-          <GroupLabel count={detail.notes.length}>Notas</GroupLabel>
+        <section aria-label={t("stats.notes_mentioning")}>
+          <GroupLabel count={detail.notes.length}>{t("stats.notes")}</GroupLabel>
           {detail.notes.map((note) => (
             <ListRow key={note.href} title={note.title} subtitle={note.line || undefined} onClick={() => window.location.assign(note.href)} />
           ))}
@@ -733,37 +729,42 @@ export function ExerciseSummary({
   external: boolean;
   period: Period;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const counted = machine.points.filter((point) => point.status === "counted");
   const first = counted[0];
   const last = counted[counted.length - 1];
   const records = recordIds(machine.points);
   const change = first && last && counted.length > 1 ? last.e1rm - first.e1rm : null;
-  const said = advice(machine, increment, external);
+  const said = advice(machine, increment, external, t, locale);
   return (
     <>
       {machine.best && (
-        <Card label="Máximo estimado">
+        <Card label={t("stats.estimated_max")}>
           <HeadlineFigure
-            label="Máximo estimado"
-            value={formatDecimal(Math.round(machine.best.e1rm))}
+            label={t("stats.estimated_max")}
+            value={amount(Math.round(machine.best.e1rm), locale)}
             unit="kg"
             change={
               change === null
                 ? undefined
                 : {
-                    text: `${change > 0 ? "+" : change < 0 ? "−" : "±"}${formatDecimal(Math.abs(Math.round(change * 10) / 10))} kg en ${periodLabel(period).toLowerCase()}`,
+                    text: t("stats.change_in", {
+                      change: `${change > 0 ? "+" : change < 0 ? "−" : "±"}${amount(Math.abs(Math.round(change * 10) / 10), locale)}`,
+                      period: periodLabel(period, t).toLowerCase(),
+                    }),
                     direction: change > 0 ? "up" : change < 0 ? "down" : "flat",
                   }
             }
           />
           {counted.length > 1 && (
             <TrendChart
-              label="Máximo estimado por sesión"
-              valueName="Máximo estimado"
-              bandName="Tu rango normal"
-              highlightName="Récord"
+              label={t("stats.estimated_max_per_session")}
+              valueName={t("stats.estimated_max")}
+              bandName={t("stats.normal_range")}
+              highlightName={t("session.record")}
               flagOutside={false}
-              format={(value) => `${formatDecimal(Math.round(value))} kg`}
+              format={(value) => `${amount(Math.round(value), locale)} kg`}
               band={normalRange(machine.points)}
               points={counted.map((point) => ({ day: point.day, value: point.e1rm, highlight: records.has(point.id) }))}
             />
@@ -772,7 +773,7 @@ export function ExerciseSummary({
       )}
 
       {said.length > 0 && (
-        <Notice title="Lo que dice">
+        <Notice title={t("stats.what_it_says")}>
           {said.map((sentence) => (
             <p key={sentence}>{sentence}</p>
           ))}
@@ -781,18 +782,18 @@ export function ExerciseSummary({
 
       {machine.records.length > 0 && (
         <Stack>
-          <GroupLabel>Récord por repeticiones</GroupLabel>
+          <GroupLabel>{t("stats.records_by_reps")}</GroupLabel>
           <Card>
             <Figures
               items={machine.records.map((record) => ({
                 label: `${record.range} reps`,
-                value: `${formatDecimal(record.load)} kg`,
+                value: `${amount(record.load, locale)} kg`,
                 muted: !record.reliable,
               }))}
             />
           </Card>
           {machine.records.some((record) => !record.reliable) && (
-            <Hint>En gris, las estimaciones de más de diez repeticiones: poco fiables.</Hint>
+            <Hint>{t("stats.grey_unreliable")}</Hint>
           )}
         </Stack>
       )}
@@ -809,6 +810,8 @@ function Changes({
   onJoin: (day: string) => void;
   onRemove: (id: string) => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const changes = machine.segments.slice(1);
   const joins = machine.marks.filter((mark) => mark.kind === "join");
   if (changes.length === 0 && joins.length === 0) return null;
@@ -817,20 +820,20 @@ function Changes({
       {changes.map((segment) => (
         <li key={segment.since} className="training-change">
           <span className="training-mover-text">
-            <span className="training-mover-name">Otra máquina desde el {longDate(segment.since)}</span>
+            <span className="training-mover-name">{t("stats.other_machine_since", { day: longDate(segment.since, locale) })}</span>
             <span className="training-card-note">
               {segment.start === "mark"
-                ? "Lo marcaste tú. Lo de antes y lo de después no se comparan."
-                : `Detectado: el nivel saltó ${segment.jump === null ? "de golpe" : signed(segment.jump)} y se quedó ahí.`}
+                ? t("stats.you_marked")
+                : t("stats.detected", { jump: segment.jump === null ? t("stats.suddenly") : signed(segment.jump, locale) })}
             </span>
           </span>
           {segment.start === "mark" && segment.mark_id ? (
             <Button variant="plain" size="small" onClick={() => onRemove(segment.mark_id!)}>
-              Quitar
+              {t("plan.remove")}
             </Button>
           ) : segment.start === "detected" ? (
             <Button variant="plain" size="small" onClick={() => onJoin(segment.since)}>
-              No cambió
+              {t("stats.did_not_change")}
             </Button>
           ) : null}
         </li>
@@ -838,11 +841,11 @@ function Changes({
       {joins.map((mark) => (
         <li key={mark.id} className="training-change">
           <span className="training-mover-text">
-            <span className="training-mover-name">La misma máquina el {longDate(mark.day)}</span>
-            <span className="training-card-note">Dijiste que no cambió, aunque el nivel saltara.</span>
+            <span className="training-mover-name">{t("stats.same_machine_on", { day: longDate(mark.day, locale) })}</span>
+            <span className="training-card-note">{t("stats.you_said_same")}</span>
           </span>
           <Button variant="plain" size="small" onClick={() => onRemove(mark.id)}>
-            Deshacer
+            {t("stats.undo")}
           </Button>
         </li>
       ))}
@@ -865,6 +868,8 @@ function PointSheet({
   onDone: () => void;
   onOpenSession?: (id: string) => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -875,39 +880,39 @@ function PointSheet({
       await action();
       onDone();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "No se ha podido guardar");
+      setError(reason instanceof Error ? reason.message : t("common.save_failed"));
       setBusy(false);
     }
   }
 
   const first = machine.segments.some((segment) => segment.since === point.day);
   return (
-    <Sheet title={longDate(point.day)} onClose={onClose}>
+    <Sheet title={longDate(point.day, locale)} onClose={onClose}>
       <p className="training-index-value">
-        {point.reps} × {kg(point.load)}
-        <span className="training-stat-unit"> · e1RM {kg(point.e1rm)}</span>
+        {point.reps} × {kg(point.load, locale)}
+        <span className="training-stat-unit"> · e1RM {kg(point.e1rm, locale)}</span>
       </p>
       <Hint>
         {exerciseLabel(variant)}
         {machine.gym ? ` · ${machine.gym}` : ""}
-        {variant.load_type !== "external" ? " · la carga es tu peso más el lastre" : ""}
+        {variant.load_type !== "external" ? ` · ${t("stats.bodyweight_load")}` : ""}
       </Hint>
       <p className={point.status === "counted" ? "training-card-note" : "training-warning"}>
-        {whyNot(point) ?? "Cuenta para la fuerza."}
+        {whyNot(point, t, locale) ?? t("stats.counts")}
       </p>
 
       <div className="training-sheet-actions">
         {point.verdict !== null ? (
           <Button variant="secondary" block disabled={busy} onClick={() => void act(() => clearPoint(point.id))}>
-            Volver a lo automático
+            {t("stats.back_to_automatic")}
           </Button>
         ) : point.status === "counted" ? (
           <Button variant="secondary" block disabled={busy} onClick={() => void act(() => judgePoint(point.id, "excluded"))}>
-            Apartar este día
+            {t("stats.set_aside_day")}
           </Button>
         ) : (
           <Button variant="secondary" block disabled={busy} onClick={() => void act(() => judgePoint(point.id, "counted"))}>
-            Es correcto: que cuente
+            {t("stats.it_is_right")}
           </Button>
         )}
         {!first && (
@@ -921,12 +926,12 @@ function PointSheet({
               )
             }
           >
-            La máquina cambió desde este día
+            {t("stats.machine_changed")}
           </Button>
         )}
         {onOpenSession && (
           <Button variant="plain" block disabled={busy} onClick={() => onOpenSession(point.session_id)}>
-            Abrir la sesión para corregirla
+            {t("stats.open_session")}
           </Button>
         )}
       </div>

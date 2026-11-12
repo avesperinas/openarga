@@ -1,3 +1,5 @@
+import type { Translate } from "@openarga/ui";
+
 import type { Day, DayInput, DayKind, SlotInput } from "./api";
 
 export const NEW_SLOT: Omit<SlotInput, "variant_ids"> = {
@@ -82,9 +84,7 @@ export function removeOption(days: DayInput[], dayIndex: number, slotIndex: numb
   });
 }
 
-export function publishProblems(days: DayInput[]): string[] {
-  if (days.length === 0) return ["Añade al menos un día."];
-  return days
-    .filter((day) => day.slots.length === 0)
-    .map((day) => `«${day.name}» no tiene ejercicios.`);
+export function publishProblems(days: DayInput[], t: Translate): string[] {
+  if (days.length === 0) return [t("plan.add_a_day")];
+  return days.filter((day) => day.slots.length === 0).map((day) => t("plan.day_without_exercises", { name: day.name }));
 }

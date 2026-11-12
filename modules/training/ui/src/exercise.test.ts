@@ -1,5 +1,6 @@
 import type { Machine, VariantPoint } from "./api";
 import { advice, normalRange, recordIds, recordStreak } from "./exercise";
+import { english } from "./i18n/testing";
 
 const point = (id: string, e1rm: number, reps = 5, load = 100, status: VariantPoint["status"] = "counted"): VariantPoint => ({
   id,
@@ -16,7 +17,7 @@ const point = (id: string, e1rm: number, reps = 5, load = 100, status: VariantPo
 
 const machine = (points: VariantPoint[], without_pr = 0): Machine => ({
   gym_id: "g",
-  gym: "Centro",
+  gym: "Gym",
   first_day: points[0]?.day ?? "",
   last_day: points[points.length - 1]?.day ?? "",
   points,
@@ -28,55 +29,55 @@ const machine = (points: VariantPoint[], without_pr = 0): Machine => ({
   excluded: 0,
 });
 
-describe("los récords de la línea", () => {
-  it("son los días que superan todo lo anterior, sin contar el primero", () => {
+describe("the records of the line", () => {
+  it("are the days that beat everything before, not counting the first", () => {
     expect([...recordIds([point("1", 100), point("2", 98), point("3", 101), point("4", 101)])]).toEqual(["3"]);
   });
 
-  it("un día apartado no es récord ni sube el listón", () => {
+  it("a day set aside is no record and does not raise the bar", () => {
     expect([...recordIds([point("1", 100), point("2", 140, 5, 100, "high"), point("3", 102)])]).toEqual(["3"]);
   });
 
-  it("la racha cuenta los últimos seguidos", () => {
+  it("the streak counts the latest in a row", () => {
     expect(recordStreak([point("1", 100), point("2", 99), point("3", 101), point("4", 103)])).toBe(2);
     expect(recordStreak([point("1", 100), point("2", 101), point("3", 99)])).toBe(0);
   });
 });
 
-describe("el rango normal", () => {
-  it("son los cuartiles de las últimas sesiones", () => {
+describe("the normal range", () => {
+  it("is the quartiles of the latest sessions", () => {
     expect(normalRange([100, 102, 104, 106, 108].map((value, index) => point(String(index + 1), value)))).toEqual({
       low: 102,
       high: 106,
     });
   });
 
-  it("con menos de cuatro no hay rango", () => {
+  it("with fewer than four there is no range", () => {
     expect(normalRange([point("1", 100), point("2", 101), point("3", 102)])).toBeNull();
   });
 });
 
-describe("lo que dice", () => {
-  it("con racha, la dice; y el peso para el récord, al paso del aparato", () => {
-    const said = advice(machine([point("1", 100), point("2", 105, 5, 90), point("3", 108, 5, 92.5)]), 2.5, true);
+describe("what it says", () => {
+  it("with a streak, it says so; and the weight for a record, at the step of the machine", () => {
+    const said = advice(machine([point("1", 100), point("2", 105, 5, 90), point("3", 108, 5, 92.5)]), 2.5, true, english, "en");
 
-    expect(said[0]).toBe("Dos sesiones seguidas con récord.");
-    expect(said[1]).toBe("Para un récord la próxima vez: 5 × 95 kg.");
+    expect(said[0]).toBe("2 sessions in a row with a record.");
+    expect(said[1]).toBe("For a record next time: 5 × 95 kg.");
   });
 
-  it("sin récord en tres sesiones, lo dice y propone salidas", () => {
-    const said = advice(machine([point("1", 110), point("2", 100), point("3", 101), point("4", 100)], 3), 2.5, true);
+  it("without a record in three sessions, it says so and proposes ways out", () => {
+    const said = advice(machine([point("1", 110), point("2", 100), point("3", 101), point("4", 100)], 3), 2.5, true, english, "en");
 
-    expect(said[0]).toContain("Llevas 3 sesiones sin récord aquí");
+    expect(said[0]).toContain("3 sessions without a record here");
   });
 
-  it("con peso corporal, las repeticiones con el mismo lastre", () => {
-    const said = advice(machine([point("1", 100, 8, 82), point("2", 96, 8, 80)]), 2.5, false);
+  it("with bodyweight, the reps with the same added load", () => {
+    const said = advice(machine([point("1", 100, 8, 82), point("2", 96, 8, 80)]), 2.5, false, english, "en");
 
-    expect(said).toEqual(["Para un récord la próxima vez: 8 repeticiones con el mismo lastre."]);
+    expect(said).toEqual(["For a record next time: 8 reps with the same added load."]);
   });
 
-  it("sin sesiones que cuenten no dice nada", () => {
-    expect(advice(machine([]), 2.5, true)).toEqual([]);
+  it("without sessions that count it says nothing", () => {
+    expect(advice(machine([]), 2.5, true, english, "en")).toEqual([]);
   });
 });

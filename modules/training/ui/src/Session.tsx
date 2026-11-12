@@ -26,7 +26,10 @@ import {
   Stepper,
   SyncMark,
   TextField,
+  useLocale,
+  useT,
 } from "@openarga/ui";
+import { usePreferences } from "@openarga/app";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { OutcomeCard } from "./Outcome";
@@ -57,9 +60,9 @@ import {
   unusualLoad,
 } from "./prefill";
 import type { SyncQueue, SyncState } from "./queue";
-import { completedSets, madridTime, overlay, remap, restSince, sessionTimes, upsertSet } from "./session";
+import { completedSets, localTime, overlay, remap, restSince, sessionTimes, upsertSet } from "./session";
 import { useLongPress, useWakeLock } from "./hooks";
-import { formatDuration, longDate } from "./labels";
+import { formatDuration, longDate, plural } from "./labels";
 
 type Load = { status: "loading" } | { status: "error" } | { status: "ready"; session: Session };
 
@@ -80,6 +83,9 @@ export function SessionScreen({
   initialOutcome,
   newId = () => crypto.randomUUID(),
 }: SessionScreenProps) {
+  const t = useT();
+  const locale = useLocale();
+  const { timezone } = usePreferences();
   const [start] = useState(() => initial ?? keptSession(id));
   const [load, setLoad] = useState<Load>(start ? { status: "ready", session: start } : { status: "loading" });
   const [exercises, setExercises] = useState<SessionExercise[]>(() =>
@@ -135,7 +141,7 @@ export function SessionScreen({
         }
         if (event.type === "signed-out") return;
         if (event.op.session !== id) return;
-        setNotice(`No se ha guardado: ${event.detail || `el servidor respondió ${event.status}`}`);
+        setNotice(t("session.not_saved", { detail: event.detail || t("session.server_answered", { status: event.status }) }));
         setFinishing(false);
         void refresh();
       }),
@@ -183,11 +189,11 @@ export function SessionScreen({
   if (!session) {
     return (
       <Screen>
-        <AppBar title="Sesión" back={{ icon: "chevron-left", label: "Hoy", onClick: onExit }} />
+        <AppBar title={t("session.title")} back={{ icon: "chevron-left", label: t("tabs.today"), onClick: onExit }} />
         {load.status === "error" ? (
-          <EmptyState title={"No se ha podido abrir la sesión"}>Comprueba la conexión y vuelve a intentarlo.</EmptyState>
+          <EmptyState title={t("session.open_failed")}>{t("next.open_failed_hint")}</EmptyState>
         ) : (
-          <Skeleton rows={3} label="Abriendo la sesión" />
+          <Skeleton rows={3} label={t("session.opening")} />
         )}
       </Screen>
     );
@@ -288,8 +294,8 @@ export function SessionScreen({
   const unsent = pending.filter((op) => op.key.startsWith("set:")).length;
   const offline = pending.some((op) => op.attempts > 0);
   const subtitle = [
-    session.ended_at ? longDate(session.day) : `Rotación ${session.rotation_number}`,
-    unsent > 0 ? `${unsent} sin enviar` : null,
+    session.ended_at ? longDate(session.day, locale) : t("session.rotation", { number: session.rotation_number }),
+    unsent > 0 ? t("session.unsent", { count: unsent }) : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -299,11 +305,15 @@ export function SessionScreen({
       <AppBar
         title={session.day_name}
         subtitle={subtitle}
-        back={{ icon: "chevron-left", label: "Hoy", onClick: onExit }}
+        back={{ icon: "chevron-left", label: t("tabs.today"), onClick: onExit }}
         action={
           session.ended_at
             ? undefined
-            : { label: finishing ? "Terminando…" : armed ? "¿Terminar?" : "Terminar", onClick: finish, disabled: finishing }
+            : {
+                label: finishing ? t("session.finishing") : armed ? t("session.finish_confirm") : t("activity.finish"),
+                onClick: finish,
+                disabled: finishing,
+              }
         }
       />
 
@@ -312,12 +322,12 @@ export function SessionScreen({
           <Notice tone="negative">{notice}</Notice>
         )}
         {finishing && offline && (
-          <Notice>Sin conexión. La sesión se termina sola en cuanto vuelva.</Notice>
+          <Notice>{t("session.offline_finish")}</Notice>
         )}
 
         {session.ended_at && <OutcomeCard session={session} exercises={exercises} outcome={outcome} />}
 
-        <DisclosureList label="Ejercicios">
+        <DisclosureList label={t("session.exercises")}>
           {session.slots.map((slot) => {
             const variantId = variantOf(slot);
             const partnerId = pair?.includes(slot.id) ? pair.find((other) => other !== slot.id) : undefined;
@@ -338,6 +348,8 @@ export function SessionScreen({
                         session.history.find((entry) => entry.variant_id === used.variant_id),
                         isBodyweight(option),
                         session.day,
+                        t,
+                        locale,
                       )
                     : null
                 }
@@ -363,13 +375,13 @@ export function SessionScreen({
         {session.ended_at && <WorkoutPulseCard id={`training:session:${session.id}`} start={session.started_at} />}
 
         <Button variant="plain" icon="trash" block onClick={() => setDeleting(true)}>
-          Borrar entreno
+          {t("session.delete")}
         </Button>
       </main>
 
       {deleting && (
         <DeleteSessionSheet
-          title={`${session.day_name} · ${longDate(session.day)}`}
+          title={`${session.day_name} · ${longDate(session.day, locale)}`}
           sets={exercises.reduce((total, exercise) => total + exercise.sets.length, 0)}
           onCancel={() => setDeleting(false)}
           onDelete={async (withSets) => {
@@ -397,23 +409,26 @@ export function SessionScreen({
       {session.ended_at ? (
         <footer className="glass training-timers">
           <p className="elapsed">
-            <span className="elapsed-label">Duración</span>
+            <span className="elapsed-label">{t("session.duration_label")}</span>
             <span className="elapsed-value">{formatDuration(session.duration_seconds)}</span>
           </p>
           <Button
             variant="secondary"
             size="small"
             icon="edit"
-            aria-label={`Cambiar horas: de ${madridTime(session.started_at)} a ${madridTime(session.ended_at)}`}
+            aria-label={t("session.change_times", {
+              from: localTime(session.started_at, timezone, locale),
+              to: localTime(session.ended_at, timezone, locale),
+            })}
             onClick={() => setEditingTimes(true)}
           >
-            {`${madridTime(session.started_at)} – ${madridTime(session.ended_at)}`}
+            {`${localTime(session.started_at, timezone, locale)} – ${localTime(session.ended_at, timezone, locale)}`}
           </Button>
         </footer>
       ) : (
         <footer className="glass training-timers">
-          <Elapsed since={restSince(exercises)} label="Descanso" size="large" />
-          <Elapsed since={session.started_at} label="Sesión" />
+          <Elapsed since={restSince(exercises)} label={t("session.rest")} size="large" />
+          <Elapsed since={session.started_at} label={t("session.title")} />
         </footer>
       )}
     </div>
@@ -446,9 +461,8 @@ function worst(states: SyncState[]): SyncState {
   return "saved";
 }
 
-const SYNC_WORD: Record<SyncState, string> = { saved: "guardada", sending: "enviando", pending: "pendiente" };
 
-const PAIR_KEY = (session: string) => `training:superserie:${session}`;
+const PAIR_KEY = (session: string) => `training:superset:${session}`;
 
 function readPair(session: string): string[] | null {
   try {
@@ -507,6 +521,8 @@ function ExerciseRow({
   comparison = null,
   record = false,
 }: ExerciseRowProps) {
+  const t = useT();
+  const locale = useLocale();
   const [pairing, setPairing] = useState(false);
   const options = byPriority(slot);
   const option = options.find((candidate) => candidate.variant_id === variantId);
@@ -526,35 +542,35 @@ function ExerciseRow({
     .filter((candidate) => candidate.sets.length > 0)
     .map((candidate) => {
       const own = slot.options.find((o) => o.variant_id === candidate.variant_id);
-      const text = describeSets(candidate.sets, isBodyweight(own));
+      const text = describeSets(candidate.sets, isBodyweight(own), locale);
       return exercises.length > 1 ? `${candidate.variant}: ${text}` : text;
     })
     .join(" · ");
   const lastText = last
-    ? `${describeSets(last.sets, bodyweight)}${
-        last.gym && (last.gym_id ?? null) !== gymId ? ` en ${last.gym}` : ""
+    ? `${describeSets(last.sets, bodyweight, locale)}${
+        last.gym && (last.gym_id ?? null) !== gymId ? ` ${t("session.at_gym", { gym: last.gym })}` : ""
       }`
-    : "primera vez";
+    : t("compare.first");
 
   return (
     <>
       <DisclosureRow
         title={slot.exercise}
-        tag={partner ? "superserie" : undefined}
+        tag={partner ? t("session.superset_tag") : undefined}
         subtitle={done > 0 ? doneText : `${slot.target_sets} × ${slot.rep_min}–${slot.rep_max} · ${lastText}`}
         leading={<ProgressRing done={done} target={slot.target_sets} />}
         trailing={
           <>
             {done > 0 && state !== "saved" && <SyncMark state={state} />}
-            {comparison && record && <Badge tone="positive">Récord</Badge>}
+            {comparison && record && <Badge tone="positive">{t("session.record")}</Badge>}
             {comparison && (
               <Delta
                 text={comparison.text}
                 direction={comparison.direction}
                 label={
                   comparison.direction === "first"
-                    ? "Primera vez"
-                    : `Mejor serie contra la última vez: ${comparison.text}${record ? ", récord" : ""}`
+                    ? t("session.first_time")
+                    : t(record ? "session.best_set_record" : "session.best_set", { text: comparison.text })
                 }
               />
             )}
@@ -567,7 +583,7 @@ function ExerciseRow({
           <>
           {options.length > 1 && (
             <ChoiceChips
-              label="Variante"
+              label={t("session.variant")}
               value={variantId}
               onChange={onVariant}
               options={options.map((candidate) => ({
@@ -579,10 +595,12 @@ function ExerciseRow({
           )}
           <Hint>
             {last
-              ? `La última vez, ${shortDay(last.day)}${
-                  last.gym && (last.gym_id ?? null) !== gymId ? ` en ${last.gym}` : ""
-                }: ${describeSets(last.sets, bodyweight)}`
-              : "Primera vez con esta variante"}
+              ? t("session.last_time", {
+                  day: shortDay(last.day, locale),
+                  gym: last.gym && (last.gym_id ?? null) !== gymId ? ` ${t("session.at_gym", { gym: last.gym })}` : "",
+                  sets: describeSets(last.sets, bodyweight, locale),
+                })
+              : t("session.first_with_variant")}
           </Hint>
           <SetRows
             key={variantId}
@@ -600,24 +618,24 @@ function ExerciseRow({
             {running &&
               (partner ? (
                 <Button variant="plain" size="small" icon="close" onClick={() => onPair(null)}>
-                  {`Superserie con ${partner.exercise}`}
+                  {t("session.superset_with", { name: partner.exercise })}
                 </Button>
               ) : (
                 others.length > 0 && (
                   <Button variant="plain" size="small" icon="repeat" onClick={() => setPairing(true)}>
-                    Superserie
+                    {t("session.superset")}
                   </Button>
                 )
               ))}
-            <ExerciseNote key={`nota-${variantId}`} value={exercise?.notes ?? ""} onSave={onNote} folded />
+            <ExerciseNote key={`note-${variantId}`} value={exercise?.notes ?? ""} onSave={onNote} folded />
           </Inline>
           </>
         )}
       </DisclosureRow>
 
       {pairing && (
-        <Sheet title={`Superserie con ${slot.exercise}`} onClose={() => setPairing(false)}>
-          <Hint>Después de cada serie se abre el otro ejercicio, mientras le queden series.</Hint>
+        <Sheet title={t("session.superset_with", { name: slot.exercise })} onClose={() => setPairing(false)}>
+          <Hint>{t("session.superset_hint")}</Hint>
           <List>
             {others.map((other) => (
               <ListRow
@@ -650,6 +668,8 @@ interface SetListProps {
 }
 
 function SetRows({ slot, option, exerciseId, sets, last, gymId, queue, running, onConfirm }: SetListProps) {
+  const t = useT();
+  const locale = useLocale();
   const [drafts, setDrafts] = useState<Record<number, Draft>>({});
   const [editing, setEditing] = useState<number | null>(null);
   const [extra, setExtra] = useState(0);
@@ -714,9 +734,9 @@ function SetRows({ slot, option, exerciseId, sets, last, gymId, queue, running, 
               <SequenceRow
                 number={number}
                 state="done"
-                value={describeSet(set, bodyweight)}
+                value={describeSet(set, bodyweight, locale)}
                 trailing={<SyncMark state={state} />}
-                label={`Serie ${number}: ${describeSet(set, bodyweight)}, ${SYNC_WORD[state]}. Tocar para corregir`}
+                label={t("session.set_label", { number, set: describeSet(set, bodyweight, locale), state: t(`sync.${state}`) })}
                 onClick={() => setEditing(number)}
               />
             </li>
@@ -728,7 +748,7 @@ function SetRows({ slot, option, exerciseId, sets, last, gymId, queue, running, 
             <SequenceRow
               number={number}
               state="todo"
-              value={describeSet({ reps: draft.reps, weight: draft.load, added_load: draft.load }, bodyweight)}
+              value={describeSet({ reps: draft.reps, weight: draft.load, added_load: draft.load }, bodyweight, locale)}
             />
           </li>
         );
@@ -736,7 +756,7 @@ function SetRows({ slot, option, exerciseId, sets, last, gymId, queue, running, 
       {running && active === undefined && editing === null && (
         <li>
           <Button variant="plain" size="small" icon="plus" onClick={() => setExtra(extra + 1)}>
-            Añadir serie
+            {t("session.add_set")}
           </Button>
         </li>
       )}
@@ -769,6 +789,8 @@ function SetEditor({
   onConfirm,
   onDuplicate,
 }: SetEditorProps) {
+  const t = useT();
+  const locale = useLocale();
   const press = useLongPress(() => onDuplicate?.());
   const [asking, setAsking] = useState(false);
   useEffect(() => setAsking(false), [draft.load]);
@@ -779,9 +801,9 @@ function SetEditor({
         state="now"
         trailing={
           <ConfirmButton
-            label={asking ? `Guardar serie ${number} así` : `Confirmar serie ${number}`}
+            label={asking ? t("session.save_set_anyway", { number }) : t("session.confirm_set", { number })}
             disabled={draft.reps === null}
-            title={onDuplicate ? "Mantén pulsado para repetir la serie anterior" : undefined}
+            title={onDuplicate ? t("session.hold_to_repeat") : undefined}
             {...press.handlers}
             onClick={() => {
               if (press.consumed()) return;
@@ -796,7 +818,7 @@ function SetEditor({
       >
         <Stepper
           size="small"
-          label={bodyweight ? "Lastre" : perDumbbell ? "Peso por mancuerna" : "Peso"}
+          label={bodyweight ? t("session.added_load") : perDumbbell ? t("session.weight_per_dumbbell") : t("session.weight")}
           value={draft.load}
           step={step}
           unit="kg"
@@ -813,11 +835,11 @@ function SetEditor({
           onChange={(reps) => onDraft({ ...draft, reps })}
         />
       </SequenceRow>
-      {perDumbbell && <SequenceHint>kg por mancuerna</SequenceHint>}
-      {state && <SequenceHint>Corrigiendo la serie {number}</SequenceHint>}
+      {perDumbbell && <SequenceHint>{t("session.kg_per_dumbbell")}</SequenceHint>}
+      {state && <SequenceHint>{t("session.correcting", { number })}</SequenceHint>}
       {asking && unusual !== null && draft.load !== null && (
         <Hint tone="warning">
-          ¿{kg(draft.load)}? La última vez aquí, {kg(unusual)}. Toca otra vez para guardarlo así.
+          {t("session.unusual", { load: kg(draft.load, locale), last: kg(unusual, locale) })}
         </Hint>
       )}
     </li>
@@ -833,6 +855,7 @@ function ExerciseNote({
   onSave: (notes: string) => void;
   folded?: boolean;
 }) {
+  const t = useT();
   const [draft, setDraft] = useState(value);
   const [open, setOpen] = useState(!folded || value.trim() !== "");
   const save = () => {
@@ -841,18 +864,18 @@ function ExerciseNote({
   if (!open) {
     return (
       <Button variant="plain" size="small" icon="edit" onClick={() => setOpen(true)}>
-        Añadir nota
+        {t("session.add_note")}
       </Button>
     );
   }
   return (
     <TextField
-      label="Nota"
+      label={t("common.note")}
       value={draft}
       onChange={setDraft}
       onBlur={save}
       onSubmit={save}
-      placeholder="Polea rara, después de aperturas…"
+      placeholder={t("session.note_placeholder")}
     />
   );
 }
@@ -866,8 +889,11 @@ export interface TimesSheetProps {
 }
 
 export function TimesSheet({ day, startedAt, endedAt, onCancel, onSave }: TimesSheetProps) {
-  const [start, setStart] = useState(() => madridTime(startedAt));
-  const [end, setEnd] = useState(() => madridTime(endedAt));
+  const t = useT();
+  const locale = useLocale();
+  const { timezone } = usePreferences();
+  const [start, setStart] = useState(() => localTime(startedAt, timezone, locale));
+  const [end, setEnd] = useState(() => localTime(endedAt, timezone, locale));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const times = sessionTimes(day, start, end);
@@ -877,27 +903,29 @@ export function TimesSheet({ day, startedAt, endedAt, onCancel, onSave }: TimesS
     setBusy(true);
     setError(null);
     onSave({ started_at: times.started_at, ended_at: times.ended_at }).catch((reason: unknown) => {
-      setError(reason instanceof Error && reason.message ? reason.message : "No se ha podido guardar");
+      setError(reason instanceof Error && reason.message ? reason.message : t("common.save_failed"));
       setBusy(false);
     });
   };
 
   return (
     <Sheet
-      title="Horas del entreno"
+      title={t("session.times_title")}
       onClose={busy ? () => undefined : onCancel}
-      action={{ label: busy ? "Guardando…" : "Guardar", onClick: save, disabled: busy || !times }}
+      action={{ label: busy ? t("common.saving") : t("common.save"), onClick: save, disabled: busy || !times }}
     >
-      <Hint>{longDate(day)}</Hint>
-      <TextField label="Empezó" type="time" value={start} onChange={setStart} />
+      <Hint>{longDate(day, locale)}</Hint>
+      <TextField label={t("session.started")} type="time" value={start} onChange={setStart} />
       <TextField
-        label="Terminó"
+        label={t("session.ended")}
         type="time"
         value={end}
         onChange={setEnd}
         hint={
           times
-            ? `Duración: ${formatDuration(times.seconds)}${times.ended_at.startsWith(day) ? "" : ", terminó al día siguiente"}`
+            ? t(times.ended_at.startsWith(day) ? "session.duration" : "session.duration_next_day", {
+                duration: formatDuration(times.seconds),
+              })
             : undefined
         }
       />
@@ -918,16 +946,13 @@ export interface DeleteSessionSheetProps {
 }
 
 export function DeleteSessionSheet({ title, sets, onCancel, onDelete }: DeleteSessionSheetProps) {
+  const t = useT();
   return (
     <ConfirmDelete
-      title="¿Borrar este entreno?"
+      title={t("session.delete_title")}
       subject={title}
-      consequence={
-        sets > 0
-          ? `Se borran sus ${sets} ${sets === 1 ? "serie" : "series"} y sus notas. No se puede deshacer.`
-          : "No tiene series. No se puede deshacer."
-      }
-      action="Borrar entreno"
+      consequence={sets > 0 ? plural(t, "session.delete_sets", sets) : t("session.delete_no_sets")}
+      action={t("session.delete")}
       onCancel={onCancel}
       onConfirm={() => onDelete(sets > 0)}
     />

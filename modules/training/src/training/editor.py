@@ -126,8 +126,8 @@ Muscles = dict[str, Literal[0.5, 1.0]]
 def _one_primary(muscles: Muscles) -> Muscles:
     if sum(1 for contribution in muscles.values() if contribution == 1.0) > 1:
         raise ValueError(
-            "un ejercicio tiene un solo músculo principal: el que mide su fuerza. "
-            "Los demás van como secundarios"
+            "an exercise has a single primary muscle: the one that measures its strength. "
+            "The rest are secondary"
         )
     return muscles
 
@@ -154,7 +154,7 @@ async def create_exercise(connection: AsyncConnection, request: ExerciseIn) -> E
         {"name": request.name.strip()},
     )
     if taken:
-        raise Conflict(f"ya existe un ejercicio que se llama «{request.name.strip()}»")
+        raise Conflict(f"an exercise called '{request.name.strip()}' already exists")
     bodyweight = request.variant.implement == "bodyweight"
     exercise_id = await connection.scalar(
         text(
@@ -180,7 +180,7 @@ async def _write_muscles(connection: AsyncConnection, exercise_id: str, muscles:
     )
     unknown = sorted(set(muscles) - known)
     if unknown:
-        raise Conflict(f"músculos que no existen: {', '.join(unknown)}")
+        raise Conflict(f"unknown muscles: {', '.join(unknown)}")
     await connection.execute(
         text("delete from training.training_exercise_muscle where exercise_id = :e"),
         {"e": exercise_id},
@@ -227,7 +227,7 @@ async def create_variant(
         {"e": exercise_id, "i": request.implement, "g": request.gym_id},
     )
     if taken:
-        raise Conflict("ese ejercicio ya tiene una variante con ese implemento en ese centro")
+        raise Conflict("that exercise already has a variant with that implement at that gym")
     increment = request.min_increment or await _increment(connection, request.implement)
     weight = request.index_weight or _default_weight(pattern)
     row = (
@@ -271,7 +271,7 @@ async def create_gym(connection: AsyncConnection, request: GymIn) -> Gym:
         {"name": request.name.strip()},
     )
     if taken:
-        raise Conflict(f"ya existe un centro que se llama «{request.name.strip()}»")
+        raise Conflict(f"a gym called '{request.name.strip()}' already exists")
     gym_id = await connection.scalar(
         text(
             "insert into training.training_gym (name, active) values (:name, :active) returning id"
@@ -398,7 +398,7 @@ class PlanIn(BaseModel):
 
 async def create_plan(connection: AsyncConnection, request: PlanIn) -> Editor:
     if await _active_plan(connection):
-        raise Conflict("ya hay un plan activo; se edita, no se crea otro")
+        raise Conflict("there is already an active plan; edit it instead of creating another")
     plan_id = await connection.scalar(
         text("insert into training.training_plan (name, active) values (:name, true) returning id"),
         {"name": request.name.strip()},
@@ -430,9 +430,9 @@ class SlotIn(BaseModel):
     @model_validator(mode="after")
     def _range(self) -> SlotIn:
         if self.rep_min > self.rep_max:
-            raise ValueError("el mínimo de repeticiones no puede pasar del máximo")
+            raise ValueError("the minimum reps cannot exceed the maximum")
         if len(set(self.variant_ids)) != len(self.variant_ids):
-            raise ValueError("la misma variante dos veces en un ejercicio")
+            raise ValueError("the same variant twice in one exercise")
         return self
 
 
@@ -542,7 +542,7 @@ async def open_draft(connection: AsyncConnection) -> Editor:
 async def save_draft(connection: AsyncConnection, request: DraftIn) -> Editor:
     draft_id = await _draft_id(connection)
     if draft_id is None:
-        raise Conflict("no hay borrador; empieza a editar el plan primero")
+        raise Conflict("there is no draft; start editing the plan first")
     await _write_days(connection, draft_id, request.days)
     return await editor(connection)
 
@@ -561,12 +561,12 @@ async def publish_draft(connection: AsyncConnection, now: datetime | None = None
     current = await editor(connection)
     draft = current.draft
     if draft is None:
-        raise Conflict("no hay borrador que publicar")
+        raise Conflict("there is no draft to publish")
     if not draft.days:
-        raise Conflict("el plan necesita al menos un día")
+        raise Conflict("the plan needs at least one day")
     empty = [day.name for day in draft.days if not day.slots]
     if empty:
-        raise Conflict(f"cada día necesita al menos un ejercicio: {', '.join(empty)}")
+        raise Conflict(f"every day needs at least one exercise: {', '.join(empty)}")
     moment = now or datetime.now(UTC)
     await connection.execute(
         text(

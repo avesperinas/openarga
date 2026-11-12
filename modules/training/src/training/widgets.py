@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets import envelope
 from training import plan, training
+from training.text import t
 
 KINDS = {"week": "ring", "next": "kpi"}
 
@@ -28,7 +29,7 @@ async def week(connection: AsyncConnection) -> dict:
     body = {
         "value": current.done,
         "target": current.goal,
-        "label": f"de {current.goal} esta semana",
+        "label": t("widget.week", goal=current.goal),
         "expected": round(current.goal * elapsed / 7, 2),
     }
     if await plan.active_plan(connection) is None:

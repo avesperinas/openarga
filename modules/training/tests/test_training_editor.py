@@ -71,16 +71,16 @@ async def test_with_nothing_everything_answers_empty_and_not_broken(api) -> None
 
 
 async def test_from_zero_to_training_a_plan_made_in_the_app(api) -> None:
-    created = await api.post("/plan", json={"name": "Torso pierna"})
+    created = await api.post("/plan", json={"name": "Torso legs"})
     assert created.status_code == 201
     assert created.json()["draft"]["number"] == 1
 
-    press = await exercise(api, "Press banca", pattern="horizontal_push")
-    squat = await exercise(api, "Sentadilla", pattern="knee_dominant")
+    press = await exercise(api, "Bench press", pattern="horizontal_push")
+    squat = await exercise(api, "Squat", pattern="knee_dominant")
     leg_press = (
         await api.post(
             f"/exercises/{(await api.get('/catalogue')).json()['exercises'][1]['id']}/variants",
-            json={"name": "Prensa", "implement": "machine"},
+            json={"name": "Leg press", "implement": "machine"},
         )
     ).json()
     assert leg_press["min_increment"] == 5
@@ -88,37 +88,37 @@ async def test_from_zero_to_training_a_plan_made_in_the_app(api) -> None:
     saved = await api.put(
         "/plan/draft",
         json={
-            "days": [day("Torso", "push", [press]), day("Pierna", "leg", [squat, leg_press["id"]])]
+            "days": [day("Upper", "push", [press]), day("Legs", "leg", [squat, leg_press["id"]])]
         },
     )
-    assert [d["name"] for d in saved.json()["draft"]["days"]] == ["Torso", "Pierna"]
+    assert [d["name"] for d in saved.json()["draft"]["days"]] == ["Upper", "Legs"]
 
     published = (await api.post("/plan/draft/publish")).json()
     assert published["draft"] is None and published["published"]["number"] == 1
 
     today = (await api.get("/today")).json()
-    assert today["next"]["name"] == "Torso"
-    assert [d["name"] for d in today["rotation"]["days"]] == ["Torso", "Pierna"]
+    assert today["next"]["name"] == "Upper"
+    assert [d["name"] for d in today["rotation"]["days"]] == ["Upper", "Legs"]
 
 
 async def test_a_plan_cannot_be_published_with_an_empty_day(api) -> None:
     await api.post("/plan", json={"name": "Plan"})
-    press = await exercise(api, "Press banca")
+    press = await exercise(api, "Bench press")
     await api.put(
-        "/plan/draft", json={"days": [day("Torso", "push", [press]), day("Vacío", "other")]}
+        "/plan/draft", json={"days": [day("Upper", "push", [press]), day("Empty", "other")]}
     )
 
     response = await api.post("/plan/draft/publish")
 
     assert response.status_code == 409
-    assert "Vacío" in response.json()["detail"]
+    assert "Empty" in response.json()["detail"]
 
 
 async def test_editing_copies_the_plan_and_the_past_keeps_its_version(api) -> None:
     await api.post("/plan", json={"name": "Plan"})
-    press = await exercise(api, "Press banca")
+    press = await exercise(api, "Bench press")
     curl = await exercise(api, "Curl")
-    await api.put("/plan/draft", json={"days": [day("Torso", "push", [press])]})
+    await api.put("/plan/draft", json={"days": [day("Upper", "push", [press])]})
     await api.post("/plan/draft/publish")
     session = (await api.post("/sessions", json={"started_at": T0.isoformat()})).json()["id"]
 
@@ -126,7 +126,7 @@ async def test_editing_copies_the_plan_and_the_past_keeps_its_version(api) -> No
     assert draft["number"] == 2
     assert [s["options"][0]["variant_id"] for s in draft["days"][0]["slots"]] == [press]
 
-    await api.put("/plan/draft", json={"days": [day("Torso", "push", [press], [curl])]})
+    await api.put("/plan/draft", json={"days": [day("Upper", "push", [press], [curl])]})
     after = (await api.post("/plan/draft/publish")).json()
 
     assert after["published"]["number"] == 2
@@ -136,8 +136,8 @@ async def test_editing_copies_the_plan_and_the_past_keeps_its_version(api) -> No
 
 async def test_a_draft_can_be_discarded(api) -> None:
     await api.post("/plan", json={"name": "Plan"})
-    press = await exercise(api, "Press banca")
-    await api.put("/plan/draft", json={"days": [day("Torso", "push", [press])]})
+    press = await exercise(api, "Bench press")
+    await api.put("/plan/draft", json={"days": [day("Upper", "push", [press])]})
     await api.post("/plan/draft/publish")
     await api.post("/plan/draft")
 
@@ -148,19 +148,19 @@ async def test_a_draft_can_be_discarded(api) -> None:
 
 async def test_names_repeated_and_unknown_variants_are_refused_with_a_reason(api) -> None:
     await api.post("/plan", json={"name": "Plan"})
-    await exercise(api, "Press banca")
+    await exercise(api, "Bench press")
 
     repeated = await api.post(
         "/exercises",
         json={
-            "name": "press BANCA",
+            "name": "bench PRESS",
             "pattern": "isolation",
             "variant": {"name": "x", "implement": "cable"},
         },
     )
     unknown = await api.put(
         "/plan/draft",
-        json={"days": [day("Torso", "push", ["00000000-0000-0000-0000-000000000000"])]},
+        json={"days": [day("Upper", "push", ["00000000-0000-0000-0000-000000000000"])]},
     )
     backwards = await api.put(
         "/plan/draft",
@@ -185,13 +185,13 @@ async def test_names_repeated_and_unknown_variants_are_refused_with_a_reason(api
 async def test_a_second_plan_is_not_created_on_top_of_the_first(api) -> None:
     await api.post("/plan", json={"name": "Plan"})
 
-    assert (await api.post("/plan", json={"name": "Otro"})).status_code == 409
+    assert (await api.post("/plan", json={"name": "Other"})).status_code == 409
 
 
 async def test_gyms_and_weekly_goal(api) -> None:
-    gym = (await api.post("/gyms", json={"name": "Centro"})).json()
+    gym = (await api.post("/gyms", json={"name": "Gym"})).json()
     goal = (await api.put("/settings", json={"weekly_goal": 4})).json()
-    closed = (await api.put(f"/gyms/{gym['id']}", json={"name": "Centro", "active": False})).json()
+    closed = (await api.put(f"/gyms/{gym['id']}", json={"name": "Gym", "active": False})).json()
 
     assert goal["weekly_goal"] == 4
     assert closed["active"] is False
@@ -200,10 +200,10 @@ async def test_gyms_and_weekly_goal(api) -> None:
 
 async def published_plan(api) -> tuple[str, str]:
     await api.post("/plan", json={"name": "Plan"})
-    press = await exercise(api, "Press banca")
-    squat = await exercise(api, "Sentadilla")
+    press = await exercise(api, "Bench press")
+    squat = await exercise(api, "Squat")
     await api.put(
-        "/plan/draft", json={"days": [day("Torso", "push", [press]), day("Pierna", "leg", [squat])]}
+        "/plan/draft", json={"days": [day("Upper", "push", [press]), day("Legs", "leg", [squat])]}
     )
     editor = (await api.post("/plan/draft/publish")).json()
     return tuple(d["id"] for d in editor["published"]["days"])  # type: ignore[return-value]
@@ -215,8 +215,8 @@ async def test_the_recommendation_does_not_force_the_day(api) -> None:
     started = await api.post("/sessions", json={"started_at": T0.isoformat(), "plan_day_id": legs})
     session = (await api.get(f"/sessions/{started.json()['id']}")).json()
 
-    assert session["day_name"] == "Pierna"
-    assert (await api.post("/sessions", json={"plan_day_id": "nada"})).status_code == 409
+    assert session["day_name"] == "Legs"
+    assert (await api.post("/sessions", json={"plan_day_id": "nothing"})).status_code == 409
 
 
 async def test_history_lists_sessions_with_their_sets_most_recent_first(api) -> None:
@@ -253,8 +253,8 @@ async def test_history_lists_sessions_with_their_sets_most_recent_first(api) -> 
     ).json()
 
     assert [(h["day"], h["day_name"], h["sets"], h["duration_seconds"]) for h in history] == [
-        ("2026-09-16", "Pierna", 2, 3600),
-        ("2026-09-14", "Torso", 2, 3600),
+        ("2026-09-16", "Legs", 2, 3600),
+        ("2026-09-14", "Upper", 2, 3600),
     ]
     assert outside == []
 
@@ -268,7 +268,7 @@ async def test_a_start_pressed_by_mistake_is_discarded_only_without_sets(api) ->
 
 
 async def test_muscles_are_set_on_creation_and_can_be_corrected(api) -> None:
-    await exercise(api, "Remo")
+    await exercise(api, "Row")
     remo = (await api.get("/catalogue")).json()["exercises"][0]
     assert remo["muscles"] == {"chest": 1.0}
 
@@ -303,12 +303,12 @@ async def test_an_exercise_in_a_session_can_carry_a_note(api) -> None:
         )
     ).json()["id"]
 
-    saved = await api.put(f"/sessions/{sid}/exercises/{eid}/notes", json={"notes": " polea rara "})
+    saved = await api.put(f"/sessions/{sid}/exercises/{eid}/notes", json={"notes": " odd cable "})
     detail = (await api.get(f"/sessions/{sid}")).json()
     cleared = await api.put(f"/sessions/{sid}/exercises/{eid}/notes", json={"notes": ""})
 
-    assert saved.json() == {"notes": "polea rara"}
-    assert detail["exercises"][0]["notes"] == "polea rara"
+    assert saved.json() == {"notes": "odd cable"}
+    assert detail["exercises"][0]["notes"] == "odd cable"
     assert detail["source"] == "app"
     assert cleared.json() == {"notes": None}
     wrong = await api.put(
@@ -318,8 +318,8 @@ async def test_an_exercise_in_a_session_can_carry_a_note(api) -> None:
 
 
 async def test_activities_live_apart_from_the_routine(api) -> None:
-    climbing = (await api.post("/activity-types", json={"name": "Escalada"})).json()
-    again = (await api.post("/activity-types", json={"name": " escalada "})).json()
+    climbing = (await api.post("/activity-types", json={"name": "Climbing"})).json()
+    again = (await api.post("/activity-types", json={"name": " climbing "})).json()
     assert again["id"] == climbing["id"]
 
     logged = await api.post(
@@ -336,7 +336,7 @@ async def test_activities_live_apart_from_the_routine(api) -> None:
         await api.get("/activities", params={"since": "2026-09-01", "until": "2026-09-30"})
     ).json()
     assert [(a["name"], a["day"], a["duration_seconds"]) for a in listed] == [
-        ("Escalada", "2026-09-15", 5400)
+        ("Climbing", "2026-09-15", 5400)
     ]
     assert (
         await api.get("/sessions", params={"since": "2026-09-01", "until": "2026-09-30"})
@@ -377,7 +377,7 @@ async def test_a_session_with_sets_is_only_deleted_when_asked_explicitly(api, da
     sid = await train_one(api, 0)
 
     refused = await api.delete(f"/sessions/{sid}")
-    assert refused.status_code == 409 and "3 series" in refused.json()["detail"]
+    assert refused.status_code == 409 and "3 sets" in refused.json()["detail"]
     assert (await api.get(f"/sessions/{sid}")).status_code == 200
 
     assert (await api.delete(f"/sessions/{sid}", params={"with_sets": "true"})).status_code == 204
@@ -410,11 +410,11 @@ async def test_deleting_a_session_keeps_the_rotation_honest(api) -> None:
 
     await api.delete(f"/sessions/{second}", params={"with_sets": "true"})
     today = (await api.get("/today")).json()
-    assert (today["next"]["rotation_number"], today["next"]["name"]) == (1, "Pierna")
+    assert (today["next"]["rotation_number"], today["next"]["name"]) == (1, "Legs")
 
     await api.delete(f"/sessions/{first}", params={"with_sets": "true"})
     today = (await api.get("/today")).json()
-    assert (today["next"]["rotation_number"], today["next"]["name"]) == (1, "Torso")
+    assert (today["next"]["rotation_number"], today["next"]["name"]) == (1, "Upper")
     assert (
         await api.get("/sessions", params={"since": "2026-09-01", "until": "2026-09-30"})
     ).json() == []

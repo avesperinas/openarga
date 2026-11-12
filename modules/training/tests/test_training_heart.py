@@ -111,7 +111,7 @@ async def test_a_session_shows_its_heart_from_vitals(apps, person) -> None:
                 "start": start.isoformat(),
                 "end": (start + timedelta(minutes=40)).isoformat(),
                 "tz": "Europe/Madrid",
-                "href": f"/training/sesion/{session}",
+                "href": f"/training/session/{session}",
                 "band_id": None,
                 "marks": [],
                 "removed": False,
@@ -121,7 +121,7 @@ async def test_a_session_shows_its_heart_from_vitals(apps, person) -> None:
 
     found = await training.get("/heart", params={"id": f"training:session:{session}"})
     missing = await training.get("/heart", params={"id": f"training:activity:{uuid.uuid4()}"})
-    refused = await training.get("/heart", params={"id": "otra:session:1"})
+    refused = await training.get("/heart", params={"id": "other:session:1"})
 
     assert found.status_code == 200, found.text
     body = found.json()

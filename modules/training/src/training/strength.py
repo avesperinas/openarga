@@ -315,8 +315,8 @@ class Curve:
 def fit(series: Iterable[Series], until: date) -> Curve | None:
     used = [
         counted
-        for serie in series
-        if (counted := [p for p in serie.counted if p.day - serie.since >= CALIBRATION])
+        for segment in series
+        if (counted := [p for p in segment.counted if p.day - segment.since >= CALIBRATION])
     ]
     if not used:
         return None

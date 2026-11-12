@@ -78,9 +78,9 @@ export function completedSets(exercises: SessionExercise[], slotId: string): num
     .reduce((total, exercise) => total + exercise.sets.filter((set) => set.completed).length, 0);
 }
 
-export function madridTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("es-ES", {
-    timeZone: "Europe/Madrid",
+export function localTime(iso: string, timeZone: string, locale: string): string {
+  return new Date(iso).toLocaleTimeString(locale, {
+    timeZone,
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",

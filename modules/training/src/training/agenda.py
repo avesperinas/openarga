@@ -31,12 +31,12 @@ def payload(row, *, cancelled: bool = False) -> dict[str, Any]:
     return {
         KEY: dated(
             uid=uid("training", "session", row.id),
-            title=row.name or "Entreno",
-            start=row.started_at.astimezone(training.MADRID),
-            end=row.ended_at.astimezone(training.MADRID),
-            tz="Europe/Madrid",
+            title=row.name or "Workout",
+            start=row.started_at.astimezone(training.zone()),
+            end=row.ended_at.astimezone(training.zone()),
+            tz=training.timezone(),
             status="cancelled" if cancelled else "confirmed",
-            href=f"/training/sesion/{row.id}",
+            href=f"/training/session/{row.id}",
         ),
         "session_id": str(row.id),
     }
@@ -53,7 +53,7 @@ async def _publish(
     await training.enqueue(
         connection,
         TYPE,
-        datetime.now(training.MADRID) if cancelled else row.ended_at,
+        datetime.now(training.zone()) if cancelled else row.ended_at,
         payload(row, cancelled=cancelled),
         _stamped(
             f"training:session:{row.id}:agenda:{row.started_at.isoformat()}:"
@@ -98,7 +98,7 @@ ACTIVITIES = text("""
 
 
 def activity_span(activity) -> tuple[datetime, datetime]:
-    start = datetime.combine(activity.day, activity.start_time, training.MADRID)
+    start = datetime.combine(activity.day, activity.start_time, training.zone())
     return start, start + timedelta(seconds=activity.duration_seconds or 3600)
 
 
@@ -110,9 +110,9 @@ def activity_payload(activity, *, cancelled: bool = False) -> dict[str, Any]:
             title=activity.name,
             start=start,
             end=end,
-            tz="Europe/Madrid",
+            tz=training.timezone(),
             status="cancelled" if cancelled else "confirmed",
-            href="/training/calendario",
+            href="/training/calendar",
         ),
         "activity_id": str(activity.id),
     }
@@ -126,7 +126,7 @@ async def _publish_activity(
     await training.enqueue(
         connection,
         ACTIVITY_TYPE,
-        datetime.now(training.MADRID) if cancelled else end,
+        datetime.now(training.zone()) if cancelled else end,
         activity_payload(activity, cancelled=cancelled),
         _stamped(
             f"training:activity:{activity.id}:agenda:{start.isoformat()}:{end.isoformat()}:{status}",

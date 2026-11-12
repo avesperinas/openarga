@@ -151,7 +151,7 @@ async function call<T>(path: string, init: RequestInit = {}, fetcher: typeof fet
   if (response.status === 401) signIn();
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as { detail?: unknown } | null;
-    const detail = typeof body?.detail === "string" ? body.detail : `${path} respondió ${response.status}`;
+    const detail = typeof body?.detail === "string" ? body.detail : `${path} answered ${response.status}`;
     throw new ApiError(response.status, detail);
   }
   if (response.status === 204) return undefined as T;

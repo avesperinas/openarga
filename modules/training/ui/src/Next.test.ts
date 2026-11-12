@@ -9,39 +9,39 @@ const BASE: Today = {
   week: { done: 2, goal: 5, monday: "2026-09-14" },
 };
 
-describe("el widget de siguiente entreno", () => {
-  it("sin entreno a medias, pide confirmar el que toca y no empieza nada", async () => {
+describe("the next workout widget", () => {
+  it("without a workout half done, asks to confirm the due one and starts nothing", async () => {
     expect(await resolveNext(async () => BASE)).toEqual({ confirm: BASE.next });
   });
 
-  it("con uno a medias, abre ese sin preguntar", async () => {
-    expect(await resolveNext(async () => ({ ...BASE, in_progress: "a-medias" }))).toEqual({ session: "a-medias" });
+  it("with one half done, opens it without asking", async () => {
+    expect(await resolveNext(async () => ({ ...BASE, in_progress: "half-done" }))).toEqual({ session: "half-done" });
   });
 
-  it("sin plan, a Hoy", async () => {
+  it("without a plan, to Today", async () => {
     expect(await resolveNext(async () => ({ ...BASE, next: null }))).toEqual({ today: true });
   });
 
-  it("confirmado, empieza y abre el nuevo", async () => {
+  it("confirmed, starts and opens the new one", async () => {
     let started = 0;
     const id = await startNext(
       async () => BASE,
       async () => {
         started += 1;
-        return "nueva";
+        return "new";
       },
     );
-    expect(id).toBe("nueva");
+    expect(id).toBe("new");
     expect(started).toBe(1);
   });
 
-  it("si otro dispositivo lo empezó a la vez, abre ese", async () => {
+  it("if another device started it at the same time, opens that one", async () => {
     const id = await startNext(
-      async () => ({ ...BASE, in_progress: "del-otro" }),
+      async () => ({ ...BASE, in_progress: "from-the-other" }),
       async () => {
-        throw new ApiError(409, "ya hay una sesión en curso");
+        throw new ApiError(409, "there is already a session in progress");
       },
     );
-    expect(id).toBe("del-otro");
+    expect(id).toBe("from-the-other");
   });
 });

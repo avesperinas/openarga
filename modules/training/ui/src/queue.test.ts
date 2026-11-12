@@ -39,8 +39,8 @@ function manualTimers() {
   };
 }
 
-describe("la cola de series", () => {
-  it("manda en orden y se vacía", async () => {
+describe("the set queue", () => {
+  it("sends in order and empties", async () => {
     const net = network();
     const queue = new SyncQueue({ fetcher: net.fetcher, storage: null });
 
@@ -57,7 +57,7 @@ describe("la cola de series", () => {
     expect(queue.stateOf("set:e1:1")).toBe("saved");
   });
 
-  it("sin red la serie queda pendiente, en ámbar, y sale sola al volver", async () => {
+  it("offline the set stays pending, in amber, and goes on its own when back", async () => {
     const net = network();
     const timers = manualTimers();
     const queue = new SyncQueue({ fetcher: net.fetcher, storage: null, ...timers });
@@ -77,11 +77,11 @@ describe("la cola de series", () => {
     expect(net.sent).toHaveLength(1);
   });
 
-  it("la espera crece hasta treinta segundos", () => {
+  it("the wait grows up to thirty seconds", () => {
     expect([1, 2, 3, 6, 10].map(retryDelay)).toEqual([1000, 2000, 4000, 30000, 30000]);
   });
 
-  it("recargar a mitad no pierde lo que no salió", async () => {
+  it("reloading halfway does not lose what was not sent", async () => {
     const storage = memory();
     const net = network();
     net.cut();
@@ -94,7 +94,7 @@ describe("la cola de series", () => {
     expect(after.pending("s1").map((op) => op.key)).toEqual(["set:e1:1"]);
   });
 
-  it("corregir una serie que no ha salido la sustituye: vale lo último", async () => {
+  it("correcting a set not yet sent replaces it: the latest wins", async () => {
     const net = network();
     net.cut();
     const queue = new SyncQueue({ fetcher: net.fetcher, storage: null, ...manualTimers() });
@@ -106,8 +106,8 @@ describe("la cola de series", () => {
     expect(queue.pending()[0]?.body.reps).toBe(9);
   });
 
-  it("lo que el servidor rechaza se quita, con su ejercicio y sus series, y se avisa", async () => {
-    const fetcher = (async () => reply(409, { detail: "este slot no permite dos variantes" })) as unknown as typeof fetch;
+  it("what the server rejects is removed, with its exercise and sets, and it warns", async () => {
+    const fetcher = (async () => reply(409, { detail: "this slot does not allow two variants" })) as unknown as typeof fetch;
     const queue = new SyncQueue({ fetcher, storage: null });
     const events: string[] = [];
     queue.listen((event) => events.push(event.type === "rejected" ? event.detail : event.type));
@@ -117,11 +117,11 @@ describe("la cola de series", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(queue.hasPending()).toBe(false);
-    expect(events).toEqual(["este slot no permite dos variantes"]);
+    expect(events).toEqual(["this slot does not allow two variants"]);
   });
 
-  it("si no se pudo empezar una sesión empezada sin red, lo apuntado en ella se va con ella", async () => {
-    const fetcher = (async () => reply(409, { detail: "ya hay una sesión en curso" })) as unknown as typeof fetch;
+  it("if a session started offline could not start, what was logged in it goes with it", async () => {
+    const fetcher = (async () => reply(409, { detail: "there is already a session in progress" })) as unknown as typeof fetch;
     const queue = new SyncQueue({ fetcher, storage: null });
 
     queue.enqueue({ key: "start:s1", session: "s1", method: "PUT", path: "/sessions/s1", body: {} });
@@ -132,7 +132,7 @@ describe("la cola de series", () => {
     expect(queue.hasPending()).toBe(false);
   });
 
-  it("si el ejercicio ya existía con otro identificador, sus series se reapuntan", async () => {
+  it("if the exercise already existed with another id, its sets are re-pointed", async () => {
     const sent: string[] = [];
     const fetcher = (async (url: string) => {
       sent.push(url);
@@ -147,7 +147,7 @@ describe("la cola de series", () => {
     expect(sent).toEqual(["/api/training/sessions/s1/exercises/e1", "/api/training/sessions/s1/exercises/e2/sets/1"]);
   });
 
-  it("la nota viaja con su ejercicio si se reapunta", async () => {
+  it("the note travels with its exercise if it is re-pointed", async () => {
     const sent: string[] = [];
     const fetcher = (async (url: string) => {
       sent.push(url);
@@ -162,12 +162,12 @@ describe("la cola de series", () => {
     expect(sent).toEqual(["/api/training/sessions/s1/exercises/e1", "/api/training/sessions/s1/exercises/e2/notes"]);
   });
 
-  it("408 y 429 se reintentan; el resto de 4xx no", () => {
+  it("408 and 429 are retried; the rest of 4xx are not", () => {
     expect([400, 404, 409, 422].every(isPermanent)).toBe(true);
     expect([0, 408, 429, 500, 503].some(isPermanent)).toBe(false);
   });
 
-  it("con la sesión caducada no tira ninguna serie: la guarda y pide volver a entrar", async () => {
+  it("with the sign-in expired it drops no set: it keeps it and asks to sign in again", async () => {
     const storage = memory();
     const events: string[] = [];
     let signedIn = false;
@@ -191,24 +191,24 @@ describe("la cola de series", () => {
   });
 });
 
-describe("olvidar una sesión borrada", () => {
-  it("quita lo pendiente de esa sesión y deja el resto", async () => {
+describe("forgetting a deleted session", () => {
+  it("removes what is pending for that session and keeps the rest", async () => {
     const net = network();
     net.cut();
     const queue = new SyncQueue({ fetcher: net.fetcher, storage: null, ...manualTimers() });
     queue.enqueue(set(1));
     await queue.flush();
-    queue.enqueue({ ...set(2), session: "otra", key: "set:e9:1" });
+    queue.enqueue({ ...set(2), session: "other", key: "set:e9:1" });
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     queue.forget("s1");
 
-    expect(queue.pending().map((op) => op.session)).toEqual(["otra"]);
+    expect(queue.pending().map((op) => op.session)).toEqual(["other"]);
   });
 });
 
-describe("de quién es lo pendiente", () => {
-  it("si entra otra persona, lo de la anterior se tira sin mandarse", () => {
+describe("whose pending work it is", () => {
+  it("if another person signs in, the previous one's is dropped without being sent", () => {
     const storage = memory();
     const net = network();
     net.cut();

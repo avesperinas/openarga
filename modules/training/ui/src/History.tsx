@@ -15,6 +15,9 @@ import {
   SegmentedControl,
   Switch,
   YearCalendar,
+  type Locale,
+  useLocale,
+  useT,
 } from "@openarga/ui";
 import { peek, remember } from "@openarga/app";
 import { useEffect, useMemo, useState } from "react";
@@ -23,7 +26,7 @@ import { type Activity, type SessionSummary, listActivities, listSessions, readT
 import { ActivityList, ActivitySheet } from "./Activities";
 import { AppVersion } from "./AppVersion";
 import { ScreenHeader } from "./Header";
-import { HUE_OF_KIND, formatDuration, shortDate } from "./labels";
+import { HUE_OF_KIND, formatDuration, plural, shortDate } from "./labels";
 
 const SHOW_ACTIVITIES = "training:calendar-activities";
 
@@ -56,6 +59,8 @@ export interface HistoryScreenProps {
 }
 
 export function HistoryScreen({ onOpenSession, now = new Date(), initial }: HistoryScreenProps) {
+  const t = useT();
+  const locale = useLocale();
   const [loaded, setLoaded] = useState<Loaded | null>(() => initial ?? peek<Loaded>("history") ?? null);
   const [failed, setFailed] = useState(false);
   const [cursor, setCursor] = useState({ year: now.getFullYear(), month: now.getMonth() });
@@ -97,31 +102,31 @@ export function HistoryScreen({ onOpenSession, now = new Date(), initial }: Hist
 
   return (
     <Screen wide>
-      <ScreenHeader title="Calendario" />
+      <ScreenHeader title={t("tabs.calendar")} />
 
-      {failed && <Notice tone="negative">No se ha podido cargar el histórico. Comprueba la conexión.</Notice>}
+      {failed && <Notice tone="negative">{t("history.load_failed")}</Notice>}
 
       <SegmentedControl
-        label="Vista"
+        label={t("history.view")}
         value={view}
         onChange={setView}
         options={[
-          { value: "month", label: "Mes" },
-          { value: "list", label: "Lista" },
+          { value: "month", label: t("history.month") },
+          { value: "list", label: t("history.list") },
         ]}
       />
 
       {view === "month" ? (
         <Panes
-          asideLabel="El año y las actividades"
+          asideLabel={t("history.aside")}
           main={
             <>
-              <Card label="El mes">
+              <Card label={t("history.the_month")}>
                 <Figures
                   items={[
-                    { label: stats.count === 1 ? "entreno" : "entrenos", value: stats.count },
-                    { label: "en total", value: hours(stats.totalSeconds) },
-                    { label: "series", value: stats.sets },
+                    { label: plural(t, "history.workouts", stats.count), value: stats.count },
+                    { label: t("history.in_total"), value: hours(stats.totalSeconds) },
+                    { label: t("history.sets"), value: stats.sets },
                   ]}
                 />
                 <MonthCalendar
@@ -137,20 +142,20 @@ export function HistoryScreen({ onOpenSession, now = new Date(), initial }: Hist
                   weekLabel={(monday) => rotationOf(monday, sessions)}
                 />
                 <div className="training-switch-row">
-                  <span>Actividades además de entrenos</span>
-                  <Switch label="Actividades además de entrenos" checked={showActivities} onChange={setShowActivities} />
+                  <span>{t("history.show_activities")}</span>
+                  <Switch label={t("history.show_activities")} checked={showActivities} onChange={setShowActivities} />
                 </div>
               </Card>
 
               <SessionList
-                title={selected ? dayTitle(selected) : "Este mes"}
+                title={selected ? dayTitle(selected, locale) : t("history.this_month")}
                 sessions={shown}
                 empty={
                   sessions.length === 0
-                    ? "Todavía no hay entrenos. Cuando termines el primero aparecerá marcado en el calendario."
+                    ? t("history.empty")
                     : selected
-                      ? "Ese día no entrenaste."
-                      : "Este mes no hay entrenos."
+                      ? t("history.empty_day")
+                      : t("history.empty_month")
                 }
                 onOpenSession={onOpenSession}
               />
@@ -159,21 +164,21 @@ export function HistoryScreen({ onOpenSession, now = new Date(), initial }: Hist
           aside={
             <>
               {sessions.length > 0 && (
-                <Section title="Último año">
+                <Section title={t("history.last_year")}>
                   <Card>
                     <YearCalendar
                       days={yearDays(sessions, today)}
-                      label="Series por día en el último año"
+                      label={t("history.year_label")}
                       end={today}
-                      format={(value) => `${value} ${value === 1 ? "serie" : "series"}`}
+                      format={(value) => plural(t, "common.sets", value)}
                     />
                   </Card>
                 </Section>
               )}
 
               {activitiesShown.length > 0 && (
-                <section className="training-history" aria-label="Actividades">
-                  <Heading>Actividades</Heading>
+                <section className="training-history" aria-label={t("today.activities")}>
+                  <Heading>{t("today.activities")}</Heading>
                   <ActivityList activities={activitiesShown} onOpen={setOpenActivity} />
                 </section>
               )}
@@ -182,10 +187,10 @@ export function HistoryScreen({ onOpenSession, now = new Date(), initial }: Hist
         />
       ) : (
         <SessionList
-          title="Todos"
+          title={t("history.all")}
           sessions={sessions}
           grouped
-          empty="Todavía no hay entrenos. Empieza el primero desde Hoy."
+          empty={t("history.empty_list")}
           onOpenSession={onOpenSession}
         />
       )}
@@ -277,9 +282,9 @@ export function weekBelow(monday: string, sessions: SessionSummary[], goal: numb
   return done < goal;
 }
 
-function dayTitle(day: string): string {
+function dayTitle(day: string, locale: Locale): string {
   const [year, month, date] = day.split("-").map(Number) as [number, number, number];
-  const text = new Date(year, month - 1, date).toLocaleDateString("es-ES", {
+  const text = new Date(year, month - 1, date).toLocaleDateString(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -287,9 +292,9 @@ function dayTitle(day: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-function monthTitle(day: string): string {
+function monthTitle(day: string, locale: Locale): string {
   const [year, month] = day.split("-").map(Number) as [number, number];
-  const text = new Date(year, month - 1, 1).toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+  const text = new Date(year, month - 1, 1).toLocaleDateString(locale, { month: "long", year: "numeric" });
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
@@ -302,6 +307,8 @@ interface SessionListProps {
 }
 
 function SessionList({ title, sessions, empty, grouped = false, onOpenSession }: SessionListProps) {
+  const t = useT();
+  const locale = useLocale();
   if (sessions.length === 0) {
     return (
       <section className="training-history" aria-label={title}>
@@ -315,7 +322,7 @@ function SessionList({ title, sessions, empty, grouped = false, onOpenSession }:
 
   const groups = new Map<string, SessionSummary[]>();
   for (const session of sessions) {
-    const key = grouped ? monthTitle(session.day) : title;
+    const key = grouped ? monthTitle(session.day, locale) : title;
     groups.set(key, [...(groups.get(key) ?? []), session]);
   }
 
@@ -331,9 +338,9 @@ function SessionList({ title, sessions, empty, grouped = false, onOpenSession }:
                 hue={HUE_OF_KIND[session.kind]}
                 title={session.day_name}
                 subtitle={[
-                  shortDate(session.day),
-                  session.ended_at ? formatDuration(session.duration_seconds) : "en curso",
-                  `${session.sets} ${session.sets === 1 ? "serie" : "series"}`,
+                  shortDate(session.day, locale),
+                  session.ended_at ? formatDuration(session.duration_seconds) : t("common.ongoing"),
+                  plural(t, "common.sets", session.sets),
                 ]
                   .filter(Boolean)
                   .join(" · ")}

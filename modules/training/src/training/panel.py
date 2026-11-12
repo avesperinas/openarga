@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets.panel import blocks_of, gather, panel
 from training import widgets
+from training.text import t
 
 
 def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
@@ -14,7 +15,7 @@ def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def nothing() -> HTTPException:
-    return HTTPException(status_code=404, detail="Training aún no tiene nada que contar")
+    return HTTPException(status_code=404, detail=t("panel.empty"))
 
 
 PARTS = {
@@ -34,9 +35,9 @@ async def build(connection: AsyncConnection) -> dict:
     if nxt.get("value") is not None:
         feature = {
             "type": "feature",
-            "eyebrow": "Siguiente sesión",
+            "eyebrow": t("panel.next"),
             "title": str(nxt["value"])[:200],
-            "action": "Empezar",
+            "action": t("panel.start"),
             "href": "/training/",
         }
         if nxt.get("detail"):
@@ -46,37 +47,37 @@ async def build(connection: AsyncConnection) -> dict:
         blocks.append(feature)
         headlines.append(
             {
-                "text": f"Toca {nxt['value']}",
+                "text": t("panel.due", name=nxt["value"]),
                 "emphasis": str(nxt["value"]),
                 "status": str(nxt["value"])[:60],
                 "priority": 40,
             }
         )
-    blocks += blocks_of("ring", found.get("week") or {}, label="Esta semana", hue=4)
+    blocks += blocks_of("ring", found.get("week") or {}, label=t("panel.this_week"), hue=4)
     if not blocks:
         raise nothing()
     if week.get("value") is not None and week.get("target") and week["value"] >= week["target"]:
         headlines.append(
             {
-                "text": "Semana de entreno cumplida",
+                "text": t("panel.week_done"),
                 "tone": "positive",
-                "status": "Cumplida",
+                "status": t("panel.done"),
                 "priority": 45,
             }
         )
     tabs = [
         {
-            "id": "entreno",
-            "label": "Entreno",
+            "id": "training",
+            "label": t("panel.tab"),
             "blocks": blocks,
-            "actions": [{"label": "Abrir Training", "href": "/training/"}],
+            "actions": [{"label": t("panel.open"), "href": "/training/"}],
         }
     ]
     questions = [
         {
-            "text": "¿Qué toca entrenar?",
-            "words": ["entreno", "entrenar", "gimnasio", "sesion", "rutina"],
-            "tab": "entreno",
+            "text": t("panel.question"),
+            "words": t("panel.words").split(","),
+            "tab": "training",
         }
     ]
     return panel("health", order=20, headlines=headlines, tabs=tabs, questions=questions)

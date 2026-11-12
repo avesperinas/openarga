@@ -13,6 +13,8 @@ import {
   WeekDots,
   type WeekDayState,
   isoDay,
+  useLocale,
+  useT,
 } from "@openarga/ui";
 import { peek, remember } from "@openarga/app";
 import { useEffect, useMemo, useState } from "react";
@@ -31,7 +33,7 @@ import {
 } from "./api";
 import { readTodayKept, startAnywhere } from "./offline";
 import { marksOf, monthStats } from "./History";
-import { HUE_OF_KIND, ICON_OF_KIND, formatDuration, shortDate } from "./labels";
+import { HUE_OF_KIND, ICON_OF_KIND, formatDuration, plural, shortDate } from "./labels";
 import { AppVersion } from "./AppVersion";
 import { ScreenHeader } from "./Header";
 import { todayLabel } from "./today";
@@ -55,6 +57,8 @@ export function TodayScreen({
   onOpenPlan,
   onOpenHistory,
 }: TodayScreenProps) {
+  const t = useT();
+  const locale = useLocale();
   const [state, setState] = useState<TodayState>(() => {
     if (initial) return initial;
     const kept = peek<Today>("today");
@@ -102,32 +106,34 @@ export function TodayScreen({
 
   return (
     <Screen wide>
-      <ScreenHeader eyebrow={todayLabel(now)} />
+      <ScreenHeader eyebrow={todayLabel(now, locale)} />
 
       <Panes
-        asideLabel="Lo último"
+        asideLabel={t("today.latest")}
         main={
           <>
-            <Card label={ready?.plan ? "Siguiente entreno" : "Tu plan"}>
+            <Card label={ready?.plan ? t("today.next_workout") : t("today.your_plan")}>
               {ready ? (
                 <NextBody today={ready} onOpenSession={onOpenSession} onOpenPlan={onOpenPlan} />
               ) : (
                 <p className="widget-note" aria-busy={loading === "loading"}>
-                  {loading === "error" ? "No se ha podido cargar. Comprueba la conexión." : "Cargando…"}
+                  {loading === "error" ? t("common.load_failed") : t("common.loading")}
                 </p>
               )}
             </Card>
 
             {ready && (
-              <Section title="Esta semana">
+              <Section title={t("today.this_week")}>
                 <Card>
                   <WeekStrip monday={ready.week.monday} today={today} sessions={sessions ?? []} />
                   <Hint>
                     {[
-                      `${ready.week.done} de ${ready.week.goal}`,
-                      `este mes, ${month.count} ${month.count === 1 ? "sesión" : "sesiones"}`,
-                      `${month.sets} series`,
-                      month.averageSeconds === null ? null : `${Math.round(month.averageSeconds / 60)} min de media`,
+                      t("today.of_goal", { done: ready.week.done, goal: ready.week.goal }),
+                      plural(t, "today.month_sessions", month.count),
+                      plural(t, "common.sets", month.sets),
+                      month.averageSeconds === null
+                        ? null
+                        : t("today.average_minutes", { minutes: Math.round(month.averageSeconds / 60) }),
                     ]
                       .filter(Boolean)
                       .join(" · ")}
@@ -136,7 +142,7 @@ export function TodayScreen({
               </Section>
             )}
 
-            <Section title="Calendario">
+            <Section title={t("tabs.calendar")}>
               <Card>
                 <MonthCalendar
                   year={cursor.year}
@@ -157,11 +163,11 @@ export function TodayScreen({
         aside={
           <>
             <Section
-              title="Últimos entrenos"
-              action={sessions && sessions.length > 4 && onOpenHistory ? { label: "Ver todo", onClick: onOpenHistory } : undefined}
+              title={t("today.latest_workouts")}
+              action={sessions && sessions.length > 4 && onOpenHistory ? { label: t("common.see_all"), onClick: onOpenHistory } : undefined}
             >
               {sessions && sessions.length === 0 ? (
-                <p className="widget-note">Todavía no hay entrenos. El primero que termines aparecerá aquí y en el calendario.</p>
+                <p className="widget-note">{t("today.no_workouts")}</p>
               ) : (
                 <List>
                   {(sessions ?? []).slice(0, 4).map((session) => (
@@ -170,9 +176,9 @@ export function TodayScreen({
                       hue={HUE_OF_KIND[session.kind]}
                       title={session.day_name}
                       subtitle={[
-                        shortDate(session.day),
-                        session.ended_at ? formatDuration(session.duration_seconds) : "en curso",
-                        `${session.sets} ${session.sets === 1 ? "serie" : "series"}`,
+                        shortDate(session.day, locale),
+                        session.ended_at ? formatDuration(session.duration_seconds) : t("common.ongoing"),
+                        plural(t, "common.sets", session.sets),
                       ].join(" · ")}
                       accessory="chevron-right"
                       onClick={() => onOpenSession(session.id)}
@@ -182,7 +188,7 @@ export function TodayScreen({
               )}
             </Section>
 
-            <Section title="Actividades" action={{ label: "Anotar", icon: "plus", onClick: () => setLogging(true) }}>
+            <Section title={t("today.activities")} action={{ label: t("activity.log"), icon: "plus", onClick: () => setLogging(true) }}>
               <ActivityQuick
                 types={types}
                 ongoing={activities?.find((activity) => activity.ongoing) ?? null}
@@ -191,7 +197,7 @@ export function TodayScreen({
                 }
               />
               {activities && activities.length === 0 ? (
-                <p className="widget-note">Escalada, pádel, una ruta: lo que hagas fuera de la rutina.</p>
+                <p className="widget-note">{t("today.activities_empty")}</p>
               ) : (
                 <ActivityList activities={latestFirst(activities ?? []).slice(0, 3)} onOpen={setOpenActivity} />
               )}
@@ -232,8 +238,6 @@ export function TodayScreen({
   );
 }
 
-const WEEKDAYS = ["L", "M", "X", "J", "V", "S", "D"];
-
 const addDays = (day: string, days: number) => {
   const date = new Date(`${day}T12:00:00Z`);
   date.setUTCDate(date.getUTCDate() + days);
@@ -241,14 +245,15 @@ const addDays = (day: string, days: number) => {
 };
 
 export function WeekStrip({ monday, today, sessions }: { monday: string; today: string; sessions: SessionSummary[] }) {
-  const days = WEEKDAYS.map((letter, index) => {
+  const t = useT();
+  const days = t("today.weekday_letters").split(",").map((letter, index) => {
     const day = addDays(monday, index);
     const session = sessions.find((candidate) => candidate.day === day);
     const state: WeekDayState = session ? "met" : day === today ? "today" : day > today ? "future" : "missed";
-    const said = `${letter}, ${session ? session.day_name : day > today ? "por venir" : "sin entreno"}`;
+    const said = `${letter}, ${session ? session.day_name : day > today ? t("today.to_come") : t("today.no_workout")}`;
     return { day, state, kind: session?.kind, today: day === today, said };
   });
-  return <WeekDots size="large" label={`Esta semana: ${days.map((one) => one.said).join("; ")}`} days={days} />;
+  return <WeekDots size="large" label={t("today.week_label", { days: days.map((one) => one.said).join("; ") })} days={days} />;
 }
 
 const shift = ({ year, month }: { year: number; month: number }, delta: number) => {
@@ -263,6 +268,7 @@ interface NextBodyProps {
 }
 
 function NextBody({ today, onOpenSession, onOpenPlan }: NextBodyProps) {
+  const t = useT();
   const [confirming, setConfirming] = useState(false);
   const [chosen, setChosen] = useState<string | null>(null);
 
@@ -270,20 +276,17 @@ function NextBody({ today, onOpenSession, onOpenPlan }: NextBodyProps) {
   if (!plan) {
     return (
       <div className="training-next">
-        <p className="training-next-name">Todavía no hay plan</p>
-        <p className="training-next-label">
-          Crea los días de tu ciclo con sus ejercicios. Después, aquí aparecerá cada día el entreno
-          que toca.
-        </p>
+        <p className="training-next-name">{t("today.no_plan")}</p>
+        <p className="training-next-label">{t("today.no_plan_hint")}</p>
         {onOpenPlan && (
           <Button variant="primary" icon="plus" onClick={onOpenPlan}>
-            Crear el plan
+            {t("today.create_plan")}
           </Button>
         )}
       </div>
     );
   }
-  if (!next) return <p className="widget-note">El plan no tiene días todavía.</p>;
+  if (!next) return <p className="widget-note">{t("today.plan_without_days")}</p>;
 
   const done = next.days_in_rotation - next.remaining;
   const pick = rotation?.days.find((day) => day.plan_day_id === chosen) ?? null;
@@ -305,7 +308,7 @@ function NextBody({ today, onOpenSession, onOpenPlan }: NextBodyProps) {
       throw new Error(
         error instanceof ApiError && error.status !== 409
           ? error.message
-          : "No se ha podido empezar: sin conexión hace falta haber abierto Training antes con red.",
+          : t("today.start_offline_failed"),
       );
     }
   }
@@ -313,29 +316,30 @@ function NextBody({ today, onOpenSession, onOpenPlan }: NextBodyProps) {
   return (
     <div className="training-next" data-kind={target.kind}>
       <p className="training-next-label">
-        {in_progress ? "En curso" : pick && pick.plan_day_id !== next.plan_day_id ? "Elegido" : "Toca"} · rotación{" "}
-        {next.rotation_number}, día {done + 1} de {next.days_in_rotation}
+        {in_progress ? t("common.ongoing_title") : pick && pick.plan_day_id !== next.plan_day_id ? t("today.chosen") : t("today.due")}
+        {" · "}
+        {t("today.rotation_day", { rotation: next.rotation_number, day: done + 1, days: next.days_in_rotation })}
       </p>
       <p className="training-next-name">
         <IconBadge
           name={ICON_OF_KIND[target.kind]}
           hue={HUE_OF_KIND[target.kind] as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8}
         />
-        <span>{in_progress ? "Entreno a medias" : target.name}</span>
+        <span>{in_progress ? t("today.half_done") : target.name}</span>
       </p>
       {in_progress ? (
         <Button variant="primary" onClick={() => onOpenSession(in_progress)}>
-          Continuar entreno
+          {t("today.continue")}
         </Button>
       ) : (
         <>
           <Inline>
             <Button variant="primary" onClick={() => setConfirming(true)}>
-              {`Empezar ${target.name}`}
+              {t("today.start_named", { name: target.name })}
             </Button>
             {rotation && rotation.days.length > 1 && (
               <Button variant="plain" size="small" onClick={() => setConfirming(true)}>
-                Otro día
+                {t("today.other_day")}
               </Button>
             )}
           </Inline>
@@ -344,7 +348,7 @@ function NextBody({ today, onOpenSession, onOpenPlan }: NextBodyProps) {
       {confirming && (
         <ConfirmStartSheet
           name={target.name}
-          detail={rotationDetail(next.rotation_number, done + 1, next.days_in_rotation)}
+          detail={rotationDetail(t, next.rotation_number, done + 1, next.days_in_rotation)}
           days={rotation?.days.map((day) => ({ id: day.plan_day_id, name: day.name, done: day.done }))}
           chosen={target.id}
           onChoose={setChosen}

@@ -68,8 +68,8 @@ def test_a_variant_that_appears_halfway_does_not_count() -> None:
     entries = [
         best("vieja", since, 5, 100),
         best("vieja", until, 5, 100),
-        best("nueva", until - timedelta(days=10), 5, 50),
-        best("nueva", until, 5, 80),
+        best("new", until - timedelta(days=10), 5, 50),
+        best("new", until, 5, 80),
     ]
 
     index = stats.performance_index(entries, since, until)
@@ -234,10 +234,10 @@ async def test_a_variant_that_goes_up_shows_up_as_a_mover(api) -> None:
 
     movers = (await api.get("/stats?period=all")).json()["movers"]
 
-    assert movers, "dos sesiones de la misma variante en el mismo centro dan un delta"
+    assert movers, "two sessions of the same variant at the same gym give a delta"
     assert movers[0]["delta"] > 0
     assert movers[0]["exercise"]
-    assert movers[0]["gym"], "cada máquina es de un centro"
+    assert movers[0]["gym"], "every machine belongs to a gym"
 
 
 async def test_the_variant_screen_brings_its_points_and_its_records(api) -> None:
@@ -280,7 +280,7 @@ async def bench(api) -> str:
         variant["id"]
         for exercise in catalogue["exercises"]
         for variant in exercise["variants"]
-        if variant["name"] == "Press banca con barra"
+        if variant["name"] == "Barbell bench press"
     )
 
 
@@ -350,7 +350,7 @@ async def test_with_a_bodyweight_dips_count_for_strength(api) -> None:
         variant["id"]
         for exercise in catalogue["exercises"]
         for variant in exercise["variants"]
-        if variant["name"] == "Fondos lastrados"
+        if variant["name"] == "Weighted dips"
     )
 
     without = (await api.get(f"/stats/variants/{dips}?period=all")).json()
@@ -370,11 +370,11 @@ async def test_a_muscle_brings_its_strength_and_everything_that_trained_it(api) 
 
     body = (await api.get("/stats/muscles/chest?period=all")).json()
 
-    assert body["name"] == "Pecho"
+    assert body["name"] == "Chest"
     assert body["value"] is not None and body["value"] > 100
     assert body["trend"]
     names = {exercise["variant"] for exercise in body["exercises"]}
-    assert "Press banca con barra" in names
+    assert "Barbell bench press" in names
     assert all(exercise["gyms"] for exercise in body["exercises"])
 
 
@@ -391,8 +391,8 @@ async def test_the_notes_that_link_a_variant_show_up_in_it(api, setup) -> None:
         await fresh_modules(connection, "training", "notebook", fresh=["notebook"])
         for n, (note, title, removed) in enumerate(
             [
-                ("n-1", "Técnica", False),
-                ("n-1", "Técnica de banca", False),
+                ("n-1", "Technique", False),
+                ("n-1", "Bench technique", False),
                 ("n-2", "Vieja", False),
                 ("n-2", "Vieja", True),
             ]
@@ -402,8 +402,8 @@ async def test_the_notes_that_link_a_variant_show_up_in_it(api, setup) -> None:
                 "id": variant,
                 "note_id": note,
                 "note_title": title,
-                "note_href": f"/notebook/nota/{note}",
-                "line": "Bajar la carga",
+                "note_href": f"/notebook/note/{note}",
+                "line": "Lower the load",
                 "removed": removed,
             }
             await connection.execute(
@@ -427,7 +427,7 @@ async def test_the_notes_that_link_a_variant_show_up_in_it(api, setup) -> None:
             await connection.execute(text("delete from kernel.modules where id = 'notebook'"))
 
     assert body["notes"] == [
-        {"title": "Técnica de banca", "href": "/notebook/nota/n-1", "line": "Bajar la carga"}
+        {"title": "Bench technique", "href": "/notebook/note/n-1", "line": "Lower the load"}
     ]
 
 

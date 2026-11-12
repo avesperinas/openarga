@@ -10,9 +10,16 @@ from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from arga_module import preferences
 from training import agenda, plan
 
-MADRID = ZoneInfo("Europe/Madrid")
+
+def zone() -> ZoneInfo:
+    return preferences.current().zone
+
+
+def timezone() -> str:
+    return preferences.current().timezone
 
 
 class Conflict(Exception):
@@ -24,7 +31,7 @@ class NotFound(Exception):
 
 
 def local_day(moment: datetime) -> date:
-    return moment.astimezone(MADRID).date()
+    return moment.astimezone(zone()).date()
 
 
 def week_bounds(day: date) -> tuple[date, date]:
@@ -166,11 +173,11 @@ async def start_session(connection: AsyncConnection, request: Start) -> str:
         text("select id from training.training_session where ended_at is null")
     )
     if in_progress:
-        raise Conflict(f"ya hay una sesión en curso: {in_progress}")
+        raise Conflict(f"there is already a session in progress: {in_progress}")
 
     upcoming = await next_session(connection)
     if upcoming is None:
-        raise Conflict("no hay plan publicado que entrenar")
+        raise Conflict("there is no published plan to train")
 
     rotation = (await connection.execute(OPEN_ROTATION)).one_or_none()
     day_id = upcoming.plan_day_id
@@ -179,7 +186,7 @@ async def start_session(connection: AsyncConnection, request: Start) -> str:
         chosen = (await connection.execute(ALL_DAYS, {"version_id": version})).all()
         match = next((day for day in chosen if str(day.id) == request.plan_day_id), None)
         if match is None:
-            raise Conflict("ese día no es de la rotación en curso")
+            raise Conflict("that day is not part of the current rotation")
         day_id = str(match.id)
         upcoming = upcoming.model_copy(update={"name": match.name, "kind": match.kind})
     if rotation is None:
@@ -260,7 +267,7 @@ async def finish_session(connection: AsyncConnection, session_id: str, request: 
 
     ended_at = request.ended_at or datetime.now(UTC)
     if ended_at < session.started_at:
-        raise Conflict("una sesión no puede terminar antes de empezar")
+        raise Conflict("a session cannot end before it starts")
     await connection.execute(
         text(
             "update training.training_session set ended_at = :end, duration_seconds = :seconds "
@@ -316,8 +323,8 @@ class Times(BaseModel):
     ended_at: datetime
 
 
-def _in_madrid(moment: datetime) -> datetime:
-    return moment.replace(tzinfo=MADRID) if moment.tzinfo is None else moment
+def _localised(moment: datetime) -> datetime:
+    return moment.replace(tzinfo=zone()) if moment.tzinfo is None else moment
 
 
 async def change_times(connection: AsyncConnection, session_id: str, request: Times) -> None:
@@ -333,13 +340,13 @@ async def change_times(connection: AsyncConnection, session_id: str, request: Ti
     if session is None:
         raise NotFound(session_id)
     if session.ended_at is None:
-        raise Conflict("la sesión sigue en curso: se corrige al terminarla")
+        raise Conflict("the session is still in progress: correct it once it ends")
 
-    started_at, ended_at = _in_madrid(request.started_at), _in_madrid(request.ended_at)
+    started_at, ended_at = _localised(request.started_at), _localised(request.ended_at)
     if ended_at < started_at:
-        raise Conflict("una sesión no puede terminar antes de empezar")
+        raise Conflict("a session cannot end before it starts")
     if ended_at > datetime.now(UTC) + timedelta(minutes=5):
-        raise Conflict("una sesión no puede terminar en el futuro")
+        raise Conflict("a session cannot end in the future")
     if (started_at, ended_at) == (session.started_at, session.ended_at):
         return
 
@@ -403,7 +410,7 @@ async def delete_session(
     if row is None:
         raise NotFound(session_id)
     if row.sets and not with_sets:
-        raise Conflict(f"el entreno tiene {row.sets} series; confirma que quieres borrarlas")
+        raise Conflict(f"the workout has {row.sets} sets; confirm you want to delete them")
 
     calendar = await agenda.session_row(connection, session_id)
     await connection.execute(
@@ -629,7 +636,7 @@ async def put_exercise(
             == request.plan_slot_id
         )
         if not same:
-            raise Conflict(f"el ejercicio {exercise_id} ya existe con otros datos")
+            raise Conflict(f"exercise {exercise_id} already exists with different data")
         return exercise_id
     if request.plan_slot_id is not None:
         found = await connection.scalar(
@@ -683,7 +690,7 @@ class SetIn(BaseModel):
     @model_validator(mode="after")
     def _completed_has_reps(self) -> SetIn:
         if self.completed and self.reps is None:
-            raise ValueError("una serie completada lleva repeticiones")
+            raise ValueError("a completed set has reps")
         return self
 
 

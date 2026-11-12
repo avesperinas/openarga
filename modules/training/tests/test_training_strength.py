@@ -16,8 +16,8 @@ _ids = count()
 def entry(
     *sets: tuple[int | None, float | None],
     day: date = LUNES,
-    variant: str = "banca",
-    gym: str | None = "centro",
+    variant: str = "bench",
+    gym: str | None = "gym",
     muscle: str = "chest",
     load_type: str = "external",
     factor: float | None = None,
@@ -42,7 +42,7 @@ def entry(
     )
 
 
-def point(e1rm: float, day: date, variant: str = "banca", gym: str | None = "centro", **extra):
+def point(e1rm: float, day: date, variant: str = "bench", gym: str | None = "gym", **extra):
     load = e1rm / (1 + 8 / 30)
     return strength.Point(
         id=f"p{next(_ids)}",
@@ -105,19 +105,19 @@ def test_the_bodyweight_of_a_day_is_the_last_one_before_or_the_first_one() -> No
 
 
 def test_the_same_variant_in_two_gyms_is_two_machines() -> None:
-    points = weekly([100, 101, 102], gym="uno") + weekly([45, 46, 47], gym="otro")
+    points = weekly([100, 101, 102], gym="uno") + weekly([45, 46, 47], gym="other")
 
     series = strength.build(points)
 
     assert len(series) == 2
-    assert all(p.counted for serie in series for p in serie.points)
+    assert all(p.counted for segment in series for p in segment.points)
 
 
 def test_a_typo_is_set_aside_with_the_level_it_was_judged_against() -> None:
     values = [110, 112, 111, 150, 112, 113, 111]
-    (serie,) = strength.build(weekly(values))
+    (segment,) = strength.build(weekly(values))
 
-    flagged = [p for p in serie.points if not p.counted]
+    flagged = [p for p in segment.points if not p.counted]
     assert [p.e1rm for p in flagged] == [150]
     assert flagged[0].status == "high"
     assert flagged[0].reference == pytest.approx(111.5)
@@ -127,8 +127,8 @@ def test_what_you_say_about_a_day_wins_over_what_was_detected() -> None:
     points = weekly([110, 112, 111, 150, 112, 113, 111])
     odd, normal = points[3], points[1]
 
-    (serie,) = strength.build(points, verdicts={odd.id: "counted", normal.id: "excluded"})
-    status = {p.id: p.status for p in serie.points}
+    (segment,) = strength.build(points, verdicts={odd.id: "counted", normal.id: "excluded"})
+    status = {p.id: p.status for p in segment.points}
 
     assert status[odd.id] == "counted"
     assert status[normal.id] == "excluded"
@@ -139,14 +139,14 @@ def test_a_clean_jump_that_stays_is_another_machine() -> None:
 
     series = strength.build(points)
 
-    assert [serie.start for serie in series] == ["first", "detected"]
+    assert [segment.start for segment in series] == ["first", "detected"]
     assert series[1].since == points[4].day
-    assert all(p.counted for serie in series for p in serie.points)
+    assert all(p.counted for segment in series for p in segment.points)
 
 
 def test_saying_the_machine_did_not_change_joins_it_back() -> None:
     points = weekly([100, 101, 100, 102, 160, 161, 160, 162])
-    join = Mark(id="m", variant_id="banca", gym_id="centro", day=points[4].day, kind="join")
+    join = Mark(id="m", variant_id="bench", gym_id="gym", day=points[4].day, kind="join")
 
     series = strength.build(points, [join])
 
@@ -155,11 +155,11 @@ def test_saying_the_machine_did_not_change_joins_it_back() -> None:
 
 def test_saying_the_machine_changed_splits_it_where_you_say() -> None:
     points = weekly([100, 101, 100, 102, 103, 104])
-    split = Mark(id="m", variant_id="banca", gym_id="centro", day=points[3].day, kind="split")
+    split = Mark(id="m", variant_id="bench", gym_id="gym", day=points[3].day, kind="split")
 
     series = strength.build(points, [split])
 
-    assert [serie.start for serie in series] == ["first", "mark"]
+    assert [segment.start for segment in series] == ["first", "mark"]
     assert series[1].since == points[3].day
 
 
@@ -177,7 +177,7 @@ def test_a_jump_hidden_behind_a_typo_is_still_found() -> None:
 
     series = strength.build(points)
 
-    assert [serie.start for serie in series] == ["first", "detected"]
+    assert [segment.start for segment in series] == ["first", "detected"]
 
 
 def change(curve: strength.Curve, since: date, until: date) -> float:
@@ -188,7 +188,7 @@ def test_a_muscle_moves_with_what_its_machines_move() -> None:
     weeks = 26
     rise = [100 * 1.1 ** (n / (weeks - 1)) for n in range(weeks)]
     series = strength.build(
-        weekly(rise, variant="banca") + weekly([v * 0.5 for v in rise], variant="aperturas")
+        weekly(rise, variant="bench") + weekly([v * 0.5 for v in rise], variant="flyes")
     )
 
     curve = strength.fit(series, LUNES + timedelta(weeks=weeks))
@@ -200,7 +200,7 @@ def test_a_muscle_moves_with_what_its_machines_move() -> None:
 
 def test_changing_gym_does_not_move_the_muscle() -> None:
     here = weekly([100] * 12, gym="uno")
-    there = weekly([50] * 12, gym="otro", start=LUNES + timedelta(weeks=12))
+    there = weekly([50] * 12, gym="other", start=LUNES + timedelta(weeks=12))
 
     curve = strength.fit(strength.build(here + there), LUNES + timedelta(weeks=24))
 
@@ -208,7 +208,7 @@ def test_changing_gym_does_not_move_the_muscle() -> None:
 
 
 def test_the_first_weeks_of_a_new_exercise_do_not_count_as_strength() -> None:
-    old = weekly([100] * 12, variant="banca")
+    old = weekly([100] * 12, variant="bench")
     new = weekly(
         [60, 70, 80, 80, 80, 80, 80, 80], variant="inclinado", start=LUNES + timedelta(weeks=12)
     )
@@ -254,8 +254,10 @@ def _dense_fit(series: list[strength.Series], until: date) -> list[float]:
 
     used = [
         counted
-        for serie in series
-        if (counted := [p for p in serie.counted if p.day - serie.since >= strength.CALIBRATION])
+        for segment in series
+        if (
+            counted := [p for p in segment.counted if p.day - segment.since >= strength.CALIBRATION]
+        )
     ]
     start = strength.monday(min(counted[0].day for counted in used))
     weeks = (strength.monday(until) - start).days // 7 + 1
@@ -303,13 +305,13 @@ def _many_series(count: int, points: int) -> list[strength.Series]:
         out.append(
             strength.Series(
                 variant_id=f"v{index}",
-                gym_id="centro",
+                gym_id="gym",
                 points=[
                     strength.Point(
                         id=f"p{index}-{n}",
                         session_id=f"s{index}-{n}",
                         variant_id=f"v{index}",
-                        gym_id="centro",
+                        gym_id="gym",
                         day=day,
                         muscle="chest",
                         index_weight=rng.choice([1, 2, 3]),

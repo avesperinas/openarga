@@ -100,7 +100,7 @@ async def test_a_finished_session_is_published_as_something_with_a_date(setup, a
     assert item["start"] == "2026-09-14T19:00:00+02:00"
     assert item["end"] == "2026-09-14T20:00:00+02:00"
     assert item["status"] == "confirmed"
-    assert item["href"] == f"/training/sesion/{session}"
+    assert item["href"] == f"/training/session/{session}"
 
 
 async def test_a_session_in_progress_is_not_in_the_calendar(setup, api) -> None:
@@ -275,7 +275,7 @@ async def activities_published(engine) -> list[dict]:
 
 
 async def test_an_activity_has_its_time_and_goes_to_the_calendar(setup, api) -> None:
-    climbing = (await api.post("/activity-types", json={"name": "Escalada"})).json()
+    climbing = (await api.post("/activity-types", json={"name": "Climbing"})).json()
     logged = (
         await api.post(
             "/activities",
@@ -292,7 +292,7 @@ async def test_an_activity_has_its_time_and_goes_to_the_calendar(setup, api) -> 
     [payload] = await activities_published(setup)
     item = arga_agenda.check_event(payload)
     assert item["uid"] == f"training:activity:{logged['id']}"
-    assert item["title"] == "Escalada"
+    assert item["title"] == "Climbing"
     assert (item["start"], item["end"]) == (
         "2026-09-15T18:30:00+02:00",
         "2026-09-15T20:00:00+02:00",
@@ -303,8 +303,30 @@ async def test_an_activity_has_its_time_and_goes_to_the_calendar(setup, api) -> 
     assert cancelled["uid"] == item["uid"] and cancelled["status"] == "cancelled"
 
 
+async def test_an_activity_is_placed_in_the_time_zone_of_the_person(setup, api) -> None:
+    climbing = (await api.post("/activity-types", json={"name": "Climbing"})).json()
+    await api.post(
+        "/activities",
+        json={
+            "activity_type_id": climbing["id"],
+            "day": "2026-09-15",
+            "start_time": "18:30",
+            "duration_seconds": 5400,
+        },
+        headers={"x-arga-timezone": "America/New_York"},
+    )
+
+    [payload] = await activities_published(setup)
+    item = arga_agenda.check_event(payload)
+    assert (item["start"], item["end"], item["tz"]) == (
+        "2026-09-15T18:30:00-04:00",
+        "2026-09-15T20:00:00-04:00",
+        "America/New_York",
+    )
+
+
 async def test_without_a_time_it_is_half_past_six_in_the_evening(setup, api) -> None:
-    climbing = (await api.post("/activity-types", json={"name": "Escalada"})).json()
+    climbing = (await api.post("/activity-types", json={"name": "Climbing"})).json()
     logged = (
         await api.post(
             "/activities", json={"activity_type_id": climbing["id"], "day": "2026-09-15"}
@@ -327,7 +349,7 @@ async def sport_done(engine, activity_id: str, start: str, minutes: int = 60, **
                     {
                         "activity": {
                             "id": activity_id,
-                            "name": "Natación",
+                            "name": "Swimming",
                             "start": start,
                             "minutes": minutes,
                             "tz": "Europe/Madrid",
@@ -359,11 +381,11 @@ async def test_sport_done_in_another_app_is_logged_once_and_does_not_come_back(s
     assert [
         (a["name"], a["day"], a["start_time"], a["duration_seconds"], a["source"]) for a in listed
     ] == [
-        ("Natación", "2026-09-17", "19:00:00", 2700, "received"),
-        ("Natación", "2026-09-15", "19:00:00", 3600, "received"),
+        ("Swimming", "2026-09-17", "19:00:00", 2700, "received"),
+        ("Swimming", "2026-09-15", "19:00:00", 3600, "received"),
     ]
     kinds = (await api.get("/activity-types")).json()
-    assert [k["name"] for k in kinds] == ["Natación"]
+    assert [k["name"] for k in kinds] == ["Swimming"]
     assert len(await activities_published(setup)) == 2
 
     assert (await api.delete(f"/activities/{listed[0]['id']}")).status_code == 204
@@ -449,7 +471,7 @@ async def test_a_band_workout_is_logged_once_with_what_it_measured(band, api) ->
 
     [bike] = await listed_activities(api)
     assert (bike["name"], bike["day"], bike["start_time"], bike["duration_seconds"]) == (
-        "Bici",
+        "Cycling",
         "2026-09-16",
         "20:30:00",
         5400,
@@ -479,12 +501,12 @@ async def test_only_a_bike_from_the_band_is_logged_on_its_own(band, api) -> None
 
     assert await receive_band(band) == 1
     assert await receive_band(band) == 0
-    assert [one["name"] for one in await listed_activities(api)] == ["Bici"]
-    assert [k["name"] for k in (await api.get("/activity-types")).json()] == ["Bici"]
+    assert [one["name"] for one in await listed_activities(api)] == ["Cycling"]
+    assert [k["name"] for k in (await api.get("/activity-types")).json()] == ["Cycling"]
 
 
 async def test_what_the_band_measured_joins_what_was_logged_whatever_it_is(band, api) -> None:
-    padel = (await api.post("/activity-types", json={"name": "Pádel"})).json()
+    padel = (await api.post("/activity-types", json={"name": "Padel"})).json()
     await api.post(
         "/activities",
         json={"activity_type_id": padel["id"], "day": "2026-09-16", "start_time": "20:30"},
@@ -495,11 +517,11 @@ async def test_what_the_band_measured_joins_what_was_logged_whatever_it_is(band,
 
     assert await receive_band(band) == 1
     [one] = await listed_activities(api)
-    assert (one["name"], one["start_time"], one["from_band"]) == ("Pádel", "20:34:00", True)
+    assert (one["name"], one["start_time"], one["from_band"]) == ("Padel", "20:34:00", True)
 
 
 async def test_the_same_activity_from_training_and_the_band_is_one(band, api) -> None:
-    bike = (await api.post("/activity-types", json={"name": "Bici"})).json()
+    bike = (await api.post("/activity-types", json={"name": "Cycling"})).json()
     await api.post(
         "/activities",
         json={
@@ -515,7 +537,11 @@ async def test_the_same_activity_from_training_and_the_band_is_one(band, api) ->
 
     assert await receive_band(band) == 1
     [one] = await listed_activities(api)
-    assert (one["name"], one["start_time"], one["duration_seconds"]) == ("Bici", "12:07:00", 1920)
+    assert (one["name"], one["start_time"], one["duration_seconds"]) == (
+        "Cycling",
+        "12:07:00",
+        1920,
+    )
     assert (one["from_band"], one["notes"]) == (True, "intervalos")
     calendar = await as_training(
         band,
@@ -538,7 +564,7 @@ async def test_logging_what_the_band_already_brought_does_not_duplicate_it(band,
             "day": "2026-09-21",
             "start_time": "19:00",
             "duration_seconds": 5400,
-            "notes": "con Íñigo",
+            "notes": "with Inigo",
         },
     )
 
@@ -548,21 +574,21 @@ async def test_logging_what_the_band_already_brought_does_not_duplicate_it(band,
     assert (one["start_time"], one["duration_seconds"], one["notes"]) == (
         "19:04:00",
         5220,
-        "con Íñigo",
+        "with Inigo",
     )
 
 
 async def test_a_type_says_what_it_is_called_on_the_band(band, api) -> None:
-    spin = (await api.post("/activity-types", json={"name": "Spinning casa"})).json()
+    spin = (await api.post("/activity-types", json={"name": "Home spinning"})).json()
     saved = await api.put(
         f"/activity-types/{spin['id']}",
-        json={"name": "Spinning casa", "band_kinds": ["STATIONARY_BIKE"]},
+        json={"name": "Home spinning", "band_kinds": ["STATIONARY_BIKE"]},
     )
     assert saved.json()["band_kinds"] == ["STATIONARY_BIKE"]
     await band_workout(band, "ex:7", "STATIONARY_BIKE", "2026-09-22T08:00:00+02:00")
 
     assert await receive_band(band) == 1
-    assert [one["name"] for one in await listed_activities(api)] == ["Spinning casa"]
+    assert [one["name"] for one in await listed_activities(api)] == ["Home spinning"]
     renamed = await api.put(f"/activity-types/{spin['id']}", json={"name": "Spinning"})
     assert renamed.json()["band_kinds"] == ["STATIONARY_BIKE"]
 
@@ -617,7 +643,7 @@ async def test_sport_from_another_app_and_the_band_at_the_same_time_is_one(band,
     assert await receive_band(band) == 1
     [swim] = await listed_activities(api)
     assert (swim["name"], swim["start_time"], swim["duration_seconds"]) == (
-        "Natación",
+        "Swimming",
         "19:10:00",
         2700,
     )
@@ -737,7 +763,7 @@ async def test_what_came_in_twice_before_is_joined_once(band, api) -> None:
 
 
 async def test_an_activity_started_now_is_finished_later(setup, api, monkeypatch) -> None:
-    bike = (await api.post("/activity-types", json={"name": "Bici"})).json()
+    bike = (await api.post("/activity-types", json={"name": "Cycling"})).json()
     started = datetime(2026, 9, 23, 10, 2, 40, tzinfo=UTC)
     monkeypatch.setattr(activities, "datetime", frozen(started))
     open_ = (await api.post("/activities/start", json={"activity_type_id": bike["id"]})).json()
@@ -768,7 +794,7 @@ async def test_an_activity_started_now_is_finished_later(setup, api, monkeypatch
 
 
 async def test_its_hours_are_corrected_to_the_minute(setup, api) -> None:
-    bike = (await api.post("/activity-types", json={"name": "Bici"})).json()
+    bike = (await api.post("/activity-types", json={"name": "Cycling"})).json()
     logged = (
         await api.post(
             "/activities",
@@ -803,7 +829,7 @@ async def move(api, uid: str, start: str, end: str, **extra):
 
 async def test_an_activity_moves_from_the_calendar_and_back(setup, api, monkeypatch) -> None:
     monkeypatch.setenv("MODULE_REGISTRATION_TOKEN", "probe-token")
-    padel = (await api.post("/activity-types", json={"name": "Pádel"})).json()
+    padel = (await api.post("/activity-types", json={"name": "Padel"})).json()
     logged = (
         await api.post(
             "/activities",
@@ -832,7 +858,7 @@ async def test_an_activity_moves_from_the_calendar_and_back(setup, api, monkeypa
 
 async def test_stretching_an_activity_gives_it_a_duration(setup, api, monkeypatch) -> None:
     monkeypatch.setenv("MODULE_REGISTRATION_TOKEN", "probe-token")
-    padel = (await api.post("/activity-types", json={"name": "Pádel"})).json()
+    padel = (await api.post("/activity-types", json={"name": "Padel"})).json()
     logged = (
         await api.post(
             "/activities",

@@ -20,7 +20,7 @@ VARIANTS = text("""
 
 
 def label(exercise: str, variant: str) -> str:
-    if variant.casefold().startswith(exercise.casefold()):
+    if exercise.casefold() in variant.casefold():
         return variant
     return f"{exercise} · {variant}"
 
@@ -30,8 +30,8 @@ def payload(row) -> dict[str, Any]:
         contracts.LINKABLE: contracts.linkable(
             id=str(row.id),
             title=label(row.exercise, row.variant)[:200],
-            kind="Ejercicio",
-            href=f"/training/stats?variante={row.id}",
+            kind="Exercise",
+            href=f"/training/stats?variant={row.id}",
             removed=not row.active,
         ),
         "variant_id": str(row.id),

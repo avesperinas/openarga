@@ -10,10 +10,11 @@ import {
   Skeleton,
   Stepper,
   TextField,
+  useT,
 } from "@openarga/ui";
 import { useCallback, useEffect, useState } from "react";
 
-import { BAND_KINDS } from "./Activities";
+import { bandKinds } from "./Activities";
 import {
   type ActivityType,
   type Gym,
@@ -33,6 +34,7 @@ import { APP } from "./Header";
 type Loaded = { settings: Settings; gyms: Gym[] };
 
 export function SettingsScreen({ initial }: { initial?: Loaded }) {
+  const t = useT();
   const [loaded, setLoaded] = useState<Loaded | null>(initial ?? null);
   const [failed, setFailed] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -56,9 +58,9 @@ export function SettingsScreen({ initial }: { initial?: Loaded }) {
       {notice && <Hint tone="warning">{notice}</Hint>}
       {!loaded ? (
         failed ? (
-          <Hint tone="warning">No se han podido leer los ajustes. Comprueba la conexión.</Hint>
+          <Hint tone="warning">{t("settings.load_failed")}</Hint>
         ) : (
-          <Skeleton label="Cargando los ajustes" />
+          <Skeleton label={t("settings.loading")} />
         )
       ) : (
         <TrainingSettings
@@ -82,6 +84,7 @@ interface TrainingSettingsProps {
 }
 
 function TrainingSettings({ settings, gyms, onSettings, onGyms, onError }: TrainingSettingsProps) {
+  const t = useT();
   const [name, setName] = useState("");
   const [weight, setWeight] = useState<BodyWeightHistory | null>(null);
   useEffect(() => {
@@ -89,7 +92,7 @@ function TrainingSettings({ settings, gyms, onSettings, onGyms, onError }: Train
       .then(setWeight)
       .catch(() => setWeight({ days: [], latest: null }));
   }, []);
-  const fail = (error: unknown) => onError(error instanceof Error ? error.message : "No se ha podido guardar");
+  const fail = (error: unknown) => onError(error instanceof Error ? error.message : t("common.save_failed"));
 
   async function addGym() {
     if (!name.trim()) return;
@@ -104,18 +107,18 @@ function TrainingSettings({ settings, gyms, onSettings, onGyms, onError }: Train
 
   return (
     <>
-      <Section title="Entreno">
+      <Section title={t("settings.training")}>
         <Card>
           <div className="training-field">
-            <span className="training-field-label">Objetivo semanal</span>
-            <p className="training-field-hint">Sesiones por semana, de lunes a domingo. Es la medida de constancia.</p>
+            <span className="training-field-label">{t("settings.weekly_goal")}</span>
+            <p className="training-field-hint">{t("settings.weekly_goal_hint")}</p>
             <Stepper
-              label="Objetivo semanal"
+              label={t("settings.weekly_goal")}
               value={settings.weekly_goal}
               step={1}
               min={1}
               max={14}
-              unit="sesiones"
+              unit={t("settings.sessions_unit")}
               inputMode="numeric"
               onChange={(value) => {
                 if (!value) return;
@@ -127,7 +130,7 @@ function TrainingSettings({ settings, gyms, onSettings, onGyms, onError }: Train
         </Card>
         <BodyWeightCard
           history={weight}
-          note="El mismo peso en Salud y en Macros. Con él, dominadas y fondos cuentan para la fuerza."
+          note={t("settings.weight_note")}
           onLog={(kg) =>
             logWeight(kg)
               .then((found) => {
@@ -142,10 +145,10 @@ function TrainingSettings({ settings, gyms, onSettings, onGyms, onError }: Train
         />
       </Section>
       <BandSection onError={fail} />
-      <Section title="Centros">
+      <Section title={t("settings.gyms")}>
         <Card>
           <div className="training-field">
-            <p className="training-field-hint">Cada sesión guarda dónde se hizo; por defecto, el último.</p>
+            <p className="training-field-hint">{t("settings.gyms_hint")}</p>
             {gyms.length > 0 && (
               <ul className="training-options">
                 {gyms.map((gym) => (
@@ -160,16 +163,16 @@ function TrainingSettings({ settings, gyms, onSettings, onGyms, onError }: Train
                         updateGym(next).catch(fail);
                       }}
                     >
-                      {gym.active ? "Archivar" : "Recuperar"}
+                      {gym.active ? t("common.archive") : t("common.restore")}
                     </Button>
                   </li>
                 ))}
               </ul>
             )}
           </div>
-          <TextField label="Nuevo centro" value={name} onChange={setName} placeholder="Nombre del gimnasio" onSubmit={() => void addGym()} />
+          <TextField label={t("settings.new_gym")} value={name} onChange={setName} placeholder={t("settings.gym_name")} onSubmit={() => void addGym()} />
           <Button variant="secondary" size="small" icon="plus" disabled={!name.trim()} onClick={() => void addGym()}>
-            Añadir centro
+            {t("settings.add_gym")}
           </Button>
         </Card>
       </Section>
@@ -178,6 +181,7 @@ function TrainingSettings({ settings, gyms, onSettings, onGyms, onError }: Train
 }
 
 export function BandSection({ onError, initial }: { onError: (error: unknown) => void; initial?: ActivityType[] }) {
+  const t = useT();
   const [types, setTypes] = useState<ActivityType[] | null>(initial ?? null);
   useEffect(() => {
     if (initial) return;
@@ -187,18 +191,15 @@ export function BandSection({ onError, initial }: { onError: (error: unknown) =>
   }, [initial]);
   if (!types || types.length === 0) return null;
   return (
-    <Section title="Actividades y pulsera">
+    <Section title={t("band.section")}>
       <Card>
-        <p className="training-field-hint">
-          Lo que empieces en la pulsera entra solo como actividad, salvo los paseos. Elige cómo se llama allí cada una si
-          no es el mismo nombre.
-        </p>
+        <p className="training-field-hint">{t("band.section_hint")}</p>
         {types.map((type) => (
           <div key={type.id} className="training-field">
             <span className="training-field-label">{type.name}</span>
             <CheckChips
-              label={`${type.name} en la pulsera`}
-              options={BAND_KINDS}
+              label={t("band.on_band", { name: type.name })}
+              options={bandKinds(t)}
               values={type.band_kinds ?? []}
               onChange={(band_kinds) => {
                 const next = { ...type, band_kinds };
