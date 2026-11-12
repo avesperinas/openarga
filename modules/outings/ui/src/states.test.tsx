@@ -72,6 +72,8 @@ const settle = () =>
     for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setTimeout(resolve, 0));
   });
 
+const retry = () => host.querySelector<HTMLButtonElement>('.empty-state[role="alert"] button') ?? undefined;
+
 const button = (name: string) =>
   Array.from(host.querySelectorAll<HTMLButtonElement>("button")).find((one) => one.textContent?.includes(name));
 
@@ -88,94 +90,94 @@ async function serious(): Promise<string[]> {
     .map((one) => `${one.id}: ${one.nodes.map((node) => node.target.join(" ")).join(", ")}`);
 }
 
-describe("la agenda", () => {
-  it("mientras llega, el esqueleto", async () => {
+describe("the agenda", () => {
+  it("while it arrives, the skeleton", async () => {
     replies["GET /api/outings/mine"] = () => new Promise(() => undefined);
     await open();
     expect(host.querySelector(".skeleton")).not.toBeNull();
   });
 
-  it("vacía, el botón lleva a Explorar", async () => {
+  it("empty, the button goes to Explore", async () => {
     await open();
-    expect(host.textContent).toContain("Tu agenda está vacía");
-    act(() => button("Explorar")!.click());
+    expect(host.textContent).toContain("Your agenda is empty");
+    act(() => button("Explore")!.click());
     await settle();
     expect(window.location.pathname).toBe("/outings/explore");
   });
 
-  it("si falla, lo dice y reintentar lo trae", async () => {
-    replies["GET /api/outings/mine"] = () => json({ detail: "la base no contesta" }, 503);
+  it("if it fails, it says so and retrying brings it", async () => {
+    replies["GET /api/outings/mine"] = () => json({ detail: "the database is not answering" }, 503);
     await open();
-    expect(host.textContent).toContain("Outings no contesta");
-    expect(host.textContent).toContain("la base no contesta");
+    expect(host.textContent).toContain("Outings is not answering");
+    expect(host.textContent).toContain("the database is not answering");
 
     replies["GET /api/outings/mine"] = () => ({ from: "2026-11-01", to: "2026-11-30", events: [] });
-    act(() => button("Reintentar")!.click());
+    act(() => retry()!.click());
     await settle();
-    expect(host.textContent).toContain("Tu agenda está vacía");
+    expect(host.textContent).toContain("Your agenda is empty");
   });
 
-  it("sin red, lo dice arriba", async () => {
+  it("offline, it says so at the top", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     await open();
-    expect(host.textContent).toContain("Sin conexión");
+    expect(host.querySelector('.notice[data-tone="warning"]')).not.toBeNull();
   });
 });
 
-describe("explorar", () => {
-  it("sin nada en la agenda, el botón pide a tu Claude que la llene", async () => {
+describe("explore", () => {
+  it("with nothing in the agenda, the button asks your AI to fill it", async () => {
     await open("/outings/explore");
-    expect(host.textContent).toContain("La agenda está vacía");
-    expect(button("Actualizar")).toBeDefined();
+    expect(host.textContent).toContain("The agenda is empty");
+    expect(button("Update")).toBeDefined();
   });
 
-  it("si falla, se reintenta", async () => {
-    replies["GET /api/outings/explore"] = () => json({ detail: "la base no contesta" }, 503);
+  it("if it fails, it retries", async () => {
+    replies["GET /api/outings/explore"] = () => json({ detail: "the database is not answering" }, 503);
     await open("/outings/explore");
-    expect(host.textContent).toContain("la base no contesta");
-    expect(button("Reintentar")).toBeDefined();
+    expect(host.textContent).toContain("the database is not answering");
+    expect(retry()).toBeDefined();
   });
 });
 
-describe("las ganas", () => {
-  it("sin ninguna, el botón apunta la primera", async () => {
+describe("the wishes", () => {
+  it("with none, the button notes the first", async () => {
     await open("/outings/wishes");
-    expect(host.textContent).toContain("Nada apuntado todavía");
-    expect(button("Apuntar")).toBeDefined();
+    expect(host.textContent).toContain("Nothing noted yet");
+    expect(button("Note")).toBeDefined();
   });
 
-  it("una que ya no está lo dice; otro fallo se reintenta", async () => {
+  it("one that is gone says so; another failure retries", async () => {
     await open(`/outings/wishes/${WISH}`);
-    expect(host.textContent).toContain("Ya no está");
-    expect(button("Reintentar")).toBeUndefined();
+    expect(host.textContent).toContain("Not here any more");
+    expect(retry()).toBeUndefined();
 
     act(() => root.unmount());
     root = createRoot(host);
     void reset();
-    replies[`GET /api/outings/wishes/${WISH}`] = () => json({ detail: "la base no contesta" }, 503);
+    replies[`GET /api/outings/wishes/${WISH}`] = () => json({ detail: "the database is not answering" }, 503);
     await open(`/outings/wishes/${WISH}`);
-    expect(host.textContent).toContain("la base no contesta");
-    expect(button("Reintentar")).toBeDefined();
+    expect(host.textContent).toContain("the database is not answering");
+    expect(retry()).toBeDefined();
   });
 });
 
-describe("un evento", () => {
-  it("si no existe lo dice", async () => {
+describe("an event", () => {
+  it("if it does not exist, it says so", async () => {
     await open(`/outings/events/${EVENT}`);
-    expect(host.textContent).toContain("Ya no está");
+    expect(host.textContent).toContain("Not here any more");
   });
 });
 
-describe("los ajustes", () => {
-  it("si no se pueden leer, se reintenta", async () => {
-    replies["GET /api/outings/interests"] = () => json({ detail: "la base no contesta" }, 503);
+describe("the settings", () => {
+  it("if they cannot be read, it retries", async () => {
+    replies["GET /api/outings/interests"] = () => json({ detail: "the database is not answering" }, 503);
     await open("/outings/settings");
-    expect(host.textContent).toContain("la base no contesta");
-    expect(button("Reintentar")).toBeDefined();
+    expect(host.textContent).toContain("the database is not answering");
+    expect(retry()).toBeDefined();
   });
 });
 
-describe("axe-core sin errores graves", () => {
+describe("axe-core without serious errors", () => {
   it.each(["/outings/", "/outings/explore", "/outings/wishes", "/outings/settings"])("%s", async (path) => {
     await open(path);
     expect(await serious()).toEqual([]);

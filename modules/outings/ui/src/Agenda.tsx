@@ -6,6 +6,7 @@ import { AppVersion } from "./AppVersion";
 import { type AgendaEvent, readMine } from "./api";
 import { VIEW, useMapBase } from "./area";
 import { ScreenHeader } from "./Header";
+import { t } from "./lang";
 import { Pending, useLoad } from "./Loads";
 import { categoryOf, dayTitle, eventLine, isoDay, longDay, marksOf, monthName, onDay, shortDay, span, until } from "./words";
 
@@ -65,7 +66,7 @@ export function AgendaScreen({
 
   return (
     <Screen>
-      <ScreenHeader eyebrow={longDay(today)} title="Agenda" />
+      <ScreenHeader eyebrow={longDay(today)} title={t("tab.agenda")} />
 
       <OfflineNotice />
 
@@ -82,7 +83,7 @@ export function AgendaScreen({
 
       {(mine === null || (coming === null && both.error)) && <Pending found={both} rows={2} />}
       {mine !== null && (
-        <Section title={selected === today ? "Hoy" : dayTitle(selected, true)} count={thatDay.length || undefined}>
+        <Section title={selected === today ? t("agenda.today") : dayTitle(selected, true)} count={thatDay.length || undefined}>
           {thatDay.length > 0 ? (
             <List>
               {thatDay.map((event) => (
@@ -90,13 +91,13 @@ export function AgendaScreen({
               ))}
             </List>
           ) : (
-            <Hint>Nada tuyo este día.</Hint>
+            <Hint>{t("agenda.day_empty")}</Hint>
           )}
         </Section>
       )}
 
       {base && points.length > 0 && (
-        <Section title={`Dónde, en ${monthName(month + 1)}`}>
+        <Section title={t("agenda.where", { month: monthName(month + 1) })}>
           <div className="outings-month-map">
             <Suspense fallback={null}>
               <AreaMap
@@ -104,7 +105,7 @@ export function AgendaScreen({
                 view={VIEW[located.some((one) => one.zone === "region") ? "region" : "near"]}
                 points={points}
                 onSelect={(id) => id && onOpenId(id)}
-                label={`Dónde es lo tuyo en ${monthName(month + 1)}`}
+                label={t("agenda.where_label", { month: monthName(month + 1) })}
               />
             </Suspense>
           </div>
@@ -112,13 +113,13 @@ export function AgendaScreen({
       )}
 
       {empty && (
-        <EmptyState icon="calendar" title="Tu agenda está vacía" action={{ label: "Explorar", onClick: onExplore }}>
-          Busca en Explorar: lo que guardes con Me apetece o mandes a Planner sale aquí, en su día y en el mapa.
+        <EmptyState icon="calendar" title={t("agenda.empty")} action={{ label: t("tab.explore"), onClick: onExplore }}>
+          {t("agenda.empty_body")}
         </EmptyState>
       )}
 
       {coming !== null && coming.length > 0 && (
-        <Section title="Lo próximo" count={coming.length}>
+        <Section title={t("agenda.coming")} count={coming.length}>
           <List>
             {coming.slice(0, 8).map((event) => (
               <EventRow key={event.id} event={event} withDay onOpen={() => onOpen(event)} />
@@ -154,7 +155,7 @@ export function EventRow({
       icon={category.icon}
       hue={category.hue}
       value={event.time ?? undefined}
-      detail={event.in_calendar ? "En Planner" : event.wish_id ? "Guardado" : event.highlight ? "Destacado" : undefined}
+      detail={event.in_calendar ? t("event.in_planner") : event.wish_id ? t("event.saved") : event.highlight ? t("event.highlight") : undefined}
       onClick={onOpen}
     />
   );

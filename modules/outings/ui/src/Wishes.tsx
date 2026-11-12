@@ -27,12 +27,11 @@ import {
   signIn,
 } from "./api";
 import { ScreenHeader } from "./Header";
+import { t } from "./lang";
 import { Pending, changed, useLoad } from "./Loads";
 import { WishSheet } from "./WishSheet";
 import {
   NEW_KIND,
-  PLANNED_PHASE,
-  WISH_TABS,
   type WishTab,
   cardLine,
   doneLine,
@@ -40,7 +39,9 @@ import {
   inTab,
   kindOf,
   plannedLine,
+  plannedPhase,
   wishLine,
+  wishTabs,
 } from "./words";
 
 export function WishesScreen({ onOpen }: { onOpen: (wish: Wish) => void }) {
@@ -51,7 +52,7 @@ export function WishesScreen({ onOpen }: { onOpen: (wish: Wish) => void }) {
   const [tab, setTab] = useState<WishTab>(() => {
     try {
       const kept = window.localStorage.getItem("outings.wishes.tab");
-      return WISH_TABS.some((one) => one.value === kept) ? (kept as WishTab) : "outings";
+      return wishTabs().some((one) => one.value === kept) ? (kept as WishTab) : "outings";
     } catch {
       return "outings";
     }
@@ -69,7 +70,7 @@ export function WishesScreen({ onOpen }: { onOpen: (wish: Wish) => void }) {
 
   const fail = useCallback((error: unknown) => {
     if (error instanceof Unauthorised) return signIn();
-    setProblem(error instanceof Error ? error.message : "No se ha podido guardar.");
+    setProblem(error instanceof Error ? error.message : t("problem.save"));
   }, []);
 
   async function done(wish: Wish) {
@@ -98,24 +99,24 @@ export function WishesScreen({ onOpen }: { onOpen: (wish: Wish) => void }) {
 
   return (
     <Screen>
-      <ScreenHeader eyebrow="Lo que nos apetece" title="Ganas" />
+      <ScreenHeader eyebrow={t("wishes.eyebrow")} title={t("tab.wishes")} />
 
-      <SegmentedControl label="Tipo" options={WISH_TABS} value={tab} onChange={choose} />
+      <SegmentedControl label={t("wishes.kind")} options={wishTabs()} value={tab} onChange={choose} />
 
       <OfflineNotice />
       {problem && <Hint tone="warning">{problem}</Hint>}
       {wishes === null && <Pending found={found} rows={4} />}
 
       {wishes !== null && wishes.length === 0 && (
-        <EmptyState icon="bookmark" title="Nada apuntado todavía" action={{ label: "Apuntar", onClick: () => setAdding(true) }}>
-          Una escapada, un restaurante o un viaje: con una foto, su nombre y dónde está.
+        <EmptyState icon="bookmark" title={t("wishes.empty")} action={{ label: t("wishes.note"), onClick: () => setAdding(true) }}>
+          {t("wishes.empty_body")}
         </EmptyState>
       )}
-      {wishes !== null && wishes.length > 0 && shown.length === 0 && <Hint>Nada aquí por ahora.</Hint>}
+      {wishes !== null && wishes.length > 0 && shown.length === 0 && <Hint>{t("wishes.tab_empty")}</Hint>}
 
       {tab === "trips" && planned.length > 0 && (
-        <Section title="Planeando" count={planned.length}>
-          <Tiles label="Planeando">
+        <Section title={t("wishes.planning")} count={planned.length}>
+          <Tiles label={t("wishes.planning")}>
             {planned.map((one) => (
               <PlannedCard key={`${one.app}-${one.id}`} trip={one} />
             ))}
@@ -142,7 +143,7 @@ export function WishesScreen({ onOpen }: { onOpen: (wish: Wish) => void }) {
                   icon={wish.has_photo ? undefined : kindOf(wish.kind).icon}
                   hue={kindOf(wish.kind).hue}
                   onClick={() => onOpen(wish)}
-                  action={{ icon: "done", label: "Hecho", kind: "check", onClick: () => void done(wish) }}
+                  action={{ icon: "done", label: t("wishes.done"), kind: "check", onClick: () => void done(wish) }}
                 />
               ))}
             </List>
@@ -152,9 +153,9 @@ export function WishesScreen({ onOpen }: { onOpen: (wish: Wish) => void }) {
 
       {archived.length > 0 && (
         <Section
-          title="Archivo"
+          title={t("wishes.archive")}
           count={archived.length}
-          action={{ label: showArchive ? "Ocultar" : "Ver", onClick: () => setShowArchive(!showArchive) }}
+          action={{ label: showArchive ? t("action.hide") : t("action.show"), onClick: () => setShowArchive(!showArchive) }}
         >
           {showArchive && (
             <List>
@@ -167,7 +168,7 @@ export function WishesScreen({ onOpen }: { onOpen: (wish: Wish) => void }) {
                   icon={wish.has_photo ? undefined : kindOf(wish.kind).icon}
                   hue={kindOf(wish.kind).hue}
                   onClick={() => onOpen(wish)}
-                  action={{ icon: "undo", label: "Devolver a la lista", onClick: () => void restore(wish) }}
+                  action={{ icon: "undo", label: t("wishes.restore"), onClick: () => void restore(wish) }}
                 />
               ))}
             </List>
@@ -177,7 +178,7 @@ export function WishesScreen({ onOpen }: { onOpen: (wish: Wish) => void }) {
 
       <AppVersion />
 
-      <CreateButton label="Apuntar" onClick={() => setAdding(true)} />
+      <CreateButton label={t("wishes.note")} onClick={() => setAdding(true)} />
 
       {adding && (
         <WishSheet
@@ -218,7 +219,7 @@ export function PlannedCard({ trip }: { trip: Planned }) {
       src={trip.image}
       hue={5}
       icon="plane"
-      badge={PLANNED_PHASE[trip.phase]}
+      badge={plannedPhase(trip.phase)}
       href={trip.href}
     />
   );

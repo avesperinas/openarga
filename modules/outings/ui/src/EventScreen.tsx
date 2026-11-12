@@ -15,13 +15,14 @@ import {
   toCalendar,
 } from "./api";
 import { ScreenHeader } from "./Header";
+import { intl, t } from "./lang";
 import { Pending, useLoad } from "./Loads";
 import { MiniMap } from "./MiniMap";
-import { KINDS, categoryOf, kindOf, shortDay, since, span } from "./words";
+import { categoryOf, kindOf, kinds, shortDay, since, span } from "./words";
 
 export function EventScreen({
   id,
-  backLabel = "Agenda",
+  backLabel,
   onBack,
   onWish,
 }: {
@@ -38,7 +39,7 @@ export function EventScreen({
 
   const fail = useCallback((error: unknown) => {
     if (error instanceof Unauthorised) return signIn();
-    setProblem(error instanceof Error ? error.message : "No se ha podido guardar.");
+    setProblem(error instanceof Error ? error.message : t("problem.save"));
   }, []);
 
   async function fancy() {
@@ -85,7 +86,7 @@ export function EventScreen({
     setBusy(true);
     try {
       setEvent(await dismissEvent(event.id, on));
-      setSaid(on ? "Apartado: ya no sale en Explorar ni en la Agenda." : "");
+      setSaid(on ? t("event.dismissed_said") : "");
     } catch (error) {
       fail(error);
     } finally {
@@ -97,7 +98,7 @@ export function EventScreen({
     setBusy(true);
     try {
       await addInterest("mute", term);
-      setSaid(`Silenciado: nada de «${term}» saldrá en Explorar. Se deshace en Ajustes.`);
+      setSaid(t("event.muted_said", { term }));
     } catch (error) {
       fail(error);
     } finally {
@@ -105,7 +106,7 @@ export function EventScreen({
     }
   }
 
-  const back = { label: backLabel, onClick: onBack };
+  const back = { label: backLabel ?? t("tab.agenda"), onClick: onBack };
   if (!event) {
     return (
       <Screen>
@@ -128,19 +129,19 @@ export function EventScreen({
 
       <div className="outings-actions outings-actions-wide">
         <Button variant={event.wish_id ? "secondary" : "primary"} icon={event.wish_id ? "done" : "heart"} onClick={() => void fancy()} disabled={busy}>
-          {event.wish_id ? "En Ganas" : "Me apetece"}
+          {event.wish_id ? t("event.in_wishes") : t("event.want")}
         </Button>
         <Button variant="secondary" icon={event.in_calendar ? "done" : "calendar"} onClick={() => void calendar()} disabled={busy}>
-          {event.in_calendar ? "En Planner" : "A Planner"}
+          {event.in_calendar ? t("event.in_planner") : t("event.to_planner")}
         </Button>
       </div>
 
       {problem && <Hint tone="warning">{problem}</Hint>}
-      {event.dismissed && <Hint tone="warning">Apartado: no te interesa.</Hint>}
+      {event.dismissed && <Hint tone="warning">{t("event.dismissed")}</Hint>}
       {event.summary && <p className="outings-body outings-muted">{event.summary}</p>}
 
       {event.programme.length > 0 && (
-        <Section title="Programa" count={event.programme.length}>
+        <Section title={t("event.programme")} count={event.programme.length}>
           <List>
             {event.programme.map((act) => (
               <ListRow key={act} title={act} icon={category.icon} hue={category.hue} />
@@ -152,7 +153,7 @@ export function EventScreen({
       {where.length > 0 && (
         <Card flush>
           {event.lat != null && event.lon != null && (
-            <MiniMap point={{ id: event.id, lon: event.lon, lat: event.lat, kind: "pill", label: shortDay(event.starts_on), hue: category.hue, title: event.title }} label={`Dónde es: ${where.join(", ")}`} />
+            <MiniMap point={{ id: event.id, lon: event.lon, lat: event.lat, kind: "pill", label: shortDay(event.starts_on), hue: category.hue, title: event.title }} label={t("event.where", { place: where.join(", ") })} />
           )}
           <List>
             <ListRow title={where[0]!} subtitle={where[1] ?? undefined} icon="pin" hue={category.hue} />
@@ -163,7 +164,7 @@ export function EventScreen({
       {near.length > 0 && <NearWishes near={near} onWish={onWish} />}
 
       {event.links.length > 0 && (
-        <Section title={event.links.length > 1 ? "Unido de varias agendas" : undefined}>
+        <Section title={event.links.length > 1 ? t("event.joined") : undefined}>
           <List>
             {event.links.map((link) => {
               const source = event.sources?.find((one) => one.page === link.page);
@@ -172,13 +173,13 @@ export function EventScreen({
                 <ListRow
                   key={link.url}
                   title={link.name || new URL(link.page).host}
-                  subtitle={several ? "Ver en su página · si no es el mismo, sepáralo" : "Ver en su página"}
+                  subtitle={several ? t("event.see_page_split") : t("event.see_page")}
                   icon="external"
                   hue={category.hue}
                   onClick={() => window.open(link.url, "_blank", "noopener")}
                   action={
                     several && source
-                      ? { icon: "close", label: `Separar ${link.name}`, onClick: () => void separate(source.id) }
+                      ? { icon: "close", label: t("event.split", { name: link.name }), onClick: () => void separate(source.id) }
                       : undefined
                   }
                 />
@@ -188,14 +189,14 @@ export function EventScreen({
         </Section>
       )}
 
-      <Section title="¿No te interesa?">
+      <Section title={t("event.not_interested_title")}>
         <div className="outings-actions">
           <Button variant="plain" icon={event.dismissed ? "undo" : "eye-off"} onClick={() => void dismiss(!event.dismissed)} disabled={busy}>
-            {event.dismissed ? "Devolverlo" : "No me interesa"}
+            {event.dismissed ? t("event.restore") : t("settings.mutes")}
           </Button>
           {event.venue && !event.dismissed && (
             <Button variant="plain" icon="eye-off" onClick={() => void mute(event.venue!)} disabled={busy}>
-              Nada en {event.venue}
+              {t("event.nothing_at", { venue: event.venue })}
             </Button>
           )}
         </div>
@@ -203,27 +204,27 @@ export function EventScreen({
       </Section>
 
       <Hint>
-        Llegó{first?.name ? ` de ${first.name}` : ""} · {since(event.first_seen)}
+        {first?.name ? t("event.arrived_from", { name: first.name, when: since(event.first_seen) }) : t("event.arrived", { when: since(event.first_seen) })}
       </Hint>
     </Screen>
   );
 }
 
 export function nearDefault(near: Near[]): Kind | null {
-  return KINDS.find((kind) => kind.value !== "eat" && near.some((one) => one.kind === kind.value))?.value ?? null;
+  return kinds().find((kind) => kind.value !== "eat" && near.some((one) => one.kind === kind.value))?.value ?? null;
 }
 
 function NearWishes({ near, onWish }: { near: Near[]; onWish: (id: string) => void }) {
   const [chosen, setChosen] = useState<Kind | "none" | null>(null);
-  const kinds = KINDS.filter((kind) => near.some((one) => one.kind === kind.value));
+  const present = kinds().filter((kind) => near.some((one) => one.kind === kind.value));
   const shown = chosen === "none" ? null : (chosen ?? nearDefault(near));
   const those = shown ? near.filter((one) => one.kind === shown) : [];
   return (
-    <Section title="Cerca, de tus ganas">
+    <Section title={t("event.near_wishes")}>
       <ChoiceChips
-        label="Qué ganas cerca"
+        label={t("event.near_wishes_label")}
         scroll
-        options={kinds.map((kind) => ({
+        options={present.map((kind) => ({
           value: kind.value,
           label: `${kind.plural} ${near.filter((one) => one.kind === kind.value).length}`,
         }))}
@@ -236,7 +237,7 @@ function NearWishes({ near, onWish }: { near: Near[]; onWish: (id: string) => vo
             <ListRow
               key={one.id}
               title={one.name}
-              subtitle={`A ${String(one.km).replace(".", ",")} km · para aprovechar el viaje`}
+              subtitle={t("event.near_km", { km: new Intl.NumberFormat(intl()).format(one.km) })}
               icon={kindOf(one.kind).icon}
               hue={kindOf(one.kind).hue}
               accessory="chevron-right"

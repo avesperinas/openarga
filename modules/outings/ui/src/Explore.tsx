@@ -8,7 +8,8 @@ import { type AgendaEvent, type Category, type When, Unauthorised, readExplore, 
 import { ScreenHeader } from "./Header";
 import { Pending, useLoad } from "./Loads";
 import { UpdateSheet } from "./UpdateSheet";
-import { CATEGORIES, WHENS, type ZoneFilter, dayTitle, freshSince, freshTitle, isoDay, monthTitle, zones } from "./words";
+import { t } from "./lang";
+import { WHEN_VALUES, type ZoneFilter, categories, dayTitle, freshSince, freshTitle, isoDay, monthTitle, whens, zones } from "./words";
 
 type Filter = "all" | Category;
 
@@ -28,7 +29,7 @@ export function ExploreScreen({ onOpen }: { onOpen: (event: AgendaEvent) => void
   const [arrived] = useState(() => new URLSearchParams(window.location.search));
   const area = useArea();
   const fromNotice = arrived.has("new") || arrived.has("when");
-  const noticeWhen = WHENS.find((one) => one.value === arrived.get("when"))?.value;
+  const noticeWhen = WHEN_VALUES.find((one) => one === arrived.get("when"));
   const [query, setQuery] = useState(fromNotice ? "" : kept.typed.trim());
   const [typed, setTyped] = useState(fromNotice ? "" : kept.typed);
   const [when, setWhen] = useState<When>(noticeWhen ?? (fromNotice ? "quarter" : kept.when));
@@ -55,7 +56,7 @@ export function ExploreScreen({ onOpen }: { onOpen: (event: AgendaEvent) => void
 
   const fail = useCallback((error: unknown) => {
     if (error instanceof Unauthorised) return signIn();
-    setProblem(error instanceof Error ? error.message : "No se ha podido buscar.");
+    setProblem(error instanceof Error ? error.message : t("problem.search"));
   }, []);
 
   useEffect(() => {
@@ -103,15 +104,15 @@ export function ExploreScreen({ onOpen }: { onOpen: (event: AgendaEvent) => void
 
   return (
     <Screen>
-      <ScreenHeader eyebrow={area ? `${area.name} · ${area.region}` : undefined} title="Explorar" />
+      <ScreenHeader eyebrow={area ? `${area.name} · ${area.region}` : undefined} title={t("tab.explore")} />
 
-      <SearchField value={typed} onChange={setTyped} placeholder="Jazz, Baluarte, setas, Olite…" label="Buscar en la agenda" />
-      <SegmentedControl label="Cuándo" options={WHENS} value={when} onChange={setWhen} />
-      <ChoiceChips label="Dónde" options={zones(area)} value={zone} onChange={setZone} scroll />
+      <SearchField value={typed} onChange={setTyped} placeholder={t("explore.placeholder")} label={t("explore.search")} />
+      <SegmentedControl label={t("explore.when")} options={whens()} value={when} onChange={setWhen} />
+      <ChoiceChips label={t("explore.where")} options={zones(area)} value={zone} onChange={setZone} scroll />
       <ChoiceChips
-        label="Qué"
+        label={t("explore.what")}
         scroll
-        options={[{ value: "all" as Filter, label: "Todo" }, ...CATEGORIES.map(({ value, label }) => ({ value: value as Filter, label }))]}
+        options={[{ value: "all" as Filter, label: t("filter.all") }, ...categories().map(({ value, label }) => ({ value: value as Filter, label }))]}
         value={filter}
         onChange={setFilter}
       />
@@ -124,7 +125,7 @@ export function ExploreScreen({ onOpen }: { onOpen: (event: AgendaEvent) => void
           title={freshTitle(fresh.since, fresh.fromNotice, today)}
           count={arrivals!.total}
           action={
-            !allFresh && arrivals!.total > newOnes.length ? { label: `Ver los ${arrivals!.total}`, onClick: () => setAllFresh(true) } : undefined
+            !allFresh && arrivals!.total > newOnes.length ? { label: t("explore.see_all", { count: arrivals!.total }), onClick: () => setAllFresh(true) } : undefined
           }
         >
           <List>
@@ -135,11 +136,11 @@ export function ExploreScreen({ onOpen }: { onOpen: (event: AgendaEvent) => void
         </Section>
       )}
       {fresh.fromNotice && arrivals && arrivals.total === 0 && !narrowed && (
-        <Hint>Lo que trajo el aviso ya pasó o lo apartaste.</Hint>
+        <Hint>{t("explore.notice_gone")}</Hint>
       )}
 
       {!narrowed && forYou.length > 0 && (
-        <Section title="Para ti" count={forYou.length}>
+        <Section title={t("explore.for_you")} count={forYou.length}>
           <List>
             {forYou.slice(0, FOR_YOU).map((pick) => (
               <EventRow
@@ -159,19 +160,19 @@ export function ExploreScreen({ onOpen }: { onOpen: (event: AgendaEvent) => void
       {found !== null && found.total === 0 && !narrowed && (
         <EmptyState
           icon="search"
-          title="La agenda está vacía"
-          action={{ label: "Actualizar", onClick: () => setUpdating(true) }}
+          title={t("explore.empty")}
+          action={{ label: t("action.update"), onClick: () => setUpdating(true) }}
         >
-          La llena tu Claude: en Actualizar se copia el encargo, o lo hace solo la tarea de cada semana.
+          {t("explore.empty_body")}
         </EmptyState>
       )}
-      {found !== null && found.total === 0 && narrowed && <Hint>Nada con eso en estas fechas. Prueba con más tiempo.</Hint>}
+      {found !== null && found.total === 0 && narrowed && <Hint>{t("explore.nothing")}</Hint>}
 
       {found !== null && found.total > 0 && sort === "best" && (
         <Section
-          title="Lo destacado"
+          title={t("explore.best")}
           count={found.total}
-          action={{ label: "Por fecha", onClick: () => setByDate(true) }}
+          action={{ label: t("explore.by_date"), onClick: () => setByDate(true) }}
         >
           <List>
             {events
@@ -188,7 +189,7 @@ export function ExploreScreen({ onOpen }: { onOpen: (event: AgendaEvent) => void
           {!narrowed && (
             <div className="outings-actions">
               <Button variant="plain" icon="filter" onClick={() => setByDate(false)}>
-                Lo destacado primero
+                {t("explore.best_first")}
               </Button>
             </div>
           )}
@@ -208,13 +209,13 @@ export function ExploreScreen({ onOpen }: { onOpen: (event: AgendaEvent) => void
 
       {left > 0 && (
         <Button variant="secondary" onClick={() => void next()}>
-          Ver {Math.min(left, PAGE)} más de {found!.total}
+          {t("explore.more", { count: Math.min(left, PAGE), total: found!.total })}
         </Button>
       )}
 
       <div className="outings-actions">
         <Button variant="plain" icon="repeat" onClick={() => setUpdating(true)}>
-          Actualizar
+          {t("action.update")}
         </Button>
       </div>
 

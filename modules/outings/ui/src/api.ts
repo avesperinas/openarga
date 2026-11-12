@@ -1,5 +1,6 @@
 import { Unauthorised, createApi, problemOf, signIn } from "@openarga/app";
 import type { SourceAsk } from "@openarga/ui";
+import { t } from "./lang";
 
 const BASE = "/api/outings";
 
@@ -64,7 +65,7 @@ const { get, send } = client;
 export { Unauthorised, problemOf, signIn };
 
 async function answer<T>(path: string, response: Response): Promise<T> {
-  if (response.status === 401) throw new Unauthorised("sin sesión");
+  if (response.status === 401) throw new Unauthorised("no session");
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new Error(problemOf(body) ?? `${path}: ${response.status}`);
@@ -118,7 +119,7 @@ export async function uploadPhoto(id: string, photo: Blob): Promise<Wish> {
 }
 
 export function creditLine(credit: PhotoCredit) {
-  return ["Foto: " + (credit.author ?? "autor sin nombre"), credit.license, "Wikimedia Commons"]
+  return [t("photo.credit", { author: credit.author ?? t("photo.no_author") }), credit.license, "Wikimedia Commons"]
     .filter(Boolean)
     .join(" · ");
 }

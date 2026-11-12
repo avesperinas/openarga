@@ -7,6 +7,7 @@ import { AgendaSettings } from "./AgendaSettings";
 import { EventScreen } from "./EventScreen";
 import { ExploreScreen } from "./Explore";
 import { APP } from "./Header";
+import { t } from "./lang";
 import { WishScreen } from "./WishScreen";
 import { WishesScreen } from "./Wishes";
 
@@ -28,7 +29,7 @@ export function route(pathname: string): Route {
   const path = pathname.replace(/\/+$/, "");
   if (path === `${ROOT}/settings`) return { tab: "settings" };
   if (path === `${ROOT}/wishes`) return { tab: "wishes" };
-  if (path === `${ROOT}/mapa`) return { tab: "map" };
+  if (path === `${ROOT}/map`) return { tab: "map" };
   if (path === `${ROOT}/explore`) return { tab: "explore" };
   const wish = new RegExp(`^${ROOT}/wishes/${UUID}$`).exec(path);
   if (wish) return { tab: "wish", id: wish[1]! };
@@ -42,7 +43,7 @@ export function route(pathname: string): Route {
 export function pathOf(to: Route): string {
   if (to.tab === "settings") return `${ROOT}/settings`;
   if (to.tab === "wishes") return `${ROOT}/wishes`;
-  if (to.tab === "map") return `${ROOT}/mapa`;
+  if (to.tab === "map") return `${ROOT}/map`;
   if (to.tab === "explore") return `${ROOT}/explore`;
   if (to.tab === "event" && to.from === "explore") return `${ROOT}/explore/${to.id}`;
   if (to.tab === "wish") return `${ROOT}/wishes/${to.id}`;
@@ -65,14 +66,14 @@ export function App() {
 
   return (
     <AppShell
-      label="Secciones"
+      label={t("app.sections")}
       active={current.tab === "event" && current.from === "explore" ? "explore" : TAB_OF[current.tab]}
       onSelect={(tab) => navigate({ tab })}
       tabs={[
-        { id: "agenda", label: "Agenda", icon: "calendar" },
-        { id: "explore", label: "Explorar", icon: "search" },
-        { id: "map", label: "Mapa", icon: "map" },
-        { id: "wishes", label: "Ganas", icon: "bookmark" },
+        { id: "agenda", label: t("tab.agenda"), icon: "calendar" },
+        { id: "explore", label: t("tab.explore"), icon: "search" },
+        { id: "map", label: t("tab.map"), icon: "map" },
+        { id: "wishes", label: t("tab.wishes"), icon: "bookmark" },
         SETTINGS_TAB,
       ]}
     >
@@ -90,7 +91,7 @@ export function App() {
         <EventScreen
           key={current.id}
           id={current.id}
-          backLabel={current.from === "explore" ? "Explorar" : "Agenda"}
+          backLabel={current.from === "explore" ? t("tab.explore") : t("tab.agenda")}
           onBack={() => navigate({ tab: current.from === "explore" ? "explore" : "agenda" })}
           onWish={(id) => navigate({ tab: "wish", id })}
         />

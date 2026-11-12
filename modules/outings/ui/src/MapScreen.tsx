@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import { type Area, GEO_BASE, type MapPoints, type Zone, photoUrl, readMap } from "./api";
 import { VIEW, mapBase, useArea } from "./area";
+import { t } from "./lang";
 import { Pending, useLoad } from "./Loads";
 import { categoryOf, kindOf, shortDay } from "./words";
 
@@ -17,7 +18,7 @@ export const scopes = (area: Area | null): { value: Scope; label: string }[] => 
         { value: "region" as Scope, label: area.region },
       ]
     : []),
-  { value: "world", label: "Mundo" },
+  { value: "world", label: t("map.world") },
 ];
 
 export function mapPoints(found: MapPoints): AreaPoint[] {
@@ -63,7 +64,7 @@ export function MapScreen({
   const card = selected ? cardOf(found, selected) : null;
 
   return (
-    <main className="outings-map" aria-label="Mapa">
+    <main className="outings-map" aria-label={t("tab.map")}>
       {scope === "world" ? (
         <WorldMap
           geoBase={GEO_BASE}
@@ -73,14 +74,14 @@ export function MapScreen({
           places={(found?.wishes ?? []).map((wish) => ({ id: `wish:${wish.id}`, lon: wish.lon, lat: wish.lat, kind: "stay", size: 0.5 }))}
           focus={found && found.wishes.length > 0 ? found.wishes.map((wish) => [wish.lon, wish.lat] as [number, number]) : null}
           onSelectPlace={setSelected}
-          label="Tus ganas en el mundo"
+          label={t("map.world_label")}
         />
       ) : area ? (
-        <AreaMap base={mapBase(area)} view={VIEW[scope]} points={points} selected={selected} onSelect={setSelected} label={`Mapa de ${area.near}`} />
+        <AreaMap base={mapBase(area)} view={VIEW[scope]} points={points} selected={selected} onSelect={setSelected} label={t("map.label", { area: area.near })} />
       ) : null}
 
       <div className="outings-map-top">
-        <SegmentedControl label="Alcance" options={scopes(area)} value={scope} onChange={(value) => { setScope(value); setSelected(null); }} />
+        <SegmentedControl label={t("map.scope")} options={scopes(area)} value={scope} onChange={(value) => { setScope(value); setSelected(null); }} />
         <OfflineNotice />
       </div>
 
@@ -113,9 +114,9 @@ export function MapScreen({
       {found && found.wishes.length === 0 && found.events.length === 0 && !card && (
         <div className="outings-map-card">
           <Card>
-            <Hint>Lo que apuntes con su sitio y lo que llegue de la agenda sale aquí.</Hint>
+            <Hint>{t("map.empty")}</Hint>
             <Button variant="tinted" icon="plus" onClick={onAdd}>
-              Apuntar una gana
+              {t("wishes.add")}
             </Button>
           </Card>
         </div>

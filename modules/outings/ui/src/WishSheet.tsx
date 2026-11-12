@@ -11,9 +11,10 @@ import {
   updateWish,
   uploadPhoto,
 } from "./api";
+import { t } from "./lang";
 import { shrink } from "./photo";
 import { PlacePicker } from "./PlacePicker";
-import { KINDS, PLACEHOLDERS, kindOf, placeLine } from "./words";
+import { kindOf, kinds, placeLine, placeholders } from "./words";
 
 type Photo = { kind: "kept" } | { kind: "new"; blob: Blob; url: string } | { kind: "none" };
 
@@ -49,7 +50,7 @@ export function WishSheet({
       const blob = await shrink(file);
       setPhoto({ kind: "new", blob, url: URL.createObjectURL(blob) });
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : "No se ha podido leer la foto.");
+      setProblem(error instanceof Error ? error.message : t("problem.photo"));
     }
   }
 
@@ -65,7 +66,7 @@ export function WishSheet({
         if (photo.kind === "none" && saved.has_photo) saved = await removePhoto(saved.id);
       } catch (error) {
         onSaved(saved);
-        onError(new Error(`Apuntada, pero la foto no: ${error instanceof Error ? error.message : "falló"}`));
+        onError(new Error(t("problem.photo_after", { reason: error instanceof Error ? error.message : t("problem.failed") })));
         return;
       }
       onSaved(saved);
@@ -77,13 +78,13 @@ export function WishSheet({
   }
 
   const shown = photo.kind === "new" ? photo.url : photo.kind === "kept" && wish ? photoUrl(wish) : undefined;
-  const hints = PLACEHOLDERS[kind];
+  const hints = placeholders(kind);
 
   return (
     <Sheet
-      title={wish ? "Editar" : "Apuntar"}
+      title={wish ? t("action.edit") : t("wishes.note")}
       onClose={onClose}
-      action={{ label: saving ? "Guardando…" : "Guardar", onClick: () => void save(), disabled: saving || !name.trim() }}
+      action={{ label: saving ? t("action.saving") : t("action.save"), onClick: () => void save(), disabled: saving || !name.trim() }}
     >
       <div className="outings-fields">
         <Photo
@@ -92,7 +93,7 @@ export function WishSheet({
           icon={kindOf(kind).icon}
           shape="banner"
           loading="eager"
-          action={{ label: shown ? "Cambiar foto" : "Poner foto", onClick: () => input.current?.click() }}
+          action={{ label: shown ? t("photo.change") : t("photo.add"), onClick: () => input.current?.click() }}
         />
         <input
           ref={input}
@@ -103,27 +104,27 @@ export function WishSheet({
         />
         {shown && (
           <Button variant="plain" onClick={() => setPhoto({ kind: "none" })}>
-            Quitar la foto
+            {t("photo.remove")}
           </Button>
         )}
 
-        <ChoiceChips label="Qué es" options={KINDS.map(({ value, label }) => ({ value, label }))} value={kind} onChange={setKind} />
+        <ChoiceChips label={t("wish.what")} options={kinds().map(({ value, label }) => ({ value, label }))} value={kind} onChange={setKind} />
 
-        <TextField label="Nombre" value={name} onChange={setName} placeholder={hints.name} autoFocus={!wish} />
+        <TextField label={t("wish.name")} value={name} onChange={setName} placeholder={hints.name} autoFocus={!wish} />
 
         {place && !picking ? (
           <div className="outings-place-chosen">
             <ListRow
               title={place.name}
               subtitle={placeLine(place) === place.name ? undefined : placeLine(place)}
-              detail={place.lat == null ? "Sin situar en el mapa" : undefined}
+              detail={place.lat == null ? t("place.unplaced") : undefined}
               icon="pin"
               hue={kindOf(kind).hue}
               accessory="edit"
               onClick={() => setPicking(true)}
             />
             <Button variant="plain" onClick={() => setPlace(null)}>
-              Quitar la ubicación
+              {t("place.remove")}
             </Button>
           </div>
         ) : (
@@ -137,7 +138,7 @@ export function WishSheet({
         )}
 
         <label className="text-field">
-          <span className="text-field-label">Texto</span>
+          <span className="text-field-label">{t("wish.text")}</span>
           <textarea
             className="text-field-input outings-textarea"
             value={body}
