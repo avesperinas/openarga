@@ -74,7 +74,7 @@ def _sets(analysis: stats.Analysis, entry_id: str) -> list[tuple[int, float]]:
 
 
 def records_of(analysis: stats.Analysis, session_id: str, day: date) -> list[Record]:
-    points = {point.id: point for serie in analysis.series for point in serie.points}
+    points = {point.id: point for segment in analysis.series for point in segment.points}
     out: list[Record] = []
     for entry in analysis.entries.values():
         if entry.session_id != session_id:

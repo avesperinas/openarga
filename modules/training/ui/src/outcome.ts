@@ -1,4 +1,6 @@
-import { formatDecimal } from "@openarga/ui";
+import type { Locale, Translate } from "@openarga/ui";
+
+import { amount } from "./labels";
 
 import type { LastTime, LoggedSet } from "./api";
 
@@ -30,9 +32,9 @@ export function bestSet(sets: LoggedSet[], bodyweight: boolean): LoggedSet | nul
   return best;
 }
 
-function signed(value: number, unit: string): string {
+function signed(value: number, unit: string, locale: Locale): string {
   const sign = value > 0 ? "+" : "−";
-  return `${sign}${formatDecimal(Math.abs(value))} ${unit}`;
+  return `${sign}${amount(Math.abs(value), locale)} ${unit}`;
 }
 
 export function compare(
@@ -40,18 +42,20 @@ export function compare(
   last: LastTime | undefined,
   bodyweight: boolean,
   day: string,
+  t: Translate,
+  locale: Locale,
 ): Comparison | null {
   const today = bestSet(sets, bodyweight);
   if (!today) return null;
   const before = last && last.day <= day ? bestSet(last.sets, bodyweight) : null;
-  if (!before) return { text: "primera vez", direction: "first" };
+  if (!before) return { text: t("compare.first"), direction: "first" };
 
   const now = strength(today, bodyweight);
   const then = strength(before, bodyweight);
   const direction: Direction = now > then ? "up" : now < then ? "down" : "flat";
   const load = loadOf(today, bodyweight) - loadOf(before, bodyweight);
-  if (load !== 0) return { text: signed(load, "kg"), direction };
+  if (load !== 0) return { text: signed(load, "kg", locale), direction };
   const reps = (today.reps ?? 0) - (before.reps ?? 0);
-  if (reps === 0) return { text: "igual", direction: "flat" };
-  return { text: signed(reps, Math.abs(reps) === 1 ? "rep" : "reps"), direction };
+  if (reps === 0) return { text: t("compare.same"), direction: "flat" };
+  return { text: signed(reps, t(Math.abs(reps) === 1 ? "compare.rep" : "compare.reps"), locale), direction };
 }

@@ -12,22 +12,22 @@ create table training.training_muscle (
 );
 
 insert into training.training_muscle (id, name, region) values
-    ('chest', 'Pecho', 'upper'),
-    ('front_delts', 'Deltoide anterior', 'upper'),
-    ('side_delts', 'Deltoide lateral', 'upper'),
-    ('rear_delts', 'Deltoide posterior', 'upper'),
-    ('lats', 'Dorsal', 'upper'),
-    ('upper_back', 'Espalda alta', 'upper'),
-    ('biceps', 'Bíceps', 'upper'),
-    ('triceps', 'Tríceps', 'upper'),
-    ('forearms', 'Antebrazo', 'upper'),
-    ('quads', 'Cuádriceps', 'lower'),
-    ('hamstrings', 'Isquiotibiales', 'lower'),
-    ('glutes', 'Glúteo', 'lower'),
-    ('calves', 'Gemelo', 'lower'),
-    ('adductors', 'Aductores', 'lower'),
-    ('abs', 'Abdomen', 'core'),
-    ('lower_back', 'Lumbar', 'core');
+    ('chest', 'Chest', 'upper'),
+    ('front_delts', 'Front delts', 'upper'),
+    ('side_delts', 'Side delts', 'upper'),
+    ('rear_delts', 'Rear delts', 'upper'),
+    ('lats', 'Lats', 'upper'),
+    ('upper_back', 'Upper back', 'upper'),
+    ('biceps', 'Biceps', 'upper'),
+    ('triceps', 'Triceps', 'upper'),
+    ('forearms', 'Forearms', 'upper'),
+    ('quads', 'Quads', 'lower'),
+    ('hamstrings', 'Hamstrings', 'lower'),
+    ('glutes', 'Glutes', 'lower'),
+    ('calves', 'Calves', 'lower'),
+    ('adductors', 'Adductors', 'lower'),
+    ('abs', 'Abs', 'core'),
+    ('lower_back', 'Lower back', 'core');
 
 create table training.training_exercise (
     id                  uuid primary key default gen_random_uuid(),
@@ -147,9 +147,9 @@ declare
     version_id uuid;
 begin
     if tg_table_name = 'training_plan_version' then
-        -- Publicar es la única escritura que se admite sobre una versión: de borrador a publicada.
+        -- Publishing is the only write a version accepts: from draft to published.
         if old.published_at is not null then
-            raise exception 'la versión % del plan está publicada y no se modifica', old.number
+            raise exception 'plan version % is published and cannot change', old.number
                 using errcode = 'check_violation';
         end if;
         if tg_op = 'DELETE' then
@@ -158,7 +158,7 @@ begin
         return new;
     end if;
 
-    -- De qué versión cuelga la fila, antes o después del cambio: las dos tienen que ser borrador.
+    -- The version the row hangs from, before and after the change: both must be drafts.
     for version_id in
         select v from unnest(array[
             case when tg_op <> 'INSERT' then training.training_version_of_row(tg_table_name, to_jsonb(old)) end,
@@ -170,7 +170,7 @@ begin
             select 1 from training.training_plan_version
             where id = version_id and published_at is not null
         ) then
-            raise exception 'la versión del plan está publicada y no se modifica'
+            raise exception 'the plan version is published and cannot change'
                 using errcode = 'check_violation';
         end if;
     end loop;
@@ -284,7 +284,7 @@ begin
           and other.id <> new.id
           and not slot.allow_both
     ) then
-        raise exception 'este slot no permite dos variantes en la misma sesión'
+        raise exception 'this slot does not allow two variants in the same session'
             using errcode = 'check_violation';
     end if;
     return new;

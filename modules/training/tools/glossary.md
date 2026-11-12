@@ -1,98 +1,98 @@
-# Glosario de Training
+# Training glossary
 
-Lo que hay que saber para contestar sobre entrenamiento sin inventarse nada. Va con las tools
-(T-R17), todas de lectura: lo que se registra en Training se registra entrenando.
+What you need to know to answer about training without making anything up. It goes with the tools,
+all of them read-only: what is logged in Training is logged while training.
 
-- `find_exercises` — el índice: traduce un nombre a la variante con la que se entrena.
-- `get_sessions` — los entrenos terminados, con rango de fechas. Devuelve **el total del rango**
-  además de los que quepan en `limit`: si `returned` es menor que `total`, la lista viene cortada
-  y hay que pedir menos rango o más límite, no dar por hecho que eso es todo.
-- `summarise_training` — cuenta entrenos, horas y volumen por año, mes, semana, tipo de día o
-  centro. **Es la que contesta "cuántos entrenos hice en 2025"**: no hay que leer sesión a sesión,
-  y no tiene tope de filas.
-- `get_progress` — la carga de una variante a lo largo del tiempo, separada por centro, con el
-  mejor día del periodo y los días que no cuentan dichos con su motivo.
-- `get_muscles` — la fuerza de cada grupo muscular en un rango, sus series por semana y qué lo ha
-  trabajado. **Es la que contesta "¿cómo va mi pecho?"** o "¿qué músculo tengo flojo?".
-- `get_activities` — lo que no es fuerza: escalada, pádel, lo que se haya registrado.
+- `find_exercises`: the index. Turns a name into the variant the person trains with.
+- `get_sessions`: finished workouts, with a date range. Returns **the range total** besides the
+  ones that fit in `limit`: if `returned` is lower than `total`, the list is cut and you have to
+  ask for a smaller range or a higher limit, never assume that is all.
+- `summarise_training`: counts workouts, hours and volume by year, month, week, day kind or gym.
+  **It is the one that answers "how many workouts did I do in 2025"**: no need to read session by
+  session, and it has no row cap.
+- `get_progress`: the load of one variant over time, split by gym, with the best day of the
+  period and the days that do not count, each with its reason.
+- `get_muscles`: the strength of each muscle group in a range, its sets per week and what worked
+  it. **It is the one that answers "how is my chest doing?"** or "which muscle is lagging?".
+- `get_activities`: what is not strength: climbing, padel, whatever was logged.
 
-## Variante, centro, y por qué la carga solo se compara dentro de una máquina
+## Variant, gym, and why load is only compared within one machine
 
-Un **ejercicio** es el movimiento: press banca, sentadilla, dominada. Una **variante** es ese
-ejercicio con un aparato concreto (barra, mancuerna, multipower, máquina, polea, peso corporal).
+An **exercise** is the movement: bench press, squat, pull-up. A **variant** is that exercise with
+a specific implement (barbell, dumbbell, Smith machine, machine, cable, bodyweight).
 
-La regla dura del dominio: **la carga solo se compara dentro de una variante y en un mismo
-centro**. 140 kg en multipower y 80 kg en prensa no se suman ni se comparan, porque no miden lo
-mismo; y el mismo jalón en dos gimnasios tampoco, porque son dos poleas distintas. Si en un centro
-la máquina cambió, `get_progress` marca ese día con `machine_changed`, y lo de antes no se compara
-con lo de después. Por eso `get_progress` pide una variante y no un nombre, y por eso
-`find_exercises` existe: para traducir "¿cómo va mi press banca?" a la variante con la que esa
-persona entrena de verdad. Si hay varias que encajan, hay que preguntar cuál antes de comparar, no
-elegir una.
+The hard rule of the domain: **load is only compared within one variant and at a single gym**.
+140 kg on the Smith machine and 80 kg on the leg press are neither added nor compared, because
+they do not measure the same thing; and the same lat pulldown at two gyms neither, because they
+are two different cables. If the machine changed at a gym, `get_progress` marks that day with
+`machine_changed`, and what came before is not compared with what came after. That is why
+`get_progress` asks for a variant and not a name, and why `find_exercises` exists: to turn "how is
+my bench press doing?" into the variant that person really trains with. If several fit, ask which
+one before comparing; do not pick one.
 
-## Días que no cuentan
+## Days that do not count
 
-Un día cuyo e1RM se aleja más de un 30 % de las sesiones de alrededor en su misma máquina no cuenta
-para la fuerza: casi siempre es un dato mal apuntado (140 donde iba 104, el par de mancuernas donde
-iba una). `get_progress` lo trae con `counts: false` y el motivo en `why_not`. No se borra ni se
-corrige desde aquí: se menciona como dudoso o no se menciona, y nunca se usa como récord.
+A day whose e1RM is more than 30 % away from the surrounding sessions on the same machine does not
+count for strength: it is almost always a mistyped entry (140 where 104 was meant, the pair of
+dumbbells where one was meant). `get_progress` returns it with `counts: false` and the reason in
+`why_not`. It is neither deleted nor corrected from here: mention it as doubtful or do not mention
+it, and never use it as a record.
 
-## Serie, repeticiones y carga
+## Set, reps and load
 
-Una **serie** son unas repeticiones seguidas con una carga. Puede llevar:
+A **set** is a run of reps with one load. It may carry:
 
-- `weight`: carga externa, en kilos.
-- `added_load`: lastre sobre el peso corporal. En dominadas, `4 × 20 kg` son cuatro repeticiones
-  con veinte kilos colgados, no con veinte kilos en total.
-- Una serie **no completada** es la que se registró sin repeticiones. No cuenta, y no se rellena a
-  ojo.
+- `weight`: external load, in kilograms.
+- `added_load`: load added on top of bodyweight. In pull-ups, `4 × 20 kg` is four reps with twenty
+  kilograms hanging, not with twenty kilograms in total.
+- A **not completed** set is one logged without reps. It does not count, and it is not filled in
+  by guessing.
 
-**Serie efectiva** es la que cuenta para un grupo muscular: cada serie cuenta entera para el
-músculo principal de su ejercicio y para ninguno más. El jalón es dorsal; que el bíceps trabaje no
-lo convierte en una serie de bíceps.
+An **effective set** is one that counts for a muscle group: each set counts in full for the
+primary muscle of its exercise and for no other. The lat pulldown is lats; that the biceps work
+does not turn it into a biceps set.
 
-## Sesión y rotación
+## Session and rotation
 
-Una **sesión** es un entreno: el día, el día del plan que tocaba (Push, Pull, Leg…), su duración y
-sus series. Una sesión **sin terminar** está en curso y no es histórico: no aparece en
-`get_sessions` y no entra en ninguna comparación.
+A **session** is a workout: the day, the plan day that was due (Push, Pull, Leg...), its duration
+and its sets. An **unfinished** session is in progress and is not history: it does not appear in
+`get_sessions` and does not enter any comparison.
 
-Una **rotación** es una vuelta completa al plan. No es una semana: si el plan tiene tres días y se
-entrena cuatro veces por semana, las rotaciones y las semanas no coinciden. "Día 2 de 3" es la
-posición dentro de la rotación en curso.
+A **rotation** is one full lap of the plan. It is not a week: if the plan has three days and the
+person trains four times a week, rotations and weeks do not match. "Day 2 of 3" is the position in
+the current rotation.
 
-## e1RM, y cuándo no fiarse
+## e1RM, and when not to trust it
 
-El **e1RM** es el peso máximo estimado para una repetición, calculado desde una serie normal con la
-fórmula de Epley: `carga × (1 + repeticiones / 30)`. Sirve para comparar sesiones donde no se
-hicieron las mismas repeticiones.
+The **e1RM** is the estimated one-rep max, computed from a normal set with the Epley formula:
+`load × (1 + reps / 30)`. It allows comparing sessions where the reps were not the same.
 
-Es una estimación, y por encima de **diez repeticiones deja de ser fiable**: con muchas
-repeticiones manda la resistencia, no la fuerza máxima. `get_progress` lo dice en cada dato con
-`e1rm_reliable`, y un dato marcado como poco fiable se menciona como tal o no se menciona. Las series
-de más de quince repeticiones y las de cero (un fallo) no cuentan para la fuerza.
+It is an estimate, and above **ten reps it stops being reliable**: with many reps endurance rules,
+not maximal strength. `get_progress` says so on every data point with `e1rm_reliable`, and a point
+marked as unreliable is mentioned as such or not mentioned. Sets of more than fifteen reps and sets
+of zero (a failure) do not count for strength.
 
-## Fuerza de un músculo e índice de rendimiento
+## Muscle strength and performance index
 
-La fuerza de un músculo sale de comparar cada máquina consigo misma: lo que sube o baja cada una
-respecto a sus sesiones anteriores, juntado en una curva por músculo. Cambiar de gimnasio, de
-máquina o de ejercicio no la mueve; las tres primeras semanas de un ejercicio nuevo tampoco, porque
-al empezar se sube por aprender, no por ganar fuerza. `get_muscles` la da en % de cambio en el
-rango.
+The strength of a muscle comes from comparing each machine with itself: how much each one goes up
+or down against its previous sessions, joined into one curve per muscle. Changing gym, machine or
+exercise does not move it; neither do the first three weeks of a new exercise, because at the start
+you get stronger by learning, not by gaining strength. `get_muscles` gives it as % change in the
+range.
 
-El **índice de rendimiento** es la media de los músculos con datos, base 100, cada músculo con el
-mismo peso. En dominadas y fondos la carga es el peso corporal más el lastre: sin peso corporal
-apuntado en Ajustes, esos ejercicios no cuentan para la fuerza (`bodyweight_kg` vale `null`).
+The **performance index** is the mean of the muscles with data, base 100, every muscle with the
+same weight. In pull-ups and dips the load is bodyweight plus the added load: without a bodyweight
+in Settings, those exercises do not count for strength (`bodyweight_kg` is `null`).
 
-## Contar, y no confundir cortado con completo
+## Counting, and not mistaking cut for complete
 
-Para cuántos, cuánto o cuándo, `summarise_training`. Para ver los entrenos, `get_sessions` con su
-rango. Toda respuesta que venga de una lista trae `total` y `returned`: si no coinciden, lo que se
-está viendo es una parte, y decir un número a partir de ahí es inventárselo.
+For how many, how much or when, `summarise_training`. To see the workouts, `get_sessions` with its
+range. Every answer that comes from a list carries `total` and `returned`: if they differ, what you
+see is a part, and stating a number from there is making it up.
 
-## Lo que no se puede contestar
+## What cannot be answered
 
-- **Nada de otra persona.** Cada quien ve lo suyo y lo garantiza la base de datos.
-- **Nada que no esté registrado.** Si no hay series de una variante, la respuesta es que no hay
-  datos, no una media de otras.
-- **Ningún consejo médico ni de rehabilitación.** Un dolor no es un dato de entrenamiento.
+- **Nothing about another person.** Everyone sees their own, and the database guarantees it.
+- **Nothing that is not logged.** If a variant has no sets, the answer is that there is no data,
+  not an average of others.
+- **No medical or rehabilitation advice.** Pain is not training data.

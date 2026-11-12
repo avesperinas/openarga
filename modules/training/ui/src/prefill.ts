@@ -1,6 +1,7 @@
-import { formatDecimal } from "@openarga/ui";
+import type { Locale } from "@openarga/ui";
 
 import type { LastTime, LoggedSet, Option, SessionExercise, Slot } from "./api";
+import { amount } from "./labels";
 
 export interface Draft {
   load: number | null;
@@ -73,17 +74,21 @@ export function unusualLoad(
   return ratio > 1 + UNUSUAL || ratio < 1 / (1 + UNUSUAL) ? reference : null;
 }
 
-export function kg(value: number): string {
-  return `${formatDecimal(value)} kg`;
+export function kg(value: number, locale: Locale): string {
+  return `${amount(value, locale)} kg`;
 }
 
-export function describeSet(set: Pick<LoggedSet, "reps" | "weight" | "added_load">, bodyweight: boolean): string {
+export function describeSet(
+  set: Pick<LoggedSet, "reps" | "weight" | "added_load">,
+  bodyweight: boolean,
+  locale: Locale,
+): string {
   const reps = set.reps === null ? "—" : String(set.reps);
-  if (bodyweight) return set.added_load ? `${reps} + ${kg(set.added_load)}` : reps;
-  return set.weight === null ? reps : `${reps} × ${kg(set.weight)}`;
+  if (bodyweight) return set.added_load ? `${reps} + ${kg(set.added_load, locale)}` : reps;
+  return set.weight === null ? reps : `${reps} × ${kg(set.weight, locale)}`;
 }
 
-export function describeSets(sets: LoggedSet[], bodyweight: boolean): string {
+export function describeSets(sets: LoggedSet[], bodyweight: boolean, locale: Locale): string {
   const runs: LoggedSet[][] = [];
   for (const set of sets.filter((candidate) => candidate.completed)) {
     const run = runs[runs.length - 1];
@@ -94,14 +99,14 @@ export function describeSets(sets: LoggedSet[], bodyweight: boolean): string {
     .map((run) => {
       const reps = run.map((set) => (set.reps === null ? "—" : String(set.reps))).join(", ");
       const [first] = run as [LoggedSet, ...LoggedSet[]];
-      return describeSet({ ...first, reps: null }, bodyweight).replace("—", reps);
+      return describeSet({ ...first, reps: null }, bodyweight, locale).replace("—", reps);
     })
     .join(" · ");
 }
 
-const SHORT_DATE = new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short" });
-
-export function shortDay(day: string): string {
+export function shortDay(day: string, locale: Locale): string {
   const [year = 1970, month = 1, date = 1] = day.split("-").map(Number);
-  return SHORT_DATE.format(new Date(year, month - 1, date)).replace(".", "");
+  return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" })
+    .format(new Date(year, month - 1, date))
+    .replace(".", "");
 }

@@ -41,12 +41,12 @@ async def test_it_is_ready_once_its_schema_exists_and_the_app_is_built(api, sche
 
 
 async def test_it_is_not_ready_without_the_app(api, schema, tmp_path, monkeypatch) -> None:
-    monkeypatch.setenv("UI_DIST", str(tmp_path / "vacio"))
+    monkeypatch.setenv("UI_DIST", str(tmp_path / "empty"))
 
     response = await api.get("/readyz")
 
     assert response.status_code == 503
-    assert "construida" in response.json()["detail"]
+    assert "not built" in response.json()["detail"]
 
 
 async def test_the_app_is_served_under_its_view(api, built) -> None:
@@ -62,7 +62,7 @@ async def test_the_app_is_served_under_its_view(api, built) -> None:
 
 
 async def test_a_screen_of_the_app_answers_with_the_app(api, built) -> None:
-    response = await api.get("/training/sesion/42")
+    response = await api.get("/training/session/42")
 
     assert response.status_code == 200
     assert "<title>Training</title>" in response.text
@@ -75,11 +75,11 @@ async def test_a_missing_file_is_a_404_and_not_the_page(api, built) -> None:
 
 
 async def test_nothing_outside_the_build_is_served(api, built) -> None:
-    (built.parent / "secreto.txt").write_text("fuera del build")
+    (built.parent / "secreto.txt").write_text("outside the build")
 
     response = await api.get("/training/..%2Fsecreto.txt")
 
-    assert "fuera del build" not in response.text
+    assert "outside the build" not in response.text
 
 
 def test_the_manifest_declares_where_it_serves() -> None:

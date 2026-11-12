@@ -14,7 +14,7 @@ async def move(connection: AsyncConnection, asked: contracts.AgendaMove) -> dict
     if module != "training" or kind not in ("session", "activity"):
         raise training.NotFound(asked.uid)
     if asked.all_day:
-        raise training.Conflict("en Training todo lleva hora")
+        raise training.Conflict("everything in Training has a time")
     if kind == "activity":
         moved = await activities.move(connection, object_id, asked.start, asked.end)
         return contracts.agenda_moved(agenda.activity_payload(moved)[KEY])

@@ -48,9 +48,9 @@ P9; then P5, P10, P11. Answer `needs-platform` issues before starting a new task
 
 | Id | Task | Verify | Status |
 |---|---|---|---|
-| A1.1 | **English everywhere but the UI**, per module: tool descriptions, glossary, errors, logs, routes, identifiers, tests | Manifest validator; MCP list test | `doing` (vitals, macros, recipes done) |
-| A1.2 | **UI in en and es**, per module: every string to `ui/src/i18n/{en,es}.json`, server texts (widgets, panel, notifications) to `src/<id>/i18n/` | Module files gone from the baseline | `doing` (vitals, macros, recipes done) |
-| A1.3 | **Preferences**: no hardcoded time zone, locale or currency | Tests in two time zones and two currencies | `doing` (vitals, macros, recipes done) |
+| A1.1 | **English everywhere but the UI**, per module: tool descriptions, glossary, errors, logs, routes, identifiers, tests | Manifest validator; MCP list test | `doing` (vitals, macros, recipes, training done) |
+| A1.2 | **UI in en and es**, per module: every string to `ui/src/i18n/{en,es}.json`, server texts (widgets, panel, notifications) to `src/<id>/i18n/` | Module files gone from the baseline | `doing` (vitals, macros, recipes, training done) |
+| A1.3 | **Preferences**: no hardcoded time zone, locale or currency | Tests in two time zones and two currencies | `doing` (vitals, macros, recipes, training done) |
 | A1.4 | **Finance simplified** (`money`): bank by API, CSV and OFX import, holdings snapshots, base currency, shared expenses kept; tax, fund certificates, crypto and mail inlets removed | Import a synthetic CSV; isolation tests | `todo` |
 | A1.5 | **Bilingual catalogues**: exercises (training), nutrients (macros), shopping sections, recipe categories | Parity test | `doing` (recipe categories done) |
 | A1.6 | **Demo seeds**: `demo.py` per module for Alex and Sam, coherent over 18 months | Seeds run twice without duplicates | `todo` |

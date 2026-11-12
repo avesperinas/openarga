@@ -1,4 +1,4 @@
-import { SETTINGS_TAB, TabBar } from "@openarga/ui";
+import { SETTINGS_TAB, TabBar, useT } from "@openarga/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { signIn } from "./api";
@@ -13,7 +13,7 @@ import { StatsScreen } from "./Stats";
 import { TodayScreen } from "./Today";
 
 const ROOT = "/training";
-const SESSION = new RegExp(`^${ROOT}/sesion/([0-9a-f-]{36})/?$`);
+const SESSION = new RegExp(`^${ROOT}/session/([0-9a-f-]{36})/?$`);
 
 type Tab = "today" | "history" | "stats" | "plan" | "settings";
 
@@ -21,10 +21,10 @@ export type Route = { screen: Tab } | { screen: "session"; id: string } | { scre
 
 const PATHS: Record<Tab, string> = {
   today: `${ROOT}/`,
-  history: `${ROOT}/calendario`,
+  history: `${ROOT}/calendar`,
   stats: `${ROOT}/stats`,
   plan: `${ROOT}/plan`,
-  settings: `${ROOT}/ajustes`,
+  settings: `${ROOT}/settings`,
 };
 
 export function route(pathname: string): Route {
@@ -35,11 +35,12 @@ export function route(pathname: string): Route {
   if (path === PATHS.stats) return { screen: "stats" };
   if (path === PATHS.plan) return { screen: "plan" };
   if (path === PATHS.settings) return { screen: "settings" };
-  if (path === `${ROOT}/siguiente`) return { screen: "next" };
+  if (path === `${ROOT}/next`) return { screen: "next" };
   return { screen: "today" };
 }
 
 export function App({ queue: given }: { queue?: SyncQueue }) {
+  const t = useT();
   const queue = useMemo(() => given ?? sharedQueue(), [given]);
   const [path, setPath] = useState(() => window.location.pathname);
 
@@ -67,10 +68,10 @@ export function App({ queue: given }: { queue?: SyncQueue }) {
     window.history.replaceState(null, "", to);
     setPath(to);
   }, []);
-  const toSession = useCallback((id: string) => replace(`${ROOT}/sesion/${id}`), [replace]);
+  const toSession = useCallback((id: string) => replace(`${ROOT}/session/${id}`), [replace]);
   const toToday = useCallback(() => replace(PATHS.today), [replace]);
 
-  const openSession = (id: string) => navigate(`${ROOT}/sesion/${id}`);
+  const openSession = (id: string) => navigate(`${ROOT}/session/${id}`);
   const current = route(path);
   if (current.screen === "next") return <NextRedirect onSession={toSession} onToday={toToday} />;
 
@@ -94,14 +95,14 @@ export function App({ queue: given }: { queue?: SyncQueue }) {
       {current.screen === "plan" && <PlanScreen />}
       {current.screen === "settings" && <SettingsScreen />}
       <TabBar
-        label="Secciones"
+        label={t("tabs.label")}
         active={current.screen}
         onSelect={(tab) => navigate(PATHS[tab])}
         items={[
-          { id: "today", label: "Hoy", icon: "today" },
-          { id: "history", label: "Calendario", icon: "calendar" },
-          { id: "stats", label: "Stats", icon: "chart" },
-          { id: "plan", label: "Plan", icon: "edit" },
+          { id: "today", label: t("tabs.today"), icon: "today" },
+          { id: "history", label: t("tabs.calendar"), icon: "calendar" },
+          { id: "stats", label: t("tabs.stats"), icon: "chart" },
+          { id: "plan", label: t("tabs.plan"), icon: "edit" },
           SETTINGS_TAB,
         ]}
       />

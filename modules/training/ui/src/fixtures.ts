@@ -3,27 +3,27 @@ import type { LastTime, Session, Slot } from "./api";
 export const SQUAT: Slot = {
   id: "slot-squat",
   position: 1,
-  exercise: "Sentadilla",
+  exercise: "Squat",
   target_sets: 3,
   rep_min: 6,
   rep_max: 10,
   allow_both: false,
   options: [
-    { variant_id: "v-smith", name: "Sentadilla Smith", implement: "smith", min_increment: 2.5, priority: 1 },
-    { variant_id: "v-press", name: "Prensa", implement: "machine", min_increment: 5, priority: 2 },
+    { variant_id: "v-smith", name: "Smith machine squat", implement: "smith", min_increment: 2.5, priority: 1 },
+    { variant_id: "v-press", name: "Leg press", implement: "machine", min_increment: 5, priority: 2 },
   ],
 };
 
 export const DIPS: Slot = {
   id: "slot-dips",
   position: 2,
-  exercise: "Fondos",
+  exercise: "Dips",
   target_sets: 2,
   rep_min: 8,
   rep_max: 12,
   allow_both: false,
   options: [
-    { variant_id: "v-dips", name: "Fondos lastrados", implement: "bodyweight", min_increment: 2.5, priority: 1 },
+    { variant_id: "v-dips", name: "Weighted dips", implement: "bodyweight", min_increment: 2.5, priority: 1 },
   ],
 };
 

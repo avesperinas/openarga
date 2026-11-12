@@ -12,8 +12,6 @@ import arga_contracts as contracts
 from training import training
 
 TYPE = "training.workout"
-TZ = "Europe/Madrid"
-
 SESSION = text("""
     select s.id, s.started_at, s.ended_at, s.band_id, d.name
     from training.training_session s
@@ -78,11 +76,11 @@ async def session(connection: AsyncConnection, session_id, *, removed: bool = Fa
         contracts.workout(
             id=f"training:session:{row.id}",
             kind="strength",
-            name=(row.name or "Entreno")[:60],
-            start=row.started_at.astimezone(training.MADRID),
-            end=row.ended_at.astimezone(training.MADRID),
-            tz=TZ,
-            href=f"/training/sesion/{row.id}",
+            name=(row.name or "Workout")[:60],
+            start=row.started_at.astimezone(training.zone()),
+            end=row.ended_at.astimezone(training.zone()),
+            tz=training.timezone(),
+            href=f"/training/session/{row.id}",
             band_id=None if removed else getattr(row, "band_id", None),
             marks=marks,
             removed=removed,
@@ -91,7 +89,7 @@ async def session(connection: AsyncConnection, session_id, *, removed: bool = Fa
 
 
 def span(activity) -> tuple[datetime, datetime]:
-    start = datetime.combine(activity.day, activity.start_time, training.MADRID)
+    start = datetime.combine(activity.day, activity.start_time, training.zone())
     return start, start + timedelta(seconds=activity.duration_seconds or 3600)
 
 
@@ -109,8 +107,8 @@ async def activity(connection: AsyncConnection, activity_id, *, removed: bool = 
             name=row.name[:60],
             start=start,
             end=end,
-            tz=TZ,
-            href="/training/calendario",
+            tz=training.timezone(),
+            href="/training/calendar",
             band_id=None if removed else row.band_id,
             removed=removed,
         ),

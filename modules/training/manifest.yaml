@@ -31,7 +31,7 @@ publishes:
 receives: [body_weight, mention, activity]
 inlets:
   - id: workouts
-    title: Entrenos
+    title: Workouts
     contracts: [health.exercise]
 uses: [weight.log, workout.heart]
 provides: [agenda.move]
@@ -43,65 +43,65 @@ tools:
   - name: find_exercises
     scope: training:read
     description: >
-      El índice de ejercicios y sus variantes, con el identificador de cada una y los centros donde
-      se ha hecho. Una variante es un ejercicio hecho con un aparato concreto, y **la carga solo se
-      compara dentro de una y en un mismo centro**: en otro gimnasio es otra máquina. Úsala siempre
-      antes de mirar progreso, para traducir un nombre dicho de pasada ("press banca") a la variante
-      con la que de verdad se entrena.
+      The index of exercises and their variants, with the id of each one and the gyms where it has
+      been done. A variant is an exercise done with a specific implement, and **load is only
+      compared within one variant and at a single gym**: at another gym it is another machine. Use
+      it always before looking at progress, to turn a name said in passing ("bench press") into the
+      variant the person actually trains with.
   - name: get_sessions
     scope: training:read
     description: >
-      Los entrenos terminados, del más reciente al más antiguo: qué día, qué día de la rotación,
-      cuánto duró, cuántas series y cuánto volumen. Acepta rango (`since`, `until`) y devuelve
-      siempre el **total del rango**, además de los que quepan en `limit`. Con `with_sets` trae
-      cada serie con sus repeticiones y su carga. Úsala para contestar qué se entrenó y cuándo.
+      Finished workouts, newest first: which day, which day of the rotation, how long it took, how
+      many sets and how much volume. Accepts a range (`since`, `until`) and always returns the
+      **range total**, besides the ones that fit in `limit`. With `with_sets` it brings each set
+      with its reps and load. Use it to answer what was trained and when.
   - name: summarise_training
     scope: training:read
     description: >
-      Cuenta entrenos, horas y volumen agrupando por año, mes, semana, tipo de día (push, pull,
-      leg…) o centro, en el rango que se le pida. Es la que contesta "cuántos entrenos hice en
-      2025" o "qué meses entrené más": no tiene límite de filas y no hay que leer sesión a sesión.
+      Counts workouts, hours and volume grouped by year, month, week, day kind (push, pull, leg...)
+      or gym, in the range asked. It is the one that answers "how many workouts did I do in 2025"
+      or "which months did I train most": it has no row limit and there is no need to read session
+      by session.
   - name: get_activities
     scope: training:read
     description: >
-      Lo que se registró y no es entreno de fuerza —escalada, pádel, lo que haya— en un rango, con
-      su duración y cuántas hay de cada tipo.
+      What was logged that is not strength training (climbing, padel, whatever there is) in a
+      range, with its duration and how many of each kind.
   - name: get_progress
     scope: training:read
     description: >
-      Cómo evoluciona la carga de **una variante**: la mejor serie de cada sesión con su e1RM
-      estimado y su centro, de la más reciente a la más antigua, un resumen por centro y el tope del
-      periodo aparte. Acepta rango (`since`, `until`). Compara solo sesiones del mismo centro, y no
-      a través de un día marcado con `machine_changed`. Los días con `counts: false` son datos que
-      no encajan con su máquina (con su motivo) y no cuentan para el tope ni para decir si sube.
-      Cada e1RM dice si es fiable: por encima de diez repeticiones la estimación vale poco. Úsala
-      para contestar si un ejercicio sube, se estanca o baja, y cuál fue el mejor día.
+      How the load of **one variant** evolves: the best set of each session with its estimated
+      e1RM and its gym, newest first, a summary per gym and the period's top apart. Accepts a range
+      (`since`, `until`). Compare only sessions at the same gym, and never across a day marked
+      `machine_changed`. Days with `counts: false` are data that do not fit their machine (with the
+      reason) and count neither for the top nor for saying whether it goes up. Each e1RM says
+      whether it is reliable: above ten reps the estimate is worth little. Use it to answer whether
+      an exercise goes up, stalls or goes down, and which was the best day.
   - name: get_muscles
     scope: training:read
     description: >
-      La fuerza de cada grupo muscular en un rango (`since`, `until`): cuánto ha cambiado en %, las
-      series por semana y qué ejercicios lo han trabajado. Cada ejercicio cuenta solo para su
-      músculo principal (el jalón es dorsal, no bíceps), y la fuerza sale de comparar cada máquina
-      consigo misma, así que cambiar de gimnasio o de ejercicio no la mueve. Es la misma cuenta que
-      la pestaña Stats. Úsala para contestar si un músculo mejora, cuál está flojo o qué se ha
-      hecho para él.
+      The strength of each muscle group in a range (`since`, `until`): how much it changed in %,
+      sets per week and which exercises worked it. Each exercise counts only for its primary muscle
+      (the lat pulldown is lats, not biceps), and strength comes from comparing each machine with
+      itself, so changing gym or exercise does not move it. It is the same count as the Stats tab.
+      Use it to answer whether a muscle improves, which one lags or what was done for it.
 
 ui:
   widgets:
     - id: week
-      title: Entreno
+      title: Training
       kind: ring
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/training/widgets/week
       refresh: 300
-      link: /training/calendario
+      link: /training/calendar
     - id: next
-      title: Siguiente sesión
+      title: Next session
       kind: kpi
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "4x2"]
       endpoint: /api/training/widgets/next
       refresh: 300
-      link: /training/siguiente
+      link: /training/next
   view: /training
   hue: 4
   family: health

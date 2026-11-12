@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-describe("dónde se enseña la versión", () => {
+describe("where the version shows", () => {
   const screens = ["Today", "History", "Plan"];
 
-  it.each(screens)("%s la pinta", (screen) => {
+  it.each(screens)("%s paints it", (screen) => {
     const source = readFileSync(new URL(`./${screen}.tsx`, import.meta.url), "utf8");
 
     expect(source).toContain('from "./AppVersion"');

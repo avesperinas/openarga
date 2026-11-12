@@ -1,0 +1,14 @@
+{
+  "panel.empty": "Entrenamiento aún no tiene nada que contar",
+  "panel.next": "Siguiente sesión",
+  "panel.start": "Empezar",
+  "panel.due": "Toca {name}",
+  "panel.this_week": "Esta semana",
+  "panel.week_done": "Semana de entreno cumplida",
+  "panel.done": "Cumplida",
+  "panel.tab": "Entreno",
+  "panel.open": "Abrir Entrenamiento",
+  "panel.question": "¿Qué toca entrenar?",
+  "panel.words": "entreno,entrenar,gimnasio,sesion,rutina",
+  "widget.week": "de {goal} esta semana"
+}

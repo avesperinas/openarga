@@ -25,8 +25,8 @@ def role_for_scopes(scopes: set[str]) -> str | None:
 
 
 DAY = r"^\d{4}-\d{2}-\d{2}$"
-SINCE = "Desde este día, `AAAA-MM-DD`, incluido. Sin él, desde el principio."
-UNTIL = "Hasta este día, `AAAA-MM-DD`, incluido. Sin él, hasta el final."
+SINCE = "From this day, `YYYY-MM-DD`, inclusive. Without it, from the beginning."
+UNTIL = "Up to this day, `YYYY-MM-DD`, inclusive. Without it, up to the end."
 
 
 class FindExercises(BaseModel):
@@ -34,11 +34,10 @@ class FindExercises(BaseModel):
         default=None,
         max_length=60,
         description=(
-            "Parte del nombre del ejercicio o de la variante, p. ej. `banca`. "
-            "Sin ella, el índice entero."
+            "Part of the exercise or variant name, e.g. `bench`. Without it, the whole index."
         ),
     )
-    limit: int = Field(default=200, ge=1, le=1000, description="Cuántas variantes, como mucho.")
+    limit: int = Field(default=200, ge=1, le=1000, description="How many variants, at most.")
 
 
 class GetSessions(BaseModel):
@@ -48,17 +47,17 @@ class GetSessions(BaseModel):
         default=100,
         ge=1,
         le=1000,
-        description="Cuántas sesiones devolver, de la más reciente. El total sale aparte.",
+        description="How many sessions to return, newest first. The total comes separately.",
     )
     with_sets: bool = Field(
         default=False,
-        description="Con `true`, cada sesión trae sus series. Sin él, solo el resumen.",
+        description="With `true`, each session brings its sets. Without it, only the summary.",
     )
 
 
 class Summarise(BaseModel):
     by: Literal["year", "month", "week", "kind", "gym"] = Field(
-        default="year", description="Cómo agrupar: por año, mes, semana, tipo de día o centro."
+        default="year", description="How to group: by year, month, week, day kind or gym."
     )
     since: str | None = Field(default=None, pattern=DAY, description=SINCE)
     until: str | None = Field(default=None, pattern=DAY, description=UNTIL)
@@ -69,13 +68,13 @@ class GetProgress(BaseModel):
         min_length=36,
         max_length=36,
         description=(
-            "La variante, tal cual la da `find_exercises`. La carga solo se compara dentro de una, "
-            "y en un mismo centro."
+            "The variant, exactly as `find_exercises` returns it. Load is only compared within one, "
+            "and at a single gym."
         ),
     )
     since: str | None = Field(default=None, pattern=DAY, description=SINCE)
     until: str | None = Field(default=None, pattern=DAY, description=UNTIL)
-    limit: int = Field(default=200, ge=1, le=1000, description="Cuántas sesiones hacia atrás.")
+    limit: int = Field(default=200, ge=1, le=1000, description="How many sessions back.")
 
 
 class GetMuscles(BaseModel):
@@ -86,7 +85,7 @@ class GetMuscles(BaseModel):
 class GetActivities(BaseModel):
     since: str | None = Field(default=None, pattern=DAY, description=SINCE)
     until: str | None = Field(default=None, pattern=DAY, description=UNTIL)
-    limit: int = Field(default=200, ge=1, le=1000, description="Cuántas actividades, como mucho.")
+    limit: int = Field(default=200, ge=1, le=1000, description="How many activities, at most.")
 
 
 CATALOGUE = text("""
@@ -166,7 +165,7 @@ SUMMARY = {
     "month": "to_char(s.day, 'YYYY-MM')",
     "week": "to_char(s.day, 'IYYY-\"W\"IW')",
     "kind": "d.kind",
-    "gym": "coalesce(g.name, 'sin centro')",
+    "gym": "coalesce(g.name, 'no gym')",
 }
 
 
@@ -361,9 +360,9 @@ async def get_activities(connection: AsyncConnection, arguments: GetActivities) 
 
 
 REASONS = {
-    "high": "muy por encima de las sesiones de alrededor en esa máquina",
-    "low": "muy por debajo de las sesiones de alrededor en esa máquina",
-    "excluded": "apartado a mano",
+    "high": "far above the surrounding sessions on that machine",
+    "low": "far below the surrounding sessions on that machine",
+    "excluded": "set aside by hand",
 }
 
 
@@ -375,14 +374,18 @@ async def get_progress(connection: AsyncConnection, arguments: GetProgress) -> d
     analysis = await stats.analyse(connection, _today())
     name = analysis.names.get(arguments.variant_id)
     if name is None:
-        return {"variant": None, "best_sets": [], "note": "esa variante no existe en tu catálogo"}
+        return {
+            "variant": None,
+            "best_sets": [],
+            "note": "that variant does not exist in your catalogue",
+        }
 
     window = _range(arguments)
     since, until = window["since"] or date.min, window["until"] or date.max
-    series = [serie for serie in analysis.series if serie.variant_id == arguments.variant_id]
-    starts = {serie.since for serie in series if serie.start in ("mark", "detected")}
+    series = [segment for segment in analysis.series if segment.variant_id == arguments.variant_id]
+    starts = {segment.since for segment in series if segment.start in ("mark", "detected")}
     points = sorted(
-        (point for serie in series for point in serie.points if since <= point.day <= until),
+        (point for segment in series for point in segment.points if since <= point.day <= until),
         key=lambda point: point.day,
         reverse=True,
     )[: arguments.limit]

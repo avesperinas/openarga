@@ -1,0 +1,14 @@
+{
+  "panel.empty": "Training has nothing to tell yet",
+  "panel.next": "Next session",
+  "panel.start": "Start",
+  "panel.due": "Up next: {name}",
+  "panel.this_week": "This week",
+  "panel.week_done": "Training week done",
+  "panel.done": "Done",
+  "panel.tab": "Training",
+  "panel.open": "Open Training",
+  "panel.question": "What should I train?",
+  "panel.words": "training,train,gym,session,routine,workout",
+  "widget.week": "of {goal} this week"
+}

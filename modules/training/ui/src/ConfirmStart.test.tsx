@@ -1,41 +1,46 @@
 import { renderToString } from "react-dom/server";
 
 import { ConfirmStartSheet, rotationDetail } from "./ConfirmStart";
+import { english, inLocale } from "./i18n/testing";
 
-describe("confirmar antes de empezar", () => {
-  it("pregunta por el día, dice dónde cae y ofrece cancelar antes que empezar", () => {
+describe("confirming before starting", () => {
+  it("asks about the day, says where it falls and offers cancel before start", () => {
     const html = renderToString(
-      <ConfirmStartSheet
-        name="Pull"
-        detail={rotationDetail(3, 2, 3)}
-        onCancel={() => undefined}
-        onStart={async () => undefined}
-      />,
+      inLocale(
+        <ConfirmStartSheet
+          name="Pull"
+          detail={rotationDetail(english, 3, 2, 3)}
+          onCancel={() => undefined}
+          onStart={async () => undefined}
+        />,
+      ),
     );
 
-    expect(html).toContain("¿Empezar Pull?");
-    expect(html).toContain("Rotación 3, día 2 de 3.");
-    expect(html).toMatch(/Cancelar.*Empezar Pull/);
+    expect(html).toContain("Start Pull?");
+    expect(html).toContain("Rotation 3, day 2 of 3.");
+    expect(html).toMatch(/Cancel.*Start Pull/);
   });
 
-  it("deja empezar otro día del plan, con los hechos marcados y el que toca elegido (T-B05)", () => {
+  it("lets you start another day of the plan, with the done ones marked and the due one chosen (T-B05)", () => {
     const html = renderToString(
-      <ConfirmStartSheet
-        name="Pull"
-        detail={rotationDetail(3, 2, 3)}
-        days={[
-          { id: "d1", name: "Push", done: true },
-          { id: "d2", name: "Pull", done: false },
-          { id: "d3", name: "Leg", done: false },
-        ]}
-        chosen="d2"
-        onChoose={() => undefined}
-        onCancel={() => undefined}
-        onStart={async () => undefined}
-      />,
+      inLocale(
+        <ConfirmStartSheet
+          name="Pull"
+          detail={rotationDetail(english, 3, 2, 3)}
+          days={[
+            { id: "d1", name: "Push", done: true },
+            { id: "d2", name: "Pull", done: false },
+            { id: "d3", name: "Leg", done: false },
+          ]}
+          chosen="d2"
+          onChoose={() => undefined}
+          onCancel={() => undefined}
+          onStart={async () => undefined}
+        />,
+      ),
     );
 
-    expect(html).toContain('aria-label="Otro día"');
+    expect(html).toContain('aria-label="Another day"');
     expect(html).toContain("Push ✓");
     expect(html).toMatch(/aria-checked="true"[^>]*>Pull</);
   });

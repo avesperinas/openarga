@@ -1,9 +1,7 @@
-import { BodyMaps, LevelChips, amountColor, nextLevel } from "@openarga/ui";
+import { BodyMaps, LevelChips, type Translate, amountColor, nextLevel, useT } from "@openarga/ui";
 
 import type { Catalogue, Muscles } from "./api";
-import { MUSCLE_LEVELS, REGIONS } from "./labels";
-
-type Level = (typeof MUSCLE_LEVELS)[number]["value"];
+import { LEVEL_ORDER, type MuscleLevel as Level, muscleLevels, muscleName, regions } from "./labels";
 
 export const toLevels = (muscles: Record<string, number>): Record<string, Level> =>
   Object.fromEntries(Object.entries(muscles).map(([id, c]) => [id, c >= 1 ? "primary" : "secondary"]));
@@ -21,8 +19,11 @@ export function onePrimary(previous: Record<string, Level>, next: Record<string,
   );
 }
 
-export function describeMuscles(muscles: Record<string, number>, catalogue: Catalogue): string {
-  const name = (id: string) => catalogue.muscles.find((muscle) => muscle.id === id)?.name ?? id;
+export function describeMuscles(muscles: Record<string, number>, catalogue: Catalogue, t: Translate): string {
+  const name = (id: string) => {
+    const muscle = catalogue.muscles.find((one) => one.id === id);
+    return muscle ? muscleName(t, muscle) : id;
+  };
   const primary = Object.entries(muscles).filter(([, c]) => c >= 1).map(([id]) => name(id));
   const secondary = Object.entries(muscles).filter(([, c]) => c < 1).map(([id]) => name(id));
   return [primary.join(", "), secondary.join(", ")].filter(Boolean).join(" · ");
@@ -30,7 +31,7 @@ export function describeMuscles(muscles: Record<string, number>, catalogue: Cata
 
 export function cycleMuscle(value: Record<string, number>, muscle: string): Muscles {
   const levels = toLevels(value);
-  const next = nextLevel(MUSCLE_LEVELS, levels[muscle]);
+  const next = nextLevel(LEVEL_ORDER, levels[muscle]);
   const changed = { ...levels };
   if (next) changed[muscle] = next;
   else delete changed[muscle];
@@ -50,39 +51,39 @@ export interface MusclePickerProps {
 }
 
 export function MusclePicker({ catalogue, value, onChange }: MusclePickerProps) {
+  const t = useT();
   const levels = toLevels(value);
+  const levelOptions = muscleLevels(t);
   return (
     <div className="training-field">
-      <span className="training-field-label">Músculos</span>
-      <p className="training-field-hint">
-        Toca el músculo en el cuerpo o en la lista. Un toque, principal: solo uno, el que mide su
-        fuerza y se lleva sus series. Dos, secundario. Tres, ninguno.
-      </p>
+      <span className="training-field-label">{t("muscles.label")}</span>
+      <p className="training-field-hint">{t("muscles.hint")}</p>
       <BodyMaps
         compact
-        label="Qué trabaja"
+        label={t("muscles.works")}
         colors={pickedColors(value)}
         names={Object.fromEntries(
           catalogue.muscles.map((muscle) => {
             const level = levels[muscle.id];
-            return [muscle.id, level ? `${muscle.name}: ${level === "primary" ? "principal" : "secundario"}` : muscle.name];
+            const name = muscleName(t, muscle);
+            return [muscle.id, level ? `${name}: ${t(`muscle_level.${level}`)}` : name];
           }),
         )}
         onSelect={(muscle) => onChange(cycleMuscle(value, muscle))}
       />
-      {REGIONS.map((region) => {
+      {regions(t).map((region) => {
         const options = catalogue.muscles
           .filter((muscle) => muscle.region === region.value)
-          .map((muscle) => ({ value: muscle.id, label: muscle.name }));
+          .map((muscle) => ({ value: muscle.id, label: muscleName(t, muscle) }));
         if (options.length === 0) return null;
         const own = Object.fromEntries(Object.entries(levels).filter(([id]) => options.some((o) => o.value === id)));
         return (
           <div key={region.value} className="training-muscle-region">
             <span className="training-field-hint">{region.label}</span>
             <LevelChips
-              label={`Músculos · ${region.label}`}
+              label={`${t("muscles.label")} · ${region.label}`}
               options={options}
-              levels={MUSCLE_LEVELS}
+              levels={levelOptions}
               value={own}
               onChange={(next) => {
                 const others = Object.fromEntries(

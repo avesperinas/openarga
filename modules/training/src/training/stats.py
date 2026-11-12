@@ -187,7 +187,7 @@ class Name:
 
     @property
     def label(self) -> str:
-        if self.variant.lower().startswith(self.exercise.lower()):
+        if self.exercise.lower() in self.variant.lower():
             return self.variant
         return f"{self.exercise} · {self.variant}"
 
@@ -204,7 +204,7 @@ class Analysis:
     _curves: dict[str, strength.Curve | None] = field(default_factory=dict)
 
     def of_muscle(self, muscle: str) -> list[strength.Series]:
-        return [serie for serie in self.series if serie.points[0].muscle == muscle]
+        return [segment for segment in self.series if segment.points[0].muscle == muscle]
 
     def curve(self, muscle: str) -> strength.Curve | None:
         if muscle not in self._curves:
@@ -349,8 +349,8 @@ def mondays(since: date, until: date) -> list[date]:
 def muscle_strength(analysis: Analysis, muscle: str, since: date, until: date) -> Strength | None:
     weeks = {
         strength.monday(point.day)
-        for serie in analysis.of_muscle(muscle)
-        for point in serie.counted
+        for segment in analysis.of_muscle(muscle)
+        for point in segment.counted
         if since <= point.day <= until
     }
     curve = analysis.curve(muscle)
@@ -485,17 +485,17 @@ def band(sets: float) -> Literal["low", "ok", "high"]:
 
 def movers(analysis: Analysis, since: date, until: date) -> list[Mover]:
     out: dict[tuple[str, str | None], Mover] = {}
-    for serie in sorted(analysis.series, key=lambda serie: serie.since):
-        inside = [point for point in serie.counted if since <= point.day <= until]
-        name = analysis.names.get(serie.variant_id)
+    for segment in sorted(analysis.series, key=lambda segment: segment.since):
+        inside = [point for point in segment.counted if since <= point.day <= until]
+        name = analysis.names.get(segment.variant_id)
         if len(inside) < 2 or name is None:
             continue
         first, last = inside[0], inside[-1]
         peak = max(inside, key=lambda point: point.e1rm)
-        out[(serie.variant_id, serie.gym_id)] = Mover(
-            variant_id=serie.variant_id,
-            gym_id=serie.gym_id,
-            gym=analysis.gym(serie.gym_id),
+        out[(segment.variant_id, segment.gym_id)] = Mover(
+            variant_id=segment.variant_id,
+            gym_id=segment.gym_id,
+            gym=analysis.gym(segment.gym_id),
             exercise=name.exercise,
             variant=name.variant,
             e1rm=round(last.e1rm, 1),
@@ -541,7 +541,7 @@ def summarise(
         measured = muscle_strength(analysis, row.id, since, today)
         if measured:
             found.append(measured)
-        points = [point for serie in analysis.of_muscle(row.id) for point in serie.points]
+        points = [point for segment in analysis.of_muscle(row.id) for point in segment.points]
         latest = last_of.get(row.id)
         name = analysis.names.get(latest.variant_id) if latest else None
         weekly = per_week(volume.get(row.id, 0), since, today)
@@ -615,19 +615,19 @@ def history(analysis: Analysis, muscle: str) -> list[ExerciseHistory]:
         if entry.muscle == muscle:
             entries[entry.variant_id].append(entry)
     series: dict[str, list[strength.Series]] = defaultdict(list)
-    for serie in analysis.of_muscle(muscle):
-        series[serie.variant_id].append(serie)
+    for segment in analysis.of_muscle(muscle):
+        series[segment.variant_id].append(segment)
     out = []
     for variant_id, done in entries.items():
         name = analysis.names.get(variant_id)
         if name is None:
             continue
         done.sort(key=lambda entry: entry.day)
-        found = sorted(series.get(variant_id, []), key=lambda serie: serie.until)
+        found = sorted(series.get(variant_id, []), key=lambda segment: segment.until)
         recent = found[-1].counted if found else []
         gyms: list[str] = []
         for entry in reversed(done):
-            gym = analysis.gym(entry.gym_id) or "Sin centro"
+            gym = analysis.gym(entry.gym_id) or "No gym"
             if gym not in gyms:
                 gyms.append(gym)
         out.append(
@@ -639,7 +639,9 @@ def history(analysis: Analysis, muscle: str) -> list[ExerciseHistory]:
                 first_day=done[0].day,
                 last_day=done[-1].day,
                 sessions=len(done),
-                excluded=sum(1 for serie in found for point in serie.points if not point.counted),
+                excluded=sum(
+                    1 for segment in found for point in segment.points if not point.counted
+                ),
                 best=round(max(point.e1rm for point in recent), 1) if recent else None,
                 last=round(recent[-1].e1rm, 1) if recent else None,
                 delta=round((recent[-1].e1rm / recent[0].e1rm - 1) * 100, 1)
@@ -653,10 +655,10 @@ def history(analysis: Analysis, muscle: str) -> list[ExerciseHistory]:
 def changes_of(own: list[strength.Series], since: date, until: date) -> list[date]:
     days: set[date] = set()
     by_variant: dict[str, list[strength.Point]] = defaultdict(list)
-    for serie in own:
-        if serie.start in ("mark", "detected"):
-            days.add(serie.since)
-        by_variant[serie.variant_id].extend(serie.points)
+    for segment in own:
+        if segment.start in ("mark", "detected"):
+            days.add(segment.since)
+        by_variant[segment.variant_id].extend(segment.points)
     for points in by_variant.values():
         points.sort(key=lambda point: point.day)
         for previous, point in zip(points, points[1:], strict=False):
@@ -803,34 +805,38 @@ def _level(points: list[strength.Point]) -> float | None:
 
 
 def machine(analysis: Analysis, found: list[strength.Series], since: date, until: date) -> Machine:
-    found.sort(key=lambda serie: serie.since)
+    found.sort(key=lambda segment: segment.since)
     gym_id, variant_id = found[0].gym_id, found[0].variant_id
     marks = [
         mark for mark in analysis.marks if (mark.variant_id, mark.gym_id) == (variant_id, gym_id)
     ]
     segments = []
-    for index, serie in enumerate(found):
+    for index, segment in enumerate(found):
         jump = mark_id = None
-        if index > 0 and serie.start == "detected":
-            before, after = _level(found[index - 1].counted[-4:]), _level(serie.counted[:4])
+        if index > 0 and segment.start == "detected":
+            before, after = _level(found[index - 1].counted[-4:]), _level(segment.counted[:4])
             if before and after:
                 jump = round((after / before - 1) * 100, 1)
-        if index > 0 and serie.start == "mark":
+        if index > 0 and segment.start == "mark":
             mark_id = next(
                 (
                     mark.id
                     for mark in marks
-                    if mark.kind == "split" and found[index - 1].until < mark.day <= serie.since
+                    if mark.kind == "split" and found[index - 1].until < mark.day <= segment.since
                 ),
                 None,
             )
         segments.append(
             Segment(
-                since=serie.since, until=serie.until, start=serie.start, jump=jump, mark_id=mark_id
+                since=segment.since,
+                until=segment.until,
+                start=segment.start,
+                jump=jump,
+                mark_id=mark_id,
             )
         )
 
-    inside = [point for serie in found for point in serie.points if since <= point.day <= until]
+    inside = [point for segment in found for point in segment.points if since <= point.day <= until]
     counted = [point for point in inside if point.counted]
     best = max(counted, key=lambda point: point.e1rm, default=None)
     rows = [
@@ -864,9 +870,9 @@ async def read_variant(
     first = await connection.scalar(FIRST_DAY)
     since = starts_on(period, today, first)
     by_gym: dict[str | None, list[strength.Series]] = defaultdict(list)
-    for serie in analysis.series:
-        if serie.variant_id == variant_id:
-            by_gym[serie.gym_id].append(serie)
+    for segment in analysis.series:
+        if segment.variant_id == variant_id:
+            by_gym[segment.gym_id].append(segment)
     machines = [machine(analysis, found, since, today) for found in by_gym.values()]
     return VariantStats(
         variant_id=variant_id,
