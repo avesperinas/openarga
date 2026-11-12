@@ -80,9 +80,9 @@ async def get_event(connection: AsyncConnection, arguments: GetEvent) -> dict[st
 class GetWishes(BaseModel):
     kind: wishes.Kind | None = None
     query: Annotated[str, Field(max_length=100)] | None = Field(
-        default=None, description="Parte del nombre, del texto o del sitio."
+        default=None, description="Part of the name, the text or the place."
     )
-    include_archived: bool = Field(default=False, description="También las hechas (el Archivo).")
+    include_archived: bool = Field(default=False, description="Also the done ones (the Archive).")
 
 
 async def get_wishes(connection: AsyncConnection, arguments: GetWishes) -> dict[str, Any]:
@@ -93,7 +93,7 @@ async def get_wishes(connection: AsyncConnection, arguments: GetWishes) -> dict[
 
 class FindPlace(BaseModel):
     query: Annotated[str, Field(min_length=2, max_length=120)] = Field(
-        description="El nombre del sitio, con el pueblo o el país si puede confundirse."
+        description="The place's name, with its town or country if it could be confused."
     )
 
 
@@ -114,7 +114,7 @@ class AddWish(BaseModel):
     text: Annotated[str, Field(max_length=4000)] | None = None
     place: wishes.Place | None = Field(
         default=None,
-        description='Un candidato de find_place tal cual, o solo {"name": ...} si no se sitúa.',
+        description='A find_place candidate as is, or only {"name": ...} if it cannot be located.',
     )
 
 
@@ -140,7 +140,7 @@ async def save_event(connection: AsyncConnection, arguments: SaveEvent) -> dict[
 
 class SendToCalendar(BaseModel):
     event_id: str
-    on: bool = Field(default=True, description="false lo quita de Planner.")
+    on: bool = Field(default=True, description="false takes it out of Planner.")
 
 
 async def send_to_calendar(
@@ -160,7 +160,7 @@ class UpdateWish(BaseModel):
 async def update_wish(connection: AsyncConnection, arguments: UpdateWish) -> dict[str, Any]:
     sent = arguments.model_fields_set - {"wish_id"}
     if not sent:
-        raise Conflict("no llega nada que cambiar", "INVALID")
+        raise Conflict("nothing to change was sent", "INVALID")
     fields = {
         "kind": arguments.kind,
         "name": arguments.name,
@@ -189,7 +189,7 @@ async def restore_wish(connection: AsyncConnection, arguments: WishId) -> dict[s
 class DeleteWish(BaseModel):
     wish_id: str
     name: Annotated[str, Field(min_length=1, max_length=120)] = Field(
-        description="El nombre exacto de la gana: si no coincide, no se borra nada."
+        description="The wish's exact name: if it does not match, nothing is deleted."
     )
 
 
@@ -201,8 +201,8 @@ async def delete_wish(connection: AsyncConnection, arguments: DeleteWish) -> dic
 class ShareWish(BaseModel):
     wish_id: str
     space: Annotated[str, Field(min_length=1, max_length=80)] | None = Field(
-        description="El nombre del espacio de arga con el que compartirla, o null para que vuelva "
-        "a ser solo tuya."
+        description="The name of the OpenArga space to share it with, or null to make it only "
+        "yours again."
     )
 
 
@@ -212,13 +212,13 @@ async def share_wish(connection: AsyncConnection, arguments: ShareWish) -> dict[
         try:
             mine = await spaces.of_caller()
         except spaces.Unavailable as error:
-            raise Conflict(f"no sé tus espacios: {error}", "UNAVAILABLE") from error
+            raise Conflict(f"cannot read your spaces: {error}", "UNAVAILABLE") from error
         wanted = arguments.space.strip().casefold()
         match = [one for one in mine if one["name"].strip().casefold() == wanted]
         if not match:
-            names = ", ".join(f"«{one['name']}»" for one in mine) or "ninguno"
+            names = ", ".join(f"“{one['name']}”" for one in mine) or "none"
             raise Conflict(
-                f"no estás en ningún espacio llamado «{arguments.space}»; los tuyos: {names}",
+                f"you are in no space called “{arguments.space}”; yours: {names}",
                 "NOT_FOUND",
             )
         space_id = match[0]["id"]
@@ -334,10 +334,10 @@ async def hide_events(connection: AsyncConnection, arguments: HideEvents) -> dic
 
 class Interest(BaseModel):
     kind: Literal["like", "mute"] = Field(
-        description="like: te interesa y sube en Explorar; mute: no sale en ningún sitio."
+        description="like: it interests you and goes up in Explore; mute: it shows nowhere."
     )
     term: Annotated[str, Field(min_length=2, max_length=80)] = Field(
-        description="Una palabra o un nombre: jazz, Baluarte, Encuentros de Pamplona."
+        description="A word or a name: jazz, a venue, a festival."
     )
 
 
@@ -353,7 +353,7 @@ async def remove_interest(connection: AsyncConnection, arguments: Interest) -> d
     for one in await explore.interests(connection):
         if one.kind == arguments.kind and agenda.fold(one.term) == folded:
             return {"removed": (await explore.remove_interest(connection, one.id)).model_dump()}
-    raise Conflict(f"no hay {arguments.kind} «{arguments.term}»", "NOT_FOUND")
+    raise Conflict(f"there is no {arguments.kind} “{arguments.term}”", "NOT_FOUND")
 
 
 @dataclass(frozen=True)

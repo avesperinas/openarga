@@ -14,8 +14,6 @@ from arga_tenancy import CURRENT_USER_SQL as ME
 from outings.common import MADRID, Conflict, NotFound
 
 Kind = Literal["eat", "plan", "getaway", "trip"]
-KINDS: dict[str, str] = {"eat": "Comer", "plan": "Plan", "getaway": "Escapada", "trip": "Viaje"}
-
 PHOTO_LIMIT = 8 * 1024 * 1024
 PHOTO_SIDE = 1600
 THUMB_SIDE = 360
@@ -83,7 +81,7 @@ class WishIn(BaseModel):
     def _name(cls, value: str) -> str:
         cleaned = _clean(value)
         if not cleaned:
-            raise ValueError("el nombre no puede estar vacío")
+            raise ValueError("the name cannot be empty")
         return cleaned
 
     @field_validator("body")
@@ -105,7 +103,7 @@ class WishPatch(BaseModel):
             return None
         cleaned = _clean(value)
         if not cleaned:
-            raise ValueError("el nombre no puede estar vacío")
+            raise ValueError("the name cannot be empty")
         return cleaned
 
     @field_validator("body")
@@ -223,7 +221,7 @@ async def wish(connection: AsyncConnection, wish_id: str) -> Wish:
         )
     ).one_or_none()
     if row is None:
-        raise NotFound(f"gana {wish_id}")
+        raise NotFound(f"wish {wish_id}")
     return _wish(row)
 
 
@@ -290,7 +288,7 @@ async def update(connection: AsyncConnection, wish_id: str, patch: WishPatch) ->
         params,
     )
     if updated.rowcount == 0:
-        raise NotFound(f"gana {wish_id}")
+        raise NotFound(f"wish {wish_id}")
     return await wish(connection, wish_id)
 
 
@@ -304,7 +302,7 @@ async def mark_done(connection: AsyncConnection, wish_id: str) -> Wish:
         {"id": wish_id},
     )
     if updated.rowcount == 0:
-        raise NotFound(f"gana {wish_id}")
+        raise NotFound(f"wish {wish_id}")
     return await wish(connection, wish_id)
 
 
@@ -317,16 +315,16 @@ async def restore(connection: AsyncConnection, wish_id: str) -> Wish:
         {"id": wish_id},
     )
     if updated.rowcount == 0:
-        raise NotFound(f"gana {wish_id}")
+        raise NotFound(f"wish {wish_id}")
     return await wish(connection, wish_id)
 
 
 async def remove(connection: AsyncConnection, wish_id: str, name: str | None = None) -> Wish:
     found = await wish(connection, wish_id)
     if name is not None and name.strip() != found.name:
-        raise Conflict(f"esa gana se llama «{found.name}»", "NAME_MISMATCH")
+        raise Conflict(f"that wish is called “{found.name}”", "NAME_MISMATCH")
     if found.space_id is not None and not found.mine:
-        raise Conflict("esta gana la compartió otra persona: solo ella la borra", "NOT_OWNER")
+        raise Conflict("someone else shared this wish: only they can delete it", "NOT_OWNER")
     await connection.execute(
         text("delete from outings.outings_wish where id = cast(:id as uuid)"), {"id": wish_id}
     )
@@ -341,7 +339,7 @@ def _shrink(content: bytes) -> tuple[bytes, str, bytes]:
             image = ImageOps.exif_transpose(opened)
             image.load()
     except (UnidentifiedImageError, OSError) as error:
-        raise Conflict("eso no es una foto que se pueda leer", "INVALID_PHOTO") from error
+        raise Conflict("that is not a readable photo", "INVALID_PHOTO") from error
 
     def encode(side: int) -> bytes:
         copy = image.copy()
@@ -366,7 +364,7 @@ class Shrunk:
 
 async def shrink(content: bytes) -> Shrunk:
     if not content:
-        raise Conflict("la foto llegó vacía", "INVALID_PHOTO")
+        raise Conflict("the photo arrived empty", "INVALID_PHOTO")
     if len(content) > PHOTO_LIMIT:
         raise Conflict("la foto pasa de 8 MB", "PHOTO_TOO_LARGE")
     return Shrunk(*await asyncio.to_thread(_shrink, content))
@@ -429,7 +427,7 @@ async def photo(
         )
     ).one_or_none()
     if row is None:
-        raise NotFound(f"foto de la gana {wish_id}")
+        raise NotFound(f"photo of wish {wish_id}")
     if thumb:
         return bytes(row.thumb), "image/jpeg"
     return bytes(row.content), row.content_type
@@ -438,7 +436,7 @@ async def photo(
 async def share(connection: AsyncConnection, wish_id: str, space_id: str | None) -> Wish:
     found = await wish(connection, wish_id)
     if not found.mine:
-        raise Conflict("solo quien apuntó la gana la comparte o deja de compartirla", "NOT_OWNER")
+        raise Conflict("only whoever noted the wish can share or unshare it", "NOT_OWNER")
     if found.space_id == space_id:
         return found
     owner = f", user_id = {ME}" if space_id is None else ""

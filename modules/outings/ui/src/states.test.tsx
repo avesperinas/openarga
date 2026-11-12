@@ -50,7 +50,7 @@ beforeEach(() => {
     vi.fn(async (url: string, init?: RequestInit) => {
       const method = init?.method ?? "GET";
       const reply = replies[`${method} ${url}`] ?? replies[`${method} ${url.split("?")[0]}`];
-      if (!reply) return json({ detail: "no existe" }, 404);
+      if (!reply) return json({ detail: "not found" }, 404);
       const body = await reply();
       return body instanceof Response ? body : json(body);
     }),
@@ -100,7 +100,7 @@ describe("la agenda", () => {
     expect(host.textContent).toContain("Tu agenda está vacía");
     act(() => button("Explorar")!.click());
     await settle();
-    expect(window.location.pathname).toBe("/outings/explorar");
+    expect(window.location.pathname).toBe("/outings/explore");
   });
 
   it("si falla, lo dice y reintentar lo trae", async () => {
@@ -124,14 +124,14 @@ describe("la agenda", () => {
 
 describe("explorar", () => {
   it("sin nada en la agenda, el botón pide a tu Claude que la llene", async () => {
-    await open("/outings/explorar");
+    await open("/outings/explore");
     expect(host.textContent).toContain("La agenda está vacía");
     expect(button("Actualizar")).toBeDefined();
   });
 
   it("si falla, se reintenta", async () => {
     replies["GET /api/outings/explore"] = () => json({ detail: "la base no contesta" }, 503);
-    await open("/outings/explorar");
+    await open("/outings/explore");
     expect(host.textContent).toContain("la base no contesta");
     expect(button("Reintentar")).toBeDefined();
   });
@@ -139,13 +139,13 @@ describe("explorar", () => {
 
 describe("las ganas", () => {
   it("sin ninguna, el botón apunta la primera", async () => {
-    await open("/outings/ganas");
+    await open("/outings/wishes");
     expect(host.textContent).toContain("Nada apuntado todavía");
     expect(button("Apuntar")).toBeDefined();
   });
 
   it("una que ya no está lo dice; otro fallo se reintenta", async () => {
-    await open(`/outings/ganas/${WISH}`);
+    await open(`/outings/wishes/${WISH}`);
     expect(host.textContent).toContain("Ya no está");
     expect(button("Reintentar")).toBeUndefined();
 
@@ -153,7 +153,7 @@ describe("las ganas", () => {
     root = createRoot(host);
     void reset();
     replies[`GET /api/outings/wishes/${WISH}`] = () => json({ detail: "la base no contesta" }, 503);
-    await open(`/outings/ganas/${WISH}`);
+    await open(`/outings/wishes/${WISH}`);
     expect(host.textContent).toContain("la base no contesta");
     expect(button("Reintentar")).toBeDefined();
   });
@@ -161,7 +161,7 @@ describe("las ganas", () => {
 
 describe("un evento", () => {
   it("si no existe lo dice", async () => {
-    await open(`/outings/eventos/${EVENT}`);
+    await open(`/outings/events/${EVENT}`);
     expect(host.textContent).toContain("Ya no está");
   });
 });
@@ -169,14 +169,14 @@ describe("un evento", () => {
 describe("los ajustes", () => {
   it("si no se pueden leer, se reintenta", async () => {
     replies["GET /api/outings/interests"] = () => json({ detail: "la base no contesta" }, 503);
-    await open("/outings/ajustes");
+    await open("/outings/settings");
     expect(host.textContent).toContain("la base no contesta");
     expect(button("Reintentar")).toBeDefined();
   });
 });
 
 describe("axe-core sin errores graves", () => {
-  it.each(["/outings/", "/outings/explorar", "/outings/ganas", "/outings/ajustes"])("%s", async (path) => {
+  it.each(["/outings/", "/outings/explore", "/outings/wishes", "/outings/settings"])("%s", async (path) => {
     await open(path);
     expect(await serious()).toEqual([]);
   });

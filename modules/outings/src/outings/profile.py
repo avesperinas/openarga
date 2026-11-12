@@ -24,8 +24,10 @@ def folder() -> Path:
 
 
 def fold(value: str | None) -> str:
-    plain = unicodedata.normalize("NFKD", value or "").encode("ascii", "ignore").decode()
-    return " ".join(re.sub(r"[^0-9a-z]+", " ", plain.casefold()).split())
+    plain = (
+        unicodedata.normalize("NFKD", (value or "").casefold()).encode("ascii", "ignore").decode()
+    )
+    return " ".join(re.sub(r"[^0-9a-z]+", " ", plain).split())
 
 
 class Near(BaseModel):
@@ -85,6 +87,7 @@ class Profile(BaseModel):
     language: str
     timezone: str
     geocoding: str
+    stopwords: list[str] = []
     near: Near
     region: Region
     map: Map

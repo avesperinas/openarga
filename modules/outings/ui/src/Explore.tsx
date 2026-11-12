@@ -27,8 +27,8 @@ const kept: { typed: string; when: When; zone: ZoneFilter; filter: Filter; byDat
 export function ExploreScreen({ onOpen }: { onOpen: (event: AgendaEvent) => void }) {
   const [arrived] = useState(() => new URLSearchParams(window.location.search));
   const area = useArea();
-  const fromNotice = arrived.has("nuevo") || arrived.has("cuando");
-  const noticeWhen = WHENS.find((one) => one.value === arrived.get("cuando"))?.value;
+  const fromNotice = arrived.has("new") || arrived.has("when");
+  const noticeWhen = WHENS.find((one) => one.value === arrived.get("when"))?.value;
   const [query, setQuery] = useState(fromNotice ? "" : kept.typed.trim());
   const [typed, setTyped] = useState(fromNotice ? "" : kept.typed);
   const [when, setWhen] = useState<When>(noticeWhen ?? (fromNotice ? "quarter" : kept.when));
@@ -36,7 +36,7 @@ export function ExploreScreen({ onOpen }: { onOpen: (event: AgendaEvent) => void
   const [filter, setFilter] = useState<Filter>(fromNotice ? "all" : kept.filter);
   const [byDate, setByDate] = useState(fromNotice ? false : kept.byDate);
   const today = isoDay(new Date());
-  const fresh = freshSince(arrived.get("nuevo"), today);
+  const fresh = freshSince(arrived.get("new"), today);
   const [allFresh, setAllFresh] = useState(fresh.fromNotice);
 
   useEffect(() => {

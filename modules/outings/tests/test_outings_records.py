@@ -23,32 +23,34 @@ async def built() -> list[dict]:
         return await records.build(connection)
 
 
-async def test_each_wish_is_a_ficha_and_doing_it_goes_to_the_diary(api) -> None:
+async def test_each_wish_is_a_record_and_doing_it_goes_to_the_diary(api) -> None:
     irati = await make_wish(
-        api, body="Ir en noviembre, con el hayedo rojo.", place=wishes.place_of(IRATI).model_dump()
+        api,
+        body="Go in November, with the beech wood red.",
+        place=wishes.place_of(IRATI).model_dump(),
     )
-    other = await make_wish(api, "Japón", kind="trip", place={"name": "Japón"})
+    other = await make_wish(api, "Japan", kind="trip", place={"name": "Japan"})
     await api.post(f"/wishes/{other['id']}/done")
 
     found = {one["id"]: one for one in await built()}
 
-    ficha = found[f"wish:{irati['id']}"]
-    assert ficha == contracts.record(**ficha)
-    assert ficha["folder"] == "Ganas" and ficha["kind"] == "Gana"
-    assert ficha["href"] == f"/outings/ganas/{irati['id']}"
-    assert ficha["properties"] == {
-        "clase": "escapada",
-        "estado": "pendiente",
-        "lugar": "Selva de Irati, Orbaizeta, España",
-        "coordenadas": "42.98000, -1.17000",
+    record = found[f"wish:{irati['id']}"]
+    assert record == contracts.record(**record)
+    assert record["folder"] == "Wishes" and record["kind"] == "Wish"
+    assert record["href"] == f"/outings/wishes/{irati['id']}"
+    assert record["properties"] == {
+        "kind": "getaway",
+        "status": "pending",
+        "place": "Selva de Irati, Orbaizeta, Spain",
+        "coordinates": "42.98000, -1.17000",
     }
-    assert ficha["body"] == (
-        "**Escapada** · Selva de Irati, Orbaizeta, España\n\nIr en noviembre, con el hayedo rojo."
+    assert record["body"] == (
+        "**Getaway** · Selva de Irati, Orbaizeta, Spain\n\nGo in November, with the beech wood red."
     )
     done = found[f"wish:{other['id']}"]
-    assert done["properties"]["estado"] == "hecha"
+    assert done["properties"]["status"] == "done"
     day = next(one for one in found.values() if one.get("day"))
-    assert day["body"] == f"- Hiciste [[outings:wish:{other['id']}|Japón]]"
+    assert day["body"] == f"- You did [[outings:wish:{other['id']}|Japan]]"
 
 
 async def test_what_changed_is_queued_once(api) -> None:
@@ -101,7 +103,7 @@ async def test_outings_the_kernel_and_notebook_put_a_wish_in_the_notes(
     from outings import publisher
 
     to_kernel, notes = notebook
-    irati = await make_wish(api, body="Ruta del Cubo.", place=wishes.place_of(IRATI).model_dump())
+    irati = await make_wish(api, body="Cube route.", place=wishes.place_of(IRATI).model_dump())
 
     async def worker() -> None:
         await write.refresh(to_kernel, engine, "outings", records.build, write.Every(0), person)
@@ -115,17 +117,17 @@ async def test_outings_the_kernel_and_notebook_put_a_wish_in_the_notes(
     await worker()
 
     found = (
-        await notes.get("/notes/resolve", params={"target": "Outings/Ganas/Selva de Irati"})
+        await notes.get("/notes/resolve", params={"target": "Outings/Wishes/Selva de Irati"})
     ).json()["note"]
     assert found is not None
     note = (await notes.get(f"/notes/{found['id']}")).json()
     assert note["properties"]["arga"] == f"outings:wish:{irati['id']}"
-    assert note["properties"]["clase"] == "escapada"
+    assert note["properties"]["kind"] == "getaway"
 
     await api.post(f"/wishes/{irati['id']}/done")
     await worker()
     again = (await notes.get(f"/notes/{found['id']}")).json()
-    assert again["properties"]["estado"] == "hecha"
+    assert again["properties"]["status"] == "done"
 
     await api.delete(f"/wishes/{irati['id']}")
     await worker()

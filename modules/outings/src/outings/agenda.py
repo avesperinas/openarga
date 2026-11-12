@@ -130,8 +130,6 @@ NEAR = text("""
       )
 """)
 
-FILLER = {"de", "del", "la", "las", "el", "los", "y", "en", "a", "al", "con", "por", "para"}
-
 
 def haystack(event: Any) -> str:
     parts = (event.title, event.venue, event.town, event.summary, " ".join(event.programme))
@@ -151,7 +149,8 @@ async def muted_terms(connection: AsyncConnection) -> list[str]:
 
 
 def _words(value: str) -> set[str]:
-    return {word for word in fold(value).split() if word not in FILLER and len(word) > 1}
+    filler = set(profile.current().stopwords)
+    return {word for word in fold(value).split() if word not in filler and len(word) > 1}
 
 
 def same_title(one: str, other: str) -> bool:
@@ -195,7 +194,7 @@ async def split(connection: AsyncConnection, event_id: str, source_id: str) -> E
         )
     ).one_or_none()
     if row is None:
-        raise NotFound(f"fuente {source_id} del evento {event_id}")
+        raise NotFound(f"source {source_id} of event {event_id}")
     others = await connection.scalar(
         text("""
             select count(*) from outings.outings_event_source
@@ -204,7 +203,7 @@ async def split(connection: AsyncConnection, event_id: str, source_id: str) -> E
         {"source": source_id, "event": event_id},
     )
     if not others:
-        raise Conflict("ese evento solo tiene esa fuente", "ONLY_SOURCE")
+        raise Conflict("that event has only that source", "ONLY_SOURCE")
     payload = row.payload
     created = await connection.scalar(
         NEW_EVENT,
@@ -445,7 +444,7 @@ async def _bare(connection: AsyncConnection, event_id: str) -> Event:
         )
     ).one_or_none()
     if row is None:
-        raise NotFound(f"evento {event_id}")
+        raise NotFound(f"event {event_id}")
     return _event(row)
 
 
@@ -457,7 +456,7 @@ def _dated(found: Event, cancelled: bool = False) -> dict[str, Any]:
         "tz": TZ,
         "location": where[:300] if where else None,
         "status": "cancelled" if cancelled else "confirmed",
-        "href": f"/outings/eventos/{found.id}",
+        "href": f"/outings/events/{found.id}",
     }
     if found.time and found.starts_on == found.ends_on:
         hour, minute = (int(part) for part in found.time.split(":"))
@@ -494,7 +493,7 @@ async def to_calendar(connection: AsyncConnection, event_id: str, on: bool) -> E
         {"id": event_id, "on": on},
     )
     if updated.rowcount == 0:
-        raise NotFound(f"evento {event_id}")
+        raise NotFound(f"event {event_id}")
     found = await event(connection, event_id)
     await publish_plan(connection, found)
     return found

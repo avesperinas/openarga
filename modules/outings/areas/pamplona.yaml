@@ -5,6 +5,7 @@ region_code: NA
 language: es
 timezone: Europe/Madrid
 geocoding: Navarra
+stopwords: [de, del, la, las, el, los, y, en, a, al, con, por, para]
 
 near:
   name: Comarca de Pamplona

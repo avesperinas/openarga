@@ -122,7 +122,7 @@ class Hub:
 
         url, params = request.url, request.url.params
         if self.down:
-            raise httpx.ConnectError("sin red", request=request)
+            raise httpx.ConnectError("no network", request=request)
         if url.host == "nominatim.openstreetmap.org":
             self.asked.append(params.get("q", ""))
             return httpx.Response(200, json=self.places)
@@ -150,7 +150,7 @@ class Hub:
                 "thumburl": "https://upload.wikimedia.org/x/1600px-foto.jpg",
                 "descriptionurl": f"https://commons.wikimedia.org/wiki/{params['titles']}",
                 "extmetadata": {
-                    "Artist": {"value": "Autora Sintética"},
+                    "Artist": {"value": "Synthetic Author"},
                     "LicenseShortName": {"value": "CC BY-SA 4.0"},
                 },
             }
@@ -159,7 +159,7 @@ class Hub:
             from outings_world import jpeg
 
             return httpx.Response(200, content=jpeg(800, 600))
-        raise AssertionError(f"nadie debería pedir {url}")
+        raise AssertionError(f"nobody should ask for {url}")
 
 
 @pytest.fixture

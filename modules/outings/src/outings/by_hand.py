@@ -24,16 +24,16 @@ class EventIn(BaseModel):
     category: agenda.Category
     summary: Annotated[str, Field(max_length=400)] | None = None
     link: Annotated[str, Field(max_length=1000)] = Field(
-        description="La página que anuncia el evento, la que lo respalda."
+        description="The page that announces the event and backs it."
     )
     programme: Annotated[
         list[Annotated[str, Field(min_length=2, max_length=160)]], Field(max_length=40)
     ] = Field(
         default_factory=list,
-        description='Los actos de una fiesta, un festival o un ciclo: "Sáb 3, 12:00 · Concurso".',
+        description='The acts of a fiesta, festival or season: "Sat 3, 12:00 · Contest".',
     )
     highlight: bool = Field(
-        default=False, description="De lo grande: lo que merece ir aunque haya que moverse."
+        default=False, description="Something big: worth going to even if it means travelling."
     )
 
     @field_validator("link")
@@ -41,7 +41,7 @@ class EventIn(BaseModel):
     def _link(cls, value: str) -> str:
         parts = urlsplit(value.strip())
         if parts.scheme not in ("http", "https") or not parts.netloc:
-            raise ValueError("el enlace es la dirección de la página que lo anuncia, con https://")
+            raise ValueError("the link is the address of the page that announces it, with https://")
         return value.strip()
 
 
@@ -79,7 +79,7 @@ def payload_of(item: EventIn) -> dict[str, Any]:
         "category": item.category,
         "summary": item.summary,
         "link": item.link,
-        "source_name": f"Claude · {host}",
+        "source_name": f"AI · {host}",
         "source_page": item.link,
         "programme": [" ".join(one.split()) for one in item.programme],
         "highlight": item.highlight,
@@ -100,16 +100,14 @@ async def add(connection: AsyncConnection, items: list[EventIn]) -> list[Outcome
     for item in items:
         ends = item.ends_on or item.starts_on
         if ends < item.starts_on:
-            out.append(
-                Outcome(title=item.title, outcome="dropped", reason="acaba antes de empezar")
-            )
+            out.append(Outcome(title=item.title, outcome="dropped", reason="ends before it starts"))
             continue
         if ends < first or item.starts_on > last:
             out.append(
                 Outcome(
                     title=item.title,
                     outcome="dropped",
-                    reason="fuera de fechas: ya pasó o es de dentro de más de un año",
+                    reason="out of range: already past or more than a year away",
                 )
             )
             continue

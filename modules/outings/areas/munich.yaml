@@ -5,6 +5,7 @@ region_code: BY
 language: de
 timezone: Europe/Berlin
 geocoding: Bayern
+stopwords: [der, die, das, des, dem, den, und, im, in, am, an, auf, mit, von, zum, zur, für]
 
 near:
   name: München und Umland

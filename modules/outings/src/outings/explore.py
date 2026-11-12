@@ -109,7 +109,7 @@ async def dismiss(connection: AsyncConnection, event_id: str, on: bool = True) -
         {"id": event_id, "on": on},
     )
     if updated.rowcount == 0:
-        raise NotFound(f"evento {event_id}")
+        raise NotFound(f"event {event_id}")
     return await agenda.event(connection, event_id)
 
 
@@ -138,7 +138,7 @@ async def add_interest(connection: AsyncConnection, given: InterestIn) -> Intere
     term = " ".join(given.term.split())
     folded = agenda.fold(term)
     if len(folded) < 2:
-        raise Conflict("eso no tiene letras que buscar", "INVALID")
+        raise Conflict("that has no letters to search for", "INVALID")
     row = (
         await connection.execute(
             text("""
@@ -164,5 +164,5 @@ async def remove_interest(connection: AsyncConnection, interest_id: str) -> Inte
         )
     ).one_or_none()
     if row is None:
-        raise NotFound(f"interés {interest_id}")
+        raise NotFound(f"interest {interest_id}")
     return Interest(id=row.id, kind=row.kind, term=row.term)

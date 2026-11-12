@@ -26,13 +26,13 @@ uses: [sources.catalogue, sources.plug, sources.unplug, places.search, places.ph
 
 notifications:
   - kind: for_you
-    label: Planes para ti
+    label: Plans for you
     default: true
   - kind: weekend
-    label: Lo mejor del finde, el jueves
+    label: The best of the weekend, on Thursday
     default: false
   - kind: saved_soon
-    label: Empieza algo que guardaste
+    label: Something you saved starts
     default: true
 
 receives: [trip]
@@ -52,51 +52,51 @@ tools:
   - name: get_event
     scope: outings:read
     description: >
-      Un evento entero por su event_id: lo de find_events más las páginas de donde llegó (lo que lo
-      respalda).
+      One whole event by its event_id: what find_events gives plus the pages it came from (what
+      backs it).
   - name: get_wishes
     scope: outings:read
     description: >
-      Las ganas: lo que apetece hacer, de cuatro tipos —eat (un sitio para comer o beber), plan (algo
-      cerca, una tarde o un día), getaway (salir uno o dos días) y trip (lejos, que puede ser solo
-      "Japón")—, cada una con su texto y su sitio. Las hechas están en el Archivo y solo salen con
-      include_archived. Un plan que vino de la agenda lleva sus fechas.
+      The wishes: what the person wants to do, of four kinds (eat, a place to eat or drink; plan,
+      something nearby for an afternoon or a day; getaway, one or two days away; and trip, far, which
+      can be just "Japan"), each with its text and its place. Done ones are in the Archive and only
+      show with include_archived. A plan that came from the agenda carries its dates.
   - name: find_place
     scope: outings:read
     description: >
-      Busca un sitio por su nombre en OpenStreetMap y devuelve candidatos con su pueblo, su país y
-      sus coordenadas. Añade el pueblo o el país si el nombre puede confundirse. Pasa el elegido tal
-      cual a add_wish o update_wish; si no contesta, una gana se guarda con el sitio solo por nombre
-      y no sale en el mapa.
+      Looks a place up by name in OpenStreetMap and returns candidates with their town, country and
+      coordinates. Add the town or the country if the name could be confused. Pass the chosen one as
+      is to add_wish or update_wish; if it does not answer, a wish is saved with the place by name
+      only and does not show on the map.
   - name: add_wish
     scope: outings:write
     description: >
-      Apunta una gana: su tipo, su nombre, su texto si se dice y su sitio, que es un candidato de
-      find_place. Nada más: sin valoración, sin con quién, sin presupuesto. "Apúntame ir a Irati en
-      otoño" es una escapada con su sitio y el otoño en el texto.
+      Notes a wish: its kind, its name, its text if one is given and its place, which is a
+      find_place candidate. Nothing else: no rating, no company, no budget. "Note down going to the
+      mountains in autumn" is a getaway with its place and autumn in the text.
   - name: save_event
     scope: outings:write
     description: >
-      "Me apetece": pasa un evento de la agenda a las ganas como un plan con sus fechas, enlazado a
-      él. Dos veces es la misma gana. No lo pone en el calendario: eso es send_to_calendar.
+      "Want to go": turns an agenda event into a plan wish with its dates, linked to it. Twice is the
+      same wish. It does not put it on the calendar: that is send_to_calendar.
   - name: send_to_calendar
     scope: outings:write
     description: >
-      Pone un evento de la agenda en Planner, el calendario, o lo quita con on=false. Es distinto de
-      save_event: algo puede apetecer sin estar decidido.
+      Puts an agenda event in Planner, the calendar, or takes it out with on=false. Different from
+      save_event: something can appeal without being decided.
   - name: update_wish
     scope: outings:write
     description: >
-      Corrige una gana por su wish_id: el tipo, el nombre, el texto o el sitio. Solo cambia lo que
-      se pasa; null vacía el texto o el sitio.
+      Corrects a wish by its wish_id: the kind, the name, the text or the place. Only what is passed
+      changes; null empties the text or the place.
   - name: mark_wish_done
     scope: outings:write
     description: >
-      Marca una gana como hecha: sale de la lista y queda en el Archivo, de donde se puede devolver.
-      No pasa a ninguna otra app.
+      Marks a wish done: it leaves the list and stays in the Archive, from where it can be restored.
+      It goes to no other app.
   - name: restore_wish
     scope: outings:write
-    description: Saca una gana del Archivo y la devuelve a la lista.
+    description: Takes a wish out of the Archive and back onto the list.
   - name: add_events
     scope: outings:write
     description: >
@@ -122,52 +122,53 @@ tools:
   - name: get_agenda_brief
     scope: outings:read
     description: >
-      El encargo para rellenar la agenda: qué agendas leer, qué buscar en la web, qué no apuntar y
-      cómo apuntarlo con add_events, con las fechas de hoy y lo que te interesa o no. Es lo que lee una tarea programada antes de buscar.
+      The brief for filling the agenda: which agendas to read, what to search for on the web, what
+      not to add and how to add it with add_events, with today's dates and what interests the
+      person or not. A scheduled task reads it before searching.
   - name: hide_events
     scope: outings:write
     description: >
-      "No me interesa": aparta eventos de la agenda por su event_id, para siempre aunque otra
-      fuente los vuelva a contar. Para actos sueltos de algo que ya está como un evento con su
-      programa, o lo que no es ocio (congresos, jornadas profesionales, festivos).
+      "Not interested": sets agenda events aside by their event_id, for good even if another source
+      reports them again. For single acts of something already listed as one event with its
+      programme, or for what is not leisure (conferences, professional days, public holidays).
   - name: add_interest
     scope: outings:write
     description: >
-      Apunta una palabra o un nombre que te interesa (like: sube en find_events y va en el encargo)
-      o que no (mute: lo que lo lleve deja de salir en la agenda). Jazz, Baluarte, congreso.
+      Notes a word or a name the person likes (like: it goes up in find_events and into the brief)
+      or does not (mute: whatever carries it stops showing in the agenda). Jazz, a venue, conference.
   - name: remove_interest
     scope: outings:write
-    description: Quita una palabra de lo que te interesa (like) o de lo silenciado (mute).
+    description: Removes a word from what the person likes (like) or has muted (mute).
   - name: delete_wish
     scope: outings:write
     description: >
-      Borra una gana para siempre, con su foto. Pide el wish_id y el nombre exacto, y no borra si no
-      coinciden. Si solo está hecha, mejor mark_wish_done. Una gana que te ha compartido otra
-      persona solo la borra ella.
+      Deletes a wish for good, with its photo. Needs the wish_id and the exact name, and does not
+      delete if they do not match. If it is only done, mark_wish_done is better. A wish someone else
+      shared with you can only be deleted by them.
   - name: share_wish
     scope: outings:write
     description: >
-      Comparte una gana con un espacio de arga, por su nombre, o con space null la deja otra vez
-      solo tuya. Compartida, los miembros la ven, la editan y la marcan hecha, con su foto. Solo
-      quien la apuntó la comparte; get_wishes dice en `mine` si es tuya y en `shared` si está
-      compartida.
+      Shares a wish with an OpenArga space, by its name, or with space null makes it only yours
+      again. Shared, the members see it, edit it and mark it done, with its photo. Only whoever
+      noted it shares it; get_wishes says in `mine` whether it is yours and in `shared` whether it
+      is shared.
 
 ui:
   widgets:
     - id: weekend
-      title: Este finde
+      title: This weekend
       kind: upnext
       sizes: ["2x2", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/outings/widgets/weekend
       refresh: 1800
       link: /outings
     - id: wishes
-      title: Ganas
+      title: Wishes
       kind: list
       sizes: ["2x2", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/outings/widgets/wishes
       refresh: 1800
-      link: /outings/ganas
+      link: /outings/wishes
   view: /outings
   hue: 7
   family: wellbeing

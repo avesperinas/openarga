@@ -48,7 +48,7 @@ async def planned(engine, at: datetime, **item) -> None:
         "starts_on": "2027-11-11",
         "ends_on": "2027-11-14",
         "image": None,
-        "detail": "4 días · 2 viajeros",
+        "detail": "4 days · 2 travellers",
         "removed": False,
         **item,
     }
@@ -74,7 +74,7 @@ async def test_a_trip_planned_elsewhere_shows_with_its_phase_and_links_there(api
         planner,
         T0,
         id="idea:2",
-        title="Japón en sakura",
+        title="Japan in sakura",
         phase="idea",
         starts_on=None,
         ends_on=None,
@@ -85,7 +85,7 @@ async def test_a_trip_planned_elsewhere_shows_with_its_phase_and_links_there(api
 
     assert [(one["title"], one["phase"], one["href"]) for one in found] == [
         ("Budapest", "plan", "/probe/viajes/1"),
-        ("Japón en sakura", "idea", "/probe/ideas/2"),
+        ("Japan in sakura", "idea", "/probe/ideas/2"),
     ]
     assert found[0]["app"] == PLANNER
 

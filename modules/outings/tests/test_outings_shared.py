@@ -159,7 +159,7 @@ async def test_claude_shares_a_wish_by_the_spaces_name(call, people) -> None:
     shared = await tool("ana", {"wish_id": wish, "space": "casa"})
     by_luis = await tool("luis", {"wish_id": wish, "space": None})
 
-    assert unknown.status_code == 409 and "«Casa»" in unknown.json()["detail"]["message"]
+    assert unknown.status_code == 409 and "“Casa”" in unknown.json()["detail"]["message"]
     assert shared.status_code == 200, shared.text
     assert (shared.json()["content"]["shared"], shared.json()["content"]["mine"]) == (True, True)
     assert by_luis.status_code == 409 and by_luis.json()["detail"]["code"] == "NOT_OWNER"

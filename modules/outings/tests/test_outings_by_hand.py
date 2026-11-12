@@ -15,7 +15,7 @@ def found(title: str, days: int, **extra) -> dict:
         "starts_on": (TODAY + timedelta(days=days)).isoformat(),
         "category": "eat",
         "town": "Pamplona",
-        "link": "https://prensa.example/noticia",
+        "link": "https://press.example/news",
         **extra,
     }
 
@@ -25,8 +25,8 @@ async def add(api, *events: dict):
 
 
 async def test_what_claude_finds_goes_in_with_its_page_and_twice_is_once(api) -> None:
-    first = await add(api, found("Jornadas Sintéticas del Pincho", 5, summary="Veinte bares."))
-    again = await add(api, found("Jornadas Sintéticas del Pincho", 5, summary="Veinte bares."))
+    first = await add(api, found("Synthetic Pintxo Days", 5, summary="Twenty bars."))
+    again = await add(api, found("Synthetic Pintxo Days", 5, summary="Twenty bars."))
 
     assert first.status_code == 200, first.text
     assert first.json()["content"]["summary"] == {"added": 1}
@@ -34,19 +34,19 @@ async def test_what_claude_finds_goes_in_with_its_page_and_twice_is_once(api) ->
     [event] = (await api.get("/agenda", params={"period": "month"})).json()["events"]
     assert event["links"] == [
         {
-            "name": "Claude · prensa.example",
-            "url": "https://prensa.example/noticia",
-            "page": "https://prensa.example/noticia",
+            "name": "AI · press.example",
+            "url": "https://press.example/news",
+            "page": "https://press.example/news",
         }
     ]
 
 
 async def test_it_joins_what_already_came_from_an_agenda(api, kernel) -> None:
-    await Hub(kernel).bring(leisure("Concierto Sintético", TODAY + timedelta(days=4)))
+    await Hub(kernel).bring(leisure("Synthetic Concert", TODAY + timedelta(days=4)))
     await derive()
 
     said = await add(
-        api, found("CONCIERTO SINTÉTICO", 4, category="stage", link="https://otra.example/c")
+        api, found("SYNTHETIC CONCERT", 4, category="stage", link="https://other.example/c")
     )
 
     assert said.json()["content"]["summary"] == {"joined": 1}
@@ -55,8 +55,8 @@ async def test_it_joins_what_already_came_from_an_agenda(api, kernel) -> None:
 
 
 async def test_what_is_past_far_or_without_a_page_does_not_go_in(api) -> None:
-    said = await add(api, found("Ya pasó", -10), found("Muy lejos", 500))
-    no_page = await add(api, found("Sin página", 3, link="no es una dirección"))
+    said = await add(api, found("Already past", -10), found("Far away", 500))
+    no_page = await add(api, found("No page", 3, link="not an address"))
 
     assert said.json()["content"]["summary"] == {"dropped": 2}
     assert no_page.status_code == 422
@@ -97,51 +97,44 @@ def test_every_search_of_every_area_is_filled_and_said_once(area) -> None:
     assert any(area.traditions[7][0] in one for one in found)
 
 
-def test_it_searches_each_month_with_what_its_season_gives() -> None:
+def test_it_searches_each_month_with_what_its_season_gives(area) -> None:
     from datetime import date
 
-    from outings import profile
+    found = by_hand.searches(date(2026, 10, 3), date(2027, 1, 1), area=area)
 
-    found = by_hand.searches(date(2026, 10, 3), date(2027, 1, 1), area=profile.load("pamplona"))
-
-    assert "fiestas de los pueblos de Navarra en octubre de 2026" in found
-    assert "fiestas de los pueblos de Navarra en enero de 2027" in found
-    assert "piquillo en Navarra en octubre de 2026: fiestas, ferias y jornadas" in found
-    assert "trufa en Navarra en enero de 2027: fiestas, ferias y jornadas" in found
+    monthly = area.searches.monthly[0]
+    assert monthly.format(month=area.months[9], year=2026) in found
+    assert monthly.format(month=area.months[0], year=2027) in found
+    for month, year in ((10, 2026), (1, 2027)):
+        for thing in area.season[month]:
+            asked = area.searches.season.format(
+                thing=thing, month=area.months[month - 1], year=year
+            )
+            assert asked in found
     assert len(found) == len(set(found))
 
 
-def test_far_months_look_for_what_returns_each_year() -> None:
+def test_far_months_look_for_what_returns_each_year(area) -> None:
     from datetime import date
 
-    from outings import profile
+    found = by_hand.searches(date(2026, 10, 5), date(2027, 1, 3), date(2027, 10, 5), area)
 
-    pamplona = profile.load("pamplona")
-    found = by_hand.searches(date(2026, 10, 5), date(2027, 1, 3), date(2027, 10, 5), pamplona)
-
-    assert "San Fermín 2027: fechas" in found
-    assert "fiestas, ferias y tradiciones de Navarra en julio de 2027: fechas" in found
-    assert "fiestas de los pueblos de Navarra en julio de 2027" not in found
-    assert not any("julio de 2027: fechas" in one and "enero" in one for one in found)
-    assert (
-        "mercadillos, ferias de artesanía y mercados de productores en Pamplona y Navarra en "
-        "noviembre de 2026" in found
-    )
+    july = area.months[6]
+    assert area.searches.tradition.format(thing=area.traditions[7][0], year=2027) in found
+    assert area.searches.yearly[0].format(month=july, year=2027) in found
+    assert area.searches.monthly[0].format(month=july, year=2027) not in found
+    assert area.searches.monthly[2].format(month=area.months[10], year=2026) in found
     assert len(found) == len(set(found))
 
 
-def test_the_prompt_puts_the_street_before_concerts() -> None:
+def test_the_prompt_says_the_area_what_to_add_and_what_to_skip(area) -> None:
     from datetime import date
 
-    from outings import profile
+    said = by_hand.prompt(date(2026, 10, 5), area=area)
 
-    pamplona = profile.load("pamplona")
-    said = by_hand.prompt(date(2026, 10, 5), area=pamplona)
-
-    assert "2027-10-05" in said and "in Spanish" in said
-    assert "mercadillos" in said and "Ayuntamiento de Pamplona" in said
-    assert "teatro de calle" in said and "do not search for them separately" in said
-    assert not any("conciertos en Pamplona" in one for one in pamplona.searches.always)
+    assert "2027-10-05" in said and f"in {by_hand.LANGUAGES[area.language]}" in said
+    assert area.focus in said and area.include in said and area.skip in said
+    assert area.near.name in said and area.region.name in said
 
 
 async def test_there_is_no_update_with_the_api(api, hub_app) -> None:

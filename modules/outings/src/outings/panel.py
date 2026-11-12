@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets.panel import blocks_of, gather, panel
 from outings import widgets
+from outings.words import say, words
 
 
 def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
@@ -14,23 +15,23 @@ def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def nothing() -> HTTPException:
-    return HTTPException(status_code=404, detail="Outings aún no tiene nada que contar")
+    return HTTPException(status_code=404, detail="Outings has nothing to tell yet")
 
 
 async def build(connection: AsyncConnection) -> dict:
     found = await gather(connection, widgets.RENDERERS, ["weekend", "wishes"])
     plans = ready(found.get("weekend")).get("events", [])
-    blocks = blocks_of("upnext", found.get("weekend") or {}, label="Este finde")
-    wishes = blocks_of("list", found.get("wishes") or {}, label="Ganas")
+    blocks = blocks_of("upnext", found.get("weekend") or {}, label=say("panel.weekend"))
+    wishes = blocks_of("list", found.get("wishes") or {}, label=say("panel.wishes"))
     if not blocks and not wishes:
         raise nothing()
     headlines = []
     if plans:
         headlines.append(
             {
-                "text": f"Este finde, {plans[0]['title']}",
+                "text": say("panel.headline", title=plans[0]["title"]),
                 "emphasis": str(plans[0]["title"]),
-                "status": "Planes",
+                "status": say("panel.plans"),
                 "priority": 30,
             }
         )
@@ -38,19 +39,19 @@ async def build(connection: AsyncConnection) -> dict:
     if blocks:
         tabs.append(
             {
-                "id": "finde",
-                "label": "Planes",
+                "id": "weekend",
+                "label": say("panel.plans"),
                 "blocks": blocks,
-                "actions": [{"label": "Explorar", "href": "/outings/"}],
+                "actions": [{"label": say("panel.explore"), "href": "/outings/explore"}],
             }
         )
     if wishes:
         tabs.append(
             {
-                "id": "ganas",
-                "label": "Ganas",
+                "id": "wishes",
+                "label": say("panel.wishes"),
                 "blocks": wishes,
-                "actions": [{"label": "Abrir Outings", "href": "/outings/"}],
+                "actions": [{"label": say("panel.open"), "href": "/outings/"}],
             }
         )
     ids = {tab["id"] for tab in tabs}
@@ -58,14 +59,14 @@ async def build(connection: AsyncConnection) -> dict:
         q
         for q in (
             {
-                "text": "¿Qué hago este finde?",
-                "words": ["finde", "planes", "concierto", "ocio", "salir"],
-                "tab": "finde",
+                "text": say("panel.ask.weekend"),
+                "words": words("panel.ask.weekend.words"),
+                "tab": "weekend",
             },
             {
-                "text": "¿Qué ganas tengo?",
-                "words": ["ganas", "deseos", "quiero hacer"],
-                "tab": "ganas",
+                "text": say("panel.ask.wishes"),
+                "words": words("panel.ask.wishes.words"),
+                "tab": "wishes",
             },
         )
         if q["tab"] in ids
