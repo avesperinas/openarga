@@ -21,10 +21,10 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from arga_tenancy import CURRENT_USER_SQL, as_user, require_person
 from kernel.db import engine
 from kernel.manifests import NOTIFICATION_KIND_PATTERN
+from kernel.preferences import of_person
 
 router = APIRouter(tags=["notifications"])
 
-MADRID = ZoneInfo("Europe/Madrid")
 QUIET_FROM, QUIET_TO = time(23, 0), time(8, 0)
 SEND_EVERY = float(os.environ.get("NOTIFY_EVERY_SECONDS", "30"))
 TTL_SECONDS = 24 * 3600
@@ -114,16 +114,18 @@ async def quiet(connection: AsyncConnection) -> tuple[time | None, time | None]:
     return QUIET_FROM, QUIET_TO
 
 
-def quiet_until(now: datetime, start: time | None, end: time | None) -> datetime | None:
+def quiet_until(
+    now: datetime, start: time | None, end: time | None, zone: ZoneInfo
+) -> datetime | None:
     if start is None or end is None or start == end:
         return None
-    local = now.astimezone(MADRID)
+    local = now.astimezone(zone)
     clock = local.time()
     inside = start <= clock < end if start < end else clock >= start or clock < end
     if not inside:
         return None
     day = local.date() if clock < end else local.date() + timedelta(days=1)
-    return datetime.combine(day, end, MADRID).astimezone(UTC)
+    return datetime.combine(day, end, zone).astimezone(UTC)
 
 
 class Keys(BaseModel):
@@ -626,7 +628,8 @@ async def send_due(connection: AsyncConnection, now: datetime) -> dict[str, int]
         return counts
     enabled = {(one.app, one.kind): one.enabled for one in await kinds(connection)}
     start, end = await quiet(connection)
-    until = quiet_until(now, start, end)
+    zone = ZoneInfo((await of_person(connection)).timezone)
+    until = quiet_until(now, start, end, zone)
     for row in rows:
         try:
             async with connection.begin_nested():

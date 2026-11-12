@@ -91,5 +91,9 @@ async def test_figures_and_records_have_an_index_that_serves_them(
 ) -> None:
     async with engine().connect() as connection:
         await connection.execute(text("set local enable_seqscan = off"))
+        # On an empty table the type index ties on cost and wins; without it the plan shows
+        # whether the index under test can serve the query at all.
+        await connection.execute(text("drop index kernel.events_type_idx"))
         plan = "\n".join((await connection.execute(text(f"explain {query}"))).scalars())
+        await connection.rollback()
     assert index in plan, plan

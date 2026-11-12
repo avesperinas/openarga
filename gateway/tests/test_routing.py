@@ -33,7 +33,18 @@ async def timed() -> Response:
 
 @upstream.post("/internal/users")
 async def people() -> dict:
-    return {"id": USER, "spaces": [SPACE]}
+    return {
+        "id": USER,
+        "spaces": [SPACE],
+        "preferences": {
+            "locale": "es",
+            "timezone": "America/Argentina/Buenos_Aires",
+            "currency": "ARS",
+            "country": "AR",
+            "region": None,
+            "area": "bad value\r\nx-evil: 1",
+        },
+    }
 
 
 @upstream.api_route(
@@ -187,6 +198,21 @@ async def test_the_spaces_travel_with_the_person_and_cannot_be_forged(api) -> No
     assert seen[-1]["headers"]["x-arga-spaces"] == SPACE
 
 
+async def test_the_preferences_travel_with_the_person_and_cannot_be_forged(api) -> None:
+    await api.get(
+        "/api/kernel/ui/layouts", headers={"x-arga-locale": "en", "x-arga-region": "ES-NA"}
+    )
+
+    sent = seen[-1]["headers"]
+    assert sent["x-arga-locale"] == "es"
+    assert sent["x-arga-timezone"] == "America/Argentina/Buenos_Aires"
+    assert sent["x-arga-currency"] == "ARS"
+    assert sent["x-arga-country"] == "AR"
+    assert "x-arga-region" not in sent
+    assert "x-arga-area" not in sent
+    assert "x-evil" not in sent
+
+
 async def test_the_person_is_asked_once_and_not_on_every_request(api) -> None:
     asked = []
     original = main.app.state.people.client.post
@@ -211,6 +237,8 @@ async def test_the_person_is_asked_once_and_not_on_every_request(api) -> None:
         ("DELETE", f"/api/kernel/spaces/{SPACE}/members/{USER}", True),
         ("GET", "/api/kernel/spaces", False),
         ("PUT", "/api/kernel/ui/preferences", False),
+        ("PATCH", "/api/kernel/me/preferences", True),
+        ("GET", "/api/kernel/me/preferences", False),
     ],
 )
 async def test_whoever_changes_their_spaces_sees_them_at_once(

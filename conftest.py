@@ -7,6 +7,9 @@ _urls = os.environ.get("TEST_DATABASE_URLS", "").split()
 if _worker and _urls:
     os.environ["TEST_DATABASE_URL"] = _urls[int(_worker.removeprefix("gw")) % len(_urls)]
 
+# Modules' tests were written for an instance in Madrid; each sets its own zone when it cares.
+os.environ.setdefault("OPENARGA_TIMEZONE", "Europe/Madrid")
+
 _WITH_DATABASE = ("kernel", "modules", "mcp", "tests", "packages/contracts", "packages/testing")
 
 

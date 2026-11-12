@@ -41,6 +41,7 @@ NEVER_FORWARDED = HOP_BY_HOP | {
     SUBJECT_HEADER,
     people_module.USER_HEADER,
     people_module.SPACES_HEADER,
+    *people_module.PREFERENCE_HEADERS.values(),
     oauth_module.SCOPES_HEADER,
 }
 
@@ -473,9 +474,9 @@ async def logout(request: Request) -> Response:
     return response
 
 
-def changes_spaces(method: str, path: str) -> bool:
+def changes_person(method: str, path: str) -> bool:
     return method not in ("GET", "HEAD", "OPTIONS") and (
-        path == "spaces" or path.startswith("spaces/")
+        path in ("spaces", "me/preferences") or path.startswith("spaces/")
     )
 
 
@@ -498,7 +499,7 @@ async def api(request: Request, module_id: str, path: str) -> Response:
         if path == "internal" or path.startswith("internal/"):
             return JSONResponse(status_code=404, content={"detail": "not found"})
         response = await forward(request, kernel_url(), path, who.subject)
-        if changes_spaces(request.method, path) and response.status_code < 300:
+        if changes_person(request.method, path) and response.status_code < 300:
             request.app.state.people.forget(who.subject)
         return with_cookie(response, who.cookie)
 

@@ -8,6 +8,7 @@ from sqlalchemy import text
 
 from kernel.db import engine
 from kernel.events import EventIn, ingest
+from kernel.preferences import instance_defaults
 
 SOURCE = "seed"
 MODULE = "finance"
@@ -37,6 +38,7 @@ def events() -> list[dict]:
     for index, alias in enumerate(LONERS):
         planned.append((alias, len(SPELLINGS) * 2 + index, -3.20 - index))
 
+    currency = instance_defaults().currency
     return [
         {
             "ts": (START + timedelta(days=offset)).isoformat(),
@@ -44,7 +46,7 @@ def events() -> list[dict]:
             "source": SOURCE,
             "type": "finance.transaction",
             "entity": {"alias": alias, "kind": KIND},
-            "payload": {"amount": round(amount, 2), "currency": "EUR", "raw_description": alias},
+            "payload": {"amount": round(amount, 2), "currency": currency, "raw_description": alias},
             "dedup_hash": f"{SOURCE}:tx:{offset:03d}",
         }
         for alias, offset, amount in planned
