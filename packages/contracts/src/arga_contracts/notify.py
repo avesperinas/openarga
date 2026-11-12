@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 import sys
 from collections.abc import Awaitable, Callable
+from contextvars import ContextVar
 from datetime import date, datetime, time
 from typing import Any
 from uuid import UUID
@@ -14,11 +16,39 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 from arga_contracts.records import Every, spaces
 from arga_tenancy import as_user, kernel_url, user_headers
 
-MADRID = ZoneInfo("Europe/Madrid")
+_zone: ContextVar[ZoneInfo | None] = ContextVar("arga_notify_zone", default=None)
+
+
+def instance_zone() -> ZoneInfo:
+    try:
+        return ZoneInfo(os.environ.get("OPENARGA_TIMEZONE") or "UTC")
+    except (KeyError, ValueError):
+        return ZoneInfo("UTC")
+
+
+def zone() -> ZoneInfo:
+    return _zone.get() or instance_zone()
+
+
+def __getattr__(name: str) -> ZoneInfo:
+    if name == "MADRID":
+        return zone()
+    raise AttributeError(name)
 
 
 def at(day: date, clock: time) -> datetime:
-    return datetime.combine(day, clock, MADRID)
+    return datetime.combine(day, clock, zone())
+
+
+async def zone_of_person(client: httpx.AsyncClient) -> ZoneInfo:
+    try:
+        response = await client.get(
+            f"{kernel_url()}/me/preferences", headers=user_headers(), timeout=10.0
+        )
+        response.raise_for_status()
+        return ZoneInfo(response.json()["timezone"])
+    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+        return instance_zone()
 
 
 def notification(
@@ -59,9 +89,13 @@ async def refresh(
         return None
     try:
         with as_user(user, await spaces(client)):
-            async with engine().begin() as connection:
-                await connection.execute(text(f'set local role "mod_{app}"'))
-                items = await build(connection)
+            token = _zone.set(await zone_of_person(client))
+            try:
+                async with engine().begin() as connection:
+                    await connection.execute(text(f'set local role "mod_{app}"'))
+                    items = await build(connection)
+            finally:
+                _zone.reset(token)
             return await sync(client, app, items)
     except Exception as error:  # noqa: BLE001 - los avisos no paran lo que publica la app
         print(f"avisos · {app}: {type(error).__name__}: {error}", file=sys.stderr, flush=True)

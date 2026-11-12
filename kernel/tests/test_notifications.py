@@ -1,5 +1,6 @@
 import json
 from datetime import UTC, datetime, time
+from zoneinfo import ZoneInfo
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -45,6 +46,7 @@ async def clean() -> None:
 async def kernel(database_url: str, monkeypatch):
     monkeypatch.setenv("ARGA_VAPID_SEED", "semilla-sintetica")
     monkeypatch.setenv("ARGA_VAPID_SUBJECT", "https://arga.ejemplo.com")
+    monkeypatch.setenv("OPENARGA_TIMEZONE", "Europe/Madrid")
     await clean()
     async with engine().begin() as connection:
         await connection.execute(REGISTER, {"id": APP, "manifest": json.dumps(MANIFEST)})
@@ -203,12 +205,24 @@ async def test_settings_say_what_there_is_and_only_yours(kernel, people) -> None
 
 
 def test_quiet_hours_cross_midnight() -> None:
+    madrid = ZoneInfo("Europe/Madrid")
     late = datetime(2026, 10, 6, 22, 30, tzinfo=UTC)
-    assert notifications.quiet_until(late, time(23), time(8)) == datetime(
+    assert notifications.quiet_until(late, time(23), time(8), madrid) == datetime(
         2026, 10, 7, 6, 0, tzinfo=UTC
     )
     noon = datetime(2026, 10, 6, 10, 0, tzinfo=UTC)
-    assert notifications.quiet_until(noon, time(23), time(8)) is None
+    assert notifications.quiet_until(noon, time(23), time(8), madrid) is None
+
+
+def test_quiet_hours_follow_the_person_time_zone() -> None:
+    evening = datetime(2026, 10, 6, 22, 30, tzinfo=UTC)
+    assert notifications.quiet_until(evening, time(23), time(8), ZoneInfo("UTC")) is None
+    assert (
+        notifications.quiet_until(evening, time(23), time(8), ZoneInfo("America/New_York")) is None
+    )
+    assert notifications.quiet_until(
+        evening, time(23), time(8), ZoneInfo("Asia/Tokyo")
+    ) == datetime(2026, 10, 6, 23, 0, tzinfo=UTC)
 
 
 async def test_without_the_key_nothing_is_sent(kernel, people, pushed, monkeypatch) -> None:

@@ -162,7 +162,7 @@ async def test_the_gateway_learns_the_spaces_with_the_person(kernel, people) -> 
     ana = (await kernel.post("/internal/users", json={"subject": SUBJECTS["ana"]})).json()
     eva = (await kernel.post("/internal/users", json={"subject": SUBJECTS["eva"]})).json()
 
-    assert ana == {"id": people["ana"][USER_HEADER], "spaces": [space["id"]]}
+    assert (ana["id"], ana["spaces"]) == (people["ana"][USER_HEADER], [space["id"]])
     assert eva["spaces"] == []
 
 

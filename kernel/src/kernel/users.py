@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 
 from kernel.db import engine
+from kernel.preferences import Preferences, of_user
 from kernel.spaces import spaces_of
 
 router = APIRouter(tags=["users"])
@@ -25,6 +26,10 @@ class ResolvedUser(UserOut):
     spaces: list[UUID]
 
 
+class ResolvedPerson(ResolvedUser):
+    preferences: Preferences
+
+
 UPSERT = text("""
     insert into kernel.users (subject, last_seen_at) values (:subject, now())
     on conflict (subject) do update set last_seen_at = now()
@@ -33,10 +38,11 @@ UPSERT = text("""
 
 
 @router.post("/internal/users")
-async def resolve_user(body: UserIn) -> ResolvedUser:
+async def resolve_user(body: UserIn) -> ResolvedPerson:
     async with engine().begin() as connection:
         user = await connection.scalar(UPSERT, {"subject": body.subject})
-        return ResolvedUser(id=user, spaces=await spaces_of(connection, user))
+        spaces = await spaces_of(connection, user)
+    return ResolvedPerson(id=user, spaces=spaces, preferences=await of_user(user))
 
 
 EVERYONE = text("""
