@@ -12,7 +12,14 @@ import { feature as topoFeature } from "topojson-client";
 
 import { Icon, type IconName } from "./icons";
 
-export type AreaView = "comarca" | "navarra";
+export type Box = [[number, number], [number, number]];
+
+export type Zone = "near" | "region";
+
+/** `comarca` and `navarra` are the names before area profiles; they mean `near` and `region`. */
+export type AreaView = Zone | "comarca" | "navarra";
+
+export type AreaViews = Record<Zone, Box>;
 
 export interface AreaPoint {
   id: string;
@@ -29,6 +36,8 @@ export interface AreaPoint {
 export interface AreaMapProps {
   base: string;
   view: AreaView;
+  views?: AreaViews;
+  reliefCredit?: string;
   points: AreaPoint[];
   selected?: string | null;
   onSelect?: (id: string | null) => void;
@@ -37,16 +46,32 @@ export interface AreaMapProps {
   compact?: boolean;
 }
 
-export const VIEWS: Record<AreaView, [[number, number], [number, number]]> = {
-  comarca: [
+// The first area profile, kept only for callers that do not pass their own boxes yet.
+export const VIEWS: AreaViews = {
+  near: [
     [-1.76, 42.74],
     [-1.52, 42.88],
   ],
-  navarra: [
+  region: [
     [-2.5, 41.91],
     [-0.72, 43.32],
   ],
 };
+
+export function zoneOf(view: AreaView): Zone {
+  if (view === "comarca") return "near";
+  if (view === "navarra") return "region";
+  return view;
+}
+
+export function maxBoundsOf(region: Box): Box {
+  const [[west, south], [east, north]] = region;
+  const margin = Math.max(east - west, north - south) / 2;
+  return [
+    [west - margin, south - margin],
+    [east + margin, north + margin],
+  ];
+}
 
 maplibre.setWorkerUrl(workerUrl);
 
@@ -87,7 +112,7 @@ export function readAreaPalette(element: Element): AreaPalette {
   ) as AreaPalette;
 }
 
-type Piece = "navarra" | "comarca";
+type Piece = Zone;
 const REGULAR = ["Noto Sans Regular"];
 const MEDIUM = ["Noto Sans Medium"];
 const ITALIC = ["Noto Sans Italic"];
@@ -321,24 +346,28 @@ export function labelLayers(source: Piece | string, palette: AreaPalette): mapli
   ];
 }
 
-function style(base: string, palette: AreaPalette): maplibre.StyleSpecification {
+export function style(base: string, palette: AreaPalette, reliefCredit?: string): maplibre.StyleSpecification {
   return {
     version: 8,
     glyphs: `${base}fonts/{fontstack}/{range}.pbf`,
     sources: {
-      navarra: { type: "vector", url: `pmtiles://${base}navarra.pmtiles`, attribution: "© OpenStreetMap" },
-      comarca: { type: "vector", url: `pmtiles://${base}comarca.pmtiles` },
-      "relief-navarra": { type: "geojson", data: EMPTY, attribution: "MDT © IGN" },
-      "relief-comarca": { type: "geojson", data: EMPTY },
+      region: { type: "vector", url: `pmtiles://${base}region.pmtiles`, attribution: "© OpenStreetMap" },
+      near: { type: "vector", url: `pmtiles://${base}near.pmtiles` },
+      "relief-region": {
+        type: "geojson",
+        data: EMPTY,
+        ...(reliefCredit ? { attribution: reliefCredit } : {}),
+      },
+      "relief-near": { type: "geojson", data: EMPTY },
     },
     layers: [
       { id: "paper", type: "background", paint: { "background-color": palette.paper } },
-      ...streetLayers("navarra", palette).filter((layer) => !layer.id.endsWith("buildings")),
-      ...relief("relief-navarra", palette, 0, 11),
-      ...relief("relief-comarca", palette, 10, 24),
-      ...streetLayers("comarca", palette).filter((layer) => !layer.id.endsWith("earth")),
-      ...labelLayers("navarra", palette),
-      ...labelLayers("comarca", palette),
+      ...streetLayers("region", palette).filter((layer) => !layer.id.endsWith("buildings")),
+      ...relief("relief-region", palette, 0, 11),
+      ...relief("relief-near", palette, 10, 24),
+      ...streetLayers("near", palette).filter((layer) => !layer.id.endsWith("earth")),
+      ...labelLayers("region", palette),
+      ...labelLayers("near", palette),
     ],
   };
 }
@@ -369,8 +398,8 @@ function relief(
 const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
 
 const RELIEFS = [
-  ["relief-navarra", "relieve-navarra.json"],
-  ["relief-comarca", "relieve-comarca.json"],
+  ["relief-region", "relief-region.json"],
+  ["relief-near", "relief-near.json"],
 ] as const;
 
 const reliefs = new Map<string, Promise<FeatureCollection<Geometry>>>();
@@ -423,7 +452,30 @@ interface Placed {
   key: string;
 }
 
-export function AreaMap({ base, view, points, selected = null, onSelect, label, center = null, compact = false }: AreaMapProps) {
+export function AreaMap({
+  base,
+  view,
+  views = VIEWS,
+  reliefCredit,
+  points,
+  selected = null,
+  onSelect,
+  label,
+  center = null,
+  compact = false,
+}: AreaMapProps) {
+  const bounds = views[zoneOf(view)];
+  const boundsRef = React.useRef(bounds);
+  boundsRef.current = bounds;
+  const [[regionWest, regionSouth], [regionEast, regionNorth]] = views.region;
+  const limits = React.useMemo(
+    () =>
+      maxBoundsOf([
+        [regionWest, regionSouth],
+        [regionEast, regionNorth],
+      ]),
+    [regionWest, regionSouth, regionEast, regionNorth],
+  );
   const container = React.useRef<HTMLDivElement>(null);
   const [map, setMap] = React.useState<maplibre.Map | null>(null);
   const [failed, setFailed] = React.useState(false);
@@ -442,15 +494,12 @@ export function AreaMap({ base, view, points, selected = null, onSelect, label, 
     ensurePmtiles();
     const created = new maplibre.Map({
       container: element,
-      style: style(absolute, readAreaPalette(element)),
-      bounds: center ? undefined : VIEWS[view],
+      style: style(absolute, readAreaPalette(element), reliefCredit),
+      bounds: center ? undefined : boundsRef.current,
       center: center ?? undefined,
       zoom: center ? 13.5 : undefined,
       fitBoundsOptions: { padding: compact ? 8 : 24 },
-      maxBounds: [
-        [-3.4, 41.4],
-        [0.2, 43.8],
-      ],
+      maxBounds: limits,
       minZoom: 6.5,
       maxZoom: 18,
       attributionControl: false,
@@ -497,7 +546,7 @@ export function AreaMap({ base, view, points, selected = null, onSelect, label, 
 
     const resize = new ResizeObserver(() => created.resize());
     resize.observe(element);
-    const repaint = () => created.setStyle(style(absolute, readAreaPalette(element)));
+    const repaint = () => created.setStyle(style(absolute, readAreaPalette(element), reliefCredit));
     const scheme = window.matchMedia("(prefers-color-scheme: dark)");
     scheme.addEventListener("change", repaint);
     const theme = new MutationObserver(repaint);
@@ -516,12 +565,12 @@ export function AreaMap({ base, view, points, selected = null, onSelect, label, 
       created.remove();
       setMap(null);
     };
-  }, [absolute, compact]);
+  }, [absolute, compact, limits, reliefCredit]);
 
   React.useEffect(() => {
     if (!map || center) return;
-    map.fitBounds(VIEWS[view], { padding: 24, duration: 600 });
-  }, [map, view, center]);
+    map.fitBounds(bounds, { padding: 24, duration: 600 });
+  }, [map, bounds[0][0], bounds[0][1], bounds[1][0], bounds[1][1], center]);
 
   React.useEffect(() => {
     if (!map) return;
