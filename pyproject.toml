@@ -1,0 +1,117 @@
+[project]
+name = "openarga"
+version = "0.0.0"
+description = "Kernel personal modular"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "kernel", "gateway", "arga-mcp", "training", 
+  "arga-tenancy", "arga-crypto", "arga-module", "arga-widgets", "arga-agenda", "arga-contracts", "recipes", "money", "hub",
+  "shopping", "library", "vitals", "travel", "arga-recurrence", "study", "planner", "goals", "notebook", "macros", "outings",
+  "arga-testing", "insights"]
+
+[tool.uv.sources]
+insights = { workspace = true }
+arga-testing = { workspace = true }
+outings = { workspace = true }
+macros = { workspace = true }
+goals = { workspace = true }
+notebook = { workspace = true }
+study = { workspace = true }
+planner = { workspace = true }
+arga-recurrence = { workspace = true }
+travel = { workspace = true }
+library = { workspace = true }
+vitals = { workspace = true }
+shopping = { workspace = true }
+hub = { workspace = true }
+money = { workspace = true }
+recipes = { workspace = true }
+arga-tenancy = { workspace = true }
+arga-crypto = { workspace = true }
+arga-module = { workspace = true }
+arga-widgets = { workspace = true }
+arga-agenda = { workspace = true }
+arga-contracts = { workspace = true }
+training = { workspace = true }
+kernel = { workspace = true }
+gateway = { workspace = true }
+arga-mcp = { workspace = true }
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "ruff>=0.8",
+  "pre-commit>=4.0",
+  "httpx>=0.28",
+  "pyyaml>=6.0",
+  "pytest-xdist>=3.8.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["kernel", "gateway", "mcp", "modules/*", "packages/tenancy", "packages/crypto", "packages/module", "packages/widgets", "packages/agenda", "packages/contracts", "packages/recurrence", "packages/nutrients", "packages/testing"]
+exclude = ["modules/_template"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["modules/_template"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC"]
+
+[tool.ruff.lint.per-file-ignores]
+# Lines that grew past the limit when the modules were renamed. Remove a file from here when
+# its text is translated (tests/test_no_spanish.py tracks the same files).
+"kernel/tests/test_tenant_isolation.py" = ["E501"]
+"modules/hub/src/hub/providers/github.py" = ["E501"]
+"modules/insights/src/insights/craft.py" = ["E501"]
+"modules/insights/src/insights/passes.py" = ["E501"]
+"modules/insights/src/insights/picks.py" = ["E501"]
+"modules/insights/src/insights/pills.py" = ["E501"]
+"modules/insights/src/insights/talk.py" = ["E501"]
+"modules/insights/src/insights/tastes.py" = ["E501"]
+"modules/insights/src/insights/voice.py" = ["E501"]
+"modules/insights/tests/test_insights_isolation.py" = ["E501"]
+"modules/insights/tests/test_insights_records.py" = ["E501"]
+"modules/notebook/src/notebook/export.py" = ["E501"]
+"modules/notebook/src/notebook/files.py" = ["E501"]
+"modules/notebook/src/notebook/mirror.py" = ["E501"]
+"modules/notebook/src/notebook/notes.py" = ["E501"]
+"modules/notebook/tests/test_notebook_isolation.py" = ["E501"]
+"modules/planner/src/planner/calendar.py" = ["E501"]
+"modules/planner/src/planner/main.py" = ["E501"]
+"modules/planner/tests/test_planner_subscriptions.py" = ["E501"]
+"modules/study/src/study/apuntes.py" = ["E501"]
+"modules/study/src/study/moving.py" = ["E501"]
+"modules/study/src/study/notes.py" = ["E501"]
+"modules/study/src/study/studies.py" = ["E501"]
+"modules/training/src/training/activities.py" = ["E501"]
+"modules/training/src/training/agenda.py" = ["E501"]
+"modules/training/src/training/editor.py" = ["E501"]
+"modules/training/src/training/publisher.py" = ["E501"]
+"modules/training/src/training/seed.py" = ["E501"]
+"modules/training/src/training/stats.py" = ["E501"]
+"modules/training/src/training/tools.py" = ["E501"]
+"modules/training/src/training/training.py" = ["E501"]
+"modules/training/src/training/workouts.py" = ["E501"]
+"modules/training/tests/test_training_editor.py" = ["E501"]
+"modules/training/tests/test_training_plan.py" = ["E501"]
+"modules/training/tests/test_training_shared.py" = ["E501"]
+"modules/training/tests/test_training_training.py" = ["E501"]
+"modules/vitals/src/vitals/labs.py" = ["E501"]
+"scripts/apple-health-steps.py" = ["E501"]
+"scripts/perf.py" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["insights", "outings", "macros", "notebook", "goals", "study", "planner", "travel", "vitals", "library", "shopping", "hub", "money", "recipes", "training", "kernel", "gateway", "arga_mcp", "arga_tenancy", "arga_crypto", "arga_module", "arga_widgets", "arga_agenda", "arga_contracts", "arga_recurrence", "arga_nutrients", "arga_testing"]
+known-third-party = ["conftest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "kernel", "gateway", "mcp", "modules", "packages/tenancy", "packages/crypto", "packages/module", "packages/widgets", "packages/agenda", "packages/contracts", "packages/recurrence", "packages/nutrients", "packages/testing"]
+addopts = "-q --strict-markers"
+asyncio_mode = "auto"
+norecursedirs = ["modules/_template", ".venv", "node_modules"]

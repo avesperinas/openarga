@@ -1,0 +1,197 @@
+id: recipes
+name: Recipes
+names:
+  en: Recipes
+  es: Recetas
+summary:
+  en: "Your home cookbook, with the nutrition worked out."
+  es: "El recetario de casa, con la nutrición calculada."
+version: 0.1.0
+
+database:
+  schema: recipes
+  role: mod_recipes
+  reads: []
+
+connectors: []
+
+uses: [food.search, food.get, usda.handoff, shopping.add, intake.replace_food]
+provides: [pantry.search, pantry.import, pantry.nutrients, recipes.search, recipes.nutrients, recipes.create]
+
+publishes:
+  - type: recipes.record
+    contract: record
+
+api:
+  prefix: /api/recipes
+
+tools:
+  - name: find_recipes
+    scope: recipes:read
+    description: >
+      Busca en el recetario por nombre, etiqueta o ingrediente, y por cuánto se tarda. Dos
+      tiempos, y son distintos: `total_minutes` es de principio a fin y `active_minutes` es
+      cuánto estás tú delante. Una receta de dos horas con hora y media de horno son treinta
+      minutos de trabajo, y es ese número el que decide si algo entra un martes. Úsala antes de
+      `get_recipe`, para traducir "la sopa esa de puerros" a la receta concreta.
+  - name: get_recipe
+    scope: recipes:read
+    description: >
+      Una receta entera: sus ingredientes agrupados por categoría, sus macros por ración y en
+      total, y el diagrama de la cocina ya calculado, con qué hacer en cada minuto y qué corre
+      solo. Con `servings` la devuelve escalada a la gente que vaya a comer, sin cambiar lo
+      guardado. Si algún ingrediente no tiene macros, lo dice en vez de dar una cifra entera que
+      no lo es.
+  - name: find_foods
+    scope: recipes:read
+    description: >
+      La despensa: los alimentos que ya están importados, con sus macros por 100 g. Míralos
+      **antes** de escribir una receta: un ingrediente que está aquí suma macros y uno que no,
+      no. Cada uno trae el nombre de su fuente y, si lo tiene, su `alias`, que es como lo llamas
+      tú y con el que se escribe la receta. `grams_per_unit` y `density_g_ml` dicen si una
+      cantidad en unidades o en mililitros se puede pasar a gramos; sin el que toque, ese
+      ingrediente no sumará. `portions` son sus medidas de casa ("loncha", "puñado") y
+      `edible_fraction` la parte que se come de lo comprado entero; `provenance` dice de dónde
+      salen sus cifras si se teclearon, y `micros_from` de qué otro alimento toma los micros que
+      no trae. `per` dice qué miden sus cifras: "100 g", o la unidad de un suplemento.
+  - name: list_categories
+    scope: recipes:read
+    description: >
+      Las categorías con las que se agrupan los ingredientes, con su emoji (`supplement` para los
+      suplementos). Míralas antes de
+      guardar un alimento: `category_id` tiene que ser uno de estos ids, y de él depende cómo sale
+      ordenada la lista de la compra.
+  - name: list_tags
+    scope: recipes:read
+    description: >
+      Las etiquetas que ya existen en el recetario. Para filtrar con `find_recipes`, y para reusar
+      la que hay en vez de dejar "rapido" al lado de "rápido".
+  - name: list_nutrients
+    scope: recipes:read
+    description: >
+      Las claves de nutriente de arga con su nombre y su unidad (vitamin_d en µg, caffeine en mg,
+      omega3_epa en g…). Míralas antes de escribir `nutrients` en `add_manual_food` o
+      `correct_food`: una clave que no está aquí, o una unidad que no es de esa clave, se rechaza.
+  - name: search_food_sources
+    scope: recipes:write
+    description: >
+      Busca un alimento en USDA y en OpenFoodFacts y devuelve candidatos con sus macros por 100 g.
+      **No guarda nada**: lo guarda `import_food` con el que se elija. Es la única tool que sale a
+      internet y pide el scope de escritura aunque no escriba una fila, porque lo que gasta es la
+      cuota de tu clave (ADR-0043). Búscalo solo si `find_foods` no lo tiene ya. Si una fuente no
+      contesta, lo dice en `failed` y devuelve lo de la otra; un candidato con cifras imposibles
+      en su fuente se aparta en `discarded` con su motivo, y el resto sale igual. Lo buscado hace
+      poco sale de caché, así que repetir la misma búsqueda no gasta cuota.
+  - name: import_food
+    scope: recipes:write
+    description: >
+      Guarda en tu despensa un candidato de `search_food_sources`, **tal como vino**: su fuente,
+      su referencia y sus macros se reenvían sin retocar. Lo que eliges tú es la categoría, el
+      alias con el que se llama en casa —"pechuga de pollo" para el "Chicken, broiler…" de USDA— y,
+      si la receta va a pedirlo en unidades o en mililitros, cuánto pesa cada una, y sus
+      `portions` caseras y `edible_fraction`. Un producto de Open Food Facts casi nunca trae
+      micros: con `micros_from` toma los que le faltan de una ficha genérica de USDA que ya esté
+      en la despensa (importa antes esa). Importar dos veces lo mismo devuelve el que ya estaba,
+      con lo que mandes de alias y medidas.
+  - name: add_manual_food
+    scope: recipes:write
+    description: >
+      Crea un alimento que no está en USDA ni en Open Food Facts —un suplemento, un producto
+      casero, una marca local— con sus macros y todos los nutrientes que se sepan en
+      `nutrients` (micros, cafeína, EPA, DHA, colesterol…), con las claves y unidades de
+      `list_nutrients`; una unidad distinta va como `{"amount": 250, "unit": "mg"}`. Queda como
+      manual con su `provenance`, que se ve en la ficha: dila siempre y con honradez ("etiqueta
+      HSN", "estimado por el modelo", "receta casera"). Lo que no sepas, no lo pongas: lo que
+      falta no cuenta como cero. Todo va por 100 g, salvo un suplemento que se toma por unidades:
+      con `per_unit: "cápsula"` (o "comprimido", "cacito"), macros y nutrientes son los de **una**
+      unidad, como en la etiqueta, y se cuenta solo en unidades; ponle `category_id: "supplement"`.
+      Admite también `portions`, `edible_fraction` y `micros_from` (este, no en uno por unidad).
+  - name: correct_food
+    scope: recipes:write
+    description: >
+      Cambia un alimento de la despensa, **solo en lo que mandes**: macros, `nutrients` (se suman
+      a los que tiene; una clave a null se quita), `provenance`, `portions` (sustituye la lista),
+      `edible_fraction` o `micros_from` (null deja de tomarlos prestados). Cambiar una cifra lo
+      deja marcado como corregido a mano.
+  - name: set_food_alias
+    scope: recipes:write
+    description: >
+      Pone, cambia o quita el alias de un alimento de la despensa: cómo lo llamas tú, corto y en
+      español. Es el que se lee en la receta y en la rejilla, y con el que `create_recipe`
+      encuentra el alimento por su nombre. El de la fuente no se toca. Un alias nombra un solo
+      alimento; si ya lo tiene otro, lo dice.
+  - name: replace_food
+    scope: recipes:write
+    description: >
+      Sustituye un alimento de la despensa por otro en todas partes, para cuando era el
+      equivocado o está repetido (dos «leche» que son la misma, la ficha genérica que ya tiene su
+      producto de marca). Las recetas que lo usan reciben una versión nueva con el otro (la de
+      antes se queda), lo apuntado en Macros con él se recalcula con los nutrientes del otro, y el
+      viejo se archiva: deja de salir en la despensa y su alias pasa al nuevo si no tiene. Los dos
+      tienen que ir igual, por 100 g o por unidad. Se puede repetir: si Macros no contesta, lo dice
+      en `macros` y otra llamada termina lo que faltaba.
+  - name: create_recipe
+    scope: recipes:write
+    description: >
+      Solo cuando la persona quiere **guardar** una receta para volver a cocinarla. Para apuntar
+      lo que se comió, ni hace falta ni se crea: eso va en Macros, como un plato (`dish`).
+      Guarda una receta nueva. Los ingredientes van por `food_id` de la despensa o por `name`,
+      que se busca por alias y por nombre; uno que no esté en ella se guarda sin resolver:
+      cuenta, no suma macros y se arregla en la app. Un ingrediente en `unit` puede decir qué
+      medida de casa cuenta (`portion: "loncha"`), y uno pesado en bruto lleva
+      `as_purchased: true` para descontar lo que no se come. Los pasos llevan verbo (`action`), minutos,
+      el aparato que ocupan (`equipment`; la freidora de aire es `air_fryer`, no `oven`) y de qué
+      pasos anteriores dependen; los dos valores cerrados están en el esquema. `after` e
+      `ingredients` de un paso son posiciones **contando desde 1**: `after: [1]` es el primer
+      paso e `ingredients: [2]` el segundo ingrediente de la lista. Marca `attended: false` el
+      horno, el reposo y el marinado, que son los que te dejan hacer otra cosa mientras. De ahí
+      sale el diagrama solo.
+  - name: update_recipe
+    scope: recipes:write
+    description: >
+      Cambia una receta que ya existe. **Manda la receta completa**: lo que no mandes no estará
+      en la versión nueva. No se pierde nada, porque no reescribe: guarda una versión nueva y la
+      anterior se queda con su número y su fecha.
+  - name: delete_recipe
+    scope: recipes:write
+    description: >
+      Borra una receta con todas sus versiones. Es lo único que pierde algo: editar escribe una
+      versión nueva y nunca pisa. Pide el id y además el nombre, y no borra si no coinciden.
+      Una receta que te ha compartido otra persona solo la borra ella.
+  - name: archive_recipe
+    scope: recipes:write
+    description: >
+      Saca una receta del recetario sin borrarla: lo apuntado con ella en Macros no cambia, y se
+      puede volver a sacar con `unarchive_recipe`. Úsala para lo que se guardó como receta y no
+      lo es (una comida suelta). Solo quien la creó la archiva.
+  - name: unarchive_recipe
+    scope: recipes:write
+    description: >
+      Devuelve al recetario una receta archivada con `archive_recipe`.
+  - name: share_recipe
+    scope: recipes:write
+    description: >
+      Comparte una receta con un espacio de arga, por su nombre, o con space null la deja otra vez
+      solo tuya. Compartida, los miembros la ven, la editan y la cocinan con sus macros: van con
+      ella sus versiones y los alimentos de tu despensa que usa. Las etiquetas son de cada uno.
+      Solo quien la creó la comparte; get_recipe dice en `mine` si es tuya.
+
+ui:
+  widgets:
+    - id: recipes
+      title: Recetario
+      kind: stats
+      sizes: ["2x2", "2x1", "4x1", "4x2"]
+      endpoint: /api/recipes/widgets/recipes
+      refresh: 900
+      link: /recipes
+    - id: quick
+      title: En media hora
+      kind: list
+      sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
+      endpoint: /api/recipes/widgets/quick
+      refresh: 900
+      link: /recipes
+  view: /recipes
+  hue: 7
+  family: health

@@ -1,0 +1,94 @@
+id: library
+name: Books
+names:
+  en: Books
+  es: Libros
+summary:
+  en: "The books you read and want to read."
+  es: "Los libros que lees y quieres leer."
+version: 0.1.0
+
+database:
+  schema: library
+  role: mod_library
+  reads: []
+
+connectors: []
+
+uses: [books.search, books.cover]
+provides: [books.want]
+
+publishes:
+  - type: library.record
+    contract: record
+  - type: library.metric
+    contract: metric
+
+api:
+  prefix: /api/library
+
+tools:
+  - name: find_books
+    scope: library:read
+    description: >
+      Busca en la biblioteca por título o autor, temática, estado o año de lectura. Un libro es una
+      lectura: leído dos veces son dos, cada una con su `book_id`, sus fechas y su valoración.
+      Estados: want (quiero leerlo), reading, read, abandoned. Lo que se está leyendo trae
+      `days_so_far`, los días que lleva contando el de inicio.
+  - name: get_currently_reading
+    scope: library:read
+    description: >
+      Lo que se está leyendo ahora: desde cuándo, cuántos días lleva y cuántas páginas tiene.
+  - name: get_reading_stats
+    scope: library:read
+    description: >
+      Lo leído en un año, con las mismas cifras que la app: libros y páginas de lo terminado ese
+      año, objetivo, valoración media, páginas al día (una estimación: las páginas de cada libro
+      repartidas entre su inicio y su fin), temáticas, autores, formatos, idiomas y lo más largo y
+      lo más rápido. Con `group_by`, libros, páginas y valoración media por año, mes, temática,
+      autor o formato.
+  - name: add_book
+    scope: library:write
+    description: >
+      Añade un libro a la biblioteca. Con el ISBN, Library trae del catálogo sus datos y su
+      portada; sin él, guarda el título y el autor sin resolver y la edición se elige en la app.
+      No busques el libro en internet para esto: da el ISBN si lo tienes, o el título y el autor.
+      Las fechas van con el estado: leyendo lleva inicio, leído lleva inicio y fin.
+  - name: start_reading
+    scope: library:write
+    description: Marca un libro como empezado en una fecha, hoy si no se dice.
+  - name: finish_reading
+    scope: library:write
+    description: >
+      Marca un libro como terminado en una fecha, hoy si no se dice, con su valoración si se da.
+      Hace falta que tenga fecha de inicio.
+  - name: rate_book
+    scope: library:write
+    description: Pone o cambia la valoración de un libro, de 0 a 5 de medio en medio punto.
+
+ui:
+  widgets:
+    - id: reading
+      title: Leyendo
+      kind: list
+      sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
+      endpoint: /api/library/widgets/reading
+      refresh: 900
+      link: /library
+    - id: goal
+      title: Objetivo del año
+      kind: ring
+      sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
+      endpoint: /api/library/widgets/goal
+      refresh: 900
+      link: /library/estadisticas
+    - id: pages
+      title: Páginas por mes
+      kind: bars
+      sizes: ["2x2", "2x1", "4x1", "4x2", "4x4"]
+      endpoint: /api/library/widgets/pages
+      refresh: 900
+      link: /library/estadisticas
+  view: /library
+  hue: 5
+  family: wellbeing

@@ -1,0 +1,24 @@
+space:
+  id: 5a0b7c9e-0000-4000-8000-00000000a5a5
+  name: Home
+people:
+  - key: alex
+    id: a1e5a1e5-0000-4000-8000-00000000a1e5
+    name: Alex
+    username: alex
+    locale: en
+    timezone: Europe/Madrid
+    currency: EUR
+    country: ES
+    region: ES-NA
+    area: pamplona
+  - key: sam
+    id: 5a305a30-0000-4000-8000-000000005a30
+    name: Sam
+    username: sam
+    locale: es
+    timezone: Europe/Madrid
+    currency: EUR
+    country: ES
+    region: ES-NA
+    area: pamplona

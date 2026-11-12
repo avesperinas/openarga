@@ -1,0 +1,142 @@
+["EUR"]
+name = "Liquidez"
+asset = "cash"
+
+["0P00011HBK.F"]
+name = "Vanguard US 500 Index Inst Plus"
+asset = "equity"
+regions = { us = 100 }
+
+["0P00011HBL.F"]
+name = "Vanguard European Index Inst Plus"
+asset = "equity"
+regions = { europe = 100 }
+
+["0P00011HBQ.F"]
+name = "Vanguard Emerging Market Index Inst Plus"
+asset = "equity"
+regions = { emerging = 100 }
+
+["0P00011OE2.F"]
+name = "Vanguard Global Small-Cap Index Inst Plus"
+asset = "equity"
+regions = { us = 63, europe = 16, japan = 11, pacific = 5, other_developed = 5 }
+
+["0P00011HBN.F"]
+name = "Vanguard Japan Index Inst Plus"
+asset = "equity"
+regions = { japan = 100 }
+
+["0P00012I6B.F"]
+name = "Vanguard Pacific ex-Japan Index Inst Plus"
+asset = "equity"
+regions = { pacific = 100 }
+
+["0P0001CBQR.F"]
+name = "Vanguard US Gov Bond Index H Inst Plus"
+asset = "bond"
+regions = { us = 100 }
+
+["0P00011HBR.F"]
+name = "Vanguard Euro Gov Bond Index Inst Plus"
+asset = "bond"
+regions = { europe = 100 }
+
+["0P00012NJE.F"]
+name = "Vanguard Global Short Bond Index Inst Plus"
+asset = "bond"
+regions = { us = 40, europe = 28, japan = 10, pacific = 4, other_developed = 8, emerging = 10 }
+
+["0P00016QKO.F"]
+name = "Vanguard US IG Bond Index H Inst Plus"
+asset = "bond"
+regions = { us = 100 }
+
+["0P00012I68.F"]
+name = "Vanguard Euro Inflation Bond Index Inst Plus"
+asset = "bond"
+regions = { europe = 100 }
+
+["0P0001CQCZ.F"]
+name = "Vanguard Gbl Short Corp Bond Idx H Inst Plus"
+asset = "bond"
+regions = { us = 60, europe = 27, japan = 2, pacific = 3, other_developed = 8 }
+
+["0P00011IIE.F"]
+name = "Vanguard Euro IG Bond Index Inst Plus"
+asset = "bond"
+regions = { europe = 100 }
+
+["0P0001I704.F"]
+name = "iShares Emerging Gov Bond Index H Inst"
+asset = "bond"
+regions = { emerging = 100 }
+
+["0P0000Y354.F"]
+name = "iShares Developed Real Estate Index Inst"
+asset = "real_estate"
+regions = { us = 63, europe = 13, japan = 10, pacific = 11, other_developed = 3 }
+
+["MEUD.PA"]
+name = "Amundi Core Stoxx Europe 600 ETF"
+asset = "equity"
+regions = { europe = 100 }
+
+["SPY"]
+name = "SPDR S&P 500 ETF"
+asset = "equity"
+regions = { us = 100 }
+
+["WEBI.DE"]
+name = "Amundi Core MSCI USA ETF"
+asset = "equity"
+regions = { us = 100 }
+
+["SPEM"]
+name = "SPDR Portfolio Emerging Markets ETF"
+asset = "equity"
+regions = { emerging = 100 }
+
+["VPL"]
+name = "Vanguard FTSE Pacific ETF"
+asset = "equity"
+regions = { japan = 58, pacific = 42 }
+
+["SCHB"]
+name = "Schwab US Broad Market ETF"
+asset = "equity"
+regions = { us = 100 }
+
+["IEMG"]
+name = "iShares Core MSCI Emerging Markets ETF"
+asset = "equity"
+regions = { emerging = 100 }
+
+["VWCG.DE"]
+name = "Vanguard FTSE Developed Europe ETFEURAcc"
+asset = "equity"
+regions = { europe = 100 }
+
+["XDEQ.DE"]
+name = "Xtrackers MSCI World Quality ETF"
+asset = "equity"
+regions = { us = 74, europe = 17, japan = 3, pacific = 2, other_developed = 4 }
+
+["XDEV.DE"]
+name = "Xtrackers MSCI World Value ETF"
+asset = "equity"
+regions = { us = 60, europe = 22, japan = 8, pacific = 3, other_developed = 7 }
+
+["SCHA"]
+name = "Schwab US Small-Cap ETF™"
+asset = "equity"
+regions = { us = 100 }
+
+["VSS"]
+name = "Vanguard FTSE All-Wld ex-US SmCp ETF"
+asset = "equity"
+regions = { europe = 29, japan = 16, pacific = 13, other_developed = 12, emerging = 30 }
+
+["IE000W8WMSL2:XETR:EUR"]
+name = "WisdomTree Quantum Computing UCITS ETF"
+asset = "equity"

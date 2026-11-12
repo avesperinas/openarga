@@ -1,0 +1,20 @@
+{
+  "name": "openarga",
+  "private": true,
+  "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "lint:tokens": "node --test scripts/css-rules.test.mjs && node scripts/lint-tokens.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.19.0",
+    "vitest": "^2.1.8"
+  }
+}

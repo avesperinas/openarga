@@ -1,0 +1,310 @@
+id: vitals
+name: Health
+names:
+  en: Health
+  es: Salud
+summary:
+  en: "Steps, sleep, heart, weight and lab results."
+  es: "Pasos, sueño, corazón, peso y analíticas."
+version: 2.0.0
+
+database:
+  schema: vitals
+  role: mod_vitals
+  reads: []
+
+connectors: []
+
+inlets:
+  - id: health
+    title: Salud
+    contracts:
+      - health.steps
+      - health.daily
+      - health.profile
+      - health.sleep
+      - health.heart
+      - health.ecg
+      - health.irn
+      - health.device
+      - health.exercise
+
+publishes:
+  - type: vitals.weight
+    contract: body_weight
+  - type: vitals.record
+    contract: record
+  - type: vitals.metric
+    contract: metric
+provides: [weight.log, workout.heart]
+receives: [workout]
+uses: [notify.sync]
+notifications:
+  - kind: battery_low
+    label: Pulsera con poca batería
+    default: true
+  - kind: not_synced
+    label: Pulsera sin sincronizar
+    default: true
+  - kind: ecg
+    label: Electrocardiograma nuevo
+    default: true
+  - kind: irn
+    label: Aviso de ritmo irregular
+    default: true
+
+api:
+  prefix: /api/vitals
+
+tools:
+  - name: get_kpis
+    scope: vitals:read
+    description: >
+      Las tres cifras de la salud: pasos (hoy, media de 7 y de 30 días, la de los 7 días antes de
+      hoy y el objetivo), peso (media móvil de 7 días, cambio a 30 y 90 días, si se quiere subir o
+      bajar y dónde queda contra la banda del objetivo) y el LDL de la última revisión contra la
+      anterior, con su rango. Úsala para "¿cómo voy?".
+  - name: get_steps
+    scope: vitals:read
+    description: >
+      Pasos por día en un rango, o su total y media diaria por semana, mes o año. Un día sin dato
+      es que no llegó nada, no cero, y la media solo cuenta los días con dato.
+  - name: get_weight
+    scope: vitals:read
+    description: >
+      El peso de cada día en un rango con su media móvil de 7 días, el mínimo, el máximo, el
+      cambio a 30 y 90 días y la banda del objetivo.
+  - name: get_body
+    scope: vitals:read
+    description: >
+      Las cifras de cada día además de los pasos: corazón (FC en reposo, media, mínima y máxima,
+      VFC y la del sueño profundo, vitals durmiendo, VO2 máx.), actividad (calorías, distancia,
+      minutos en zona, minutos activos por intensidad, minutos en cada zona de vitals, tiempo
+      sentado, pisos), respiración y temperatura (respiración y la de cada fase del sueño, SpO₂ con
+      su rango, temperatura de la piel por la noche), y lo que solo daba el
+      iPhone hasta el cambio a la pulsera (marcha, anillos, ruido), con la ficha (grupo sanguíneo,
+      sexo, edad, altura, zancada). Sin `metrics`, la ficha y el resumen de cada cifra con su id, su último
+      valor y sus medias de 30 días y de un año; con `metrics`, esas cifras día a día o por semana,
+      mes o año. La VFC, el VO2 máx. y las calorías los mide cada marca a su manera: `changed_on`
+      es el día del cambio de aparato y sus medias no lo cruzan. Dice qué es cada cifra, pero no
+      diagnostica ni aconseja.
+  - name: get_sleep
+    scope: vitals:read
+    description: >
+      El sueño de la pulsera: la última noche con sus fases (profundo, REM, ligero, despierto), lo
+      que tardó en dormirse, las veces que se despertó, lo que estuvo levantado y las siestas, las medias de 7 y 30 noches con la hora media de
+      dormirse y de despertarse, y cada noche de un rango o su media por semana, mes o año. Cada
+      noche trae su nota de 0 a 100 (`score`): duración hasta 50, profundidad hasta 25 y
+      tranquilidad hasta 25, con su calidad (excelente desde 90, buena desde 80, regular desde 60).
+      Una noche es la del día en que uno se despierta. No diagnostica ni aconseja.
+  - name: get_heart_day
+    scope: vitals:read
+    description: >
+      El vitals de un día (sin fecha, el último con datos) hora a hora, con el mínimo, la media y el
+      máximo, y el tramo más bajo y el más alto (minuto a minuto desde Vitals 2.0). Úsala para
+      "¿cómo tuve el vitals ayer?". Para un entreno, mejor get_workouts. No diagnostica.
+  - name: get_today
+    scope: vitals:read
+    description: >
+      Hoy contra tu normal: el sueño de anoche, la VFC, la FC en reposo, la respiración, la SpO₂ y
+      la temperatura de la piel, cada una con la media de los 60 días anteriores ± una desviación
+      típica y si hoy queda dentro, por encima o por debajo; la carga de entreno de esta semana
+      contra la media de las cuatro anteriores; los entrenos de los últimos siete días y la
+      batería de la pulsera. Úsala para "¿cómo estoy hoy?". No es un diagnóstico ni una
+      puntuación.
+  - name: get_stress
+    scope: vitals:read
+    description: >
+      El estrés estimado de un día (sin fecha, hoy), calculado por arga porque Google no da el de
+      Fitbit: los minutos despierto y quieto con el vitals claramente por encima de tu reposo, por
+      horas, y cómo llegas al día de 0 a 100 (la VFC de la noche y la FC en reposo contra tu normal;
+      50 es lo de siempre). Úsala para "¿cómo voy de estrés?". No distingue el estrés de la cafeína,
+      el calor o un resfriado, y no aconseja.
+  - name: get_workouts
+    scope: vitals:read
+    description: >
+      Los entrenos hechos (sesiones de fuerza y actividades como pádel o bici, vengan de Training o de
+      la pulsera) en un rango, con su vitals: media, máximo, minutos en cada zona, carga y cuánto
+      bajó el vitals en los dos minutos de después, y las calorías si la pulsera lo midió. Con `id`,
+      uno solo con su vitals minuto a minuto y sus series. Úsala para "¿cómo me fue el pádel del
+      jueves?" o "¿a qué vitals fui en la bici?".
+  - name: get_training_load
+    scope: vitals:read
+    description: >
+      La carga de entreno de cada una de las últimas doce semanas (cada minuto por su zona de vitals),
+      con los entrenos y los minutos de cada una, y la de esta semana contra la media de las cuatro
+      de antes.
+  - name: get_sleep_patterns
+    scope: vitals:read
+    description: >
+      Cuánto se mueven la hora de dormirse y la de despertarse en las últimas 30 noches, y las
+      noches después de un día con entreno (o de entrenar a partir de las 20:00) contra el resto:
+      cuánto se durmió, el sueño profundo y la VFC. Úsala para "¿duermo peor cuando entreno
+      tarde?". Son medias, no causas.
+  - name: get_checkup_changes
+    scope: vitals:read
+    description: >
+      La última revisión médica contra la anterior: cada analito con su valor de antes y de ahora,
+      lo que más se movió primero y lo que entró o salió de rango. No diagnostica.
+  - name: get_heart_rhythm
+    scope: vitals:read
+    description: >
+      Los electrocardiogramas que se hizo la persona con la pulsera, con lo que dijo su algoritmo
+      tal cual y el vitals medio, y los avisos de ritmo irregular con cuántas ventanas dieron
+      positivo, y si los avisos están activados. Úsala para "¿qué salió en el último ECG?". No
+      interpreta la traza ni diagnostica.
+  - name: get_band
+    scope: vitals:read
+    description: >
+      La pulsera y los demás aparatos emparejados: su batería y cuándo sincronizaron por última
+      vez. Úsala para "¿cuánta batería tiene la pulsera?" o para saber si lleva tiempo sin pasar
+      datos.
+  - name: get_lab_results
+    scope: vitals:read
+    description: >
+      Los valores de uno o varios analitos en todas las revisiones, con la unidad y el rango de
+      referencia de cada informe y si quedan fuera. Úsala para "¿cómo va mi colesterol?". Dice
+      qué es cada analito, pero no diagnostica ni aconseja: si algo está fuera, se dice y ya.
+  - name: get_checkups
+    scope: vitals:read
+    description: >
+      Las revisiones médicas, de la más reciente, con cuántos valores tienen, cuántos quedan fuera
+      de rango y si tienen su PDF.
+  - name: log_weight
+    scope: vitals:write
+    description: >
+      Apunta una pesada: kilos y, si no es de hoy, su fecha. El mismo peso el mismo día ya estaba y
+      no se duplica, así que cargar un histórico dos veces no repite nada. Para pesadas antiguas de
+      otra app, `from_history: true`. Devuelve la media móvil de 7 días y el cambio a 30 días.
+  - name: record_checkup
+    scope: vitals:write
+    description: >
+      Crea una revisión médica con su día y su centro, o devuelve la que ya hay ese día en ese
+      centro, y da su id. Es el primer paso para cargar una analítica: después, un add_lab_result
+      por cada valor. El PDF no viaja por aquí: devuelve `attach_pdf_url`, el enlace de la app para
+      adjuntarlo con un toque; dáselo a la persona.
+  - name: add_lab_result
+    scope: vitals:write
+    description: >
+      Añade un valor a una revisión: el analito (su id o su nombre como en el informe), el número
+      o, si no lo hay, el texto ("Negativo"), la unidad y el rango de referencia tal como vienen en
+      el informe. El mismo analito otra vez en la misma revisión corrige el valor. Si no conoce el
+      analito, no apunta nada y dice cuáles hay.
+
+ui:
+  widgets:
+    - id: steps_today
+      title: Pasos hoy
+      kind: ring
+      sizes: ["1x1", "2x2", "2x1", "4x1", "4x2"]
+      endpoint: /api/vitals/widgets/steps_today
+      refresh: 900
+      link: /vitals/pasos
+    - id: weight
+      title: Peso
+      kind: kpi-delta
+      sizes: ["1x1", "2x2", "2x1", "4x1", "4x2", "4x4"]
+      endpoint: /api/vitals/widgets/weight
+      refresh: 3600
+      link: /vitals/peso
+    - id: ldl
+      title: Colesterol LDL
+      kind: kpi-delta
+      sizes: ["1x1", "2x2", "2x1", "4x1", "4x2", "4x4"]
+      endpoint: /api/vitals/widgets/ldl
+      refresh: 3600
+      link: /vitals/analiticas
+    - id: steps_week
+      title: Pasos de la semana
+      kind: bars
+      sizes: ["4x2", "2x2", "2x1", "4x1", "4x4"]
+      endpoint: /api/vitals/widgets/steps_week
+      refresh: 900
+      link: /vitals/pasos
+    - id: sleep
+      title: Sueño
+      kind: kpi-delta
+      sizes: ["2x1", "1x1", "2x2", "4x1", "4x2"]
+      endpoint: /api/vitals/widgets/sleep
+      refresh: 3600
+      link: /vitals/sueno
+    - id: steps_year
+      title: Pasos del año
+      kind: heatmap
+      sizes: ["2x2", "4x2", "1x1", "2x1", "4x1", "2x4", "4x4"]
+      endpoint: /api/vitals/widgets/steps_year
+      refresh: 3600
+      link: /vitals/pasos
+    - id: sleep_score
+      title: Nota del sueño
+      kind: ring
+      sizes: ["1x1", "2x2", "2x1", "4x1", "4x2"]
+      endpoint: /api/vitals/widgets/sleep_score
+      refresh: 3600
+      link: /vitals/sueno
+    - id: sleep_week
+      title: Sueño de la semana
+      kind: bars
+      sizes: ["4x2", "2x2", "2x1", "4x1", "4x4"]
+      endpoint: /api/vitals/widgets/sleep_week
+      refresh: 3600
+      link: /vitals/sueno
+    - id: readiness
+      title: Cómo llegas al día
+      kind: ring
+      sizes: ["1x1", "2x2", "2x1", "4x1", "4x2"]
+      endpoint: /api/vitals/widgets/readiness
+      refresh: 3600
+      link: /vitals/
+    - id: resting_heart
+      title: FC en reposo
+      kind: kpi-delta
+      sizes: ["2x1", "1x1", "2x2", "4x1", "4x2"]
+      endpoint: /api/vitals/widgets/resting_heart
+      refresh: 3600
+      link: /vitals/salud/cifra/resting_heart_rate
+    - id: hrv
+      title: VFC
+      kind: kpi-delta
+      sizes: ["2x1", "1x1", "2x2", "4x1", "4x2"]
+      endpoint: /api/vitals/widgets/hrv
+      refresh: 3600
+      link: /vitals/salud/cifra/hrv_ms
+    - id: vo2max
+      title: VO₂ máx.
+      kind: kpi-delta
+      sizes: ["2x1", "1x1", "2x2", "4x1", "4x2"]
+      endpoint: /api/vitals/widgets/vo2max
+      refresh: 3600
+      link: /vitals/salud/cifra/vo2max
+    - id: training_load
+      title: Carga de la semana
+      kind: progress
+      sizes: ["2x1", "4x1", "2x2", "4x2"]
+      endpoint: /api/vitals/widgets/training_load
+      refresh: 900
+      link: /vitals/entrenar
+    - id: training_week
+      title: Entreno de la semana
+      kind: stats
+      sizes: ["4x1", "2x2", "4x2", "2x1"]
+      endpoint: /api/vitals/widgets/training_week
+      refresh: 900
+      link: /vitals/entrenar
+    - id: last_workout
+      title: Último entreno
+      kind: stats
+      sizes: ["4x1", "2x2", "4x2", "2x1"]
+      endpoint: /api/vitals/widgets/last_workout
+      refresh: 900
+      link: /vitals/entrenar
+    - id: band
+      title: Pulsera
+      kind: ring
+      sizes: ["1x1", "2x1", "2x2"]
+      endpoint: /api/vitals/widgets/band
+      refresh: 900
+      link: /vitals/ajustes
+  view: /vitals
+  hue: 5
+  family: health

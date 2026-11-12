@@ -1,0 +1,39 @@
+id: __MODULE_ID__
+name: __MODULE_NAME__
+version: 0.1.0
+
+database:
+  schema: __MODULE_ID__
+  role: mod___MODULE_ID__
+  reads: []
+
+api:
+  prefix: /api/__MODULE_ID__
+
+tools:
+  - name: get_readings
+    scope: __MODULE_ID__:read
+    description: >
+      Las lecturas registradas, de la más reciente a la más antigua, con el objetivo de cada
+      etiqueta si lo hay. Una lectura es un valor medido en un momento con una etiqueta (peso,
+      sueño, pasos, ánimo). Úsala para contestar cómo va algo o si se acerca a su objetivo.
+  - name: add_reading
+    scope: __MODULE_ID__:write
+    description: >
+      Apunta una lectura: un valor con su etiqueta, ahora si no se dice cuándo. No cambia ninguna
+      de las que ya hay.
+  - name: set_target
+    scope: __MODULE_ID__:write
+    description: >
+      Fija el objetivo de una etiqueta, sustituyendo el anterior. Un objetivo es el valor al que
+      se quiere llegar; no es una lectura y no cambia ninguna.
+
+ui:
+  widgets:
+    - id: main
+      title: __MODULE_NAME__
+      kind: kpi
+      sizes: ["2x2", "4x2"]
+      endpoint: /api/__MODULE_ID__/widgets/main
+      refresh: 300
+  view: /__MODULE_ID__

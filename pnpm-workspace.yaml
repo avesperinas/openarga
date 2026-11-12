@@ -1,0 +1,7 @@
+packages:
+  - packages/*
+  - shell
+  - modules/*/ui
+
+allowBuilds:
+  esbuild: true

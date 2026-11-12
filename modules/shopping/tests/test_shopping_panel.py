@@ -1,0 +1,29 @@
+from pathlib import Path
+
+from arga_testing.panel import full_panel
+from arga_widgets.panel import served
+from shopping import panel as home_panel
+
+
+async def test_panel_sin_datos_no_revienta(api):
+    response = await api.get("/panel")
+    assert response.status_code in (200, 404), response.text
+    if response.status_code == 200:
+        for item in served(response.json()):
+            assert item["area"] == "home"
+
+
+async def test_lo_apuntado_desde_el_panel_va_a_la_lista_y_a_la_frase(api):
+    added = await api.post("/widgets/list/act", json={"verb": "add", "id": "Pan"})
+    assert added.status_code == 200, added.text
+    (item,) = served((await api.get("/panel")).json())
+    block = item["tabs"][0]["blocks"][0]
+    assert [one["title"] for one in block["items"]] == ["Pan"]
+    assert block["add"]
+    assert item["headlines"][0]["text"] == "Falta 1 cosa por comprar"
+
+
+async def test_con_todos_sus_widgets_llenos_el_panel_sella(monkeypatch):
+    (item,) = await full_panel(home_panel, Path(__file__).parents[1] / "manifest.yaml", monkeypatch)
+    assert item["area"] == "home"
+    assert item["tabs"]

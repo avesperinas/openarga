@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="b0" cx="0.15" cy="0.1" r="0.75">
+      <stop offset="0" stop-color="#4a7ba7" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#4a7ba7" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="b1" cx="0.85" cy="0.35" r="0.6">
+      <stop offset="0" stop-color="#1d2b45" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#1d2b45" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="b2" cx="0.5" cy="0.95" r="0.65">
+      <stop offset="0" stop-color="#3d6389" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#3d6389" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="b3" cx="0.25" cy="0.7" r="0.3">
+      <stop offset="0" stop-color="#5b90bd" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#5b90bd" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g>
+    <rect width="1000" height="1000" fill="#2a3f5f"/>
+    <rect width="1000" height="1000" fill="url(#b0)"/>
+    <rect width="1000" height="1000" fill="url(#b1)"/>
+    <rect width="1000" height="1000" fill="url(#b2)"/>
+    <rect width="1000" height="1000" fill="url(#b3)"/>
+  </g>
+</svg>

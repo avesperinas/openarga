@@ -1,0 +1,38 @@
+{
+  "name": "Notes",
+  "short_name": "Notes",
+  "description": "What you know: your notes, linked.",
+  "start_url": "/notebook/",
+  "scope": "/notebook/",
+  "id": "/notebook/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#7d45ae",
+  "theme_color": "#7d45ae",
+  "icons": [
+    {
+      "src": "/notebook/icon-192.png?v=31f00b6856",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/notebook/icon-512.png?v=bd43504369",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/notebook/icon-512.png?v=bd43504369",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/notebook/icon.svg?v=6a5435b459",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

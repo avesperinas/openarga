@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      retries: 10
+
+  kernel:
+    build:
+      context: .
+      dockerfile: kernel/Dockerfile
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway/Dockerfile
+    env_file: .env
+    environment:
+      KERNEL_URL: http://kernel:8000
+      SHELL_URL: http://shell:3000
+    depends_on:
+      - kernel
+    ports:
+      - "8000:8000"
+
+  shell:
+    build: ./shell
+    env_file: .env
+    depends_on:
+      - kernel
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:

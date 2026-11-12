@@ -1,0 +1,28 @@
+{
+  "name": "@openarga/shell",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "lint": "node ../scripts/make-pwa.mjs --check && node ../scripts/make-wallpapers.mjs --check && eslint . && tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@openarga/ui": "workspace:*",
+    "next": "^15.1.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "eslint": "^9.17.0",
+    "jsdom": "^30.1.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

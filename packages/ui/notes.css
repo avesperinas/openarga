@@ -1,0 +1,389 @@
+.mn-prose {
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  overflow-wrap: break-word;
+}
+
+.mn-prose > :first-child {
+  margin-top: 0;
+}
+
+.mn-prose h1,
+.mn-prose h2,
+.mn-prose h3,
+.mn-prose h4,
+.mn-prose h5,
+.mn-prose h6 {
+  margin: 1.4em 0 0.4em;
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-title);
+  scroll-margin-top: var(--space-4);
+}
+
+.mn-prose h1 {
+  font-size: var(--text-title2);
+}
+.mn-prose h2 {
+  font-size: var(--text-title3);
+}
+.mn-prose h3 {
+  font-size: var(--text-headline);
+}
+.mn-prose h4,
+.mn-prose h5,
+.mn-prose h6 {
+  font-size: var(--text-body);
+}
+
+.mn-prose p,
+.mn-prose ul,
+.mn-prose ol,
+.mn-prose blockquote,
+.mn-prose pre,
+.mn-prose table {
+  margin: 0 0 0.8em;
+}
+
+.mn-prose ul,
+.mn-prose ol {
+  padding-left: 1.4em;
+}
+
+.mn-prose li + li {
+  margin-top: 0.15em;
+}
+
+.mn-prose li.mn-task {
+  list-style: none;
+  margin-left: -1.3em;
+}
+
+.mn-check {
+  margin: 0 var(--space-1) 0 0;
+  accent-color: var(--accent);
+  vertical-align: -0.1em;
+}
+
+.mn-prose a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.mn-prose a:hover {
+  text-decoration: underline;
+}
+
+.mn-prose .mn-link[data-missing] {
+  color: var(--fg-muted);
+  text-decoration: underline dashed var(--fg-faint);
+  text-underline-offset: 3px;
+}
+
+.mn-prose .mn-embed {
+  display: inline-flex;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--fill);
+}
+
+.mn-app-link,
+.mn-file {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  color: var(--fg-muted);
+  font-size: 0.92em;
+}
+
+.mn-image {
+  max-width: 100%;
+  border-radius: var(--radius-control);
+}
+
+.mn-prose code {
+  padding: 0.1em 0.35em;
+  border-radius: 5px;
+  background: var(--fill);
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+
+.mn-prose pre {
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  overflow-x: auto;
+}
+
+.mn-prose pre code {
+  padding: 0;
+  background: none;
+}
+
+.mn-prose blockquote {
+  padding: var(--space-1) var(--space-3);
+  border-left: 3px solid var(--separator);
+  color: var(--fg-muted);
+}
+
+.mn-prose mark {
+  padding: 0 0.1em;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--warning) 32%, transparent);
+  color: inherit;
+}
+
+.mn-prose hr {
+  border: 0;
+  border-top: 1px solid var(--separator);
+  margin: 1.5em 0;
+}
+
+.mn-prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: var(--text-subhead);
+}
+
+.mn-prose th,
+.mn-prose td {
+  padding: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--separator);
+  text-align: left;
+  vertical-align: top;
+}
+
+.mn-prose th {
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.mn-prose .footnotes {
+  color: var(--fg-muted);
+  font-size: var(--text-footnote);
+}
+
+.mn-prose .mn-callout {
+  --callout: var(--accent);
+  padding: var(--space-3);
+  border-left: 3px solid var(--callout);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--callout) 10%, transparent);
+  color: var(--fg);
+}
+
+.mn-prose .mn-callout[data-callout="tip"],
+.mn-prose .mn-callout[data-callout="success"],
+.mn-prose .mn-callout[data-callout="check"],
+.mn-prose .mn-callout[data-callout="done"] {
+  --callout: var(--positive);
+}
+
+.mn-prose .mn-callout[data-callout="warning"],
+.mn-prose .mn-callout[data-callout="caution"],
+.mn-prose .mn-callout[data-callout="attention"],
+.mn-prose .mn-callout[data-callout="question"],
+.mn-prose .mn-callout[data-callout="faq"] {
+  --callout: var(--warning);
+}
+
+.mn-prose .mn-callout[data-callout="danger"],
+.mn-prose .mn-callout[data-callout="error"],
+.mn-prose .mn-callout[data-callout="bug"],
+.mn-prose .mn-callout[data-callout="failure"] {
+  --callout: var(--negative);
+}
+
+.mn-prose .mn-callout-title {
+  margin: 0 0 var(--space-1);
+  color: var(--callout);
+  font-weight: var(--weight-semibold);
+}
+
+.mn-prose .mn-callout > :last-child {
+  margin-bottom: 0;
+}
+
+.mn-editor .cm-editor {
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  background: none;
+}
+
+.mn-editor .cm-editor.cm-focused {
+  outline: none;
+}
+
+.mn-editor .cm-scroller {
+  font-family: var(--font-sans);
+  overflow: visible;
+}
+
+.mn-editor .cm-content {
+  padding: 0 0 var(--space-12);
+  caret-color: var(--accent);
+}
+
+.mn-editor .cm-line {
+  padding: 0;
+}
+
+.mn-editor .cm-cursor {
+  border-left-color: var(--accent);
+}
+
+.mn-editor .cm-selectionBackground,
+.mn-editor .cm-focused .cm-selectionBackground {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.mn-editor .cm-placeholder {
+  color: var(--fg-faint);
+}
+
+.mn-editor .cm-mn-h1,
+.mn-editor .cm-mn-h2,
+.mn-editor .cm-mn-h3,
+.mn-editor .cm-mn-h4,
+.mn-editor .cm-mn-h5,
+.mn-editor .cm-mn-h6 {
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-title);
+}
+
+.mn-editor .cm-mn-h1 {
+  font-size: var(--text-title2);
+  padding-top: 0.6em;
+}
+.mn-editor .cm-mn-h2 {
+  font-size: var(--text-title3);
+  padding-top: 0.5em;
+}
+.mn-editor .cm-mn-h3 {
+  font-size: var(--text-headline);
+  padding-top: 0.4em;
+}
+
+.mn-editor .cm-mn-quote {
+  border-left: 3px solid var(--separator);
+  padding-left: var(--space-3);
+  color: var(--fg-muted);
+}
+
+.mn-editor .cm-mn-codeblock {
+  background: var(--fill);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  padding-inline: var(--space-2);
+}
+
+.mn-editor .cm-mn-strong {
+  font-weight: var(--weight-bold);
+}
+
+.mn-editor .cm-mn-em {
+  font-style: italic;
+}
+
+.mn-editor .cm-mn-strike {
+  text-decoration: line-through;
+}
+
+.mn-editor .cm-mn-code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--fill);
+  border-radius: 4px;
+}
+
+.mn-editor .cm-mn-mdlink,
+.mn-editor .cm-mn-link {
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.mn-editor .cm-mn-link-raw,
+.mn-editor .cm-mn-url,
+.mn-editor .cm-mn-faint {
+  color: var(--fg-muted);
+}
+
+.mn-editor .cm-mn-embed {
+  padding: 0 var(--space-1);
+  border-radius: 4px;
+  background: var(--fill);
+}
+
+.mn-editor .cm-mn-tag {
+  padding: 0 0.3em;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+
+.mn-editor .cm-mn-mark {
+  background: color-mix(in srgb, var(--warning) 32%, transparent);
+  border-radius: 3px;
+}
+
+.mn-editor .cm-mn-check {
+  margin: 0 var(--space-1) 0 0;
+  accent-color: var(--accent);
+  vertical-align: -0.1em;
+  cursor: pointer;
+}
+
+.mn-editor .cm-tooltip {
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  box-shadow: var(--elevation-drag);
+  overflow: hidden;
+}
+
+.mn-editor .cm-tooltip-autocomplete > ul {
+  font-family: var(--font-sans);
+  max-height: 16em;
+}
+
+.mn-editor .cm-tooltip-autocomplete > ul > li {
+  padding: var(--space-1) var(--space-3);
+}
+
+.mn-editor .cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--accent);
+  color: var(--fg-on-accent);
+}
+
+.mn-editor .cm-completionDetail {
+  margin-left: var(--space-2);
+  color: inherit;
+  opacity: 0.7;
+  font-style: normal;
+  font-size: var(--text-caption1);
+}
+
+.mn-editor .cm-panels {
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.mn-editor .cm-searchMatch {
+  background: color-mix(in srgb, var(--warning) 35%, transparent);
+}
+
+@media (max-width: 600px) {
+  .mn-prose table {
+    font-size: var(--text-footnote);
+  }
+
+  .mn-prose th,
+  .mn-prose td {
+    min-width: 7em;
+    padding: var(--space-1) var(--space-2);
+  }
+}

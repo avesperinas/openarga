@@ -1,0 +1,19 @@
+[BBVA]
+internal = "^TRASPASO // TRASPASO (A|DESDE) CUENTA"
+bank_category = "^(?:PAGO CON TARJETA|CARGO POR COMPRA CON TARJETA) (?:EN |DE )?([^/]+?) //"
+merchant = ["// PAGO CON TARJETA // (.+?)(?:\\s{2,}|$)", "// OTROS // (.+?)(?:\\s{2,}|$)", "^[^/]+// [^/]+// (.+)$"]
+
+["Caja Rural"]
+aliases = ["Caja Rural de Navarra"]
+merchant = ["^TJ-(.+)$", "^RCBO\\.(.+)$", "TRF\\.\\s*(.+)$"]
+
+[Revolut]
+aliases = ["Enviada desde Revolut"]
+merchant = ["Bizum payment (?:to|from): (.+)$", "^Refund from (.+)$"]
+
+["Renault Bank"]
+
+[Finizens]
+
+[Bitvavo]
+aliases = ["Stichting Bitvavo"]

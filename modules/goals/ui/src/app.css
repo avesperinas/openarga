@@ -1,0 +1,125 @@
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.goals-version {
+  max-width: var(--app-width);
+  margin: calc(var(--space-12) * -2) auto 0;
+  padding: 0 var(--space-4) calc(env(safe-area-inset-bottom) + var(--space-12) + var(--tap-target));
+  color: var(--fg-faint);
+}
+
+.goals-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.goals-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.goals-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.goals-hues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.goals-hue {
+  display: grid;
+  place-items: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--fill);
+  cursor: pointer;
+}
+.goals-hue .list-row-dot {
+  width: var(--space-6);
+  height: var(--space-6);
+}
+.goals-hue[aria-checked="true"] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.goals-hue:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.goals-options {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-2);
+}
+.goals-options > li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.goals-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap-target);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  color: var(--fg);
+  text-align: left;
+  cursor: pointer;
+}
+.goals-option > span {
+  display: grid;
+}
+.goals-option .icon {
+  flex: 0 0 auto;
+  width: var(--icon-m);
+  height: var(--icon-m);
+  color: var(--fg-muted);
+}
+.goals-option[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.goals-option[aria-pressed="true"] .icon {
+  color: var(--accent);
+}
+.goals-option-detail {
+  color: var(--fg-muted);
+  font-size: var(--text-footnote);
+}
+.goals-invite {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  font-size: var(--text-subhead);
+  color: var(--fg-muted);
+}
+.goals-code {
+  font-family: var(--font-mono);
+  font-size: var(--text-title2);
+  letter-spacing: var(--tracking-caption);
+  color: var(--fg);
+  user-select: all;
+}
+
+.goals-goals {
+  display: grid;
+  gap: var(--space-3);
+}

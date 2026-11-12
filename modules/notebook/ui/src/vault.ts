@@ -1,0 +1,148 @@
+import { unzipSync } from "fflate";
+
+import { wikilink } from "@openarga/ui/notes/markdown";
+
+export interface VaultNote {
+  folder: string;
+  title: string;
+  content: string;
+}
+
+export interface VaultFile {
+  name: string;
+  data: Uint8Array;
+}
+
+export interface Left {
+  path: string;
+  reason: string;
+}
+
+export interface Vault {
+  notes: VaultNote[];
+  files: VaultFile[];
+  left: Left[];
+  tops: string[];
+  unresolved: string[];
+}
+
+const IMAGE = /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i;
+
+function hidden(segment: string): boolean {
+  return segment.startsWith(".") || segment.endsWith(".obsidian") || segment === "__MACOSX";
+}
+
+const decoder = new TextDecoder("utf-8");
+const strict = new TextDecoder("utf-8", { fatal: true });
+
+const DOS = ["\u00c7\u00fc\u00e9\u00e2\u00e4\u00e0\u00e5\u00e7\u00ea\u00eb\u00e8\u00ef\u00ee\u00ec\u00c4\u00c5\u00c9\u00e6\u00c6\u00f4\u00f6\u00f2\u00fb\u00f9\u00ff\u00d6\u00dc\u00f8\u00a3\u00d8\u00d7\u0192\u00e1\u00ed\u00f3\u00fa\u00f1\u00d1\u00aa\u00ba\u00bf\u00ae\u00ac\u00bd\u00bc\u00a1\u00ab\u00bb\u2591\u2592\u2593\u2502\u2524\u00c1\u00c2\u00c0\u00a9\u2563\u2551\u2557\u255d\u00a2\u00a5\u2510\u2514\u2534\u252c\u251c\u2500\u253c\u00e3\u00c3\u255a\u2554\u2569\u2566\u2560\u2550\u256c\u00a4\u00f0\u00d0\u00ca\u00cb\u00c8\u0131\u00cd\u00ce\u00cf\u2518\u250c\u2588\u2584\u00a6\u00cc\u2580\u00d3\u00df\u00d4\u00d2\u00f5\u00d5\u00b5\u00fe\u00de\u00da\u00db\u00d9\u00fd\u00dd\u00af\u00b4\u00ad\u00b1\u2017\u00be\u00b6\u00a7\u00f7\u00b8\u00b0\u00a8\u00b7\u00b9\u00b3\u00b2\u25a0\u00a0", "\u00c7\u00fc\u00e9\u00e2\u00e4\u00e0\u00e5\u00e7\u00ea\u00eb\u00e8\u00ef\u00ee\u00ec\u00c4\u00c5\u00c9\u00e6\u00c6\u00f4\u00f6\u00f2\u00fb\u00f9\u00ff\u00d6\u00dc\u00a2\u00a3\u00a5\u20a7\u0192\u00e1\u00ed\u00f3\u00fa\u00f1\u00d1\u00aa\u00ba\u00bf\u2310\u00ac\u00bd\u00bc\u00a1\u00ab\u00bb\u2591\u2592\u2593\u2502\u2524\u2561\u2562\u2556\u2555\u2563\u2551\u2557\u255d\u255c\u255b\u2510\u2514\u2534\u252c\u251c\u2500\u253c\u255e\u255f\u255a\u2554\u2569\u2566\u2560\u2550\u256c\u2567\u2568\u2564\u2565\u2559\u2558\u2552\u2553\u256b\u256a\u2518\u250c\u2588\u2584\u258c\u2590\u2580\u03b1\u00df\u0393\u03c0\u03a3\u03c3\u00b5\u03c4\u03a6\u0398\u03a9\u03b4\u221e\u03c6\u03b5\u2229\u2261\u00b1\u2265\u2264\u2320\u2321\u00f7\u2248\u00b0\u2219\u00b7\u221a\u207f\u00b2\u25a0\u00a0"];
+
+function redecode(name: string, byteOf: (char: string) => number | undefined): string | null {
+  const bytes: number[] = [];
+  for (const char of name) {
+    const byte = char.charCodeAt(0) < 128 ? char.charCodeAt(0) : byteOf(char);
+    if (byte === undefined) return null;
+    bytes.push(byte);
+  }
+  try {
+    return strict.decode(Uint8Array.from(bytes));
+  } catch {
+    return null;
+  }
+}
+
+export function fixName(name: string): string {
+  if (![...name].some((c) => c.charCodeAt(0) > 127)) return name;
+  const latin = redecode(name, (c) => (c.charCodeAt(0) < 256 ? c.charCodeAt(0) : undefined));
+  if (latin !== null && latin !== name) return latin;
+  for (const table of DOS) {
+    const dos = redecode(name, (c) => {
+      const at = table.indexOf(c);
+      return at >= 0 ? 128 + at : undefined;
+    });
+    if (dos !== null && dos !== name) return dos;
+  }
+  return name;
+}
+
+export function readVault(entries: Record<string, Uint8Array>): Vault {
+  let paths = Object.keys(entries)
+    .filter((path) => !path.endsWith("/"))
+    .map((raw) => ({ raw, path: fixName(raw).replace(/\\/g, "/").normalize("NFC").replace(/^\/+/, "") }));
+
+  const visible = paths.filter(({ path }) => !path.split("/").some(hidden));
+  const roots = new Set(visible.map(({ path }) => (path.includes("/") ? path.split("/")[0] : "")));
+  if (roots.size === 1 && !roots.has("")) {
+    const [root] = roots;
+    paths = paths.map(({ raw, path }) => ({ raw, path: path.startsWith(`${root}/`) ? path.slice(root!.length + 1) : path }));
+  }
+
+  const notes: VaultNote[] = [];
+  const files: VaultFile[] = [];
+  const left: Left[] = [];
+  for (const { raw, path } of paths) {
+    const parts = path.split("/");
+    if (parts.some(hidden)) {
+      left.push({ path, reason: "configuración u oculto" });
+      continue;
+    }
+    const name = parts.pop()!;
+    const folder = parts.join("/");
+    if (/\.md$/i.test(name) && entries[raw]!.length > 0 && entries[raw]!.every((byte) => byte === 0)) {
+      left.push({ path, reason: "vacía en el origen: el fichero no tiene su texto (¿sin descargar de iCloud?)" });
+    } else if (/\.md$/i.test(name)) {
+      const content = decoder
+        .decode(entries[raw])
+        .replace(/^\uFEFF/, "")
+        .replace(/\r\n?/g, "\n")
+        .replaceAll("\u0000", "");
+      notes.push({ folder, title: name.slice(0, -3), content });
+    } else if (IMAGE.test(name)) {
+      files.push({ name, data: entries[raw]! });
+    } else {
+      left.push({ path, reason: "no es una nota ni una imagen" });
+    }
+  }
+
+  const tops = [...new Set(notes.map((n) => n.folder.split("/")[0]!).filter(Boolean))].sort((a, b) =>
+    a.localeCompare(b, "es", { numeric: true }),
+  );
+  return { notes, files, left, tops, unresolved: unresolvedLinks(notes, files) };
+}
+
+const key = (text: string) => text.normalize("NFC").trim().toLowerCase();
+
+function unresolvedLinks(notes: VaultNote[], files: VaultFile[]): string[] {
+  const titles = new Set(notes.map((n) => key(n.title)));
+  const names = new Set(files.map((f) => key(f.name)));
+  const missing = new Set<string>();
+  for (const note of notes) {
+    for (const match of note.content.matchAll(/!?\[\[([^[\]\n]+?)\]\]/g)) {
+      const link = wikilink(match[1]!, match[0].startsWith("!"));
+      if (!link?.target || /^[a-z][a-z0-9_]*:/.test(link.target)) continue;
+      const name = link.target.split("/").pop()!;
+      const clean = key(name.replace(/\.md$/i, ""));
+      if (!titles.has(clean) && !names.has(key(name))) missing.add(link.target);
+    }
+  }
+  return [...missing].sort((a, b) => a.localeCompare(b, "es"));
+}
+
+export function moved(folder: string, destinations: Record<string, string>): string {
+  if (!folder) return folder;
+  const [top, ...rest] = folder.split("/");
+  const to = destinations[top!];
+  if (to === undefined || to.trim() === top) return folder;
+  const clean = to.trim().replace(/^\/+|\/+$/g, "");
+  return [clean, ...rest].filter(Boolean).join("/");
+}
+
+export function unzip(buffer: ArrayBuffer): Record<string, Uint8Array> {
+  return unzipSync(new Uint8Array(buffer));
+}
+
+export function batches<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
+}

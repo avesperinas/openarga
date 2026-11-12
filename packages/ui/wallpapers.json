@@ -1,0 +1,106 @@
+[
+  {
+    "id": "marea",
+    "name": "Marea",
+    "luminance": {
+      "mean": 0.0766,
+      "variance": 0.00091
+    },
+    "scrim": {
+      "light": 0.4,
+      "dark": 0
+    },
+    "veil": {
+      "light": 0.35,
+      "dark": 0
+    },
+    "glass": {
+      "light": 0.65,
+      "dark": 0.26
+    },
+    "contrast": {
+      "light": 4.53,
+      "dark": 4.61
+    },
+    "image": "/wallpapers/marea.svg",
+    "blurred": "/wallpapers/marea-blur.svg"
+  },
+  {
+    "id": "brezo",
+    "name": "Brezo",
+    "luminance": {
+      "mean": 0.0653,
+      "variance": 0.00029
+    },
+    "scrim": {
+      "light": 0.4,
+      "dark": 0
+    },
+    "veil": {
+      "light": 0.35,
+      "dark": 0
+    },
+    "glass": {
+      "light": 0.65,
+      "dark": 0
+    },
+    "contrast": {
+      "light": 4.56,
+      "dark": 6.49
+    },
+    "image": "/wallpapers/brezo.svg",
+    "blurred": "/wallpapers/brezo-blur.svg"
+  },
+  {
+    "id": "duna",
+    "name": "Duna",
+    "luminance": {
+      "mean": 0.1266,
+      "variance": 0.00103
+    },
+    "scrim": {
+      "light": 0.32,
+      "dark": 0.06
+    },
+    "veil": {
+      "light": 0.32,
+      "dark": 0.06
+    },
+    "glass": {
+      "light": 0.6,
+      "dark": 0.32
+    },
+    "contrast": {
+      "light": 4.58,
+      "dark": 4.56
+    },
+    "image": "/wallpapers/duna.svg",
+    "blurred": "/wallpapers/duna-blur.svg"
+  },
+  {
+    "id": "pizarra",
+    "name": "Pizarra",
+    "luminance": {
+      "mean": 0.0612,
+      "variance": 0.00033
+    },
+    "scrim": {
+      "light": 0.4,
+      "dark": 0
+    },
+    "veil": {
+      "light": 0.35,
+      "dark": 0
+    },
+    "glass": {
+      "light": 0.65,
+      "dark": 0
+    },
+    "contrast": {
+      "light": 4.55,
+      "dark": 6.61
+    },
+    "image": "/wallpapers/pizarra.svg",
+    "blurred": "/wallpapers/pizarra-blur.svg"
+  }
+]

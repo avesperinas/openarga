@@ -1,0 +1,30 @@
+default_install_hook_types: [pre-commit]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        exclude: \.(md|sql)$
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.6
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: lint-tokens
+        name: lint-tokens
+        entry: node scripts/lint-tokens.mjs
+        language: system
+        pass_filenames: false
+        files: ^(shell|modules)/.*\.(tsx?|jsx?|mjs|css|scss)$

@@ -1,0 +1,38 @@
+{
+  "name": "Goals",
+  "short_name": "Goals",
+  "description": "What you set out to do and what you have to do.",
+  "start_url": "/goals/",
+  "scope": "/goals/",
+  "id": "/goals/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#d36327",
+  "theme_color": "#d36327",
+  "icons": [
+    {
+      "src": "/goals/icon-192.png?v=09aaeee3f9",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/goals/icon-512.png?v=f0f310e3d3",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/goals/icon-512.png?v=f0f310e3d3",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/goals/icon.svg?v=598d4515b6",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

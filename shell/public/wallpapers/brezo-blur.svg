@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="b0" cx="0.8" cy="0.15" r="0.7">
+      <stop offset="0" stop-color="#6d5480" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#6d5480" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="b1" cx="0.1" cy="0.6" r="0.65">
+      <stop offset="0" stop-color="#33283d" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#33283d" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="b2" cx="0.6" cy="0.85" r="0.5">
+      <stop offset="0" stop-color="#7a5f8e" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#7a5f8e" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="b3" cx="0.4" cy="0.3" r="0.28">
+      <stop offset="0" stop-color="#8b6fa0" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#8b6fa0" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="desenfoque" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="60"/>
+    </filter>
+  </defs>
+  <g filter="url(#desenfoque)">
+    <rect width="1000" height="1000" fill="#4a3a56"/>
+    <rect width="1000" height="1000" fill="url(#b0)"/>
+    <rect width="1000" height="1000" fill="url(#b1)"/>
+    <rect width="1000" height="1000" fill="url(#b2)"/>
+    <rect width="1000" height="1000" fill="url(#b3)"/>
+  </g>
+</svg>

@@ -1,0 +1,35 @@
+[project]
+name = "hub"
+version = "0.1.0"
+description = "Hub: el centro de las fuentes de fuera de OpenArga"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "arga-tenancy",
+  "arga-module",
+  "arga-widgets",
+  "arga-crypto",
+  "arga-nutrients",
+  "arga-contracts",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "sqlalchemy[asyncio]>=2.0",
+  "asyncpg>=0.30",
+  "httpx>=0.28",
+  "icalendar>=6.0",
+  "recurring-ical-events>=3.3",
+]
+
+[tool.uv.sources]
+arga-nutrients = { workspace = true }
+arga-tenancy = { workspace = true }
+arga-module = { workspace = true }
+arga-widgets = { workspace = true }
+arga-crypto = { workspace = true }
+arga-contracts = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hub"]

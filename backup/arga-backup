@@ -1,0 +1,380 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${PGHOST:=postgres}" "${PGUSER:=arga_backup}"
+: "${PGDATABASE:?falta PGDATABASE}" "${PGPASSWORD:?falta PGPASSWORD}"
+: "${RESTIC_PASSWORD:?falta RESTIC_PASSWORD}"
+export PGHOST PGUSER PGDATABASE PGPASSWORD RESTIC_PASSWORD
+export RESTIC_FROM_PASSWORD=$RESTIC_PASSWORD
+export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-auto}
+
+LOCAL_REPO=${LOCAL_REPO:-/backups/restic}
+OFFSITE_REPOSITORY=${OFFSITE_REPOSITORY:-}
+STATE=${STATE_DIR:-/backups/state}
+WORK=${WORK_DIR:-/backups/work}
+FINGERPRINT_SQL=${FINGERPRINT_SQL:-/usr/local/share/arga-backup/fingerprint.sql}
+NOTIFY_ENV_FILE=${NOTIFY_ENV_FILE:-/run/notify.env}
+BACKUP_MINUTE=${BACKUP_MINUTE:-17}
+DAILY_HOUR=${DAILY_HOUR:-3}
+WEEKLY_HOUR=${WEEKLY_HOUR:-7}
+STARTUP_DELAY=${STARTUP_DELAY:-120}
+OFFSITE_QUOTA_BYTES=${OFFSITE_QUOTA_BYTES:-10000000000}
+OFFSITE_ALERT_PERCENT=${OFFSITE_ALERT_PERCENT:-75}
+RETENTION=(--keep-hourly 24 --keep-daily 7 --keep-weekly 5 --keep-monthly unlimited)
+HOST=arga
+DUMP="$WORK/dump"
+
+log() { printf '%s %s\n' "$(date -u +%FT%TZ)" "$*"; }
+die() { log "ERROR: $*" >&2; exit 1; }
+
+repos() {
+  echo "local"
+  [[ -z $OFFSITE_REPOSITORY ]] || echo "offsite"
+}
+
+location() {
+  case $1 in
+    local) echo "$LOCAL_REPO" ;;
+    offsite) echo "$OFFSITE_REPOSITORY" ;;
+  esac
+}
+
+r() {
+  local name=$1
+  shift
+  restic --quiet --repo "$(location "$name")" "$@"
+}
+
+record() {
+  mkdir -p "$STATE"
+  printf '%s %s\n' "$(date -u +%s)" "$2" > "$STATE/$1"
+}
+
+ensure_local() {
+  if ! r local cat config >/dev/null 2>&1; then
+    mkdir -p "$LOCAL_REPO"
+    r local init
+    log "repositorio local creado en $LOCAL_REPO"
+  fi
+}
+
+ensure_offsite() {
+  if ! r offsite cat config >/dev/null 2>&1; then
+    r offsite init --from-repo "$LOCAL_REPO" --copy-chunker-params
+    log "repositorio de fuera creado"
+  fi
+}
+
+dump() {
+  rm -rf "$DUMP"
+  mkdir -p "$WORK"
+  mkdir -m 700 "$DUMP"
+  coproc SESSION { psql -X -q -At -F $'\t' -v ON_ERROR_STOP=1 2>&1; }
+  local to=${SESSION[1]} from=${SESSION[0]} pid=$SESSION_PID
+  printf '%s\n' "begin isolation level repeatable read, read only;" "select pg_export_snapshot();" >&"$to"
+  local snapshot
+  read -r -t 30 snapshot <&"$from" || die "psql no exportó la instantánea"
+  [[ $snapshot =~ ^[0-9A-F-]+$ ]] || die "psql: $snapshot"
+
+  pg_dumpall --globals-only --no-role-passwords -l "$PGDATABASE" -f "$DUMP/globals.sql"
+  pg_dump --create --snapshot="$snapshot" -f "$DUMP/database.sql"
+  printf '%s\n' "\\o $DUMP/fingerprint.tsv" "\\i $FINGERPRINT_SQL" "\\o" "commit;" >&"$to"
+  exec {to}>&-
+  local rest
+  rest=$(cat <&"$from")
+  wait "$pid" || die "la huella falló: $rest"
+  [[ -z $rest ]] || die "psql: $rest"
+
+  {
+    echo "database=$PGDATABASE"
+    echo "bootstrap=$(psql -X -At -c 'select rolname from pg_roles where oid = 10')"
+    echo "server=$(psql -X -At -c 'show server_version')"
+    echo "taken_at=$(date -u +%FT%TZ)"
+    echo "arga=${APP_VERSION:-}"
+  } > "$DUMP/meta.env"
+  (cd "$DUMP" && sha256sum globals.sql database.sql fingerprint.tsv meta.env > SHA256SUMS)
+}
+
+summary() {
+  awk -F '\t' '
+    $2 == "sequence" { seqs++; next }
+    { tables++; rows += $2 }
+    END { printf "%d tablas, %d filas, %d secuencias", tables, rows, seqs }' "$1"
+}
+
+forget() {
+  local name=$1
+  shift
+  r "$name" forget --host "$HOST" "${RETENTION[@]}" "$@" >/dev/null
+}
+
+once() {
+  ensure_local
+  local started=$SECONDS
+  dump
+  local what
+  what=$(summary "$DUMP/fingerprint.tsv")
+  r local backup --host "$HOST" "$DUMP"
+  forget local
+  record backup "ok $what"
+  log "copia local hecha: $what, $(du -sh "$DUMP" | cut -f1) sin comprimir ($((SECONDS - started)) s)"
+  rm -rf "$DUMP"
+
+  if [[ -z $OFFSITE_REPOSITORY ]]; then
+    log "AVISO: sin OFFSITE_REPOSITORY, la copia solo está en este servidor"
+    return 0
+  fi
+  started=$SECONDS
+  ensure_offsite
+  r offsite copy --from-repo "$LOCAL_REPO" --host "$HOST"
+  forget offsite
+  record offsite "ok"
+  log "copia subida fuera ($((SECONDS - started)) s)"
+}
+
+check() {
+  local name failed=0
+  for name in $(repos); do
+    local args=(--read-data)
+    [[ $name == local ]] || args=(--read-data-subset "${CHECK_OFFSITE_SUBSET:-$(date -u +%u)/7}")
+    if r "$name" check "${args[@]}"; then
+      log "check $name: OK"
+    else
+      log "check $name: FALLA"
+      failed=1
+    fi
+  done
+  return $failed
+}
+
+verify() {
+  local snapshot=${1:-latest} source
+  source=$(repos | tail -n 1)
+  dir="$WORK/verify" files="$WORK/verify/files" data="$WORK/verify/pgdata" socket="$WORK/verify/run"
+  stop_verify() {
+    [[ -f $data/postmaster.pid ]] && su-exec postgres pg_ctl -D "$data" -m immediate stop >/dev/null 2>&1
+    rm -rf "$dir"
+  }
+  stop_verify || true
+  trap 'stop_verify || true' EXIT
+  mkdir -p "$files" "$data" "$socket"
+  chmod 700 "$data"
+  chmod 755 "$dir" "$socket"
+  chown postgres:postgres "$data" "$socket"
+
+  local started=$SECONDS
+  r "$source" restore "$snapshot" --host "$HOST" --target "$files"
+  local copy="$files$DUMP"
+  (cd "$copy" && sha256sum -c -s SHA256SUMS) || die "los ficheros de la copia no coinciden con su SHA256SUMS"
+  local bootstrap database taken
+  bootstrap=$(sed -n 's/^bootstrap=//p' "$copy/meta.env")
+  database=$(sed -n 's/^database=//p' "$copy/meta.env")
+  taken=$(sed -n 's/^taken_at=//p' "$copy/meta.env")
+  [[ $bootstrap =~ ^[a-z_][a-z0-9_]*$ ]] || die "meta.env sin superusuario de arranque"
+
+  su-exec postgres initdb -D "$data" -U "$bootstrap" --auth=trust >/dev/null
+  su-exec postgres pg_ctl -D "$data" -w -l "$socket/postgres.log" \
+    -o "-c listen_addresses='' -c unix_socket_directories=$socket" start >/dev/null
+  local sql=(su-exec postgres psql -X -q -v ON_ERROR_STOP=1 -h "$socket" -U "$bootstrap")
+  grep -vx "CREATE ROLE $bootstrap;" "$copy/globals.sql" | "${sql[@]}" -d postgres >/dev/null
+  "${sql[@]}" -d postgres < "$copy/database.sql" >/dev/null
+  local restored
+  restored=$("${sql[@]}" -At -F $'\t' -d "$database" -c 'begin isolation level repeatable read, read only' \
+    -f "$FINGERPRINT_SQL" -c commit)
+
+  if [[ $restored != "$(cat "$copy/fingerprint.tsv")" ]]; then
+    log "DISTINTO: estas tablas no coinciden (nombre, recuento o hash):"
+    diff <(cat "$copy/fingerprint.tsv") <(echo "$restored") | grep '^[<>]' | cut -f1,2 || true
+    record verify "fail $taken"
+    die "la copia restaurada no es igual a producción"
+  fi
+  local what
+  what=$(summary "$copy/fingerprint.tsv")
+  record verify "ok $taken $source: $what"
+  log "restauración de prueba OK: copia de $taken ($source), $what, iguales a producción ($((SECONDS - started)) s)"
+}
+
+daily() {
+  local failed=0 name
+  for name in $(repos); do
+    { forget "$name" && r "$name" prune; } || failed=1
+  done
+  check || failed=1
+  "$0" verify || failed=1
+  return $failed
+}
+
+restore_files() {
+  local snapshot=${1:?falta la copia} target=${2:?falta el directorio}
+  r "$(repos | tail -n 1)" restore "$snapshot" --host "$HOST" --target "$target"
+  log "copia $snapshot en $target$DUMP: globals.sql, database.sql, fingerprint.tsv y meta.env"
+}
+
+offsite_bytes() {
+  if [[ $OFFSITE_REPOSITORY != s3:* ]]; then
+    du -sb "$OFFSITE_REPOSITORY" | cut -f1
+    return
+  fi
+  local url=${OFFSITE_REPOSITORY#s3:}
+  local path=${url#*://}
+  local host=${url%%://*}://${path%%/*}
+  local rest=${path#*/}
+  [[ $rest != "$path" && -n $rest ]] || die "OFFSITE_REPOSITORY sin bucket"
+  local bucket=${rest%%/*} prefix=""
+  [[ $rest != */* ]] || prefix=${rest#*/}/
+  local token="" total=0 xml size
+  while :; do
+    local args=(-G --data-urlencode list-type=2 --data-urlencode "prefix=$prefix"
+      --data-urlencode "max-keys=${OFFSITE_LIST_PAGE:-1000}")
+    [[ -z $token ]] || args+=(--data-urlencode "continuation-token=$token")
+    xml=$(curl -fsS --max-time 30 --aws-sigv4 "aws:amz:$AWS_DEFAULT_REGION:s3" \
+      --user "$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY" "${args[@]}" "$host/$bucket") || return 1
+    for size in $(grep -o '<Size>[0-9]*</Size>' <<<"$xml" | grep -o '[0-9]*'); do
+      total=$((total + size))
+    done
+    grep -q '<IsTruncated>true</IsTruncated>' <<<"$xml" || break
+    token=$(grep -o '<NextContinuationToken>[^<]*' <<<"$xml" | cut -d'>' -f2)
+    [[ -n $token ]] || return 1
+  done
+  echo "$total"
+}
+
+human() {
+  awk -v b="$1" 'BEGIN { if (b >= 1e9) printf "%.2f GB", b / 1e9; else printf "%.1f MB", b / 1e6 }'
+}
+
+space_text() {
+  echo "fuera ocupa $(human "$1") de $(human "$OFFSITE_QUOTA_BYTES") ($(($1 * 100 / OFFSITE_QUOTA_BYTES)) %)"
+}
+
+space() {
+  if [[ -z $OFFSITE_REPOSITORY ]]; then
+    log "sin OFFSITE_REPOSITORY, no hay espacio de fuera que medir"
+    return 0
+  fi
+  local used
+  used=$(offsite_bytes)
+  [[ $used =~ ^[0-9]+$ ]] || die "no se pudo medir lo que ocupa el repositorio de fuera"
+  local text
+  text=$(space_text "$used")
+  if ((used * 100 <= OFFSITE_QUOTA_BYTES * OFFSITE_ALERT_PERCENT)); then
+    log "$text"
+    return 0
+  fi
+  log "AVISO: $text, por encima del $OFFSITE_ALERT_PERCENT %"
+  notify "$(printf 'arga · copias: R2 por encima del %s %%\n\n%s.\n\nLas mensuales no se borran nunca, así que no bajará sola. Pasado el límite, R2 cobra lo que exceda.' \
+    "$OFFSITE_ALERT_PERCENT" "$text")"
+}
+
+ago() {
+  local then=$1 now minutes
+  now=$(date -u +%s)
+  minutes=$(((now - then) / 60))
+  if ((minutes < 120)); then echo "hace $minutes min"; else echo "hace $((minutes / 60)) h"; fi
+}
+
+describe() {
+  local file="$STATE/$1"
+  [[ -f $file ]] || { echo "nunca"; return; }
+  local when rest
+  read -r when rest < "$file"
+  echo "$rest, $(ago "$when")"
+}
+
+status_text() {
+  local name
+  for name in $(repos); do
+    local count
+    count=$(r "$name" snapshots --host "$HOST" --json 2>/dev/null | grep -o '"short_id"' | wc -l) || count="?"
+    echo "$name: $count copias"
+  done
+  [[ -n $OFFSITE_REPOSITORY ]] || echo "fuera: SIN CONFIGURAR, la copia solo está en este servidor"
+  if [[ -n $OFFSITE_REPOSITORY ]]; then
+    local used
+    used=$(offsite_bytes 2>/dev/null) || true
+    if [[ $used =~ ^[0-9]+$ ]]; then space_text "$used"; else echo "fuera: no se pudo medir lo que ocupa"; fi
+  fi
+  echo "última copia: $(describe backup)"
+  [[ -z $OFFSITE_REPOSITORY ]] || echo "última subida: $(describe offsite)"
+  echo "última restauración de prueba: $(describe verify)"
+}
+
+notify() {
+  local text=$1
+  if [[ ! -r $NOTIFY_ENV_FILE ]]; then
+    log "sin avisar: no hay $NOTIFY_ENV_FILE"
+    return 0
+  fi
+  local TELEGRAM_BOT_TOKEN="" TELEGRAM_CHAT_ID=""
+  # shellcheck disable=SC1090
+  . "$NOTIFY_ENV_FILE"
+  [[ -n $TELEGRAM_BOT_TOKEN && -n $TELEGRAM_CHAT_ID ]] || { log "sin avisar: faltan las variables de Telegram"; return 0; }
+  curl -fsS --max-time 10 -d "chat_id=$TELEGRAM_CHAT_ID" --data-urlencode "text=$text" \
+    "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" >/dev/null 2>&1 \
+    || log "el aviso por Telegram no salió"
+}
+
+step() {
+  local name=$1 output
+  mkdir -p "$STATE"
+  if "$0" "$name" 2>&1 | tee "$STATE/last-$name.log"; then
+    if [[ -f $STATE/failing-$name ]]; then
+      rm -f "$STATE/failing-$name"
+      notify "$(printf 'arga · copias\n\n"%s" vuelve a funcionar.\n\n%s' "$name" "$(status_text)")"
+    fi
+    return 0
+  fi
+  if [[ ! -f $STATE/failing-$name ]]; then
+    touch "$STATE/failing-$name"
+    output=$(tail -n 8 "$STATE/last-$name.log")
+    notify "$(printf 'arga · copias: FALLA "%s"\n\n%s\n\n%s' "$name" "$output" "$(status_text)")"
+  fi
+  return 1
+}
+
+heartbeat() { mkdir -p "$STATE" && touch "$STATE/heartbeat"; }
+
+sleep_until_minute() {
+  while :; do
+    heartbeat
+    [[ $((10#$(date -u +%M))) -eq $BACKUP_MINUTE ]] && return 0
+    sleep 20
+  done
+}
+
+serve() {
+  set -o pipefail
+  log "servicio de copias: cada hora a los :$BACKUP_MINUTE, la pasada diaria a las $DAILY_HOUR UTC"
+  [[ -n $OFFSITE_REPOSITORY ]] || log "AVISO: sin OFFSITE_REPOSITORY, las copias solo quedarán en este servidor"
+  heartbeat
+  sleep "$STARTUP_DELAY"
+  step once || true
+  while :; do
+    sleep_until_minute
+    step once || true
+    local hour weekday
+    hour=$((10#$(date -u +%H)))
+    weekday=$(date -u +%u)
+    if ((hour == DAILY_HOUR)); then
+      step daily || true
+      step space || true
+    fi
+    if ((weekday == 1 && hour == WEEKLY_HOUR)); then
+      notify "$(printf 'arga · copias, la semana\n\n%s' "$(status_text)")"
+    fi
+    sleep 60
+  done
+}
+
+case ${1:-} in
+  serve) serve ;;
+  once) once ;;
+  daily) daily ;;
+  verify) verify "${2:-latest}" ;;
+  check) check ;;
+  status) status_text ;;
+  space) space ;;
+  restore) restore_files "${2:-}" "${3:-}" ;;
+  notify-test) notify "$(printf 'arga · copias: prueba de aviso\n\n%s' "$(status_text)")" ;;
+  *) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+esac

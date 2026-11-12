@@ -1,0 +1,173 @@
+id: goals
+name: Goals
+names:
+  en: Goals
+  es: Objetivos
+summary:
+  en: "Goals, habits and tasks."
+  es: "Metas, hábitos y tareas."
+version: 0.1.0
+
+database:
+  schema: goals
+  role: mod_goals
+  reads: []
+
+connectors: []
+
+publishes:
+  - type: goals.task
+    contract: agenda
+  - type: goals.metric
+    contract: metric
+  - type: goals.record
+    contract: record
+
+receives: [metric]
+
+uses: [notify.sync]
+notifications:
+  - kind: goals_at_risk
+    label: Metas de la semana en riesgo
+    default: false
+
+api:
+  prefix: /api/goals
+
+tools:
+  - name: get_categories
+    scope: goals:read
+    description: >
+      Las categorías de tareas (Trabajo, Casa, Personal y las que haya creado), con cuántas tareas
+      le quedan a cada una y cuántas vencidas. Una categoría compartida es de un espacio: sus
+      tareas las ven y las tachan todos sus miembros.
+  - name: find_tasks
+    scope: goals:read
+    description: >
+      Las tareas pendientes, por fecha y con las que no tienen fecha al final, o las ya hechas, lo
+      último primero. Se filtran por categoría (por su nombre), por texto y por fecha límite: con
+      due_until = hoy salen lo de hoy y lo vencido. Vencida es que su día pasó, o que es hoy y ya
+      pasó su hora.
+  - name: add_task
+    scope: goals:write
+    description: >
+      Apunta una tarea en una categoría que ya existe, con fecha límite, hora y notas solo si se
+      dicen. Si se repite ("sacar la basura cada martes"), la regla va como objeto y la fecha es la
+      primera vez; al tacharla nace la siguiente.
+  - name: update_task
+    scope: goals:write
+    description: >
+      Cambia una tarea: título, categoría, fecha, hora, notas o repetición. Lo que no se dice se
+      queda; null en la fecha, la hora, las notas o la repetición lo quita.
+  - name: complete_task
+    scope: goals:write
+    description: >
+      Tacha una tarea como hecha. Si se repite, devuelve también la siguiente, que nace con la fecha
+      que le toca.
+  - name: add_category
+    scope: goals:write
+    description: >
+      Crea una categoría nueva, como "Recados" o "Universidad", con uno de los ocho tonos de arga
+      si se pide uno.
+  - name: get_goals
+    scope: goals:read
+    description: >
+      Las metas activas con cómo van, calculado por KPIs: en las periódicas, si hoy está cumplida,
+      la semana, la racha y la constancia de las últimas cuatro semanas; en las de fecha, la cifra
+      de ahora, por dónde tocaría ir hoy, el ritmo (ahead, on_track, behind) y dónde llega en la
+      fecha si sigue así. Por categoría si se pide, o las cerradas con state = closed. Es lo que
+      contesta «¿cómo voy?»: no hace falta calcular nada.
+  - name: get_goal
+    scope: goals:read
+    description: >
+      Una meta por su id con su historia: el valor de cada día, si se cumplió, lo apuntado a mano
+      y sus notas.
+  - name: list_metrics
+    scope: goals:read
+    description: >
+      Las cifras que publican las demás apps de arga (pasos, peso, patrimonio, libros, media de un
+      estudio…) con su clave, unidad, clase y último valor. Búscala aquí antes de crear una meta
+      que se pueda cumplir sola: amount se suma por día, level vale lo último.
+  - name: create_goal
+    scope: goals:write
+    description: >
+      Crea una meta en un solo objeto. Periódica («leer 20 minutos, 5 días por semana», «8.000
+      pasos cada día», «40 km a la semana») o con fecha («bajar a 80 kg para Navidad», «el B2 en
+      junio»: un hito sin target). Con metric_key de list_metrics se cumple sola, y parte de lo
+      que valía la cifra el día que empieza (start_on), que pone KPIs; sin ella, se apunta a mano.
+      La categoría, por su nombre.
+  - name: update_goal
+    scope: goals:write
+    description: >
+      Cambia una meta: título, categoría, cifra, condición u objetivo, frecuencia, punto de
+      partida, fecha límite, nota o si sale destacada. Lo que no se dice se queda. Con cifra, el
+      punto de partida sigue al día en que empieza: cambiar start_on lo vuelve a tomar de la cifra.
+  - name: check_goal
+    scope: goals:write
+    description: >
+      Apunta un día a mano, hoy si no se dice: «hoy he leído» es done true en su periódica; en una
+      con fecha o de total semanal, la cifra (value). En un hito, done true lo da por cumplido. Lo
+      apuntado a mano manda sobre la cifra de ese día.
+  - name: close_goal
+    scope: goals:write
+    description: >
+      Da una meta por cumplida antes de tiempo, la abandona (se queda en el histórico) o la reabre.
+  - name: record_past_goal
+    scope: goals:write
+    description: >
+      Apunta una meta ya terminada, de antes de usar KPIs (las de otros años, las de otra
+      herramienta): título, cuándo se propuso, para cuándo era y cómo acabó (achieved, missed,
+      abandoned), con su cifra objetivo y la cifra final si las tuvo. Entra cerrada en el
+      Histórico, en el año de su cierre. Para una meta que sigue abierta, create_goal.
+  - name: delete_goal
+    scope: goals:write
+    description: >
+      Borra una meta con todo lo apuntado. Pide su título exacto; si no coincide, no borra nada.
+      Si solo se deja, mejor close_goal con abandoned.
+ui:
+  widgets:
+    - id: today
+      title: Para hoy
+      kind: tasks
+      sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
+      endpoint: /api/goals/widgets/today
+      refresh: 300
+      link: /goals/tareas
+    - id: upcoming
+      title: Próximos días
+      kind: tasks
+      sizes: ["2x4", "2x2", "4x2", "4x4"]
+      endpoint: /api/goals/widgets/upcoming
+      refresh: 600
+      link: /goals/tareas
+    - id: overdue
+      title: Vencidas
+      kind: tasks
+      sizes: ["1x1", "2x1", "4x1", "2x2", "4x2"]
+      endpoint: /api/goals/widgets/overdue
+      refresh: 600
+      link: /goals/tareas
+    - id: goals_today
+      title: Metas de hoy
+      kind: tasks
+      sizes: ["2x2", "1x1", "2x1", "4x1", "2x4", "4x2", "4x4"]
+      endpoint: /api/goals/widgets/goals_today
+      refresh: 600
+      link: /goals/metas
+    - id: goals
+      title: Metas
+      kind: list
+      sizes: ["2x2", "4x2", "2x4", "4x4"]
+      endpoint: /api/goals/widgets/goals
+      refresh: 1800
+      link: /goals/metas
+    - id: goal
+      title: Meta destacada
+      kind: progress
+      sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
+      endpoint: /api/goals/widgets/goal
+      refresh: 1800
+      link: /goals/metas
+  view: /goals
+  hue: 3
+  family: goals

@@ -1,0 +1,107 @@
+id: training
+name: Training
+names:
+  en: Training
+  es: Entrenamiento
+summary:
+  en: "Strength training, one tap per set, and what the history says."
+  es: "Entrenamiento de fuerza, un toque por serie, y lo que dice el histórico."
+version: 0.1.0
+
+database:
+  schema: training
+  role: mod_training
+  reads: []
+
+connectors: []
+
+publishes:
+  - type: training.session
+    contract: agenda
+  - type: training.activity
+    contract: agenda
+  - type: training.variant
+    contract: linkable
+  - type: training.record
+    contract: record
+  - type: training.metric
+    contract: metric
+  - type: training.workout
+    contract: workout
+receives: [body_weight, mention, activity]
+inlets:
+  - id: workouts
+    title: Entrenos
+    contracts: [health.exercise]
+uses: [weight.log, workout.heart]
+provides: [agenda.move]
+
+api:
+  prefix: /api/training
+
+tools:
+  - name: find_exercises
+    scope: training:read
+    description: >
+      El índice de ejercicios y sus variantes, con el identificador de cada una y los centros donde
+      se ha hecho. Una variante es un ejercicio hecho con un aparato concreto, y **la carga solo se
+      compara dentro de una y en un mismo centro**: en otro gimnasio es otra máquina. Úsala siempre
+      antes de mirar progreso, para traducir un nombre dicho de pasada ("press banca") a la variante
+      con la que de verdad se entrena.
+  - name: get_sessions
+    scope: training:read
+    description: >
+      Los entrenos terminados, del más reciente al más antiguo: qué día, qué día de la rotación,
+      cuánto duró, cuántas series y cuánto volumen. Acepta rango (`since`, `until`) y devuelve
+      siempre el **total del rango**, además de los que quepan en `limit`. Con `with_sets` trae
+      cada serie con sus repeticiones y su carga. Úsala para contestar qué se entrenó y cuándo.
+  - name: summarise_training
+    scope: training:read
+    description: >
+      Cuenta entrenos, horas y volumen agrupando por año, mes, semana, tipo de día (push, pull,
+      leg…) o centro, en el rango que se le pida. Es la que contesta "cuántos entrenos hice en
+      2025" o "qué meses entrené más": no tiene límite de filas y no hay que leer sesión a sesión.
+  - name: get_activities
+    scope: training:read
+    description: >
+      Lo que se registró y no es entreno de fuerza —escalada, pádel, lo que haya— en un rango, con
+      su duración y cuántas hay de cada tipo.
+  - name: get_progress
+    scope: training:read
+    description: >
+      Cómo evoluciona la carga de **una variante**: la mejor serie de cada sesión con su e1RM
+      estimado y su centro, de la más reciente a la más antigua, un resumen por centro y el tope del
+      periodo aparte. Acepta rango (`since`, `until`). Compara solo sesiones del mismo centro, y no
+      a través de un día marcado con `machine_changed`. Los días con `counts: false` son datos que
+      no encajan con su máquina (con su motivo) y no cuentan para el tope ni para decir si sube.
+      Cada e1RM dice si es fiable: por encima de diez repeticiones la estimación vale poco. Úsala
+      para contestar si un ejercicio sube, se estanca o baja, y cuál fue el mejor día.
+  - name: get_muscles
+    scope: training:read
+    description: >
+      La fuerza de cada grupo muscular en un rango (`since`, `until`): cuánto ha cambiado en %, las
+      series por semana y qué ejercicios lo han trabajado. Cada ejercicio cuenta solo para su
+      músculo principal (el jalón es dorsal, no bíceps), y la fuerza sale de comparar cada máquina
+      consigo misma, así que cambiar de gimnasio o de ejercicio no la mueve. Es la misma cuenta que
+      la pestaña Stats. Úsala para contestar si un músculo mejora, cuál está flojo o qué se ha
+      hecho para él.
+
+ui:
+  widgets:
+    - id: week
+      title: Entreno
+      kind: ring
+      sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
+      endpoint: /api/training/widgets/week
+      refresh: 300
+      link: /training/calendario
+    - id: next
+      title: Siguiente sesión
+      kind: kpi
+      sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "4x2"]
+      endpoint: /api/training/widgets/next
+      refresh: 300
+      link: /training/siguiente
+  view: /training
+  hue: 4
+  family: health

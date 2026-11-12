@@ -1,0 +1,49 @@
+.macros-version {
+  max-width: var(--app-width);
+  margin: calc(var(--space-12) * -2) auto 0;
+  padding: 0 var(--space-4) calc(env(safe-area-inset-bottom) + var(--space-12) + var(--tap-target));
+}
+
+.macros-daynav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.macros-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.macros-item-actions  {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.macros-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.macros-fields {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.macros-bars {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.macros-coverage-group,
+.macros-planned {
+  display: grid;
+  gap: var(--space-2);
+}

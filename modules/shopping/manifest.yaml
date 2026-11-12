@@ -1,0 +1,76 @@
+id: shopping
+name: Shopping
+names:
+  en: Shopping
+  es: Compra
+summary:
+  en: "The shopping list that remembers what you buy."
+  es: "La lista de la compra que se acuerda de lo que compras."
+version: 0.1.0
+
+database:
+  schema: shopping
+  role: mod_shopping
+  reads: []
+
+connectors: []
+
+publishes:
+  - type: shopping.trip
+    contract: agenda
+  - type: shopping.record
+    contract: record
+provides: [shopping.add]
+
+api:
+  prefix: /api/shopping
+
+tools:
+  - name: get_shopping_list
+    scope: shopping:read
+    description: >
+      La lista de la compra: lo que falta por comprar agrupado por sección del súper, en el orden
+      en que se recorre la tienda; lo que ya está en el carro; y `due`, lo habitual que se está
+      acabando y no está apuntado. `due` es una propuesta: apúntalo solo si te lo piden.
+      Es la lista que la persona eligió en la app: la suya o la de un espacio de arga, como la de
+      casa; `shared` dice si la ven y la marcan también otros.
+  - name: get_purchase_history
+    scope: shopping:read
+    description: >
+      Lo que se ha comprado. De cada producto, cuántas veces, la última y cada cuánto: `every_days`
+      es la mediana de días entre compras y hace falta haberlo comprado tres veces para tenerla.
+      Y las últimas compras con lo que llevaban. Úsala para "¿cuándo compré café?" o "¿qué suelo
+      comprar?".
+  - name: add_to_list
+    scope: shopping:write
+    description: >
+      Apunta uno o varios productos en la lista, con su cantidad si se dice. Lo que ya está
+      apuntado no se duplica ni se pisa. Para lo que pide una receta, léela en Recipes, escala a
+      las raciones que toquen y apunta los ingredientes por su nombre de casa, sin lo que ya haya
+      en la lista. La sección la pone un diccionario; dila solo si es un producto nuevo y la sabes.
+      Apunta en la lista que la persona usa, que puede ser la compartida de casa (`shared`).
+  - name: remove_from_list
+    scope: shopping:write
+    description: >
+      Quita un producto de la lista por su nombre. No borra nada: el producto y su historial se
+      quedan. Si el nombre puede ser varios, no quita ninguno y dice cuáles hay.
+
+ui:
+  widgets:
+    - id: list
+      title: La compra
+      kind: tasks
+      sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
+      endpoint: /api/shopping/widgets/list
+      refresh: 300
+      link: /shopping
+    - id: due
+      title: Te toca
+      kind: list
+      sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
+      endpoint: /api/shopping/widgets/due
+      refresh: 900
+      link: /shopping
+  view: /shopping
+  hue: 1
+  family: goals

@@ -1,0 +1,175 @@
+id: outings
+name: Outings
+names:
+  en: Outings
+  es: Planes
+summary:
+  en: "What is on near you and what you want to do."
+  es: "Lo que pasa cerca y lo que te apetece hacer."
+version: 0.2.0
+
+database:
+  schema: outings
+  role: mod_outings
+  reads: []
+
+connectors: []
+
+inlets:
+  - id: agenda
+    title: Agenda
+    contracts: [leisure.event]
+
+consumes: [hub.run, hub.connection]
+
+uses: [sources.catalogue, sources.plug, sources.unplug, places.search, places.photo, claude.run, trips.idea, notify.sync]
+
+notifications:
+  - kind: for_you
+    label: Planes para ti
+    default: true
+  - kind: weekend
+    label: Lo mejor del finde, el jueves
+    default: false
+  - kind: saved_soon
+    label: Empieza algo que guardaste
+    default: true
+
+receives: [trip]
+
+publishes:
+  - type: outings.plan
+    contract: agenda
+  - type: outings.record
+    contract: record
+  - type: outings.metric
+    contract: metric
+
+api:
+  prefix: /api/outings
+
+tools:
+  - name: get_event
+    scope: outings:read
+    description: >
+      Un evento entero por su event_id: lo de find_events más las páginas de donde llegó (lo que lo
+      respalda).
+  - name: get_wishes
+    scope: outings:read
+    description: >
+      Las ganas: lo que apetece hacer, de cuatro tipos —eat (un sitio para comer o beber), plan (algo
+      cerca, una tarde o un día), getaway (salir uno o dos días) y trip (lejos, que puede ser solo
+      "Japón")—, cada una con su texto y su sitio. Las hechas están en el Archivo y solo salen con
+      include_archived. Un plan que vino de la agenda lleva sus fechas.
+  - name: find_place
+    scope: outings:read
+    description: >
+      Busca un sitio por su nombre en OpenStreetMap y devuelve candidatos con su pueblo, su país y
+      sus coordenadas. Añade el pueblo o el país si el nombre puede confundirse. Pasa el elegido tal
+      cual a add_wish o update_wish; si no contesta, una gana se guarda con el sitio solo por nombre
+      y no sale en el mapa.
+  - name: add_wish
+    scope: outings:write
+    description: >
+      Apunta una gana: su tipo, su nombre, su texto si se dice y su sitio, que es un candidato de
+      find_place. Nada más: sin valoración, sin con quién, sin presupuesto. "Apúntame ir a Irati en
+      otoño" es una escapada con su sitio y el otoño en el texto.
+  - name: save_event
+    scope: outings:write
+    description: >
+      "Me apetece": pasa un evento de la agenda a las ganas como un plan con sus fechas, enlazado a
+      él. Dos veces es la misma gana. No lo pone en el calendario: eso es send_to_calendar.
+  - name: send_to_calendar
+    scope: outings:write
+    description: >
+      Pone un evento de la agenda en Planner, el calendario, o lo quita con on=false. Es distinto de
+      save_event: algo puede apetecer sin estar decidido.
+  - name: update_wish
+    scope: outings:write
+    description: >
+      Corrige una gana por su wish_id: el tipo, el nombre, el texto o el sitio. Solo cambia lo que
+      se pasa; null vacía el texto o el sitio.
+  - name: mark_wish_done
+    scope: outings:write
+    description: >
+      Marca una gana como hecha: sale de la lista y queda en el Archivo, de donde se puede devolver.
+      No pasa a ninguna otra app.
+  - name: restore_wish
+    scope: outings:write
+    description: Saca una gana del Archivo y la devuelve a la lista.
+  - name: add_events
+    scope: outings:write
+    description: >
+      Apunta en la agenda eventos de Pamplona y Navarra que hayas encontrado en una página web: cada
+      uno con su título tal como lo escribe la página, sus fechas, su hora si la hay, su lugar y
+      pueblo, su categoría (eat, stage, culture, festival, outdoors), un resumen de una frase y,
+      siempre, el enlace a la página que lo anuncia. Una fiesta, un festival o un ciclo es un solo
+      evento con sus actos en programme, nunca uno por acto; highlight marca lo grande. Solo lo que
+      esté en una página, nada de memoria.
+      Lo que ya estaba se une en vez de repetirse, y lo que ya pasó o es de dentro de más de un año
+      se descarta. Hasta 60 por llamada; contesta qué pasó con cada uno.
+  - name: find_events
+    scope: outings:read
+    description: >
+      Lo que pasa en Pamplona y en Navarra, de lo que tu Claude ha ido apuntando de las agendas
+      públicas y de la web: palabras (en el título, el sitio, el pueblo o el programa, sin
+      tildes), cuándo (weekend, que es este finde de viernes a domingo, week, month, quarter o
+      year, o dos días con from y to), dónde (pamplona, que es Pamplona y su comarca, navarra, el
+      resto, o un pueblo con town) y qué categoría (eat, stage, culture, festival, outdoors). Por
+      fecha, o lo destacado primero con best_first: lo de Pamplona, lo grande y lo que te
+      interesa. Sin lo que no te interesa. Cada evento lleva su event_id, si ya está en Planner o
+      guardado como gana, su programa si lo tiene y su zona. Con for_you, solo lo que le puede
+      gustar de los próximos 45 días, cada uno con su razón: para contestar «¿hay algo que me
+      pueda gustar?».
+  - name: get_agenda_brief
+    scope: outings:read
+    description: >
+      El encargo para rellenar la agenda: qué agendas leer, qué buscar en la web, qué no apuntar y
+      cómo apuntarlo con add_events, con las fechas de hoy y lo que te interesa o no. Es lo que lee una tarea programada antes de buscar.
+  - name: hide_events
+    scope: outings:write
+    description: >
+      "No me interesa": aparta eventos de la agenda por su event_id, para siempre aunque otra
+      fuente los vuelva a contar. Para actos sueltos de algo que ya está como un evento con su
+      programa, o lo que no es ocio (congresos, jornadas profesionales, festivos).
+  - name: add_interest
+    scope: outings:write
+    description: >
+      Apunta una palabra o un nombre que te interesa (like: sube en find_events y va en el encargo)
+      o que no (mute: lo que lo lleve deja de salir en la agenda). Jazz, Baluarte, congreso.
+  - name: remove_interest
+    scope: outings:write
+    description: Quita una palabra de lo que te interesa (like) o de lo silenciado (mute).
+  - name: delete_wish
+    scope: outings:write
+    description: >
+      Borra una gana para siempre, con su foto. Pide el wish_id y el nombre exacto, y no borra si no
+      coinciden. Si solo está hecha, mejor mark_wish_done. Una gana que te ha compartido otra
+      persona solo la borra ella.
+  - name: share_wish
+    scope: outings:write
+    description: >
+      Comparte una gana con un espacio de arga, por su nombre, o con space null la deja otra vez
+      solo tuya. Compartida, los miembros la ven, la editan y la marcan hecha, con su foto. Solo
+      quien la apuntó la comparte; get_wishes dice en `mine` si es tuya y en `shared` si está
+      compartida.
+
+ui:
+  widgets:
+    - id: weekend
+      title: Este finde
+      kind: upnext
+      sizes: ["2x2", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
+      endpoint: /api/outings/widgets/weekend
+      refresh: 1800
+      link: /outings
+    - id: wishes
+      title: Ganas
+      kind: list
+      sizes: ["2x2", "4x1", "2x4", "4x2", "4x4"]
+      endpoint: /api/outings/widgets/wishes
+      refresh: 1800
+      link: /outings/ganas
+  view: /outings
+  hue: 7
+  family: wellbeing

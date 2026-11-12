@@ -1,0 +1,17 @@
+[project]
+name = "arga-recurrence"
+version = "0.1.0"
+description = "La repetición de arga: el subconjunto de RRULE, su expansión y su frase (ADR-0076)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "pydantic>=2.9",
+  "python-dateutil>=2.9",
+  "tzdata>=2024.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/arga_recurrence"]

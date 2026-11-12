@@ -1,0 +1,145 @@
+id: notebook
+name: Notes
+names:
+  en: Notes
+  es: Notas
+summary:
+  en: "Your notes, linked."
+  es: "Tus notas, enlazadas."
+version: 0.1.0
+
+database:
+  schema: notebook
+  role: mod_notebook
+  reads: []
+
+connectors: []
+
+uses: [notes.push, notify.sync]
+
+provides: [notes.list, notes.read, notes.create, notes.write, notes.trash]
+
+receives: [linkable, record, metric]
+publishes:
+  - type: notebook.mention
+    contract: mention
+
+notifications:
+  - kind: week
+    label: Tu semana
+    default: false
+
+api:
+  prefix: /api/notebook
+
+tools:
+  - name: search_notes
+    scope: notebook:read
+    description: >
+      Busca en las notas por palabras, sin importar acentos, diéresis ni mayúsculas, y con filtros
+      de carpeta, de tag y de propiedades del frontmatter (`naechste_wiederholung` lte `today`,
+      `status` eq `offen`). Devuelve la ruta de cada nota, un fragmento y sus tags. Sin palabras,
+      lo que casa con los filtros, de lo más reciente a lo más viejo; con `since`, `until` y `by`,
+      lo que cambió en un periodo y quién (tú, Claude o la importación), con cuántos cambios. Cada
+      una trae su `href`, dónde se abre en la app. Cada app de arga tiene aquí
+      una nota por cada cosa suya (su ficha, con `tipo` y `arga`: un libro, un viaje, una receta,
+      una cuenta) y lo de cada día en la nota del día, con sus cifras como propiedades (`pasos`,
+      `kcal`): filtrar por `tipo` (`Libro`, `Viaje`) es preguntar por lo de las apps.
+  - name: read_note
+    scope: notebook:read
+    description: >
+      Lee una nota entera, o solo la sección bajo un encabezado. Una nota se nombra por su título
+      o, si hay dos con el mismo, por su ruta (`carpeta/título`); la de un día, con `day`
+      (`2026-09-28`), y sin nada, la de hoy. Devuelve el texto en Markdown con su frontmatter, sus
+      propiedades, sus tags, su índice de encabezados, cuántas notas la enlazan y su versión; con
+      `links`, además lo que enlaza (y a qué nota llega cada enlace) y las notas que la enlazan,
+      con la línea donde lo hacen. Léela antes de cambiarla. Si parte de la nota la escribe una app
+      (el bloque entre `%% arga %%` y `%% /arga %%` y sus propiedades), dice cuál.
+  - name: explore_graph
+    scope: notebook:read
+    description: >
+      Las notas conectadas con una, a uno o dos saltos, en los dos sentidos, con los enlaces entre
+      ellas. Sirve para entender un tema y encontrar notas relacionadas sin leerlas todas.
+  - name: list_folder
+    scope: notebook:read
+    description: >
+      Las subcarpetas de una carpeta, con cuántas notas tiene cada una contando las de dentro, y
+      los títulos de sus notas. Sin carpeta, la raíz y todos los tags con cuántas notas lleva
+      cada uno (`a/b` es un tag hijo de `a`).
+  - name: get_digest
+    scope: notebook:read
+    description: >
+      Cómo fue una semana (`2026-W41`), un mes (`2026-09`) o un trimestre (`2026-T4`): las cifras
+      de cada app frente al periodo anterior, lo que pasó con nombre propio y las metas, lo mismo
+      que escribe el Digest en su nota. Sin periodo, la última semana cerrada. Para contestar
+      "¿cómo fue septiembre?".
+  - name: create_note
+    scope: notebook:write
+    description: >
+      Crea una nota con su título, en una carpeta (que se crea si no existe) y con su texto en
+      Markdown y sus propiedades. Enlaza otras notas con `[[título]]`; si el título es de dos
+      notas, con `[[carpeta/título]]`. No se puede crear si ya hay una con ese título en esa carpeta.
+  - name: append_to_note
+    scope: notebook:write
+    description: >
+      Añade texto al final de una nota, o al final de la sección de un encabezado, antes del
+      siguiente encabezado del mismo nivel. No toca nada de lo que ya hay.
+  - name: edit_note
+    scope: notebook:write
+    description: >
+      Cambia un fragmento exacto de una nota por otro. El fragmento tiene que aparecer una sola
+      vez: si no aparece o aparece varias, no cambia nada y lo dice, y hay que leer la nota otra vez
+      o dar más texto alrededor. Para cambiar una sección entera, `replace_section`; para las
+      propiedades, `set_properties`. Lo que escribe una app en una nota (el bloque entre
+      `%% arga %%` y `%% /arga %%` y sus propiedades) no se cambia aquí sino con las tools de esa
+      app, y se rehace solo; lo de fuera del bloque sí.
+  - name: replace_section
+    scope: notebook:write
+    description: >
+      Sustituye lo que hay bajo un encabezado, con sus subsecciones, por un texto nuevo. El
+      encabezado se queda, y lo que viene después del siguiente encabezado del mismo nivel no se
+      toca.
+  - name: set_properties
+    scope: notebook:write
+    description: >
+      Pone, cambia o quita propiedades del frontmatter de una nota sin tocar su texto ni el orden
+      de las demás. Una fecha va como texto ISO (`2026-10-15`) y se guarda como fecha. Las que pone
+      una app (`arga`, `tipo` y las de su ficha) se cambian en esa app.
+  - name: add_to_daily_note
+    scope: notebook:write
+    description: >
+      Añade texto a la nota de un día, hoy si no se dice, creándola si no existe; al final, o bajo
+      un encabezado.
+  - name: move_note
+    scope: notebook:write
+    description: >
+      Mueve una nota a otra carpeta o le cambia el título, y reescribe los enlaces de otras notas
+      que dejarían de encontrarla. Dice cuántas notas cambiaron por eso.
+
+ui:
+  widgets:
+    - id: recent
+      title: Notas recientes
+      kind: list
+      sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
+      endpoint: /api/notebook/widgets/recent
+      refresh: 300
+      link: /notebook
+    - id: today
+      title: Nota de hoy
+      kind: list
+      sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
+      endpoint: /api/notebook/widgets/today
+      refresh: 300
+      link: /notebook/hoy
+    - id: review
+      title: Para repasar
+      kind: list
+      sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
+      endpoint: /api/notebook/widgets/review
+      refresh: 900
+      link: /notebook/repasar
+  view: /notebook
+  search: /api/notebook/search/arga
+  hue: 3
+  family: growth

@@ -1,0 +1,122 @@
+["Vanguard US 500 Index Inst Plus"]
+isin = "IE00BFPM9V94"
+symbol = "0P00011HBK.F"
+currency = "EUR"
+
+["Vanguard European Index Inst Plus"]
+isin = "IE00BFPM9L96"
+symbol = "0P00011HBL.F"
+currency = "EUR"
+
+["Vanguard Emerging Market Index Inst Plus"]
+isin = "IE00BFPM9J74"
+symbol = "0P00011HBQ.F"
+currency = "EUR"
+
+["Vanguard Global Small-Cap Index Inst Plus"]
+isin = "IE00BFRTDD83"
+symbol = "0P00011OE2.F"
+currency = "EUR"
+
+["Vanguard Japan Index Inst Plus"]
+isin = "IE00BFPM9P35"
+symbol = "0P00011HBN.F"
+currency = "EUR"
+
+["Vanguard Pacific ex-Japan Index Inst Plus"]
+isin = "IE00BGCC5G60"
+symbol = "0P00012I6B.F"
+currency = "EUR"
+
+["Vanguard US Gov Bond Index H Inst Plus"]
+isin = "IE00BF6T7R10"
+symbol = "0P0001CBQR.F"
+currency = "EUR"
+
+["Vanguard Euro Gov Bond Index Inst Plus"]
+isin = "IE00BFPM9W02"
+symbol = "0P00011HBR.F"
+currency = "EUR"
+
+["Vanguard Global Short Bond Index Inst Plus"]
+isin = "IE00BH65QT84"
+symbol = "0P00012NJE.F"
+currency = "EUR"
+
+["Vanguard US IG Bond Index H Inst Plus"]
+isin = "IE00BZ04LQ92"
+symbol = "0P00016QKO.F"
+currency = "EUR"
+
+["Vanguard Euro Inflation Bond Index Inst Plus"]
+isin = "IE00BGCZ0719"
+symbol = "0P00012I68.F"
+currency = "EUR"
+
+["Vanguard Gbl Short Corp Bond Idx H Inst Plus"]
+isin = "IE00BDFB6X37"
+symbol = "0P0001CQCZ.F"
+currency = "EUR"
+
+["Vanguard Euro IG Bond Index Inst Plus"]
+isin = "IE00BFPM9X19"
+symbol = "0P00011IIE.F"
+currency = "EUR"
+
+["iShares Emerging Gov Bond Index H Inst"]
+isin = "IE00BJ9MTQ85"
+symbol = "0P0001I704.F"
+currency = "EUR"
+
+["iShares Developed Real Estate Index Inst"]
+isin = "IE00B83YJG36"
+symbol = "0P0000Y354.F"
+currency = "EUR"
+
+["Amundi Core Stoxx Europe 600 ETF"]
+symbol = "MEUD.PA"
+currency = "EUR"
+
+["SPDR S&P 500 ETF"]
+symbol = "SPY"
+currency = "USD"
+
+["Amundi Core MSCI USA ETF"]
+symbol = "WEBI.DE"
+currency = "EUR"
+
+["SPDR Portfolio Emerging Markets ETF"]
+symbol = "SPEM"
+currency = "USD"
+
+["Vanguard FTSE Pacific ETF"]
+symbol = "VPL"
+currency = "USD"
+
+["Schwab US Broad Market ETF"]
+symbol = "SCHB"
+currency = "USD"
+
+["iShares Core MSCI Emerging Markets ETF"]
+symbol = "IEMG"
+currency = "USD"
+
+["Vanguard FTSE Developed Europe ETFEURAcc"]
+symbol = "VWCG.DE"
+currency = "EUR"
+
+["Xtrackers MSCI World Quality ETF"]
+symbol = "XDEQ.DE"
+currency = "EUR"
+
+["Xtrackers MSCI World Value ETF"]
+symbol = "XDEV.DE"
+currency = "EUR"
+
+["Schwab US Small-Cap ETF™"]
+symbol = "SCHA"
+currency = "USD"
+
+["Vanguard FTSE All-Wld ex-US SmCp ETF"]
+symbol = "VSS"
+currency = "USD"

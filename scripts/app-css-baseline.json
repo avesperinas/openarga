@@ -1,0 +1,62 @@
+{
+  "modules/arca/ui/src/app.css": {
+    "appearance": 187,
+    "unused": 0
+  },
+  "modules/study/ui/src/app.css": {
+    "appearance": 159,
+    "unused": 0
+  },
+  "modules/carrera/ui/src/app.css": {
+    "appearance": 30,
+    "unused": 0
+  },
+  "modules/chuping/ui/src/app.css": {
+    "appearance": 22,
+    "unused": 0
+  },
+  "modules/money/ui/src/money.css": {
+    "appearance": 172,
+    "unused": 0
+  },
+  "modules/hub/ui/src/app.css": {
+    "appearance": 2,
+    "unused": 0
+  },
+  "modules/planner/ui/src/app.css": {
+    "appearance": 168,
+    "unused": 1
+  },
+  "modules/outings/ui/src/app.css": {
+    "appearance": 31,
+    "unused": 0
+  },
+  "modules/travel/ui/src/app.css": {
+    "appearance": 428,
+    "unused": 0
+  },
+  "modules/library/ui/src/app.css": {
+    "appearance": 13,
+    "unused": 0
+  },
+  "modules/notebook/ui/src/app.css": {
+    "appearance": 290,
+    "unused": 9
+  },
+  "modules/vitals/ui/src/app.css": {
+    "appearance": 23,
+    "unused": 0
+  },
+  "modules/goals/ui/src/app.css": {
+    "appearance": 32,
+    "unused": 0
+  },
+  "modules/training/ui/src/app.css": {
+    "appearance": 162,
+    "unused": 0
+  },
+  "shell/app/shell.css": {
+    "appearance": 272,
+    "unused": 12
+  }
+}

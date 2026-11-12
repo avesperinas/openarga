@@ -1,0 +1,140 @@
+html,
+body {
+  margin: 0;
+  min-height: 100dvh;
+}
+
+.vitals-card {
+  display: grid;
+
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.vitals-log-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+}
+
+.vitals-sheet {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.vitals-group {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.vitals-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.vitals-steps {
+  margin: 0;
+  padding-left: var(--space-6);
+  display: grid;
+  gap: var(--space-2);
+  font-size: var(--text-callout);
+  line-height: var(--leading-body);
+}
+
+.vitals-labs {
+  display: grid;
+  gap: var(--space-3);
+}
+.vitals-labs-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 29.5rem);
+  gap: var(--space-6);
+}
+.vitals-labs .data-table { table-layout: fixed; }
+.vitals-labs .data-table th,
+.vitals-labs .data-table td {
+  padding-inline: var(--space-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vitals-labs .data-table th:first-child,
+.vitals-labs .data-table td:first-child {
+  min-width: 0;
+  padding-inline-start: var(--space-3);
+}
+.vitals-labs .data-table th:not(:first-child) { width: 3.5rem; }
+.vitals-labs .data-table th:last-child,
+.vitals-labs .data-table td:last-child { padding-inline-end: var(--space-3); }
+.vitals-analyte {
+  display: block;
+  hyphens: auto;
+  overflow-wrap: anywhere;
+}
+.vitals-analyte-unit {
+  display: block;
+  font-size: var(--text-caption2);
+  color: var(--fg-muted);
+}
+.vitals-value-missing { color: var(--fg-faint); }
+
+.vitals-profile {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+}
+.vitals-profile dt {
+  font-size: var(--text-footnote);
+  color: var(--fg-muted);
+}
+.vitals-profile dd {
+  margin: 0;
+  font-size: var(--text-title3);
+  font-weight: var(--weight-semibold);
+}
+
+.vitals-fields summary {
+  cursor: pointer;
+  font-size: var(--text-callout);
+  font-weight: var(--weight-semibold);
+}
+.vitals-fields dl {
+  margin: var(--space-3) 0 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.vitals-fields dt,
+.vitals-fields dd {
+  margin: 0;
+  font-size: var(--text-footnote);
+  line-height: var(--leading-body);
+}
+.vitals-fields dd { color: var(--fg-muted); }
+
+.vitals-steps code,
+.vitals-fields code {
+  font-family: var(--font-mono);
+  font-size: var(--text-footnote);
+}
+
+.vitals-value { font-variant-numeric: tabular-nums; }
+.vitals-value[data-out] {
+  color: var(--negative);
+  font-weight: var(--weight-semibold);
+}
+
+.vitals-night-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.vitals-night-top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-4);
+}

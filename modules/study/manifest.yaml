@@ -1,0 +1,221 @@
+id: study
+name: Study
+names:
+  en: Study
+  es: Estudios
+summary:
+  en: "Courses, classes, exams and grades."
+  es: "Cursos, clases, exámenes y notas."
+version: 0.1.0
+
+database:
+  schema: study
+  role: mod_study
+  reads: []
+
+connectors: []
+
+uses: [notes.list, notes.read, notes.create, notes.write, notes.trash, notify.sync]
+
+publishes:
+  - type: study.session
+    contract: agenda
+  - type: study.assessment
+    contract: agenda
+  - type: study.record
+    contract: record
+  - type: study.metric
+    contract: metric
+notifications:
+  - kind: assessment
+    label: Evaluable mañana
+    default: false
+provides: [agenda.move]
+
+api:
+  prefix: /api/study
+
+tools:
+  - name: get_courses
+    scope: study:read
+    description: >
+      Los estudios (másteres, grados, cursos, certificaciones, idiomas) con su estado, su progreso
+      —créditos superados sobre el total, u horas hechas— y su media, y sus asignaturas con cómo va
+      cada una. La media del estudio pondera por créditos las asignaturas que ya tienen nota final.
+  - name: get_week
+    scope: study:read
+    description: >
+      Las clases y los evaluables con fecha entre dos días, hoy y la semana siguiente si no se dice.
+      Una clase sale de un bloque del horario o es una sesión suelta (tutoría, jornada, defensa);
+      cada una lleva si se fue o no y si tiene apuntes.
+  - name: get_grades
+    scope: study:read
+    description: >
+      Las notas de un estudio o de una asignatura y lo que falta para aprobar. De cada asignatura:
+      la nota de lo calificado (media ponderada de lo que tiene nota), lo asegurado (esos puntos
+      sobre el total), el tanto por ciento que queda, la nota media que hace falta en lo que queda
+      para aprobar y para el objetivo, y la frase que lo resume ("Necesitas un 6,2 en lo que
+      queda"). Un evaluable con nota mínima suspende la asignatura si no se llega, aunque la media
+      dé; la nota de acta manda sobre la calculada.
+  - name: find_notes
+    scope: study:read
+    description: >
+      Busca en todos los apuntes, por palabras en castellano (encuentra también plurales y formas
+      verbales), y devuelve el fragmento donde aparece cada una, con su estudio, su asignatura y la
+      clase de la que son.
+  - name: create_course
+    scope: study:write
+    description: >
+      Crea un estudio entero en un solo objeto: sus asignaturas, el horario de cada una (bloques que
+      se repiten, con regla de repetición, horas, study o enlace y hasta qué día) y sus evaluables
+      (entregas y exámenes con fecha, peso en tanto por ciento y nota mínima). Úsala para montar un
+      máster o un curso a partir de su guía docente o su calendario académico. Las clases del
+      horario se generan solas para todo el periodo. `tracks` dice qué se sigue de él (notas,
+      progreso, asistencia): un idioma sin examen a la vista nace sin ninguna.
+  - name: add_assessment
+    scope: study:write
+    description: >
+      Añade una entrega, un examen, una práctica o la participación a un estudio o a una de sus
+      asignaturas, con su fecha, su peso y su nota mínima si la tiene.
+  - name: record_grade
+    scope: study:write
+    description: >
+      Pone la calificación de un evaluable, o la nota de acta de una asignatura, en la escala del
+      estudio. La nota de acta es la oficial y manda sobre la calculada.
+  - name: add_note
+    scope: study:write
+    description: >
+      Añade apuntes en Markdown a una clase, a una asignatura o a un estudio. Los de una clase
+      toman su asignatura.
+  - name: mark_attendance
+    scope: study:write
+    description: Marca si se fue a una clase o no, o lo deja sin marcar.
+  - name: get_course
+    scope: study:read
+    description: >
+      Un estudio entero con todos sus ids: sus datos, sus asignaturas, los bloques de su horario
+      (con la regla de repetición), sus evaluables, sus materiales y la lista de sus apuntes. Es lo
+      que hay que leer antes de editar o borrar algo de un estudio.
+  - name: get_note
+    scope: study:read
+    description: >
+      Unos apuntes enteros, con su texto en Markdown, su estudio, su asignatura y su clase.
+  - name: update_course
+    scope: study:write
+    description: >
+      Cambia los datos de un estudio: nombre, tipo, centro, modalidad, fechas, planeado o en curso,
+      créditos u horas, escala, aprobado, objetivo, color, enlace al campus, nota o qué se sigue de
+      él (`tracks`: grades, progress, attendance; lista vacía, nada). Solo cambia lo que se dice; un
+      null en un campo opcional lo quita.
+  - name: archive_course
+    scope: study:write
+    description: >
+      Termina o abandona un estudio: pasa al Archivo con su fecha y, si la tiene, su nota final. No
+      se pierde nada y se puede reabrir.
+  - name: reopen_course
+    scope: study:write
+    description: Devuelve un estudio del Archivo a en curso, por si se cerró sin querer.
+  - name: delete_course
+    scope: study:write
+    description: >
+      Borra un estudio con sus asignaturas, su horario, sus clases y sus evaluables con sus
+      calificaciones, y lo quita del calendario. Sus apuntes siguen en Notas. No se deshace: si solo
+      se terminó o se dejó, archive_course. Pide el id y además el nombre, y no borra si no
+      coinciden.
+  - name: add_subject
+    scope: study:write
+    description: >
+      Añade una asignatura a un estudio, y si se quiere su horario y sus evaluables, con la misma
+      forma que en create_course.
+  - name: update_subject
+    scope: study:write
+    description: >
+      Cambia el nombre, el profesor, los créditos, el periodo o el orden de una asignatura. Solo
+      cambia lo que se dice.
+  - name: delete_subject
+    scope: study:write
+    description: >
+      Borra una asignatura con su horario, sus clases y sus evaluables. Sus apuntes siguen en Notas.
+      Pide el id y además el nombre, y no borra si no coinciden.
+  - name: add_schedule
+    scope: study:write
+    description: >
+      Añade un bloque al horario de un estudio o de una asignatura (regla de repetición, horas,
+      study o enlace) y genera sus clases para todo el periodo.
+  - name: update_schedule
+    scope: study:write
+    description: >
+      Cambia un bloque del horario (días, horas, desde o hasta cuándo, study, enlace, asignatura) y
+      mueve con él sus clases futuras que no se han tocado. Solo cambia lo que se dice.
+  - name: delete_schedule
+    scope: study:write
+    description: >
+      Quita un bloque del horario y sus clases futuras sin tocar. Las que ya pasaron o tienen algo
+      (asistencia, apuntes, cambios) se quedan como sesiones sueltas.
+  - name: add_session
+    scope: study:write
+    description: >
+      Añade una sesión suelta a un estudio: una tutoría, una jornada, la defensa del TFM o una
+      clase de más, con su hora, su lugar o su enlace.
+  - name: update_session
+    scope: study:write
+    description: >
+      Mueve una clase o una sesión, la cancela o la recupera, le cambia el lugar o el enlace, o le
+      pone el tema. No toca el horario: la clase deja de regenerarse con él.
+  - name: delete_session
+    scope: study:write
+    description: >
+      Borra una sesión suelta. Una clase del horario no se borra: se cancela con update_session.
+  - name: update_assessment
+    scope: study:write
+    description: >
+      Cambia un evaluable: título, tipo, asignatura, fecha y hora, peso, nota mínima, pendiente o
+      entregado, o una observación. Solo cambia lo que se dice. La nota se pone con record_grade.
+  - name: delete_assessment
+    scope: study:write
+    description: >
+      Borra un evaluable con su calificación, y lo quita del calendario. Pide el id y además el
+      título, y no borra si no coinciden.
+  - name: update_note
+    scope: study:write
+    description: >
+      Cambia unos apuntes: el título, el texto entero, o añade texto al final sin reescribir lo que
+      hay. También los pasa a otra asignatura del mismo estudio.
+  - name: delete_note
+    scope: study:write
+    description: Manda unos apuntes a la papelera de Notas, de donde se recuperan.
+  - name: add_material
+    scope: study:write
+    description: >
+      Añade un enlace a los materiales de un estudio o de una asignatura: la guía docente, un
+      vídeo, unas diapositivas en la nube.
+  - name: delete_material
+    scope: study:write
+    description: Quita un material de un estudio o de una asignatura.
+
+ui:
+  widgets:
+    - id: upnext
+      title: Próximo en Study
+      kind: upnext
+      sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
+      endpoint: /api/study/widgets/upnext
+      refresh: 300
+      link: /study
+    - id: progress
+      title: Progreso
+      kind: progress
+      sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
+      endpoint: /api/study/widgets/progress
+      refresh: 900
+      link: /study
+    - id: average
+      title: Media
+      kind: kpi
+      sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "4x2"]
+      endpoint: /api/study/widgets/average
+      refresh: 900
+      link: /study
+  view: /study
+  hue: 6
+  family: growth

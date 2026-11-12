@@ -1,0 +1,19 @@
+[project]
+name = "arga-testing"
+version = "0.1.0"
+description = "Lo que comparten las pruebas: el schema de un módulo recién aplicado, sin aplicarlo en cada una"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "kernel",
+  "sqlalchemy[asyncio]>=2.0",
+]
+
+[tool.uv.sources]
+kernel = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/arga_testing"]

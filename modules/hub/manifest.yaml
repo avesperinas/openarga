@@ -1,0 +1,69 @@
+id: hub
+name: Connections
+names:
+  en: Connections
+  es: Conexiones
+summary:
+  en: "Everything that comes from outside, in one place."
+  es: "Todo lo que llega de fuera, en un sitio."
+version: 0.1.0
+
+database:
+  schema: hub
+  role: mod_hub
+  reads: []
+
+connectors: []
+
+uses: [notify.sync]
+notifications:
+  - kind: failing
+    label: Una fuente falla
+    default: true
+  - kind: reauth
+    label: Reautorizar un banco
+    default: true
+  - kind: claude_blocked
+    label: Tu Claude no puede trabajar
+    default: true
+
+api:
+  prefix: /api/hub
+
+tools:
+  - name: get_connections
+    scope: hub:read
+    description: >
+      Qué fuentes de fuera tienes conectadas —bancos, exchanges, correo, tu cuenta de Claude—, de
+      qué categoría es cada una y cómo está: al día, a punto de caducar, caducada, fallando o en
+      pausa, con el motivo, cuándo trajo algo bien por última vez y cuántos datos trajo la última
+      semana. Dice también qué fuentes se configuran todavía en su app. Úsala para contestar por
+      qué no entra un dato, qué hay que reconectar o qué está conectado.
+  - name: record_portfolio
+    scope: hub:write
+    description: >
+      Guarda la cartera de un producto de inversión tal como la ves en la web de su entidad —por
+      ejemplo, en una captura de pantalla de Finizens que te pase la persona—: la entidad, el nombre
+      del producto tal cual sale, el día que dice la página, lo que vale el producto, lo aportado si
+      sale, y cada fondo con su nombre exacto y lo que vale en euros o su peso en % (el de la
+      liquidez también). Si salen participaciones y valor liquidativo, inclúyelos. Si sale el ISIN
+      de un fondo, un ETF, un ETC o una acción, ponlo: es lo que lo identifica. Sin ISIN se busca
+      por su nombre. Un valor que cotiza se valora en su línea de la moneda de la cuenta con más
+      liquidez (en euros, Xetra); si la persona lo tiene en otra, pon su MIC (XMIL, XLON...) y su
+      moneda. Entra igual que si se hubiera subido la página: Money parte de esa foto y mueve el
+      valor cada día con el precio de cada fondo. Los fondos tienen que sumar lo que vale el
+      producto. La respuesta dice con qué línea se valora cada uno y cuál se queda sin precio. Úsala
+      solo cuando la persona te pida actualizar su cartera.
+
+ui:
+  widgets:
+    - id: status
+      title: Hub
+      kind: list
+      sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
+      endpoint: /api/hub/widgets/status
+      refresh: 900
+      link: /hub
+  view: /hub
+  hue: 6
+  family: system

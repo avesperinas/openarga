@@ -1,0 +1,38 @@
+{
+  "name": "Recipes",
+  "short_name": "Recipes",
+  "description": "Your home cookbook, with the macros worked out.",
+  "start_url": "/recipes/",
+  "scope": "/recipes/",
+  "id": "/recipes/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#298b56",
+  "theme_color": "#298b56",
+  "icons": [
+    {
+      "src": "/recipes/icon-192.png?v=71f2abc68b",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/recipes/icon-512.png?v=0ce750ecc5",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/recipes/icon-512.png?v=0ce750ecc5",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/recipes/icon.svg?v=f1aa821074",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

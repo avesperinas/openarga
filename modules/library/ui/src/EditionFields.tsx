@@ -1,0 +1,49 @@
+import { TextField } from "@openarga/ui";
+import { useState } from "react";
+
+import type { Edition } from "./api";
+import { splitAuthors } from "./words";
+
+export function EditionFields({ edition, onChange }: { edition: Edition; onChange: (edition: Edition) => void }) {
+  const [authors, setAuthors] = useState(edition.authors.join(", "));
+  const set = (changes: Partial<Edition>) => onChange({ ...edition, ...changes });
+  const number = (text: string) => (text.trim() && /^\d+$/.test(text.trim()) ? Number(text.trim()) : null);
+
+  return (
+    <div className="library-fields">
+      <TextField label="Título" value={edition.title} onChange={(title) => set({ title })} autoFocus />
+      <TextField
+        label="Autores"
+        value={authors}
+        placeholder="separados por comas"
+        onChange={(text) => {
+          setAuthors(text);
+          set({ authors: splitAuthors(text) });
+        }}
+      />
+      <div className="library-dates">
+        <TextField
+          label="Páginas"
+          inputMode="numeric"
+          value={edition.pages?.toString() ?? ""}
+          onChange={(text) => set({ pages: number(text) })}
+        />
+        <TextField
+          label="Año"
+          inputMode="numeric"
+          value={edition.year?.toString() ?? ""}
+          onChange={(text) => set({ year: number(text) })}
+        />
+      </div>
+      <div className="library-dates">
+        <TextField
+          label="Idioma"
+          placeholder="es, en, eu…"
+          value={edition.language ?? ""}
+          onChange={(text) => set({ language: text.trim().toLowerCase() || null })}
+        />
+        <TextField label="ISBN" inputMode="numeric" value={edition.isbn ?? ""} onChange={(isbn) => set({ isbn: isbn || null })} />
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="b0" cx="0.2" cy="0.2" r="0.8">
+      <stop offset="0" stop-color="#8d7859" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#8d7859" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="b1" cx="0.9" cy="0.7" r="0.6">
+      <stop offset="0" stop-color="#4e4132" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#4e4132" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="b2" cx="0.45" cy="0.55" r="0.35">
+      <stop offset="0" stop-color="#a08b68" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#a08b68" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="desenfoque" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="60"/>
+    </filter>
+  </defs>
+  <g filter="url(#desenfoque)">
+    <rect width="1000" height="1000" fill="#6b5a44"/>
+    <rect width="1000" height="1000" fill="url(#b0)"/>
+    <rect width="1000" height="1000" fill="url(#b1)"/>
+    <rect width="1000" height="1000" fill="url(#b2)"/>
+  </g>
+</svg>

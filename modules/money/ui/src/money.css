@@ -1,0 +1,694 @@
+.money-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.money-period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.money-period-step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.money-period-step[data-center] {
+  justify-content: center;
+}
+
+.money-period-title {
+  min-width: 10ch;
+  text-align: center;
+  font-size: var(--text-headline);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-title);
+  font-variant-numeric: var(--numeric);
+}
+
+.money-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.money-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.money-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: calc(var(--tap-target) * 0.75);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--text-footnote);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--spring-snappy), background var(--duration-fast);
+}
+
+.money-chip:hover {
+  background: var(--fill-strong);
+}
+
+.money-chip:active {
+  transform: scale(0.96);
+}
+
+.money-chip[data-plain] {
+  background: none;
+  color: var(--accent);
+}
+
+.money-chip span[aria-hidden] {
+  color: var(--fg-muted);
+}
+
+.money-days {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.money-day {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.money-day-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-inline: var(--space-4);
+}
+
+.money-day-net {
+  color: var(--fg-muted);
+  font-size: var(--text-footnote);
+  font-variant-numeric: var(--numeric);
+}
+
+.money-table {
+  border-radius: var(--radius-surface);
+  padding: var(--space-2) var(--space-4);
+}
+
+.money-cell-merchant {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.money-cell-title {
+  font-weight: var(--weight-medium);
+}
+
+.money-tag {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+  white-space: nowrap;
+}
+
+.money-cell-what {
+  color: var(--fg-muted);
+}
+
+.money-cell-what[data-status="ask"],
+.money-cell-what[data-status="pending"] {
+  color: var(--warning);
+  font-weight: var(--weight-medium);
+}
+
+.money-amount,
+.money-hero-amount {
+  font-variant-numeric: var(--numeric);
+  white-space: nowrap;
+}
+
+.money-amount[data-sign="in"],
+.money-hero-amount[data-sign="in"],
+.money-month-facts dd[data-sign="in"] {
+  color: var(--positive);
+}
+
+.money-amount[data-sign="transfer"],
+.money-hero-amount[data-sign="transfer"] {
+  color: var(--fg-muted);
+}
+
+.money-detail {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.money-hero {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding-block: var(--space-2) var(--space-1);
+  text-align: center;
+}
+
+.money-hero-amount {
+  font-size: var(--text-kpi-m);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-kpi);
+  line-height: var(--leading-tight);
+}
+
+.money-hero-meta {
+  color: var(--fg-muted);
+  font-size: var(--text-subhead);
+}
+
+.money-status {
+  margin-top: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  font-size: var(--text-footnote);
+  font-weight: var(--weight-medium);
+}
+
+.money-status[data-status="ask"],
+.money-status[data-status="pending"] {
+  color: var(--warning);
+}
+
+.money-status[data-status="manual"] {
+  color: var(--accent);
+}
+
+.money-transfer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-surface);
+  font-size: var(--text-callout);
+}
+
+.money-parts-read,
+.money-month-cats {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.money-parts-read li,
+.money-month-cats li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.money-part-name {
+  display: grid;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+}
+
+.money-month-cats .money-part-name,
+.money-month-cats li > span:first-child {
+  display: grid;
+  font-weight: var(--weight-regular);
+}
+
+.money-part-kind {
+  color: var(--fg-muted);
+  font-size: var(--text-footnote);
+  font-weight: var(--weight-regular);
+}
+
+.money-part-amount {
+  font-variant-numeric: var(--numeric);
+  white-space: nowrap;
+}
+
+.money-editor,
+.money-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.money-part-edit {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-surface);
+}
+
+.money-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.money-split,
+.money-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.money-actions {
+  justify-content: flex-start;
+}
+
+.money-left {
+  color: var(--warning);
+  font-size: var(--text-footnote);
+  font-variant-numeric: var(--numeric);
+}
+
+.money-left[data-ok] {
+  color: var(--positive);
+}
+
+.money-raw,
+.money-month-facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  font-size: var(--text-footnote);
+}
+
+.money-raw dt,
+.money-month-facts dt {
+  color: var(--fg-muted);
+}
+
+.money-raw dd,
+.money-month-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.money-month-facts {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--separator);
+}
+
+.money-month-facts dd {
+  text-align: right;
+  font-variant-numeric: var(--numeric);
+}
+
+.money-months {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.money-chip[data-review] {
+  justify-self: start;
+  color: var(--fg-muted);
+}
+
+.money-chip[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--fg-on-accent);
+}
+
+@media (min-width: 900px) {
+  .money-period > :first-child {
+    flex: 0 0 18rem;
+  }
+}
+
+.money-filters {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.money-filter-groups {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.money-filter-group {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.money-analysis-views > .segmented {
+  width: 100%;
+}
+
+.money-analysis-bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-inline: calc(var(--space-4) * -1);
+  padding: var(--space-2) var(--space-4);
+  background: color-mix(in srgb, var(--bg-base) 88%, transparent);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-bottom: 1px solid var(--separator);
+}
+
+.money-analysis-period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.money-analysis-period {
+  flex-wrap: nowrap;
+}
+
+.money-analysis-period .select-field {
+  flex: 0 0 auto;
+  width: 9rem;
+}
+
+.money-analysis-toggles .segmented {
+  width: 11rem;
+}
+
+.money-analysis-title {
+  min-width: 11ch;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  font-size: var(--text-headline);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-title);
+  font-variant-numeric: var(--numeric);
+  text-align: center;
+}
+
+.money-analysis-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.money-analysis-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-subhead);
+  color: var(--fg-muted);
+}
+
+.money-analysis-local {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.money-analysis-pick {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.money-analysis-pick > .select-field {
+  flex: 1 1 11rem;
+  min-width: 0;
+}
+
+.money-analysis-sheet .money-analysis-pick {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.money-analysis-span {
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: var(--text-subhead);
+  font-variant-numeric: var(--numeric);
+}
+
+.money-analysis-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.money-sheet-total {
+  margin: 0;
+  font-size: var(--text-title2);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: var(--numeric);
+  letter-spacing: var(--tracking-title);
+}
+
+.money-bars {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.money-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--duration-fast);
+}
+
+.money-bar:hover {
+  background: var(--fill);
+}
+
+.money-bar-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: var(--text-body);
+}
+
+.money-bar-tag {
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+}
+
+.money-bar-value {
+  font-variant-numeric: var(--numeric);
+  font-weight: var(--weight-semibold);
+}
+
+.money-bar-track {
+  grid-column: 1 / -1;
+  height: 0.5rem;
+  border-radius: var(--radius-control);
+  background: var(--fill);
+  overflow: hidden;
+}
+
+.money-bar-fill {
+  display: block;
+  width: var(--bar, 0);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width var(--duration-base) var(--spring-snappy);
+}
+
+.money-bar-fill[data-shared] {
+  background: color-mix(in srgb, var(--accent) 55%, var(--bg-base));
+}
+
+.money-bar-foot {
+  grid-column: 1 / -1;
+  color: var(--fg-muted);
+  font-size: var(--text-footnote);
+  font-variant-numeric: var(--numeric);
+}
+
+.money-bar-foot [data-tone="negative"] {
+  color: var(--negative);
+}
+
+.money-bar-foot [data-tone="positive"] {
+  color: var(--positive);
+}
+
+.money-analysis-local > .segmented {
+  flex: 1 1 18rem;
+}
+
+.money-analysis-title {
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .money-analysis-period .select-field {
+    width: 7.75rem;
+  }
+
+  .money-analysis-title {
+    min-width: 0;
+    font-size: var(--text-callout);
+  }
+}
+
+@media (max-width: 899px) {
+  .money-analysis-bar {
+    flex-wrap: nowrap;
+  }
+
+  .money-analysis-bar > .money-period-step {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .share-chart {
+    justify-content: center;
+  }
+}
+
+.money-analysis-sheet {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.money-analysis-sheet .money-analysis-switch {
+  justify-content: space-between;
+  font-size: var(--text-body);
+  color: var(--fg);
+}
+
+.money-split {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.money-split-side {
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+}
+
+.money-pair {
+  display: grid;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .money-split {
+    grid-template-columns: minmax(18rem, 2fr) 3fr;
+    align-items: start;
+  }
+
+  .money-split-side .share-chart {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .money-split-side .share-chart svg,
+  .money-pair .share-chart svg {
+    width: 15rem;
+    align-self: center;
+  }
+
+  .money-pair {
+    grid-template-columns: 3fr 2fr;
+  }
+
+  .money-pair .share-chart {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .money-split-side .share-chart-legend,
+  .money-pair .share-chart-legend {
+    flex: none;
+  }
+}
+
+.money-flow .sankey-scroll svg {
+  max-width: 56rem;
+  margin-inline: auto;
+}
+
+.money-bars {
+  padding: var(--space-2);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+
+.money-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--tap-target);
+  font-size: var(--text-callout);
+}
+.money-switch-text {
+  display: grid;
+  gap: var(--space-1);
+}
+.money-switch-hint {
+  font-size: var(--text-footnote);
+  color: var(--fg-muted);
+}
+
+.money-iban-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.money-fund-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 9ch auto;
+  align-items: end;
+  gap: var(--space-2);
+}
+

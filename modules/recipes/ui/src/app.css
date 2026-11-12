@@ -1,0 +1,23 @@
+.recipes-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.recipes-group {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.recipes-macro-fields {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.recipes-panel {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+

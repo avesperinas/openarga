@@ -1,0 +1,57 @@
+{
+  "clientId": "claude-run",
+  "name": "Tu Claude, lanzado por arga",
+  "enabled": true,
+  "protocol": "openid-connect",
+  "publicClient": false,
+  "clientAuthenticatorType": "client-secret",
+  "standardFlowEnabled": true,
+  "implicitFlowEnabled": false,
+  "directAccessGrantsEnabled": false,
+  "serviceAccountsEnabled": false,
+  "consentRequired": false,
+  "fullScopeAllowed": false,
+  "frontchannelLogout": false,
+  "redirectUris": [
+    "${PUBLIC_URL}/api/hub/claude-run/callback"
+  ],
+  "webOrigins": [],
+  "attributes": {
+    "pkce.code.challenge.method": "S256"
+  },
+  "defaultClientScopes": [
+    "basic"
+  ],
+  "optionalClientScopes": [
+    "goals:read",
+    "goals:write",
+    "hub:read",
+    "hub:write",
+    "insights:read",
+    "insights:write",
+    "library:read",
+    "library:write",
+    "macros:read",
+    "macros:write",
+    "money:read",
+    "money:write",
+    "notebook:read",
+    "notebook:write",
+    "outings:read",
+    "outings:write",
+    "planner:read",
+    "planner:write",
+    "recipes:read",
+    "recipes:write",
+    "shopping:read",
+    "shopping:write",
+    "study:read",
+    "study:write",
+    "training:read",
+    "training:write",
+    "travel:read",
+    "travel:write",
+    "vitals:read",
+    "vitals:write"
+  ]
+}

@@ -1,0 +1,164 @@
+id: planner
+name: Calendar
+names:
+  en: Calendar
+  es: Calendario
+summary:
+  en: "Your events, what repeats and what arrives on its own."
+  es: "Tus eventos, lo que se repite y lo que llega solo."
+version: 0.4.0
+
+database:
+  schema: planner
+  role: mod_planner
+  reads: []
+
+connectors: []
+
+consumes: [hub.run, hub.connection]
+
+inlets:
+  - id: calendar
+    title: Calendario
+    contracts: [calendar.event, calendar.feed]
+    settings:
+      - key: name
+        kind: text
+        label: Nombre
+      - key: tone
+        kind: tone
+        label: Color
+
+uses:
+  - sources.catalogue
+  - sources.search
+  - sources.plug
+  - sources.unplug
+  - agenda.move
+  - notify.sync
+
+receives: [agenda]
+
+publishes:
+  - type: planner.record
+    contract: record
+
+notifications:
+  - kind: event
+    label: Evento de tus calendarios
+    default: true
+
+api:
+  prefix: /api/planner
+
+tools:
+  - name: get_calendars
+    scope: planner:read
+    description: >
+      Las capas del calendario, con su id, su nombre, su tono, si es propia, suscrita o de otra app y si está
+      visible, y si se ve como eventos o como fondo. Úsala para saber en qué capa crear algo cuando lo piden por su nombre ("en Trabajo").
+      `days_off_from` dice de qué capas libra una: lo que se repite en ella no sale los días que
+      esas tienen algo de todo el día (el horario laboral, un festivo).
+  - name: get_events
+    scope: planner:read
+    description: >
+      Lo que hay entre dos fechas (`from` y `to`), de todas las capas o de las que se pidan, o lo
+      que casa con `query` en el título, el lugar o las notas, en todas las capas y opcionalmente
+      entre dos fechas; de una serie, la búsqueda devuelve su próxima ocurrencia. Las series vienen
+      expandidas en ocurrencias y cada hora con su zona. Cada ocurrencia de una serie lleva
+      `original_start`, que es lo que piden `update_event` y `cancel_event` para tocar solo esa.
+      Lo de las capas de fondo (el horario laboral, un viaje) va aparte, en `backgrounds`: es el
+      marco en el que caen los eventos y no ocupa tiempo. Úsala para "¿qué tengo el jueves?" o
+      "¿cuándo estoy libre esta semana?" con las fechas, y para "¿cuándo es la cena con Ane?" o
+      "¿cuándo tengo dentista?" con `query`. Ahí lo libre lo deciden los eventos, y el fondo dice
+      si cae en horario laboral o de viaje. Lo que se repite en una capa que libra días ya viene
+      sin ellos: si Trabajo libra los festivos, un festivo no trae la jornada.
+  - name: create_event
+    scope: planner:write
+    description: >
+      Crea un evento, con hora o de todo el día, o una serie si lleva `repeat`. La repetición va
+      como objeto: frecuencia, cada cuántos, días de la semana (con posición para "el segundo
+      martes"), días del mes, meses, y hasta una fecha o un número de veces. Sin capa, va a la
+      primera propia que no es de fondo. Devuelve cómo ha quedado, con la frase de la repetición en castellano:
+      léela para confirmar que es lo que se pidió. Si lo que se pide cae dentro de un viaje (lo
+      dice el fondo de Travel en `get_events`, en `backgrounds`), un plan o una visita del viaje va
+      en Travel (`travel_add_block`), no aquí: aquí, solo lo que no es del viaje. Si devuelve
+      `duplicates`, ya había algo igual en otra capa: díselo y pregunta si quiere quitar el que
+      acabas de crear (`cancel_event`).
+  - name: update_event
+    scope: planner:write
+    description: >
+      Cambia un evento: título, hora, lugar, notas, enlace, capa o repetición. En una serie, `scope`
+      dice a qué alcanza: `this` solo la ocurrencia de `original_start`, `following` esa y las
+      siguientes, `all` la serie entera. Lo que no se pasa no cambia.
+  - name: cancel_event
+    scope: planner:write
+    description: >
+      Cancela un evento, o en una serie la ocurrencia de `original_start` (`this`), esa y las
+      siguientes (`following`) o la serie entera (`all`). No borra nada: deja de verse.
+  - name: create_calendar
+    scope: planner:write
+    description: >
+      Crea una capa tuya, con su nombre, su tono (del 1 al 10) y cómo se ve: `events`, o
+      `background` para un marco que no ocupa tiempo, como el horario laboral. Úsala cuando lo
+      que se va a apuntar no encaja en ninguna capa que ya hay ("los festivos locales").
+  - name: set_days_off
+    scope: planner:write
+    description: >
+      Hace que una capa tuya libre, o deje de librar, los días de otra: lo que se repite en
+      `calendar` no sale los días en que `source` tiene algo de todo el día. Para "que no salga
+      que trabajo los festivos" o "ni en vacaciones". Toca una pareja de capas cada vez.
+  - name: get_sources
+    scope: planner:read
+    description: >
+      Lo que se puede suscribir en el calendario: festivos de un país y su región, la Fórmula 1,
+      los partidos de un equipo, un .ics público. Sin argumentos, cada fuente con lo que pregunta
+      (`asks`) y lo que ya tienes de ella. Con `provider` y `ask`, las opciones de esa pregunta
+      (las regiones de un país con `parent`, un equipo buscando con `query`). Úsala antes de
+      `subscribe`.
+  - name: subscribe
+    scope: planner:write
+    description: >
+      Se suscribe a una fuente de `get_sources`, con lo contestado a cada pregunta en `params` y
+      el nombre de su capa ("Festivos · Navarra"). Todas son gratis y sin clave. La capa sale ya
+      y lo suyo llega con la primera pasada, en un minuto. Si ya tienes esa misma suscripción, no
+      crea otra: devuelve la que hay con `already`; díselo así.
+  - name: unsubscribe
+    scope: planner:write
+    description: >
+      Quita una suscripción por el nombre o el id de su capa: deja de llegar y deja de verse.
+      Solo una cada vez, y solo lo suscrito: una capa tuya no se quita.
+
+ui:
+  widgets:
+    - id: today
+      title: Hoy
+      kind: agenda
+      sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
+      endpoint: /api/planner/widgets/today
+      refresh: 300
+      link: /planner
+    - id: week
+      title: Semana
+      kind: week
+      sizes: ["4x2", "2x1", "4x1", "2x2", "2x4", "4x4"]
+      endpoint: /api/planner/widgets/week
+      refresh: 600
+      link: /planner
+    - id: upnext
+      title: Próximo
+      kind: upnext
+      sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
+      endpoint: /api/planner/widgets/upnext
+      refresh: 300
+      link: /planner
+    - id: calendar
+      title: Este mes
+      kind: calendar
+      sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
+      endpoint: /api/planner/widgets/calendar
+      refresh: 900
+      link: /planner/mes
+  view: /planner
+  hue: 6
+  family: calendar
