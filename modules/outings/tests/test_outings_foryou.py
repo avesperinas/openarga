@@ -51,14 +51,14 @@ async def arrived_on() -> str:
 
 
 async def test_what_you_like_what_is_big_nearby_and_what_names_a_wish_come_with_their_reason(
-    api,
+    api, area
 ) -> None:
     await call(api, "add_interest", {"kind": "like", "term": "jazz"})
     await call(api, "add_wish", {"kind": "getaway", "name": "Bardenas Sintéticas"})
     await add(
         api,
         found("Noche de jazz sintético", 3),
-        found("Feria Sintética de Otoño", 5, town="Pamplona", highlight=True),
+        found("Feria Sintética de Otoño", 5, town=area.near.towns[0], highlight=True),
         found("Ruta por las Bardenas Sintéticas", 8),
         found("Charla cualquiera", 4),
     )
@@ -68,7 +68,7 @@ async def test_what_you_like_what_is_big_nearby_and_what_names_a_wish_come_with_
     reasons = {one["event"]["title"]: one["reasons"] for one in picked}
     assert reasons == {
         "Noche de jazz sintético": ["Te interesa «jazz»"],
-        "Feria Sintética de Otoño": ["De lo grande en la Comarca de Pamplona"],
+        "Feria Sintética de Otoño": [f"De lo grande en {area.near.name}"],
         "Ruta por las Bardenas Sintéticas": [
             "Cerca de «Bardenas Sintéticas», que está en tus Ganas"
         ],

@@ -1,0 +1,101 @@
+id: munich
+name: München
+country: DE
+region_code: BY
+language: de
+timezone: Europe/Berlin
+geocoding: Bayern
+
+near:
+  name: München und Umland
+  contains: [munchen, munich, muenchen]
+  towns: [
+    München, Munich, Garching, Unterföhring, Ismaning, Unterhaching, Oberhaching, Taufkirchen,
+    Ottobrunn, Neubiberg, Haar, Pullach, Grünwald, Planegg, Gräfelfing, Germering, Puchheim,
+    Oberschleißheim, Unterschleißheim, Feldkirchen, Aschheim, Kirchheim bei München, Gauting,
+  ]
+  box: [11.36, 48.06, 11.72, 48.25]
+
+region:
+  name: Oberbayern
+  towns: [Rosenheim, Garmisch-Partenkirchen, Bad Tölz, Freising, Ingolstadt, Starnberg, Erding, Dachau]
+  box: [10.7, 47.4, 13.1, 49.0]
+
+map:
+  near: {box: [11.3, 48.0, 11.8, 48.3], maxzoom: 14}
+  region: {box: [10.7, 47.4, 13.1, 49.0], maxzoom: 9}
+
+focus: >-
+  Folk festivals, markets and what the city and the towns organise matter most: Dulten, Volksfeste,
+  Christmas markets, beer and food festivals, open-air culture and traditions. Concerts only when
+  they appear in the agendas of the Olympiapark or the Gasteig: do not search for them separately.
+
+include: >-
+  markets, Dulten and flea markets; Volksfeste and town fiestas; beer festivals and Starkbier;
+  Christmas and Easter markets; food weeks and tastings; open-air cinema, theatre and summer
+  festivals; Maibaum raisings, processions and named traditions; what the city runs for the public;
+  open guided tours; well-known popular races; theatre, dance and festivals.
+
+skip: >-
+  conferences, trade fairs for professionals, courses and workshops, children's storytelling,
+  public holidays, protocol acts (council meetings, openings, tributes), small-venue concerts and
+  anything for a very specific audience.
+
+agendas:
+  - {name: muenchen.de, url: "https://www.muenchen.de/veranstaltungen"}
+  - {name: Olympiapark München, url: "https://www.olympiapark.de/de/veranstaltungen/"}
+  - {name: Gasteig, url: "https://www.gasteig.de/veranstaltungen"}
+
+months: [
+  Januar, Februar, März, April, Mai, Juni, Juli, August, September, Oktober, November, Dezember,
+]
+
+searches:
+  always:
+    - Volksfeste und Dulten in München und Oberbayern
+    - Mittelaltermärkte und historische Feste in Oberbayern
+    - Stadtführungen und Themenführungen in München
+    - Straßentheater, Zirkus und Open-Air-Festivals in München
+    - Musik-, Film- und Theaterfestivals in München
+    - große Ausstellungen in München (Pinakotheken, Haus der Kunst, Lenbachhaus, Deutsches Museum)
+  monthly:
+    - Volksfeste und Ortsfeste in Oberbayern im {month} {year}
+    - Stadtteilfeste in München im {month} {year}
+    - Flohmärkte, Handwerkermärkte und Bauernmärkte in München im {month} {year}
+    - Food-Festivals, Bierfeste und Verkostungen in München im {month} {year}
+    - Open-Air-Veranstaltungen und Straßenkunst in München im {month} {year}
+    - Veranstaltungen der Stadt München und der Gemeinden im Umland (Garching, Unterföhring, Ismaning, Unterhaching, Ottobrunn, Haar, Germering) im {month} {year}
+    - "Was ist los in München im {month} {year}: Wochenende"
+  yearly:
+    - "Feste, Märkte und Traditionen in Oberbayern im {month} {year}: Termine"
+    - "Bierfeste und kulinarische Feste in Oberbayern im {month} {year}: Termine"
+  season: "{thing} in München und Oberbayern im {month} {year}: Feste und Märkte"
+  tradition: "{thing} {year}: Termine"
+
+season:
+  1: [Fasching, Krapfen]
+  2: [Fasching, Krapfen]
+  3: [Starkbier, Fastenzeit]
+  4: [Spargel, Bärlauch, Ostermärkte]
+  5: [Spargel, Maibock]
+  6: [Spargel, Biergarten]
+  7: [Biergarten, Beeren]
+  8: [Biergarten, Sommerfeste]
+  9: [Wiesn, Kirchweih]
+  10: [Kirchweih, Kürbis, Wild]
+  11: [Martinsgans, Wild]
+  12: [Christkindlmarkt, Glühwein]
+
+traditions:
+  1: [Münchner Fasching]
+  2: [Tanz der Marktweiber am Viktualienmarkt]
+  3: [Starkbierfest am Nockherberg]
+  4: [Frühlingsfest auf der Theresienwiese, Maidult]
+  5: [Maibaumaufstellen]
+  6: [Stadtgründungsfest München, Tollwood Sommerfestival]
+  7: [Kocherlball am Chinesischen Turm, Jakobidult]
+  8: [Theatron Musiksommer]
+  9: [Oktoberfest, Oide Wiesn]
+  10: [Kirchweihdult, Lange Nacht der Münchner Museen]
+  11: [Leonhardifahrt in Bad Tölz, Tollwood Winterfestival]
+  12: [Christkindlmarkt am Marienplatz]

@@ -22,6 +22,7 @@ from outings import (
     hub,
     maps,
     planned,
+    profile,
     publisher,
     spaces,
     tools,
@@ -243,6 +244,30 @@ async def wishes_near_event(event_id: UUID) -> list[area.Near]:
         return await area.near(connection, found.lat, found.lon)
 
     return await _edit(run)
+
+
+class AreaOut(BaseModel):
+    id: str
+    name: str
+    near: str
+    region: str
+    near_box: profile.Box
+    region_box: profile.Box
+    map: bool
+
+
+@app.get("/area")
+async def read_area() -> AreaOut:
+    found = profile.current()
+    return AreaOut(
+        id=found.id,
+        name=found.name,
+        near=found.near.name,
+        region=found.region.name,
+        near_box=found.near.box,
+        region_box=found.region.box,
+        map=maps.has_map(service.ui_dist(), found.id),
+    )
 
 
 @app.get("/map")

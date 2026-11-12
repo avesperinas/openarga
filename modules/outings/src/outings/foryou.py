@@ -9,7 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_contracts import notify
-from outings import agenda, explore, places
+from outings import agenda, explore, places, profile
 from outings.common import today
 
 MADRID = ZoneInfo("Europe/Madrid")
@@ -52,8 +52,8 @@ async def picks(connection: AsyncConnection, arrived_since: datetime | None = No
         hit = next((term for term, one in liked if agenda.mentions(event, [one])), None)
         if hit:
             reasons.append(f"Te interesa «{hit}»")
-        if event.highlight and event.zone == "pamplona":
-            reasons.append("De lo grande en la Comarca de Pamplona")
+        if event.highlight and event.zone == "near":
+            reasons.append(f"De lo grande en {profile.current().near.name}")
         wish = _near(event, wishes)
         if wish:
             reasons.append(f"Cerca de «{wish}», que está en tus Ganas")

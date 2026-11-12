@@ -73,20 +73,36 @@ async def test_a_read_token_cannot_add_events(api) -> None:
     assert refused.status_code == 403
 
 
-async def test_the_prompt_has_today_the_agendas_and_the_tool(api) -> None:
+async def test_the_prompt_has_today_the_agendas_and_the_tool(api, area) -> None:
     said = (await api.get("/agenda/prompt")).json()["prompt"]
 
     assert "add_events" in said and "find_events" in said and "hide_events" in said
     assert "programme" in said
-    assert "https://www.baluarte.com/es/agenda" in said
-    assert by_hand.MONTHS[TODAY.month - 1] in said
-    assert "shopping medieval" in said and "fiestas de los pueblos de Navarra en" in said
+    assert all(one.url in said for one in area.agendas)
+    assert area.months[TODAY.month - 1] in said
+    assert area.searches.always[0] in said and area.near.name in said
+    assert (
+        area.searches.monthly[0].format(month=area.months[TODAY.month - 1], year=TODAY.year) in said
+    )
+
+
+def test_every_search_of_every_area_is_filled_and_said_once(area) -> None:
+    from datetime import date
+
+    found = by_hand.searches(date(2026, 10, 3), date(2027, 1, 1), date(2027, 10, 3), area)
+
+    assert len(found) == len(set(found))
+    assert not any("{" in one or "}" in one for one in found)
+    assert any(area.months[0] in one and "2027" in one for one in found)
+    assert any(area.traditions[7][0] in one for one in found)
 
 
 def test_it_searches_each_month_with_what_its_season_gives() -> None:
     from datetime import date
 
-    found = by_hand.searches(date(2026, 10, 3), date(2027, 1, 1))
+    from outings import profile
+
+    found = by_hand.searches(date(2026, 10, 3), date(2027, 1, 1), area=profile.load("pamplona"))
 
     assert "fiestas de los pueblos de Navarra en octubre de 2026" in found
     assert "fiestas de los pueblos de Navarra en enero de 2027" in found
@@ -98,7 +114,10 @@ def test_it_searches_each_month_with_what_its_season_gives() -> None:
 def test_far_months_look_for_what_returns_each_year() -> None:
     from datetime import date
 
-    found = by_hand.searches(date(2026, 10, 5), date(2027, 1, 3), date(2027, 10, 5))
+    from outings import profile
+
+    pamplona = profile.load("pamplona")
+    found = by_hand.searches(date(2026, 10, 5), date(2027, 1, 3), date(2027, 10, 5), pamplona)
 
     assert "San Fermín 2027: fechas" in found
     assert "fiestas, ferias y tradiciones de Navarra en julio de 2027: fechas" in found
@@ -114,12 +133,15 @@ def test_far_months_look_for_what_returns_each_year() -> None:
 def test_the_prompt_puts_the_street_before_concerts() -> None:
     from datetime import date
 
-    said = by_hand.prompt(date(2026, 10, 5))
+    from outings import profile
 
-    assert "5 de octubre de 2027" in said
+    pamplona = profile.load("pamplona")
+    said = by_hand.prompt(date(2026, 10, 5), area=pamplona)
+
+    assert "2027-10-05" in said and "in Spanish" in said
     assert "mercadillos" in said and "Ayuntamiento de Pamplona" in said
-    assert "teatro de calle" in said and "no\nlos busques aparte" in said
-    assert not any("conciertos en Pamplona" in one for one in by_hand.ALWAYS)
+    assert "teatro de calle" in said and "do not search for them separately" in said
+    assert not any("conciertos en Pamplona" in one for one in pamplona.searches.always)
 
 
 async def test_there_is_no_update_with_the_api(api, hub_app) -> None:

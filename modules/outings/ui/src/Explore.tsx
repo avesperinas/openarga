@@ -3,11 +3,12 @@ import { useCallback, useEffect, useState } from "react";
 
 import { EventRow } from "./Agenda";
 import { AppVersion } from "./AppVersion";
+import { useArea } from "./area";
 import { type AgendaEvent, type Category, type When, Unauthorised, readExplore, readForYou, signIn } from "./api";
 import { ScreenHeader } from "./Header";
 import { Pending, useLoad } from "./Loads";
 import { UpdateSheet } from "./UpdateSheet";
-import { CATEGORIES, WHENS, ZONES, type ZoneFilter, dayTitle, freshSince, freshTitle, isoDay, monthTitle } from "./words";
+import { CATEGORIES, WHENS, type ZoneFilter, dayTitle, freshSince, freshTitle, isoDay, monthTitle, zones } from "./words";
 
 type Filter = "all" | Category;
 
@@ -25,6 +26,7 @@ const kept: { typed: string; when: When; zone: ZoneFilter; filter: Filter; byDat
 
 export function ExploreScreen({ onOpen }: { onOpen: (event: AgendaEvent) => void }) {
   const [arrived] = useState(() => new URLSearchParams(window.location.search));
+  const area = useArea();
   const fromNotice = arrived.has("nuevo") || arrived.has("cuando");
   const noticeWhen = WHENS.find((one) => one.value === arrived.get("cuando"))?.value;
   const [query, setQuery] = useState(fromNotice ? "" : kept.typed.trim());
@@ -101,11 +103,11 @@ export function ExploreScreen({ onOpen }: { onOpen: (event: AgendaEvent) => void
 
   return (
     <Screen>
-      <ScreenHeader eyebrow="Pamplona y Navarra" title="Explorar" />
+      <ScreenHeader eyebrow={area ? `${area.name} · ${area.region}` : undefined} title="Explorar" />
 
       <SearchField value={typed} onChange={setTyped} placeholder="Jazz, Baluarte, setas, Olite…" label="Buscar en la agenda" />
       <SegmentedControl label="Cuándo" options={WHENS} value={when} onChange={setWhen} />
-      <ChoiceChips label="Dónde" options={ZONES} value={zone} onChange={setZone} scroll />
+      <ChoiceChips label="Dónde" options={zones(area)} value={zone} onChange={setZone} scroll />
       <ChoiceChips
         label="Qué"
         scroll

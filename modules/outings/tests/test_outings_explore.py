@@ -4,7 +4,7 @@ from datetime import timedelta
 
 from outings_world import TODAY
 
-from outings import agenda
+from outings import profile
 
 WRITE = {"x-arga-scopes": "outings:write"}
 READ = {"x-arga-scopes": "outings:read"}
@@ -37,15 +37,28 @@ def titles(answer: dict) -> list[str]:
     return [one["title"] for one in answer["events"]]
 
 
-def test_the_zone_is_pamplona_and_its_comarca_or_the_rest() -> None:
-    assert agenda.zone("Pamplona/Iruña") == "pamplona"
-    assert agenda.zone("Villava/Atarrabia") == "pamplona"
-    assert agenda.zone("Barañáin") == "pamplona"
-    assert agenda.zone("Cintruénigo") == "navarra"
-    assert agenda.zone(None) == "navarra"
+def test_the_zone_is_near_for_the_core_towns_and_region_for_the_rest(area) -> None:
+    assert all(area.zone(town) == "near" for town in area.near.towns)
+    assert all(area.zone(town) == "region" for town in area.region.towns)
+    assert area.zone(f"{area.near.towns[0]} centro") == "near"
+    assert area.zone(None) == "region"
 
 
-async def test_a_festival_is_one_event_with_its_programme(api) -> None:
+def test_pamplona_knows_its_comarca_with_or_without_accents() -> None:
+    pamplona = profile.load("pamplona")
+    assert pamplona.zone("Pamplona/Iruña") == "near"
+    assert pamplona.zone("Villava/Atarrabia") == "near"
+    assert pamplona.zone("Barañain") == "near"
+    assert pamplona.zone("Cintruénigo") == "region"
+
+
+def test_an_unknown_area_falls_back_to_the_default() -> None:
+    assert profile.resolve("Munich") == "munich"
+    assert profile.resolve("atlantis") == profile.DEFAULT
+    assert profile.resolve(None) == profile.DEFAULT
+
+
+async def test_a_festival_is_one_event_with_its_programme(api, area) -> None:
     [event_id] = await add(
         api,
         found(
@@ -64,7 +77,7 @@ async def test_a_festival_is_one_event_with_its_programme(api) -> None:
         "Sáb, 12:00 · Concurso de tortillas",
         "Dom, 13:00 · Degustación",
     ]
-    assert event["highlight"] is True and event["zone"] == "navarra"
+    assert event["highlight"] is True and event["zone"] == "region"
     assert titles(await explore(api, q="tortillas")) == ["Fiesta Sintética de la Verdura"]
 
 
@@ -106,20 +119,22 @@ async def test_since_keeps_only_what_arrived_from_that_day(api) -> None:
     assert everything >= {"Concierto sintético viejo", "Concierto sintético nuevo"}
 
 
-async def test_best_puts_pamplona_and_what_is_big_first(api) -> None:
+async def test_best_puts_the_near_area_and_what_is_big_first(api, area) -> None:
+    here = area.near.towns[0]
     await add(
         api,
-        found("Lejos y pequeño", 2, town="Villa Sintética"),
-        found("Lejos y grande", 3, town="Villa Sintética", highlight=True),
-        found("Aquí y pequeño", 4),
-        found("Aquí y grande", 5, highlight=True),
+        found("Lejos y pequeño", 2, town=area.region.towns[0]),
+        found("Lejos y grande", 3, town=area.region.towns[1], highlight=True),
+        found("Aquí y pequeño", 4, town=here),
+        found("Aquí y grande", 5, town=here, highlight=True),
     )
 
     best = await explore(api, sort="best")
     assert titles(best) == ["Aquí y grande", "Lejos y grande", "Aquí y pequeño", "Lejos y pequeño"]
     by_date = await explore(api)
     assert titles(by_date)[0] == "Lejos y pequeño"
-    assert titles(await explore(api, zone="pamplona")) == ["Aquí y pequeño", "Aquí y grande"]
+    assert titles(await explore(api, zone="near")) == ["Aquí y pequeño", "Aquí y grande"]
+    assert titles(await explore(api, zone="region")) == ["Lejos y pequeño", "Lejos y grande"]
 
 
 async def test_what_you_like_goes_up(api) -> None:
@@ -178,8 +193,8 @@ async def test_mine_is_only_what_you_saved_or_sent_to_planner(api) -> None:
     assert [one["id"] for one in got.json()["events"]] == [saved, sent]
 
 
-async def test_find_events_and_the_brief_are_tools_for_claude(api) -> None:
-    await add(api, found("Festival Sintético de Cine", 20, highlight=True))
+async def test_find_events_and_the_brief_are_tools_for_claude(api, area) -> None:
+    await add(api, found("Festival Sintético de Cine", 20, town=area.near.towns[1], highlight=True))
     await api.post("/interests", json={"kind": "mute", "term": "congreso"})
 
     got = await api.post(
@@ -189,9 +204,9 @@ async def test_find_events_and_the_brief_are_tools_for_claude(api) -> None:
 
     [event] = got.json()["content"]["events"]
     assert event["title"] == "Festival Sintético de Cine" and event["highlight"] is True
-    assert event["zone"] == "pamplona"
+    assert event["zone"] == "near"
     said = brief.json()["content"]["brief"]
-    assert "add_events" in said and "congreso" in said
+    assert "add_events" in said and "congreso" in said and area.agendas[0].url in said
 
 
 async def test_interests_are_listed_and_not_repeated(api) -> None:

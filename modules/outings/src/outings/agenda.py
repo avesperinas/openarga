@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import json
-import re
-import unicodedata
 from datetime import date, datetime, timedelta
 from typing import Any, Literal
 
@@ -12,7 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_agenda import KEY as AGENDA
 from arga_agenda import dated, uid
+from outings import profile
 from outings.common import MADRID, TZ, Conflict, NotFound, enqueue, today
+from outings.profile import fold
 
 EVENT = "leisure.event"
 CONNECTION = "hub.connection"
@@ -131,34 +131,6 @@ NEAR = text("""
 """)
 
 FILLER = {"de", "del", "la", "las", "el", "los", "y", "en", "a", "al", "con", "por", "para"}
-
-
-def fold(value: str | None) -> str:
-    plain = unicodedata.normalize("NFKD", value or "").encode("ascii", "ignore").decode()
-    return " ".join(re.sub(r"[^0-9a-z]+", " ", plain.casefold()).split())
-
-
-COMARCA = frozenset(
-    fold(one)
-    for one in (
-        "Pamplona", "Iruña", "Iruñea", "Pamplona/Iruña", "Burlada", "Burlata", "Villava",
-        "Atarrabia", "Villava/Atarrabia", "Huarte", "Uharte", "Barañáin", "Barañain", "Zizur",
-        "Zizur Mayor", "Cizur", "Cizur Menor", "Ansoáin", "Antsoain", "Berriozar", "Berrioplano",
-        "Egüés", "Valle de Egüés", "Sarriguren", "Aranguren", "Mutilva", "Noáin", "Beriáin",
-        "Galar", "Orkoien", "Olza", "Ezcabarte", "Arre", "Esteribar", "Juslapeña",
-        "Burlada/Burlata", "Artica", "Gorraiz", "Olaz", "Tajonar", "Cordovilla", "Esquíroz",
-        "Ripagaina",
-    )
-)  # fmt: skip
-
-
-def zone(town: str | None) -> Literal["pamplona", "navarra"]:
-    folded = fold(town)
-    if not folded:
-        return "navarra"
-    if folded in COMARCA or "pamplona" in folded or "iruna" in folded:
-        return "pamplona"
-    return "navarra"
 
 
 def haystack(event: Any) -> str:
@@ -363,7 +335,7 @@ class Event(BaseModel):
     programme: list[str] = []
     highlight: bool = False
     dismissed: bool = False
-    zone: Literal["pamplona", "navarra"] = "navarra"
+    zone: profile.Zone = "region"
 
 
 COLUMNS = """
@@ -399,7 +371,7 @@ def _event(row: Any) -> Event:
         programme=list(row.programme or []),
         highlight=row.highlight,
         dismissed=row.dismissed_at is not None,
-        zone=zone(row.town),
+        zone=profile.current().zone(row.town),
     )
 
 

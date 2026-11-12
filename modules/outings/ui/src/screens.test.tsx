@@ -133,7 +133,7 @@ function event(overrides: Partial<AgendaEvent>): AgendaEvent {
     programme: [],
     highlight: false,
     dismissed: false,
-    zone: "pamplona",
+    zone: "near",
     ...overrides,
   };
 }

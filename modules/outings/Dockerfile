@@ -51,13 +51,15 @@ FROM python:3.12-slim AS runtime
 ENV PATH="/opt/venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    UI_DIST=/opt/outings/ui
+    UI_DIST=/opt/outings/ui \
+    OUTINGS_AREAS=/opt/outings/areas
 
 RUN useradd --system --uid 10001 --no-create-home modulo
 
 COPY --from=builder /opt/venv /opt/venv
 COPY modules/outings/manifest.yaml /opt/module/manifest.yaml
 COPY modules/outings/schema /opt/module/schema
+COPY modules/outings/areas /opt/outings/areas
 
 COPY --from=app /src/modules/outings/ui/dist /opt/outings/ui
 COPY packages/ui/geo/countries.json /opt/outings/ui/geo/countries.json

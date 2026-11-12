@@ -1,6 +1,6 @@
 import type { DayMark, IconName } from "@openarga/ui";
 
-import type { AgendaEvent, Category, Kind, Period, Place, Planned, When, Wish, Zone } from "./api";
+import type { AgendaEvent, Area, Category, Kind, Period, Place, Planned, When, Wish, Zone } from "./api";
 
 export const KINDS: { value: Kind; label: string; plural: string; icon: IconName; hue: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 }[] = [
   { value: "eat", label: "Restaurante", plural: "Restaurantes", icon: "food", hue: 4 },
@@ -188,10 +188,10 @@ export const WHENS: { value: When; label: string }[] = [
 
 export type ZoneFilter = "all" | Zone;
 
-export const ZONES: { value: ZoneFilter; label: string }[] = [
+export const zones = (area: Area | null): { value: ZoneFilter; label: string }[] => [
   { value: "all", label: "Todo" },
-  { value: "pamplona", label: "Pamplona y comarca" },
-  { value: "navarra", label: "Resto de Navarra" },
+  { value: "near", label: area?.near ?? "Cerca" },
+  { value: "region", label: area ? `Resto de ${area.region}` : "Resto" },
 ];
 
 const MONTH_YEAR = new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric", timeZone: "UTC" });

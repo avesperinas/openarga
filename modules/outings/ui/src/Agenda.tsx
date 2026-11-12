@@ -3,7 +3,8 @@ import type { AreaPoint } from "@openarga/ui/area-map";
 import { Suspense, lazy, useState } from "react";
 
 import { AppVersion } from "./AppVersion";
-import { type AgendaEvent, MAP_BASE, readMine } from "./api";
+import { type AgendaEvent, readMine } from "./api";
+import { VIEW, useMapBase } from "./area";
 import { ScreenHeader } from "./Header";
 import { Pending, useLoad } from "./Loads";
 import { categoryOf, dayTitle, eventLine, isoDay, longDay, marksOf, monthName, onDay, shortDay, span, until } from "./words";
@@ -49,6 +50,7 @@ export function AgendaScreen({
 
   const events = mine?.events ?? [];
   const thatDay = onDay(events, selected);
+  const base = useMapBase();
   const located = events.filter((one) => one.lat != null && one.lon != null);
   const points: AreaPoint[] = located.map((one) => ({
     id: one.id,
@@ -93,13 +95,13 @@ export function AgendaScreen({
         </Section>
       )}
 
-      {points.length > 0 && (
+      {base && points.length > 0 && (
         <Section title={`Dónde, en ${monthName(month + 1)}`}>
           <div className="outings-month-map">
             <Suspense fallback={null}>
               <AreaMap
-                base={MAP_BASE}
-                view={located.some((one) => one.zone === "navarra") ? "navarra" : "comarca"}
+                base={base}
+                view={VIEW[located.some((one) => one.zone === "region") ? "region" : "near"]}
                 points={points}
                 onSelect={(id) => id && onOpenId(id)}
                 label={`Dónde es lo tuyo en ${monthName(month + 1)}`}

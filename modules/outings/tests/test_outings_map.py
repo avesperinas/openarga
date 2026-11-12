@@ -26,12 +26,13 @@ async def locate() -> int:
         return await places.locate(connection)
 
 
-def test_a_venue_is_asked_with_its_town_and_then_the_town_alone() -> None:
-    assert places.queries("Baluarte · sala principal", "Pamplona") == [
-        "Baluarte, Pamplona, Navarra",
-        "Pamplona, Navarra",
+def test_a_venue_is_asked_with_its_town_and_then_the_town_alone(area) -> None:
+    town, other = area.near.towns[0], area.region.towns[0]
+    assert places.queries("Sala Sintética · principal", town) == [
+        f"Sala Sintética, {town}, {area.geocoding}",
+        f"{town}, {area.geocoding}",
     ]
-    assert places.queries("Lodosa", "Lodosa") == ["Lodosa, Navarra"]
+    assert places.queries(other, other) == [f"{other}, {area.geocoding}"]
     assert round(places.km((42.8136, -1.6503), (42.98, -1.17)), 0) == 43
 
 

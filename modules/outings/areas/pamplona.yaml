@@ -1,0 +1,114 @@
+id: pamplona
+name: Pamplona
+country: ES
+region_code: NA
+language: es
+timezone: Europe/Madrid
+geocoding: Navarra
+
+near:
+  name: Comarca de Pamplona
+  contains: [pamplona, iruna]
+  towns: [
+    Pamplona, Iruña, Iruñea, Pamplona/Iruña, Burlada, Burlata, Burlada/Burlata, Villava,
+    Atarrabia, Villava/Atarrabia, Huarte, Uharte, Barañáin, Barañain, Zizur, Zizur Mayor, Cizur,
+    Cizur Menor, Ansoáin, Antsoain, Berriozar, Berrioplano, Egüés, Valle de Egüés, Sarriguren,
+    Aranguren, Mutilva, Noáin, Beriáin, Galar, Orkoien, Olza, Ezcabarte, Arre, Esteribar,
+    Juslapeña, Artica, Gorraiz, Olaz, Tajonar, Cordovilla, Esquíroz, Ripagaina,
+  ]
+  box: [-1.76, 42.74, -1.52, 42.88]
+
+region:
+  name: Navarra
+  towns: [Tudela, Estella, Tafalla, Olite, Sangüesa, Lodosa, Cintruénigo, Elizondo]
+  box: [-2.5, 41.91, -0.72, 43.32]
+
+map:
+  near: {box: [-1.82, 42.7, -1.47, 42.93], maxzoom: 14}
+  region: {box: [-2.55, 41.9, -0.7, 43.35], maxzoom: 9}
+  relief:
+    wcs: https://servicios.idee.es/wcs-inspire/mdt
+    attribution: MDT © IGN
+    near: {coverage: Elevacion4258_25, every: 40}
+    region: {coverage: Elevacion4258_200, every: 100}
+
+focus: >-
+  Street life and the towns matter most: markets and fairs, town and neighbourhood fiestas, what
+  the town halls organise, street shows, food and traditions. Concerts only when they appear in the
+  agendas of Baluarte or Navarra Arena: do not search for them separately.
+
+include: >-
+  flea markets, producers' markets and craft fairs; produce and livestock fairs; food weeks and
+  days (croqueta, pintxo, cazuelica, setas), tastings, cooking contests and txotx; wine fiestas and
+  harvests; town and neighbourhood fiestas; street theatre, circus, parades, gigantes y cabezudos,
+  open-air cinema; what the town hall runs for the public (fiesta programmes, cultural seasons,
+  Christmas, summer or Día de Navarra activities); medieval markets and re-enactments; carnivals;
+  romerías and named traditions; open guided tours; well-known popular races and routes; theatre,
+  dance and festivals.
+
+skip: >-
+  conferences, professional or technical days, library courses and workshops, storytelling,
+  public holidays (Todos los Santos, Fiesta Nacional, Halloween), protocol acts (council meetings,
+  openings, tributes), small-venue concerts and anything for a very specific audience.
+
+agendas:
+  - {name: Ayuntamiento de Pamplona, url: "https://www.pamplona.es/actualidad/eventos"}
+  - {name: Turismo de Navarra, url: "https://www.visitnavarra.es/es/agenda"}
+  - {name: Cultura Navarra, url: "https://www.culturanavarra.es/es/agenda"}
+  - {name: Baluarte, url: "https://www.baluarte.com/es/agenda"}
+  - {name: Navarra Arena, url: "https://www.navarrarena.com/es/agenda"}
+
+months: [
+  enero, febrero, marzo, abril, mayo, junio, julio, agosto, septiembre, octubre, noviembre,
+  diciembre,
+]
+
+searches:
+  always:
+    - shopping medieval o recreación histórica en Navarra
+    - fiestas de interés turístico de Navarra
+    - visitas guiadas y teatralizadas en Pamplona y Navarra
+    - festivales de teatro de calle, circo y artes de calle en Navarra
+    - festivales de música, cine y teatro en Navarra
+    - exposiciones importantes en Pamplona (Museo Universidad de Navarra, Museo de Navarra, Ciudadela, Baluarte)
+  monthly:
+    - fiestas de los pueblos de Navarra en {month} de {year}
+    - fiestas de los barrios de Pamplona en {month} de {year}
+    - mercadillos, ferias de artesanía y mercados de productores en Pamplona y Navarra en {month} de {year}
+    - semanas y jornadas gastronómicas, catas y concursos populares en Pamplona y Navarra en {month} de {year}
+    - teatro de calle, pasacalles, circo y espectáculos al aire libre en Pamplona en {month} de {year}
+    - actividades del Ayuntamiento de Pamplona y de los de su comarca (Burlada, Villava, Barañáin, Zizur, Ansoáin, Berriozar, Egüés, Huarte) en {month} de {year}
+    - "qué hacer en Navarra en {month} de {year}: agenda de fin de semana"
+  yearly:
+    - "fiestas, ferias y tradiciones de Navarra en {month} de {year}: fechas"
+    - "jornadas gastronómicas y ferias de producto en Navarra en {month} de {year}: fechas"
+  season: "{thing} en Navarra en {month} de {year}: fiestas, ferias y jornadas"
+  tradition: "{thing} {year}: fechas"
+
+season:
+  1: [trufa, sidra y txotx, carnavales rurales]
+  2: [trufa, sidra y txotx, carnavales rurales]
+  3: [alcachofa, sidra y txotx]
+  4: [verdura, alcachofa, espárrago]
+  5: [espárrago, croqueta, pintxo]
+  6: [cereza, espárrago, queso]
+  7: [queso, cordero]
+  8: [vino, queso]
+  9: [pochas, vendimia, piquillo]
+  10: [piquillo, setas, caza, vendimia]
+  11: [setas, caza, vino nuevo]
+  12: [trufa, caza, mercados de Navidad]
+
+traditions:
+  1: [hogueras de San Antón, carnaval de Ituren y Zubieta]
+  2: [carnaval de Lantz, carnavales de Pamplona]
+  3: [Javierada]
+  4: [Fiestas de la Verdura de Tudela, "Semana Santa en Tudela: el Volatín y la Bajada del Ángel"]
+  5: [Día de la Almadía de Burgui]
+  6: [San Juan y la noche de las hogueras]
+  7: [San Fermín, Tributo de las Tres Vacas, Festival de Teatro de Olite]
+  8: [Shopping Medieval de Olite, fiestas de Estella y Tafalla]
+  9: [Fiesta de la Vendimia de Olite]
+  10: [Exaltación del Piquillo de Lodosa]
+  11: [Ferias de San Andrés de Estella]
+  12: [Olentzero, Feria de Navidad de Pamplona]

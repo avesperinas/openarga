@@ -247,33 +247,34 @@ class FindEvents(BaseModel):
 
     query: Annotated[str, Field(max_length=100)] | None = Field(
         default=None,
-        description="Palabras que buscar en el título, el sitio, el pueblo o el programa.",
+        description="Words to look for in the title, the venue, the town or the programme.",
     )
     when: explore.When = Field(
         default="quarter",
-        description="weekend, week (7 días), month (30), quarter (tres meses) o year.",
+        description="weekend, week (7 days), month (30), quarter (three months) or year.",
     )
     zone: explore.Zone | None = Field(
-        default=None, description="pamplona (y su comarca) o navarra (el resto). Sin ella, todo."
+        default=None,
+        description="near (the home area's core towns) or region (the rest). Without it, all.",
     )
     date_from: date | None = Field(
-        default=None, alias="from", description="Desde este día, con `to`: en vez de `when`."
+        default=None, alias="from", description="From this day, with `to`: instead of `when`."
     )
-    date_to: date | None = Field(default=None, alias="to", description="Hasta este día.")
+    date_to: date | None = Field(default=None, alias="to", description="Until this day.")
     category: agenda.Category | None = None
     town: Annotated[str, Field(max_length=80)] | None = Field(
-        default=None, description="Solo lo de este pueblo."
+        default=None, description="Only what is on in this town."
     )
     best_first: bool = Field(
         default=False,
-        description="Lo destacado primero (Pamplona, lo grande, lo que interesa) en vez de por "
-        "fecha.",
+        description="Best first (the near area, the big things, what interests) instead of by "
+        "date.",
     )
     limit: Annotated[int, Field(ge=1, le=100)] = 60
     for_you: bool = Field(
         default=False,
-        description="Solo lo que le puede gustar, de los próximos 45 días, cada uno con su razón "
-        "(lo que le interesa, lo grande en la comarca, una gana cerca). Ignora los demás filtros.",
+        description="Only what the person may like in the next 45 days, each with its reason "
+        "(an interest, something big in the near area, a wish nearby). Ignores the other filters.",
     )
 
 
