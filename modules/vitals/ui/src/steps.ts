@@ -1,9 +1,12 @@
+import type { Locale, Translate } from "@openarga/ui";
+
 import type { StepsDay } from "./api";
 
 export type Grain = "week" | "month" | "year";
 
-export const steps = (value: number) => `${Math.round(value).toLocaleString("es-ES")} pasos`;
-export const count = (value: number) => Math.round(value).toLocaleString("es-ES");
+export const steps = (value: number, t: Translate, locale: Locale) =>
+  t("steps.count", { count: Math.round(value).toLocaleString(locale) });
+export const count = (value: number, locale: Locale) => Math.round(value).toLocaleString(locale);
 
 export function startOf(day: string, grain: Grain): string {
   if (grain === "year") return `${day.slice(0, 4)}-01-01`;
@@ -35,12 +38,12 @@ export function perBucket(
     }));
 }
 
-export function bucketLabel(start: string, grain: Grain): string {
+export function bucketLabel(start: string, grain: Grain, locale: Locale): string {
   const date = new Date(`${start}T12:00:00Z`);
   if (grain === "year") return start.slice(0, 4);
   return grain === "month"
-    ? date.toLocaleDateString("es-ES", { month: "short", year: "2-digit" })
-    : date.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+    ? date.toLocaleDateString(locale, { month: "short", year: "2-digit" })
+    : date.toLocaleDateString(locale, { day: "numeric", month: "short" });
 }
 
 export function stepsTone(value: number | null | undefined, goal: number | null): "positive" | "warning" | "negative" | "neutral" {
@@ -51,7 +54,7 @@ export function stepsTone(value: number | null | undefined, goal: number | null)
 
 export const CALENDAR_GOAL = 10_000;
 
-export const WEEKDAYS = ["L", "M", "X", "J", "V", "S", "D"];
+export const weekdays = (t: Translate) => t("weekday.letters").split(",");
 
 export function yearsOf(days: StepsDay[]): string[] {
   return [...new Set(days.map((one) => one.day.slice(0, 4)))].sort().reverse();

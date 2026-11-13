@@ -84,7 +84,7 @@ async def test_one_figure_day_by_day(api, log) -> None:
 
     found = (await api.get("/body/exercise_min")).json()
 
-    assert found["figure"]["name"] == "Minutos de ejercicio"
+    assert found["figure"]["name"] == "Exercise minutes"
     assert [(one["day"], one["value"]) for one in found["points"]] == [
         (day(2), 42.0),
         (day(1), 39.0),

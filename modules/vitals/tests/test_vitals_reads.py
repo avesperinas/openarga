@@ -4,7 +4,7 @@ import asyncio
 import re
 from datetime import UTC, date, datetime, timedelta
 
-from test_vitals_google import at, day, log  # noqa: F401 - el fixture del log, compartido
+from test_vitals_google import at, day, log  # noqa: F401 - the shared log fixture
 from test_vitals_v2 import DAY, as_vitals, gym, heart_day, profile_of_age, workout  # noqa: F401
 
 from vitals import body, memo, sleep, steps, today, workouts
@@ -197,7 +197,7 @@ async def test_the_band_traces_are_not_kept_only_their_versions(schema, gym, log
         {
             "id": "band:1",
             "kind": "PADEL",
-            "name": "Pádel",
+            "name": "Padel",
             "start": done["start"],
             "end": done["end"],
             "heart": [{"s": 0, "bpm": 120}, {"s": 600, "bpm": 140}],
@@ -268,7 +268,7 @@ async def test_a_workout_moved_days_later_keeps_its_band(schema, gym, log) -> No
         {
             "id": "band:movido",
             "kind": "PADEL",
-            "name": "Pádel",
+            "name": "Padel",
             "start": started_at.isoformat(),
             "end": (started_at + timedelta(minutes=30)).isoformat(),
             "heart": [{"s": 0, "bpm": 120}, {"s": 600, "bpm": 140}],
@@ -293,12 +293,12 @@ async def test_workouts_at_the_same_time_keep_their_order_when_one_changes(
     for name in ("w:b", "w:a", "w:c"):
         await gym(workout(name, DAY, "18:30", "19:30"))
     await as_vitals(schema, workouts.between, DAY, DAY)
-    await gym(workout("w:a", DAY, "18:30", "19:30", name="Pádel editado"))
+    await gym(workout("w:a", DAY, "18:30", "19:30", name="Padel edited"))
 
     again = await as_vitals(schema, workouts.between, DAY, DAY)
 
     assert [one.id for one in again] == ["w:a", "w:b", "w:c"]
-    assert again[0].name == "Pádel editado"
+    assert again[0].name == "Padel edited"
 
 
 async def test_the_heart_of_a_workout_is_the_last_version_that_arrived(
@@ -306,7 +306,7 @@ async def test_the_heart_of_a_workout_is_the_last_version_that_arrived(
     gym,  # noqa: F811
     log,  # noqa: F811
 ) -> None:
-    await gym(workout("w:dia", DAY, "18:00", "18:30"))
+    await gym(workout("w:day", DAY, "18:00", "18:30"))
     await heart_day(log, DAY, {18 * 60 + m: 100 for m in range(0, 30)})
     first = await as_vitals(schema, workouts.between, DAY, DAY)
     await log(
@@ -345,7 +345,7 @@ async def test_when_each_source_started_is_read_whole_again_after_a_while(
 
 async def test_a_night_remade_with_another_date_counts_by_the_last(schema, log) -> None:  # noqa: F811
     night = {
-        "id": "noche-rehecha",
+        "id": "night-redone",
         "start": f"{day(3)}T23:30:00+02:00",
         "end": f"{day(2)}T07:00:00+02:00",
         "minutes_asleep": 420,
@@ -377,7 +377,7 @@ async def test_today_answers_with_a_fixed_number_of_queries(api, gym, log) -> No
     await log({"date": day(1), "steps": 12000}, at(1, "21:00"), "health.steps", "apple_health")
     await log(
         {
-            "id": "noche-de-hoy",
+            "id": "tonight",
             "date": day(0),
             "start": f"{day(1)}T23:30:00+02:00",
             "end": f"{day(0)}T07:00:00+02:00",
@@ -390,9 +390,9 @@ async def test_today_answers_with_a_fixed_number_of_queries(api, gym, log) -> No
     await heart_day(log, now - timedelta(days=1), {18 * 60 + m: 130 for m in range(0, 40)})
     await log(
         {
-            "id": "band:hoy",
+            "id": "band:today",
             "kind": "PADEL",
-            "name": "Pádel",
+            "name": "Padel",
             "start": f"{day(1)}T18:00:00+02:00",
             "end": f"{day(1)}T18:30:00+02:00",
             "heart": [{"s": 0, "bpm": 120}, {"s": 600, "bpm": 140}],
@@ -400,7 +400,7 @@ async def test_today_answers_with_a_fixed_number_of_queries(api, gym, log) -> No
         at(1, "19:00"),
         "health.exercise",
     )
-    await gym(workout("w:hoy", now - timedelta(days=1), "18:00", "18:30", band_id="band:hoy"))
+    await gym(workout("w:today", now - timedelta(days=1), "18:00", "18:30", band_id="band:today"))
 
     response = await api.get("/today")
     again = await api.get("/today")

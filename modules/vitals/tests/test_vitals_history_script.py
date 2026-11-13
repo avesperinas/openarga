@@ -48,7 +48,7 @@ FULL = b"""<?xml version="1.0" encoding="UTF-8"?>
    HKCharacteristicTypeIdentifierBiologicalSex="HKBiologicalSexFemale"
    HKCharacteristicTypeIdentifierBloodType="HKBloodTypeONegative"
    HKCharacteristicTypeIdentifierFitzpatrickSkinType="HKFitzpatrickSkinTypeNotSet"
-   HKCharacteristicTypeIdentifierCardioFitnessMedicationsUse="Ninguna"/>
+   HKCharacteristicTypeIdentifierCardioFitnessMedicationsUse="None"/>
  <Record type="HKQuantityTypeIdentifierHeight" sourceName="iPhone" unit="cm"
    startDate="2018-01-08 10:00:00 +0100" endDate="2018-01-08 10:00:00 +0100" value="170"/>
  <Record type="HKQuantityTypeIdentifierHeartRate" sourceName="Reloj" unit="count/min"
@@ -109,15 +109,15 @@ def test_it_reads_every_figure_vitals_keeps_and_nothing_else() -> None:
         "blood_type": "0-",
         "sex": "female",
         "birth_date": "1990-01-01",
-        "cardio_medications": "Ninguna",
+        "cardio_medications": "None",
     }
 
 
 def test_it_finds_the_export_with_its_spanish_name(tmp_path: Path) -> None:
-    exported = tmp_path / "exportación.zip"
+    exported = tmp_path / "exportaci\u00f3n.zip"
     with zipfile.ZipFile(exported, "w") as archive:
         archive.writestr("apple_health_export/export_cda.xml", b"<ClinicalDocument/>")
-        archive.writestr("apple_health_export/exportación.xml", EXPORT)
+        archive.writestr("apple_health_export/exportaci\u00f3n.xml", EXPORT)
         archive.writestr("apple_health_export/workout-routes/route.gpx", b"<gpx/>")
 
     with history.open_export(exported) as source:

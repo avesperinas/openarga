@@ -145,7 +145,7 @@ async def test_what_stopped_arriving_with_the_switch_is_history(api, log) -> Non
 def night(back: int, asleep: int, *, id: str | None = None, main: bool = True) -> dict:
     woke = day(back)
     return {
-        "id": id or f"noche-{back}",
+        "id": id or f"night-{back}",
         "date": woke,
         "start": f"{day(back + 1)}T23:30:00+02:00",
         "end": f"{woke}T07:15:00+02:00",
@@ -221,7 +221,7 @@ async def test_the_sleep_widget_compares_last_night_with_the_month(api, log) -> 
     assert ready["state"] == "ready"
     validate("kpi-delta", ready["body"])
     assert (ready["body"]["value"], ready["body"]["previous"]) == (6.0, 6.5)
-    assert ready["body"]["detail"] == "profundo 70 min · REM 90 min"
+    assert ready["body"]["detail"] == "deep 70 min · REM 90 min"
 
 
 async def test_the_sleep_tool_tells_the_nights_and_their_means(log, tool) -> None:
@@ -291,21 +291,21 @@ async def test_an_ecg_says_what_the_device_said_and_draws_its_trace(api, log, to
     told = await tool("get_heart_rhythm", {})
 
     assert [(one["result_text"], one["seconds"]) for one in listed] == [
-        ("Ritmo sinusal normal", 30.0)
+        ("Normal sinus rhythm", 30.0)
     ]
     assert len(drawn["millivolts"]) == 1500
     assert drawn["millivolts"][:2] == [0.0, 0.005]
     assert drawn["step_seconds"] == 0.02
-    assert told["ecgs"][0]["result_text"] == "Ritmo sinusal normal"
+    assert told["ecgs"][0]["result_text"] == "Normal sinus rhythm"
     assert "millivolts" not in told["ecgs"][0]
-    assert (await api.get("/ecg/trace", params={"id": "otro"})).status_code == 404
+    assert (await api.get("/ecg/trace", params={"id": "other"})).status_code == 404
 
 
 async def test_irregular_rhythm_alerts_and_the_band(api, log, tool) -> None:
     alert = {"id": "irn-1", "start": f"{day(2)}T03:00:00+02:00", "end": f"{day(2)}T05:00:00+02:00"}
     await log(alert | {"windows": 3, "positive_windows": 2}, at(2), "health.irn")
     await log({"irn_enrolled": True}, at(2), "health.profile")
-    band = {"id": "band-1", "name": "Pulsera sintética", "kind": "tracker", "battery_pct": 90}
+    band = {"id": "band-1", "name": "Synthetic band", "kind": "tracker", "battery_pct": 90}
     await log(band | {"last_sync": f"{day(1)}T08:00:00+00:00"}, at(1, "08:00"), "health.device")
     await log(
         band | {"battery_pct": 82, "last_sync": f"{day(0)}T08:00:00+00:00"},
@@ -319,7 +319,7 @@ async def test_irregular_rhythm_alerts_and_the_band(api, log, tool) -> None:
     told = await tool("get_band", {})
 
     assert [(one["windows"], one["positive_windows"]) for one in alerts] == [(3, 2)]
-    assert [(one["name"], one["battery_pct"]) for one in devices] == [("Pulsera sintética", 82)]
+    assert [(one["name"], one["battery_pct"]) for one in devices] == [("Synthetic band", 82)]
     assert rhythm["alerts_enabled"] is True
     assert told["devices"][0]["battery_pct"] == 82
 
@@ -328,7 +328,7 @@ async def test_without_the_band_the_band_tool_says_so(tool) -> None:
     told = await tool("get_band", {})
 
     assert told["devices"] == []
-    assert "ningún aparato" in told["note"]
+    assert "no Google Health device" in told["note"]
 
 
 @pytest.fixture

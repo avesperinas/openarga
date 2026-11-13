@@ -4,10 +4,10 @@ import pytest
 
 from vitals import labs
 
-PDF = b"%PDF-1.4\n% una revision inventada\n%%EOF\n"
+PDF = b"%PDF-1.4\n% a made-up check-up\n%%EOF\n"
 
 
-async def checkup(api, day: str, center: str = "Laboratorio de prueba") -> str:
+async def checkup(api, day: str, center: str = "Test lab") -> str:
     response = await api.post("/checkups", json={"day": day, "center": center})
     assert response.status_code == 201
     return response.json()["id"]
@@ -27,7 +27,7 @@ def test_units_are_read_however_a_report_writes_them() -> None:
 
 def test_names_are_matched_without_accents_or_the_asterisk() -> None:
     assert labs.plain(" Colesterol  LDL* ") == "colesterol ldl"
-    assert labs.plain("ÁCIDO ÚRICO") == "acido urico"
+    assert labs.plain("\u00c1CIDO \u00daRICO") == "acido urico"
 
 
 @pytest.mark.parametrize(
@@ -48,8 +48,8 @@ async def test_the_catalogue_comes_seeded_in_reading_order(api) -> None:
 
 
 async def test_the_same_checkup_twice_is_one(api) -> None:
-    first = await api.post("/checkups", json={"day": "2026-09-02", "center": "Prevención"})
-    again = await api.post("/checkups", json={"day": "2026-09-02", "center": "Prevención"})
+    first = await api.post("/checkups", json={"day": "2026-09-02", "center": "Occupational health"})
+    again = await api.post("/checkups", json={"day": "2026-09-02", "center": "Occupational health"})
 
     assert first.json() == {"id": first.json()["id"], "existed": False}
     assert again.json() == {"id": first.json()["id"], "existed": True}
@@ -128,14 +128,14 @@ async def test_a_pdf_is_kept_and_served_back(api) -> None:
     found = await checkup(api, "2026-09-02")
 
     saved = await api.put(
-        f"/checkups/{found}/document", params={"filename": "revision.pdf"}, content=PDF
+        f"/checkups/{found}/document", params={"filename": "checkup.pdf"}, content=PDF
     )
     served = await api.get(f"/checkups/{found}/document")
 
     assert saved.status_code == 204
     assert served.content == PDF
     assert served.headers["content-type"] == "application/pdf"
-    assert (await api.get("/checkups")).json()[0]["document"] == "revision.pdf"
+    assert (await api.get("/checkups")).json()[0]["document"] == "checkup.pdf"
 
 
 async def test_what_is_not_a_pdf_is_refused(api) -> None:

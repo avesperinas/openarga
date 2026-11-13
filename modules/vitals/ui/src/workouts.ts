@@ -1,9 +1,11 @@
-import type { StatTone } from "@openarga/ui";
+import type { Locale, StatTone, Translate } from "@openarga/ui";
 
 import type { Baseline, Load, SleepGroup, Workout } from "./api";
 
-const number = (value: number, digits = 0) =>
-  value.toLocaleString("es-ES", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+import { plural, unitName } from "./words";
+
+const number = (value: number, locale: Locale, digits = 0) =>
+  value.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
 export function minutesLabel(minutes: number): string {
   if (minutes < 60) return `${Math.round(minutes)} min`;
@@ -11,31 +13,25 @@ export function minutesLabel(minutes: number): string {
   return `${hours} h ${String(Math.round(minutes - hours * 60)).padStart(2, "0")}`;
 }
 
-export function baselineValue(baseline: Baseline, value: number | null): string {
+export function baselineValue(baseline: Baseline, value: number | null, t: Translate, locale: Locale): string {
   if (value === null) return "—";
   if (baseline.unit === "min") return minutesLabel(value);
-  const shown = number(value, baseline.digits);
+  const shown = number(value, locale, baseline.digits);
   if (baseline.unit === "%") return `${shown} %`;
   if (baseline.unit === "°C") return `${value > 0 ? "+" : ""}${shown} °C`;
-  return `${shown} ${baseline.unit}`;
+  return `${shown} ${unitName(t, baseline.unit)}`;
 }
 
-const SAID: Record<NonNullable<Baseline["status"]>, string> = {
-  below: "por debajo de tu normal",
-  inside: "en tu normal",
-  above: "por encima de tu normal",
-};
-
-export function baselineTile(baseline: Baseline): { value: string; foot: string; tone: StatTone } {
-  const value = baselineValue(baseline, baseline.value);
-  if (baseline.value === null) return { value, foot: "sin dato de hoy ni de ayer", tone: "neutral" };
+export function baselineTile(baseline: Baseline, t: Translate, locale: Locale): { value: string; foot: string; tone: StatTone } {
+  const value = baselineValue(baseline, baseline.value, t, locale);
+  if (baseline.value === null) return { value, foot: t("baseline.no_data"), tone: "neutral" };
   if (baseline.status === null || baseline.low === null || baseline.high === null) {
-    return { value, foot: `aún sin tu normal (${baseline.days} de 14 días)`, tone: "neutral" };
+    return { value, foot: t("baseline.not_yet", { days: baseline.days }), tone: "neutral" };
   }
-  const range = `${baselineValue(baseline, baseline.low)} – ${baselineValue(baseline, baseline.high)}`;
+  const range = `${baselineValue(baseline, baseline.low, t, locale)} – ${baselineValue(baseline, baseline.high, t, locale)}`;
   return {
     value,
-    foot: `${SAID[baseline.status]} · ${range}`,
+    foot: `${t(`baseline.${baseline.status}`)} · ${range}`,
     tone: baseline.status === "inside" ? "neutral" : "warning",
   };
 }
@@ -45,19 +41,18 @@ export function clock(iso: string): string {
   return `${String(moment.getHours()).padStart(2, "0")}:${String(moment.getMinutes()).padStart(2, "0")}`;
 }
 
-const WEEKDAYS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
-
-export function whenLabel(iso: string): string {
+export function whenLabel(iso: string, locale: Locale): string {
   const moment = new Date(iso);
-  return `${WEEKDAYS[moment.getDay()]} ${moment.getDate()}, ${clock(iso)}`;
+  const weekday = moment.toLocaleDateString(locale, { weekday: "short" }).replace(".", "");
+  return `${weekday} ${moment.getDate()}, ${clock(iso)}`;
 }
 
-export function workoutLine(workout: Workout): string {
+export function workoutLine(workout: Workout, t: Translate, locale: Locale): string {
   return [
-    whenLabel(workout.start),
+    whenLabel(workout.start, locale),
     minutesLabel(workout.minutes),
-    workout.heart.avg != null ? `media ${Math.round(workout.heart.avg)} lpm` : null,
-    workout.heart.max != null ? `máx. ${Math.round(workout.heart.max)}` : null,
+    workout.heart.avg != null ? t("workout.average", { value: Math.round(workout.heart.avg) }) : null,
+    workout.heart.max != null ? t("workout.max", { value: Math.round(workout.heart.max) }) : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -68,13 +63,13 @@ export function elapsed(seconds: number): string {
   return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-export function groupLine(group: SleepGroup): string {
-  if (group.nights === 0) return "sin noches";
+export function groupLine(group: SleepGroup, t: Translate, locale: Locale): string {
+  if (group.nights === 0) return t("group.no_nights");
   return [
     group.asleep != null ? minutesLabel(group.asleep) : null,
-    group.deep != null ? `profundo ${minutesLabel(group.deep)}` : null,
-    group.hrv != null ? `VFC ${number(group.hrv)} ms` : null,
-    `${group.nights} ${group.nights === 1 ? "noche" : "noches"}`,
+    group.deep != null ? t("group.deep", { value: minutesLabel(group.deep) }) : null,
+    group.hrv != null ? t("group.hrv", { value: number(group.hrv, locale) }) : null,
+    plural(t, "group.nights", group.nights),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -104,7 +99,12 @@ export function zoneShares(load: Load, weeks = 4): { minutes: number[]; shares: 
   return { minutes, shares: minutes.map((one) => (total > 0 ? one / total : 0)) };
 }
 
-export function byName(workouts: Workout[], now: Date, days = 30): { name: string; count: number; minutes: number }[] {
+export function byName(
+  workouts: Workout[],
+  now: Date,
+  t: Translate,
+  days = 30,
+): { name: string; count: number; minutes: number }[] {
   const since = now.getTime() - days * 86_400_000;
   const groups = new Map<string, { name: string; count: number; minutes: number }>();
   for (const one of workouts) {
@@ -116,17 +116,22 @@ export function byName(workouts: Workout[], now: Date, days = 30): { name: strin
   }
   const sorted = [...groups.values()].sort((a, b) => b.minutes - a.minutes);
   if (sorted.length <= 6) return sorted;
-  const others = sorted.slice(5).reduce((sum, one) => ({ name: "Otros", count: sum.count + one.count, minutes: sum.minutes + one.minutes }), {
-    name: "Otros",
+  const other = t("workout.others");
+  const others = sorted.slice(5).reduce((sum, one) => ({ name: other, count: sum.count + one.count, minutes: sum.minutes + one.minutes }), {
+    name: other,
     count: 0,
     minutes: 0,
   });
   return [...sorted.slice(0, 5), others];
 }
 
-const SHORT = new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short" });
-
-export function byWeek(workouts: Workout[], now: Date): { start: string; label: string; items: Workout[] }[] {
+export function byWeek(
+  workouts: Workout[],
+  now: Date,
+  t: Translate,
+  locale: Locale,
+): { start: string; label: string; items: Workout[] }[] {
+  const short = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
   const mondayOf = (date: Date) => {
     const monday = new Date(date);
     monday.setHours(12, 0, 0, 0);
@@ -144,7 +149,7 @@ export function byWeek(workouts: Workout[], now: Date): { start: string; label: 
     const monday = new Date(`${start}T12:00:00`);
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    const label = start === current ? "Esta semana" : `${SHORT.format(monday)} – ${SHORT.format(sunday)}`;
+    const label = start === current ? t("workout.this_week") : `${short.format(monday)} – ${short.format(sunday)}`;
     return { start, label: `${label} · ${items.length}`, items };
   });
 }

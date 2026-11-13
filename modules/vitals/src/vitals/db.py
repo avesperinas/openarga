@@ -14,8 +14,8 @@ def database_url() -> str:
     url = os.environ.get("DATABASE_URL", "").strip()
     if not url:
         raise RuntimeError(
-            "falta DATABASE_URL. El módulo no arranca sin ella: servir sin base de datos "
-            "es prometer un dato que no se tiene."
+            "DATABASE_URL is missing. The module does not start without it: serving without a "
+            "database would promise data it does not have."
         )
     return url
 

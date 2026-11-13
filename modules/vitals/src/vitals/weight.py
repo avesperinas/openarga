@@ -4,7 +4,6 @@ import json
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from typing import Literal
-from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field
 from sqlalchemy import text
@@ -12,12 +11,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_contracts import BODY_WEIGHT, body_weight
+from vitals import steps
 
-MADRID = ZoneInfo("Europe/Madrid")
 WINDOW_DAYS = 7
 CHANGE_SLACK_DAYS = 7
 
-Source = Literal["manual", "claude", "historico"]
+Source = Literal["manual", "claude", "history"]
 
 
 class NotFound(LookupError):
@@ -29,7 +28,7 @@ class Conflict(ValueError):
 
 
 def today() -> date:
-    return datetime.now(MADRID).date()
+    return datetime.now(steps.zone()).date()
 
 
 class WeightIn(BaseModel):
@@ -170,9 +169,9 @@ async def correct(connection: AsyncConnection, weight_id: str, weighing: WeightI
         async with connection.begin_nested():
             row = (await connection.execute(UPDATE, values)).one_or_none()
     except IntegrityError as error:
-        raise Conflict("ese día ya tiene una pesada con ese peso") from error
+        raise Conflict("that day already has a weigh-in with that weight") from error
     if row is None:
-        raise NotFound(f"la pesada {weight_id}")
+        raise NotFound(f"weigh-in {weight_id}")
     entry = _entry(row)
     await _publish(connection, entry)
     return entry
@@ -291,7 +290,7 @@ async def set_goal(connection: AsyncConnection, wanted: Goal) -> Goal:
         and wanted.weight_max_kg is not None
         and wanted.weight_min_kg > wanted.weight_max_kg
     ):
-        raise Conflict("el mínimo de la banda de peso no puede pasar del máximo")
+        raise Conflict("the weight band minimum cannot exceed the maximum")
     await connection.execute(SET_GOAL, wanted.model_dump())
     return await goal(connection)
 

@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from vitals import body, sleep, workouts
-from vitals.steps import MADRID, today
+from vitals.steps import today, zone
 
 LATE_HOUR = 20
 NIGHTS = 90
@@ -21,6 +21,7 @@ class Group(BaseModel):
 
 
 class Comparison(BaseModel):
+    id: str
     label: str
     after: Group
     rest: Group
@@ -57,9 +58,9 @@ async def read(connection: AsyncConnection, now: date | None = None) -> Patterns
     trained: set[date] = set()
     late: set[date] = set()
     for start, end in done:
-        day = start.astimezone(MADRID).date()
+        day = start.astimezone(zone()).date()
         trained.add(day)
-        if end.astimezone(MADRID).hour >= LATE_HOUR:
+        if end.astimezone(zone()).hour >= LATE_HOUR:
             late.add(day)
     found = await body.read(connection, "hrv_ms", since=first)
     hrv = {one.day: one.value for one in found.get("hrv_ms", [])}
@@ -76,12 +77,14 @@ async def read(connection: AsyncConnection, now: date | None = None) -> Patterns
         woke_spread=spread([sleep.clock(one.end) for one in last_30]),
         comparisons=[
             Comparison(
-                label="Después de un día con entreno",
+                id="after_training",
+                label="After a day with a workout",
                 after=group(with_training, hrv),
                 rest=group(without_training, hrv),
             ),
             Comparison(
-                label="Después de entrenar a partir de las 20:00",
+                id="after_late_training",
+                label="After training from 20:00 on",
                 after=group(after_late, hrv),
                 rest=group(not_late, hrv),
             ),

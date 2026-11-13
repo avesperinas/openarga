@@ -48,11 +48,13 @@ async def get_kpis(connection: AsyncConnection, arguments: GetKpis) -> dict[str,
 
 
 class GetSteps(BaseModel):
-    since: dt.date | None = Field(default=None, description="Desde qué día, `YYYY-MM-DD`.")
-    until: dt.date | None = Field(default=None, description="Hasta qué día, incluido.")
+    since: dt.date | None = Field(default=None, description="From which day, `YYYY-MM-DD`.")
+    until: dt.date | None = Field(default=None, description="Up to which day, inclusive.")
     group_by: steps.Period = Field(
         default="day",
-        description="`day` da cada día; `week`, `month` y `year`, el total y la media diaria.",
+        description=(
+            "`day` gives each day; `week`, `month` and `year`, the total and the daily average."
+        ),
     )
 
 
@@ -78,8 +80,8 @@ async def get_steps(connection: AsyncConnection, arguments: GetSteps) -> dict[st
 
 
 class GetWeight(BaseModel):
-    since: dt.date | None = Field(default=None, description="Desde qué día, `YYYY-MM-DD`.")
-    until: dt.date | None = Field(default=None, description="Hasta qué día, incluido.")
+    since: dt.date | None = Field(default=None, description="From which day, `YYYY-MM-DD`.")
+    until: dt.date | None = Field(default=None, description="Up to which day, inclusive.")
 
 
 async def get_weight(connection: AsyncConnection, arguments: GetWeight) -> dict[str, Any]:
@@ -104,18 +106,18 @@ class GetBody(BaseModel):
         default_factory=list,
         max_length=10,
         description=(
-            "Ids de cifra: `resting_heart_rate`, `hrv_ms`, `vo2max`, `active_kcal`, "
-            "`walking_speed_kmh`… Vacío, la ficha y el resumen de todas las que tienen dato, con "
-            "sus ids."
+            "Figure ids: `resting_heart_rate`, `hrv_ms`, `vo2max`, `active_kcal`, "
+            "`walking_speed_kmh`... Empty, the card and summary of every figure with data, with "
+            "their ids."
         ),
     )
-    since: dt.date | None = Field(default=None, description="Desde qué día, `YYYY-MM-DD`.")
-    until: dt.date | None = Field(default=None, description="Hasta qué día, incluido.")
+    since: dt.date | None = Field(default=None, description="From which day, `YYYY-MM-DD`.")
+    until: dt.date | None = Field(default=None, description="Up to which day, inclusive.")
     group_by: steps.Period = Field(
         default="day",
         description=(
-            "`day` da cada día; `week`, `month` y `year`, la media diaria de cada periodo (y el "
-            "total, en lo que se suma)."
+            "`day` gives each day; `week`, `month` and `year`, the daily average of each period "
+            "(and the total, for what adds up)."
         ),
     )
 
@@ -148,8 +150,8 @@ class GetLabResults(BaseModel):
         default_factory=list,
         max_length=20,
         description=(
-            "Ids o nombres de analito: `ldl`, `hdl`, `cholesterol`, `glucose`… Vacío, todos los "
-            "que se han medido."
+            "Analyte ids or names: `ldl`, `hdl`, `cholesterol`, `glucose`... Empty, every one "
+            "that has been measured."
         ),
     )
 
@@ -162,7 +164,7 @@ async def get_lab_results(connection: AsyncConnection, arguments: GetLabResults)
         try:
             wanted = {(await labs.find(connection, one)).id for one in arguments.analytes}
         except NotFound as error:
-            return {"results": [], "note": f"no conozco {error}"}
+            return {"results": [], "note": f"unknown {error}"}
     return {
         "results": [
             {
@@ -182,7 +184,7 @@ async def get_lab_results(connection: AsyncConnection, arguments: GetLabResults)
             for row in found.rows
             if wanted is None or row.analyte.id in wanted
         ],
-        "note": "El rango es el del informe de cada revisión. Vitals no diagnostica.",
+        "note": "The range is the one in each check-up report. Vitals does not diagnose.",
     }
 
 
@@ -207,17 +209,18 @@ async def get_checkups(connection: AsyncConnection, arguments: GetCheckups) -> d
 
 
 class LogWeight(BaseModel):
-    kg: float = Field(ge=20, le=400, description="El peso en kilos, con decimales: `78.4`.")
+    kg: float = Field(ge=20, le=400, description="The weight in kilograms, with decimals: `78.4`.")
     date: dt.date | None = Field(
-        default=None, description="El día de la pesada, `YYYY-MM-DD`. Sin él, hoy en Madrid."
+        default=None,
+        description="The day of the weigh-in, `YYYY-MM-DD`. Without it, today for the person.",
     )
-    time: dt.time | None = Field(default=None, description="La hora, `HH:MM`, si se sabe.")
-    note: str | None = Field(default=None, max_length=200, description="Solo si se dice algo.")
+    time: dt.time | None = Field(default=None, description="The time, `HH:MM`, if known.")
+    note: str | None = Field(default=None, max_length=200, description="Only if something is said.")
     from_history: bool = Field(
         default=False,
         description=(
-            "`true` al cargar pesadas antiguas de otra app (MyFitnessPal), para que se distingan "
-            "de las que se apuntan al momento."
+            "`true` when loading old weigh-ins from another app (MyFitnessPal), so they are told "
+            "apart from those logged on the spot."
         ),
     )
 
@@ -229,7 +232,7 @@ async def log_weight(connection: AsyncConnection, arguments: LogWeight) -> dict[
     logged = await weight.log(
         connection,
         weighing,
-        source="historico" if arguments.from_history else "claude",
+        source="history" if arguments.from_history else "claude",
     )
     found = await weight.summary(connection, entries=0)
     return {
@@ -244,9 +247,9 @@ async def log_weight(connection: AsyncConnection, arguments: LogWeight) -> dict[
 
 
 class RecordCheckup(BaseModel):
-    date: dt.date = Field(description="El día de la revisión o de la extracción, `YYYY-MM-DD`.")
+    date: dt.date = Field(description="The day of the check-up or the blood draw, `YYYY-MM-DD`.")
     center: str | None = Field(
-        default=None, max_length=120, description="El servicio de prevención o el laboratorio."
+        default=None, max_length=120, description="The occupational health service or the lab."
     )
     notes: str | None = Field(default=None, max_length=2000)
 
@@ -260,27 +263,27 @@ async def record_checkup(connection: AsyncConnection, arguments: RecordCheckup) 
     return {
         "checkup_id": found,
         "already_existed": existed,
-        "attach_pdf_url": f"{base}/vitals/analiticas?adjuntar={found}",
+        "attach_pdf_url": f"{base}/vitals/labs?attach={found}",
     }
 
 
 class AddLabResult(BaseModel):
-    checkup_id: UUID = Field(description="El que devuelve `record_checkup`.")
+    checkup_id: UUID = Field(description="The one `record_checkup` returns.")
     analyte: str = Field(
         min_length=1,
         max_length=80,
         description=(
-            "El id del analito (`ldl`, `hemoglobin`, `urine_ph`…) o su nombre como lo escribe el "
-            "informe: `Colesterol LDL`, `GOT`. Si no lo conoce, dice cuáles hay."
+            "The analyte id (`ldl`, `hemoglobin`, `urine_ph`...) or its name as the report writes "
+            "it: `LDL cholesterol`, `GOT`. If it does not know it, it says which ones exist."
         ),
     )
-    value: float | None = Field(default=None, description="El número, tal cual el informe.")
+    value: float | None = Field(default=None, description="The number, exactly as in the report.")
     value_text: str | None = Field(
-        default=None, max_length=80, description="Solo si no hay número: `Negativo`, `Normal`."
+        default=None, max_length=80, description="Only if there is no number: `Negative`, `Normal`."
     )
-    unit: str | None = Field(default=None, max_length=30, description="Tal cual: `mg/dL`.")
-    ref_low: float | None = Field(default=None, description="El mínimo del rango del informe.")
-    ref_high: float | None = Field(default=None, description="El máximo del rango del informe.")
+    unit: str | None = Field(default=None, max_length=30, description="As written: `mg/dL`.")
+    ref_low: float | None = Field(default=None, description="The low end of the report range.")
+    ref_high: float | None = Field(default=None, description="The high end of the report range.")
 
 
 async def add_lab_result(connection: AsyncConnection, arguments: AddLabResult) -> dict[str, Any]:
@@ -291,16 +294,18 @@ async def add_lab_result(connection: AsyncConnection, arguments: AddLabResult) -
             labs.ResultIn(**arguments.model_dump(exclude={"checkup_id"})),
         )
     except (NotFound, Conflict, ValueError) as error:
-        return {"added": None, "note": f"no lo he apuntado: {error}"}
+        return {"added": None, "note": f"not logged: {error}"}
     return {"added": result.model_dump(mode="json")}
 
 
 class GetSleep(BaseModel):
-    since: dt.date | None = Field(default=None, description="Desde qué noche, `YYYY-MM-DD`.")
-    until: dt.date | None = Field(default=None, description="Hasta qué noche, incluida.")
+    since: dt.date | None = Field(default=None, description="From which night, `YYYY-MM-DD`.")
+    until: dt.date | None = Field(default=None, description="Up to which night, inclusive.")
     group_by: steps.Period = Field(
         default="day",
-        description="`day` da cada noche; `week`, `month` y `year`, la media de sus noches.",
+        description=(
+            "`day` gives each night; `week`, `month` and `year`, the average of their nights."
+        ),
     )
 
 
@@ -318,16 +323,16 @@ async def get_sleep(connection: AsyncConnection, arguments: GetSleep) -> dict[st
             if arguments.group_by == "day"
             else [one.model_dump(mode="json") for one in sleep.buckets(nights, arguments.group_by)]
         ),
-        "note": "Una noche es la del día en que uno se despierta; las horas, en minutos desde "
-        "medianoche (negativo, antes). La nota (`score`) es de Vitals y con la cuenta a la vista: "
-        "duración contra 8 h hasta 50, profundo y REM llenos con un 45 % hasta 25, y lo "
-        "despierto en la cama, lleno con un 5 % y vacío con un 25 %, hasta 25.",
+        "note": "A night belongs to the day one wakes up; times are minutes from midnight "
+        "(negative, before). The `score` is Vitals' own with the sum in view: duration against "
+        "8 h up to 50, deep and REM full at 45 % up to 25, and time awake in bed, full at 5 % "
+        "and empty at 25 %, up to 25.",
     }
 
 
 class GetHeartDay(BaseModel):
     date: dt.date | None = Field(
-        default=None, description="El día, `YYYY-MM-DD`. Sin él, el último con datos."
+        default=None, description="The day, `YYYY-MM-DD`. Without it, the last one with data."
     )
 
 
@@ -336,19 +341,19 @@ async def get_heart_day(connection: AsyncConnection, arguments: GetHeartDay) -> 
     if day is None:
         known = await heart.days(connection, 1)
         if not known:
-            return {"day": None, "note": "todavía no ha llegado el vitals de ningún día"}
+            return {"day": None, "note": "no day of heart rate has arrived yet"}
         day = known[0]
     found = await heart.of_day(connection, day)
     if found is None:
-        return {"day": day.isoformat(), "note": "no hay vitals de ese día"}
+        return {"day": day.isoformat(), "note": "no heart rate on that day"}
     return {
         "day": day.isoformat(),
         "step_minutes": found.step,
         "lowest": found.min.model_dump() if found.min else None,
         "highest": found.max.model_dump() if found.max else None,
         "hours": [one.model_dump() for one in heart.hours(found)],
-        "note": "Por hora: mínimo, media y máximo de los tramos (de `step_minutes` minutos). "
-        "`minute` es el minuto del día en que empieza el tramo.",
+        "note": "Per hour: minimum, average and maximum of the spans (of `step_minutes` "
+        "minutes). `minute` is the minute of the day the span starts.",
     }
 
 
@@ -360,37 +365,39 @@ async def get_today(connection: AsyncConnection, arguments: GetToday) -> dict[st
     found = await today.read(connection)
     out = found.model_dump(mode="json", exclude={"load": {"weeks"}})
     out["note"] = (
-        "Cada cifra, contra la media de tus 60 días anteriores ± una desviación típica: "
-        "`status` dice si queda dentro, por encima o por debajo. Sin 14 días con dato no hay "
-        "banda. No es un diagnóstico ni una puntuación."
+        "Each figure, against the average of your previous 60 days ± one standard deviation: "
+        "`status` says whether it is inside, above or below. Without 14 days of data there is "
+        "no band. It is neither a diagnosis nor a score."
     )
     return out
 
 
 class GetStress(BaseModel):
-    date: dt.date | None = Field(default=None, description="El día, `YYYY-MM-DD`. Sin él, hoy.")
+    date: dt.date | None = Field(
+        default=None, description="The day, `YYYY-MM-DD`. Without it, today."
+    )
 
 
 async def get_stress(connection: AsyncConnection, arguments: GetStress) -> dict[str, Any]:
     out = (await stress.read(connection, arguments.date)).model_dump(mode="json")
     out["note"] = (
-        "Estimación de arga, no el estrés de Fitbit. `tension.minutes`: minutos despierto y quieto "
-        "con el vitals por encima de `threshold` (reposo + 25 % de la reserva de vitals). "
-        "`morning.score`: 50 + 12,5 × (z de la VFC − z de la FC en reposo) contra tu normal; 50 es "
-        "lo de siempre y más es mejor recuperado. No distingue estrés de cafeína, calor o un "
-        "resfriado."
+        "An arga estimate, not Fitbit stress. `tension.minutes`: minutes awake and still with "
+        "the heart rate above `threshold` (resting + 25 % of the heart rate reserve). "
+        "`morning.score`: 50 + 12.5 × (HRV z − resting HR z) against your normal; 50 is the "
+        "usual and higher is better recovered. It cannot tell stress from caffeine, heat or a "
+        "cold."
     )
     return out
 
 
 class GetWorkouts(BaseModel):
-    since: dt.date | None = Field(default=None, description="Desde qué día, `YYYY-MM-DD`.")
-    until: dt.date | None = Field(default=None, description="Hasta qué día, incluido.")
+    since: dt.date | None = Field(default=None, description="From which day, `YYYY-MM-DD`.")
+    until: dt.date | None = Field(default=None, description="Up to which day, inclusive.")
     id: str | None = Field(
         default=None,
         max_length=200,
-        description="El id de un entreno (de una llamada sin él) para su vitals minuto a minuto y "
-        "sus series.",
+        description="The id of a workout (from a call without it) for its heart rate minute by "
+        "minute and its series.",
     )
 
 
@@ -408,7 +415,7 @@ async def get_workouts(connection: AsyncConnection, arguments: GetWorkouts) -> d
     if arguments.id:
         found = await workouts.one(connection, arguments.id)
         if found is None:
-            return {"note": "no hay ese entreno"}
+            return {"note": "no such workout"}
         out = found.model_dump(mode="json", exclude={"beats"})
         out["heart_per_minute"] = per_minute(found.beats)
         return out
@@ -420,9 +427,9 @@ async def get_workouts(connection: AsyncConnection, arguments: GetWorkouts) -> d
         "until": last.isoformat(),
         "total": len(found),
         "workouts": [one.model_dump(mode="json") for one in found],
-        "note": "Zonas 1 a 5 sobre el vitals máximo teórico (220 menos la edad): 50, 60, 70, 80 y "
-        "90 %. `load` suma cada minuto por su zona (Edwards). `recovery_2min`, cuánto bajó el "
-        "vitals en los dos minutos de después.",
+        "note": "Zones 1 to 5 over the theoretical max heart rate (220 minus age): 50, 60, 70, "
+        "80 and 90 %. `load` adds each minute times its zone (Edwards). `recovery_2min`, how "
+        "much the heart rate dropped in the two minutes after.",
     }
 
 
@@ -444,7 +451,7 @@ async def get_sleep_patterns(
     connection: AsyncConnection, arguments: GetSleepPatterns
 ) -> dict[str, Any]:
     out = (await patterns.read(connection)).model_dump(mode="json")
-    out["note"] = "Medias de lo que pasó en los últimos 90 días; no dicen por qué."
+    out["note"] = "Averages of what happened in the last 90 days; they do not say why."
     return out
 
 
@@ -472,9 +479,9 @@ async def get_heart_rhythm(
         "ecgs": [one.model_dump(mode="json") for one in found[:50]],
         "irregular_rhythm_alerts": [one.model_dump(mode="json") for one in alerts[:50]],
         "alerts_enabled": profile.irn_enrolled if profile else None,
-        "note": "`result_text` es lo que dijo el algoritmo de la pulsera, tal cual. "
-        "`positive_windows` son las ventanas del aviso en que detectó un ritmo irregular. "
-        "Vitals no interpreta ni diagnostica.",
+        "note": "`result_text` is what the band's algorithm said, as is. `positive_windows` "
+        "are the alert windows where it detected an irregular rhythm. Vitals neither "
+        "interprets nor diagnoses.",
     }
 
 
@@ -485,11 +492,11 @@ class GetBand(BaseModel):
 async def get_band(connection: AsyncConnection, arguments: GetBand) -> dict[str, Any]:
     found = await rhythm.devices(connection)
     if not found:
-        return {"devices": [], "note": "todavía no ha llegado ningún aparato de Google Health"}
+        return {"devices": [], "note": "no Google Health device has arrived yet"}
     return {
         "devices": [one.model_dump(mode="json") for one in found],
-        "note": "`last_sync` es la última vez que el aparato pasó sus datos al móvil; la batería, "
-        "la que tenía entonces.",
+        "note": "`last_sync` is the last time the device passed its data to the phone; the "
+        "battery, the one it had then.",
     }
 
 

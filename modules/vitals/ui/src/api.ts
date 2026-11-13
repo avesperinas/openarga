@@ -1,6 +1,6 @@
 const BASE = "/api/vitals";
 
-export type Source = "manual" | "claude" | "historico";
+export type Source = "manual" | "claude" | "history";
 
 export interface Entry {
   id: string;
@@ -46,7 +46,7 @@ export interface WeightIn {
 export class Unauthorised extends Error {}
 
 async function answer<T>(path: string, response: Response): Promise<T> {
-  if (response.status === 401) throw new Unauthorised("sin sesión");
+  if (response.status === 401) throw new Unauthorised("no session");
   if (!response.ok) {
     const detail = await response.json().catch(() => null);
     throw new Error(typeof detail?.detail === "string" ? detail.detail : `${path}: ${response.status}`);
@@ -92,7 +92,7 @@ export const readSteps = () => get<StepsSummary>("/steps");
 export interface Analyte {
   id: string;
   name: string;
-  panel: "hemograma" | "bioquimica" | "lipidos" | "orina" | "otros";
+  panel: "blood_count" | "biochemistry" | "lipids" | "urine" | "other";
   unit: string | null;
   about: string;
 }
@@ -191,10 +191,10 @@ export async function uploadDocument(checkup: string, file: File): Promise<void>
     headers: { "content-type": "application/pdf" },
     body: file,
   });
-  if (response.status === 401) throw new Unauthorised("sin sesión");
+  if (response.status === 401) throw new Unauthorised("no session");
   if (!response.ok) {
     const detail = await response.json().catch(() => null);
-    throw new Error(typeof detail?.detail === "string" ? detail.detail : "No se pudo subir el PDF.");
+    throw new Error(typeof detail?.detail === "string" ? detail.detail : "Could not upload the PDF.");
   }
 }
 
@@ -480,7 +480,7 @@ export interface SleepPatterns {
   nights: number;
   fell_asleep_spread: number | null;
   woke_spread: number | null;
-  comparisons: { label: string; after: SleepGroup; rest: SleepGroup }[];
+  comparisons: { id: string; label: string; after: SleepGroup; rest: SleepGroup }[];
 }
 
 export interface CheckupChange {

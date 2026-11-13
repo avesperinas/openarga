@@ -1,12 +1,11 @@
+import type { Locale, Translate } from "@openarga/ui";
+
 import type { Against, Day, Goal, Source } from "./api";
 
 export type Period = "3m" | "1y" | "all";
 
-export const PERIODS: { id: Period; label: string }[] = [
-  { id: "3m", label: "3 meses" },
-  { id: "1y", label: "1 año" },
-  { id: "all", label: "Todo" },
-];
+export const periods = (t: Translate): { id: Period; label: string }[] =>
+  (["3m", "1y", "all"] as const).map((id) => ({ id, label: t(`period.${id}`) }));
 
 export function monthsBefore(day: string, months: number): string {
   const [year = 1970, month = 1, date = 1] = day.split("-").map(Number);
@@ -32,10 +31,11 @@ export function extremes(days: Day[]): { min: Day; max: Day } | null {
   return { min, max };
 }
 
-export const kg = (value: number) => `${value.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg`;
+export const kg = (value: number, locale: Locale) =>
+  `${value.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg`;
 
-export const signedKg = (value: number) =>
-  `${value.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: "exceptZero" })} kg`;
+export const signedKg = (value: number, locale: Locale) =>
+  `${value.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: "exceptZero" })} kg`;
 
 export function goodWay(against: Against | null): "down" | "up" | "stay" | null {
   if (against === "above") return "down";
@@ -51,29 +51,29 @@ export function changeTone(change: number | null, against: Against | null): "pos
   return (way === "down") === change < 0 ? "positive" : "negative";
 }
 
-export function bandFoot(value: number, goal: Goal, against: Against | null): string {
-  if (against === "above" && goal.weight_max_kg !== null) return `${kg(value - goal.weight_max_kg)} por encima del objetivo`;
-  if (against === "below" && goal.weight_min_kg !== null) return `${kg(goal.weight_min_kg - value)} por debajo del objetivo`;
-  if (against === "inside") return "Dentro del objetivo";
-  return "Sin objetivo";
+export function bandFoot(value: number, goal: Goal, against: Against | null, t: Translate, locale: Locale): string {
+  if (against === "above" && goal.weight_max_kg !== null) {
+    return t("goal.above", { amount: kg(value - goal.weight_max_kg, locale) });
+  }
+  if (against === "below" && goal.weight_min_kg !== null) {
+    return t("goal.below", { amount: kg(goal.weight_min_kg - value, locale) });
+  }
+  if (against === "inside") return t("goal.inside");
+  return t("goal.none");
 }
 
-export function bandLabel(goal: Goal): string {
+export function bandLabel(goal: Goal, t: Translate, locale: Locale): string {
   const { weight_min_kg: low, weight_max_kg: high } = goal;
-  if (low !== null && high !== null) return `Entre ${kg(low)} y ${kg(high)}`;
-  if (high !== null) return `Hasta ${kg(high)}`;
-  if (low !== null) return `Desde ${kg(low)}`;
-  return "Sin objetivo";
+  if (low !== null && high !== null) return t("goal.between", { low: kg(low, locale), high: kg(high, locale) });
+  if (high !== null) return t("goal.up_to", { high: kg(high, locale) });
+  if (low !== null) return t("goal.from", { low: kg(low, locale) });
+  return t("goal.none");
 }
 
-export const SOURCES: Record<Source, string> = {
-  manual: "Apuntada en la app",
-  claude: "Apuntada por Claude",
-  historico: "Del histórico",
-};
+export const sourceName = (t: Translate, source: Source) => t(`source.${source}`);
 
-export function dayLabel(day: string, withYear = true): string {
-  return new Date(`${day}T12:00:00Z`).toLocaleDateString("es-ES", {
+export function dayLabel(day: string, locale: Locale, withYear = true): string {
+  return new Date(`${day}T12:00:00Z`).toLocaleDateString(locale, {
     weekday: withYear ? undefined : "short",
     day: "numeric",
     month: "short",
@@ -81,8 +81,8 @@ export function dayLabel(day: string, withYear = true): string {
   });
 }
 
-export function today(now = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(now);
+export function today(timeZone: string, now = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone }).format(now);
 }
 
 export function parseKg(text: string): number | null {

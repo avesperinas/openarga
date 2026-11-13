@@ -117,7 +117,7 @@ async def loop() -> None:
                     failures = 0
                     if result["published"]:
                         print(f"publisher · {result['published']} publicado(s)", flush=True)
-            except Exception as error:  # noqa: BLE001 - un fallo de base no tumba el proceso
+            except Exception as error:  # noqa: BLE001 - a database failure does not bring the process down
                 failures += 1
                 print(f"publisher · {type(error).__name__}: {error}", file=sys.stderr, flush=True)
             await asyncio.sleep(min(60.0, INTERVAL_SECONDS * (2 ** min(failures, 4))))

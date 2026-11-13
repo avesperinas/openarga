@@ -14,13 +14,13 @@ LATEST = text("""
 """)
 
 RESULTS = {
-    "normal_sinus_rhythm": "Ritmo sinusal normal",
-    "atrial_fibrillation": "Fibrilación auricular",
-    "inconclusive": "No concluyente",
-    "inconclusive_high_heart_rate": "No concluyente: vitals por encima de 120",
-    "inconclusive_low_heart_rate": "No concluyente: vitals por debajo de 50",
-    "unreadable": "No se pudo leer",
-    "not_analyzed": "Sin analizar",
+    "normal_sinus_rhythm": "Normal sinus rhythm",
+    "atrial_fibrillation": "Atrial fibrillation",
+    "inconclusive": "Inconclusive",
+    "inconclusive_high_heart_rate": "Inconclusive: heart rate above 120",
+    "inconclusive_low_heart_rate": "Inconclusive: heart rate below 50",
+    "unreadable": "Could not be read",
+    "not_analyzed": "Not analysed",
 }
 
 TRACE_POINTS = 1500

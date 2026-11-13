@@ -1,7 +1,9 @@
-import type { TrendTileProps } from "@openarga/ui";
+import type { Locale, Translate, TrendTileProps } from "@openarga/ui";
 
 import type { BodyOverview, BodySection, CheckupChanges, Figure, Kpis } from "./api";
-import { figureFoot, figureValue } from "./body";
+import { figureAbout, figureFoot, figureName, figureValue } from "./body";
+import { analyteName } from "./labs";
+import { fixed } from "./words";
 
 const NOT_MOVING = new Set(["headphone_db", "environment_db", "headphone_noise_events", "environment_noise_events", "high_heart_rate_events", "low_heart_rate_events"]);
 
@@ -39,37 +41,50 @@ export function moving(overview: BodyOverview | null, limit = 4): Moving[] {
   return found.sort((a, b) => Math.abs(b.z) - Math.abs(a.z)).slice(0, limit);
 }
 
-export function movingLine(one: Moving): string {
-  const word = one.direction === "up" ? "Subiendo" : "Bajando";
-  return `${word}: ${figureValue(one.figure, one.recent)} de media este mes; antes, ${figureValue(one.figure, one.before)}.`;
+export function movingLine(one: Moving, t: Translate, locale: Locale): string {
+  return t(one.direction === "up" ? "moving.up" : "moving.down", {
+    now: figureValue(one.figure, one.recent, t, locale),
+    before: figureValue(one.figure, one.before, t, locale),
+  });
 }
 
-export function weightMoving(kpis: Kpis | null): { line: string; direction: "up" | "down" } | null {
+export function weightMoving(kpis: Kpis | null, t: Translate, locale: Locale): { line: string; direction: "up" | "down" } | null {
   const change = kpis?.weight.change_90 ?? null;
   if (change === null || Math.abs(change) < 0.5) return null;
-  const shown = `${change > 0 ? "+" : "−"}${Math.abs(change).toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg`;
-  return { line: `Peso: ${shown} en 90 días.`, direction: change > 0 ? "up" : "down" };
+  const shown = `${change > 0 ? "+" : "−"}${fixed(Math.abs(change), locale, 1)} kg`;
+  return { line: t("moving.weight", { change: shown }), direction: change > 0 ? "up" : "down" };
 }
 
-export function ageLabel(day: string, now: Date = new Date()): string {
+export function ageLabel(day: string, t: Translate, now: Date = new Date()): string {
   const then = new Date(`${day}T12:00:00`);
   const days = Math.max(0, Math.round((now.getTime() - then.getTime()) / 86_400_000));
-  if (days === 0) return "Hoy";
-  if (days < 31) return days === 1 ? "Ayer" : `Hace ${days} días`;
+  if (days === 0) return t("age.today");
+  if (days < 31) return days === 1 ? t("age.yesterday") : t("age.days", { count: days });
   const months = Math.round(days / 30.44);
-  if (months < 1) return `Hace ${days} días`;
-  return months === 1 ? "Hace 1 mes" : `Hace ${months} meses`;
+  if (months < 1) return t("age.days", { count: days });
+  return months === 1 ? t("age.month") : t("age.months", { count: months });
 }
 
-export function outChips(changes: CheckupChanges | null, now: Date = new Date()): { id: string; name: string }[] {
+export function outChips(
+  changes: CheckupChanges | null,
+  t: Translate,
+  now: Date = new Date(),
+): { id: string; name: string }[] {
   const checkup = changes?.checkup;
   if (!checkup) return [];
   const days = (now.getTime() - new Date(`${checkup.day}T12:00:00`).getTime()) / 86_400_000;
   if (days > 365) return [];
-  return (changes?.changes ?? []).filter((one) => one.out).map((one) => ({ id: one.analyte.id, name: one.analyte.name }));
+  return (changes?.changes ?? [])
+    .filter((one) => one.out)
+    .map((one) => ({ id: one.analyte.id, name: analyteName(t, one.analyte) }));
 }
 
-export function tilesOf(section: BodySection, open: (id: string) => void): (TrendTileProps & { key: string })[] {
+export function tilesOf(
+  section: BodySection,
+  open: (id: string) => void,
+  t: Translate,
+  locale: Locale,
+): (TrendTileProps & { key: string })[] {
   return section.figures
     .filter((figure) => !figure.historic)
     .map((figure) => {
@@ -77,12 +92,12 @@ export function tilesOf(section: BodySection, open: (id: string) => void): (Tren
       const changed = figure.changed_on ? weekIndex(figure.changed_on, weeks.length) : undefined;
       return {
         key: figure.id,
-        label: figure.name,
-        value: figure.latest ? figureValue(figure, figure.latest.value) : "—",
-        foot: figureFoot(figure) || undefined,
+        label: figureName(t, figure),
+        value: figure.latest ? figureValue(figure, figure.latest.value, t, locale) : "—",
+        foot: figureFoot(figure, t, locale) || undefined,
         weeks,
         changedAt: changed,
-        info: figure.about,
+        info: figureAbout(t, figure),
         onOpen: () => open(figure.id),
       };
     });

@@ -1,53 +1,63 @@
 import { describe, expect, it } from "vitest";
 
+import { english, spanish } from "./i18n/testing";
 import { daySentence, daysStarted, moveVerdict, pace, recoveryLine, recoveryVerdict, sleepVerdict, trainVerdict, weekDots } from "./today";
 
-describe("el ritmo de la semana, a estas alturas", () => {
-  it("un jueves se compara con cuatro séptimos de la media, no con la semana entera", () => {
+describe("the pace of the week, so far", () => {
+  it("a Thursday is compared with four sevenths of the average, not the whole week", () => {
     const thursday = new Date("2026-11-05T12:00:00");
     expect(daysStarted(thursday)).toBe(4);
     expect(pace(240, 520, thursday)).toBeCloseTo(240 / ((520 * 4) / 7));
-    expect(trainVerdict(pace(240, 520, thursday))).toEqual({ verdict: "Algo por debajo", tone: "neutral" });
+    expect(trainVerdict(pace(240, 520, thursday), english)).toEqual({ code: "slightly_below", verdict: "Slightly below", tone: "neutral" });
   });
 
-  it("el lunes cuenta un día y el domingo siete", () => {
+  it("Monday counts one day and Sunday seven", () => {
     expect(daysStarted(new Date("2026-11-02T12:00:00"))).toBe(1);
     expect(daysStarted(new Date("2026-11-08T12:00:00"))).toBe(7);
     expect(pace(520, 520, new Date("2026-11-08T12:00:00"))).toBe(1);
   });
 
-  it("sin media, no hay ritmo", () => {
+  it("without an average, there is no pace", () => {
     expect(pace(100, null, new Date())).toBeNull();
-    expect(trainVerdict(null).verdict).toBe("Sin media aún");
+    expect(trainVerdict(null, english).verdict).toBe("No average yet");
   });
 });
 
-describe("las palabras de Hoy", () => {
-  it("el sueño por su calidad y cómo llegas, con 50 lo de siempre", () => {
-    expect(sleepVerdict({ value: 81, quality: "good", duration: 40, depth: 20, calm: 21 })?.verdict).toBe("Buena");
-    expect(recoveryVerdict(74)?.verdict).toBe("Mejor que de costumbre");
-    expect(recoveryVerdict(50)?.verdict).toBe("Como siempre");
-    expect(recoveryVerdict(30)?.tone).toBe("fair");
-    expect(recoveryLine(1.2, -0.8)).toBe("VFC alta, reposo bajo");
+describe("the words of Today", () => {
+  it("sleep by its quality and how you start the day, with 50 the usual", () => {
+    expect(sleepVerdict({ value: 81, quality: "good", duration: 40, depth: 20, calm: 21 }, english)?.verdict).toBe("Good");
+    expect(recoveryVerdict(74, english)?.verdict).toBe("Better than usual");
+    expect(recoveryVerdict(50, english)?.verdict).toBe("As usual");
+    expect(recoveryVerdict(30, english)?.tone).toBe("fair");
+    expect(recoveryLine(1.2, -0.8, english)).toBe("HRV high, resting low");
   });
 
-  it("los pasos con su media", () => {
-    const said = moveVerdict({ today: 3200, mean_7: 8000, mean_7_past: 8100, mean_30: 9000, goal: 8000 });
-    expect(said).toEqual({ verdict: "3.200 pasos", tone: "neutral", detail: "media de 7 días: 8.100" });
+  it("the steps with their average, in the language of the person", () => {
+    const steps = { today: 3200, mean_7: 8000, mean_7_past: 8100, mean_30: 9000, goal: 8000 };
+    expect(moveVerdict(steps, english, "en")).toEqual({
+      code: "moving",
+      verdict: "3,200 steps",
+      tone: "neutral",
+      detail: "7-day average: 8,100",
+    });
+    expect(moveVerdict(steps, spanish, "es").verdict).toBe(spanish("steps.count", { count: "3200" }));
   });
 
-  it("la frase junta lo que haya", () => {
+  it("the sentence joins whatever there is", () => {
     expect(
-      daySentence({
-        sleep: { verdict: "Buena", tone: "good" },
-        recovery: { verdict: "Mejor que de costumbre", tone: "good" },
-        train: { verdict: "Algo por debajo", tone: "neutral" },
-      }),
-    ).toBe("Dormiste bien y llegas mejor que de costumbre. Esta semana vas algo por debajo de tu ritmo.");
-    expect(daySentence({})).toBe("");
+      daySentence(
+        {
+          sleep: sleepVerdict({ value: 81, quality: "good", duration: 40, depth: 20, calm: 21 }, english),
+          recovery: recoveryVerdict(74, english),
+          train: trainVerdict(0.7, english),
+        },
+        english,
+      ),
+    ).toBe("You slept well and you start better than usual. This week you are slightly below your pace.");
+    expect(daySentence({}, english)).toBe("");
   });
 
-  it("los días de la semana, con lo hecho y lo que falta", () => {
+  it("the days of the week, with what is done and what is left", () => {
     const days = weekDots([], new Date("2026-11-05T12:00:00"));
     expect(days.map((one) => one.state)).toEqual(["missed", "missed", "missed", "today", "future", "future", "future"]);
   });

@@ -1,13 +1,16 @@
-import { Heading } from "@openarga/ui";
+import { Heading, useLocale, useT } from "@openarga/ui";
+
 import type { Profile } from "./api";
 import { profileRows } from "./body";
 
 export function ProfileCard({ profile, medications = true }: { profile: Profile | null; medications?: boolean }) {
-  const rows = profile ? profileRows(profile, medications) : [];
+  const t = useT();
+  const locale = useLocale();
+  const rows = profile ? profileRows(profile, t, locale, medications) : [];
   if (rows.length === 0) return null;
   return (
-    <section className="surface vitals-card" aria-label="Ficha">
-      <Heading>Ficha</Heading>
+    <section className="surface vitals-card" aria-label={t("profile.title")}>
+      <Heading>{t("profile.title")}</Heading>
       <dl className="vitals-profile">
         {rows.map((row) => (
           <div key={row.label}>

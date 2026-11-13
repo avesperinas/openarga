@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets.panel import blocks_of, gather, panel, tile_of
 from vitals import widgets
+from vitals.text import number, t
 
 
 def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
@@ -14,10 +15,14 @@ def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def nothing() -> HTTPException:
-    return HTTPException(status_code=404, detail="Vitals aún no tiene nada que contar")
+    return HTTPException(status_code=404, detail=t("panel.empty"))
 
 
-RINGS = [("readiness", "Disposición", 5), ("sleep_score", "Sueño", 1), ("steps_today", "Pasos", 2)]
+RINGS = [
+    ("readiness", "panel.readiness", 5),
+    ("sleep_score", "panel.sleep", 1),
+    ("steps_today", "panel.steps", 2),
+]
 
 
 async def build(connection: AsyncConnection) -> dict:
@@ -33,13 +38,13 @@ async def build(connection: AsyncConnection) -> dict:
         if body.get("value") is not None and body.get("target"):
             value = body["value"]
             shown = (
-                f"{value / 1000:.1f}k".replace(".", ",")
+                f"{number(value / 1000, 1)}k"
                 if key == "steps_today" and value >= 1000
                 else str(round(value))
             )
             rings.append(
                 {
-                    "label": label,
+                    "label": t(label),
                     "value": shown,
                     "share": max(0.0, value / body["target"]),
                     "hue": hue,
@@ -51,66 +56,66 @@ async def build(connection: AsyncConnection) -> dict:
         if readiness >= 70:
             headlines.append(
                 {
-                    "text": f"Llegas bien al día: {round(readiness)} de disposición",
-                    "emphasis": f"{round(readiness)} de disposición",
+                    "text": t("panel.ready_text", value=round(readiness)),
+                    "emphasis": t("panel.ready_emphasis", value=round(readiness)),
                     "tone": "positive",
-                    "status": "Listo",
+                    "status": t("panel.ready_status"),
                     "priority": 50,
                 }
             )
         elif readiness < 45:
             headlines.append(
                 {
-                    "text": f"Hoy mejor suave: {round(readiness)} de disposición",
-                    "emphasis": "mejor suave",
+                    "text": t("panel.easy_text", value=round(readiness)),
+                    "emphasis": t("panel.easy_emphasis"),
                     "tone": "warning",
-                    "status": "Descansa",
+                    "status": t("panel.easy_status"),
                     "priority": 55,
                 }
             )
         else:
             headlines.append(
                 {
-                    "text": f"Un día normal: {round(readiness)} de disposición",
+                    "text": t("panel.normal_text", value=round(readiness)),
                     "emphasis": f"{round(readiness)}",
-                    "status": "Normal",
+                    "status": t("panel.normal_status"),
                     "priority": 35,
                 }
             )
-    hoy = []
+    today = []
     if rings:
-        hoy.append({"type": "rings", "items": rings})
+        today.append({"type": "rings", "items": rings})
     tiles = [
-        t
-        for t in (
-            tile_of("kpi-delta", found.get("sleep"), "Sueño"),
-            tile_of("kpi-delta", found.get("weight"), "Peso"),
-            tile_of("kpi-delta", found.get("resting_heart"), "FC en reposo"),
-            tile_of("kpi-delta", found.get("hrv"), "VFC"),
+        tile
+        for tile in (
+            tile_of("kpi-delta", found.get("sleep"), t("panel.sleep")),
+            tile_of("kpi-delta", found.get("weight"), t("panel.weight")),
+            tile_of("kpi-delta", found.get("resting_heart"), t("panel.resting_hr")),
+            tile_of("kpi-delta", found.get("hrv"), t("panel.hrv")),
         )
-        if t
+        if tile
     ]
     if tiles:
-        hoy.append({"type": "tiles", "items": tiles})
-    sueno = blocks_of("kpi-delta", found.get("sleep") or {}, label="Sueño") + blocks_of(
-        "bars", found.get("sleep_week") or {}, label="La semana"
+        today.append({"type": "tiles", "items": tiles})
+    asleep = blocks_of("kpi-delta", found.get("sleep") or {}, label=t("panel.sleep")) + blocks_of(
+        "bars", found.get("sleep_week") or {}, label=t("panel.the_week")
     )
-    cuerpo = blocks_of("kpi-delta", found.get("weight") or {}, label="Peso")
+    figure = blocks_of("kpi-delta", found.get("weight") or {}, label=t("panel.weight"))
     more = [
-        t
-        for t in (
-            tile_of("kpi-delta", found.get("ldl"), "Colesterol LDL"),
-            tile_of("kpi-delta", found.get("vo2max"), "VO₂ máx."),
-            tile_of("kpi-delta", found.get("resting_heart"), "FC en reposo"),
+        tile
+        for tile in (
+            tile_of("kpi-delta", found.get("ldl"), t("panel.ldl")),
+            tile_of("kpi-delta", found.get("vo2max"), t("panel.vo2max")),
+            tile_of("kpi-delta", found.get("resting_heart"), t("panel.resting_hr")),
         )
-        if t
+        if tile
     ]
     if more:
-        cuerpo.append({"type": "tiles", "items": more})
-    actividad = blocks_of(
-        "bars", found.get("steps_week") or {}, label="Pasos de la semana"
-    ) + blocks_of("progress", found.get("training_load") or {}, label="Carga de la semana", hue=4)
-    actividad += blocks_of("stats", found.get("training_week") or {}) + [
+        figure.append({"type": "tiles", "items": more})
+    activity = blocks_of(
+        "bars", found.get("steps_week") or {}, label=t("panel.steps_week")
+    ) + blocks_of("progress", found.get("training_load") or {}, label=t("panel.load_week"), hue=4)
+    activity += blocks_of("stats", found.get("training_week") or {}) + [
         dict(b, detail=True) for b in blocks_of("stats", found.get("last_workout") or {})
     ]
     tabs = [
@@ -118,13 +123,13 @@ async def build(connection: AsyncConnection) -> dict:
             "id": tab,
             "label": label,
             "blocks": blocks,
-            "actions": [{"label": "Abrir Vitals", "href": "/vitals/"}],
+            "actions": [{"label": t("panel.open"), "href": "/vitals/"}],
         }
         for tab, label, blocks in (
-            ("hoy", "Hoy", hoy),
-            ("sueno", "Sueño", sueno),
-            ("cuerpo", "Cuerpo", cuerpo),
-            ("actividad", "Actividad", actividad),
+            ("today", t("panel.today"), today),
+            ("sleep", t("panel.sleep"), asleep),
+            ("body", t("panel.body"), figure),
+            ("activity", t("panel.activity"), activity),
         )
         if blocks
     ]
@@ -135,24 +140,24 @@ async def build(connection: AsyncConnection) -> dict:
         q
         for q in (
             {
-                "text": "¿Cómo llego hoy?",
-                "words": ["disposicion", "como estoy", "energia", "recuperacion"],
-                "tab": "hoy",
+                "text": t("panel.q_today"),
+                "words": t("panel.w_today").split(","),
+                "tab": "today",
             },
             {
-                "text": "¿He dormido bien?",
-                "words": ["sueno", "dormir", "dormido", "descanso"],
-                "tab": "sueno",
+                "text": t("panel.q_sleep"),
+                "words": t("panel.w_sleep").split(","),
+                "tab": "sleep",
             },
             {
-                "text": "¿Cómo va mi peso?",
-                "words": ["peso", "kilos", "cuerpo", "colesterol"],
-                "tab": "cuerpo",
+                "text": t("panel.q_weight"),
+                "words": t("panel.w_weight").split(","),
+                "tab": "body",
             },
             {
-                "text": "¿Cuánto me he movido?",
-                "words": ["pasos", "actividad", "andar", "carga"],
-                "tab": "actividad",
+                "text": t("panel.q_activity"),
+                "words": t("panel.w_activity").split(","),
+                "tab": "activity",
             },
         )
         if q["tab"] in ids_

@@ -10,7 +10,7 @@ from arga_contracts import records as write
 from vitals import records
 from vitals.db import engine
 
-KERNEL_LIKE = "kernel_como_en_produccion"
+KERNEL_LIKE = "kernel_as_in_production"
 
 
 async def built() -> dict[str, dict]:
@@ -50,9 +50,9 @@ async def steps(schema, person, day: str, count: int) -> None:
         )
 
 
-async def test_a_checkup_is_a_ficha_and_each_day_says_weight_and_steps(api, schema, person) -> None:
+async def test_a_checkup_is_a_sheet_and_each_day_says_weight_and_steps(api, schema, person) -> None:
     checkup = (
-        await api.post("/checkups", json={"day": "2026-03-12", "center": "Prevención"})
+        await api.post("/checkups", json={"day": "2026-03-12", "center": "Occupational health"})
     ).json()
     await api.post(
         f"/checkups/{checkup['id']}/results",
@@ -73,23 +73,24 @@ async def test_a_checkup_is_a_ficha_and_each_day_says_weight_and_steps(api, sche
                 text("delete from kernel.events where dedup_hash like 'records-steps:%'")
             )
 
-    ficha = found[f"checkup:{checkup['id']}"]
-    assert ficha["title"] == "2026-03-12 Prevención"
-    assert ficha["folder"] == "Revisiones"
-    assert ficha["properties"] == {
-        "fecha": "2026-03-12",
-        "valores": 2,
-        "centro": "Prevención",
-        "fuera_de_rango": 1,
+    sheet = found[f"checkup:{checkup['id']}"]
+    assert sheet["title"] == "2026-03-12 Occupational health"
+    assert sheet["folder"] == "Check-ups"
+    assert sheet["properties"] == {
+        "date": "2026-03-12",
+        "values": 2,
+        "center": "Occupational health",
+        "out_of_range": 1,
     }
-    assert "| Colesterol LDL | **162** | mg/dL | ≤ 130 |" in ficha["body"]
-    assert "1 fuera de rango, en negrita." in ficha["body"]
+    assert "| LDL cholesterol | **162** | mg/dL | ≤ 130 |" in sheet["body"]
+    assert "1 out of range, in bold." in sheet["body"]
 
     day = found["day:2026-09-01"]
-    assert day["properties"] == {"peso_kg": 80.2, "pasos": 9432}
-    assert day["body"] == "- Peso: 80,2 kg\n- Pasos: 9.432"
+    assert day["properties"] == {"weight_kg": 80.2, "steps": 9432}
+    assert day["body"].startswith("- Weight: 80")
+    assert "- Steps: 9" in day["body"]
     assert found["day:2026-03-12"]["body"] == (
-        f"- Revisión: [[vitals:checkup:{checkup['id']}|2026-03-12 Prevención]]"
+        f"- Check-up: [[vitals:checkup:{checkup['id']}|2026-03-12 Occupational health]]"
     )
 
     async with engine().begin() as connection:

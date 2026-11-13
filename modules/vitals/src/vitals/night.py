@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from vitals import heart, sleep, today
-from vitals.steps import MADRID
+from vitals.steps import zone
 
 NIGHT_FIGURES = ("hrv_ms", "respiratory_rate", "spo2_pct", "skin_temp_delta_c")
 
@@ -27,10 +27,10 @@ class Page(BaseModel):
 
 async def pulse_between(connection: AsyncConnection, start: datetime, end: datetime) -> list[Pulse]:
     out: list[Pulse] = []
-    day = start.astimezone(MADRID).date()
-    while day <= end.astimezone(MADRID).date():
+    day = start.astimezone(zone()).date()
+    while day <= end.astimezone(zone()).date():
         found = await heart.of_day(connection, day)
-        midnight = datetime.combine(day, time(0), MADRID)
+        midnight = datetime.combine(day, time(0), zone())
         for one in found.buckets if found else []:
             at = midnight + timedelta(minutes=one.minute)
             if start <= at <= end:

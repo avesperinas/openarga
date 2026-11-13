@@ -16,6 +16,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_contracts as contracts
+from arga_module import preferences
 from arga_tenancy import UserFromHeader, require_person
 from vitals import (
     body,
@@ -44,6 +45,15 @@ app = FastAPI(title="Vitals", version=os.environ.get("APP_VERSION", "dev"))
 app.add_middleware(UserFromHeader)
 
 
+@app.middleware("http")
+async def person_preferences(request: Request, call_next):
+    token = preferences.use(preferences.from_headers(request.headers))
+    try:
+        return await call_next(request)
+    finally:
+        preferences.reset(token)
+
+
 def ui_dist() -> Path:
     default = Path(__file__).resolve().parents[2] / "ui" / "dist"
     return Path(os.environ.get("UI_DIST", default))
@@ -62,17 +72,17 @@ async def readyz() -> dict:
                 text("select 1 from information_schema.schemata where schema_name = :schema"),
                 {"schema": SCHEMA},
             )
-    except Exception as error:  # noqa: BLE001 -- cualquier fallo de conexión es "no listo"
-        raise HTTPException(status_code=503, detail=f"sin base de datos: {error}") from error
+    except Exception as error:  # noqa: BLE001 -- any connection failure means "not ready"
+        raise HTTPException(status_code=503, detail=f"no database: {error}") from error
 
     if not found:
         raise HTTPException(
             status_code=503,
-            detail=f"el schema '{SCHEMA}' no existe todavía; lo aprovisiona el kernel al "
-            f"registrar el manifiesto",
+            detail=f"schema '{SCHEMA}' does not exist yet; the kernel provisions it when it "
+            f"registers the manifest",
         )
     if not (ui_dist() / "index.html").is_file():
-        raise HTTPException(status_code=503, detail=f"la app no está construida en {ui_dist()}")
+        raise HTTPException(status_code=503, detail=f"the app is not built in {ui_dist()}")
     return {"status": "ready", "module": MODULE_ID, "schema": SCHEMA}
 
 
@@ -91,7 +101,7 @@ async def as_app() -> AsyncIterator[AsyncConnection]:
 async def widget(widget_id: str) -> dict:
     renderer = widgets.RENDERERS.get(widget_id)
     if renderer is None:
-        raise HTTPException(status_code=404, detail=f"vitals no tiene el widget '{widget_id}'")
+        raise HTTPException(status_code=404, detail=f"vitals has no widget '{widget_id}'")
     async with engine().begin() as connection:
         await connection.execute(text(f'set local role "{READER_ROLE}"'))
         return await renderer(connection)
@@ -119,11 +129,11 @@ async def list_tools() -> list[dict]:
 async def call_tool(name: str, request: Request, x_arga_scopes: str = Header(default="")) -> dict:
     tool = tools.TOOLS.get(name)
     if tool is None:
-        raise HTTPException(status_code=404, detail=f"vitals no tiene la tool '{name}'")
+        raise HTTPException(status_code=404, detail=f"vitals has no tool '{name}'")
 
     role = tools.role_for_scopes(set(x_arga_scopes.split()))
     if role is None:
-        raise HTTPException(status_code=403, detail=f"ningún scope de {MODULE_ID} en la llamada")
+        raise HTTPException(status_code=403, detail=f"no {MODULE_ID} scope in the call")
 
     try:
         arguments = tool.arguments.model_validate(await request.json())
@@ -147,7 +157,7 @@ async def _edit(action, *args):
         async with as_app() as connection:
             return await action(connection, *args)
     except weight.NotFound as error:
-        raise HTTPException(status_code=404, detail=f"no existe: {error}") from error
+        raise HTTPException(status_code=404, detail=f"not found: {error}") from error
     except weight.Conflict as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
 
@@ -171,7 +181,7 @@ async def capability(
 ) -> dict:
     expected = os.environ.get("MODULE_REGISTRATION_TOKEN", "")
     if not expected:
-        raise HTTPException(status_code=503, detail="Vitals no tiene MODULE_REGISTRATION_TOKEN")
+        raise HTTPException(status_code=503, detail="Vitals has no MODULE_REGISTRATION_TOKEN")
     if not hmac.compare_digest(x_module_token, expected):
         raise HTTPException(status_code=401, detail="solo el kernel pide cosas a Vitals")
     if capability not in (contracts.WEIGHT_LOG, contracts.WORKOUT_HEART):
@@ -184,7 +194,7 @@ async def capability(
     except (ValidationError, ValueError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     logged = await _edit(weight.set_day, asked.kg, asked.day)
-    print(f"peso       {logged.entry.kg} kg pedido por {x_arga_module}", flush=True)
+    print(f"weight     {logged.entry.kg} kg asked by {x_arga_module}", flush=True)
     return contracts.weight_logged(
         id=logged.entry.id, day=logged.entry.day, kg=logged.entry.kg, already=logged.already
     )
@@ -196,7 +206,9 @@ async def _workout_heart(body: dict, asker: str) -> dict:
     except ValidationError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     if not asked.id.startswith(f"{asker}:"):
-        raise HTTPException(status_code=403, detail="solo el vitals de lo que publicó quien pide")
+        raise HTTPException(
+            status_code=403, detail="only the heart rate of what the caller published"
+        )
     found = await _edit(workouts.one, asked.id)
     if found is None:
         return contracts.workout_heart(found=False)
@@ -249,7 +261,7 @@ async def read_profile() -> body.Profile | None:
 @app.get("/body/{metric}")
 async def read_figure(metric: str) -> body.Series:
     if metric not in body.BY_ID:
-        raise HTTPException(status_code=404, detail=f"vitals no conoce la cifra '{metric}'")
+        raise HTTPException(status_code=404, detail=f"vitals does not know the figure '{metric}'")
     return await _edit(body.series, metric)
 
 
@@ -262,7 +274,7 @@ async def read_sleep(since: date | None = None, until: date | None = None) -> sl
 async def read_night(day: date) -> sleep.NightDetail:
     found = await _edit(sleep.night, day)
     if found is None:
-        raise HTTPException(status_code=404, detail=f"no hay sueño del {day.isoformat()}")
+        raise HTTPException(status_code=404, detail=f"no sleep on {day.isoformat()}")
     return found
 
 
@@ -270,7 +282,7 @@ async def read_night(day: date) -> sleep.NightDetail:
 async def read_night_page(day: date) -> night.Page:
     found = await _edit(night.page, day)
     if found is None:
-        raise HTTPException(status_code=404, detail=f"no hay noche el {day}")
+        raise HTTPException(status_code=404, detail=f"no night on {day}")
     return found
 
 
@@ -283,7 +295,7 @@ async def read_heart_days() -> list[date]:
 async def read_heart_day(day: date) -> heart.Day:
     found = await _edit(heart.of_day, day)
     if found is None:
-        raise HTTPException(status_code=404, detail=f"no hay vitals del {day.isoformat()}")
+        raise HTTPException(status_code=404, detail=f"no heart rate on {day.isoformat()}")
     return found
 
 
@@ -309,7 +321,7 @@ async def read_workouts(
     last = until or steps.today()
     first = since or last - timedelta(days=89)
     if first > last:
-        raise HTTPException(status_code=422, detail="`since` va antes que `until`")
+        raise HTTPException(status_code=422, detail="`since` must come before `until`")
     return await _edit(workouts.between, first, last)
 
 
@@ -317,7 +329,7 @@ async def read_workouts(
 async def read_workout(id: str) -> workouts.WorkoutDetail:
     found = await _edit(workouts.one, id)
     if found is None:
-        raise HTTPException(status_code=404, detail="no hay ese entreno")
+        raise HTTPException(status_code=404, detail="no such workout")
     return found
 
 
@@ -340,7 +352,7 @@ async def read_ecgs() -> list[rhythm.Ecg]:
 async def read_ecg(id: str) -> rhythm.EcgTrace:
     found = await _edit(rhythm.ecg_trace, id)
     if found is None:
-        raise HTTPException(status_code=404, detail="no hay ese electrocardiograma")
+        raise HTTPException(status_code=404, detail="no such electrocardiogram")
     return found
 
 
@@ -388,7 +400,7 @@ async def add_result(checkup_id: UUID, request: labs.ResultIn) -> labs.Result:
 async def upload_document(checkup_id: UUID, request: Request, filename: str = "") -> Response:
     declared = int(request.headers.get("content-length") or 0)
     if declared > labs.PDF_LIMIT:
-        raise HTTPException(status_code=413, detail="el PDF pasa de 20 MB")
+        raise HTTPException(status_code=413, detail="the PDF is over 20 MB")
     content = await request.body()
     await _edit(labs.save_document, str(checkup_id), filename, content)
     return Response(status_code=204)
@@ -449,5 +461,5 @@ async def ui(path: str = "") -> FileResponse:
         )
     index = root / "index.html"
     if not index.is_file():
-        raise HTTPException(status_code=503, detail="la app no está construida")
+        raise HTTPException(status_code=503, detail="the app is not built")
     return FileResponse(index, headers={"cache-control": "no-cache"})
