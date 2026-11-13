@@ -89,7 +89,7 @@ def _valid(item: Any) -> dict[str, Any] | None:
         return arga_agenda.validate(item)
     except arga_agenda.BadDated as error:
         uid = item.get("uid") if isinstance(item, dict) else None
-        print(f"círculo · descartado {uid}: {error}", file=sys.stderr, flush=True)
+        print(f"circle · dropped {uid}: {error}", file=sys.stderr, flush=True)
         return None
 
 
@@ -255,7 +255,7 @@ async def move(
     async with transaction() as connection:
         try:
             row = (await connection.execute(ONE, {"id": app_event_id})).one_or_none()
-        except Exception as error:  # noqa: BLE001 -- un id que no es uuid es un id que no está
+        except Exception as error:  # noqa: BLE001 -- an id that is not a uuid is an id that is not there
             raise NotFound(app_event_id) from error
     if row is None:
         raise NotFound(app_event_id)
@@ -280,7 +280,7 @@ async def move(
         )
     item = _valid(response.json().get(arga_agenda.KEY))
     if item is None or item["uid"] != row.uid:
-        raise Refused(f"{row.app} contesta algo que no casa")
+        raise Refused(f"{row.app} answers something that does not fit")
     async with transaction() as connection:
         await connection.execute(MOVED, {"id": app_event_id, "payload": json.dumps(item)})
     return item

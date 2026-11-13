@@ -73,7 +73,7 @@ async def test_nobody_changes_what_is_not_theirs(two_people) -> None:
         two_people,
         WRITE,
         LUIS,
-        "update planner.planner_event set title = 'mío' where title = 'Cita de Ana'",
+        "update planner.planner_event set title = 'mine' where title = 'Ana''s appointment'",
     )
 
     assert changed == 0

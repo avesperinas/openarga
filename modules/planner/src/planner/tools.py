@@ -102,7 +102,7 @@ async def _calendar_id(connection: AsyncConnection, wanted: str | None) -> str |
         if wanted == one.id or wanted.strip().casefold() == one.name.casefold():
             return one.id
     raise calendar.Invalid(
-        f"no hay una capa «{wanted}»; las que hay: {', '.join(one.name for one in found)}"
+        f"there is no layer “{wanted}”; the ones there are: {', '.join(one.name for one in found)}"
     )
 
 
@@ -134,24 +134,24 @@ class GetEvents(BaseModel):
     start: datetime | date | None = Field(
         default=None,
         alias="from",
-        description="Desde, incluido. Una fecha es desde su medianoche. Sin `query`, obligatorio.",
+        description="From, included. A date is from its midnight. Required without `query`.",
     )
     end: datetime | date | None = Field(
         default=None,
         alias="to",
-        description="Hasta, excluido. Una fecha es hasta su medianoche. Sin `query`, obligatorio.",
+        description="To, excluded. A date is until its midnight. Required without `query`.",
     )
     query: str | None = Field(
         default=None,
         min_length=1,
         max_length=100,
-        description="Palabras del título, el lugar o las notas: busca en todas las capas, entre "
-        "`from` y `to` si se dan.",
+        description="Words of the title, the place or the notes: searches every layer, between "
+        "`from` and `to` if given.",
     )
     calendars: list[str] | None = Field(
-        default=None, description="Ids o nombres de capa. Sin nada, todas. No vale con `query`."
+        default=None, description="Layer ids or names. Without any, all. Not valid with `query`."
     )
-    tz: str = Field(default=HOME_TZ, description="La zona de las fechas y horas sin zona.")
+    tz: str = Field(default=HOME_TZ, description="The zone of dates and times given without one.")
 
     model_config = {"populate_by_name": True}
 
@@ -175,14 +175,14 @@ def _window(start: datetime | date, end: datetime | date, tz: str) -> tuple[date
 async def get_events(connection: AsyncConnection, arguments: GetEvents) -> dict[str, Any]:
     if arguments.query is not None:
         if arguments.calendars:
-            raise calendar.Invalid("`calendars` no vale con `query`: se busca en todas las capas")
+            raise calendar.Invalid("`calendars` is not valid with `query`: every layer is searched")
         start = end = None
         if arguments.start is not None and arguments.end is not None:
             start, end = _window(arguments.start, arguments.end, arguments.tz)
         found = await calendar.search(connection, arguments.query, start, end)
         return await _read(connection, found)
     if arguments.start is None or arguments.end is None:
-        raise calendar.Invalid("sin `query`, hacen falta `from` y `to`")
+        raise calendar.Invalid("without `query`, `from` and `to` are needed")
     start, end = _window(arguments.start, arguments.end, arguments.tz)
     ids = None
     if arguments.calendars:
@@ -194,27 +194,29 @@ async def get_events(connection: AsyncConnection, arguments: GetEvents) -> dict[
 class CreateEvent(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     start: datetime | date = Field(
-        description="Con hora, `2026-10-06T19:00` (en `tz`) o con zona. De todo el día, una fecha."
+        description="Timed, `2026-10-06T19:00` (in `tz`) or with a zone. All day, a date."
     )
     end: datetime | date | None = Field(
         default=None,
-        description="Con hora, el fin; sin él, una hora después. De todo el día, el último día "
-        "incluido; sin él, un solo día.",
+        description="Timed, the end; without it, an hour later. All day, the last day "
+        "included; without it, a single day.",
     )
     all_day: bool = False
     tz: str = Field(
-        default=HOME_TZ, description="La zona del evento: la que decide el cambio de hora."
+        default=HOME_TZ,
+        description="The event's zone: the one that decides daylight saving changes.",
     )
     calendar: str | None = Field(
         default=None,
-        description="Id o nombre de la capa. Sin nada, la primera propia que no es de fondo.",
+        description="Layer id or name. Without any, the first of your own that is not a "
+        "background.",
     )
     location: str | None = Field(default=None, max_length=300)
     notes: str | None = Field(default=None, max_length=8000)
     url: str | None = Field(default=None, max_length=2000)
     repeat: recurrence.Rule | None = Field(
         default=None,
-        description="Para una serie. `until` es el último día incluido o una hora de pared.",
+        description="For a series. `until` is the last day included or a wall-clock time.",
     )
 
 
@@ -264,11 +266,11 @@ class UpdateEvent(BaseModel):
     event_id: str
     scope: Scope = Field(
         default="all",
-        description="En una serie: `this` solo `original_start`, `following` esa y las "
-        "siguientes, `all` todas.",
+        description="In a series: `this` only `original_start`, `following` that one and the "
+        "next ones, `all` all of them.",
     )
     original_start: str | None = Field(
-        default=None, description="La ocurrencia que se toca, tal como la da `get_events`."
+        default=None, description="The occurrence to change, as `get_events` gives it."
     )
     title: str | None = Field(default=None, min_length=1, max_length=200)
     start: datetime | date | None = None
@@ -276,13 +278,11 @@ class UpdateEvent(BaseModel):
     all_day: bool | None = None
     tz: str | None = None
     calendar: str | None = None
-    location: str | None = Field(default=None, description="Vacío lo quita.")
-    notes: str | None = Field(default=None, description="Vacío lo quita.")
-    url: str | None = Field(default=None, description="Vacío lo quita.")
-    repeat: recurrence.Rule | None = Field(
-        default=None, description="La nueva repetición de la serie."
-    )
-    stop_repeating: bool = Field(default=False, description="Deja de ser una serie.")
+    location: str | None = Field(default=None, description="Empty removes it.")
+    notes: str | None = Field(default=None, description="Empty removes it.")
+    url: str | None = Field(default=None, description="Empty removes it.")
+    repeat: recurrence.Rule | None = Field(default=None, description="The series' new repetition.")
+    stop_repeating: bool = Field(default=False, description="Stops being a series.")
 
 
 async def update_event(connection: AsyncConnection, arguments: UpdateEvent) -> dict[str, Any]:
@@ -335,11 +335,11 @@ async def cancel_event(connection: AsyncConnection, arguments: CancelEvent) -> d
 
 class CreateCalendar(BaseModel):
     name: str = Field(min_length=1, max_length=60)
-    tone: int = Field(default=5, ge=1, le=10, description="Uno de los diez tonos, del 1 al 10.")
+    tone: int = Field(default=5, ge=1, le=10, description="One of the ten tones, from 1 to 10.")
     display: calendar.Display = Field(
         default="events",
-        description="`events`, o `background` para un marco que no ocupa tiempo, como el "
-        "horario laboral o un viaje.",
+        description="`events`, or `background` for a frame that takes no time, such as "
+        "working hours or a trip.",
     )
 
 
@@ -347,7 +347,7 @@ async def create_calendar(connection: AsyncConnection, arguments: CreateCalendar
     names = await _names(connection)
     name = arguments.name.strip()
     if name.casefold() in {one.casefold() for one in names.values()}:
-        raise calendar.Invalid(f"ya hay una capa «{name}»")
+        raise calendar.Invalid(f"there is already a layer “{name}”")
     created = await calendar.create_calendar(
         connection, calendar.CalendarIn(name=name, tone=arguments.tone, display=arguments.display)
     )
@@ -355,12 +355,13 @@ async def create_calendar(connection: AsyncConnection, arguments: CreateCalendar
 
 
 class SetDaysOff(BaseModel):
-    calendar: str = Field(description="Id o nombre de la capa tuya que libra: la del trabajo.")
-    source: str = Field(
-        description="Id o nombre de la capa cuyos días de todo el día libra: unos festivos, "
-        "las vacaciones."
+    calendar: str = Field(
+        description="Id or name of your layer that takes the days off: the work one."
     )
-    off: bool = Field(default=True, description="`false` deja de librarlos.")
+    source: str = Field(
+        description="Id or name of the layer whose all-day days it takes off: holidays, vacations."
+    )
+    off: bool = Field(default=True, description="`false` stops taking them off.")
 
 
 async def set_days_off(connection: AsyncConnection, arguments: SetDaysOff) -> dict[str, Any]:
@@ -388,17 +389,17 @@ class GetSources(BaseModel):
     provider: str | None = Field(
         default=None,
         pattern=r"^[a-z][a-z0-9_]{1,40}$",
-        description="Sin nada, el catálogo. Con una fuente y `ask`, lo que se puede contestar a "
-        "esa pregunta.",
+        description="Without any, the catalog. With a source and `ask`, what that question "
+        "can be answered with.",
     )
     ask: str | None = Field(default=None, pattern=r"^[a-z][a-z0-9_]{0,40}$")
     query: str | None = Field(
-        default=None, max_length=60, description="Lo que se busca, si la pregunta es de buscar."
+        default=None, max_length=60, description="What to search for, if the question is a search."
     )
     parent: str | None = Field(
         default=None,
         max_length=60,
-        description="Lo contestado a la pregunta de la que depende: el país de una región.",
+        description="The answer to the question it depends on: the country of a region.",
     )
 
 
@@ -426,7 +427,7 @@ async def get_sources(transaction: Transaction, arguments: GetSources) -> dict[s
             out["failed"] = found["failed"]
         return out
     if arguments.provider or arguments.ask:
-        raise calendar.Invalid("las opciones de una pregunta se piden con `provider` y `ask`")
+        raise calendar.Invalid("a question's options are asked for with `provider` and `ask`")
     found = await hub.catalogue()
     async with transaction() as connection:
         layers = [
@@ -456,15 +457,16 @@ async def get_sources(transaction: Transaction, arguments: GetSources) -> dict[s
 
 class Subscribe(BaseModel):
     provider: str = Field(
-        pattern=r"^[a-z][a-z0-9_]{1,40}$", description="La fuente, como la da `get_sources`."
+        pattern=r"^[a-z][a-z0-9_]{1,40}$", description="The source, as `get_sources` gives it."
     )
     params: dict[str, Any] = Field(
         default_factory=dict,
-        description='Lo contestado a cada pregunta de la fuente, por su `key`: {"country": "ES", '
-        '"region": "ES-NC"}. Las de buscar, con el `code` de lo elegido.',
+        description="The answer to each of the source's questions, by its `key`: "
+        '{"country": "ES", "region": "ES-NC"}. Search questions, with the `code` of the chosen '
+        "one.",
     )
-    name: str = Field(min_length=1, max_length=60, description="El nombre de su capa.")
-    tone: int | None = Field(default=None, ge=1, le=10, description="Sin nada, el de la fuente.")
+    name: str = Field(min_length=1, max_length=60, description="The name of its layer.")
+    tone: int | None = Field(default=None, ge=1, le=10, description="Without any, the source's.")
 
 
 async def subscribe(transaction: Transaction, arguments: Subscribe) -> dict[str, Any]:
@@ -472,7 +474,7 @@ async def subscribe(transaction: Transaction, arguments: Subscribe) -> dict[str,
     async with transaction() as connection:
         await _writes(connection)
         if name.casefold() in {one.casefold() for one in (await _names(connection)).values()}:
-            raise calendar.Invalid(f"ya hay una capa «{name}»")
+            raise calendar.Invalid(f"there is already a layer “{name}”")
     tone = arguments.tone
     if tone is None:
         offered = {one["provider"]: one for one in (await hub.catalogue()).get("sources") or []}
@@ -512,7 +514,7 @@ async def subscribe(transaction: Transaction, arguments: Subscribe) -> dict[str,
 
 
 class Unsubscribe(BaseModel):
-    calendar: str = Field(description="Id o nombre de la capa suscrita que se quita.")
+    calendar: str = Field(description="Id or name of the subscribed layer to remove.")
 
 
 async def unsubscribe(transaction: Transaction, arguments: Unsubscribe) -> dict[str, Any]:
@@ -522,7 +524,9 @@ async def unsubscribe(transaction: Transaction, arguments: Unsubscribe) -> dict[
             connection, str(await _calendar_id(connection, arguments.calendar))
         )
     if layer.origin != "subscription" or not layer.connection_id:
-        raise calendar.Invalid(f"«{layer.name}» no es una suscripción: una capa tuya no se quita")
+        raise calendar.Invalid(
+            f"“{layer.name}” is not a subscription: a layer of your own is not removed"
+        )
     await hub.unsubscribe(layer.connection_id)
     return {"unsubscribed": layer.name}
 

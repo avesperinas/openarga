@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_contracts import notify
 from planner import calendar
+from planner.words import say
 
 KIND = "event"
 BEFORE = timedelta(minutes=15)
@@ -34,12 +35,12 @@ async def build(connection: AsyncConnection, now: datetime | None = None) -> lis
         if one.all_day:
             day = date.fromisoformat(one.start[:10])
             at = notify.at(day, ALL_DAY_AT)
-            body = "Hoy, todo el día"
+            body = say("notice.today_all_day")
         else:
             start = datetime.fromisoformat(one.start)
             at = start - BEFORE
             day = start.astimezone(notify.MADRID).date()
-            body = f"A las {_when(start)}"
+            body = say("notice.at", time=_when(start))
         if one.location:
             body = f"{body} · {one.location}"
         out.append(
@@ -47,7 +48,7 @@ async def build(connection: AsyncConnection, now: datetime | None = None) -> lis
                 KIND,
                 f"event:{one.id}:{one.start}",
                 one.title,
-                f"/planner/dia/{day.isoformat()}",
+                f"/planner/day/{day.isoformat()}",
                 at,
                 body=body,
             )

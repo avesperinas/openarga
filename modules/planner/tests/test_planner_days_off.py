@@ -103,7 +103,7 @@ async def test_the_local_ones_go_in_a_layer_of_your_own(api, kernel) -> None:
     holidays = await subscribed_holidays(api, kernel)
     local = await layer(api, "Festivos locales")
     await event(
-        api, local["id"], "Fiesta local de prueba", "2026-10-15", "2026-10-16", all_day=True
+        api, local["id"], "Local test holiday", "2026-10-15", "2026-10-16", all_day=True
     )
     work, _ = await workweek(api)
 
@@ -119,7 +119,7 @@ async def test_the_local_ones_go_in_a_layer_of_your_own(api, kernel) -> None:
 async def test_a_week_of_holidays_frees_each_of_its_days(api) -> None:
     holidays = await layer(api, "Vacaciones")
     await event(api, holidays["id"], "Vacaciones", "2026-10-13", "2026-10-16", all_day=True)
-    await event(api, holidays["id"], "Médico", at("2026-10-06T09:00"), at("2026-10-06T10:00"))
+    await event(api, holidays["id"], "Doctor", at("2026-10-06T09:00"), at("2026-10-06T10:00"))
     work = await layer(api, "Trabajo", "background", days_off_from=[holidays["id"]])
     await event(
         api,

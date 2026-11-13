@@ -131,7 +131,7 @@ MATCH = {
     "status": "confirmed",
 }
 HOLIDAY = {
-    "title": "Fiesta de prueba",
+    "title": "Test holiday",
     "all_day": True,
     "start": "2026-10-12",
     "end": "2026-10-13",
@@ -166,7 +166,7 @@ async def test_a_connection_made_in_hub_brings_its_own_layer(api, kernel) -> Non
     found = await shown(api)
     assert found["Partido de prueba"]["calendar_id"] == layer["id"]
     assert found["Partido de prueba"]["location"] == "Estadio de prueba"
-    assert found["Fiesta de prueba"]["all_day"] is True
+    assert found["Test holiday"]["all_day"] is True
 
 
 async def test_plugged_in_hub_the_layer_takes_what_was_answered_to_planner(api, kernel) -> None:
@@ -202,7 +202,7 @@ async def test_what_changes_changes_and_what_goes_away_goes_away(api, kernel) ->
 
     found = await shown(api)
     assert found["Partido de prueba"]["start"] == "2026-10-11T19:00:00+00:00"
-    assert "Fiesta de prueba" not in found
+    assert "Test holiday" not in found
 
 
 async def test_the_version_the_last_feed_names_is_the_good_one(api, kernel) -> None:
@@ -255,7 +255,7 @@ async def test_what_is_subscribed_is_not_edited_but_can_be_hidden(api, kernel) -
     assert hidden.status_code == 204
     found = await shown(api)
     assert "Partido de prueba" not in found
-    assert "Fiesta de prueba" in found
+    assert "Test holiday" in found
 
 
 async def test_a_hidden_layer_hides_what_it_brings_from_the_widget(api, kernel) -> None:
@@ -324,7 +324,7 @@ async def test_subscribing_creates_the_connection_in_hub_and_its_layer_here(api,
         "/subscriptions",
         json={
             "provider": "holidays",
-            "name": "Festivos · Navarra",
+            "name": "Holidays · Navarre",
             "tone": 4,
             "params": {"country": "ES", "region": "ES-NC"},
         },
@@ -333,7 +333,7 @@ async def test_subscribing_creates_the_connection_in_hub_and_its_layer_here(api,
     assert response.status_code == 201, response.text
     layer = response.json()
     assert (layer["name"], layer["tone"], layer["origin"]) == (
-        "Festivos · Navarra",
+        "Holidays · Navarre",
         4,
         "subscription",
     )
@@ -350,7 +350,7 @@ async def test_subscribing_creates_the_connection_in_hub_and_its_layer_here(api,
 async def test_subscribing_twice_to_the_same_gives_back_the_same_layer(api, hub_app) -> None:
     body = {
         "provider": "holidays",
-        "name": "Festivos · Región",
+        "name": "Holidays · Region",
         "tone": 4,
         "params": {"country": "ES", "region": "ES-NC"},
     }
@@ -360,7 +360,7 @@ async def test_subscribing_twice_to_the_same_gives_back_the_same_layer(api, hub_
     assert first.status_code == 201, first.text
     assert again.status_code == 200, again.text
     assert again.json()["id"] == first.json()["id"]
-    assert again.json()["name"] == "Festivos · Región"
+    assert again.json()["name"] == "Holidays · Region"
     subscribed = [one for one in await layers(api) if one["origin"] == "subscription"]
     assert len(subscribed) == 1
 
@@ -386,7 +386,7 @@ async def test_subscribing_to_a_team_creates_its_connection(api, hub_app) -> Non
 async def test_a_subscription_that_makes_no_sense_is_said_by_its_parameter(api, hub_app) -> None:
     response = await api.post(
         "/subscriptions",
-        json={"provider": "ical", "name": "Nada", "tone": 2, "params": {"url": "no"}},
+        json={"provider": "ical", "name": "Nothing", "tone": 2, "params": {"url": "no"}},
     )
 
     assert response.status_code == 422
@@ -474,7 +474,7 @@ async def test_unsubscribing_from_the_menu_removes_the_connection_and_the_layer(
     layer = (
         await api.post(
             "/subscriptions",
-            json={"provider": "formula1", "name": "Fórmula 1", "tone": 1, "params": {}},
+            json={"provider": "formula1", "name": "Formula 1", "tone": 1, "params": {}},
         )
     ).json()
 

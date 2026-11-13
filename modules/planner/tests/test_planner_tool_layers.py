@@ -49,7 +49,7 @@ async def test_claude_makes_a_layer_of_holidays_and_work_frees_them(api) -> None
         api,
         "create_event",
         {
-            "title": "Fiesta local de prueba",
+            "title": "Local test holiday",
             "start": str(soon),
             "all_day": True,
             "calendar": "Festivos locales",
@@ -75,7 +75,7 @@ async def test_a_layer_is_not_made_twice_nor_with_the_read_role(api) -> None:
     await api.get("/calendars")
 
     again = await call(api, "create_calendar", {"name": "personal"})
-    assert "ya hay una capa" in again["error"]
+    assert "there is already a layer" in again["error"]
 
     response = await api.post("/tools/create_calendar", json={"name": "Otra"}, headers=READ)
     assert response.status_code == 403
@@ -85,7 +85,7 @@ async def test_claude_reads_the_catalogue_and_what_a_source_asks(api, hub_app, m
     from hub import catalogue
 
     async def regions(_client, _query, parent):
-        return [{"code": f"{parent}-XX", "name": "Región de prueba"}]
+        return [{"code": f"{parent}-XX", "name": "Test region"}]
 
     monkeypatch.setitem(catalogue.BY_ID["holidays"].searches, "regions", regions)
 
@@ -100,7 +100,7 @@ async def test_claude_reads_the_catalogue_and_what_a_source_asks(api, hub_app, m
     options = await call(
         api, "get_sources", {"provider": "holidays", "ask": "region", "parent": "ES"}, READ
     )
-    assert options["options"] == [{"code": "ES-XX", "name": "Región de prueba"}]
+    assert options["options"] == [{"code": "ES-XX", "name": "Test region"}]
 
     half = await call(api, "get_sources", {"provider": "holidays"}, READ)
     assert "provider" in half["error"] and "ask" in half["error"]
@@ -128,10 +128,10 @@ async def test_claude_subscribes_and_unsubscribes(api, hub_app) -> None:
     twice = await call(
         api, "subscribe", {"provider": "formula1", "name": "festivos de prueba", "params": {}}
     )
-    assert "ya hay una capa" in twice["error"]
+    assert "there is already a layer" in twice["error"]
 
     own = await call(api, "unsubscribe", {"calendar": "Personal"})
-    assert "no es una suscripción" in own["error"]
+    assert "is not a subscription" in own["error"]
 
     gone = await call(api, "unsubscribe", {"calendar": "Festivos de prueba"})
 
@@ -153,9 +153,9 @@ async def test_with_the_read_role_nothing_reaches_the_hub(api, hub_app) -> None:
 
 async def test_what_the_hub_refuses_comes_back_with_its_reason(api, hub_app) -> None:
     refused = await call(
-        api, "subscribe", {"provider": "ical", "name": "Nada", "params": {"url": "no"}}
+        api, "subscribe", {"provider": "ical", "name": "Nothing", "params": {"url": "no"}}
     )
 
     assert "https://" in refused["error"]
     names = [one["name"] for one in (await call(api, "get_calendars", {}, READ))["calendars"]]
-    assert "Nada" not in names
+    assert "Nothing" not in names

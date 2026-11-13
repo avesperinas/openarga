@@ -45,7 +45,7 @@ publishes:
 
 notifications:
   - kind: event
-    label: Evento de tus calendarios
+    label: An event in your calendars
     default: true
 
 api:
@@ -55,110 +55,111 @@ tools:
   - name: get_calendars
     scope: planner:read
     description: >
-      Las capas del calendario, con su id, su nombre, su tono, si es propia, suscrita o de otra app y si está
-      visible, y si se ve como eventos o como fondo. Úsala para saber en qué capa crear algo cuando lo piden por su nombre ("en Trabajo").
-      `days_off_from` dice de qué capas libra una: lo que se repite en ella no sale los días que
-      esas tienen algo de todo el día (el horario laboral, un festivo).
+      The calendar's layers, with their id, name and tone, whether each is your own, subscribed or
+      from another app, whether it is visible, and whether it shows as events or as a background.
+      Use it to know which layer to create something in when it is asked for by name ("in Work").
+      `days_off_from` says which layers a layer takes days off from: what repeats in it does not
+      show on the days those have something all day (working hours, a public holiday).
   - name: get_events
     scope: planner:read
     description: >
-      Lo que hay entre dos fechas (`from` y `to`), de todas las capas o de las que se pidan, o lo
-      que casa con `query` en el título, el lugar o las notas, en todas las capas y opcionalmente
-      entre dos fechas; de una serie, la búsqueda devuelve su próxima ocurrencia. Las series vienen
-      expandidas en ocurrencias y cada hora con su zona. Cada ocurrencia de una serie lleva
-      `original_start`, que es lo que piden `update_event` y `cancel_event` para tocar solo esa.
-      Lo de las capas de fondo (el horario laboral, un viaje) va aparte, en `backgrounds`: es el
-      marco en el que caen los eventos y no ocupa tiempo. Úsala para "¿qué tengo el jueves?" o
-      "¿cuándo estoy libre esta semana?" con las fechas, y para "¿cuándo es la cena con Ane?" o
-      "¿cuándo tengo dentista?" con `query`. Ahí lo libre lo deciden los eventos, y el fondo dice
-      si cae en horario laboral o de viaje. Lo que se repite en una capa que libra días ya viene
-      sin ellos: si Trabajo libra los festivos, un festivo no trae la jornada.
+      What there is between two dates (`from` and `to`), in every layer or in the ones asked for,
+      or what matches `query` in the title, place or notes, in every layer and optionally between
+      two dates; for a series, the search returns its next occurrence. Series come expanded into
+      occurrences, and every time carries its zone. Each occurrence of a series carries
+      `original_start`, which `update_event` and `cancel_event` need to touch only that one. What
+      is in background layers (working hours, a trip) comes apart, in `backgrounds`: it is the
+      frame events fall in and takes no time. Use it for "what do I have on Thursday?" or "when am
+      I free this week?" with dates, and for "when is dinner with Ane?" or "when is my dentist?"
+      with `query`. Events decide what is free, and the background says whether it falls in
+      working hours or on a trip. What repeats in a layer that takes days off already comes
+      without them: if Work takes public holidays off, a holiday brings no workday.
   - name: create_event
     scope: planner:write
     description: >
-      Crea un evento, con hora o de todo el día, o una serie si lleva `repeat`. La repetición va
-      como objeto: frecuencia, cada cuántos, días de la semana (con posición para "el segundo
-      martes"), días del mes, meses, y hasta una fecha o un número de veces. Sin capa, va a la
-      primera propia que no es de fondo. Devuelve cómo ha quedado, con la frase de la repetición en castellano:
-      léela para confirmar que es lo que se pidió. Si lo que se pide cae dentro de un viaje (lo
-      dice el fondo de Travel en `get_events`, en `backgrounds`), un plan o una visita del viaje va
-      en Travel (`travel_add_block`), no aquí: aquí, solo lo que no es del viaje. Si devuelve
-      `duplicates`, ya había algo igual en otra capa: díselo y pregunta si quiere quitar el que
-      acabas de crear (`cancel_event`).
+      Creates an event, timed or all day, or a series if it has `repeat`. The repetition is an
+      object: frequency, interval, weekdays (with a position for "the second Tuesday"), days of the
+      month, months, and an end date or a count. Without a layer, it goes to the first of your own
+      that is not a background. It returns how it turned out, with the repetition as a sentence:
+      read it to confirm it is what was asked. If what is asked falls within a trip (the Travel
+      background in `get_events`, in `backgrounds`), a plan or a visit of the trip goes in Travel
+      (`travel_add_block`), not here: here, only what is not part of the trip. If it returns
+      `duplicates`, something identical already existed in another layer: say so and ask whether
+      to remove the one just created (`cancel_event`).
   - name: update_event
     scope: planner:write
     description: >
-      Cambia un evento: título, hora, lugar, notas, enlace, capa o repetición. En una serie, `scope`
-      dice a qué alcanza: `this` solo la ocurrencia de `original_start`, `following` esa y las
-      siguientes, `all` la serie entera. Lo que no se pasa no cambia.
+      Changes an event: title, time, place, notes, link, layer or repetition. In a series, `scope`
+      says how far it reaches: `this` only the occurrence of `original_start`, `following` that one
+      and the next ones, `all` the whole series. What is not passed does not change.
   - name: cancel_event
     scope: planner:write
     description: >
-      Cancela un evento, o en una serie la ocurrencia de `original_start` (`this`), esa y las
-      siguientes (`following`) o la serie entera (`all`). No borra nada: deja de verse.
+      Cancels an event, or in a series the occurrence of `original_start` (`this`), that one and
+      the next ones (`following`) or the whole series (`all`). It deletes nothing: it stops showing.
   - name: create_calendar
     scope: planner:write
     description: >
-      Crea una capa tuya, con su nombre, su tono (del 1 al 10) y cómo se ve: `events`, o
-      `background` para un marco que no ocupa tiempo, como el horario laboral. Úsala cuando lo
-      que se va a apuntar no encaja en ninguna capa que ya hay ("los festivos locales").
+      Creates a layer of your own, with its name, its tone (from 1 to 10) and how it shows:
+      `events`, or `background` for a frame that takes no time, such as working hours. Use it when
+      what is about to be noted fits no existing layer ("local holidays").
   - name: set_days_off
     scope: planner:write
     description: >
-      Hace que una capa tuya libre, o deje de librar, los días de otra: lo que se repite en
-      `calendar` no sale los días en que `source` tiene algo de todo el día. Para "que no salga
-      que trabajo los festivos" o "ni en vacaciones". Toca una pareja de capas cada vez.
+      Makes a layer of yours take, or stop taking, the days of another off: what repeats in
+      `calendar` does not show on the days `source` has something all day. For "do not show me
+      working on public holidays" or "nor on vacation". It touches one pair of layers at a time.
   - name: get_sources
     scope: planner:read
     description: >
-      Lo que se puede suscribir en el calendario: festivos de un país y su región, la Fórmula 1,
-      los partidos de un equipo, un .ics público. Sin argumentos, cada fuente con lo que pregunta
-      (`asks`) y lo que ya tienes de ella. Con `provider` y `ask`, las opciones de esa pregunta
-      (las regiones de un país con `parent`, un equipo buscando con `query`). Úsala antes de
-      `subscribe`.
+      What can be subscribed to in the calendar: holidays of a country and its region, Formula 1,
+      a team's matches, a public .ics. Without arguments, each source with what it asks (`asks`)
+      and what you already have from it. With `provider` and `ask`, that question's options (a
+      country's regions with `parent`, a team searched with `query`). Use it before `subscribe`.
   - name: subscribe
     scope: planner:write
     description: >
-      Se suscribe a una fuente de `get_sources`, con lo contestado a cada pregunta en `params` y
-      el nombre de su capa ("Festivos · Navarra"). Todas son gratis y sin clave. La capa sale ya
-      y lo suyo llega con la primera pasada, en un minuto. Si ya tienes esa misma suscripción, no
-      crea otra: devuelve la que hay con `already`; díselo así.
+      Subscribes to a source from `get_sources`, with the answer to each question in `params` and
+      the name of its layer ("Holidays · Navarre"). They are all free and need no key. The layer
+      shows at once and its events arrive with the first pass, within a minute. If you already have
+      that same subscription, it does not create another: it returns the existing one with
+      `already`; say so.
   - name: unsubscribe
     scope: planner:write
     description: >
-      Quita una suscripción por el nombre o el id de su capa: deja de llegar y deja de verse.
-      Solo una cada vez, y solo lo suscrito: una capa tuya no se quita.
+      Removes a subscription by its layer's name or id: it stops arriving and stops showing. Only
+      one at a time, and only what is subscribed: a layer of your own is not removed.
 
 ui:
   widgets:
     - id: today
-      title: Hoy
+      title: Today
       kind: agenda
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/planner/widgets/today
       refresh: 300
       link: /planner
     - id: week
-      title: Semana
+      title: Week
       kind: week
       sizes: ["4x2", "2x1", "4x1", "2x2", "2x4", "4x4"]
       endpoint: /api/planner/widgets/week
       refresh: 600
       link: /planner
     - id: upnext
-      title: Próximo
+      title: Up next
       kind: upnext
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/planner/widgets/upnext
       refresh: 300
       link: /planner
     - id: calendar
-      title: Este mes
+      title: This month
       kind: calendar
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/planner/widgets/calendar
       refresh: 900
-      link: /planner/mes
+      link: /planner/month
   view: /planner
   hue: 6
   family: calendar

@@ -27,10 +27,10 @@ async def derive(user: UUID) -> dict[str, int]:
                 for key, value in result.items():
                     total[key] = total.get(key, 0) + value
     except Exception as error:  # noqa: BLE001 - el reflejo no para lo que publica Planner
-        print(f"reflejo · {type(error).__name__}: {error}", file=sys.stderr, flush=True)
+        print(f"mirror · {type(error).__name__}: {error}", file=sys.stderr, flush=True)
         return total
     if any(total.values()):
-        print(f"reflejo · {total}", flush=True)
+        print(f"mirror · {total}", flush=True)
     return total
 
 

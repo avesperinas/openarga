@@ -71,7 +71,7 @@ async def flush(kernel) -> int:
 
 
 async def padel(training, kernel) -> str:
-    kind = (await training.post("/activity-types", json={"name": "Pádel"})).json()
+    kind = (await training.post("/activity-types", json={"name": "Padel"})).json()
     logged = (
         await training.post(
             "/activities", json={"activity_type_id": kind["id"], "day": DAY, "start_time": "18:30"}
