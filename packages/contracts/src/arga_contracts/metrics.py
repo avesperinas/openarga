@@ -72,7 +72,7 @@ async def publish(
     for one in points:
         identity = metric_identity(one)
         if identity in now:
-            raise BadContract(f"Metric no casa: punto repetido: {identity}")
+            raise BadContract(f"Metric does not match: repeated point: {identity}")
         now[identity] = one
     published = {
         metric_identity(row.point): (row.row_id, row.point)

@@ -114,7 +114,7 @@ async def test_going_back_to_a_value_of_before_is_a_new_event(outbox) -> None:
 
 async def test_the_same_point_twice_is_a_bug_of_whoever_builds_them(outbox) -> None:
     async with outbox.begin() as connection:
-        with pytest.raises(contracts.BadContract, match="repetido"):
+        with pytest.raises(contracts.BadContract, match="repeated"):
             await metrics.publish(connection, APP, [steps(1, 1), steps(1, 2)])
 
 

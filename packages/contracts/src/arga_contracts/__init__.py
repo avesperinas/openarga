@@ -82,7 +82,7 @@ def _check(model: type[BaseModel], fields: dict[str, Any]) -> dict[str, Any]:
             f"{'.'.join(str(p) for p in item['loc']) or 'objeto'}: {item['msg']}"
             for item in error.errors()
         )
-        raise BadContract(f"{model.__name__} no casa: {where}") from None
+        raise BadContract(f"{model.__name__} does not match: {where}") from None
 
 
 class BodyWeight(BaseModel):
@@ -112,7 +112,7 @@ BODY_WEIGHT_DAYS = """
 
 def body_weight_days(view: str) -> str:
     if not re.fullmatch(r"[a-z][a-z0-9_]*\.events", view):
-        raise ValueError(f"'{view}' no es la vista de eventos de una app")
+        raise ValueError(f"'{view}' is not an app's events view")
     return BODY_WEIGHT_DAYS.format(view=view)
 
 
@@ -204,7 +204,7 @@ class Custody(BaseModel):
     @model_validator(mode="after")
     def _known_category(self) -> Custody:
         if self.category not in CUSTODY_CATEGORIES:
-            raise ValueError(f"category: una de {sorted(CUSTODY_CATEGORIES)}")
+            raise ValueError(f"category: one of {sorted(CUSTODY_CATEGORIES)}")
         return self
 
 
@@ -231,11 +231,11 @@ class Trip(BaseModel):
     @model_validator(mode="after")
     def _known_phase(self) -> Trip:
         if self.phase not in TRIP_PHASES:
-            raise ValueError(f"phase: una de {sorted(TRIP_PHASES)}")
+            raise ValueError(f"phase: one of {sorted(TRIP_PHASES)}")
         if (self.starts_on is None) != (self.ends_on is None):
-            raise ValueError("starts_on y ends_on van juntos")
+            raise ValueError("starts_on and ends_on go together")
         if self.starts_on and self.ends_on and self.ends_on < self.starts_on:
-            raise ValueError("un viaje no acaba antes de empezar")
+            raise ValueError("a trip does not end before it starts")
         return self
 
 
@@ -255,7 +255,7 @@ class TripIdea(BaseModel):
     @model_validator(mode="after")
     def _whole_point(self) -> TripIdea:
         if (self.lat is None) != (self.lon is None):
-            raise ValueError("lat y lon van juntas")
+            raise ValueError("lat and lon go together")
         return self
 
 
@@ -289,7 +289,7 @@ class Activity(BaseModel):
 def activity(**fields: Any) -> dict[str, Any]:
     found = _check(Activity, fields)
     if datetime.fromisoformat(found["start"]).tzinfo is None:
-        raise BadContract("Activity no casa: start: con zona")
+        raise BadContract("Activity does not match: start: with a time zone")
     return found
 
 
@@ -317,9 +317,9 @@ class Workout(BaseModel):
     @model_validator(mode="after")
     def _ends_after_it_starts(self) -> Workout:
         if self.start.tzinfo is None or self.end.tzinfo is None:
-            raise ValueError("start y end, con zona")
+            raise ValueError("start and end, with a time zone")
         if self.end < self.start:
-            raise ValueError("end antes que start")
+            raise ValueError("end before start")
         return self
 
 
@@ -371,14 +371,14 @@ class Metric(BaseModel):
     @model_validator(mode="after")
     def _known_unit(self) -> Metric:
         if self.unit not in UNITS:
-            raise ValueError(f"unit: una de {sorted(UNITS)}")
+            raise ValueError(f"unit: one of {sorted(UNITS)}")
         return self
 
 
 def metric(app: str, **fields: Any) -> dict[str, Any]:
     found = _check(Metric, fields)
     if found["key"].split(".", 1)[0] != app:
-        raise BadContract(f"Metric no casa: key: tiene que empezar por '{app}.'")
+        raise BadContract(f"Metric does not match: key: must start with '{app}.'")
     return found
 
 
@@ -434,20 +434,20 @@ class Record(BaseModel):
     def _well_formed(self) -> Record:
         for name, value in self.properties.items():
             if not re.fullmatch(PROPERTY_NAME, name):
-                raise ValueError(f"properties.{name}: en minúscula, sin tildes y con _")
+                raise ValueError(f"properties.{name}: lowercase ASCII letters, digits and _")
             if name in RESERVED_PROPERTIES:
-                raise ValueError(f"properties.{name}: la pone quien escribe la nota")
+                raise ValueError(f"properties.{name}: set by whoever writes the note")
             if isinstance(value, float) and not math.isfinite(value):
-                raise ValueError(f"properties.{name}: un número de verdad")
+                raise ValueError(f"properties.{name}: a finite number")
             if isinstance(value, str) and len(value) > 500:
-                raise ValueError(f"properties.{name}: pasa de 500 caracteres")
+                raise ValueError(f"properties.{name}: longer than 500 characters")
             if isinstance(value, list) and len(value) > 50:
-                raise ValueError(f"properties.{name}: pasa de 50 valores")
+                raise ValueError(f"properties.{name}: more than 50 values")
         parts = self.folder.split("/") if self.folder else []
         if any(not part.strip() or part.strip() in (".", "..") for part in parts):
-            raise ValueError("folder: una ruta sin barras de más ni `..`")
+            raise ValueError("folder: a path without extra slashes or `..`")
         if "%% arga %%" in self.body or "%% /arga %%" in self.body:
-            raise ValueError("body: no lleva las marcas del bloque, las pone quien escribe")
+            raise ValueError("body: without the block markers, the writer adds them")
         return self
 
 
@@ -540,7 +540,7 @@ class AgendaMove(BaseModel):
                             date.fromisoformat(value) if all_day else datetime.fromisoformat(value)
                         )
                     except ValueError as error:
-                        raise ValueError(f"{key}: {value!r} no casa con all_day") from error
+                        raise ValueError(f"{key}: {value!r} does not match all_day") from error
                     data = {**data, key: parsed}
         return data
 
@@ -548,15 +548,15 @@ class AgendaMove(BaseModel):
     def _coherent(self) -> AgendaMove:
         if self.all_day:
             if type(self.start) is not date or type(self.end) is not date:
-                raise ValueError("todo el día: fechas, sin hora")
+                raise ValueError("all day: dates, without a time")
             if self.end <= self.start:
-                raise ValueError("todo el día: el fin es exclusivo")
+                raise ValueError("all day: the end is exclusive")
         else:
             for value in (self.start, self.end):
                 if not isinstance(value, datetime) or value.utcoffset() is None:
-                    raise ValueError("con hora: inicio y fin llevan zona")
+                    raise ValueError("with a time: start and end carry a time zone")
             if self.end < self.start:
-                raise ValueError("el fin no puede ir antes del inicio")
+                raise ValueError("the end cannot be before the start")
         return self
 
     @property

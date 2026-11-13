@@ -192,7 +192,7 @@ def test_a_metric_can_carry_a_parameter_after_a_colon() -> None:
 
 
 def test_a_metric_with_another_apps_key_fails_in_whoever_publishes_it() -> None:
-    with pytest.raises(contracts.BadContract, match="empezar por 'macros.'"):
+    with pytest.raises(contracts.BadContract, match="start with 'macros.'"):
         contracts.metric(
             "macros",
             key="vitals.steps",
@@ -240,7 +240,7 @@ def test_asking_to_log_a_weight_is_kilos_and_maybe_a_day() -> None:
 
 def test_the_weight_of_each_day_is_read_from_an_app_view_only() -> None:
     assert "from training.events" in contracts.body_weight_days("training.events")
-    with pytest.raises(ValueError, match="vista de eventos"):
+    with pytest.raises(ValueError, match="events view"):
         contracts.body_weight_days("vitals.vitals_weight; drop table x")
 
 
