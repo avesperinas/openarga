@@ -4,8 +4,8 @@ import type { Reading } from "./api";
 import { ReadingFields } from "./ReadingFields";
 
 const GENRES = [
-  { id: "novel", name: "Novela" },
-  { id: "other", name: "Otros" },
+  { id: "novel", name: "Novel" },
+  { id: "other", name: "Other" },
 ];
 
 function render(reading: Partial<Reading>): string {
@@ -22,33 +22,33 @@ function render(reading: Partial<Reading>): string {
   return renderToString(<ReadingFields reading={full} genres={GENRES} onChange={() => {}} />);
 }
 
-describe("los campos de la lectura", () => {
-  it("un libro que quieres leer no pide fechas ni valoración", () => {
+describe("the reading fields", () => {
+  it("a book you want to read asks for no dates or rating", () => {
     const html = render({ status: "want" });
 
-    expect(html).not.toContain("Empezado");
-    expect(html).not.toContain("Sin valorar");
-    expect(html).toContain("Novela");
+    expect(html).not.toContain("Started");
+    expect(html).not.toContain("Not rated");
+    expect(html).toContain("Novel");
   });
 
-  it("uno leído pide inicio, fin y valoración", () => {
+  it("a read one asks for start, end and rating", () => {
     const html = render({ status: "read", started_on: "2026-09-01", finished_on: "2026-09-20", rating: 4.5 });
 
-    expect(html).toContain("Empezado");
-    expect(html).toContain("Terminado");
-    expect(html).toContain("Quitar valoración");
+    expect(html).toContain("Started");
+    expect(html).toContain("Finished");
+    expect(html).toContain("Remove rating");
   });
 
-  it("la valoración se ve con su nombre y su nota, no solo la barra", () => {
+  it("the rating shows its name and value, not just the slider", () => {
     expect(render({ status: "read", started_on: "2026-09-01", finished_on: "2026-09-20", rating: null })).toMatch(
-      /library-rating-head.*Valoración.*Sin valorar/,
+      /library-rating-head.*Rating.*Not rated/,
     );
     expect(render({ status: "reading", started_on: "2026-09-01", rating: 4.5 })).toMatch(
-      /library-rating-head.*Valoración.*4,5/,
+      /library-rating-head.*Rating.*4\.5/,
     );
   });
 
-  it("uno abandonado dice cuándo lo dejaste", () => {
-    expect(render({ status: "abandoned", started_on: "2026-09-01" })).toContain("Dejado");
+  it("an abandoned one says when you left it", () => {
+    expect(render({ status: "abandoned", started_on: "2026-09-01" })).toContain("Abandoned");
   });
 });

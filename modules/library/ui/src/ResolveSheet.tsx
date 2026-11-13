@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { type Book, type Search, asCandidate, resolveBook, searchCatalog } from "./api";
 import { candidateDetail, failedNote } from "./words";
+import { t } from "./lang";
 
 export function ResolveSheet({
   book,
@@ -39,15 +40,15 @@ export function ResolveSheet({
   }, []);
 
   return (
-    <Sheet title="Buscar su edición" onClose={onClose}>
+    <Sheet title={t("book.find_edition")} onClose={onClose}>
       <div className="library-fields">
-        <TextField label="Buscar" type="search" value={query} onChange={setQuery} onSubmit={() => void search(query)} />
+        <TextField label={t("action.search")} type="search" value={query} onChange={setQuery} onSubmit={() => void search(query)} />
         <Button variant="tinted" onClick={() => void search(query)}>
-          Buscar
+          {t("action.search")}
         </Button>
-        {searching && <Skeleton rows={3} label="Buscando" />}
+        {searching && <Skeleton rows={3} label={t("add.searching")} />}
         {found && failedNote(found.failed) && <Hint tone="warning">{failedNote(found.failed)}</Hint>}
-        {found && !searching && found.candidates.length === 0 && <Hint>No sale en ningún catálogo.</Hint>}
+        {found && !searching && found.candidates.length === 0 && <Hint>{t("resolve.none")}</Hint>}
         {found && found.candidates.length > 0 && (
           <List>
             {found.candidates.map((candidate) => (

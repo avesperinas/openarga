@@ -23,7 +23,8 @@ import { AppVersion } from "./AppVersion";
 import { type Book, type Genre, type YearStats, Unauthorised, coverUrl, readBooks, readStats, saveReading, signIn } from "./api";
 import { Cover } from "./Cover";
 import { ScreenHeader } from "./Header";
-import { FORMATS, type Filters, NO_FILTERS, datesLine, filtered, goalFoot, shelves, stars, withStatus } from "./words";
+import { t } from "./lang";
+import { type Filters, NO_FILTERS, datesLine, filtered, formats, goalPace, shelves, stars, withStatus } from "./words";
 
 export function LibraryScreen({ genres, onOpen }: { genres: Genre[]; onOpen: (book: Book) => void }) {
   const shelf = useResource("books", readBooks, { persist: true });
@@ -34,7 +35,7 @@ export function LibraryScreen({ genres, onOpen }: { genres: Genre[]; onOpen: (bo
 
   const fail = useCallback((error: unknown) => {
     if (error instanceof Unauthorised) return signIn();
-    setProblem(error instanceof Error ? error.message : "No se pudo guardar.");
+    setProblem(error instanceof Error ? error.message : t("problem.save"));
   }, []);
 
   const all = books ?? [];
@@ -71,10 +72,10 @@ export function LibraryScreen({ genres, onOpen }: { genres: Genre[]; onOpen: (bo
 
   return (
     <Screen>
-      <ScreenHeader title="Tus libros" />
+      <ScreenHeader title={t("shelf.title")} />
       <OfflineNotice />
 
-      <CreateButton label="Libro" onClick={() => setAdding(true)} />
+      <CreateButton label={t("shelf.add_short")} onClick={() => setAdding(true)} />
 
       {problem && (
         <Hint tone="warning">
@@ -82,7 +83,7 @@ export function LibraryScreen({ genres, onOpen }: { genres: Genre[]; onOpen: (bo
         </Hint>
       )}
       {shelf.error && books === null && (
-        <ErrorState title="No se ha podido leer la estantería" detail={shelf.error.message} onRetry={shelf.refresh} />
+        <ErrorState title={t("shelf.error")} detail={shelf.error.message} onRetry={shelf.refresh} />
       )}
 
       {shelf.loading && <Skeleton rows={4} />}
@@ -91,11 +92,10 @@ export function LibraryScreen({ genres, onOpen }: { genres: Genre[]; onOpen: (bo
         <EmptyState
           icon="book"
           hue={5}
-          title="Todavía no hay libros"
-          action={{ label: "Añadir un libro", icon: "plus", onClick: () => setAdding(true) }}
+          title={t("shelf.empty")}
+          action={{ label: t("shelf.add"), icon: "plus", onClick: () => setAdding(true) }}
         >
-          Busca el que estás leyendo o escanea su código de barras, y añade los que has leído este año con
-          sus fechas.
+          {t("shelf.empty_body")}
         </EmptyState>
       )}
 
@@ -105,16 +105,16 @@ export function LibraryScreen({ genres, onOpen }: { genres: Genre[]; onOpen: (bo
             size="medium"
             share={goal.books / goal.goal!}
             value={goal.books}
-            label={`${goal.books} de ${goal.goal} este año`}
-            detail={goalFoot(goal).replace(`de ${goal.goal} · `, "").replace(`de ${goal.goal}`, "") || undefined}
+            label={t("goal.this_year", { books: goal.books, goal: goal.goal! })}
+            detail={goalPace(goal) || undefined}
             tone={goal.goal_pace !== null && goal.books + 0.5 < goal.goal_pace ? "warning" : undefined}
           />
         </Card>
       )}
 
       {reading.length > 0 && (
-        <section className="library-group" aria-label="Leyendo">
-          <GroupLabel>Leyendo</GroupLabel>
+        <section className="library-group" aria-label={t("shelf.reading")}>
+          <GroupLabel>{t("shelf.reading")}</GroupLabel>
           {reading.map((book) => (
             <MediaCard
               key={book.id}
@@ -123,10 +123,10 @@ export function LibraryScreen({ genres, onOpen }: { genres: Genre[]; onOpen: (bo
               lines={[
                 ...(book.authors.length > 0 ? [book.authors.join(", ")] : []),
                 datesLine(book),
-                ...(book.pages ? [`${book.pages} páginas`] : []),
+                ...(book.pages ? [t("edition.pages", { pages: book.pages })] : []),
               ]}
               onOpen={() => onOpen(book)}
-              action={{ label: "Terminado hoy", icon: "done", disabled: finishing === book.id, onClick: () => void finish(book) }}
+              action={{ label: t("action.finished_today"), icon: "done", disabled: finishing === book.id, onClick: () => void finish(book) }}
             />
           ))}
         </section>
@@ -136,25 +136,25 @@ export function LibraryScreen({ genres, onOpen }: { genres: Genre[]; onOpen: (bo
         <>
           {present.length > 1 && (
             <ChoiceChips
-              label="Temática"
+              label={t("field.genre")}
               value={filters.genre}
               onChange={(genre) => setFilters({ ...filters, genre })}
-              options={[{ value: "all", label: "Todas" }, ...present.map((one) => ({ value: one.id, label: one.name }))]}
+              options={[{ value: "all", label: t("filter.all_genres") }, ...present.map((one) => ({ value: one.id, label: one.name }))]}
             />
           )}
           <div className="library-filters">
             <SelectField
-              label="Formato"
-              options={[{ value: "all", label: "Todos" }, ...FORMATS]}
+              label={t("field.format")}
+              options={[{ value: "all", label: t("filter.all_formats") }, ...formats()]}
               value={filters.format}
               onChange={(format) => setFilters({ ...filters, format })}
             />
             <SelectField
-              label="Valoración"
+              label={t("field.rating")}
               options={[
-                { value: "all", label: "Todas" },
-                { value: "3", label: stars(3) + " o más" },
-                { value: "4", label: stars(4) + " o más" },
+                { value: "all", label: t("filter.all_ratings") },
+                { value: "3", label: t("filter.or_more", { stars: stars(3) }) },
+                { value: "4", label: t("filter.or_more", { stars: stars(4) }) },
                 { value: "5", label: stars(5) },
               ]}
               value={filters.rating}
@@ -163,7 +163,7 @@ export function LibraryScreen({ genres, onOpen }: { genres: Genre[]; onOpen: (bo
           </div>
         </>
       )}
-      {filtering && walls.length === 0 && <Hint>Ningún libro con esos filtros.</Hint>}
+      {filtering && walls.length === 0 && <Hint>{t("filter.none")}</Hint>}
 
       {walls.map((shelf) => (
         <section key={shelf.id} className="library-group" aria-label={shelf.title}>

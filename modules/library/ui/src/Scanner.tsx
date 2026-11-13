@@ -2,6 +2,7 @@ import { Button, Hint } from "@openarga/ui";
 import { useEffect, useRef, useState } from "react";
 
 import { detector, isbnFrom } from "./scanner";
+import { t } from "./lang";
 
 export function Scanner({ onIsbn, onCancel }: { onIsbn: (isbn: string) => void; onCancel: () => void }) {
   const video = useRef<HTMLVideoElement>(null);
@@ -19,7 +20,7 @@ export function Scanner({ onIsbn, onCancel }: { onIsbn: (isbn: string) => void; 
           audio: false,
         });
       } catch {
-        setProblem("No se puede abrir la cámara. Revisa el permiso, o busca el libro por su título.");
+        setProblem(t("scan.no_camera"));
         return;
       }
       const element = video.current;
@@ -28,7 +29,7 @@ export function Scanner({ onIsbn, onCancel }: { onIsbn: (isbn: string) => void; 
       await element.play().catch(() => undefined);
       const reader = await detector().catch(() => null);
       if (!reader) {
-        setProblem("Este navegador no sabe leer códigos. Busca el libro por su título o su ISBN.");
+        setProblem(t("scan.unsupported"));
         return;
       }
       const look = async () => {
@@ -65,12 +66,12 @@ export function Scanner({ onIsbn, onCancel }: { onIsbn: (isbn: string) => void; 
         </Hint>
       ) : (
         <>
-          <video ref={video} className="library-scanner-video" muted playsInline aria-label="Cámara" />
-          <Hint>Apunta al código de barras de la contraportada.</Hint>
+          <video ref={video} className="library-scanner-video" muted playsInline aria-label={t("scan.camera")} />
+          <Hint>{t("scan.hint")}</Hint>
         </>
       )}
       <Button variant="secondary" onClick={onCancel}>
-        Cancelar
+        {t("action.cancel")}
       </Button>
     </div>
   );

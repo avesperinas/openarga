@@ -7,7 +7,8 @@ import { BookSheet } from "./BookSheet";
 import { Cover } from "./Cover";
 import { ScreenHeader } from "./Header";
 import { ResolveSheet } from "./ResolveSheet";
-import { FORMATS, STATUS_NAMES, datesLine, editionLine, stars, todayIso, withStatus } from "./words";
+import { t } from "./lang";
+import { datesLine, editionLine, formats, stars, statusName, todayIso, withStatus } from "./words";
 
 export function BookScreen({ id, genres, onBack }: { id: string; genres: Genre[]; onBack: () => void }) {
   const found = useResource(`book:${id}`, () => readBook(id), {
@@ -21,7 +22,7 @@ export function BookScreen({ id, genres, onBack }: { id: string; genres: Genre[]
 
   const fail = useCallback((error: unknown) => {
     if (error instanceof Unauthorised) return signIn();
-    setProblem(error instanceof Error ? error.message : "No se pudo guardar.");
+    setProblem(error instanceof Error ? error.message : t("problem.save"));
   }, []);
 
   const saved = useCallback((fresh: Book) => {
@@ -46,14 +47,14 @@ export function BookScreen({ id, genres, onBack }: { id: string; genres: Genre[]
     }
   }
 
-  const back = { label: "Tus libros", onClick: onBack };
+  const back = { label: t("shelf.title"), onClick: onBack };
   if (!book) {
     return (
       <Screen>
         <ScreenHeader back={back} />
         <OfflineNotice />
         {found.error ? (
-          <ErrorState title="No se ha podido abrir el libro" detail={found.error.message} onRetry={found.refresh} />
+          <ErrorState title={t("book.error")} detail={found.error.message} onRetry={found.refresh} />
         ) : (
           <Skeleton rows={5} />
         )}
@@ -62,11 +63,11 @@ export function BookScreen({ id, genres, onBack }: { id: string; genres: Genre[]
   }
 
   const genre = genres.find((one) => one.id === book.genre)?.name ?? book.genre;
-  const format = FORMATS.find((one) => one.value === book.format)?.label ?? book.format;
+  const format = formats().find((one) => one.value === book.format)?.label ?? book.format;
 
   return (
     <Screen>
-      <ScreenHeader back={back} eyebrow={STATUS_NAMES[book.status]} title={book.title} />
+      <ScreenHeader back={back} eyebrow={statusName(book.status)} title={book.title} />
       <OfflineNotice />
 
       <MediaHero media={<Cover book={book} size="hero" />}>
@@ -83,11 +84,11 @@ export function BookScreen({ id, genres, onBack }: { id: string; genres: Genre[]
       {(book.pages || book.days) && (
         <Card>
           <Figures
-            label="Su lectura"
+            label={t("book.reading")}
             items={[
-              ...(book.pages ? [{ label: "páginas", value: book.pages }] : []),
-              ...(book.days ? [{ label: book.days === 1 ? "día" : "días", value: book.days }] : []),
-              ...(book.pages && book.days ? [{ label: "páginas al día", value: Math.round(book.pages / book.days), lit: true }] : []),
+              ...(book.pages ? [{ label: t("book.pages"), value: book.pages }] : []),
+              ...(book.days ? [{ label: book.days === 1 ? t("book.day") : t("book.days"), value: book.days }] : []),
+              ...(book.pages && book.days ? [{ label: t("book.pages_per_day"), value: Math.round(book.pages / book.days), lit: true }] : []),
             ]}
           />
           <Hint>{datesLine(book)}</Hint>
@@ -95,11 +96,11 @@ export function BookScreen({ id, genres, onBack }: { id: string; genres: Genre[]
       )}
       {!(book.pages || book.days) && <Hint>{datesLine(book)}</Hint>}
       {book.note && (
-        <Card title="Tu nota">
+        <Card title={t("book.note")}>
           <Hint lines>{book.note}</Hint>
         </Card>
       )}
-      <Inline label="Temática y formato">
+      <Inline label={t("book.genre_and_format")}>
         <Badge>{genre}</Badge>
         <Badge>{format}</Badge>
         {book.language && <Badge>{book.language}</Badge>}
@@ -107,16 +108,16 @@ export function BookScreen({ id, genres, onBack }: { id: string; genres: Genre[]
       <div className="library-actions">
         {book.status === "want" && (
           <Button variant="tinted" disabled={moving} onClick={() => void move("reading")}>
-            Empezarlo hoy
+            {t("action.start_today")}
           </Button>
         )}
         {book.status === "reading" && (
           <Button variant="tinted" disabled={moving} onClick={() => void move("read")}>
-            Terminado hoy
+            {t("action.finished_today")}
           </Button>
         )}
         <Button variant="secondary" icon="edit" onClick={() => setEditing(true)}>
-          Editar
+          {t("action.edit")}
         </Button>
       </div>
 
@@ -124,11 +125,11 @@ export function BookScreen({ id, genres, onBack }: { id: string; genres: Genre[]
         <section className="library-group">
           <Hint>
             {book.source === "tool"
-              ? "Lo apuntó Claude sin su edición. Búscala para tener la portada y los datos del catálogo."
-              : "Está tecleado. Si está en algún catálogo, búscalo para tener su portada."}
+              ? t("book.manual_ai")
+              : t("book.manual_typed")}
           </Hint>
           <Button variant="plain" onClick={() => setResolving(true)}>
-            Buscar su edición
+            {t("book.find_edition")}
           </Button>
         </section>
       )}

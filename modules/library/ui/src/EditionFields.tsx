@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import type { Edition } from "./api";
 import { splitAuthors } from "./words";
+import { t } from "./lang";
 
 export function EditionFields({ edition, onChange }: { edition: Edition; onChange: (edition: Edition) => void }) {
   const [authors, setAuthors] = useState(edition.authors.join(", "));
@@ -11,11 +12,11 @@ export function EditionFields({ edition, onChange }: { edition: Edition; onChang
 
   return (
     <div className="library-fields">
-      <TextField label="Título" value={edition.title} onChange={(title) => set({ title })} autoFocus />
+      <TextField label={t("edition.title")} value={edition.title} onChange={(title) => set({ title })} autoFocus />
       <TextField
-        label="Autores"
+        label={t("edition.authors")}
         value={authors}
-        placeholder="separados por comas"
+        placeholder={t("edition.authors_hint")}
         onChange={(text) => {
           setAuthors(text);
           set({ authors: splitAuthors(text) });
@@ -23,13 +24,13 @@ export function EditionFields({ edition, onChange }: { edition: Edition; onChang
       />
       <div className="library-dates">
         <TextField
-          label="Páginas"
+          label={t("edition.pages_label")}
           inputMode="numeric"
           value={edition.pages?.toString() ?? ""}
           onChange={(text) => set({ pages: number(text) })}
         />
         <TextField
-          label="Año"
+          label={t("edition.year")}
           inputMode="numeric"
           value={edition.year?.toString() ?? ""}
           onChange={(text) => set({ year: number(text) })}
@@ -37,7 +38,7 @@ export function EditionFields({ edition, onChange }: { edition: Edition; onChang
       </div>
       <div className="library-dates">
         <TextField
-          label="Idioma"
+          label={t("edition.language")}
           placeholder="es, en, eu…"
           value={edition.language ?? ""}
           onChange={(text) => set({ language: text.trim().toLowerCase() || null })}

@@ -14,9 +14,9 @@ const BOOK: Book = {
   id: ID,
   edition: "catalog",
   edition_id: "e",
-  title: "Libro sintético",
+  title: "Synthetic book",
   subtitle: null,
-  authors: ["Autora Sintética"],
+  authors: ["Synthetic Author"],
   pages: 300,
   language: "es",
   year: 2020,
@@ -67,11 +67,11 @@ const YEAR: YearStats = {
     pages: index === 8 ? 300 : 0,
   })),
   days: { "2026-09-10": 15 },
-  genres: [{ id: "novel", name: "Novela", books: 1, pages: 300 }],
-  authors: [{ id: "a", name: "Autora Sintética", books: 1, pages: 300 }],
+  genres: [{ id: "novel", name: "Novel", books: 1, pages: 300 }],
+  authors: [{ id: "a", name: "Synthetic Author", books: 1, pages: 300 }],
   ratings: { "4": 1 },
-  longest: { id: ID, title: "Libro sintético", pages: 300, days: 20 },
-  fastest: { id: ID, title: "Libro sintético", pages: 300, days: 20 },
+  longest: { id: ID, title: "Synthetic book", pages: 300, days: 20 },
+  fastest: { id: ID, title: "Synthetic book", pages: 300, days: 20 },
 };
 
 type Reply = () => unknown;
@@ -96,7 +96,7 @@ beforeEach(() => {
   window.history.replaceState(null, "", "/library/");
   replies = {
     "GET /api/library/books": () => [BOOK],
-    "GET /api/library/genres": () => [{ id: "novel", name: "Novela" }],
+    "GET /api/library/genres": () => [{ id: "novel", name: "Novel" }],
     "GET /api/library/version": () => ({ version: "1.0.0" }),
     "GET /api/library/stats": () => YEAR,
     [`GET /api/library/books/${ID}`]: () => BOOK,
@@ -105,7 +105,7 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (url: string, init?: RequestInit) => {
       const reply = replies[`${init?.method ?? "GET"} ${url}`];
-      if (!reply) return json({ detail: "no existe" }, 404);
+      if (!reply) return json({ detail: "not found" }, 404);
       const body = await reply();
       return body instanceof Response ? body : json(body);
     }),
@@ -126,6 +126,8 @@ const settle = () =>
     for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setTimeout(resolve, 0));
   });
 
+const retry = () => host.querySelector<HTMLButtonElement>('.empty-state[role="alert"] button') ?? undefined;
+
 const button = (name: string) =>
   Array.from(host.querySelectorAll<HTMLButtonElement>("button")).find((one) => one.textContent?.includes(name));
 
@@ -142,91 +144,91 @@ async function serious(): Promise<string[]> {
     .map((one) => `${one.id}: ${one.nodes.map((node) => node.target.join(" ")).join(", ")}`);
 }
 
-describe("la estantería", () => {
-  it("mientras llega, el esqueleto", async () => {
+describe("the shelf", () => {
+  it("while it arrives, the skeleton", async () => {
     replies["GET /api/library/books"] = () => new Promise(() => undefined);
     await open("/library/");
     expect(host.querySelector(".skeleton")).not.toBeNull();
   });
 
-  it("vacía, dice qué hacer y el botón abre el alta", async () => {
+  it("empty, it says what to do and the button opens the add sheet", async () => {
     replies["GET /api/library/books"] = () => [];
     await open("/library/");
-    expect(host.textContent).toContain("Todavía no hay libros");
+    expect(host.textContent).toContain("No books yet");
 
-    act(() => button("Añadir un libro")!.click());
+    act(() => button("Add a book")!.click());
     await settle();
     expect(document.querySelector("dialog, [role=dialog]")).not.toBeNull();
   });
 
-  it("si falla, lo dice y reintentar la trae", async () => {
-    replies["GET /api/library/books"] = () => json({ detail: "la base no contesta" }, 503);
+  it("if it fails, it says so and retrying brings it", async () => {
+    replies["GET /api/library/books"] = () => json({ detail: "the database is not answering" }, 503);
     await open("/library/");
-    expect(host.textContent).toContain("No se ha podido leer la estantería");
-    expect(host.textContent).toContain("la base no contesta");
+    expect(host.textContent).toContain("Could not read the shelf");
+    expect(host.textContent).toContain("the database is not answering");
 
     replies["GET /api/library/books"] = () => [BOOK];
-    act(() => button("Reintentar")!.click());
+    act(() => retry()!.click());
     await settle();
-    expect(host.textContent).not.toContain("No se ha podido leer la estantería");
-    expect(host.querySelector('[aria-label="Libro sintético"]')).not.toBeNull();
+    expect(host.textContent).not.toContain("Could not read the shelf");
+    expect(host.querySelector('[aria-label="Synthetic book"]')).not.toBeNull();
   });
 
-  it("sin red, lo dice arriba", async () => {
+  it("offline, it says so at the top", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     await open("/library/");
-    expect(host.textContent).toContain("Sin conexión");
+    expect(host.querySelector('.notice[data-tone="warning"]')).not.toBeNull();
   });
 
-  it("axe-core sin errores graves", async () => {
+  it("axe-core without serious errors", async () => {
     await open("/library/");
     expect(await serious()).toEqual([]);
   });
 });
 
-describe("las estadísticas", () => {
-  it("un año sin libros lleva a la estantería", async () => {
+describe("the stats", () => {
+  it("a year without books leads to the shelf", async () => {
     replies["GET /api/library/stats"] = () => EMPTY_YEAR;
     await open("/library/stats");
-    expect(host.textContent).toContain("Nada leído en 2026");
+    expect(host.textContent).toContain("Nothing read in 2026");
 
-    act(() => button("Ir a la estantería")!.click());
+    act(() => button("Go to the shelf")!.click());
     await settle();
     expect(window.location.pathname).toBe("/library/");
   });
 
-  it("si fallan, reintentar", async () => {
+  it("if they fail, retry", async () => {
     replies["GET /api/library/stats"] = () => json({ detail: "no" }, 500);
     await open("/library/stats");
-    expect(host.textContent).toContain("No se han podido leer las cifras");
+    expect(host.textContent).toContain("Could not read the figures");
 
     replies["GET /api/library/stats"] = () => YEAR;
-    act(() => button("Reintentar")!.click());
+    act(() => retry()!.click());
     await settle();
-    expect(host.textContent).toContain("Páginas por mes");
+    expect(host.textContent).toContain("Pages per month");
   });
 
-  it("axe-core sin errores graves", async () => {
+  it("axe-core without serious errors", async () => {
     await open("/library/stats");
-    expect(host.textContent).toContain("Páginas por mes");
+    expect(host.textContent).toContain("Pages per month");
     expect(await serious()).toEqual([]);
   });
 });
 
-describe("la ficha", () => {
-  it("si no se puede abrir, reintentar", async () => {
+describe("the book", () => {
+  it("if it cannot be opened, retry", async () => {
     replies["GET /api/library/books"] = () => [];
     replies[`GET /api/library/books/${ID}`] = () => json({ detail: "no" }, 500);
     await open(`/library/books/${ID}`);
-    expect(host.textContent).toContain("No se ha podido abrir el libro");
+    expect(host.textContent).toContain("Could not open the book");
 
     replies[`GET /api/library/books/${ID}`] = () => BOOK;
-    act(() => button("Reintentar")!.click());
+    act(() => retry()!.click());
     await settle();
-    expect(host.querySelector(".app-shell-detail h1")?.textContent).toContain("Libro sintético");
+    expect(host.querySelector(".app-shell-detail h1")?.textContent).toContain("Synthetic book");
   });
 
-  it("axe-core sin errores graves", async () => {
+  it("axe-core without serious errors", async () => {
     await open(`/library/books/${ID}`);
     expect(await serious()).toEqual([]);
   });

@@ -26,7 +26,8 @@ import { useCallback, useState } from "react";
 
 import { type Share, Unauthorised, type YearStats, readStats, setGoal, signIn } from "./api";
 import { ScreenHeader } from "./Header";
-import { goalFoot, ratingRows, shareItems, todayIso, yearDays } from "./words";
+import { intl, t } from "./lang";
+import { goalPace, ratingRows, shareItems, todayIso, yearDays } from "./words";
 
 const number = (value: number) => plain(Math.round(value));
 
@@ -44,13 +45,13 @@ export function StatsScreen({ onOpen, onShelf }: { onOpen: (id: string) => void;
 
   const fail = useCallback((error: unknown) => {
     if (error instanceof Unauthorised) return signIn();
-    setProblem(error instanceof Error ? error.message : "No se pudo leer.");
+    setProblem(error instanceof Error ? error.message : t("problem.read"));
   }, []);
 
   async function saveGoal() {
     const books = Number(goalText);
     if (!found || !Number.isInteger(books) || books < 1) {
-      setProblem("El objetivo es un número de libros, de uno para arriba.");
+      setProblem(t("goal.invalid"));
       return;
     }
     try {
@@ -65,10 +66,10 @@ export function StatsScreen({ onOpen, onShelf }: { onOpen: (id: string) => void;
   if (!found) {
     return (
       <Screen>
-        <ScreenHeader title="Estadísticas" />
+        <ScreenHeader title={t("tab.stats")} />
         <OfflineNotice />
         {stats.error ? (
-          <ErrorState title="No se han podido leer las cifras" detail={stats.error.message} onRetry={stats.refresh} />
+          <ErrorState title={t("stats.error")} detail={stats.error.message} onRetry={stats.refresh} />
         ) : (
           <Skeleton rows={6} />
         )}
@@ -81,11 +82,11 @@ export function StatsScreen({ onOpen, onShelf }: { onOpen: (id: string) => void;
 
   return (
     <Screen>
-      <ScreenHeader title="Estadísticas" />
+      <ScreenHeader title={t("tab.stats")} />
       <OfflineNotice />
 
       <SelectField
-        label="Año"
+        label={t("edition.year")}
         hideLabel
         options={found.years.map((one) => ({ value: String(one), label: String(one) }))}
         value={String(found.year)}
@@ -102,27 +103,27 @@ export function StatsScreen({ onOpen, onShelf }: { onOpen: (id: string) => void;
         <EmptyState
           icon="chart"
           hue={5}
-          title={`Nada leído en ${found.year}`}
-          action={{ label: "Ir a la estantería", icon: "book", onClick: onShelf }}
+          title={t("stats.empty", { year: found.year })}
+          action={{ label: t("stats.to_shelf"), icon: "book", onClick: onShelf }}
         >
-          Las cifras salen de las fechas de cada libro: apunta cuándo empezaste y terminaste los de este año.
+          {t("stats.empty_body")}
         </EmptyState>
       )}
 
       {!empty && (
         <Card>
           <HeadlineFigure
-            label="Libros"
+            label={t("stats.books")}
             value={number(found.books)}
-            unit={found.goal ? `de ${found.goal}` : undefined}
+            unit={found.goal ? t("goal.of", { goal: found.goal }) : undefined}
             change={versus ?? undefined}
           />
           <Figures
-            label="El año"
+            label={t("stats.year")}
             items={[
-              { label: "páginas", value: number(found.pages) },
-              { label: "páginas al día", value: found.pages_per_day.toLocaleString("es-ES") },
-              { label: "de media", value: found.average_rating === null ? "–" : `★ ${found.average_rating.toLocaleString("es-ES")}` },
+              { label: t("book.pages"), value: number(found.pages) },
+              { label: t("book.pages_per_day"), value: found.pages_per_day.toLocaleString(intl()) },
+              { label: t("stats.average"), value: found.average_rating === null ? "–" : `★ ${found.average_rating.toLocaleString(intl())}` },
             ]}
           />
         </Card>
@@ -134,17 +135,17 @@ export function StatsScreen({ onOpen, onShelf }: { onOpen: (id: string) => void;
             size="medium"
             share={found.books / found.goal}
             value={found.books}
-            label={`${found.books} de ${found.goal} libros`}
-            detail={goalFoot(found).replace(`de ${found.goal} · `, "").replace(`de ${found.goal}`, "") || undefined}
+            label={t("stats.goal_books", { books: found.books, goal: found.goal! })}
+            detail={goalPace(found) || undefined}
             tone={found.goal_pace !== null && found.books + 0.5 < found.goal_pace ? "warning" : undefined}
           />
         ) : (
-          <Hint>Sin objetivo para este año.</Hint>
+          <Hint>{t("goal.none_this_year")}</Hint>
         )}
         {editingGoal ? (
           <div className="library-actions">
             <TextField
-              label="Libros en el año"
+              label={t("stats.goal_label")}
               inputMode="numeric"
               value={goalText}
               onChange={setGoalText}
@@ -152,7 +153,7 @@ export function StatsScreen({ onOpen, onShelf }: { onOpen: (id: string) => void;
               autoFocus
             />
             <Button variant="tinted" onClick={() => void saveGoal()}>
-              Guardar
+              {t("action.save")}
             </Button>
           </div>
         ) : (
@@ -163,7 +164,7 @@ export function StatsScreen({ onOpen, onShelf }: { onOpen: (id: string) => void;
               setEditingGoal(true);
             }}
           >
-            {found.goal ? "Cambiar objetivo" : "Poner objetivo"}
+            {found.goal ? t("goal.change") : t("goal.set")}
           </Button>
         )}
       </section>
@@ -171,32 +172,32 @@ export function StatsScreen({ onOpen, onShelf }: { onOpen: (id: string) => void;
       {!empty && (
         <>
           <section className="surface library-panel">
-            <Heading>Páginas por mes</Heading>
+            <Heading>{t("stats.pages_month")}</Heading>
             <SeriesChart
-              label="Páginas por mes"
+              label={t("stats.pages_month")}
               labels={found.months.map((month) => month.label)}
-              series={[{ key: "pages", name: "Páginas", values: found.months.map((month) => month.pages) }]}
-              format={(value) => `${number(value)} págs.`}
+              series={[{ key: "pages", name: t("edition.pages_label"), values: found.months.map((month) => month.pages) }]}
+              format={(value) => t("edition.pages_short", { pages: number(value) })}
               axisFormat={number}
             />
             <Hint>
               {found.months
                 .filter((month) => month.books)
                 .map((month) => `${month.label}: ${month.books}`)
-                .join(" · ") || "Ningún libro terminado todavía."}
+                .join(" · ") || t("stats.none_finished")}
             </Hint>
           </section>
 
           <section className="surface library-panel">
-            <Heading>Páginas cada día</Heading>
+            <Heading>{t("stats.pages_day")}</Heading>
             <YearCalendar
               days={yearDays(found.year, found.days, current ? todayIso() : `${found.year}-12-31`)}
               end={current ? todayIso() : `${found.year}-12-31`}
-              label="Páginas cada día"
-              format={(value) => `${number(value)} págs.`}
+              label={t("stats.pages_day")}
+              format={(value) => t("edition.pages_short", { pages: number(value) })}
             />
             <Hint>
-              Una estimación: las páginas de cada libro se reparten a partes iguales entre su inicio y su fin.
+              {t("stats.estimate")}
             </Hint>
           </section>
         </>
@@ -204,18 +205,18 @@ export function StatsScreen({ onOpen, onShelf }: { onOpen: (id: string) => void;
 
       {found.genres.length > 0 && (
         <section className="surface library-panel">
-          <Heading>Temáticas</Heading>
-          <ShareChart label="Temáticas" items={shareItems(found.genres)} format={(value) => `${value} libros`} />
+          <Heading>{t("stats.genres")}</Heading>
+          <ShareChart label={t("stats.genres")} items={shareItems(found.genres)} format={(value) => t("books.other", { count: value })} />
         </section>
       )}
 
       {found.authors.length > 0 && (
-        <Group title="Autores más leídos" shares={found.authors} />
+        <Group title={t("stats.authors")} shares={found.authors} />
       )}
 
       {Object.keys(found.ratings).length > 0 && (
         <section className="library-group">
-          <GroupLabel>Valoraciones</GroupLabel>
+          <GroupLabel>{t("stats.ratings")}</GroupLabel>
           <List>
             {ratingRows(found.ratings).map((row) => (
               <ListRow key={row.label} title={row.label} value={row.value} />
@@ -224,18 +225,18 @@ export function StatsScreen({ onOpen, onShelf }: { onOpen: (id: string) => void;
         </section>
       )}
 
-      {found.formats.length > 1 && <Group title="Formatos" shares={found.formats} />}
-      {found.languages.length > 1 && <Group title="Idiomas" shares={found.languages} />}
+      {found.formats.length > 1 && <Group title={t("stats.formats")} shares={found.formats} />}
+      {found.languages.length > 1 && <Group title={t("stats.languages")} shares={found.languages} />}
 
       {(found.longest || found.fastest) && (
         <section className="library-group">
-          <GroupLabel>Destacados</GroupLabel>
+          <GroupLabel>{t("stats.highlights")}</GroupLabel>
           <List>
             {found.longest && (
               <ListRow
                 title={found.longest.title}
-                subtitle="El más largo"
-                value={found.longest.pages ? `${found.longest.pages} págs.` : undefined}
+                subtitle={t("stats.longest")}
+                value={found.longest.pages ? t("edition.pages_short", { pages: found.longest.pages }) : undefined}
                 accessory="expand"
                 onClick={() => onOpen(found.longest!.id)}
               />
@@ -243,8 +244,8 @@ export function StatsScreen({ onOpen, onShelf }: { onOpen: (id: string) => void;
             {found.fastest && (
               <ListRow
                 title={found.fastest.title}
-                subtitle="El más rápido"
-                value={found.fastest.days === 1 ? "1 día" : `${found.fastest.days} días`}
+                subtitle={t("stats.fastest")}
+                value={found.fastest.days === 1 ? t("stats.one_day") : t("dates.days", { days: found.fastest.days ?? 0 })}
                 accessory="expand"
                 onClick={() => onOpen(found.fastest!.id)}
               />
@@ -265,8 +266,8 @@ function Group({ title, shares }: { title: string; shares: Share[] }) {
           <ListRow
             key={share.id}
             title={share.name}
-            detail={share.pages ? `${number(share.pages)} págs.` : undefined}
-            value={share.books === 1 ? "1 libro" : `${share.books} libros`}
+            detail={share.pages ? t("edition.pages_short", { pages: number(share.pages) }) : undefined}
+            value={share.books === 1 ? t("books.one") : t("books.other", { count: share.books })}
           />
         ))}
       </List>
@@ -276,7 +277,7 @@ function Group({ title, shares }: { title: string; shares: Share[] }) {
 
 export function change(books: number, previous: number, year: number): { text: string; direction: "up" | "down" | "flat" } {
   const diff = books - previous;
-  if (diff === 0) return { text: `igual que en ${year}`, direction: "flat" };
-  return { text: `${diff > 0 ? "+" : "−"}${Math.abs(diff)} que en ${year}`, direction: diff > 0 ? "up" : "down" };
+  if (diff === 0) return { text: t("change.same", { year }), direction: "flat" };
+  return { text: t("change.diff", { diff: `${diff > 0 ? "+" : "−"}${Math.abs(diff)}`, year }), direction: diff > 0 ? "up" : "down" };
 }
 
