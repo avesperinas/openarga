@@ -1,0 +1,14 @@
+{
+  "id": "msg_01Xsynthetic0000000000001",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-5-5",
+  "content": [
+    {"type": "thinking", "thinking": "", "signature": "c3ludGhldGlj"},
+    {"type": "text", "text": "{\"events\":[{\"title\":\"Jazz night\",\"day\":\"2026-11-20\"}],\"page\":\"Agenda\"}"}
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {"input_tokens": 412, "output_tokens": 38, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}
+}
