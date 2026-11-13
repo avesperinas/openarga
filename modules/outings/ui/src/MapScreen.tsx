@@ -4,7 +4,7 @@ import { WorldMap } from "@openarga/ui/world-map";
 import { useMemo, useState } from "react";
 
 import { type Area, GEO_BASE, type MapPoints, type Zone, photoUrl, readMap } from "./api";
-import { VIEW, mapBase, useArea } from "./area";
+import { mapOf, useArea } from "./area";
 import { t } from "./lang";
 import { Pending, useLoad } from "./Loads";
 import { categoryOf, kindOf, shortDay } from "./words";
@@ -56,7 +56,8 @@ export function MapScreen({
 }) {
   const area = useArea();
   const [chosen, setScope] = useState<Scope>("near");
-  const scope: Scope = area && !area.map ? "world" : chosen;
+  const setup = area ? mapOf(area) : null;
+  const scope: Scope = area && !setup ? "world" : chosen;
   const { data: found, found: loading } = useLoad("map", () => readMap());
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -76,8 +77,8 @@ export function MapScreen({
           onSelectPlace={setSelected}
           label={t("map.world_label")}
         />
-      ) : area ? (
-        <AreaMap base={mapBase(area)} view={VIEW[scope]} points={points} selected={selected} onSelect={setSelected} label={t("map.label", { area: area.near })} />
+      ) : area && setup ? (
+        <AreaMap {...setup} view={scope} points={points} selected={selected} onSelect={setSelected} label={t("map.label", { area: area.near })} />
       ) : null}
 
       <div className="outings-map-top">

@@ -8,14 +8,6 @@ from fastapi.responses import FileResponse
 IMMUTABLE = "public, max-age=31536000, immutable"
 REVALIDATE = "no-cache"
 
-# The shared AreaMap still asks for the first area's file names (needs-platform issue).
-ALIASES = {
-    "navarra.pmtiles": "region.pmtiles",
-    "comarca.pmtiles": "near.pmtiles",
-    "relieve-navarra.json": "relief-region.json",
-    "relieve-comarca.json": "relief-near.json",
-}
-
 
 def version(root: Path) -> str | None:
     try:
@@ -32,7 +24,7 @@ def _file(folder: Path, path: str) -> Path | None:
     head, _, rest = path.partition("/")
     tried = [path]
     if rest and (folder / head).is_dir():
-        tried = [f"{head}/{ALIASES.get(rest, rest)}", rest]
+        tried = [path, rest]
     for one in tried:
         candidate = (folder / one).resolve()
         if candidate.is_relative_to(folder) and candidate.is_file():

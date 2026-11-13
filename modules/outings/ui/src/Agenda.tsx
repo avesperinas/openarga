@@ -4,7 +4,7 @@ import { Suspense, lazy, useState } from "react";
 
 import { AppVersion } from "./AppVersion";
 import { type AgendaEvent, readMine } from "./api";
-import { VIEW, useMapBase } from "./area";
+import { useAreaMap } from "./area";
 import { ScreenHeader } from "./Header";
 import { t } from "./lang";
 import { Pending, useLoad } from "./Loads";
@@ -51,7 +51,7 @@ export function AgendaScreen({
 
   const events = mine?.events ?? [];
   const thatDay = onDay(events, selected);
-  const base = useMapBase();
+  const setup = useAreaMap();
   const located = events.filter((one) => one.lat != null && one.lon != null);
   const points: AreaPoint[] = located.map((one) => ({
     id: one.id,
@@ -96,13 +96,13 @@ export function AgendaScreen({
         </Section>
       )}
 
-      {base && points.length > 0 && (
+      {setup && points.length > 0 && (
         <Section title={t("agenda.where", { month: monthName(month + 1) })}>
           <div className="outings-month-map">
             <Suspense fallback={null}>
               <AreaMap
-                base={base}
-                view={VIEW[located.some((one) => one.zone === "region") ? "region" : "near"]}
+                {...setup}
+                view={located.some((one) => one.zone === "region") ? "region" : "near"}
                 points={points}
                 onSelect={(id) => id && onOpenId(id)}
                 label={t("agenda.where_label", { month: monthName(month + 1) })}
