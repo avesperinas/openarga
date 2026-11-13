@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import json
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from types import SimpleNamespace
 from uuid import UUID
 
@@ -11,11 +10,12 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from arga_contracts import sources
-from hub import catalogue, sync
+from hub import ai, catalogue, sync
+from hub.connections import Refused
 from hub.providers import agendas
 
 TODAY = date(2026, 10, 2)
-KEY = "sk-ant-" + "de-prueba-" * 3
+SEARCH = "http://search.example"
 
 PAGE = """
 <html><head><title>Agenda · Auditorio Sintético</title><script>var x = "no";</script></head>
@@ -32,10 +32,10 @@ URL = "https://agenda.example/es/agenda"
 
 
 def said(*events: dict) -> dict:
-    return {
-        "content": [{"type": "tool_use", "name": "events", "input": {"events": list(events)}}],
-        "stop_reason": "tool_use",
-    }
+    return {"events": list(events)}
+
+
+TOO_LONG = Refused("the answer did not fit", 502)
 
 
 ORCHESTRA = {
@@ -130,11 +130,11 @@ def test_what_is_on_the_page_goes_in_with_its_link() -> None:
 @pytest.mark.parametrize(
     ("invented", "reason"),
     [
-        ({**ORCHESTRA, "title": "Concierto que no existe"}, "el título no está en la página"),
-        ({**ORCHESTRA, "starts_on": "2026-10-05", "ends_on": "2026-10-05"}, "la fecha no está"),
-        ({**ORCHESTRA, "link": 99}, "enlace que no es de la página"),
-        ({**ORCHESTRA, "category": "concierto"}, "categoría que no existe"),
-        ({**EXPO, "starts_on": "2025-09-25", "ends_on": "2025-10-31"}, "la fecha no está"),
+        ({**ORCHESTRA, "title": "Concierto que no existe"}, "the title is not on the page"),
+        ({**ORCHESTRA, "starts_on": "2026-10-05", "ends_on": "2026-10-05"}, "the date is not"),
+        ({**ORCHESTRA, "link": 99}, "a link that is not on the page"),
+        ({**ORCHESTRA, "category": "concierto"}, "unknown category"),
+        ({**EXPO, "starts_on": "2025-09-25", "ends_on": "2025-10-31"}, "the date is not"),
     ],
 )
 def test_what_the_model_invents_does_not_go_in_and_is_counted(invented: dict, reason: str) -> None:
@@ -149,7 +149,7 @@ def test_a_past_event_is_out_even_if_it_is_on_the_page() -> None:
 
     checked = agendas.check([ORCHESTRA], page(), "c1", late)
 
-    assert checked.events == [] and checked.discarded == {"fuera de fechas": 1}
+    assert checked.events == [] and checked.discarded == {"out of dates": 1}
 
 
 def test_the_same_event_twice_is_one_and_its_identity_does_not_depend_on_the_summary() -> None:
@@ -175,36 +175,41 @@ def test_the_settings_are_the_chosen_pages_or_a_pasted_one() -> None:
         agendas.clean_settings({"url": "ftp://algo"})
 
 
-def test_the_key_is_an_anthropic_key() -> None:
-    assert agendas.normalise("api_key", f"  {KEY} ") == KEY
-    with pytest.raises(ValueError, match="sk-ant-"):
-        agendas.normalise("api_key", "otra-cosa")
-
-
 def test_it_is_in_the_catalogue_as_leisure_and_offered() -> None:
     provider = catalogue.provider("agendas")
 
     assert provider.category == "leisure" and provider.emits == ("leisure.event",)
-    assert provider.offer is not None and provider.shared == ("api_key",)
+    assert provider.offer is not None and provider.secrets == ()
     assert "leisure" in {group.id for group in catalogue.GROUPS}
 
 
 class Web:
     def __init__(self) -> None:
         self.pages = {URL: PAGE}
-        self.answers: list[dict] = [said(ORCHESTRA, CROQUETA)]
+        self.answers: list[dict | Exception] = [said(ORCHESTRA, CROQUETA)]
         self.model_calls: list[dict] = []
         self.down: set[str] = set()
+        self.searched: list[str] = []
+
+    def answer(self, body: dict) -> dict | Exception:
+        return self.answers[min(len(self.answers), len(self.model_calls)) - 1]
+
+    async def extract(self, module: str, body: dict) -> dict:
+        self.model_calls.append({"module": module, **body})
+        found = self.answer(body)
+        if isinstance(found, Exception):
+            raise found
+        return {"output": found, "provider": "fake", "model": "fake"}
+
+    def results(self, query: str) -> list[dict]:
+        return []
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         url = str(request.url)
-        if url == agendas.MESSAGES:
-            body = json.loads(request.content)
-            self.model_calls.append(body)
-            assert request.headers["x-api-key"] == KEY
-            return httpx.Response(
-                200, json=self.answers[min(len(self.answers), len(self.model_calls)) - 1]
-            )
+        if url.startswith(f"{SEARCH}/search"):
+            query = request.url.params["q"]
+            self.searched.append(query)
+            return httpx.Response(200, json={"results": self.results(query)})
         if url in self.down:
             return httpx.Response(503)
         if url in self.pages:
@@ -216,7 +221,11 @@ class Web:
 def web(monkeypatch) -> Web:
     monkeypatch.setattr(agendas, "MIN_INTERVAL", 0.0)
     monkeypatch.setattr(agendas, "today", lambda: TODAY)
-    return Web()
+    monkeypatch.delenv("OPENARGA_SEARXNG_URL", raising=False)
+    monkeypatch.delenv("OPENARGA_BRAVE_KEY", raising=False)
+    found = Web()
+    monkeypatch.setattr(ai, "extract", lambda module, body: found.extract(module, body))
+    return found
 
 
 def target(config: dict) -> SimpleNamespace:
@@ -231,8 +240,8 @@ def target(config: dict) -> SimpleNamespace:
 async def test_a_page_that_has_not_changed_does_not_call_the_model(web) -> None:
     config = {"pages": [{"url": URL, "name": "Auditorio Sintético"}]}
     async with httpx.AsyncClient(transport=httpx.MockTransport(web)) as client:
-        first = await agendas.sync(client, {"api_key": KEY}, target(config))
-        again = await agendas.sync(client, {"api_key": KEY}, target({**config, **first.state}))
+        first = await agendas.sync(client, {}, target(config))
+        again = await agendas.sync(client, {}, target({**config, **first.state}))
 
     assert len(web.model_calls) == 1
     assert [event["payload"]["title"] for event in first.events] == [
@@ -240,10 +249,11 @@ async def test_a_page_that_has_not_changed_does_not_call_the_model(web) -> None:
         "Semana de la Croqueta Inventada",
     ]
     assert again.events == [] and again.problem is None
-    assert "1 sin cambios" in again.note
-    content = web.model_calls[0]["messages"][0]["content"]
-    assert "Orquesta Sintética ⟨3⟩" in content and "Hoy es 2026-10-02" in content
-    assert web.model_calls[0]["tool_choice"] == {"type": "tool", "name": "events"}
+    assert "1 unchanged" in again.note
+    asked = web.model_calls[0]
+    assert "Orquesta Sintética ⟨3⟩" in asked["input"] and "Today is 2026-10-02" in asked["input"]
+    assert (asked["module"], asked["role"]) == ("hub", "fast")
+    assert asked["output_schema"] == agendas.SCHEMA
 
 
 async def test_the_daily_budget_stops_the_pass_and_says_so(web) -> None:
@@ -254,10 +264,10 @@ async def test_the_daily_budget_stops_the_pass_and_says_so(web) -> None:
         "daily_calls": 1,
     }
     async with httpx.AsyncClient(transport=httpx.MockTransport(web)) as client:
-        got = await agendas.sync(client, {"api_key": KEY}, target(config))
+        got = await agendas.sync(client, {}, target(config))
 
     assert len(web.model_calls) == 1
-    assert "presupuesto" in got.problem
+    assert "budget" in got.problem
     assert got.state["usage"]["calls"] == 1 and list(got.state["seen"]) == [URL]
 
 
@@ -266,27 +276,22 @@ async def test_a_dead_page_does_not_lose_what_the_others_brought(web) -> None:
     web.down.add(dead)
     config = {"pages": [{"url": dead, "name": "Caída"}, {"url": URL, "name": "Buena"}]}
     async with httpx.AsyncClient(transport=httpx.MockTransport(web)) as client:
-        got = await agendas.sync(client, {"api_key": KEY}, target(config))
+        got = await agendas.sync(client, {}, target(config))
 
-    assert "Caída contesta 503" in got.problem
+    assert "Caída answers 503" in got.problem
     assert len(got.events) == 2 and URL in got.state["seen"]
 
 
-async def test_a_refused_key_says_so_and_does_not_keep_trying(web) -> None:
-    def refused(request: httpx.Request) -> httpx.Response:
-        if str(request.url) == agendas.MESSAGES:
-            web.model_calls.append({})
-            return httpx.Response(401, json={"error": {"message": "invalid x-api-key"}})
-        return web(request)
-
+async def test_without_the_ai_layer_it_says_so_and_does_not_keep_trying(web) -> None:
+    web.answers = [Refused("no AI provider is configured", 503)]
     other = "https://agenda.example/otra"
     web.pages[other] = PAGE
     config = {"pages": [{"url": URL, "name": "Una"}, {"url": other, "name": "Otra"}]}
-    async with httpx.AsyncClient(transport=httpx.MockTransport(refused)) as client:
-        got = await agendas.sync(client, {"api_key": KEY}, target(config))
+    async with httpx.AsyncClient(transport=httpx.MockTransport(web)) as client:
+        got = await agendas.sync(client, {}, target(config))
 
     assert len(web.model_calls) == 1
-    assert "no acepta la clave" in got.problem and got.state["seen"] == {}
+    assert "no AI provider" in got.problem and got.state["seen"] == {}
 
 
 @pytest.fixture
@@ -334,7 +339,7 @@ async def row_of(_api, connection_id: str) -> SimpleNamespace:
     )
 
 
-async def test_without_the_key_nothing_is_called_and_with_it_the_log_gets_the_events(
+async def test_the_log_gets_the_events_and_an_unchanged_page_costs_nothing(
     api, schema, kernel, web
 ) -> None:
     from hub import connections
@@ -352,16 +357,6 @@ async def test_without_the_key_nothing_is_called_and_with_it_the_log_gets_the_ev
     connection_id = str(created)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(web)) as source:
-        skipped = await sync.run(
-            await row_of(api, connection_id), source=source, kernel=kernel, sleep=no_wait
-        )
-        assert skipped.outcome == "skipped" and skipped.code == "missing_credential"
-        assert web.model_calls == []
-
-        pasted = await api.put(
-            f"/connections/{connection_id}/credentials/api_key", json={"value": KEY}
-        )
-        assert pasted.status_code == 200, pasted.text
         first = await sync.run(
             await row_of(api, connection_id), source=source, kernel=kernel, sleep=no_wait
         )
@@ -371,7 +366,7 @@ async def test_without_the_key_nothing_is_called_and_with_it_the_log_gets_the_ev
 
     assert first.outcome == "ok", first.detail
     assert first.emitted == 2 and again.emitted == 0
-    assert len(web.model_calls) == 1, "la segunda pasada vio la página igual y no llamó al modelo"
+    assert len(web.model_calls) == 1, "the second pass saw the same page and did not ask"
     async with schema.connect() as connection:
         titles = (
             (
@@ -386,35 +381,6 @@ async def test_without_the_key_nothing_is_called_and_with_it_the_log_gets_the_ev
             .all()
         )
     assert titles == ["Orquesta Sintética", "Semana de la Croqueta Inventada"]
-
-
-async def test_a_second_agenda_shares_the_key_pasted_in_the_first(api, schema) -> None:
-    from hub import connections, credentials
-    from hub.db import as_module
-
-    first = await api.post(
-        "/connections",
-        json={
-            "provider": "agendas",
-            "label": "Una",
-            "settings": {"url": URL},
-            "secrets": {"api_key": KEY},
-        },
-    )
-    assert first.status_code == 201, first.text
-    async with as_module() as database:
-        second = await connections.create(
-            database,
-            "agendas",
-            "Otra",
-            {},
-            from_app="outings",
-            config=agendas.clean_settings({"url": "https://otra.example/a"}),
-        )
-        copied = await connections.share(database, catalogue.provider("agendas"), second)
-        found = await credentials.use(database, "agendas", second, "api_key")
-
-    assert copied == 1 and found == KEY
 
 
 FOUND = "https://prensa.example/jornadas-de-la-alcachofa"
@@ -438,39 +404,27 @@ class SearchingWeb(Web):
     def __init__(self) -> None:
         super().__init__()
         self.pages[FOUND] = JORNADAS
-        self.searched: list[str] = []
 
-    def __call__(self, request: httpx.Request) -> httpx.Response:
-        if str(request.url) == agendas.MESSAGES:
-            body = json.loads(request.content)
-            if body["tools"][0].get("type", "").startswith("web_search"):
-                query = body["messages"][0]["content"]
-                self.searched.append(query)
-                results = (
-                    [{"type": "web_search_result", "url": FOUND, "title": "Jornadas"}]
-                    if "gastronómicas" in query
-                    else {"type": "web_search_tool_result_error", "error_code": "unavailable"}
-                )
-                return httpx.Response(
-                    200,
-                    json={
-                        "content": [
-                            {"type": "server_tool_use", "name": "web_search", "input": {}},
-                            {"type": "web_search_tool_result", "content": results},
-                        ]
-                    },
-                )
-            self.model_calls.append(body)
-            content = body["messages"][0]["content"]
-            return httpx.Response(200, json=said(ALCACHOFA) if FOUND in content else said())
-        return super().__call__(request)
+    def answer(self, body: dict) -> dict:
+        return said(ALCACHOFA) if FOUND in body["input"] else said()
+
+    def results(self, query: str) -> list[dict]:
+        return [{"url": FOUND, "title": "Jornadas", "content": ""}] if "gastron" in query else []
 
 
-async def test_the_weekly_search_brings_what_no_fixed_agenda_has_with_its_page(web) -> None:
-    web = SearchingWeb()
+@pytest.fixture
+def searching(web, monkeypatch) -> SearchingWeb:
+    monkeypatch.setenv("OPENARGA_SEARXNG_URL", SEARCH)
+    found = SearchingWeb()
+    monkeypatch.setattr(ai, "extract", lambda module, body: found.extract(module, body))
+    return found
+
+
+async def test_the_weekly_search_brings_what_no_fixed_agenda_has_with_its_page(searching) -> None:
+    web = searching
     config = {"pages": [], "search_now": True, "weekly_searches": 3}
     async with httpx.AsyncClient(transport=httpx.MockTransport(web)) as client:
-        got = await agendas.sync(client, {"api_key": KEY}, target(config))
+        got = await agendas.sync(client, {}, target(config))
 
     assert len(web.searched) == 3
     assert all("Navarra octubre 2026" in query for query in web.searched)
@@ -478,18 +432,26 @@ async def test_the_weekly_search_brings_what_no_fixed_agenda_has_with_its_page(w
     assert event["title"] == "Jornadas Sintéticas de la Alcachofa"
     assert event["source_page"] == FOUND and event["source_name"] == "prensa.example"
     assert event["recurring"] is True
-    assert "presupuesto de búsquedas" in got.problem
+    assert "search budget" in got.problem
     assert got.state["searches"]["count"] == 3 and got.state["searched_at"]
     assert got.state["search_now"] is False
 
 
-async def test_the_search_only_runs_when_asked(web) -> None:
-    web = SearchingWeb()
-    long_ago = datetime.now(agendas.MADRID) - timedelta(days=30)
+async def test_without_web_search_configured_nothing_is_searched(web) -> None:
+    config = {"pages": [], "search_now": True, "weekly_searches": 3}
+    async with httpx.AsyncClient(transport=httpx.MockTransport(web)) as client:
+        got = await agendas.sync(client, {}, target(config))
+
+    assert web.searched == [] and got.events == []
+
+
+async def test_the_search_only_runs_when_asked(searching) -> None:
+    web = searching
+    long_ago = datetime.now(UTC) - timedelta(days=30)
     async with httpx.AsyncClient(transport=httpx.MockTransport(web)) as client:
         await agendas.sync(
             client,
-            {"api_key": KEY},
+            {},
             target({"pages": [], "search": True, "searched_at": long_ago.isoformat()}),
         )
 
@@ -526,7 +488,7 @@ async def test_it_remembers_what_it_published_that_comes_back_every_year(
             database,
             "agendas",
             "Agenda",
-            {"api_key": KEY},
+            {},
             from_app="outings",
             config=agendas.clean_settings({"url": URL}),
         )
@@ -544,22 +506,16 @@ async def test_it_remembers_what_it_published_that_comes_back_every_year(
 
 
 async def test_a_page_whose_answer_does_not_fit_is_read_in_pieces(web) -> None:
+    def long(body: dict) -> dict | Exception:
+        content = body["input"]
+        if "Orquesta" in content and "Croqueta" in content:
+            return TOO_LONG
+        return said(ORCHESTRA) if "Orquesta" in content else said(CROQUETA)
 
-    def long(request: httpx.Request) -> httpx.Response:
-        if str(request.url) == agendas.MESSAGES:
-            body = json.loads(request.content)
-            web.model_calls.append(body)
-            content = body["messages"][0]["content"]
-            if "Orquesta" in content and "Croqueta" in content:
-                return httpx.Response(200, json={"content": [], "stop_reason": "max_tokens"})
-            return httpx.Response(
-                200, json=said(ORCHESTRA) if "Orquesta" in content else said(CROQUETA)
-            )
-        return web(request)
-
+    web.answer = long
     config = {"pages": [{"url": URL, "name": "Larga"}]}
-    async with httpx.AsyncClient(transport=httpx.MockTransport(long)) as client:
-        got = await agendas.sync(client, {"api_key": KEY}, target(config))
+    async with httpx.AsyncClient(transport=httpx.MockTransport(web)) as client:
+        got = await agendas.sync(client, {}, target(config))
 
     assert len(web.model_calls) == 3
     assert {one["payload"]["title"] for one in got.events} == {
@@ -570,18 +526,13 @@ async def test_a_page_whose_answer_does_not_fit_is_read_in_pieces(web) -> None:
 
 
 async def test_a_page_that_never_fits_is_not_marked_as_read(web) -> None:
-    def never(request: httpx.Request) -> httpx.Response:
-        if str(request.url) == agendas.MESSAGES:
-            web.model_calls.append({})
-            return httpx.Response(200, json={"content": [], "stop_reason": "max_tokens"})
-        return web(request)
-
+    web.answers = [TOO_LONG]
     config = {"pages": [{"url": URL, "name": "Larga"}], "daily_calls": 50}
-    async with httpx.AsyncClient(transport=httpx.MockTransport(never)) as client:
-        got = await agendas.sync(client, {"api_key": KEY}, target(config))
+    async with httpx.AsyncClient(transport=httpx.MockTransport(web)) as client:
+        got = await agendas.sync(client, {}, target(config))
 
     assert got.state["seen"] == {}
-    assert "no cabe" in got.problem and "0 leída(s)" in got.problem
+    assert "did not fit" in got.problem and "0 read" in got.problem
 
 
 async def test_it_asks_for_html_like_a_browser(web) -> None:

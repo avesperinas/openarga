@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-import os
 import re
 import time
 import unicodedata
@@ -12,24 +11,21 @@ from datetime import date, datetime, timedelta
 from html.parser import HTMLParser
 from typing import Any
 from urllib.parse import urljoin, urlsplit
-from zoneinfo import ZoneInfo
 
 import httpx
 
-from hub.declare import Ask, Choice, Offer, Provider, Secret, Setting, Sync
+from arga_contracts.notify import zone
+from hub.declare import Ask, Choice, Offer, Provider, Setting, Sync
 from hub.providers import USER_AGENT, Fetched, SourceError
 
 PROVIDER = "agendas"
 EVENT = "leisure.event"
-API_KEY = "api_key"
 PAGES = "pages"
 URL = "url"
 NAME = "name"
 SEARCH = "search"
-MADRID = ZoneInfo("Europe/Madrid")
 
-MESSAGES = "https://api.anthropic.com/v1/messages"
-DEFAULT_MODEL = os.environ.get("AGENDAS_MODEL", "claude-haiku-4-5")
+AI_APP = "hub"
 TEXT_LIMIT = 60_000
 LINKS_LIMIT = 400
 MAX_TOKENS = 12000
@@ -37,7 +33,6 @@ MAX_PIECES = 4
 DAILY_CALLS = 30
 WEEKLY_SEARCHES = 8
 PAGES_PER_SEARCH = 3
-WEB_SEARCH = {"type": "web_search_20250305", "name": "web_search", "max_uses": 2}
 CATEGORIES = ("eat", "stage", "culture", "festival", "outdoors")
 
 
@@ -58,17 +53,14 @@ BY_KEY = {page.key: page for page in START}
 
 
 def normalise(key: str, raw: str) -> str:
-    value = raw.strip()
-    if key == API_KEY and not re.fullmatch(r"sk-ant-[A-Za-z0-9_\-]{20,}", value):
-        raise ValueError("una clave de la API de Anthropic empieza por sk-ant-")
-    return value
+    return raw.strip()
 
 
 def _url(raw: str) -> str:
     value = raw.strip()
     parts = urlsplit(value)
     if parts.scheme not in ("http", "https") or not parts.netloc:
-        raise ValueError("la dirección de la agenda empieza por https://")
+        raise ValueError("an agenda address starts with https://")
     return value
 
 
@@ -80,7 +72,7 @@ def clean_settings(raw: dict[str, Any]) -> dict[str, Any]:
     pages: list[dict[str, str]] = []
     unknown = [one for one in chosen if one not in BY_KEY and one != SEARCH]
     if unknown:
-        raise ValueError(f"agendas que no existen: {', '.join(unknown)}")
+        raise ValueError(f"unknown agendas: {', '.join(unknown)}")
     for page in START:
         if page.key in chosen:
             pages.append({URL: page.url, NAME: page.name})
@@ -94,7 +86,7 @@ def clean_settings(raw: dict[str, Any]) -> dict[str, Any]:
         pages.append({URL: _url(str(given[URL])), NAME: str(given.get(NAME) or "")[:80]})
     search = SEARCH in chosen or bool(raw.get(SEARCH) is True)
     if not pages and not search:
-        raise ValueError("elige al menos una agenda o pega su dirección")
+        raise ValueError("choose at least one agenda or paste its address")
     out: dict[str, Any] = {PAGES: pages, SEARCH: search}
     if raw.get("model"):
         out["model"] = str(raw["model"])[:80]
@@ -204,129 +196,95 @@ async def download(client: httpx.AsyncClient, url: str, name: str) -> Read:
             follow_redirects=True,
         )
     except httpx.HTTPError as error:
-        raise SourceError(f"{name} no contesta ({type(error).__name__})", transient=True) from error
+        raise SourceError(
+            f"{name} does not answer ({type(error).__name__})", transient=True
+        ) from error
     if response.status_code >= 400:
-        raise SourceError(f"{name} contesta {response.status_code}")
+        raise SourceError(f"{name} answers {response.status_code}")
     return parse(str(response.url), name, response.text)
 
 
-SYSTEM = """Lees la página de una agenda pública de Pamplona y Navarra y sacas los eventos que \
-anuncia.
+SYSTEM = """You read the page of a public events agenda and list the events it announces.
 
-Reglas:
-- Solo lo que dice la página. No inventes, no completes con lo que sabes, no añadas eventos que no \
-salen.
-- El título, copiado de la página tal cual, sin traducir ni resumir.
-- Las fechas en AAAA-MM-DD. Si la página no dice el año, el del próximo día con esa fecha a partir \
-de hoy. Si dura varios días, el primero y el último; si es un día, los dos iguales.
-- La hora de empieza en HH:MM si la dice; si no, nada.
-- El lugar (sala, bar, plaza) y el pueblo o ciudad, si los dice.
-- La categoría, una de: eat (jornadas y semanas gastronómicas, ferias de producto, catas), stage \
-(música, teatro, danza, cine, humor), culture (exposiciones, charlas, visitas guiadas, libros), \
-festival (fiestas patronales, tradición, ferias populares), outdoors (deporte, naturaleza, rutas).
-- Un resumen de una o dos frases en castellano con lo que dice la página.
-- El enlace: el número ⟨n⟩ que acompaña al evento en el texto, si lo tiene.
-- recurring: verdadero solo si la página dice que se repite cada año ("XVI edición", "como cada \
-octubre").
-- Nada de eventos que ya han pasado. Si no hay ninguno, la lista vacía.
-- Contesta siempre llamando a la herramienta `events`, aunque sea con la lista vacía."""
+Rules:
+- Only what the page says. Do not invent, do not complete with what you know, do not add events \
+that are not there.
+- The title copied from the page as it is, not translated or summarised.
+- Dates as YYYY-MM-DD. If the page gives no year, the year of the next day with that date from \
+today. If it lasts several days, the first and the last; if it is one day, both the same.
+- The start time as HH:MM if the page says it; otherwise nothing.
+- The place (hall, bar, square) and the town or city, if the page says them.
+- The category, one of: eat (food weeks and days, produce fairs, tastings), stage (music, \
+theatre, dance, cinema, comedy), culture (exhibitions, talks, guided visits, books), festival \
+(patron saint festivities, tradition, popular fairs), outdoors (sport, nature, routes).
+- A summary of one or two sentences, in the language of the page, of what the page says.
+- The link: the number ⟨n⟩ next to the event in the text, if it has one.
+- recurring: true only if the page says it happens every year ("16th edition", "as every \
+October").
+- No events that are already over. If there are none, an empty list."""
 
-TOOL = {
-    "name": "events",
-    "description": "Los eventos que anuncia la página.",
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "events": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "title": {"type": "string"},
-                        "starts_on": {"type": "string"},
-                        "ends_on": {"type": "string"},
-                        "time": {"type": ["string", "null"]},
-                        "venue": {"type": ["string", "null"]},
-                        "town": {"type": ["string", "null"]},
-                        "category": {"type": "string", "enum": list(CATEGORIES)},
-                        "summary": {"type": ["string", "null"]},
-                        "link": {"type": ["integer", "null"]},
-                        "recurring": {"type": "boolean"},
-                    },
-                    "required": ["title", "starts_on", "ends_on", "category"],
+SCHEMA = {
+    "type": "object",
+    "properties": {
+        "events": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "starts_on": {"type": "string"},
+                    "ends_on": {"type": "string"},
+                    "time": {"type": ["string", "null"]},
+                    "venue": {"type": ["string", "null"]},
+                    "town": {"type": ["string", "null"]},
+                    "category": {"type": "string", "enum": list(CATEGORIES)},
+                    "summary": {"type": ["string", "null"]},
+                    "link": {"type": ["integer", "null"]},
+                    "recurring": {"type": "boolean"},
                 },
-            }
-        },
-        "required": ["events"],
+                "required": ["title", "starts_on", "ends_on", "category"],
+            },
+        }
     },
+    "required": ["events"],
 }
 
 
 def prompt(page: Read, today: date) -> str:
     return (
-        f"Hoy es {today.isoformat()}. Página: {page.name} ({page.url}).\n\n"
-        f"--- texto de la página ---\n{page.text}"
+        f"Today is {today.isoformat()}. Page: {page.name} ({page.url}).\n\n"
+        f"--- page text ---\n{page.text}"
     )
 
 
-def choice(model: str) -> dict[str, str]:
-    if model.startswith("claude-haiku"):
-        return {"type": "tool", "name": TOOL["name"]}
-    return {"type": "auto"}
+async def ask_model(content: str, system: str = SYSTEM) -> list[dict[str, Any]]:
+    from hub import ai
+    from hub.connections import Refused
 
-
-async def ask_model(
-    client: httpx.AsyncClient, key: str, model: str, content: str, system: str = SYSTEM
-) -> list[dict[str, Any]]:
     try:
-        response = await client.post(
-            MESSAGES,
-            headers={
-                "x-api-key": key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
+        answer = await ai.extract(
+            AI_APP,
+            {
+                "role": "fast",
+                "instructions": system,
+                "input": content,
+                "output_schema": SCHEMA,
             },
-            json={
-                "model": model,
-                "max_tokens": MAX_TOKENS,
-                "system": system,
-                "messages": [{"role": "user", "content": content}],
-                "tools": [TOOL],
-                "tool_choice": choice(model),
-            },
-            timeout=300.0,
         )
-    except httpx.HTTPError as error:
-        raise SourceError(
-            f"Anthropic no contesta ({type(error).__name__})", transient=True
-        ) from error
-    if response.status_code in (401, 403):
-        raise SourceError("Anthropic no acepta la clave: pégala de nuevo en la ficha")
-    if response.status_code == 429:
-        raise SourceError("Anthropic pide esperar", rate_limited=True)
-    if response.status_code >= 400:
-        try:
-            said = response.json()["error"]["message"]
-        except (ValueError, KeyError, TypeError):
-            said = response.text[:200]
-        raise SourceError(
-            f"Anthropic contesta {response.status_code}: {said}",
-            transient=response.status_code >= 500,
-        )
-    answer = response.json()
-    if answer.get("stop_reason") == "max_tokens":
-        raise Cut(f"la respuesta no cabe en {MAX_TOKENS} tokens")
-    for block in answer.get("content") or []:
-        if block.get("type") == "tool_use" and block.get("name") == TOOL["name"]:
-            found = (block.get("input") or {}).get("events")
-            return (
-                [one for one in found if isinstance(one, dict)] if isinstance(found, list) else []
-            )
-    return []
+    except Refused as error:
+        if "did not fit" in str(error):
+            raise Cut(str(error)) from error
+        raise Unreadable(f"the AI layer: {error}", transient=error.status in (502, 503)) from error
+    found = answer["output"].get("events")
+    return [one for one in found if isinstance(one, dict)] if isinstance(found, list) else []
 
 
 class Cut(SourceError):
     pass
+
+
+class Unreadable(SourceError):
+    """Nothing more can be read in this pass: no provider, no budget, a refused key."""
 
 
 def pieces(text: str, parts: int) -> list[str]:
@@ -420,22 +378,22 @@ def check(found: list[dict[str, Any]], page: Read, connection: str, today: date)
         title = _clip(one.get("title"), 200)
         starts, ends = _day(one.get("starts_on")), _day(one.get("ends_on"))
         if not title or starts is None:
-            out.drop("sin título o sin fecha")
+            out.drop("no title or no date")
             continue
         ends = ends or starts
         if ends < starts:
             starts, ends = ends, starts
         if one.get("category") not in CATEGORIES:
-            out.drop("categoría que no existe")
+            out.drop("unknown category")
             continue
         if not title_in(title, text):
-            out.drop("el título no está en la página")
+            out.drop("the title is not on the page")
             continue
         if not date_in(starts, text) or (ends != starts and not date_in(ends, text)):
-            out.drop("la fecha no está en la página")
+            out.drop("the date is not on the page")
             continue
         if ends < today - timedelta(days=1) or starts > today + timedelta(days=366):
-            out.drop("fuera de fechas")
+            out.drop("out of dates")
             continue
         link = one.get("link")
         if link is None:
@@ -443,7 +401,7 @@ def check(found: list[dict[str, Any]], page: Read, connection: str, today: date)
         elif isinstance(link, int) and 1 <= link <= len(page.links):
             url = page.links[link - 1]
         else:
-            out.drop("enlace que no es de la página")
+            out.drop("a link that is not on the page")
             continue
         key = hashlib.sha256(f"{page.url}\n{fold(title)}\n{starts}".encode()).hexdigest()[:24]
         if key in seen:
@@ -484,10 +442,6 @@ QUERIES = (
     "ferias en Navarra {mes} {año}",
 )
 
-SEARCH_PROMPT = """Busca en la web páginas que anuncien, con su fecha, lo que se pide. Prefiere \
-las páginas de quien lo organiza, de los ayuntamientos y de la prensa de Navarra. No resumas nada: \
-basta con buscar."""
-
 
 def queries(day: date, recurring: list[dict[str, Any]]) -> list[str]:
     months = [(day.year, day.month), ((day.year + day.month // 12), day.month % 12 + 1)]
@@ -503,45 +457,21 @@ def queries(day: date, recurring: list[dict[str, Any]]) -> list[str]:
     return list(dict.fromkeys(out))
 
 
-async def search_pages(client: httpx.AsyncClient, key: str, model: str, query: str) -> list[str]:
+async def search_pages(client: httpx.AsyncClient, query: str) -> list[str]:
+    from hub.ai.tools import Web
+
+    web = Web(client)
+    if web.searcher is None:
+        return []
     try:
-        response = await client.post(
-            MESSAGES,
-            headers={
-                "x-api-key": key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": model,
-                "max_tokens": 1024,
-                "system": SEARCH_PROMPT,
-                "messages": [{"role": "user", "content": query}],
-                "tools": [WEB_SEARCH],
-            },
-            timeout=120.0,
-        )
-    except httpx.HTTPError as error:
-        raise SourceError(
-            f"Anthropic no contesta ({type(error).__name__})", transient=True
-        ) from error
-    if response.status_code in (401, 403):
-        raise SourceError("Anthropic no acepta la clave: pégala de nuevo en la ficha")
-    if response.status_code == 429:
-        raise SourceError("Anthropic pide esperar", rate_limited=True)
-    if response.status_code >= 400:
-        raise SourceError(f"la búsqueda contesta {response.status_code}")
+        found = await web.search(query)
+    except (httpx.HTTPError, ValueError) as error:
+        raise SourceError(f"web search failed ({type(error).__name__})", transient=True) from error
     urls: list[str] = []
-    for block in response.json().get("content") or []:
-        if block.get("type") != "web_search_tool_result":
-            continue
-        found = block.get("content")
-        if not isinstance(found, list):
-            continue
-        for result in found:
-            url = result.get("url") if isinstance(result, dict) else None
-            if isinstance(url, str) and url.startswith(("http://", "https://")) and url not in urls:
-                urls.append(url)
+    for result in found:
+        url = result.get("url")
+        if isinstance(url, str) and url.startswith(("http://", "https://")) and url not in urls:
+            urls.append(url)
     return urls
 
 
@@ -573,7 +503,7 @@ async def recall(database: Any, connection: Any) -> dict[str, Any]:
 
 
 def today() -> date:
-    return datetime.now(MADRID).date()
+    return datetime.now(zone()).date()
 
 
 def _usage(config: dict[str, Any], day: date) -> dict[str, Any]:
@@ -589,10 +519,8 @@ def _said(discarded: dict[str, int]) -> str:
 
 async def sync(client: httpx.AsyncClient, secrets: dict[str, str], connection: Any) -> Fetched:
     config = connection.config or {}
-    key = secrets[API_KEY]
-    model = config.get("model") or DEFAULT_MODEL
     limit = int(config.get("daily_calls") or DAILY_CALLS)
-    now = datetime.now(MADRID)
+    now = datetime.now(zone())
     day = today()
     seen: dict[str, str] = dict(config.get("seen") or {})
     usage = _usage(config, day)
@@ -621,22 +549,22 @@ async def sync(client: httpx.AsyncClient, secrets: dict[str, str], connection: A
                 for text in texts:
                     if usage["calls"] >= limit:
                         problems.append(
-                            f"presupuesto del día gastado ({limit} lecturas): sigue mañana"
+                            f"today's budget is spent ({limit} reads): it goes on tomorrow"
                         )
                         stop = True
                         return
                     usage["calls"] += 1
                     piece = Read(url=got.url, name=got.name, text=text, links=got.links)
-                    said.extend(await ask_model(client, key, model, prompt(piece, day)))
+                    said.extend(await ask_model(prompt(piece, day)))
                 break
             except Cut as error:
                 if parts * 2 > MAX_PIECES:
-                    problems.append(f"{got.name}: {error}, ni en {parts} trozos")
+                    problems.append(f"{got.name}: {error}, not even in {parts} pieces")
                     return
                 parts *= 2
             except SourceError as error:
                 problems.append(f"{got.name}: {error}")
-                stop = error.rate_limited or "clave" in str(error)
+                stop = isinstance(error, Unreadable)
                 return
         checked = check(said, got, str(connection.id), day)
         for reason, count in checked.discarded.items():
@@ -671,14 +599,14 @@ async def sync(client: httpx.AsyncClient, secrets: dict[str, str], connection: A
         recalled = getattr(connection, "recalled", None) or {}
         for query in queries(day, recalled.get("recurring") or []):
             if spent["count"] >= weekly:
-                problems.append(f"presupuesto de búsquedas de la semana gastado ({weekly})")
+                problems.append(f"this week's search budget is spent ({weekly})")
                 break
             spent["count"] += 1
             try:
-                found = await search_pages(client, key, model, query)
+                found = await search_pages(client, query)
             except SourceError as error:
-                problems.append(f"búsqueda «{query}»: {error}")
-                if error.rate_limited or "clave" in str(error):
+                problems.append(f"search '{query}': {error}")
+                if isinstance(error, Unreadable):
                     stop = True
                     break
                 continue
@@ -692,11 +620,11 @@ async def sync(client: httpx.AsyncClient, secrets: dict[str, str], connection: A
                 break
         state = {"searches": spent, "searched_at": now.isoformat(), "search_now": False}
     read, unchanged = counts["read"], counts["unchanged"]
-    note = f"{read} leída(s), {unchanged} sin cambios, {len(events)} evento(s)"
+    note = f"{read} read, {unchanged} unchanged, {len(events)} event(s)"
     if searched:
-        note += f"; {searched} búsqueda(s)"
+        note += f"; {searched} search(es)"
     if discarded:
-        note += f"; descartados: {_said(discarded)}"
+        note += f"; discarded: {_said(discarded)}"
     return Fetched(
         events,
         problem=f"{'; '.join(problems)} · {note}" if problems else None,
@@ -710,39 +638,30 @@ SOURCES = (
         id=PROVIDER,
         name="Agendas",
         category="leisure",
-        description="Lo que pasa en Pamplona y en Navarra, leído de las páginas de sus agendas por "
-        "un modelo de Anthropic con tu clave: Baluarte, el Ayuntamiento, Cultura Navarra, Turismo "
-        "de Navarra y las que añadas. Solo entra lo que está en la página. Se enchufa desde "
-        "Outings.",
+        description="What is on in Pamplona and Navarre, read from the pages of its agendas by "
+        "the AI layer: Baluarte, the City Council, Cultura Navarra, Turismo de Navarra and any "
+        "you add. Only what is on the page goes in. Plugged in from Outings.",
         capabilities=("sync",),
-        secrets=(
-            Secret(
-                API_KEY,
-                "Clave de la API de Anthropic",
-                "La creas en console.anthropic.com, en API Keys. Cada lectura de una página que ha "
-                "cambiado es una llamada al modelo más barato; las que no cambian no gastan.",
-            ),
-        ),
-        shared=(API_KEY,),
+        secrets=(),
         settings=(
-            Setting(PAGES, "Agendas", "Las de inicio: baluarte, pamplona, cultura, turismo."),
-            Setting(URL, "Dirección", "La de otra agenda, que empieza por https://."),
+            Setting(PAGES, "Agendas", "The starting ones: baluarte, pamplona, cultura, turismo."),
+            Setting(URL, "Address", "Another agenda's, starting with https://."),
             Setting(
                 SEARCH,
-                "Buscar cada semana",
-                "true para buscar en la web lo que no está en ninguna agenda.",
+                "Search every week",
+                "true to search the web for what is in no agenda (needs web search configured).",
             ),
         ),
         emits=(EVENT,),
         available=True,
         schedule="30 2 * * *",
         offer=Offer(
-            title="Agenda de Pamplona y Navarra",
-            subtitle="Conciertos, teatro, exposiciones, jornadas gastronómicas y fiestas",
+            title="Pamplona and Navarre agenda",
+            subtitle="Concerts, theatre, exhibitions, food weeks and festivities",
             tone=5,
             many=True,
             group="leisure",
-            name="Agenda de Navarra",
+            name="Navarre agenda",
             asks=(
                 Ask(
                     PAGES,
@@ -750,9 +669,9 @@ SOURCES = (
                     "Agendas",
                     choices=tuple(Choice(page.key, page.name) for page in START),
                     defaults=tuple(page.key for page in START),
-                    help="Las lee un modelo con tu clave de Anthropic, que se pega en Hub. "
-                    "Buscar en la web lo que no sale en ninguna agenda se hace al actualizar, "
-                    "cuando tú lo pidas. Puedes añadir la de cualquier otra web después.",
+                    help="The AI layer configured in Connections reads them. Searching the web "
+                    "for what is in no agenda happens when you refresh. You can add any other "
+                    "agenda later.",
                 ),
             ),
         ),
