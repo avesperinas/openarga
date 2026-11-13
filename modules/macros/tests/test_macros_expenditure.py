@@ -3,7 +3,12 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
-from test_macros_goals import READ, WRITE, call, publishers  # noqa: F401 - la fixture por nombre
+from test_macros_goals import (  # noqa: F401 - the fixture is used by name
+    READ,
+    WRITE,
+    call,
+    publishers,
+)
 
 import arga_contracts as contracts
 from macros import expenditure
@@ -23,9 +28,9 @@ def test_the_trend_of_the_weight_is_its_least_squares_slope() -> None:
 
 def test_a_proposal_is_said_in_words() -> None:
     lose = expenditure.Proposal(rate_kg_week=-0.3, kcal=2150)
-    assert expenditure.proposal_label(lose) == "Para bajar 0,3 kg por semana, 2.150 kcal"
+    assert expenditure.proposal_label(lose) == "To lose 0.3 kg a week, 2,150 kcal"
     keep = expenditure.Proposal(rate_kg_week=0, kcal=2450)
-    assert expenditure.proposal_label(keep) == "Para mantener el peso, 2.450 kcal"
+    assert expenditure.proposal_label(keep) == "To keep your weight, 2,450 kcal"
 
 
 async def eat_days(api, world, days: list, kcal: float) -> None:
@@ -46,7 +51,7 @@ async def test_it_needs_complete_days_and_the_weight(api, world, publishers) -> 
 
     week = (await call(api, "get_week", {}, READ)).json()["content"]["expenditure"]
     assert week["kcal"] is None
-    assert "14 días completos" in week["missing"]
+    assert "14 complete days" in week["missing"]
 
     for day in days[:13]:
         marked = await api.put(f"/day-complete/{day.isoformat()}", json={"complete": True})
@@ -57,7 +62,7 @@ async def test_it_needs_complete_days_and_the_weight(api, world, publishers) -> 
 
     week = (await call(api, "get_week", {}, READ)).json()["content"]["expenditure"]
     assert week["kcal"] is None
-    assert "peso" in week["missing"]
+    assert "weight" in week["missing"]
 
     first, last = days[-1], days[0]
     for day, kg in ((first, 80.0), (last, 79.4)):
@@ -73,9 +78,9 @@ async def test_it_needs_complete_days_and_the_weight(api, world, publishers) -> 
     assert week["intake"] == 2000
     assert week["kcal"] == 2200
     keep, lose = week["proposals"]
-    assert (keep["kcal"], keep["said"]) == (2200, "Para mantener el peso, 2.200 kcal")
+    assert (keep["kcal"], keep["said"]) == (2200, "To keep your weight, 2,200 kcal")
     assert lose["kcal"] == 1850
-    assert lose["said"] == "Para bajar 0,3 kg por semana, 1.850 kcal"
+    assert lose["said"] == "To lose 0.3 kg a week, 1,850 kcal"
 
 
 async def test_tomorrow_cannot_be_complete(api, world) -> None:

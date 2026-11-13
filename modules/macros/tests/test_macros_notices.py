@@ -29,7 +29,7 @@ async def test_what_is_missing_is_said_at_the_chosen_hour_until_it_is_reached(
     assert saved["protein_at"].startswith("21:30")
     assert missing["kind"] == "protein"
     assert missing["key"] == f"protein:{today().isoformat()}"
-    assert missing["title"] == "Te faltan 140 g de proteína"
+    assert missing["title"] == "140 g of protein to go"
     assert missing["at"].startswith(f"{today().isoformat()}T21:30")
 
     entry = {

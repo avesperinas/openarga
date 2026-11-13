@@ -11,6 +11,10 @@ import {
   Sheet,
   Stepper,
   TextField,
+  type Locale,
+  type Translate,
+  useLocale,
+  useT,
 } from "@openarga/ui";
 import { useEffect, useMemo, useState } from "react";
 
@@ -30,7 +34,7 @@ import {
   readUsualOf,
   search,
 } from "./api";
-import { amount, mealOfTime, measureCount, nowTime, quantityLabel, todayIso, withThis } from "./words";
+import { amount, mealOfTime, measureCount, nowTime, plural, quantityLabel, todayIso, withThis } from "./words";
 
 type Per = { kcal: number; protein: number | null } | null;
 
@@ -54,20 +58,19 @@ export interface Picked {
 }
 
 const STEP: Record<Unit, number> = { g: 10, ml: 25, unit: 1, serving: 0.5, kcal: 50 };
-const UNIT_LABEL: Record<Unit, string> = { g: "g", ml: "ml", unit: "ud", serving: "rac.", kcal: "kcal" };
 
 function per100(food: { nutrients: Record<string, number> }, grams: number): Per {
   if (food.nutrients.kcal === undefined) return null;
   return { kcal: (food.nutrients.kcal * grams) / 100, protein: food.nutrients.protein === undefined ? null : (food.nutrients.protein * grams) / 100 };
 }
 
-export function foodChoice(food: PantryFood): Choice {
+export function foodChoice(food: PantryFood, t: Translate): Choice {
   if (food.nutrients_per === "unit") {
     const one: Per = { kcal: food.nutrients.kcal ?? 0, protein: food.nutrients.protein ?? null };
     return {
       key: `food:${food.id}`,
       name: food.label,
-      units: [{ value: "unit", label: food.unit_name ?? "unidad", per: one }],
+      units: [{ value: "unit", label: food.unit_name ?? t("measure.unit"), per: one }],
       unit: "unit",
       quantity: 1,
       measures: [],
@@ -78,7 +81,7 @@ export function foodChoice(food: PantryFood): Choice {
     { value: "g", label: "g", per: per100(food, 1) },
     { value: "ml", label: "ml", per: per100(food, food.density_g_ml ?? 1) },
   ];
-  if (food.grams_per_unit) units.push({ value: "unit", label: "ud", per: per100(food, food.grams_per_unit) });
+  if (food.grams_per_unit) units.push({ value: "unit", label: t("short.unit"), per: per100(food, food.grams_per_unit) });
   const measures = Object.entries(food.portions ?? {})
     .filter(([, grams]) => grams > 0)
     .map(([name, grams]) => ({ name, grams }))
@@ -97,12 +100,12 @@ export function foodChoice(food: PantryFood): Choice {
   };
 }
 
-export function recipeChoice(recipe: RecipeRef): Choice {
+export function recipeChoice(recipe: RecipeRef, t: Translate): Choice {
   return {
     key: `recipe:${recipe.id}`,
     name: recipe.name,
     units: [
-      { value: "serving", label: "rac.", per: null },
+      { value: "serving", label: t("short.serving"), per: null },
       { value: "g", label: "g", per: null },
     ],
     unit: "serving",
@@ -127,7 +130,7 @@ export function outsideChoice(candidate: Candidate): Choice {
   };
 }
 
-export function usualChoice(one: UsualItem): Choice {
+export function usualChoice(one: UsualItem, t: Translate): Choice {
   const per: Per = one.kcal === null || one.quantity <= 0 ? null : { kcal: one.kcal / one.quantity, protein: null };
   const make = (quantity: number, unit: Unit): ItemIn => {
     if (one.kind === "recipe") return { kind: "recipe", recipe_id: one.recipe_id ?? "", quantity, unit };
@@ -144,7 +147,7 @@ export function usualChoice(one: UsualItem): Choice {
   return {
     key: one.kind === "food" ? `food:${one.food_id}` : one.kind === "recipe" ? `recipe:${one.recipe_id}` : `${one.kind}:${one.name}`,
     name: one.name,
-    units: [{ value: one.unit, label: one.portion && one.unit === "unit" ? one.portion : UNIT_LABEL[one.unit], per }],
+    units: [{ value: one.unit, label: one.portion && one.unit === "unit" ? one.portion : t(`short.${one.unit}`), per }],
     unit: one.unit,
     quantity: one.quantity,
     measures: [],
@@ -152,15 +155,20 @@ export function usualChoice(one: UsualItem): Choice {
   };
 }
 
-export const WATER: Choice = {
-  key: "water",
-  name: "Agua",
-  units: [{ value: "ml", label: "ml", per: { kcal: 0, protein: 0 } }],
-  unit: "ml",
-  quantity: 250,
-  measures: [{ name: "vaso", grams: 250 }, { name: "botella", grams: 500 }],
-  make: (quantity) => ({ kind: "water", quantity, unit: "ml" }),
-};
+export function water(t: Translate): Choice {
+  return {
+    key: "water",
+    name: t("nutrient.water"),
+    units: [{ value: "ml", label: "ml", per: { kcal: 0, protein: 0 } }],
+    unit: "ml",
+    quantity: 250,
+    measures: [
+      { name: t("water.glass"), grams: 250 },
+      { name: t("water.bottle"), grams: 500 },
+    ],
+    make: (quantity) => ({ kind: "water", quantity, unit: "ml" }),
+  };
+}
 
 export function preview(choice: Choice, quantity: number, unit: Unit): Per {
   const per = choice.units.find((one) => one.value === unit)?.per ?? null;
@@ -168,14 +176,21 @@ export function preview(choice: Choice, quantity: number, unit: Unit): Per {
   return { kcal: per.kcal * quantity, protein: per.protein === null ? null : per.protein * quantity };
 }
 
-export function picked(choice: Choice, quantity: number, unit: Unit, portion?: string): Picked {
+export function picked(
+  choice: Choice,
+  quantity: number,
+  unit: Unit,
+  t: Translate,
+  locale: Locale,
+  portion?: string,
+): Picked {
   const item = choice.make(quantity, unit, portion);
   const sum = portion
     ? preview(choice, quantity * (choice.measures.find((one) => one.name === portion)?.grams ?? 0), "g")
     : preview(choice, quantity, unit);
   const label = portion
-    ? measureCount(quantity, portion)
-    : quantityLabel({ quantity, unit: item.unit, estimated: false });
+    ? measureCount(quantity, portion, locale)
+    : quantityLabel({ quantity, unit: item.unit, estimated: false }, t, locale);
   return { key: `${choice.key}:${Date.now()}`, name: choice.name, label, item, kcal: sum?.kcal ?? null, protein: sum?.protein ?? null };
 }
 
@@ -198,6 +213,8 @@ export function AddSheet({
   onClose: () => void;
   onSaved: (entry: Entry, what: string) => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const meals = dayData?.meals ?? [];
   const startMeal = initialMeal ?? meals.find((one) => one.current)?.meal ?? mealOfTime(nowTime());
   const usualAt = (key: MealKey) => {
@@ -233,7 +250,7 @@ export function AddSheet({
     }
     return counted;
   }, [usual]);
-  const label = meals.find((one) => one.meal === meal)?.label ?? "la comida";
+  const label = meals.find((one) => one.meal === meal)?.label ?? t("add.the_meal");
 
   useEffect(() => {
     const text = query.trim();
@@ -249,11 +266,11 @@ export function AddSheet({
           setFound(next);
           setSearchError(null);
         })
-        .catch((reason: unknown) => setSearchError(reason instanceof Error ? reason.message : "No se ha podido buscar"))
+        .catch((reason: unknown) => setSearchError(reason instanceof Error ? reason.message : t("item.search_failed")))
         .finally(() => setBusy(false));
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [query, outside]);
+  }, [query, outside, t]);
 
   const choose = (next: Choice) => {
     setChoice(next);
@@ -265,7 +282,7 @@ export function AddSheet({
   const add = (next: Picked) => setBasket((current) => [...current, next]);
   const addChoice = () => {
     if (!choice || !quantity) return;
-    add(portion ? picked(choice, quantity, "unit", portion) : picked(choice, quantity, unit));
+    add(portion ? picked(choice, quantity, "unit", t, locale, portion) : picked(choice, quantity, unit, t, locale));
     setChoice(null);
     setQuery("");
     setStep("list");
@@ -302,14 +319,14 @@ export function AddSheet({
       .then((entry) => onSaved(entry, dish || basket.map((one) => one.name).join(" + ")))
       .catch((reason: unknown) => {
         setSaving(false);
-        setError(reason instanceof Error ? reason.message : "No se ha podido apuntar");
+        setError(reason instanceof Error ? reason.message : t("weight.log_failed"));
       });
   };
   const logMenu = (id: string, name: string) => {
     const when = at();
     void logTemplate(id, when.meal, when.eatenAt)
       .then((entry) => onSaved(entry, name))
-      .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "No se ha podido apuntar"));
+      .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : t("weight.log_failed")));
   };
 
   const kcalNow = dayData?.nutrients.kcal ?? 0;
@@ -319,15 +336,19 @@ export function AddSheet({
   const basketProtein = basket.reduce((total, one) => total + (one.protein ?? 0), 0) + (step === "amount" ? amountPreview?.protein ?? 0 : 0);
   const kcalGoal = dayData?.target?.kcal ?? null;
   const proteinGoal = dayData?.target?.protein ?? null;
-  const foot = withThis(kcalNow + basketKcal, proteinNow + basketProtein, { kcal: kcalGoal, protein: proteinGoal });
+  const foot = withThis(kcalNow + basketKcal, proteinNow + basketProtein, { kcal: kcalGoal, protein: proteinGoal }, t);
 
   const action =
     step === "amount"
-      ? { label: "Añadir a la cesta", onClick: addChoice, disabled: !quantity }
+      ? { label: t("add.to_basket"), onClick: addChoice, disabled: !quantity }
       : step === "quick"
-        ? { label: "Añadir a la cesta", onClick: addQuick, disabled: !quickName.trim() || !quickKcal }
+        ? { label: t("add.to_basket"), onClick: addQuick, disabled: !quickName.trim() || !quickKcal }
         : {
-            label: saving ? "Apuntando…" : basket.length ? `Apuntar ${basket.length === 1 ? "1 cosa" : `${basket.length} cosas`}` : "Apuntar",
+            label: saving
+              ? t("add.logging")
+              : basket.length
+                ? t("add.log_things", { things: plural(t, "things", basket.length) })
+                : t("common.log"),
             onClick: save,
             disabled: basket.length === 0 || saving,
           };
@@ -336,16 +357,24 @@ export function AddSheet({
     <ListRow
       key={`${note}:${one.item_id}`}
       title={one.name}
-      subtitle={`${one.portion && one.unit === "unit" ? measureCount(one.quantity, one.portion) : quantityLabel({ quantity: one.quantity, unit: one.unit, estimated: false })}, ${note}`}
+      subtitle={`${
+        one.portion && one.unit === "unit"
+          ? measureCount(one.quantity, one.portion, locale)
+          : quantityLabel({ quantity: one.quantity, unit: one.unit, estimated: false }, t, locale)
+      }, ${note}`}
       value={one.kcal === null ? undefined : `${amount(one.kcal, 0)} kcal`}
-      onClick={() => choose(usualChoice(one))}
-      action={{ icon: "plus", label: `Añadir ${one.name} a la cesta`, onClick: () => add(picked(usualChoice(one), one.quantity, one.unit)) }}
+      onClick={() => choose(usualChoice(one, t))}
+      action={{
+        icon: "plus",
+        label: t("add.add_named", { name: one.name }),
+        onClick: () => add(picked(usualChoice(one, t), one.quantity, one.unit, t, locale)),
+      }}
     />
   );
 
   return (
     <Sheet
-      title={step === "list" ? `Añadir a ${label.toLowerCase()}` : step === "quick" ? "A ojo" : (choice?.name ?? "")}
+      title={step === "list" ? t("add.title", { meal: label.toLowerCase() }) : step === "quick" ? t("add.quick") : (choice?.name ?? "")}
       onClose={onClose}
       back={step === "list" ? undefined : () => setStep("list")}
       action={action}
@@ -357,7 +386,7 @@ export function AddSheet({
         <>
           <div className="macros-when">
             <ChoiceChips<MealKey>
-              label="Comida"
+              label={t("item.meal")}
               value={meal}
               onChange={(next) => {
                 setMeal(next);
@@ -367,7 +396,7 @@ export function AddSheet({
               options={(meals.length ? meals : []).map((one) => ({ value: one.meal, label: one.label }))}
             />
             <TextField
-              label="Hora"
+              label={t("common.time")}
               type="time"
               value={time}
               onChange={(next) => {
@@ -379,8 +408,8 @@ export function AddSheet({
           </div>
 
           {basket.length > 0 && (
-            <section aria-label="La cesta">
-              <GroupLabel>La cesta</GroupLabel>
+            <section aria-label={t("add.basket")}>
+              <GroupLabel>{t("add.basket")}</GroupLabel>
               <List>
                 {basket.map((one) => (
                   <ListRow
@@ -390,7 +419,7 @@ export function AddSheet({
                     value={one.kcal === null ? undefined : `${amount(one.kcal, 0)} kcal`}
                     action={{
                       icon: "close",
-                      label: `Quitar ${one.name}`,
+                      label: t("add.remove_named", { name: one.name }),
                       onClick: () => setBasket((current) => current.filter((other) => other.key !== one.key)),
                     }}
                   />
@@ -398,17 +427,17 @@ export function AddSheet({
               </List>
               {basket.length > 1 && (
                 <TextField
-                  label="Nombre del plato"
+                  label={t("dish.name")}
                   value={dishName}
                   onChange={setDishName}
-                  placeholder="Ensalada de pasta con atún"
-                  hint="Si es un plato, ponle nombre: se verá como una sola fila."
+                  placeholder={t("add.dish_placeholder")}
+                  hint={t("add.dish_hint")}
                 />
               )}
             </section>
           )}
 
-          <SearchField label="Buscar qué apuntar" value={query} onChange={setQuery} placeholder="yogur, café, lentejas…" busy={busy} />
+          <SearchField label={t("add.search")} value={query} onChange={setQuery} placeholder={t("add.search_placeholder")} busy={busy} />
           {searchError && <Notice tone="warning">{searchError}</Notice>}
 
           {query.trim().length >= 2 ? (
@@ -419,13 +448,15 @@ export function AddSheet({
                     <ListRow
                       key={food.id}
                       title={food.label}
-                      subtitle={uses.get(food.id) ? `Despensa · ${uses.get(food.id)} veces` : "Despensa"}
-                      value={`${amount(food.nutrients.kcal ?? 0, 0)} kcal/${food.nutrients_per === "unit" ? (food.unit_name ?? "ud") : "100 g"}`}
-                      onClick={() => choose(foodChoice(food))}
+                      subtitle={uses.get(food.id) ? `${t("source.pantry")} · ${t("contributors.times", { count: uses.get(food.id) ?? 0 })}` : t("source.pantry")}
+                      value={`${amount(food.nutrients.kcal ?? 0, 0)} kcal/${food.nutrients_per === "unit" ? (food.unit_name ?? t("short.unit")) : "100 g"}`}
+                      onClick={() => choose(foodChoice(food, t))}
                     />
                   ))}
                   {found.recipes.map((recipe) => (
-                    <ListRow key={recipe.id} title={recipe.name} subtitle={`Receta · ${recipe.servings} raciones`} onClick={() => choose(recipeChoice(recipe))} />
+                    <ListRow key={recipe.id} title={recipe.name} subtitle={`${t("source.recipe")} · ${plural(t, "unit.serving", recipe.servings, { amount: recipe.servings })}`}
+                      onClick={() => choose(recipeChoice(recipe, t))}
+                    />
                   ))}
                   {found.candidates.map((candidate) => (
                     <ListRow
@@ -441,34 +472,40 @@ export function AddSheet({
               {found?.failed.map((one) => (
                 <Hint key={one.source}>{one.reason}</Hint>
               ))}
-              {found && !outside && found.foods.length + found.recipes.length === 0 && <Hint>No está en tu despensa.</Hint>}
+              {found && !outside && found.foods.length + found.recipes.length === 0 && <Hint>{t("add.not_in_pantry")}</Hint>}
               {!outside && (
                 <Button variant="tinted" icon="search" onClick={() => setOutside(true)}>
-                  Buscar fuera de tu despensa
+                  {t("item.search_outside")}
                 </Button>
               )}
-              {outside && found && found.candidates.length === 0 && <Hint>Tampoco fuera. Apúntalo a ojo.</Hint>}
+              {outside && found && found.candidates.length === 0 && <Hint>{t("add.not_outside")}</Hint>}
             </>
           ) : (
             <>
-              <GroupLabel>Para {label.toLowerCase()}</GroupLabel>
+              <GroupLabel>{t("add.for_meal", { meal: label.toLowerCase() })}</GroupLabel>
               <List>
-                {usual?.yesterday.map((one) => usualRow(one, "ayer"))}
+                {usual?.yesterday.map((one) => usualRow(one, t("since.yesterday")))}
                 {usual?.items
                   .filter((one) => !usual.yesterday.some((other) => other.name === one.name))
-                  .map((one) => usualRow(one, one.times > 1 ? `${one.times} veces` : "la última vez"))}
-                {usual?.recent.map((one) => usualRow(one, "la última vez"))}
+                  .map((one) => usualRow(one, one.times > 1 ? t("contributors.times", { count: one.times }) : t("add.last_time")))}
+                {usual?.recent.map((one) => usualRow(one, t("add.last_time")))}
                 {usual?.menus.map((menu) => (
                   <ListRow
                     key={menu.id}
                     title={menu.name}
-                    subtitle={`Menú · ${menu.items.length} ${menu.items.length === 1 ? "cosa" : "cosas"}`}
+                    subtitle={`${t("menu.menu")} · ${plural(t, "things", menu.items.length)}`}
                     accessory="plus"
                     onClick={() => logMenu(menu.id, menu.name)}
                   />
                 ))}
-                <ListRow title="Agua" subtitle="Un vaso, una botella" icon="cup" hue={6} onClick={() => choose(WATER)} />
-                <ListRow title="A ojo" subtitle="Unas kcal, sin buscar" icon="edit" hue={4} onClick={() => setStep("quick")} />
+                <ListRow
+                  title={t("nutrient.water")}
+                  subtitle={t("add.water_hint")}
+                  icon="cup"
+                  hue={6}
+                  onClick={() => choose(water(t))}
+                />
+                <ListRow title={t("add.quick")} subtitle={t("add.quick_hint")} icon="edit" hue={4} onClick={() => setStep("quick")} />
               </List>
             </>
           )}
@@ -478,7 +515,7 @@ export function AddSheet({
       {step === "amount" && choice && (
         <>
           <Stepper
-            label="Cantidad"
+            label={t("item.quantity")}
             value={quantity}
             step={portion ? 1 : STEP[unit]}
             min={0}
@@ -487,7 +524,7 @@ export function AddSheet({
           />
           {(choice.units.length > 1 || choice.measures.length > 0) && (
             <ChoiceChips
-              label="Medida"
+              label={t("add.measure")}
               value={portion ? `portion:${portion}` : unit}
               onChange={(next) => {
                 if (next.startsWith("portion:")) {
@@ -508,19 +545,25 @@ export function AddSheet({
           {amountPreview ? (
             <Hint>
               {amount(amountPreview.kcal, 0)} kcal
-              {amountPreview.protein !== null && ` · ${amount(amountPreview.protein)} g de proteína`}
+              {amountPreview.protein !== null && ` · ${t("with_this.protein", { value: amount(amountPreview.protein) })}`}
             </Hint>
           ) : (
-            <Hint>Lo que suma sale de la despensa al apuntarlo.</Hint>
+            <Hint>{t("add.from_pantry")}</Hint>
           )}
         </>
       )}
 
       {step === "quick" && (
         <>
-          <TextField label="Qué era" value={quickName} onChange={setQuickName} placeholder="Un pintxo de tortilla" autoFocus />
-          <Stepper label="Kcal, a ojo" value={quickKcal} step={50} min={0} unit="kcal" inputMode="numeric" onChange={setQuickKcal} />
-          <Hint>Lo apuntado a ojo solo lleva sus kcal: sus micros quedan sin dato.</Hint>
+          <TextField
+            label={t("add.what_was_it")}
+            value={quickName}
+            onChange={setQuickName}
+            placeholder={t("add.quick_placeholder")}
+            autoFocus
+          />
+          <Stepper label={t("add.quick_kcal")} value={quickKcal} step={50} min={0} unit="kcal" inputMode="numeric" onChange={setQuickKcal} />
+          <Hint>{t("add.quick_micros")}</Hint>
         </>
       )}
     </Sheet>

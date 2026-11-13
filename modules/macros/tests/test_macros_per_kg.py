@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 import pytest
-from test_macros_goals import READ, call, publishers  # noqa: F401 - la fixture se usa por nombre
+from test_macros_goals import READ, call, publishers  # noqa: F401 - the fixture is used by name
 
 import arga_contracts as contracts
 from macros.common import today

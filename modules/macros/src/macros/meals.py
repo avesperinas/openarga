@@ -10,7 +10,8 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from macros.common import MADRID, TZ, Conflict, now
+from macros import catalog
+from macros.common import Conflict, now, timezone, zone
 
 Meal = Literal["breakfast", "morning", "lunch", "snack", "dinner", "night"]
 
@@ -18,26 +19,26 @@ Meal = Literal["breakfast", "morning", "lunch", "snack", "dinner", "night"]
 @dataclass(frozen=True)
 class Slot:
     key: Meal
-    label: str
     start: time
     usual: time
 
 
 SLOTS: tuple[Slot, ...] = (
-    Slot("night", "Noche", time(0, 0), time(1, 0)),
-    Slot("breakfast", "Desayuno", time(4, 0), time(8, 30)),
-    Slot("morning", "Media mañana", time(10, 30), time(11, 0)),
-    Slot("lunch", "Comida", time(13, 0), time(14, 30)),
-    Slot("snack", "Merienda", time(17, 0), time(18, 0)),
-    Slot("dinner", "Cena", time(20, 0), time(21, 30)),
+    Slot("night", time(0, 0), time(1, 0)),
+    Slot("breakfast", time(4, 0), time(8, 30)),
+    Slot("morning", time(10, 30), time(11, 0)),
+    Slot("lunch", time(13, 0), time(14, 30)),
+    Slot("snack", time(17, 0), time(18, 0)),
+    Slot("dinner", time(20, 0), time(21, 30)),
 )
 BY_KEY = {slot.key: slot for slot in SLOTS}
 ORDER: tuple[Meal, ...] = tuple(slot.key for slot in SLOTS)
 HISTORY_DAYS = 30
 
 
-def meal_of(moment: datetime | time, tz: str = TZ) -> Meal:
-    local = moment if isinstance(moment, time) else moment.astimezone(ZoneInfo(tz)).time()
+def meal_of(moment: datetime | time, tz: str | None = None) -> Meal:
+    zone_ = ZoneInfo(tz or timezone())
+    local = moment if isinstance(moment, time) else moment.astimezone(zone_).time()
     found: Meal = "night"
     for slot in SLOTS:
         if local >= slot.start:
@@ -46,11 +47,11 @@ def meal_of(moment: datetime | time, tz: str = TZ) -> Meal:
 
 
 def label(meal: Meal) -> str:
-    return BY_KEY[meal].label
+    return catalog.t(f"meal.{meal}")
 
 
 def started(meal: Meal, day: date, moment: datetime | None = None) -> bool:
-    current = (moment or now()).astimezone(MADRID)
+    current = (moment or now()).astimezone(zone())
     if day < current.date():
         return True
     if day > current.date():
@@ -72,7 +73,7 @@ async def usual_times(connection: AsyncConnection, day: date) -> dict[Meal, time
     ).all()
     minutes: dict[Meal, list[int]] = {}
     for row in rows:
-        local = row.eaten_at.astimezone(ZoneInfo(row.tz or TZ))
+        local = row.eaten_at.astimezone(ZoneInfo(row.tz or timezone()))
         minutes.setdefault(meal_of(local.time()), []).append(local.hour * 60 + local.minute)
     found: dict[Meal, time] = {}
     for slot in SLOTS:
@@ -90,15 +91,15 @@ async def moment_for(
 ) -> datetime:
     current = now()
     if at is not None:
-        local = at if at.tzinfo else at.replace(tzinfo=MADRID)
+        local = at if at.tzinfo else at.replace(tzinfo=zone())
         if meal_of(local) == meal:
             return local
-        day = local.astimezone(MADRID).date()
+        day = local.astimezone(zone()).date()
     on = day or current.date()
     if on == current.date() and meal_of(current) == meal:
         return current.replace(second=0, microsecond=0)
     usual = (await usual_times(connection, on))[meal]
-    return datetime.combine(on, usual, MADRID)
+    return datetime.combine(on, usual, zone())
 
 
 class MealOut(BaseModel):
@@ -115,5 +116,5 @@ class MealOut(BaseModel):
 
 def check(meal: str) -> Meal:
     if meal not in BY_KEY:
-        raise Conflict(f"«{meal}» no es una comida: {', '.join(ORDER)}")
+        raise Conflict(f"'{meal}' is not a meal: {', '.join(ORDER)}")
     return meal  # type: ignore[return-value]

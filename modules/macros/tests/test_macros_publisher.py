@@ -63,7 +63,7 @@ async def test_protein_reaches_whoever_receives_metric(api, world, schema) -> No
         )
     await provision(GOALS)
     try:
-        lentils = await world.imported("lentils", alias="lentejas")
+        lentils = await world.imported("lentils", alias="dry lentils")
         response = await api.post(
             "/entries", json={"items": [{"food_id": lentils["id"], "quantity": 200, "unit": "g"}]}
         )
@@ -72,7 +72,7 @@ async def test_protein_reaches_whoever_receives_metric(api, world, schema) -> No
         def down(request: httpx.Request) -> httpx.Response:
             if request.url.path == "/internal/users":
                 return httpx.Response(200, json=[{"id": str(person)}])
-            raise httpx.ConnectError("el kernel no contesta", request=request)
+            raise httpx.ConnectError("the kernel is not answering", request=request)
 
         async with httpx.AsyncClient(transport=httpx.MockTransport(down)) as client:
             failed = await publisher.run_once(client)

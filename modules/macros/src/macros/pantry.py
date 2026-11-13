@@ -18,7 +18,7 @@ def timeout() -> float:
     return float(os.environ.get("PANTRY_TIMEOUT_SECONDS", "40"))
 
 
-DOWN = "Recipes no contesta ahora. Lo apuntado se sigue viendo; prueba en un momento."
+DOWN = "Recipes is not answering now. What you logged is still visible; try again in a moment."
 
 
 async def ask(client: httpx.AsyncClient, service: str, body: dict[str, Any]) -> dict[str, Any]:

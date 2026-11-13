@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_nutrients
-from macros import detail
+from macros import catalog, detail
 from macros import expenditure as spending
 from macros import goals as ranges
 from macros import meals as slots
@@ -78,7 +78,7 @@ def target_from(resolved: dict[str, ranges.Resolved], day: date) -> Target | Non
 
 async def set_target(connection: AsyncConnection, request: TargetIn) -> Target:
     if all(getattr(request, key) is None for key in ("kcal", "protein", "carbs", "fat")):
-        raise Conflict("un objetivo lleva al menos las kcal o una macro")
+        raise Conflict("a target needs at least kcal or one macro")
     valid_from = request.valid_from or today()
     await connection.execute(
         SET_TARGET,
@@ -184,14 +184,14 @@ async def set_reference(
     connection: AsyncConnection, nutrient: str, request: ReferenceIn | None
 ) -> None:
     if nutrient not in arga_nutrients.KEYS:
-        raise Conflict(f"'{nutrient}' no es un nutriente de arga")
+        raise Conflict(f"'{nutrient}' is not an arga nutrient")
     if request is None:
         await ranges.set_goal(connection, ranges.GoalIn(nutrient=nutrient, reset=True))
         return
     if request.kind == "energy_share" and request.value > 1:
-        raise Conflict("una fracción de las kcal va de 0 a 1: 0,1 es un 10 %")
+        raise Conflict("a share of kcal goes from 0 to 1: 0.1 is 10 %")
     if request.kind == "energy_share" and nutrient not in arga_nutrients.KCAL_PER_GRAM:
-        raise Conflict(f"{nutrient} no aporta kcal: su referencia va en cantidad")
+        raise Conflict(f"{nutrient} has no kcal: its reference is an amount")
     if request.kind == "min":
         one = ranges.GoalIn(nutrient=nutrient, min=request.value)
     elif request.kind == "max":
@@ -462,7 +462,7 @@ async def week(
     compliance = [
         Compliance(
             nutrient=key,
-            name=arga_nutrients.BY_KEY[key].name,
+            name=catalog.nutrient(key),
             states=[day.get(key, "none") for day in daily],
         )
         for key in sorted(rows, key=lambda one: order[one])
@@ -489,7 +489,7 @@ async def week(
         micros.append(
             Micro(
                 key=nutrient.key,
-                name=nutrient.name,
+                name=catalog.nutrient(nutrient.key),
                 unit=nutrient.unit,
                 value=value,
                 coverage=share,

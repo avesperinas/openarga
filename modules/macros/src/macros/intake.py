@@ -4,7 +4,6 @@ import json
 from dataclasses import dataclass
 from datetime import date, datetime, time
 from typing import Any, Literal
-from zoneinfo import ZoneInfo
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -13,8 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_contracts as contracts
 import arga_nutrients
-from macros import meals, metrics, pantry
-from macros.common import TZ, Conflict, NotFound, enqueue, is_uuid, local_day, now
+from macros import catalog, meals, metrics, pantry
+from macros.common import Conflict, NotFound, enqueue, is_uuid, local_day, now, timezone, zone
 
 Kind = Literal["food", "recipe", "quick", "water"]
 Unit = Literal["g", "ml", "unit", "serving", "kcal"]
@@ -51,25 +50,25 @@ class ItemIn(BaseModel):
     def _coherent(self) -> ItemIn:
         if self.kind == "food":
             if not self.food_id and not (self.source and self.source_ref):
-                raise ValueError("un alimento va con food_id, o con source y source_ref")
+                raise ValueError("a food needs food_id, or source and source_ref")
             if self.unit not in ("g", "ml", "unit"):
-                raise ValueError("un alimento va en g, ml o unit")
+                raise ValueError("a food goes in g, ml or unit")
             if self.portion is not None and self.unit != "unit":
-                raise ValueError("una porción cuenta unidades: va con unit")
+                raise ValueError("a portion counts units: it goes with unit")
         elif self.portion is not None or self.as_purchased:
-            raise ValueError("portion y as_purchased son de un alimento")
+            raise ValueError("portion and as_purchased belong to a food")
         if self.kind == "recipe":
             if not self.recipe_id:
-                raise ValueError("una receta va con recipe_id")
+                raise ValueError("a recipe needs recipe_id")
             if self.unit not in ("serving", "g"):
-                raise ValueError("una receta va en serving o en g")
+                raise ValueError("a recipe goes in serving or g")
         elif self.kind == "quick":
             if self.unit != "kcal":
-                raise ValueError("algo a ojo va en kcal")
+                raise ValueError("a quick estimate goes in kcal")
             if not (self.name or "").strip():
-                raise ValueError("algo a ojo lleva name: qué era")
+                raise ValueError("a quick estimate needs name: what it was")
         elif self.kind == "water" and self.unit != "ml":
-            raise ValueError("el agua va en ml")
+            raise ValueError("water goes in ml")
         return self
 
 
@@ -102,7 +101,7 @@ class ItemSwap(BaseModel):
     def _one(self) -> ItemSwap:
         given = [bool(self.food_id), bool(self.source and self.source_ref), bool(self.recipe_id)]
         if sum(given) != 1:
-            raise ValueError("food_id, o source y source_ref, o recipe_id: uno")
+            raise ValueError("exactly one of food_id, source with source_ref, or recipe_id")
         return self
 
 
@@ -186,25 +185,25 @@ def _raw_grams(quantity: float, unit: str, food: dict[str, Any], portion: str | 
         portions = food.get("portions") or {}
         grams = portions.get(portion.strip().lower())
         if not grams:
-            known = ", ".join(sorted(portions)) or "ninguna"
+            known = ", ".join(sorted(portions)) or "none"
             raise Conflict(
-                f"{food['label']} no tiene la porción «{portion}» (tiene: {known}): dilo en "
-                "gramos, o añádela en Recipes"
+                f"{food['label']} has no portion '{portion}' (it has: {known}): "
+                "say it in grams, or add it in Recipes"
             )
         return quantity * float(grams)
     per_unit = food.get("grams_per_unit")
     if not per_unit:
         raise Conflict(
-            f"no se sabe cuánto pesa una unidad de {food['label']}: dilo en gramos, "
-            "o ponle el peso por unidad en Recipes"
+            f"the weight of one unit of {food['label']} is unknown: say it in grams, "
+            "or set its weight per unit in Recipes"
         )
     return quantity * float(per_unit)
 
 
 def _unit_grams(item: ItemIn, food: dict[str, Any]) -> float | None:
     if item.unit != "unit" or item.portion is not None or item.as_purchased:
-        unit = food.get("unit_name") or "unidad"
-        raise Conflict(f"{food['label']} se apunta en unidades ({unit}): unit y la cantidad")
+        unit = food.get("unit_name") or "unit"
+        raise Conflict(f"{food['label']} is logged in units ({unit}): unit and the quantity")
     per_one = food.get("grams_per_unit")
     return None if not per_one else item.quantity * float(per_one)
 
@@ -222,7 +221,9 @@ def compute(line: Line) -> Line:
         if line.unit == "g":
             per_serving = float(line.basis.get("_grams") or 0)
             if per_serving <= 0:
-                raise Conflict(f"{line.name} no dice cuánto pesa una ración: dilo en raciones")
+                raise Conflict(
+                    f"{line.name} does not say what a serving weighs: say it in servings"
+                )
             servings = line.quantity / per_serving
         line.nutrients = {
             key: round(value * servings, 4)
@@ -250,7 +251,7 @@ async def resolve(
         if item.kind == "food":
             food = found.get(item.food_id or "")
             if food is None:
-                raise NotFound(f"el alimento {item.food_id} en la despensa")
+                raise NotFound(f"food {item.food_id} in the pantry")
             per_unit = food.get("nutrients_per") == "unit"
             grams = (
                 _unit_grams(item, food)
@@ -272,7 +273,7 @@ async def resolve(
             )
         elif item.kind == "recipe":
             if not is_uuid(item.recipe_id):
-                raise NotFound(f"la receta {item.recipe_id}")
+                raise NotFound(f"recipe {item.recipe_id}")
             recipe = recipes.get(item.recipe_id or "") or await pantry.recipe(
                 client, item.recipe_id or ""
             )
@@ -346,7 +347,7 @@ def _moment(eaten_at: datetime | None) -> datetime:
     if eaten_at is None:
         return now()
     if eaten_at.tzinfo is None:
-        return eaten_at.replace(tzinfo=ZoneInfo(TZ))
+        return eaten_at.replace(tzinfo=zone())
     return eaten_at
 
 
@@ -433,7 +434,7 @@ async def write(
             INSERT_ENTRY,
             {
                 "eaten_at": moment,
-                "tz": TZ,
+                "tz": timezone(),
                 "day": day,
                 "said": (said or "").strip() or None,
                 "origin": origin,
@@ -475,7 +476,7 @@ async def _row(connection: AsyncConnection, item_id: str) -> Any:
         (await connection.execute(ITEM_ROW, {"id": item_id})).first() if is_uuid(item_id) else None
     )
     if row is None:
-        raise NotFound(f"la línea {item_id}")
+        raise NotFound(f"line {item_id}")
     return row
 
 
@@ -492,7 +493,7 @@ def _requantified(row: Any, quantity: float, unit: str, estimated: bool) -> Line
     )
     if row.kind == "food" and row.basis_per == "unit":
         if unit != "unit":
-            raise Conflict(f"{row.name} se apunta en unidades")
+            raise Conflict(f"{row.name} is logged in units")
         if row.grams is not None and float(row.quantity) > 0:
             line.grams = round(float(row.grams) / float(row.quantity) * quantity, 2)
     elif row.kind == "food":
@@ -501,16 +502,16 @@ def _requantified(row: Any, quantity: float, unit: str, estimated: bool) -> Line
         elif unit in ("g", "ml"):
             line.grams = quantity
         else:
-            raise Conflict(f"{row.name}: cámbialo en gramos")
+            raise Conflict(f"{row.name}: change it in grams")
     elif row.kind == "recipe":
         if unit not in ("serving", "g"):
-            raise Conflict("una receta va en raciones o en gramos")
+            raise Conflict("a recipe goes in servings or grams")
         grams = float((row.basis or {}).get("_grams") or 0)
         servings = quantity if unit == "serving" else quantity / (grams or 1)
         line.grams = round(grams * servings, 2) if grams else None
     elif row.kind == "quick":
         if unit != "kcal":
-            raise Conflict("algo a ojo va en kcal")
+            raise Conflict("a quick estimate goes in kcal")
         previous = float(row.quantity)
         return Line(
             kind="quick",
@@ -527,7 +528,7 @@ def _requantified(row: Any, quantity: float, unit: str, estimated: bool) -> Line
         )
     else:
         if unit != "ml":
-            raise Conflict("el agua va en ml")
+            raise Conflict("water goes in ml")
         line.grams = quantity
     return compute(line)
 
@@ -548,7 +549,7 @@ async def update(
     for change in patch.change:
         row = await _row(connection, change.item_id)
         if str(row.entry_id) != entry_id:
-            raise NotFound(f"la línea {change.item_id} en esa entrada")
+            raise NotFound(f"line {change.item_id} in that entry")
         line = _requantified(
             row,
             change.quantity,
@@ -569,12 +570,12 @@ async def update(
     for swap in patch.swap:
         row = await _row(connection, swap.item_id)
         if str(row.entry_id) != entry_id:
-            raise NotFound(f"la línea {swap.item_id} en esa entrada")
+            raise NotFound(f"line {swap.item_id} in that entry")
         await _swap(connection, client, entry_id, row, swap)
     for item_id in patch.remove:
         row = await _row(connection, item_id)
         if str(row.entry_id) != entry_id:
-            raise NotFound(f"la línea {item_id} en esa entrada")
+            raise NotFound(f"line {item_id} in that entry")
         await connection.execute(DELETE_ITEM, {"id": item_id})
     if patch.add:
         lines = await resolve(connection, client, patch.add)
@@ -582,7 +583,7 @@ async def update(
             line.dish = asked.dish
         await _insert_items(connection, entry_id, lines)
     if not await connection.scalar(ITEMS_LEFT, {"id": entry_id}):
-        raise Conflict("una entrada sin líneas no es nada: bórrala entera")
+        raise Conflict("an entry without lines is nothing: delete the whole entry")
     return await _changed(connection, entry_id, days)
 
 
@@ -594,7 +595,7 @@ def _kept(row: Any, swap: ItemSwap) -> ItemIn:
         elif grams:
             quantity, unit = grams, "g"
         else:
-            raise Conflict(f"no se sabe cuánto pesaba {row.name}: dilo en raciones")
+            raise Conflict(f"what {row.name} weighed is unknown: say it in servings")
         return ItemIn(
             kind="recipe",
             recipe_id=swap.recipe_id,
@@ -607,7 +608,7 @@ def _kept(row: Any, swap: ItemSwap) -> ItemIn:
     elif grams:
         quantity, unit = grams, "g"
     else:
-        raise Conflict(f"no se sabe cuánto pesaba {row.name}: dilo en gramos")
+        raise Conflict(f"what {row.name} weighed is unknown: say it in grams")
     return ItemIn(
         kind="food",
         food_id=swap.food_id,
@@ -638,7 +639,7 @@ async def _swap(
     swap: ItemSwap,
 ) -> None:
     if row.kind not in ("food", "recipe"):
-        raise Conflict("solo se cambia un alimento o una receta")
+        raise Conflict("only a food or a recipe can be swapped")
     [line] = await resolve(connection, client, [_kept(row, swap)])
     await connection.execute(
         SWAPPED,
@@ -682,11 +683,11 @@ async def measures(
                 found.append(Measure(name=name, grams=float(grams)))
         per_unit = food.get("grams_per_unit")
         if per_unit and not any(one.grams == float(per_unit) for one in found):
-            found.append(Measure(name="unidad", grams=float(per_unit)))
+            found.append(Measure(name=catalog.t("measure.unit"), grams=float(per_unit)))
     elif row.kind == "recipe":
         grams = float((row.basis or {}).get("_grams") or 0)
         if grams:
-            found.append(Measure(name="ración", grams=grams))
+            found.append(Measure(name=catalog.t("measure.serving"), grams=grams))
     return Measures(item_id=str(row.id), measures=found)
 
 
@@ -697,10 +698,10 @@ CLEAR_DOUBT = text("""
 
 async def clear_doubt(connection: AsyncConnection, item_id: str) -> Entry:
     if not is_uuid(item_id):
-        raise NotFound(f"la línea {item_id}")
+        raise NotFound(f"line {item_id}")
     entry_id = await connection.scalar(CLEAR_DOUBT, {"id": item_id})
     if entry_id is None:
-        raise NotFound(f"la línea {item_id}")
+        raise NotFound(f"line {item_id}")
     return await one(connection, str(entry_id))
 
 
@@ -736,13 +737,13 @@ async def replace_food(
     found = await pantry.foods(client, [asked.new_id])
     food = found.get(asked.new_id)
     if food is None:
-        raise NotFound(f"el alimento {asked.new_id} en la despensa")
+        raise NotFound(f"food {asked.new_id} in the pantry")
     per_unit = food.get("nutrients_per") == "unit"
     basis = arga_nutrients.only_known(food["nutrients"])
     entries: dict[str, set[date]] = {}
     for row in rows:
         if (row.basis_per == "unit") != per_unit:
-            raise Conflict(f"{row.name}: uno va por 100 g y el otro por unidad")
+            raise Conflict(f"{row.name}: one is per 100 g and the other per unit")
         line = compute(
             Line(
                 kind="food",
@@ -825,7 +826,7 @@ async def rename_dish(
         )
     ).all()
     if not changed:
-        raise NotFound(f"el plato «{old}» en esa entrada")
+        raise NotFound(f"dish '{old}' in that entry")
     return await _changed(connection, entry_id, set())
 
 
@@ -884,7 +885,7 @@ async def repeat(
             INSERT_ENTRY,
             {
                 "eaten_at": moment,
-                "tz": TZ,
+                "tz": timezone(),
                 "day": day,
                 "said": None,
                 "origin": "app",
@@ -938,7 +939,7 @@ async def copy_items(
 ) -> Entry:
     wanted = [one for one in dict.fromkeys(item_ids) if is_uuid(one)]
     if not wanted or len(wanted) != len(set(item_ids)):
-        raise NotFound("alguna de esas líneas")
+        raise NotFound("one of those lines")
     found = (
         await connection.execute(
             text("select count(*) from macros.macros_item where id = any(cast(:ids as uuid[]))"),
@@ -946,14 +947,14 @@ async def copy_items(
         )
     ).scalar_one()
     if found != len(wanted):
-        raise NotFound("alguna de esas líneas")
+        raise NotFound("one of those lines")
     day = local_day(moment)
     new_id = str(
         await connection.scalar(
             INSERT_ENTRY,
             {
                 "eaten_at": moment,
-                "tz": TZ,
+                "tz": timezone(),
                 "day": day,
                 "said": said,
                 "origin": origin,
@@ -981,7 +982,7 @@ async def repeat_items(
     origin: str = "app",
 ) -> Entry:
     if not item_ids:
-        raise NotFound("ninguna línea que repetir")
+        raise NotFound("any line to repeat")
     if meal is None and eaten_at is None:
         source = (
             (await connection.execute(SOURCE_MEAL, {"id": item_ids[0]})).first()
@@ -989,8 +990,8 @@ async def repeat_items(
             else None
         )
         if source is None:
-            raise NotFound(f"la línea {item_ids[0]}")
-        meal = meals.meal_of(source.eaten_at, source.tz or TZ)
+            raise NotFound(f"line {item_ids[0]}")
+        meal = meals.meal_of(source.eaten_at, source.tz or timezone())
     if meal is not None:
         moment = await meals.moment_for(connection, meal, day, eaten_at)
     else:
@@ -1022,7 +1023,7 @@ async def repeat_meal(
 ) -> Entry:
     found = await in_meal(connection, from_day, meal)
     if not found:
-        raise NotFound(f"nada apuntado en {meals.label(meal).lower()} del {from_day.isoformat()}")
+        raise NotFound(f"anything logged at {meal} on {from_day.isoformat()}")
     target = to_meal or meal
     moment = await meals.moment_for(connection, target, day)
     items = [item.id for entry in found for item in entry.items]
@@ -1034,8 +1035,8 @@ async def move_meal(
 ) -> list[Entry]:
     found = await in_meal(connection, day, meal, ("confirmed", "planned"))
     if not found:
-        raise NotFound(f"nada en {meals.label(meal).lower()} ese día")
-    moment = datetime.combine(day, at, ZoneInfo(TZ))
+        raise NotFound(f"anything at {meal} that day")
+    moment = datetime.combine(day, at, zone())
     moved = []
     for entry in found:
         await connection.execute(MOVE_ENTRY, {"id": entry.id, "eaten_at": moment, "day": day})
@@ -1087,7 +1088,7 @@ async def _entry_row(connection: AsyncConnection, entry_id: str) -> Any:
         else None
     )
     if row is None:
-        raise NotFound(f"la entrada {entry_id}")
+        raise NotFound(f"entry {entry_id}")
     return row
 
 
@@ -1121,7 +1122,7 @@ async def entries(
                 items=[],
                 nutrients={},
                 status=row.status,
-                meal=meals.meal_of(row.eaten_at, row.tz or TZ),
+                meal=meals.meal_of(row.eaten_at, row.tz or timezone()),
             )
         found[key].items.append(
             Item(

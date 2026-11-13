@@ -7,7 +7,8 @@ from typing import Any
 from pydantic import BaseModel
 
 import arga_nutrients
-from macros.common import MADRID, now
+from macros import catalog
+from macros.common import now, zone
 from macros.intake import Entry
 
 EPA_DHA = "omega3_epa_dha"
@@ -18,17 +19,17 @@ CURVE_STEP = timedelta(minutes=30)
 GROUPS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     (
         "vitamins",
-        "Vitaminas",
+        "vitamins",
         tuple(one.key for one in arga_nutrients.NUTRIENTS if one.group == "vitamin"),
     ),
     (
         "minerals",
-        "Minerales",
+        "minerals",
         tuple(one.key for one in arga_nutrients.NUTRIENTS if one.group == "mineral"),
     ),
     (
         "fats",
-        "Ácidos grasos",
+        "fatty_acids",
         (
             "saturated_fat",
             "monounsaturated_fat",
@@ -38,8 +39,8 @@ GROUPS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
             EPA_DHA,
         ),
     ),
-    ("sugars", "Azúcares", ("sugars", "added_sugars", "lactose", "fructose")),
-    ("other", "Otros", ("caffeine", "cholesterol", "alcohol", "water")),
+    ("sugars", "sugars", ("sugars", "added_sugars", "lactose", "fructose")),
+    ("other", "other", ("caffeine", "cholesterol", "alcohol", "water")),
 )
 
 
@@ -115,11 +116,11 @@ def _coverage(lines: list[tuple[Entry, Any, dict[str, float]]], key: str) -> flo
 
 def _name_unit(key: str) -> tuple[str, str]:
     if key == EPA_DHA:
-        return "Omega 3 (EPA + DHA)", "g"
+        return catalog.t("nutrient.omega3_epa_dha"), "g"
     if key == "water":
-        return "Agua", "ml"
+        return catalog.nutrient("water"), "ml"
     nutrient = arga_nutrients.BY_KEY[key]
-    return nutrient.name, nutrient.unit
+    return catalog.nutrient(key), nutrient.unit
 
 
 def groups(entries: list[Entry], states: list[Any]) -> list[Group]:
@@ -147,13 +148,13 @@ def groups(entries: list[Entry], states: list[Any]) -> list[Group]:
                     goal_unit=state.basis if state else None,
                 )
             )
-        out.append(Group(key=key, name=name, items=items))
+        out.append(Group(key=key, name=catalog.t(f"group.{name}"), items=items))
     return out
 
 
 def contributors(entries: list[Entry], key: str, limit: int = 10) -> Contributors:
     if key != EPA_DHA and key != "water" and key not in arga_nutrients.KEYS:
-        raise ValueError(f"'{key}' no es un nutriente de arga")
+        raise ValueError(f"'{key}' is not an arga nutrient")
     lines = _per_item(entries)
     total = sum(values.get(key, 0.0) for _, _, values in lines)
     by_name: dict[str, list[float]] = {}
@@ -199,12 +200,12 @@ def _remaining(doses: list[tuple[datetime, float]], at: datetime) -> float:
 
 def caffeine(entries: list[Entry], day: date) -> Caffeine:
     doses = sorted(
-        (entry.eaten_at.astimezone(MADRID), item.nutrients["caffeine"])
+        (entry.eaten_at.astimezone(zone()), item.nutrients["caffeine"])
         for entry in entries
         for item in entry.items
         if item.nutrients.get("caffeine")
     )
-    end = datetime.combine(day + timedelta(days=1), time.min, MADRID)
+    end = datetime.combine(day + timedelta(days=1), time.min, zone())
     moment = now()
     until = min(end, moment) if day == moment.date() else end
     curve: list[CaffeinePoint] = []

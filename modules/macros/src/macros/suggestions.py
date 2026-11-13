@@ -6,7 +6,7 @@ from statistics import median
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from macros import detail, summary
+from macros import catalog, detail, summary
 from macros.common import NotFound
 from macros.intake import Entry, Item, entries
 
@@ -52,13 +52,14 @@ class Suggestions(BaseModel):
 
 
 def _portion(item: Item) -> str:
-    amount = f"{item.quantity:g}".replace(".", ",")
+    amount = catalog.short(item.quantity)
     if item.portion:
         return f"{amount} {item.portion}"
     if item.unit == "unit":
-        return f"{amount} ud"
+        return catalog.t("portion.units", amount=amount)
     if item.unit == "serving":
-        return f"{amount} {'ración' if item.quantity == 1 else 'raciones'}"
+        key = "portion.serving" if item.quantity == 1 else "portion.servings"
+        return catalog.t(key, amount=amount)
     return f"{amount} {item.unit}"
 
 

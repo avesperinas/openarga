@@ -13,6 +13,9 @@ import {
   Sheet,
   Skeleton,
   TextField,
+  type Translate,
+  dates,
+  useT,
   useToast,
 } from "@openarga/ui";
 import { useCallback, useEffect, useState } from "react";
@@ -40,14 +43,7 @@ import {
 import { ScreenHeader } from "./Header";
 import { amount, todayIso } from "./words";
 
-const FIELDS = [
-  { key: "kcal", label: "Kcal" },
-  { key: "protein", label: "Proteína, g" },
-  { key: "carbs", label: "Hidratos, g" },
-  { key: "fat", label: "Grasa, g" },
-] as const;
-
-const KIND = { min: "mínimo", max: "máximo", energy_share: "de las kcal" } as const;
+const FIELDS = ["kcal", "protein", "carbs", "fat"] as const;
 
 const SHARES = new Set([
   "protein", "carbs", "fat", "fiber", "sugars", "added_sugars", "starch", "saturated_fat",
@@ -59,28 +55,29 @@ function parsed(text: string): number | null {
   return text.trim() && Number.isFinite(value) && value >= 0 ? value : null;
 }
 
-export function referenceLabel(reference: Reference, unit: string): string {
-  if (reference.kind === "energy_share") return `${amount(reference.value * 100, 0)} % de las kcal, como tope`;
-  return `${amount(reference.value)} ${unit} ${KIND[reference.kind]}`;
+export function referenceLabel(reference: Reference, unit: string, t: Translate): string {
+  if (reference.kind === "energy_share") return t("reference.share_cap", { pct: amount(reference.value * 100, 0) });
+  return `${amount(reference.value)} ${unit} ${t(`reference.${reference.kind}`)}`;
 }
 
-const PROFILES = [
-  { value: "any", label: "Todos los días" },
-  { value: "training", label: "Entreno" },
-  { value: "rest", label: "Descanso" },
-] as const;
+const PROFILES = ["any", "training", "rest"] as const;
 
-const SOURCES = { own: "tuyo", legacy: "tuyo", efsa: "EFSA" } as const;
+const source = (t: Translate, key: GoalInfo["source"]) => (key === "efsa" ? "EFSA" : t("goal.yours"));
 
 export const PER_KG = new Set(["kcal", "protein", "carbs", "fat"]);
 
-export function goalLabel(goal: Pick<GoalInfo, "min" | "max" | "unit" | "nutrient_unit" | "kg" | "amount">): string {
+export function goalLabel(
+  goal: Pick<GoalInfo, "min" | "max" | "unit" | "nutrient_unit" | "kg" | "amount">,
+  t: Translate,
+): string {
   if (goal.unit === "per_kg") {
-    const said = goalLabel({ ...goal, unit: "amount", nutrient_unit: `${goal.nutrient_unit}/kg` });
-    const today = goal.amount ? goalLabel({ ...goal.amount, unit: "amount", nutrient_unit: goal.nutrient_unit }) : null;
-    return today && goal.kg ? `${said} · ${today.replace(/^[≥≤] /, "")} con ${amount(goal.kg)} kg` : said;
+    const said = goalLabel({ ...goal, unit: "amount", nutrient_unit: `${goal.nutrient_unit}/kg` }, t);
+    const today = goal.amount ? goalLabel({ ...goal.amount, unit: "amount", nutrient_unit: goal.nutrient_unit }, t) : null;
+    return today && goal.kg
+      ? `${said} · ${t("goal.with_kg", { amount: today.replace(/^[≥≤] /, ""), kg: amount(goal.kg) })}`
+      : said;
   }
-  const unit = goal.unit === "kcal_pct" ? "% de las kcal" : goal.nutrient_unit;
+  const unit = goal.unit === "kcal_pct" ? t("goal.pct_unit") : goal.nutrient_unit;
   const digits = goal.unit === "kcal_pct" ? 0 : undefined;
   const one = (value: number) => amount(value, digits);
   if (goal.min !== null && goal.max !== null) {
@@ -88,21 +85,22 @@ export function goalLabel(goal: Pick<GoalInfo, "min" | "max" | "unit" | "nutrien
   }
   if (goal.min !== null) return `≥ ${one(goal.min)} ${unit}`;
   if (goal.max !== null) return `≤ ${one(goal.max)} ${unit}`;
-  return "sin objetivo";
+  return t("goal.none");
 }
 
-export function dayKindLabel(found: DayKindInfo): string {
-  if (found.kind === "rest") return found.source === "manual" ? "Hoy es de descanso, a mano." : "Hoy es de descanso.";
-  if (found.source === "manual") return "Hoy es de entreno, a mano.";
-  return `Hoy es de entreno: ${found.workouts.join(", ")}.`;
+export function dayKindLabel(found: DayKindInfo, t: Translate): string {
+  if (found.kind === "rest") return found.source === "manual" ? t("kind.rest_manual") : t("kind.rest");
+  if (found.source === "manual") return t("kind.training_manual");
+  return t("kind.training", { workouts: found.workouts.join(", ") });
 }
 
-export function proteinPerKilo(protein: number | null, kg: number | null): string | null {
+export function proteinPerKilo(protein: number | null, kg: number | null, t: Translate): string | null {
   if (!protein || !kg) return null;
-  return `Tu objetivo de proteína son ${amount(protein / kg, 1)} g por kilo. El mismo peso en Salud y en Training.`;
+  return t("goal.protein_per_kg", { grams: amount(protein / kg, 1) });
 }
 
 export function GoalsScreen() {
+  const t = useT();
   const [target, setTarget] = useState<Target | null>(null);
   const [goals, setGoals] = useState<GoalInfo[] | null>(null);
   const [kind, setKind] = useState<DayKindInfo | null>(null);
@@ -132,7 +130,7 @@ export function GoalsScreen() {
         setKind(current.day_kind);
         setTarget(found);
         setDraft(
-          Object.fromEntries(FIELDS.map(({ key }) => [key, found?.[key] == null ? "" : String(found[key])])),
+          Object.fromEntries(FIELDS.map((key) => [key, found?.[key] == null ? "" : String(found[key])])),
         );
         setReferences(refs.references);
         setProfile(refs.profile);
@@ -140,21 +138,21 @@ export function GoalsScreen() {
       })
       .catch((reason: unknown) => {
         if (reason instanceof Unauthorised) return signIn();
-        setError(reason instanceof Error ? reason.message : "No se ha podido cargar");
+        setError(reason instanceof Error ? reason.message : t("common.load_failed"));
       });
-  }, []);
+  }, [t]);
 
   useEffect(load, [load]);
 
   const save = () => {
-    const body = Object.fromEntries(FIELDS.map(({ key }) => [key, parsed(draft[key] ?? "")]));
+    const body = Object.fromEntries(FIELDS.map((key) => [key, parsed(draft[key] ?? "")]));
     saveTarget({ ...body, valid_from: todayIso() })
       .then((saved) => {
         setTarget(saved);
-        toast({ message: "Objetivo guardado desde hoy" });
+        toast({ message: t("target.saved") });
       })
       .catch((reason: unknown) =>
-        toast({ message: reason instanceof Error ? reason.message : "No se ha podido guardar", tone: "error" }),
+        toast({ message: reason instanceof Error ? reason.message : t("common.save_failed"), tone: "error" }),
       );
   };
 
@@ -176,7 +174,7 @@ export function GoalsScreen() {
         load();
       })
       .catch((reason: unknown) =>
-        toast({ message: reason instanceof Error ? reason.message : "No se ha podido guardar", tone: "error" }),
+        toast({ message: reason instanceof Error ? reason.message : t("common.save_failed"), tone: "error" }),
       );
   const saveEditing = () => {
     if (!editing) return;
@@ -186,17 +184,17 @@ export function GoalsScreen() {
     void setDayKind(todayIso(), next)
       .then(() => load())
       .catch((reason: unknown) =>
-        toast({ message: reason instanceof Error ? reason.message : "No se ha podido guardar", tone: "error" }),
+        toast({ message: reason instanceof Error ? reason.message : t("common.save_failed"), tone: "error" }),
       );
 
   return (
     <Screen>
-      <ScreenHeader title="Objetivo" />
+      <ScreenHeader title={t("tabs.goals")} />
       <OfflineNotice />
       {!references ? (
         error ? (
           <ErrorState
-            title="Macros no contesta"
+            title={t("common.not_answering")}
             detail={error}
             onRetry={() => {
               setError(null);
@@ -208,13 +206,13 @@ export function GoalsScreen() {
         )
       ) : (
         <>
-          <section className="surface macros-panel" aria-label="Objetivo del día">
-            <GroupLabel>Objetivo del día</GroupLabel>
+          <section className="surface macros-panel" aria-label={t("target.title")}>
+            <GroupLabel>{t("target.title")}</GroupLabel>
             <div className="macros-fields">
-              {FIELDS.map(({ key, label }) => (
+              {FIELDS.map((key) => (
                 <TextField
                   key={key}
-                  label={label}
+                  label={t(`target.${key}`)}
                   inputMode="decimal"
                   value={draft[key] ?? ""}
                   onChange={(text) => setDraft((current) => ({ ...current, [key]: text }))}
@@ -222,51 +220,61 @@ export function GoalsScreen() {
               ))}
             </div>
             <Hint>
-              {target ? `Vale desde el ${target.valid_from.split("-").reverse().join("/")}. ` : "Sin objetivo todavía. "}
-              Atajo para todos los días: las kcal, los hidratos y la grasa quedan como rango de ±10 %, y la proteína
-              como mínimo. Para un rango exacto o un tipo de día, en Objetivos.
+              {target
+                ? t("target.since", {
+                    day: dates({ day: "numeric", month: "long", year: "numeric" }).format(
+                      new Date(`${target.valid_from}T12:00:00`),
+                    ),
+                  })
+                : t("target.none")}{" "}
+              {t("target.shortcut")}
             </Hint>
             <Button variant="primary" onClick={save}>
-              Guardar desde hoy
+              {t("goal.save_today")}
             </Button>
           </section>
 
           <BodyWeightCard
             history={weight}
-            note={proteinPerKilo(target?.protein ?? null, weight?.latest?.kg ?? null) ?? undefined}
+            note={proteinPerKilo(target?.protein ?? null, weight?.latest?.kg ?? null, t) ?? undefined}
             onLog={(kg) =>
               logWeight(kg)
                 .then(setWeight)
                 .catch((reason: unknown) => {
-                  toast({ message: reason instanceof Error ? reason.message : "No se ha podido apuntar", tone: "error" });
+                  toast({ message: reason instanceof Error ? reason.message : t("weight.log_failed"), tone: "error" });
                   throw reason;
                 })
             }
           />
 
           {kind && (
-            <section className="surface macros-panel" aria-label="Tipo de día">
-              <GroupLabel>Tipo de día</GroupLabel>
-              <Hint>{dayKindLabel(kind)} Los objetivos de entreno o de descanso mandan sobre los de todos los días.</Hint>
+            <section className="surface macros-panel" aria-label={t("kind.title")}>
+              <GroupLabel>{t("kind.title")}</GroupLabel>
+              <Hint>
+                {dayKindLabel(kind, t)} {t("kind.override")}
+              </Hint>
               <ChoiceChips
-                label="Hoy"
+                label={t("day.today")}
                 value={kind.source === "manual" ? kind.kind : "auto"}
                 onChange={(next) => markDay(next === "auto" ? null : (next as DayKindInfo["kind"]))}
                 options={[
-                  { value: "auto", label: "Solo" },
-                  { value: "training", label: "Entreno" },
-                  { value: "rest", label: "Descanso" },
+                  { value: "auto", label: t("kind.auto") },
+                  { value: "training", label: t("profile.training") },
+                  { value: "rest", label: t("profile.rest") },
                 ]}
               />
             </section>
           )}
 
-          <section className="surface macros-panel" aria-label="Objetivos">
-            <GroupLabel>Objetivos</GroupLabel>
+          <section className="surface macros-panel" aria-label={t("goals.title")}>
+            <GroupLabel>{t("goals.title")}</GroupLabel>
             <Hint>
               {profile?.from_health
-                ? `Las de la EFSA para ${profile.sex === "female" ? "una mujer" : profile.sex === "male" ? "un hombre" : "un adulto"}${profile.age ? ` de ${profile.age} años` : ""}, de tu ficha de Apple Salud.`
-                : "Las de la EFSA para un adulto de 30 a 59 años: no hay ficha de Apple Salud."}
+                ? t(profile.age ? "goals.efsa_age" : "goals.efsa", {
+                    who: t(`goals.who.${profile.sex === "female" || profile.sex === "male" ? profile.sex : "adult"}`),
+                    age: profile.age ?? "",
+                  })
+                : t("goals.efsa_default")}
             </Hint>
             <List>
               {(goals ?? [])
@@ -276,8 +284,12 @@ export function GoalsScreen() {
                   <ListRow
                     key={goal.nutrient}
                     title={goal.name}
-                    subtitle={goal.profile === "any" ? SOURCES[goal.source] : `${SOURCES[goal.source]}, ${goal.profile === "training" ? "entreno" : "descanso"}`}
-                    value={goalLabel(goal)}
+                    subtitle={
+                      goal.profile === "any"
+                        ? source(t, goal.source)
+                        : `${source(t, goal.source)}, ${t(`profile.${goal.profile}`).toLowerCase()}`
+                    }
+                    value={goalLabel(goal, t)}
                     accessory="edit"
                     onClick={() => open(goal.nutrient)}
                   />
@@ -290,36 +302,45 @@ export function GoalsScreen() {
         <Sheet
           title={named.get(editing)?.name ?? editing}
           onClose={() => setEditing(null)}
-          action={{ label: "Guardar desde hoy", onClick: saveEditing, disabled: parsed(low) === null && parsed(high) === null }}
+          action={{ label: t("goal.save_today"), onClick: saveEditing, disabled: parsed(low) === null && parsed(high) === null }}
         >
-          <ChoiceChips label="Para" value={goalProfile} onChange={(next) => setGoalProfile(next as GoalInfo["profile"])} options={[...PROFILES]} />
+          <ChoiceChips
+            label={t("goal.for")}
+            value={goalProfile}
+            onChange={(next) => setGoalProfile(next as GoalInfo["profile"])}
+            options={PROFILES.map((value) => ({ value, label: t(`profile.${value}`) }))}
+          />
           {named.get(editing) && (SHARES.has(editing) || PER_KG.has(editing)) && (
             <ChoiceChips
-              label="En"
+              label={t("goal.in")}
               value={goalUnit}
               onChange={(next) => setGoalUnit(next as GoalInfo["unit"])}
               options={[
                 { value: "amount", label: named.get(editing)!.unit },
-                ...(SHARES.has(editing) ? [{ value: "kcal_pct", label: "% de las kcal" }] : []),
-                ...(PER_KG.has(editing) ? [{ value: "per_kg", label: `${named.get(editing)!.unit} por kilo` }] : []),
+                ...(SHARES.has(editing) ? [{ value: "kcal_pct", label: t("goal.pct_unit") }] : []),
+                ...(PER_KG.has(editing) ? [{ value: "per_kg", label: t("goal.per_kilo", { unit: named.get(editing)!.unit }) }] : []),
               ]}
             />
           )}
           {goalUnit === "per_kg" && (
             <Hint>
-              Sigue a tu peso, el mismo de Salud: {weight?.latest ? `hoy ${amount(weight.latest.kg)} kg.` : "aún no hay ninguno, y sin peso no se compara."}
+              {t("goal.follows_weight", {
+                weight: weight?.latest ? t("goal.weight_today", { kg: amount(weight.latest.kg) }) : t("goal.no_weight"),
+              })}
             </Hint>
           )}
           <div className="macros-fields">
-            <TextField label="Mínimo" inputMode="decimal" value={low} onChange={setLow} onSubmit={saveEditing} autoFocus />
-            <TextField label="Máximo" inputMode="decimal" value={high} onChange={setHigh} onSubmit={saveEditing} />
+            <TextField label={t("goal.min")} inputMode="decimal" value={low} onChange={setLow} onSubmit={saveEditing} autoFocus />
+            <TextField label={t("goal.max")} inputMode="decimal" value={high} onChange={setHigh} onSubmit={saveEditing} />
           </div>
-          <Hint>Un mínimo, un máximo o los dos. Lo de antes de hoy se sigue midiendo con lo que había.</Hint>
-          {editingGoal && <Hint>Ahora: {goalLabel(editingGoal)} ({SOURCES[editingGoal.source]}).</Hint>}
+          <Hint>{t("goal.min_max_hint")}</Hint>
+          {editingGoal && (
+            <Hint>{t("goal.now", { goal: goalLabel(editingGoal, t), source: source(t, editingGoal.source) })}</Hint>
+          )}
           <Button onClick={() => finish(saveGoal(editing, { min: null, max: null, unit: "amount", profile: goalProfile }))}>
-            Sin objetivo
+            {t("goal.clear")}
           </Button>
-          <Button onClick={() => finish(resetGoal(editing, goalProfile))}>Volver al de la EFSA</Button>
+          <Button onClick={() => finish(resetGoal(editing, goalProfile))}>{t("goal.reset")}</Button>
         </Sheet>
       )}
     </Screen>

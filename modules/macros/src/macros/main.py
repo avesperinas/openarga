@@ -17,6 +17,7 @@ import arga_nutrients
 from arga_module.service import INSUFFICIENT_PRIVILEGE, Service
 from arga_tenancy import require_person
 from macros import (
+    catalog,
     detail,
     expenditure,
     goals,
@@ -62,14 +63,14 @@ async def _edit(action, *args):
         async with as_app() as connection:
             return await action(connection, *args)
     except NotFound as error:
-        raise HTTPException(status_code=404, detail=f"no existe: {error}") from error
+        raise HTTPException(status_code=404, detail=f"not found: {error}") from error
     except Conflict as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
     except Unavailable as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
     except DBAPIError as error:
         if getattr(error.orig, "sqlstate", None) == INSUFFICIENT_PRIVILEGE:
-            raise HTTPException(status_code=403, detail="no puedes hacer esto aquí") from error
+            raise HTTPException(status_code=403, detail="you cannot do this here") from error
         raise
 
 
@@ -184,16 +185,14 @@ async def dish_to_recipe(entry_id: UUID, body: DishRecipe) -> dict:
     entry = await _edit(intake.one, str(entry_id))
     lines = [item for item in entry.items if item.dish == body.dish]
     if not lines:
-        raise HTTPException(status_code=404, detail=f"No hay un plato «{body.dish}» en esa entrada")
+        raise HTTPException(status_code=404, detail=f"There is no dish '{body.dish}' in that entry")
     foods = [
         item
         for item in lines
         if item.kind == "food" and item.food_id and item.unit in ("g", "ml", "unit")
     ]
     if not foods:
-        raise HTTPException(
-            status_code=409, detail="Ese plato no tiene alimentos de la despensa que guardar"
-        )
+        raise HTTPException(status_code=409, detail="That dish has no pantry foods to save")
     ingredients = [
         {
             "food_id": item.food_id,
@@ -473,7 +472,7 @@ async def read_nutrients() -> list[dict]:
     return [
         {
             "key": one.key,
-            "name": one.name,
+            "name": catalog.nutrient(one.key),
             "unit": one.unit,
             "group": one.group,
             "front": one.front,

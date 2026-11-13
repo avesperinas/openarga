@@ -23,8 +23,8 @@ async def log(api, food_id: str, grams: float, days_ago: int = 0) -> dict:
 async def test_a_branded_product_without_micros_dims_vitamin_d_and_sodium_goes_red(
     api, world
 ) -> None:
-    milk = await world.imported("milk", alias="leche")
-    found = (await api.get("/search", params={"q": "galletas"})).json()
+    milk = await world.imported("milk", alias="semi milk")
+    found = (await api.get("/search", params={"q": "biscuits"})).json()
     [cookies] = found["candidates"]
     await log(api, milk["id"], 250)
     for days_ago in range(3):
@@ -46,7 +46,7 @@ async def test_a_branded_product_without_micros_dims_vitamin_d_and_sodium_goes_r
     micros = {micro["key"]: micro for micro in week["micros"]}
 
     assert micros["vitamin_d"]["partial"] is True
-    assert "Galletas de marca" in micros["vitamin_d"]["missing"]
+    assert "Branded biscuits" in micros["vitamin_d"]["missing"]
     assert micros["vitamin_d"]["coverage"] < 0.8
     assert micros["sodium"]["status"] == "high"
     assert micros["sodium"]["partial"] is False
@@ -126,7 +126,7 @@ async def metric_points(schema) -> list[dict]:
 
 
 async def test_each_day_publishes_its_figures_and_only_what_changed(api, world, schema) -> None:
-    lentils = await world.imported("lentils", alias="lentejas")
+    lentils = await world.imported("lentils", alias="dry lentils")
     entry = await log(api, lentils["id"], 100)
 
     first = {point["key"]: point for point in await metric_points(schema)}
@@ -155,11 +155,11 @@ async def test_the_widgets_answer_their_kind(api, world) -> None:
     unknown = (await api.get("/widgets/week_short")).json()
     assert (unknown["state"], unknown["body"]["detail"]) == (
         "empty",
-        "Lo apuntado no trae micronutrientes",
+        "What you logged has no micronutrients",
     )
-    milk = await world.imported("milk", alias="leche")
+    milk = await world.imported("milk", alias="semi milk")
     await log(api, milk["id"], 200)
-    assert "objetivo" in no_target["body"]["detail"]
+    assert "goal" in no_target["body"]["detail"]
 
     await api.put("/target", json={"kcal": 2000, "protein": 140})
     ring = (await api.get("/widgets/today")).json()
@@ -167,16 +167,16 @@ async def test_the_widgets_answer_their_kind(api, world) -> None:
     week = (await api.get("/widgets/week_short")).json()
 
     assert (ring["state"], ring["body"]["value"], ring["body"]["target"]) == ("ready", 360, 2000)
-    assert [one["label"] for one in stats["body"]["stats"]] == ["Proteína", "Hidratos", "Grasa"]
+    assert [one["label"] for one in stats["body"]["stats"]] == ["Protein", "Carbs", "Fat"]
     assert week["state"] == "ready"
     rows = {row["label"]: row for row in week["body"]["rows"]}
-    assert rows["Vitamina D"]["value"] == "16 % · faltan datos"
+    assert rows["Vitamin D"]["value"] == "16 % · data missing"
     for kind, answer in (("ring", ring), ("stats", stats), ("list", week)):
         validate(kind, answer["body"], answer["state"])
 
 
 async def test_the_week_counts_only_complete_days_when_there_are_enough(api, world) -> None:
-    milk = await world.imported("milk", alias="leche")
+    milk = await world.imported("milk", alias="semi milk")
     for days_ago in (1, 2, 3):
         await log(api, milk["id"], 500, days_ago=days_ago)
         day = (today() - timedelta(days=days_ago)).isoformat()
@@ -192,7 +192,7 @@ async def test_the_week_counts_only_complete_days_when_there_are_enough(api, wor
 
 
 async def test_with_few_complete_days_the_week_counts_what_has_something(api, world) -> None:
-    milk = await world.imported("milk", alias="leche")
+    milk = await world.imported("milk", alias="semi milk")
     await log(api, milk["id"], 500, days_ago=1)
     await log(api, milk["id"], 500, days_ago=2)
     week = (await api.get("/week")).json()
@@ -200,7 +200,7 @@ async def test_with_few_complete_days_the_week_counts_what_has_something(api, wo
 
 
 async def test_the_trend_has_each_day_and_a_share_per_week(api, world) -> None:
-    milk = await world.imported("milk", alias="leche")
+    milk = await world.imported("milk", alias="semi milk")
     for days_ago in (1, 2, 3):
         await log(api, milk["id"], 500, days_ago=days_ago)
         day = (today() - timedelta(days=days_ago)).isoformat()
@@ -216,7 +216,7 @@ async def test_the_trend_has_each_day_and_a_share_per_week(api, world) -> None:
 
 
 async def test_suggestions_come_from_what_you_eat_more_than_once(api, world) -> None:
-    milk = await world.imported("milk", alias="leche")
+    milk = await world.imported("milk", alias="semi milk")
     for days_ago in (1, 2, 3):
         await log(api, milk["id"], 150, days_ago=days_ago)
         day = (today() - timedelta(days=days_ago)).isoformat()

@@ -3,38 +3,44 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import date
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_contracts as contracts
 from arga_contracts import records as write
 from macros import intake, summary
-from macros.common import today
+from macros.common import today, zone
 
 APP = "macros"
-MADRID = ZoneInfo("Europe/Madrid")
 PROPERTIES = (
     ("kcal", "kcal", 0),
-    ("protein", "proteina_g", 1),
-    ("carbs", "hidratos_g", 1),
-    ("fat", "grasa_g", 1),
-    ("fiber", "fibra_g", 1),
+    ("protein", "protein_g", 1),
+    ("carbs", "carbs_g", 1),
+    ("fat", "fat_g", 1),
+    ("fiber", "fiber_g", 1),
 )
-NAMES = {"protein": "proteína", "carbs": "hidratos", "fat": "grasa"}
+NAMES = {"protein": "protein", "carbs": "carbs", "fat": "fat"}
+
+
+def _number(value: float) -> str:
+    return f"{value:,.0f}"
+
+
+def _trimmed(value: float) -> str:
+    return f"{value:,.2f}".rstrip("0").rstrip(".")
 
 
 def _amount(item: intake.Item) -> str:
-    return f"{write.trimmed(item.quantity)} {item.unit}"
+    return f"{_trimmed(item.quantity)} {item.unit}"
 
 
 def _totals(nutrients: dict[str, float]) -> str:
     parts = []
     if "kcal" in nutrients:
-        parts.append(f"{write.number(nutrients['kcal'])} kcal")
+        parts.append(f"{_number(nutrients['kcal'])} kcal")
     for key in ("protein", "carbs", "fat"):
         if key in nutrients:
-            parts.append(f"{write.number(nutrients[key])} g {NAMES[key]}")
+            parts.append(f"{_number(nutrients[key])} g {NAMES[key]}")
     return " · ".join(parts)
 
 
@@ -50,15 +56,15 @@ def day(on: date, entries: list[intake.Entry]) -> dict[str, Any]:
     }
     lines = []
     for entry in sorted(entries, key=lambda one: one.eaten_at):
-        when = entry.eaten_at.astimezone(MADRID).strftime("%H:%M")
+        when = entry.eaten_at.astimezone(zone()).strftime("%H:%M")
         things = ", ".join(f"{item.name} ({_amount(item)})" for item in entry.items)
         kcal = entry.nutrients.get("kcal")
-        lines.append(f"- {when} · {things}" + (f" · {write.number(kcal)} kcal" if kcal else ""))
+        lines.append(f"- {when} · {things}" + (f" · {_number(kcal)} kcal" if kcal else ""))
     return contracts.record(
         id=f"day:{on.isoformat()}",
-        title="Comidas",
-        kind="Día",
-        href=f"/macros/dia/{on.isoformat()}",
+        title="Meals",
+        kind="Day",
+        href=f"/macros/day/{on.isoformat()}",
         day=on,
         properties=properties,
         body=write.sections(_totals(nutrients), "\n".join(lines)),
@@ -68,31 +74,31 @@ def day(on: date, entries: list[intake.Entry]) -> dict[str, Any]:
 def target(found: summary.Target) -> dict[str, Any]:
     values = {
         "kcal": found.kcal,
-        "proteina_g": found.protein,
-        "hidratos_g": found.carbs,
-        "grasa_g": found.fat,
+        "protein_g": found.protein,
+        "carbs_g": found.carbs,
+        "fat_g": found.fat,
     }
     lines = [
-        f"- {label}: {write.trimmed(value)} {unit}"
+        f"- {label}: {_trimmed(value)} {unit}"
         for label, value, unit in (
-            ("Energía", found.kcal, "kcal"),
-            ("Proteína", found.protein, "g"),
-            ("Hidratos", found.carbs, "g"),
-            ("Grasa", found.fat, "g"),
+            ("Energy", found.kcal, "kcal"),
+            ("Protein", found.protein, "g"),
+            ("Carbs", found.carbs, "g"),
+            ("Fat", found.fat, "g"),
         )
         if value is not None
     ]
     return contracts.record(
         id="target",
-        title="Objetivo",
-        kind="Objetivo",
-        href="/macros/objetivo",
+        title="Target",
+        kind="Target",
+        href="/macros/goals",
         properties={
-            "desde": found.valid_from.isoformat(),
+            "since": found.valid_from.isoformat(),
             **{key: value for key, value in values.items() if value is not None},
         },
         body=write.sections(
-            f"Lo que te propones comer cada día desde el {write.long_date(found.valid_from)}.",
+            f"What you aim to eat each day since {found.valid_from.isoformat()}.",
             "\n".join(lines),
         ),
     )

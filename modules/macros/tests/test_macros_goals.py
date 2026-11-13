@@ -65,7 +65,7 @@ async def goals_of(api) -> dict[str, dict]:
 async def eat(api, world, kcal: float, saturated: float = 0) -> None:
     grams = kcal / 5
     food = await world.manual_food(
-        f"Comida de {kcal}",
+        f"Meal of {kcal}",
         {"kcal": 500, "protein": 0, "fat": 10, "carbs": 0},
         nutrients={"saturated_fat": round(saturated / grams * 100, 4)},
     )
@@ -126,7 +126,7 @@ async def test_a_share_needs_something_that_has_kcal(api, world) -> None:
     refused = await call(api, "set_goal", {"nutrient": "caffeine", "max": 5, "unit": "kcal_pct"})
 
     assert refused.status_code == 422
-    assert "no aporta kcal" in refused.text
+    assert "has no kcal" in refused.text
 
 
 async def test_training_days_have_their_own_and_a_workout_makes_one(api, world, publishers) -> None:

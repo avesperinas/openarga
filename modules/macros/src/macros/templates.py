@@ -10,7 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from macros import intake
-from macros.common import MADRID, Conflict, NotFound, Unavailable, is_uuid, today
+from macros.common import Conflict, NotFound, Unavailable, is_uuid, today, zone
 
 
 class TemplateIn(BaseModel):
@@ -140,10 +140,10 @@ async def from_meal(
 ) -> Template:
     found = await intake.in_meal(connection, day, meal)
     if not found:
-        raise NotFound("nada apuntado en esa comida")
+        raise NotFound("anything logged at that meal")
     items = await _as_items(connection, [entry.id for entry in found])
     if len(items) > intake.MAX_ITEMS:
-        raise Conflict(f"un menú lleva hasta {intake.MAX_ITEMS} cosas")
+        raise Conflict(f"a menu holds up to {intake.MAX_ITEMS} things")
     return await save(connection, TemplateIn(name=name, items=items, daily_at=daily_at))
 
 
@@ -158,7 +158,7 @@ async def read(connection: AsyncConnection, template_id: str) -> Template:
         else None
     )
     if row is None:
-        raise NotFound(f"la plantilla {template_id}")
+        raise NotFound(f"template {template_id}")
     return _template(row)
 
 
@@ -167,14 +167,14 @@ async def find(connection: AsyncConnection, wanted: str) -> Template:
         return await read(connection, wanted)
     row = (await connection.execute(BY_NAME, {"name": wanted})).first()
     if row is None:
-        known = ", ".join(one.name for one in await all_of(connection)) or "ninguna"
-        raise NotFound(f"la plantilla «{wanted}» (hay: {known})")
+        known = ", ".join(one.name for one in await all_of(connection)) or "none"
+        raise NotFound(f"template '{wanted}' (there are: {known})")
     return _template(row)
 
 
 async def remove(connection: AsyncConnection, template_id: str) -> None:
     if (await connection.execute(DELETE, {"id": template_id})).first() is None:
-        raise NotFound(f"la plantilla {template_id}")
+        raise NotFound(f"template {template_id}")
 
 
 async def use(
@@ -188,7 +188,7 @@ async def use(
     try:
         items = [intake.ItemIn.model_validate(one) for one in template.items]
     except ValidationError as error:
-        raise Conflict(f"la plantilla «{template.name}» ya no se puede apuntar: {error}") from error
+        raise Conflict(f"template '{template.name}' can no longer be logged: {error}") from error
     request = intake.EntryIn(eaten_at=eaten_at, said=template.said, items=items, planned=planned)
     return await intake.log(connection, client, request, origin)  # type: ignore[arg-type]
 
@@ -198,7 +198,7 @@ async def materialise(connection: AsyncConnection, client: httpx.AsyncClient) ->
     created = 0
     for row in (await connection.execute(DAILY_DUE, {"day": day})).all():
         template = _template(row)
-        moment = datetime.combine(day, template.daily_at or time(), MADRID)
+        moment = datetime.combine(day, template.daily_at or time(), zone())
         try:
             async with connection.begin_nested():
                 entry = await use(connection, client, template, moment, planned=True)

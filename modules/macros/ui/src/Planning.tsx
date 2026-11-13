@@ -1,5 +1,5 @@
 import { useResource } from "@openarga/app";
-import { Button, Card, ConfirmPanel, Hint, List, ListRow, Notice, Sheet, TextField, useToast } from "@openarga/ui";
+import { Button, Card, ConfirmPanel, Hint, List, ListRow, Notice, Sheet, TextField, type Translate, useT, useToast } from "@openarga/ui";
 import { useEffect, useState } from "react";
 
 import {
@@ -13,13 +13,14 @@ import {
   saveTemplate,
   templateFromEntry,
 } from "./api";
+import { plural } from "./words";
 
-export function dailyLabel(template: Pick<Template, "daily_at">): string | undefined {
-  return template.daily_at ? `cada día a las ${template.daily_at.slice(0, 5)}` : undefined;
+export function dailyLabel(template: Pick<Template, "daily_at">, t: Translate): string | undefined {
+  return template.daily_at ? t("menu.daily_at", { at: template.daily_at.slice(0, 5) }) : undefined;
 }
 
-export function outdatedLabel(one: Outdated): string {
-  return `${one.name}: ${one.items} ${one.items === 1 ? "registro" : "registros"} con la versión anterior`;
+export function outdatedLabel(one: Outdated, t: Translate): string {
+  return `${one.name}: ${plural(t, "outdated.records", one.items)}`;
 }
 
 function failed(toast: ReturnType<typeof useToast>, reason: unknown, fallback: string) {
@@ -27,6 +28,7 @@ function failed(toast: ReturnType<typeof useToast>, reason: unknown, fallback: s
 }
 
 export function SaveTemplateSheet({ entry, onClose }: { entry: Entry; onClose: () => void }) {
+  const t = useT();
   const [name, setName] = useState(entry.said ?? entry.items.map((item) => item.name).join(" + "));
   const [at, setAt] = useState("");
   const toast = useToast();
@@ -34,24 +36,25 @@ export function SaveTemplateSheet({ entry, onClose }: { entry: Entry; onClose: (
   const save = () =>
     void templateFromEntry(entry.id, name.trim(), valid ? at.trim() : null)
       .then(() => {
-        toast({ message: "Menú guardado" });
+        toast({ message: t("menu.saved") });
         onClose();
       })
-      .catch((reason: unknown) => failed(toast, reason, "No se ha podido guardar"));
+      .catch((reason: unknown) => failed(toast, reason, t("common.save_failed")));
   return (
     <Sheet
-      title="Guardar como menú"
+      title={t("menu.save_as")}
       onClose={onClose}
-      action={{ label: "Guardar", onClick: save, disabled: !name.trim() || (at.trim() !== "" && !valid) }}
+      action={{ label: t("common.save"), onClick: save, disabled: !name.trim() || (at.trim() !== "" && !valid) }}
     >
-      <TextField label="Nombre" value={name} onChange={setName} autoFocus />
-      <TextField label="Cada día a las (opcional)" type="time" value={at} onChange={setAt} />
-      <Hint>Con hora, cada día aparece planificada a esa hora para confirmarla con un toque.</Hint>
+      <TextField label={t("common.name")} value={name} onChange={setName} autoFocus />
+      <TextField label={t("menu.daily_optional")} type="time" value={at} onChange={setAt} />
+      <Hint>{t("menu.daily_hint")}</Hint>
     </Sheet>
   );
 }
 
 export function OutdatedNotice({ onChanged }: { onChanged: () => void }) {
+  const t = useT();
   const [found, setFound] = useState<Outdated[]>([]);
   const toast = useToast();
   useEffect(() => {
@@ -64,20 +67,20 @@ export function OutdatedNotice({ onChanged }: { onChanged: () => void }) {
     <Notice tone="info">
       {found.map((one) => (
         <span key={one.recipe_id} className="macros-outdated">
-          {outdatedLabel(one)}.{" "}
+          {outdatedLabel(one, t)}.{" "}
           <Button
             variant="plain"
             onClick={() =>
               void recalculateRecipe(one.recipe_id)
                 .then((done) => {
-                  toast({ message: `Recalculados ${done.items}` });
+                  toast({ message: t("outdated.done", { count: done.items }) });
                   setFound((current) => current.filter((other) => other.recipe_id !== one.recipe_id));
                   onChanged();
                 })
-                .catch((reason: unknown) => failed(toast, reason, "No se ha podido recalcular"))
+                .catch((reason: unknown) => failed(toast, reason, t("outdated.failed")))
             }
           >
-            Recalcular
+            {t("outdated.recalculate")}
           </Button>
         </span>
       ))}
@@ -85,28 +88,29 @@ export function OutdatedNotice({ onChanged }: { onChanged: () => void }) {
   );
 }
 
-export function menuLine(menu: Pick<Template, "items" | "daily_at">): string {
-  const things = `${menu.items.length} ${menu.items.length === 1 ? "cosa" : "cosas"}`;
-  const daily = dailyLabel(menu);
+export function menuLine(menu: Pick<Template, "items" | "daily_at">, t: Translate): string {
+  const things = plural(t, "things", menu.items.length);
+  const daily = dailyLabel(menu, t);
   return daily ? `${things} · ${daily}` : things;
 }
 
 export function MenuSettings() {
+  const t = useT();
   const found = useResource("menus", readTemplates);
   const [open, setOpen] = useState<Template | null>(null);
   const menus = found.data ?? [];
   return (
-    <Card title="Menús">
+    <Card title={t("menu.menus")}>
       {menus.length === 0 ? (
         <Hint>
           {found.error
             ? found.error.message
-            : "Aún no hay menús. Guarda uno desde el menú de una comida, o díselo a Claude: «guarda el desayuno como menú»."}
+            : t("menu.none")}
         </Hint>
       ) : (
         <List>
           {menus.map((menu) => (
-            <ListRow key={menu.id} title={menu.name} subtitle={menuLine(menu)} accessory="edit" onClick={() => setOpen(menu)} />
+            <ListRow key={menu.id} title={menu.name} subtitle={menuLine(menu, t)} accessory="edit" onClick={() => setOpen(menu)} />
           ))}
         </List>
       )}
@@ -125,40 +129,41 @@ export function MenuSettings() {
 }
 
 function MenuSheet({ menu, onClose, onChanged }: { menu: Template; onClose: () => void; onChanged: () => void }) {
+  const t = useT();
   const before = menu.daily_at?.slice(0, 5) ?? "";
   const [at, setAt] = useState(before);
   const [step, setStep] = useState<"main" | "time" | "delete">("main");
   return (
     <Sheet title={menu.name} onClose={onClose}>
-      <Hint>{menuLine(menu)}</Hint>
+      <Hint>{menuLine(menu, t)}</Hint>
       {step === "main" && (
         <>
-          <TextField label="Cada día a las (opcional)" type="time" value={at} onChange={setAt} />
-          <Hint>Con hora, cada día aparece planificado a esa hora para confirmarlo con un toque.</Hint>
+          <TextField label={t("menu.daily_optional")} type="time" value={at} onChange={setAt} />
+          <Hint>{t("menu.daily_hint")}</Hint>
           <div className="macros-item-actions">
             <Button variant="tinted" icon="clock" disabled={at === before} onClick={() => setStep("time")}>
-              Guardar la hora
+              {t("menu.save_time")}
             </Button>
             <Button variant="destructive" icon="trash" onClick={() => setStep("delete")}>
-              Borrar
+              {t("common.delete")}
             </Button>
           </div>
         </>
       )}
       {step === "time" && (
         <ConfirmPanel
-          title="¿Cambiar la hora del menú?"
-          changes={[{ label: "Cada día", from: before || "nunca", to: at || "nunca" }]}
-          action="Guardar"
+          title={t("menu.time_title")}
+          changes={[{ label: t("menu.every_day"), from: before || t("menu.never"), to: at || t("menu.never") }]}
+          action={t("common.save")}
           onCancel={() => setStep("main")}
           onConfirm={() => saveTemplate({ name: menu.name, items: menu.items, said: menu.said, daily_at: at || null }).then(onChanged)}
         />
       )}
       {step === "delete" && (
         <ConfirmPanel
-          title={`¿Borrar «${menu.name}»?`}
-          detail="Lo ya apuntado con él se queda. No se puede deshacer."
-          action="Borrar menú"
+          title={t("common.delete_named", { name: menu.name })}
+          detail={t("menu.delete_detail")}
+          action={t("menu.delete")}
           destructive
           onCancel={() => setStep("main")}
           onConfirm={() => removeTemplate(menu.id).then(onChanged)}

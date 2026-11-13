@@ -1,8 +1,8 @@
-import type { Drinks, Item, Meal, MealKey, Unit } from "./api";
+import { type Locale, type Translate, numbers, regional, zonedDates } from "@openarga/ui";
+
+import type { Drinks, Item, Meal, MealKey } from "./api";
 
 const GROUPED = { useGrouping: "always" } as unknown as Intl.NumberFormatOptions;
-const ONE = new Intl.NumberFormat("es-ES", { ...GROUPED, maximumFractionDigits: 1 });
-const NONE = new Intl.NumberFormat("es-ES", { ...GROUPED, maximumFractionDigits: 0 });
 
 export type Row = { kind: "item"; item: Item } | { kind: "dish"; name: string; items: Item[] };
 
@@ -19,37 +19,41 @@ export function rows(items: Item[]): Row[] {
 
 export function amount(value: number | null | undefined, digits = 1): string {
   if (value === null || value === undefined) return "—";
-  return (digits === 0 ? NONE : ONE).format(value);
+  return numbers({ ...GROUPED, maximumFractionDigits: digits }).format(value);
 }
 
-const SHORT: Record<Unit, string> = { g: "g", ml: "ml", unit: "ud", serving: "rac.", kcal: "kcal" };
+export function plural(t: Translate, key: string, count: number, vars: Record<string, string | number> = {}): string {
+  return t(`${key}.${count === 1 ? "one" : "other"}`, { count, ...vars });
+}
 
-export function quantityLabel(item: Pick<Item, "quantity" | "unit" | "estimated"> & { portion?: string | null }): string {
-  if (item.portion && item.unit === "unit") {
-    const text = measureCount(item.quantity, item.portion);
-    return item.estimated ? `≈ ${text}` : text;
-  }
-  const unit = item.unit === "serving" && item.quantity === 1 ? "ración" : SHORT[item.unit];
-  const text = `${amount(item.quantity)} ${item.unit === "serving" && item.quantity !== 1 ? "raciones" : unit}`;
+type Quantity = Pick<Item, "quantity" | "unit" | "estimated"> & { portion?: string | null };
+
+export function quantityLabel(item: Quantity, t: Translate, locale: Locale): string {
+  const text =
+    item.portion && item.unit === "unit"
+      ? measureCount(item.quantity, item.portion, locale)
+      : item.unit === "serving"
+        ? plural(t, "unit.serving", item.quantity, { amount: amount(item.quantity) })
+        : `${amount(item.quantity)} ${t(`unit.${item.unit}`)}`;
   return item.estimated ? `≈ ${text}` : text;
 }
 
-export function itemTag(item: Pick<Item, "kind">): string | undefined {
-  if (item.kind === "recipe") return "receta";
-  if (item.kind === "quick") return "a ojo";
+export function itemTag(item: Pick<Item, "kind">, t: Translate): string | undefined {
+  if (item.kind === "recipe") return t("tag.recipe");
+  if (item.kind === "quick") return t("tag.quick");
   return undefined;
 }
 
 export function timeOf(iso: string): string {
-  return new Date(iso).toLocaleTimeString("es-ES", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/Madrid",
-  });
+  return zonedDates({ hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+}
+
+export function clockOf(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: regional().timeZone });
 }
 
 export function todayIso(now = new Date()): string {
-  return now.toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+  return now.toLocaleDateString("sv-SE", { timeZone: regional().timeZone });
 }
 
 export function shiftDay(day: string, by: number): string {
@@ -58,36 +62,30 @@ export function shiftDay(day: string, by: number): string {
   return moved.toISOString().slice(0, 10);
 }
 
-export function dayTitle(day: string, today: string): string {
-  if (day === today) return "Hoy";
-  if (day === shiftDay(today, -1)) return "Ayer";
-  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
-  const text = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("es-ES", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  });
-  return text.charAt(0).toUpperCase() + text.slice(1);
+export function dayTitle(day: string, today: string, t: Translate, locale: Locale): string {
+  if (day === today) return t("day.today");
+  if (day === shiftDay(today, -1)) return t("day.yesterday");
+  return longDate(day, locale);
 }
 
-export function remainingLabel(left: number, unit: string): string {
-  return left >= 0 ? `quedan ${amount(left, 0)} ${unit}` : `te pasas ${amount(-left, 0)} ${unit}`;
+export function remainingLabel(left: number, unit: string, t: Translate): string {
+  const value = `${amount(Math.abs(left), 0)} ${unit}`;
+  return left >= 0 ? t("remaining.left", { value }) : t("remaining.over", { value });
 }
 
-export function drinksLine(drinks: Drinks): string {
+export function drinksLine(drinks: Drinks, t: Translate): string {
   const parts = [];
-  if (drinks.caffeine_mg !== null) parts.push(`${amount(drinks.caffeine_mg, 0)} mg de cafeína`);
+  if (drinks.caffeine_mg !== null) parts.push(t("drinks.caffeine", { mg: amount(drinks.caffeine_mg, 0) }));
   if (drinks.alcohol_g !== null) {
-    parts.push(`${amount(drinks.alcohol_units)} ud de alcohol (${amount(drinks.alcohol_g)} g)`);
+    parts.push(t("drinks.alcohol", { units: amount(drinks.alcohol_units), grams: amount(drinks.alcohol_g) }));
   }
-  parts.push(`${amount(drinks.water_l)} l de agua`);
+  parts.push(t("drinks.water", { litres: amount(drinks.water_l) }));
   return parts.join(" · ");
 }
 
-export function longDate(day: string): string {
+export function longDate(day: string, locale: Locale): string {
   const [y, m, d] = day.split("-").map(Number) as [number, number, number];
-  const text = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("es-ES", {
+  const text = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -96,8 +94,8 @@ export function longDate(day: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-export function mealLine(meal: Pick<Meal, "kcal" | "protein">): string {
-  return `${amount(meal.kcal, 0)} kcal · ${amount(meal.protein, 0)} g de proteína`;
+export function mealLine(meal: Pick<Meal, "kcal" | "protein">, t: Translate): string {
+  return t("meal.line", { kcal: amount(meal.kcal, 0), protein: amount(meal.protein, 0) });
 }
 
 const MEAL_STARTS: [string, MealKey][] = [
@@ -116,25 +114,41 @@ export function mealOfTime(hhmm: string): MealKey {
 }
 
 export function nowTime(now = new Date()): string {
-  return now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Madrid" });
+  return now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: regional().timeZone });
 }
 
-export function withThis(kcal: number, protein: number, target: { kcal: number | null; protein: number | null }): string {
-  const energy = target.kcal ? `${amount(kcal, 0)} de ${amount(target.kcal, 0)} kcal` : `${amount(kcal, 0)} kcal`;
+export function withThis(
+  kcal: number,
+  protein: number,
+  target: { kcal: number | null; protein: number | null },
+  t: Translate,
+): string {
+  const energy = target.kcal
+    ? t("with_this.kcal_of", { value: amount(kcal, 0), target: amount(target.kcal, 0) })
+    : t("with_this.kcal", { value: amount(kcal, 0) });
   const body = target.protein
-    ? `${amount(protein, 0)} de ${amount(target.protein, 0)} g de proteína`
-    : `${amount(protein, 0)} g de proteína`;
-  return `Con esto: ${energy} · ${body}`;
+    ? t("with_this.protein_of", { value: amount(protein, 0), target: amount(target.protein, 0) })
+    : t("with_this.protein", { value: amount(protein, 0) });
+  return t("with_this.line", { energy, protein: body });
 }
 
-export function measureCount(quantity: number, name: string): string {
+export function measureCount(quantity: number, name: string, locale: Locale): string {
   if (quantity === 1) return `1 ${name}`;
-  const plural = /[aeiouáéó]$/i.test(name) ? `${name}s` : /s$/i.test(name) ? name : `${name}es`;
-  return `${amount(quantity)} ${plural}`;
+  const many =
+    locale === "es"
+      ? /[aeiou\u00e1\u00e9\u00f3]$/i.test(name)
+        ? `${name}s`
+        : /s$/i.test(name)
+          ? name
+          : `${name}es`
+      : /s$/i.test(name)
+        ? name
+        : `${name}s`;
+  return `${amount(quantity)} ${many}`;
 }
 
-export function doubtLine(doubt: "first" | "unsure" | null | undefined): string | undefined {
-  if (doubt === "first") return "¿Es este? Primera vez que lo apuntas";
-  if (doubt === "unsure") return "¿Es este? Claude no lo tenía claro";
+export function doubtLine(doubt: "first" | "unsure" | null | undefined, t: Translate): string | undefined {
+  if (doubt === "first") return t("doubt.first");
+  if (doubt === "unsure") return t("doubt.unsure");
   return undefined;
 }

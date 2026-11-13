@@ -51,7 +51,7 @@ async def test_correcting_the_food_later_does_not_change_what_was_eaten(api, wor
 
 
 async def test_micros_come_from_the_pantry_multiplied_by_the_grams(api, world) -> None:
-    lentils = await world.imported("lentils", alias="lentejas")
+    lentils = await world.imported("lentils", alias="dry lentils")
 
     await log(api, {"food_id": lentils["id"], "quantity": 80, "unit": "g", "estimated": True})
 
@@ -74,37 +74,39 @@ async def test_nobody_can_send_a_nutrient_with_a_line(api, world) -> None:
 
 async def test_units_need_the_weight_of_one_and_say_so(api, world) -> None:
     egg = await world.manual_food(
-        "Huevo", {"kcal": 143, "protein": 12.6, "fat": 9.5, "carbs": 0.7}, grams_per_unit=60
+        "Egg", {"kcal": 143, "protein": 12.6, "fat": 9.5, "carbs": 0.7}, grams_per_unit=60
     )
-    bread = await world.manual_food("Pan", {"kcal": 266, "protein": 7.6, "fat": 3.3, "carbs": 50.6})
+    bread = await world.manual_food(
+        "Bread", {"kcal": 266, "protein": 7.6, "fat": 3.3, "carbs": 50.6}
+    )
 
     ok = await log(api, {"food_id": egg, "quantity": 2, "unit": "unit"})
     assert ok.json()["items"][0]["grams"] == 120
     refused = await log(api, {"food_id": bread, "quantity": 1, "unit": "unit"})
     assert refused.status_code == 409
-    assert "gramos" in refused.json()["detail"]
+    assert "grams" in refused.json()["detail"]
 
 
 async def test_a_house_portion_counts_its_grams_and_says_which(api, world) -> None:
     ham = await world.manual_food(
-        "Jamón",
+        "Ham",
         {"kcal": 250, "protein": 30, "fat": 14, "carbs": 0},
         grams_per_unit=100,
-        portions=[{"name": "Loncha", "grams": 15}],
+        portions=[{"name": "Slice", "grams": 15}],
     )
 
-    logged = await log(api, {"food_id": ham, "quantity": 3, "unit": "unit", "portion": "loncha"})
+    logged = await log(api, {"food_id": ham, "quantity": 3, "unit": "unit", "portion": "slice"})
 
     assert logged.status_code == 201, logged.text
     [item] = logged.json()["items"]
-    assert (item["name"], item["grams"], item["portion"]) == ("Jamón", 45, "loncha")
+    assert (item["name"], item["grams"], item["portion"]) == ("Ham", 45, "slice")
     unknown = await log(api, {"food_id": ham, "quantity": 1, "unit": "unit", "portion": "taco"})
     assert unknown.status_code == 409
-    assert "loncha" in unknown.json()["detail"]
+    assert "slice" in unknown.json()["detail"]
 
 
 async def test_one_package_from_outside_counts_its_label_and_works_in_a_menu(api, world) -> None:
-    assert (await api.get("/search", params={"q": "galletas"})).status_code == 200
+    assert (await api.get("/search", params={"q": "biscuits"})).status_code == 200
     logged = await log(
         api,
         {
@@ -117,12 +119,14 @@ async def test_one_package_from_outside_counts_its_label_and_works_in_a_menu(api
     )
     assert logged.status_code == 201, logged.text
     [item] = logged.json()["items"]
-    assert (item["name"], item["grams"], item["portion"]) == ("Galletas de marca", 200, "envase")
+    assert (item["name"], item["grams"], item["portion"]) == ("Branded biscuits", 200, "envase")
     assert item["nutrients"]["kcal"] == pytest.approx(960)
+    [kept] = (await world.recipes.get("/foods", params={"query": "biscuits"})).json()
+    serving = next(one["name"] for one in kept["portions"] if one["grams"] == 30)
 
     two = await log(
         api,
-        {"food_id": item["food_id"], "quantity": 2, "unit": "unit", "portion": "ración"},
+        {"food_id": item["food_id"], "quantity": 2, "unit": "unit", "portion": serving},
     )
     assert two.json()["items"][0]["grams"] == 60
 
@@ -152,7 +156,7 @@ async def test_a_supplement_is_logged_in_its_units(api, world) -> None:
         "Omega 3",
         {"kcal": 9, "protein": 0, "fat": 1, "carbs": 0},
         category_id="supplement",
-        per_unit="cápsula",
+        per_unit="capsule",
         nutrients={"omega3_epa": 0.33, "vitamin_d": 5},
     )
 
@@ -166,7 +170,7 @@ async def test_a_supplement_is_logged_in_its_units(api, world) -> None:
     assert day["nutrients"]["kcal"] == 18
     assert day["nutrients"]["vitamin_d"] == 10
     assert in_grams.status_code == 409
-    assert "cápsula" in in_grams.json()["detail"]
+    assert "capsule" in in_grams.json()["detail"]
 
     changed = await api.patch(
         f"/entries/{logged.json()['id']}",
@@ -185,7 +189,7 @@ async def test_replacing_a_food_in_recipes_recalculates_what_was_eaten(api, worl
         "Leche entera", {"kcal": 64, "protein": 3.2, "fat": 3.6, "carbs": 4.7}
     )
     first = await log(api, {"food_id": wrong, "quantity": 250, "unit": "g"})
-    said = await log(api, {"food_id": wrong, "name": "mi leche", "quantity": 100, "unit": "g"})
+    said = await log(api, {"food_id": wrong, "name": "my milk", "quantity": 100, "unit": "g"})
     assert first.status_code == said.status_code == 201
 
     body = {"old_food_id": wrong, "new_food_id": right}
@@ -197,18 +201,18 @@ async def test_replacing_a_food_in_recipes_recalculates_what_was_eaten(api, worl
     day = (await api.get("/day")).json()
     assert day["nutrients"]["kcal"] == 224
     names = sorted(item["name"] for entry in day["entries"] for item in entry["items"])
-    assert names == ["Leche entera", "mi leche"]
+    assert names == ["Leche entera", "my milk"]
     again = (await world.recipes.post("/tools/replace_food", json=body, headers=scopes)).json()
     assert again["content"]["replaced"]["macros"]["items"] == 0
 
 
 async def test_a_recipe_goes_in_servings_and_keeps_its_version(api, world) -> None:
-    lentils = await world.imported("lentils", alias="lentejas")
+    lentils = await world.imported("lentils", alias="dry lentils")
     recipe = (
         await world.recipes.post(
             "/recipes",
             json={
-                "name": "Lentejas estofadas",
+                "name": "Stewed lentils",
                 "servings": 4,
                 "ingredients": [{"food_id": lentils["id"], "quantity": 400, "unit": "g"}],
             },
@@ -222,7 +226,7 @@ async def test_a_recipe_goes_in_servings_and_keeps_its_version(api, world) -> No
     ).json()
 
     [item] = entry["items"]
-    assert (item["name"], item["quantity"], item["grams"]) == ("Lentejas estofadas", 2, 200)
+    assert (item["name"], item["quantity"], item["grams"]) == ("Stewed lentils", 2, 200)
     assert entry["nutrients"]["kcal"] == pytest.approx(704)
     assert entry["nutrients"]["iron"] == pytest.approx(13)
 
@@ -254,7 +258,7 @@ async def test_by_eye_and_water(api, world) -> None:
 async def test_something_from_outside_is_imported_into_the_pantry_as_it_is_logged(
     api, world
 ) -> None:
-    found = (await api.get("/search", params={"q": "galletas"})).json()
+    found = (await api.get("/search", params={"q": "biscuits"})).json()
     [cookies] = found["candidates"]
 
     entry = (
@@ -271,14 +275,14 @@ async def test_something_from_outside_is_imported_into_the_pantry_as_it_is_logge
 
     assert entry["nutrients"]["kcal"] == 144
     assert entry["nutrients"]["sodium"] == pytest.approx(270)
-    [kept] = (await world.recipes.get("/foods", params={"query": "galletas"})).json()
+    [kept] = (await world.recipes.get("/foods", params={"query": "biscuits"})).json()
     assert kept["id"] == entry["items"][0]["food_id"]
 
 
 async def test_changing_the_quantity_recalculates_from_what_was_kept_even_offline(
     api, world
 ) -> None:
-    lentils = await world.imported("lentils", alias="lentejas")
+    lentils = await world.imported("lentils", alias="dry lentils")
     entry = (await log(api, {"food_id": lentils["id"], "quantity": 100, "unit": "g"})).json()
     world.recipes_down()
 
@@ -299,7 +303,7 @@ async def test_with_recipes_down_nothing_new_is_logged_and_it_says_so(api, world
 
     refused = await log(api, {"food_id": rice, "quantity": 100, "unit": "g"})
     assert refused.status_code == 503
-    assert "Recipes no contesta" in refused.json()["detail"]
+    assert "Recipes is not answering" in refused.json()["detail"]
     assert "Error" not in refused.json()["detail"]
     assert "Timeout" not in refused.json()["detail"]
     assert (await api.get("/search", params={"q": "arroz"})).status_code == 503
@@ -310,7 +314,7 @@ async def test_with_recipes_down_nothing_new_is_logged_and_it_says_so(api, world
 
 
 async def test_a_line_is_duplicated_and_deleted_and_the_last_takes_its_entry(api, world) -> None:
-    coffee = await world.manual_food("Café", {"kcal": 1, "protein": 0.1, "fat": 0, "carbs": 0})
+    coffee = await world.manual_food("Coffee", {"kcal": 1, "protein": 0.1, "fat": 0, "carbs": 0})
     entry = (await log(api, {"food_id": coffee, "quantity": 200, "unit": "ml"})).json()
     item = entry["items"][0]["id"]
 
@@ -324,7 +328,7 @@ async def test_a_line_is_duplicated_and_deleted_and_the_last_takes_its_entry(api
 
 
 async def test_the_usual_and_yesterday_come_back_with_one_tap(api, world) -> None:
-    coffee = await world.manual_food("Café", {"kcal": 1, "protein": 0.1, "fat": 0, "carbs": 0})
+    coffee = await world.manual_food("Coffee", {"kcal": 1, "protein": 0.1, "fat": 0, "carbs": 0})
     from macros.common import now
     from macros.meals import meal_of
 
@@ -336,7 +340,7 @@ async def test_the_usual_and_yesterday_come_back_with_one_tap(api, world) -> Non
         await log(api, {"food_id": coffee, "quantity": 200, "unit": "ml"}, eaten_at=earlier)
 
     usual = (await api.get(f"/usual/{meal_of(moment)}")).json()
-    assert (usual["usual"]["label"], usual["usual"]["times"]) == ("Café", 3)
+    assert (usual["usual"]["label"], usual["usual"]["times"]) == ("Coffee", 3)
     assert len(usual["yesterday"]) == 1
     yesterday = (moment - __import__("datetime").timedelta(days=1)).date().isoformat()
     [entry] = (await api.get("/day", params={"day": yesterday})).json()["entries"]
@@ -368,25 +372,25 @@ async def test_a_dish_without_recipe_keeps_its_name_and_can_be_renamed_or_undone
     api, world
 ) -> None:
     oats = await world.manual_food("Avena", {"kcal": 380, "protein": 13, "fat": 7, "carbs": 60})
-    egg = await world.manual_food("Huevo", {"kcal": 140, "protein": 12, "fat": 10, "carbs": 1})
+    egg = await world.manual_food("Egg", {"kcal": 140, "protein": 12, "fat": 10, "carbs": 1})
     created = await api.post(
         "/entries",
         json={
             "items": [
-                {"food_id": oats, "quantity": 50, "dish": "Tortita de avena"},
-                {"food_id": egg, "quantity": 60, "dish": "Tortita de avena"},
+                {"food_id": oats, "quantity": 50, "dish": "Oat pancake"},
+                {"food_id": egg, "quantity": 60, "dish": "Oat pancake"},
             ]
         },
     )
     assert created.status_code == 201, created.text
     entry = created.json()
-    assert [item["dish"] for item in entry["items"]] == ["Tortita de avena", "Tortita de avena"]
+    assert [item["dish"] for item in entry["items"]] == ["Oat pancake", "Oat pancake"]
 
     again = (await api.post(f"/entries/{entry['id']}/repeat")).json()
-    assert [item["dish"] for item in again["items"]] == ["Tortita de avena", "Tortita de avena"]
+    assert [item["dish"] for item in again["items"]] == ["Oat pancake", "Oat pancake"]
 
     renamed = await api.put(
-        f"/entries/{entry['id']}/dish", json={"from": "Tortita de avena", "to": "Tortita"}
+        f"/entries/{entry['id']}/dish", json={"from": "Oat pancake", "to": "Tortita"}
     )
     assert renamed.status_code == 200, renamed.text
     assert {item["dish"] for item in renamed.json()["items"]} == {"Tortita"}
@@ -394,7 +398,9 @@ async def test_a_dish_without_recipe_keeps_its_name_and_can_be_renamed_or_undone
         await api.put(f"/entries/{entry['id']}/dish", json={"from": "Tortita", "to": None})
     ).json()
     assert {item["dish"] for item in undone["items"]} == {None}
-    assert (await api.put(f"/entries/{entry['id']}/dish", json={"from": "Nada"})).status_code == 404
+    assert (
+        await api.put(f"/entries/{entry['id']}/dish", json={"from": "Nothing"})
+    ).status_code == 404
 
 
 async def test_a_dish_is_saved_as_a_recipe_only_when_asked(api, world) -> None:
