@@ -55,7 +55,7 @@ def test_what_does_not_fit_says_why(event_type: str, payload: dict) -> None:
 
 
 def test_a_type_that_is_not_a_source_contract_is_refused() -> None:
-    with pytest.raises(sources.BadSource, match="no es un contrato de fuente"):
+    with pytest.raises(sources.BadSource, match="is not a source contract"):
         sources.check("money.movement", MOVEMENT)
 
 
@@ -96,7 +96,7 @@ def test_a_holding_says_how_much_or_what_it_is_worth() -> None:
     base = {"account": "plan", "symbol": "FUND", "on": "2026-10-01"}
     sources.check("finance.holding", {**base, "quantity": "2.5"})
     sources.check("finance.holding", {**base, "value": "1200.50"})
-    with pytest.raises(sources.BadSource, match="cuánto se tiene o lo que vale"):
+    with pytest.raises(sources.BadSource, match="how much is held or what it is worth"):
         sources.check("finance.holding", base)
 
 
@@ -149,7 +149,7 @@ HEART = {"date": "2026-10-14", "step": 1, "buckets": []}
 def test_the_pulse_of_a_day_goes_at_noon_utc_of_that_day() -> None:
     sources.check_ts("health.heart", HEART, "2026-10-14T12:00:00+00:00")
     sources.check_ts("health.heart", HEART, "2026-10-14T14:00:00+02:00")
-    with pytest.raises(sources.BadSource, match="mediodía"):
+    with pytest.raises(sources.BadSource, match="noon UTC"):
         sources.check_ts("health.heart", HEART, "2026-10-14T07:00:00+00:00")
     sources.check_ts("health.steps", {"date": "2026-10-14", "steps": 1}, "2026-10-14T07:00:00Z")
     with pytest.raises(sources.BadSource):

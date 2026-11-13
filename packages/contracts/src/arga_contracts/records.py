@@ -25,7 +25,7 @@ EVERY_SECONDS = float(os.environ.get("RECORDS_EVERY_SECONDS", "120"))
 
 def _outbox(app: str) -> str:
     if not APP.fullmatch(app):
-        raise ValueError(f"'{app}' no es el id de una app")
+        raise ValueError(f"'{app}' is not an app id")
     return f'"{app}"."{app}_outbox"'
 
 
@@ -76,7 +76,7 @@ async def publish(
     now: dict[str, dict[str, Any]] = {}
     for one in records:
         if one["id"] in now:
-            raise BadContract(f"Record no casa: id repetido: {one['id']}")
+            raise BadContract(f"Record does not match: repeated id: {one['id']}")
         now[one["id"]] = one
     published = {
         row.item["id"]: (row.row_id, row.item)
@@ -121,8 +121,8 @@ async def prune(connection: AsyncConnection, app: str) -> int:
     try:
         async with connection.begin_nested():
             result = await connection.execute(text(prune_superseded(app)))
-    except Exception as error:  # noqa: BLE001 - podar no puede parar lo que se publica
-        print(f"poda · {app}: {type(error).__name__}: {error}", file=sys.stderr, flush=True)
+    except Exception as error:  # noqa: BLE001 - pruning must not stop publishing
+        print(f"prune · {app}: {type(error).__name__}: {error}", file=sys.stderr, flush=True)
         return 0
     return result.rowcount or 0
 
@@ -175,8 +175,8 @@ async def refresh(
             async with engine().begin() as connection:
                 await connection.execute(text(f'set local role "mod_{app}"'))
                 return await publish(connection, app, await build(connection))
-    except Exception as error:  # noqa: BLE001 - las fichas no paran lo que publica la app
-        print(f"fichas · {app}: {type(error).__name__}: {error}", file=sys.stderr, flush=True)
+    except Exception as error:  # noqa: BLE001 - records must not stop what the app publishes
+        print(f"records · {app}: {type(error).__name__}: {error}", file=sys.stderr, flush=True)
         return None
 
 

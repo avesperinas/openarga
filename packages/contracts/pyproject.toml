@@ -1,7 +1,7 @@
 [project]
 name = "arga-contracts"
 version = "0.1.0"
-description = "Lo que una app comparte con otra: las formas comunes (ADR-0081)"
+description = "What one app shares with another: the common shapes"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "arga-agenda",

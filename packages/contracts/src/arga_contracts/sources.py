@@ -23,7 +23,7 @@ def _decimal(value: str | int | float) -> str | int | float:
     try:
         Decimal(str(value))
     except InvalidOperation as error:
-        raise ValueError(f"'{value}' no es una cantidad") from error
+        raise ValueError(f"'{value}' is not an amount") from error
     return value
 
 
@@ -39,7 +39,7 @@ def _instant(value: str) -> str:
 
 def _month(value: str) -> str:
     if not re.fullmatch(r"\d{4}-\d{2}", value):
-        raise ValueError(f"'{value}' no es un mes (AAAA-MM)")
+        raise ValueError(f"'{value}' is not a month (YYYY-MM)")
     return value
 
 
@@ -156,7 +156,7 @@ class FinanceHolding(Source):
     @model_validator(mode="after")
     def _quantity_or_value(self) -> FinanceHolding:
         if self.quantity is None and self.value is None:
-            raise ValueError("una posición dice cuánto se tiene o lo que vale")
+            raise ValueError("a position says how much is held or what it is worth")
         return self
 
 
@@ -186,9 +186,9 @@ class FinanceTrade(Source):
     @model_validator(mode="after")
     def _priced(self) -> FinanceTrade:
         if Decimal(str(self.quantity)) <= 0:
-            raise ValueError("quantity: lo que se mueve es más que cero")
+            raise ValueError("quantity: what moves is more than zero")
         if self.side in ("buy", "sell") and self.price is None:
-            raise ValueError("price: una compra o una venta dice a cuánto")
+            raise ValueError("price: a buy or a sell says at what price")
         return self
 
 
@@ -356,7 +356,7 @@ LEISURE_CATEGORIES = ("eat", "stage", "culture", "festival", "outdoors")
 
 def _leisure_category(value: str) -> str:
     if value not in LEISURE_CATEGORIES:
-        raise ValueError(f"'{value}' no es una de {', '.join(LEISURE_CATEGORIES)}")
+        raise ValueError(f"'{value}' is not one of {', '.join(LEISURE_CATEGORIES)}")
     return value
 
 
@@ -417,22 +417,20 @@ def check_ts(event_type: str, payload: dict[str, Any], ts: str | datetime) -> No
         when = datetime.fromisoformat(ts) if isinstance(ts, str) else ts
         expected = datetime.fromisoformat(f"{payload['date']}T12:00:00+00:00")
     except (KeyError, TypeError, ValueError) as error:
-        raise BadSource(f"{event_type} sin un ts y un día que se puedan leer: {error}") from error
+        raise BadSource(f"{event_type} without a readable ts and day: {error}") from error
     if when.tzinfo is None or when != expected:
-        raise BadSource(
-            f"{event_type} lleva en ts {when.isoformat()}, y no el mediodía UTC de su día"
-        )
+        raise BadSource(f"{event_type} has ts {when.isoformat()}, not noon UTC of its day")
 
 
 def check(event_type: str, payload: dict[str, Any]) -> None:
     shape = SHAPES.get(event_type)
     if shape is None:
-        raise BadSource(f"'{event_type}' no es un contrato de fuente")
+        raise BadSource(f"'{event_type}' is not a source contract")
     try:
         shape.model_validate(payload)
     except ValidationError as error:
         where = "; ".join(
-            f"{'.'.join(str(part) for part in detail['loc']) or '<raíz>'}: {detail['msg']}"
+            f"{'.'.join(str(part) for part in detail['loc']) or '<root>'}: {detail['msg']}"
             for detail in error.errors()
         )
-        raise BadSource(f"{event_type} no cumple su contrato: {where}") from error
+        raise BadSource(f"{event_type} does not meet its contract: {where}") from error

@@ -53,15 +53,15 @@ def test_a_record_is_a_note_of_an_app_or_a_day() -> None:
     ("changes", "where"),
     [
         ({"properties": {"Valoración": 4}}, "properties"),
-        ({"properties": {"arga": "otro:1"}}, "la pone quien escribe"),
-        ({"properties": {"tipo": "Otro"}}, "la pone quien escribe"),
-        ({"properties": {"nota": float("nan")}}, "número"),
+        ({"properties": {"arga": "otro:1"}}, "whoever writes"),
+        ({"properties": {"tipo": "Otro"}}, "whoever writes"),
+        ({"properties": {"nota": float("nan")}}, "finite number"),
         ({"properties": {"nota": {"a": 1}}}, "properties"),
         ({"folder": "Libros/../Otros"}, "folder"),
         ({"folder": "/Libros"}, "folder"),
         ({"href": "https://fuera.example"}, "href"),
         ({"id": "con espacio"}, "id"),
-        ({"body": "a\n%% arga %%\nb"}, "marcas"),
+        ({"body": "a\n%% arga %%\nb"}, "block markers"),
     ],
 )
 def test_a_record_that_does_not_fit_fails_where_it_is_written(changes, where) -> None:
@@ -210,12 +210,12 @@ async def test_a_prune_that_fails_does_not_take_the_records_with_it(outbox, monk
 
 async def test_the_same_id_twice_is_a_bug_of_whoever_builds_them(outbox) -> None:
     async with outbox.begin() as connection:
-        with pytest.raises(contracts.BadContract, match="repetido"):
+        with pytest.raises(contracts.BadContract, match="repeated"):
             await records.publish(connection, APP, [book(), book()])
 
 
 def test_an_app_id_that_is_not_one_is_refused() -> None:
-    with pytest.raises(ValueError, match="id de una app"):
+    with pytest.raises(ValueError, match="not an app id"):
         records.last_published('x"; drop table y; --')
 
 
