@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
@@ -14,13 +13,11 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_recurrence as recurrence
-from planner import calendar, feeds, hub
+from planner import calendar, feeds, hub, zones
 
 MODULE = "planner"
 WRITE_ROLE = f"mod_{MODULE}"
 READ_ROLE = f"mod_{MODULE}_read"
-
-HOME_TZ = os.environ.get("PLANNER_DEFAULT_TZ", "Europe/Madrid")
 
 Scope = Literal["this", "following", "all"]
 
@@ -151,7 +148,10 @@ class GetEvents(BaseModel):
     calendars: list[str] | None = Field(
         default=None, description="Layer ids or names. Without any, all. Not valid with `query`."
     )
-    tz: str = Field(default=HOME_TZ, description="The zone of dates and times given without one.")
+    tz: str = Field(
+        default_factory=zones.home_name,
+        description="The zone of dates and times given without one. Without it, the person's.",
+    )
 
     model_config = {"populate_by_name": True}
 
@@ -203,8 +203,9 @@ class CreateEvent(BaseModel):
     )
     all_day: bool = False
     tz: str = Field(
-        default=HOME_TZ,
-        description="The event's zone: the one that decides daylight saving changes.",
+        default_factory=zones.home_name,
+        description="The event's zone: the one that decides daylight saving changes. "
+        "Without it, the person's.",
     )
     calendar: str | None = Field(
         default=None,

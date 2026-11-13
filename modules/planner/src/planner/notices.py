@@ -16,7 +16,7 @@ AHEAD = timedelta(days=2)
 
 
 def _when(start: datetime) -> str:
-    return start.astimezone(notify.MADRID).strftime("%H:%M")
+    return start.astimezone(notify.zone()).strftime("%H:%M")
 
 
 async def build(connection: AsyncConnection, now: datetime | None = None) -> list[dict[str, Any]]:
@@ -39,7 +39,7 @@ async def build(connection: AsyncConnection, now: datetime | None = None) -> lis
         else:
             start = datetime.fromisoformat(one.start)
             at = start - BEFORE
-            day = start.astimezone(notify.MADRID).date()
+            day = start.astimezone(notify.zone()).date()
             body = say("notice.at", time=_when(start))
         if one.location:
             body = f"{body} · {one.location}"

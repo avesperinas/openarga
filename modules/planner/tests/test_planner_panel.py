@@ -23,11 +23,10 @@ async def test_with_every_widget_full_the_panel_seals(monkeypatch):
 
 async def test_tomorrow_does_not_count_as_today(monkeypatch):
     from datetime import datetime, timedelta
-    from zoneinfo import ZoneInfo
 
-    from planner import widgets
+    from planner import zones
 
-    today = datetime.now(ZoneInfo(widgets.HOME_TZ)).date()
+    today = datetime.now(zones.home()).date()
     tomorrow = (today + timedelta(days=1)).isoformat()
     entries = [
         {"start": today.isoformat(), "end": tomorrow, "all_day": True, "title": "Presupuesto"},

@@ -160,8 +160,8 @@ export const readVersion = client.readVersion;
 
 export const VIEWER_TZ = (() => {
   try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Madrid";
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   } catch {
-    return "Europe/Madrid";
+    return "UTC";
   }
 })();
