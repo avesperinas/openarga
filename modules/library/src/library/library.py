@@ -9,10 +9,16 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from arga_contracts import notify
+from arga_module import preferences
 from library import isbn
 from library.words import say
 
-MADRID = ZoneInfo("Europe/Madrid")
+
+def zone() -> ZoneInfo:
+    person = preferences.current()
+    return person.zone if person != preferences.defaults() else notify.zone()
+
 
 Status = Literal["want", "reading", "read", "abandoned"]
 Format = Literal["paper", "ebook", "audio"]
@@ -46,7 +52,7 @@ class Conflict(Exception):
 
 
 def today() -> date:
-    return datetime.now(MADRID).date()
+    return datetime.now(zone()).date()
 
 
 class GenreOut(BaseModel):
