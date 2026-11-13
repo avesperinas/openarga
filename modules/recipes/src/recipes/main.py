@@ -61,7 +61,7 @@ async def quota_needs_write(request: Request, call_next):
         return JSONResponse(
             status_code=403,
             content={
-                "detail": f"{name} gasta cuota de tu clave de las fuentes y eso pide "
+                "detail": f"{name} spends quota of your sources key and that needs "
                 f"{MODULE_ID}:write"
             },
         )
@@ -70,7 +70,7 @@ async def quota_needs_write(request: Request, call_next):
 
 def _translate(error: Exception) -> HTTPException:
     if isinstance(error, recipes.NotFound):
-        return HTTPException(status_code=404, detail=f"no existe: {error}")
+        return HTTPException(status_code=404, detail=f"not found: {error}")
     return HTTPException(status_code=409, detail=str(error))
 
 
@@ -130,7 +130,7 @@ async def add_to_shopping_list(recipe_id: UUID, request: shopping.ShoppingIn) ->
             body = await shopping.body(connection, str(recipe_id), request)
         return await shopping.send(source_client(), body)
     except recipes.NotFound as error:
-        raise HTTPException(status_code=404, detail=f"no existe: {error}") from error
+        raise HTTPException(status_code=404, detail=f"not found: {error}") from error
     except recipes.Conflict as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
     except shopping.Unavailable as error:
@@ -162,7 +162,7 @@ async def share_recipe(recipe_id: UUID, request: SpaceIn) -> recipes.Recipe:
         raise HTTPException(status_code=503, detail=str(error)) from error
     current_spaces.set(tuple(UUID(space["id"]) for space in found))
     if request.space_id is not None and str(request.space_id) not in {s["id"] for s in found}:
-        raise HTTPException(status_code=404, detail="no estás en ese espacio")
+        raise HTTPException(status_code=404, detail="you are not in that space")
     space = str(request.space_id) if request.space_id else None
 
     async def run(connection: AsyncConnection) -> recipes.Recipe:

@@ -1,0 +1,18 @@
+{
+  "grid.and": " and ",
+  "grid.ingredient_again": "ingredient {ingredient} also goes into step {steps}",
+  "grid.no_uses": "no step says which ingredients go into it, so there is nothing to group: say it in each step and the grid draws itself",
+  "grid.orphans": "goes into no step: {names}",
+  "grid.step_again": "what comes from step {step} also goes into step {steps}",
+  "nutrition.missing": "{count} of {total} ingredients missing",
+  "panel.book": "Recipe book",
+  "panel.kitchen": "Kitchen",
+  "panel.question": "What do I cook?",
+  "panel.quick": "In half an hour",
+  "panel.words": "recipe,cook,dinner,eat,recipes",
+  "widget.average": "On average",
+  "widget.in_30": "In 30 min",
+  "widget.no_recipes": "no recipes yet",
+  "widget.none_quick": "nothing under {minutes} minutes",
+  "widget.recipes": "Recipes"
+}

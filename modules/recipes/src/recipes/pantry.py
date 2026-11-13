@@ -81,9 +81,9 @@ async def fetch(client: httpx.AsyncClient, source: str, ref: str) -> sources.Can
             client, "food.get", {"items": [{"source": source, "source_ref": ref}]}
         )
     except httpx.HTTPError as error:
-        raise Unavailable(f"el kernel no contesta ({type(error).__name__})") from error
+        raise Unavailable(f"the kernel is not answering ({type(error).__name__})") from error
     if response.status_code != 200:
-        raise Unavailable(f"el hub contesta {response.status_code}")
+        raise Unavailable(f"the hub answers {response.status_code}")
     answer = response.json()
     for raw in answer.get("candidates") or []:
         candidate = sources.Candidate.from_hub(raw)
@@ -91,8 +91,8 @@ async def fetch(client: httpx.AsyncClient, source: str, ref: str) -> sources.Can
             return candidate
     for failed in answer.get("failed") or []:
         if failed.get("source") == source:
-            raise Unavailable(failed.get("reason") or f"{source} no contesta")
-    raise recipes.NotFound(f"{source}:{ref} en su fuente")
+            raise Unavailable(failed.get("reason") or f"{source} is not answering")
+    raise recipes.NotFound(f"{source}:{ref} in its source")
 
 
 async def import_candidate(
@@ -243,9 +243,9 @@ async def refill(connection: AsyncConnection, client: httpx.AsyncClient) -> int:
             {"items": [{"source": row.source, "source_ref": row.source_ref} for row in rows]},
         )
     except httpx.HTTPError as error:
-        raise Unavailable(f"el kernel no contesta ({type(error).__name__})") from error
+        raise Unavailable(f"the kernel is not answering ({type(error).__name__})") from error
     if response.status_code != 200:
-        raise Unavailable(f"el hub contesta {response.status_code}")
+        raise Unavailable(f"the hub answers {response.status_code}")
     answer = response.json()
     failed = {one.get("source") for one in answer.get("failed") or []}
     brought = {}

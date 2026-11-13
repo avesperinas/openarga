@@ -197,7 +197,7 @@ async def test_unsharing_takes_back_every_version_and_sealed_stays_sealed(call, 
             .scalars()
             .all()
         )
-        with pytest.raises(Exception, match="sellada"):
+        with pytest.raises(Exception, match="sealed"):
             await connection.execute(
                 text(
                     "update recipes.recipes_recipe_version set note = 'tocada' "

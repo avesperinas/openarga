@@ -73,7 +73,7 @@ async def test_a_sealed_version_is_never_rewritten(draft) -> None:
             v=version,
         )
 
-    assert "sellada" in str(refused.value)
+    assert "sealed" in str(refused.value)
 
 
 async def test_a_sealed_version_takes_no_more_ingredients(draft) -> None:
@@ -83,7 +83,7 @@ async def test_a_sealed_version_takes_no_more_ingredients(draft) -> None:
     with pytest.raises(DBAPIError) as refused:
         await add_ingredient(engine, version, food)
 
-    assert "sellada" in str(refused.value)
+    assert "sealed" in str(refused.value)
 
 
 async def test_an_ingredient_of_a_sealed_version_is_not_removed(draft) -> None:
@@ -98,7 +98,7 @@ async def test_an_ingredient_of_a_sealed_version_is_not_removed(draft) -> None:
             v=version,
         )
 
-    assert "sellada" in str(refused.value)
+    assert "sealed" in str(refused.value)
 
 
 async def test_only_one_version_can_be_open_at_a_time(draft) -> None:
@@ -186,7 +186,7 @@ async def test_deleting_the_recipe_takes_its_versions_but_a_loose_one_stays(draf
             "delete from recipes.recipes_recipe_version where id = :v",
             v=version,
         )
-    assert "sellada" in str(refused.value)
+    assert "sealed" in str(refused.value)
 
     assert await run(engine, "delete from recipes.recipes_recipe where id = :r", r=recipe) == 1
     assert (

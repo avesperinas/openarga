@@ -107,7 +107,7 @@ async def macros(client: httpx.AsyncClient, old: foods.Food, new: foods.Food) ->
     try:
         response = await hub.ask(client, contracts.INTAKE_REPLACE_FOOD, body)
     except httpx.HTTPError as error:
-        return {"done": False, "note": f"el kernel no contesta ({type(error).__name__})"}
+        return {"done": False, "note": f"the kernel is not answering ({type(error).__name__})"}
     if response.status_code != 200:
         try:
             detail = response.json().get("detail")
@@ -125,18 +125,18 @@ async def replace(
     source: str = "tool",
 ) -> dict[str, Any]:
     if old_id == new_id:
-        raise Conflict("un alimento no se sustituye por sí mismo")
+        raise Conflict("a food is not replaced by itself")
     old = await foods.read(connection, old_id)
     new = await foods.read(connection, new_id)
     if new.archived:
-        raise Conflict(f"«{new.label}» ya está sustituido: usa el que lo sustituye")
+        raise Conflict(f"'{new.label}' is already replaced: use the one that replaces it")
     if old.nutrients_per != new.nutrients_per:
         raise Conflict(
-            "uno va por 100 g y el otro por unidad: lo apuntado con uno no se puede contar "
-            "con el otro"
+            "one is per 100 g and the other per unit: what was logged with one cannot be "
+            "counted with the other"
         )
     if old.archived and old.replaced_by != new.id:
-        raise Conflict(f"«{old.label}» ya se sustituyó por otro alimento")
+        raise Conflict(f"'{old.label}' was already replaced by another food")
 
     done: list[dict[str, Any]] = []
     skipped: list[dict[str, str]] = []

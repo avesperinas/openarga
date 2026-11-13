@@ -16,9 +16,9 @@ from recipes.recipes import Conflict, NotFound
 UNITS = ("g", "ml", "unit", "tbsp", "tsp", "pinch")
 
 ALIAS_HELP = (
-    "Cómo se llama en casa, corto y en español: `pechuga de pollo`, `cebolla`. Es lo que se lee "
-    "en la receta y con lo que se escribe; el nombre de la fuente se queda al lado. Uno por "
-    "alimento, y no puede repetirse en otro. Vacío o nulo, sin alias."
+    "What it is called at home, short and in the person's language: `chicken breast`, `onion`. "
+    "It is what the recipe shows and what people type; the source's name stays beside it. One "
+    "per food, and it cannot repeat on another. Empty or null, no alias."
 )
 
 
@@ -36,37 +36,37 @@ class MacrosIn(Macros):
 
 
 NUTRIENTS_HELP = (
-    "Todo lo que lleva por 100 g además de las macros, con las claves de `list_nutrients`: "
-    '`{"vitamin_d": 5, "caffeine": 80}`. El número va en la unidad de la clave (µg, mg, g); si '
-    'la etiqueta lo da en otra, con la suya: `{"omega3_epa": {"amount": 250, "unit": "mg"}}`. '
-    "Una clave o una unidad que no cuadra se rechaza con su motivo. Lo que no sepas, no lo pongas: "
-    "lo que falta no cuenta como cero."
+    "Everything it has per 100 g besides the macros, with the keys of `list_nutrients`: "
+    '`{"vitamin_d": 5, "caffeine": 80}`. The number is in the key\'s unit (µg, mg, g); if the '
+    'label gives it in another, with its own: `{"omega3_epa": {"amount": 250, "unit": "mg"}}`. '
+    "A key or unit that does not fit is rejected with its reason. What you do not know, leave "
+    "out: what is missing does not count as zero."
 )
 PROVENANCE_HELP = (
-    "De dónde salen estas cifras, corto: «etiqueta HSN», «estimado por el modelo», «receta "
-    "casera». Se enseña en la ficha: dilo con honradez, porque un dato medido y uno estimado no "
-    "valen lo mismo."
+    "Where these figures come from, briefly: \"HSN label\", \"estimated by the model\", "
+    "\"home recipe\". It shows on the food's card: say it honestly, because a measured figure "
+    "and an estimated one are not worth the same."
 )
 PORTIONS_HELP = (
-    "Las medidas de casa, con los gramos **comestibles** de cada una: "
-    '`[{"name": "loncha", "grams": 15}, {"name": "puñado", "grams": 30}]`. Luego una receta o '
-    'un registro dicen «2 lonchas» en `unit` con `portion: "loncha"`.'
+    "The household measures, with the **edible** grams of each: "
+    '`[{"name": "slice", "grams": 15}, {"name": "handful", "grams": 30}]`. Then a recipe or a '
+    'log says "2 slices" in `unit` with `portion: "slice"`.'
 )
 EDIBLE_HELP = (
-    "La parte que se come de lo que se pesa entero, de 0 a 1: una rueda de bonito de 730 g con "
-    "espina y piel son ~600 g limpios, 0.82. Se aplica a una cantidad marcada `as_purchased`. "
-    "Sin valor, se come todo."
+    "The share eaten of what is weighed whole, from 0 to 1: a 730 g tuna steak with bone and "
+    "skin is ~600 g clean, 0.82. It applies to a quantity marked `as_purchased`. Without a "
+    "value, all of it is eaten."
 )
 PER_UNIT_HELP = (
-    "Para un suplemento que se toma por unidades: el nombre de la unidad, «cápsula», "
-    "«comprimido», «cacito», «gota». Entonces `macros` y `nutrients` son lo que lleva **una** "
-    "unidad, como lo da la etiqueta, y no por 100 g; y se cuenta solo en unidades. "
-    "`grams_per_unit`, si se sabe, es lo que pesa una. Sin esto, todo va por 100 g."
+    "For a supplement taken in units: the unit's name, \"capsule\", \"tablet\", \"scoop\", "
+    "\"drop\". Then `macros` and `nutrients` are what **one** unit has, as the label gives "
+    "it, not per 100 g; and it is counted only in units. `grams_per_unit`, if known, is what "
+    "one weighs. Without this, everything is per 100 g."
 )
 MICROS_FROM_HELP = (
-    "Otro alimento de tu despensa (`food_id`) del que tomar los micros que este no trae: un "
-    "producto de Open Food Facts con sus macros de etiqueta y los micros de la ficha genérica de "
-    "USDA. Lo que este sí trae manda; las macros nunca se toman prestadas."
+    "Another food in your pantry (`food_id`) to take the micros this one lacks from: an Open "
+    "Food Facts product with its label macros and the micros of the generic USDA entry. What "
+    "this one has wins; macros are never borrowed."
 )
 
 
@@ -85,7 +85,7 @@ def _typed(values: dict[str, Any]) -> dict[str, float]:
 def _distinct(portions: list[Portion]) -> list[Portion]:
     names = [one.name.strip().lower() for one in portions]
     if len(names) != len(set(names)):
-        raise ValueError("dos porciones con el mismo nombre")
+        raise ValueError("two portions with the same name")
     return portions
 
 
@@ -166,7 +166,7 @@ class ImportIn(_Measures):
     alias: str | None = Field(default=None, max_length=60, description=ALIAS_HELP)
     nutrients: dict[str, float] = Field(
         default_factory=dict,
-        description="Los `nutrients` del candidato, tal cual vinieron de la búsqueda.",
+        description="The candidate's `nutrients`, as the search returned them.",
     )
 
 
@@ -189,7 +189,7 @@ class ManualIn(_Measures):
     @model_validator(mode="after")
     def _per_unit_borrows_nothing(self) -> ManualIn:
         if self.per_unit and self.micros_from:
-            raise ValueError("un alimento por unidad no toma micros de otro, que van por 100 g")
+            raise ValueError("a per-unit food does not take micros from another, which are per 100 g")
         return self
 
 
@@ -204,21 +204,21 @@ class CorrectionIn(BaseModel):
     nutrients: dict[str, Any] = Field(
         default_factory=dict,
         description=NUTRIENTS_HELP
-        + " Se suman a los que ya tiene: una clave nueva se añade, una que ya estaba se cambia y "
-        "una con `null` se quita.",
+        + " They merge with what it has: a new key is added, an existing one is changed and "
+        "one with `null` is removed.",
     )
     provenance: str | None = Field(default=None, max_length=120, description=PROVENANCE_HELP)
     portions: list[Portion] | None = Field(
         default=None,
         max_length=20,
-        description=PORTIONS_HELP + " Sustituye la lista entera; `[]` las quita todas.",
+        description=PORTIONS_HELP + " Replaces the whole list; `[]` removes them all.",
     )
     edible_fraction: float | None = Field(default=None, gt=0, le=1, description=EDIBLE_HELP)
     micros_from: str | None = Field(
         default=None,
         min_length=36,
         max_length=36,
-        description=MICROS_FROM_HELP + " `null` deja de tomarlos prestados.",
+        description=MICROS_FROM_HELP + " `null` stops borrowing them.",
     )
 
     @field_validator("nutrients")
@@ -228,7 +228,7 @@ class CorrectionIn(BaseModel):
         dropped = {key: None for key, value in values.items() if value is None}
         unknown = [key for key in dropped if key not in arga_nutrients.KEYS]
         if unknown:
-            raise ValueError(f"'{unknown[0]}' no es un nutriente de arga (mira `list_nutrients`)")
+            raise ValueError(f"'{unknown[0]}' is not an arga nutrient (see `list_nutrients`)")
         return {**_typed(kept), **dropped}
 
     @field_validator("portions")
@@ -237,7 +237,10 @@ class CorrectionIn(BaseModel):
         return None if portions is None else _distinct(portions)
 
 
-FOLD = str.maketrans("áàâäãéèêëíìîïóòôöõúùûüñç", "aaaaaeeeeiiiiooooouuuunc")
+FOLD = str.maketrans(
+    "\u00e1\u00e0\u00e2\u00e4\u00e3\u00e9\u00e8\u00ea\u00eb\u00ed\u00ec\u00ee\u00ef\u00f3\u00f2\u00f4\u00f6\u00f5\u00fa\u00f9\u00fb\u00fc\u00f1\u00e7",
+    "aaaaaeeeeiiiiooooouuuunc",
+)
 
 
 def fold(value: str | None) -> str:
@@ -479,9 +482,9 @@ def _discarded(raw: Any, error: Exception) -> dict[str, str]:
     if isinstance(error, ValidationError) and error.errors():
         first = error.errors()[0]
         field = ".".join(str(part) for part in first["loc"])
-        reason = f"{field} = {first.get('input')}: fuera de rango"
+        reason = f"{field} = {first.get('input')}: out of range"
     else:
-        reason = "no trae lo que hace falta"
+        reason = "it lacks what is needed"
     return {
         "source": str(raw.get("source") or "?"),
         "name": str(raw.get("name") or "?"),
@@ -491,7 +494,7 @@ def _discarded(raw: Any, error: Exception) -> dict[str, str]:
 
 async def _check_category(connection: AsyncConnection, category_id: str) -> None:
     if (await connection.execute(CATEGORY_EXISTS, {"id": category_id})).first() is None:
-        raise NotFound(f"la categoría '{category_id}'")
+        raise NotFound(f"category '{category_id}'")
 
 
 def _stored(values: dict[str, float] | None) -> str | None:
@@ -508,7 +511,7 @@ async def _check_alias(connection: AsyncConnection, alias: str | None, food_id: 
         return
     taken = (await connection.execute(ALIAS_TAKEN, {"alias": alias, "id": food_id})).first()
     if taken is not None:
-        raise Conflict(f"«{alias}» ya es el alias de {taken.name}")
+        raise Conflict(f"'{alias}' is already the alias of {taken.name}")
 
 
 async def _check_lender(
@@ -517,14 +520,14 @@ async def _check_lender(
     if lender is None:
         return
     if lender == food_id:
-        raise Conflict("un alimento no puede tomar los micros de sí mismo")
+        raise Conflict("a food cannot take micros from itself")
     row = (await connection.execute(LENDER, {"id": lender})).first() if _is_uuid(lender) else None
     if row is None:
-        raise NotFound(f"el alimento {lender} del que tomar los micros")
+        raise NotFound(f"food {lender} to take the micros from")
     if row.micros_from is not None:
-        raise Conflict("ese alimento ya toma sus micros de otro: apunta al original")
+        raise Conflict("that food already takes its micros from another: point to the original")
     if row.nutrients_per != "100g":
-        raise Conflict("ese alimento va por unidad: sus micros no se pueden prestar por 100 g")
+        raise Conflict("that food is per unit: its micros cannot be lent per 100 g")
 
 
 async def _set_portions(connection: AsyncConnection, food_id: str, portions: list[Portion]) -> None:
@@ -641,7 +644,7 @@ async def correct(connection: AsyncConnection, food_id: str, request: Correction
     )
     if "micros_from" in sent:
         if micros_from is not None and current.nutrients_per != "100g":
-            raise Conflict("un alimento por unidad no toma micros de otro, que van por 100 g")
+            raise Conflict("a per-unit food does not take micros from another, which are per 100 g")
         await _check_lender(connection, micros_from, food_id)
 
     def kept(field: str, column: Any) -> Any:

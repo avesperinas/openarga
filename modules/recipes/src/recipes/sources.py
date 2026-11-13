@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import dataclass, field, fields
 
 
@@ -26,22 +27,23 @@ class Candidate:
 
 
 HINTS = {
-    "vegetable": ("vegetable", "légume", "verdura", "legumbres-y-verduras"),
+    "vegetable": ("vegetable", "verdura", "legumbres-y-verduras"),
     "fruit": ("fruit", "fruta", "berries"),
     "protein": ("poultry", "beef", "pork", "sausage", "lamb", "meat", "carne", "embutido"),
     "fish": ("fish", "seafood", "shellfish", "pescado", "marisco", "poisson"),
-    "dairy": ("dairy", "cheese", "yogurt", "milk", "egg", "lácteo", "queso", "huevo", "leche"),
+    "dairy": ("dairy", "cheese", "yogurt", "milk", "egg", "lacteo", "queso", "huevo", "leche"),
     "grain": ("cereal", "grain", "pasta", "bread", "rice", "pan", "arroz", "harina"),
     "legume": ("legume", "bean", "lentil", "chickpea", "legumbre", "garbanzo", "lenteja"),
     "fat": ("fat", "oil", "butter", "aceite", "mantequilla", "grasa"),
     "spice": ("spice", "herb", "condiment", "sauce", "especia", "salsa", "condimento"),
-    "sweet": ("sweet", "sugar", "candy", "chocolate", "dessert", "azúcar", "dulce", "postre"),
+    "sweet": ("sweet", "sugar", "candy", "chocolate", "dessert", "azucar", "dulce", "postre"),
     "liquid": ("beverage", "drink", "broth", "soup", "bebida", "caldo", "zumo", "juice"),
 }
 
 
 def category_hint(*texts: str | None) -> str:
-    haystack = " ".join(text.lower() for text in texts if text)
+    joined = unicodedata.normalize("NFKD", " ".join(text.lower() for text in texts if text))
+    haystack = "".join(char for char in joined if not unicodedata.combining(char))
     for category, needles in HINTS.items():
         if any(needle in haystack for needle in needles):
             return category

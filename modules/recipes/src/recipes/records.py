@@ -12,8 +12,16 @@ APP = "recipes"
 PANTRY_LIMIT = 100_000
 
 
+def _number(value: float) -> str:
+    return f"{value:,.0f}"
+
+
+def _trimmed(value: float) -> str:
+    return f"{value:,.2f}".rstrip("0").rstrip(".")
+
+
 def _amount(one: recipes.IngredientOut) -> str:
-    return f"{write.trimmed(one.quantity)} {one.unit}".strip()
+    return f"{_trimmed(one.quantity)} {one.unit}".strip()
 
 
 def recipe(found: recipes.Recipe) -> dict[str, Any]:
@@ -31,45 +39,45 @@ def recipe(found: recipes.Recipe) -> dict[str, Any]:
     steps = "\n".join(
         f"{step.position + 1}. {step.text}"
         + (f" · {step.minutes} min" if step.minutes else "")
-        + ("" if step.attended else " (sin estar delante)")
+        + ("" if step.attended else " (unattended)")
         for step in sorted(kitchen.steps, key=lambda one: one.position)
     )
     macros = (
-        f"{write.number(serving.kcal)} kcal · {write.trimmed(serving.protein, 1)} g proteína · "
-        f"{write.trimmed(serving.carbs, 1)} g hidratos · {write.trimmed(serving.fat, 1)} g grasa"
+        f"{_number(serving.kcal)} kcal · {_trimmed(serving.protein)} g protein · "
+        f"{_trimmed(serving.carbs)} g carbs · {_trimmed(serving.fat)} g fat"
     )
     if found.nutrition.uncertainty:
         macros += f"\n\n*{found.nutrition.uncertainty}*"
     lead = (
-        f"Para {found.servings} {'ración' if found.servings == 1 else 'raciones'} · "
-        f"{kitchen.total_minutes} min en total, {kitchen.active_minutes} delante · "
-        f"versión {found.version}"
+        f"For {found.servings} {'serving' if found.servings == 1 else 'servings'} · "
+        f"{kitchen.total_minutes} min in all, {kitchen.active_minutes} attended · "
+        f"version {found.version}"
     )
     properties: dict[str, Any] = {
-        "raciones": found.servings,
-        "tiempo_total_min": kitchen.total_minutes,
-        "tiempo_activo_min": kitchen.active_minutes,
-        "kcal_racion": round(serving.kcal),
-        "proteina_racion_g": round(serving.protein, 1),
-        "hidratos_racion_g": round(serving.carbs, 1),
-        "grasa_racion_g": round(serving.fat, 1),
+        "servings": found.servings,
+        "total_min": kitchen.total_minutes,
+        "active_min": kitchen.active_minutes,
+        "kcal_serving": round(serving.kcal),
+        "protein_serving_g": round(serving.protein, 1),
+        "carbs_serving_g": round(serving.carbs, 1),
+        "fat_serving_g": round(serving.fat, 1),
         "version": found.version,
     }
     if found.tags:
-        properties["etiquetas"] = [tag.name for tag in found.tags]
+        properties["tags"] = [tag.name for tag in found.tags]
     return contracts.record(
         id=f"recipe:{found.id}",
         title=found.name,
-        kind="Receta",
-        href=f"/recipes/receta/{found.id}",
-        folder="Recetas",
+        kind="Recipe",
+        href=f"/recipes/recipe/{found.id}",
+        folder="Recipes",
         properties=properties,
         body=write.sections(
             lead + ".",
             found.note,
-            "## Ingredientes\n\n" + "\n\n".join(groups) if groups else None,
-            f"## Pasos\n\n{steps}" if steps else None,
-            f"## Por ración\n\n{macros}",
+            "## Ingredients\n\n" + "\n\n".join(groups) if groups else None,
+            f"## Steps\n\n{steps}" if steps else None,
+            f"## Per serving\n\n{macros}",
         ),
     )
 
@@ -78,24 +86,24 @@ def pantry(found: list[foods.Food]) -> dict[str, Any]:
     rows = [
         [
             one.label,
-            write.trimmed(one.macros.kcal, 0),
-            write.trimmed(one.macros.protein, 1),
-            write.trimmed(one.macros.carbs, 1),
-            write.trimmed(one.macros.fat, 1),
+            _number(one.macros.kcal),
+            _trimmed(one.macros.protein),
+            _trimmed(one.macros.carbs),
+            _trimmed(one.macros.fat),
             one.source,
         ]
         for one in sorted(found, key=lambda one: one.label.casefold())
     ]
     return contracts.record(
         id="pantry",
-        title="Despensa",
-        kind="Despensa",
-        href="/recipes/despensa",
-        properties={"alimentos": len(rows)},
+        title="Pantry",
+        kind="Pantry",
+        href="/recipes/pantry",
+        properties={"foods": len(rows)},
         body=write.sections(
-            "Lo que lleva cada alimento de tu despensa por 100 g.",
-            write.table(["Alimento", "kcal", "Proteína", "Hidratos", "Grasa", "Fuente"], rows)
-            or "La despensa está vacía.",
+            "What each food in your pantry has per 100 g.",
+            write.table(["Food", "kcal", "Protein", "Carbs", "Fat", "Source"], rows)
+            or "The pantry is empty.",
         ),
     )
 
