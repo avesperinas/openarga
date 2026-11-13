@@ -175,7 +175,7 @@ async def test_a_bank_that_gives_no_account_says_so_until_it_is_reconnected(
 
     assert back.headers["location"] == f"/hub/{connection}?banco=sin-cuentas"
     assert (empty["state"], empty["tone"]) == ("failing", "negative")
-    assert "enlaza en su panel las cuentas de este banco" in empty["reason"]
+    assert "link this bank's accounts in its dashboard" in empty["reason"]
     assert fixed.headers["location"] == f"/hub/{connection}?banco=conectado"
     assert (ficha["state"], ficha["reason"], len(ficha["accounts"])) == ("active", None, 1)
 
@@ -235,7 +235,7 @@ async def test_a_consent_the_bank_ends_leaves_it_expired_without_retrying(
     assert answer["outcome"] == "error"
     assert "EXPIRED_SESSION" in answer["outcome_detail"]
     assert answer["state"] == "expired"
-    assert "hay que reconectarlo" in answer["reason"]
+    assert "it needs reconnecting" in answer["reason"]
     assert fake.account_calls == 1
 
 

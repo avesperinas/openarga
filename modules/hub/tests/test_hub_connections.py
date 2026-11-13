@@ -33,13 +33,13 @@ def test_the_state_comes_from_facts(status, paused, expires, recent, expected) -
 
 def test_the_reason_names_the_connection_and_the_date() -> None:
     assert connections.reason_of("BBVA", "expired", NOW - timedelta(days=2), None, NOW) == (
-        "El acceso a BBVA caducó el 20/09/2026; hay que reconectarlo."
+        "Access to BBVA expired on 2026-09-20; it needs reconnecting."
     )
     assert connections.reason_of("BBVA", "expiring", NOW + timedelta(days=1), None, NOW) == (
-        "El acceso a BBVA caduca en 1 día."
+        "Access to BBVA expires in 1 day."
     )
-    assert connections.reason_of("Bitvavo", "failing", None, "403 clave revocada", NOW) == (
-        "Bitvavo está fallando: 403 clave revocada"
+    assert connections.reason_of("Bitvavo", "failing", None, "403 key revoked", NOW) == (
+        "Bitvavo is failing: 403 key revoked"
     )
     assert connections.reason_of("Bitvavo", "active", None, None, NOW) is None
 
@@ -89,8 +89,8 @@ async def test_the_listing_reads_the_runs(schema) -> None:
     await ran(schema, good, "ok", timedelta(days=9), emitted=100)
     await ran(schema, good, "ok", timedelta(hours=3), emitted=4)
     broken = await connect(schema, "Claude", provider="claude")
-    await ran(schema, broken, "error", timedelta(hours=2), detail="401 token caducado")
-    await ran(schema, broken, "error", timedelta(hours=1), detail="401 token caducado")
+    await ran(schema, broken, "error", timedelta(hours=2), detail="401 token expired")
+    await ran(schema, broken, "error", timedelta(hours=1), detail="401 token expired")
 
     async with schema.connect() as connection:
         found = {item.label: item for item in await connections.listed(connection, NOW)}
@@ -100,7 +100,7 @@ async def test_the_listing_reads_the_runs(schema) -> None:
     assert found["Bitvavo"].emitted_week == 4
     assert found["Bitvavo"].category == "finance"
     assert found["Claude"].state == "failing"
-    assert found["Claude"].reason == "Claude está fallando: 401 token caducado"
+    assert found["Claude"].reason == "Claude is failing: 401 token expired"
     assert found["Claude"].last_ok_at is None
 
 
@@ -114,10 +114,10 @@ async def test_the_widget_puts_what_needs_you_first(schema) -> None:
     validate("list", body["body"], body["state"])
     assert body["state"] == "ready"
     assert body["body"]["rows"] == [
-        {"label": "Santander", "value": "A medias", "tone": "warning"},
-        {"label": "Bitvavo", "value": "Al día", "tone": "positive"},
+        {"label": "Santander", "value": "Unfinished", "tone": "warning"},
+        {"label": "Bitvavo", "value": "Up to date", "tone": "positive"},
     ]
-    assert body["body"]["detail"] == "Santander espera a que termines de autorizarla."
+    assert body["body"]["detail"] == "Santander is waiting for you to finish authorising it."
 
 
 async def test_an_expired_connection_shows_in_red_without_hiding_the_rest(schema) -> None:
@@ -134,9 +134,9 @@ async def test_an_expired_connection_shows_in_red_without_hiding_the_rest(schema
 
     validate("list", body["body"], body["state"])
     assert body["state"] == "ready"
-    assert body["body"]["rows"][0] == {"label": "BBVA", "value": "Caducada", "tone": "negative"}
+    assert body["body"]["rows"][0] == {"label": "BBVA", "value": "Expired", "tone": "negative"}
     assert [row["label"] for row in body["body"]["rows"]] == ["BBVA", "Bitvavo"]
-    assert body["body"]["detail"] == "El acceso a BBVA caducó el 20/09/2026; hay que reconectarlo."
+    assert body["body"]["detail"] == "Access to BBVA expired on 2026-09-20; it needs reconnecting."
 
 
 async def test_all_well_says_so(schema) -> None:
@@ -146,7 +146,7 @@ async def test_all_well_says_so(schema) -> None:
     async with schema.connect() as connection:
         body = await widgets.status(connection, NOW)
 
-    assert body["body"]["detail"] == "todo al día"
+    assert body["body"]["detail"] == "all up to date"
 
 
 async def test_the_tool_tells_what_is_connected_and_what_still_lives_in_its_app(schema) -> None:
@@ -183,4 +183,4 @@ async def test_a_connection_without_its_credential_is_half_done_and_says_what(sc
         [found] = await connections.listed(connection, NOW)
 
     assert found.state == "pending"
-    assert found.reason == "A Claude del trabajo le falta su credencial: pégala en su ficha."
+    assert found.reason == "Claude del trabajo is missing its credential: paste it in its page."

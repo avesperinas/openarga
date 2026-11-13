@@ -127,7 +127,7 @@ async def test_an_account_without_a_token_is_there_but_half_done(api, kernel) ->
 
     ficha = (await api.get(f"/connections/{account}")).json()
     assert ficha["state"] == "pending"
-    assert ficha["reason"] == "A Trabajo le falta su credencial: pégala en su ficha."
+    assert ficha["reason"] == "Trabajo is missing its credential: paste it in its page."
     pasted = await api.put(f"/connections/{account}/credentials/token", json={"value": TOKEN})
     assert pasted.json()["state"] == "active"
 

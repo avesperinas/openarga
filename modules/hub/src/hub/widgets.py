@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets import envelope
 from hub import connections
+from hub.words import say
 
 
 async def status(connection: AsyncConnection, now: datetime | None = None) -> dict:
@@ -13,7 +14,7 @@ async def status(connection: AsyncConnection, now: datetime | None = None) -> di
     now = now or datetime.now(UTC)
     found = await connections.listed(connection, now)
     if not found:
-        return envelope(kind, "empty", {"detail": "nada conectado todavía"})
+        return envelope(kind, "empty", {"detail": say("widget.status.empty")})
     ordered = sorted(found, key=lambda item: connections.URGENCY[item.state])
     attention = [item for item in ordered if connections.needs_attention(item)]
     return envelope(
@@ -23,12 +24,12 @@ async def status(connection: AsyncConnection, now: datetime | None = None) -> di
             "rows": [
                 {
                     "label": item.label,
-                    "value": connections.BRIEF[item.state],
+                    "value": connections.brief(item.state),
                     "tone": connections.TONE[item.state],
                 }
                 for item in ordered
             ],
-            "detail": attention[0].reason if attention else "todo al día",
+            "detail": attention[0].reason if attention else say("widget.status.all_good"),
         },
     )
 

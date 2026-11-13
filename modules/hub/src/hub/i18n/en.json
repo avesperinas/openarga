@@ -1,0 +1,18 @@
+{
+  "connection.brief.active": "Up to date",
+  "connection.brief.expired": "Expired",
+  "connection.brief.expiring": "Expiring",
+  "connection.brief.failing": "Failing",
+  "connection.brief.paused": "Paused",
+  "connection.brief.pending": "Unfinished",
+  "connection.reason.expired": "Access to {label} expired on {date}; it needs reconnecting.",
+  "connection.reason.expiring.one": "Access to {label} expires in 1 day.",
+  "connection.reason.expiring.other": "Access to {label} expires in {days} days.",
+  "connection.reason.failing": "{label} is failing.",
+  "connection.reason.failing_detail": "{label} is failing: {detail}",
+  "connection.reason.missing": "{label} is missing its credential: paste it in its page.",
+  "connection.reason.no_accounts": "{label} has not given any account. If your Enable Banking application is in restricted mode, link this bank's accounts in its dashboard and then reconnect it.",
+  "connection.reason.pending": "{label} is waiting for you to finish authorising it.",
+  "widget.status.all_good": "all up to date",
+  "widget.status.empty": "nothing connected yet"
+}

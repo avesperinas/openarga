@@ -229,7 +229,7 @@ async def test_with_nothing_connected_the_widget_is_empty_and_says_why(api) -> N
     body = (await api.get("/widgets/status")).json()
 
     assert body["state"] == "empty"
-    assert body["body"]["detail"] == "nada conectado todavía"
+    assert body["body"]["detail"] == "nothing connected yet"
     validate("list", body["body"], body["state"])
 
 
