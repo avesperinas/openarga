@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { fitsUncertaintyLine, kpiStep, type Layout, layoutOf, type WidgetSize } from "./sizes";
+import { say } from "./words";
 
 export type { WidgetSize } from "./sizes";
 
@@ -48,11 +49,11 @@ export const useWidgetLayout = (): Layout => layoutOf(useWidgetSize());
 
 function ago(date: Date): string {
   const minutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
-  if (minutes < 1) return "ahora";
-  if (minutes < 60) return `hace ${minutes} min`;
+  if (minutes < 1) return say("widget.ago.now");
+  if (minutes < 60) return say("widget.ago.minutes", { count: minutes });
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `hace ${hours} h`;
-  return `hace ${Math.round(hours / 24)} d`;
+  if (hours < 24) return say("widget.ago.hours", { count: hours });
+  return say("widget.ago.days", { count: Math.round(hours / 24) });
 }
 
 export function WidgetValue({ children }: { children: React.ReactNode }) {
@@ -284,16 +285,16 @@ export function Widget({
         )}
 
         {state === "empty" && (
-          <p className="widget-empty">{note ?? "Todavía no hay nada que enseñar"}</p>
+          <p className="widget-empty">{note ?? say("widget.empty")}</p>
         )}
 
         {state === "error" && (
           <div className="widget-note widget-note-error">
             {updatedAt && <span className="widget-stamp">{ago(updatedAt)}</span>}
-            <span>No se pudo cargar</span>
+            <span>{say("widget.failed")}</span>
             {onRetry && (
               <button type="button" className="widget-action" onClick={onRetry}>
-                Reintentar
+                {say("widget.retry")}
               </button>
             )}
           </div>
@@ -301,7 +302,7 @@ export function Widget({
 
         {state === "disconnected" && (
           <div className="widget-note widget-note-disconnected">
-            <span>{note ?? "Ningún conector ha sincronizado nunca"}</span>
+            <span>{note ?? say("widget.never_synced")}</span>
             {onConnect && (
               <button type="button" className="widget-action" onClick={onConnect}>
                 Conectar

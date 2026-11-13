@@ -3,9 +3,10 @@ import * as React from "react";
 import { Button } from "./controls";
 import { IconBadge } from "./icons";
 import { Notice } from "./screen";
+import { say } from "./words";
 
 export function ErrorState({
-  title = "No se ha podido cargar",
+  title,
   detail,
   onRetry,
 }: {
@@ -17,7 +18,7 @@ export function ErrorState({
   return (
     <div className="surface empty-state" role="alert">
       <IconBadge name="alert" hue={2} />
-      <p className="empty-state-title">{title}</p>
+      <p className="empty-state-title">{title ?? say("error_state.title")}</p>
       {detail && <div className="empty-state-body">{detail}</div>}
       {onRetry && (
         <Button
@@ -32,7 +33,7 @@ export function ErrorState({
               .finally(() => setBusy(false));
           }}
         >
-          {busy ? "Reintentando…" : "Reintentar"}
+          {busy ? say("error_state.retrying") : say("error_state.retry")}
         </Button>
       )}
     </div>
@@ -56,8 +57,10 @@ export function OfflineNotice({ pending = 0, offline }: { pending?: number; offl
   const online = useOnline();
   if (offline === undefined ? online : !offline) return null;
   return (
-    <Notice tone="warning" title="Sin conexión">
-      {pending > 0 ? `${pending === 1 ? "1 cambio" : `${pending} cambios`} por enviar.` : "Ves lo guardado."}
+    <Notice tone="warning" title={say("offline.title")}>
+      {pending > 0
+        ? say(pending === 1 ? "offline.pending.one" : "offline.pending.other", { count: pending })
+        : say("offline.saved")}
     </Notice>
   );
 }

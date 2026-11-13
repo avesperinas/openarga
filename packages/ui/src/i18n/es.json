@@ -1,0 +1,18 @@
+{
+  "area_map.failed": "No se ha podido cargar el mapa.",
+  "error_state.retry": "Reintentar",
+  "error_state.retrying": "Reintentando…",
+  "error_state.title": "No se ha podido cargar",
+  "offline.pending.one": "1 cambio por enviar.",
+  "offline.pending.other": "{count} cambios por enviar.",
+  "offline.saved": "Ves lo guardado.",
+  "offline.title": "Sin conexión",
+  "widget.ago.days": "hace {count} d",
+  "widget.ago.hours": "hace {count} h",
+  "widget.ago.minutes": "hace {count} min",
+  "widget.ago.now": "ahora",
+  "widget.empty": "Todavía no hay nada que enseñar",
+  "widget.failed": "No se pudo cargar",
+  "widget.never_synced": "Ningún conector ha sincronizado nunca",
+  "widget.retry": "Reintentar"
+}

@@ -1,0 +1,18 @@
+{
+  "area_map.failed": "The map could not be loaded.",
+  "error_state.retry": "Try again",
+  "error_state.retrying": "Trying again…",
+  "error_state.title": "Could not load",
+  "offline.pending.one": "1 change waiting to be sent.",
+  "offline.pending.other": "{count} changes waiting to be sent.",
+  "offline.saved": "You are seeing what was saved.",
+  "offline.title": "Offline",
+  "widget.ago.days": "{count} d ago",
+  "widget.ago.hours": "{count} h ago",
+  "widget.ago.minutes": "{count} min ago",
+  "widget.ago.now": "now",
+  "widget.empty": "Nothing to show yet",
+  "widget.failed": "Could not load",
+  "widget.never_synced": "No connection has ever synced",
+  "widget.retry": "Try again"
+}
