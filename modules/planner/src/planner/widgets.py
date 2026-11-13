@@ -1,17 +1,14 @@
 from __future__ import annotations
 
-import os
 from datetime import UTC, date, datetime, time, timedelta
-from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets import envelope
-from planner import calendar
+from planner import calendar, zones
 from planner.words import say
 
 KINDS = {"upnext": "upnext", "calendar": "calendar", "today": "agenda", "week": "week"}
-HOME_TZ = os.environ.get("PLANNER_DEFAULT_TZ", "Europe/Madrid")
 UPNEXT = 5
 LOOKAHEAD_DAYS = 60
 
@@ -38,7 +35,7 @@ async def _backgrounds(connection: AsyncConnection) -> set[str]:
 
 async def upnext(connection: AsyncConnection, now: datetime | None = None) -> dict:
     now = now or datetime.now(UTC)
-    zone = ZoneInfo(HOME_TZ)
+    zone = zones.home()
     visible = await _visible(connection, backgrounds=False)
     if not visible:
         return envelope(KINDS["upnext"], "empty", {"detail": say("widget.hidden")})
@@ -104,11 +101,11 @@ async def _entries(
 
 
 def _day_start(day: date) -> datetime:
-    return datetime.combine(day, time(), ZoneInfo(HOME_TZ))
+    return datetime.combine(day, time(), zones.home())
 
 
 async def agenda(connection: AsyncConnection, now: datetime | None = None) -> dict:
-    local = (now or datetime.now(UTC)).astimezone(ZoneInfo(HOME_TZ)).date()
+    local = (now or datetime.now(UTC)).astimezone(zones.home()).date()
     if not await _visible(connection, backgrounds=False):
         return envelope(KINDS["today"], "empty", {"detail": say("widget.hidden")})
     entries = await _entries(
@@ -118,7 +115,7 @@ async def agenda(connection: AsyncConnection, now: datetime | None = None) -> di
 
 
 async def week(connection: AsyncConnection, now: datetime | None = None) -> dict:
-    local = (now or datetime.now(UTC)).astimezone(ZoneInfo(HOME_TZ)).date()
+    local = (now or datetime.now(UTC)).astimezone(zones.home()).date()
     if not await _visible(connection, backgrounds=False):
         return envelope(KINDS["week"], "empty", {"detail": say("widget.hidden")})
     entries = await _entries(
@@ -128,7 +125,7 @@ async def week(connection: AsyncConnection, now: datetime | None = None) -> dict
 
 
 async def month(connection: AsyncConnection, now: datetime | None = None) -> dict:
-    zone = ZoneInfo(HOME_TZ)
+    zone = zones.home()
     today = (now or datetime.now(UTC)).astimezone(zone).date()
     first = today.replace(day=1)
     following = (first + timedelta(days=32)).replace(day=1)

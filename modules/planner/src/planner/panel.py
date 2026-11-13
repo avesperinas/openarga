@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets.panel import blocks_of, gather, panel
-from planner import widgets
+from planner import widgets, zones
 from planner.words import say, words
 
 
@@ -42,7 +41,7 @@ def month_block(envelope: dict[str, Any] | None, now: datetime) -> dict[str, Any
     if (envelope or {}).get("state") != "ready":
         return None
     body = ready(envelope)
-    local = now.astimezone(ZoneInfo(widgets.HOME_TZ))
+    local = now.astimezone(zones.home())
     entries = []
     for one in (body.get("entries") or [])[:300]:
         if not one.get("start") or not one.get("title"):
@@ -78,7 +77,7 @@ async def build(connection: AsyncConnection) -> dict:
     found = await gather(connection, widgets.RENDERERS, ["today", "upnext", "calendar"])
     week = ready(found.get("today")).get("entries", [])
     now = datetime.now().astimezone()
-    day = now.astimezone(ZoneInfo(widgets.HOME_TZ)).date()
+    day = now.astimezone(zones.home()).date()
     timed = on_day(week, day.isoformat())
     later = upcoming(timed, now)
     headlines = []

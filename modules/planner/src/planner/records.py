@@ -9,11 +9,10 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_contracts as contracts
-from planner import calendar
+from planner import calendar, zones
 from planner.words import say
 
 APP = "planner"
-MADRID = ZoneInfo("Europe/Madrid")
 AHEAD = timedelta(days=31)
 
 FIRST = text("""
@@ -25,7 +24,7 @@ FIRST = text("""
 def _when(one: calendar.Occurrence) -> tuple[date, str]:
     if one.all_day:
         return date.fromisoformat(one.start[:10]), say("record.all_day")
-    zone = ZoneInfo(one.tz) if one.tz else MADRID
+    zone = ZoneInfo(one.tz) if one.tz else zones.home()
     start = datetime.fromisoformat(one.start).astimezone(zone)
     end = datetime.fromisoformat(one.end).astimezone(zone)
     return start.date(), f"{start:%H:%M}–{end:%H:%M}"
