@@ -2,6 +2,7 @@ import { CommandPalette, type IconName, type PaletteItem, dayStart, formatClock,
 import * as React from "react";
 
 import { type Layer, type Occurrence, searchEvents } from "./api";
+import { dateFormat, t } from "./lang";
 
 export interface Command {
   id: string;
@@ -18,11 +19,11 @@ interface Props {
   onClose: () => void;
 }
 
-const when = new Intl.DateTimeFormat("es-ES", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+const when = dateFormat({ weekday: "short", day: "numeric", month: "short", year: "numeric" });
 
 export function describe(occurrence: Occurrence): string {
   const day = occurrence.all_day
-    ? `${when.format(dayStart(occurrence.start))} · todo el día`
+    ? `${when.format(dayStart(occurrence.start))} · ${t("event.all_day")}`
     : `${when.format(new Date(occurrence.start))} · ${formatClock(new Date(occurrence.start))}`;
   return occurrence.location ? `${day} · ${occurrence.location}` : day;
 }
@@ -72,15 +73,15 @@ export function Palette({ commands, layers, onOpen, onClose }: Props) {
 
   return (
     <CommandPalette
-      label="Buscar y comandos"
-      placeholder="Buscar eventos o escribir un comando"
+      label={t("palette.label")}
+      placeholder={t("palette.placeholder")}
       query={query}
       onQuery={setQuery}
       onClose={onClose}
-      empty={searching ? "Buscando…" : `Nada con «${words}»`}
+      empty={searching ? t("palette.searching") : t("palette.nothing", { words })}
       groups={[
-        { label: "Eventos", items: events },
-        { label: "Comandos", items: actions },
+        { label: t("palette.events"), items: events },
+        { label: t("palette.commands"), items: actions },
       ]}
     />
   );
