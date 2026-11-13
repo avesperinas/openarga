@@ -27,7 +27,7 @@ async def add(api, title: str, status: str = "want", **edition) -> dict:
     response = await api.post(
         "/books",
         json={
-            "edition": {"title": title, "authors": ["Autora Sintética"], **edition},
+            "edition": {"title": title, "authors": ["Synthetic Author"], **edition},
             "reading": {"status": status, "genre": "novel", **dates},
         },
     )
@@ -36,7 +36,7 @@ async def add(api, title: str, status: str = "want", **edition) -> dict:
 
 
 async def test_a_book_typed_by_hand_is_read_with_its_dates(api) -> None:
-    added = await add(api, "El libro de prueba", pages=320, language="es", year=2019)
+    added = await add(api, "The test book", pages=320, language="es", year=2019)
 
     started = await api.post(f"/books/{added['id']}/start", json={"on": "2026-09-02"})
     finished = await api.post(
@@ -52,8 +52,8 @@ async def test_a_book_typed_by_hand_is_read_with_its_dates(api) -> None:
     assert book["days"] == 19
     assert book["edition"] == "manual"
     assert (book["title"], book["authors"], book["pages"]) == (
-        "El libro de prueba",
-        ["Autora Sintética"],
+        "The test book",
+        ["Synthetic Author"],
         320,
     )
 
@@ -88,19 +88,19 @@ async def test_the_dates_must_say_the_status(api) -> None:
     odd_rating = await api.put(f"/books/{added['id']}", json={**body, "rating": 3.3})
 
     assert read_without_dates.status_code == 422
-    assert "inicio y de fin" in read_without_dates.text
+    assert "a start date and an end date" in read_without_dates.text
     assert backwards.status_code == 422
     assert future.status_code == 422
     assert odd_rating.status_code == 422
 
 
 async def test_finishing_needs_to_know_when_it_started(api) -> None:
-    added = await add(api, "Nunca empezado")
+    added = await add(api, "Never started")
 
     response = await api.post(f"/books/{added['id']}/finish", json={})
 
     assert response.status_code == 409
-    assert "empezaste" in response.json()["detail"]
+    assert "when you started" in response.json()["detail"]
 
 
 async def test_finishing_without_a_date_is_today(api) -> None:
@@ -112,7 +112,7 @@ async def test_finishing_without_a_date_is_today(api) -> None:
 
 
 async def test_a_finished_book_is_not_started_again(api) -> None:
-    added = await add(api, "Releído", status="read")
+    added = await add(api, "Reread", status="read")
 
     response = await api.post(f"/books/{added['id']}/start", json={})
 
@@ -125,7 +125,7 @@ async def test_a_typed_book_can_be_corrected(api) -> None:
     response = await api.put(
         f"/books/{added['id']}/edition",
         json={
-            "title": "  Título   corregido ",
+            "title": "  Corrected   title ",
             "authors": ["Una", " ", "Otra"],
             "isbn": "84-376-0494-X",
         },
@@ -133,7 +133,7 @@ async def test_a_typed_book_can_be_corrected(api) -> None:
 
     book = response.json()
     assert response.status_code == 200, response.text
-    assert book["title"] == "Título corregido"
+    assert book["title"] == "Corrected title"
     assert book["authors"] == ["Una", "Otra"]
     assert book["isbn13"] == "9788437604947"
 

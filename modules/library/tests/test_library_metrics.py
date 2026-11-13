@@ -20,7 +20,7 @@ async def built() -> dict[str, dict]:
 async def test_a_finished_book_counts_its_day_and_spreads_its_pages(api) -> None:
     await add(
         api,
-        "Un libro sintético",
+        "A synthetic book",
         {"status": "read", "started_on": "2026-08-01", "finished_on": "2026-08-10"},
         pages=300,
     )

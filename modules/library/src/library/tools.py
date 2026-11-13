@@ -47,12 +47,15 @@ def _book(one: library.Book) -> dict[str, Any]:
 
 class FindBooks(BaseModel):
     query: str | None = Field(
-        default=None, max_length=100, description="Parte del título o del nombre de un autor."
+        default=None, max_length=100, description="Part of the title or of an author's name."
     )
     genre: Genre | None = None
     status: Status | None = None
     year: int | None = Field(
-        default=None, ge=1900, le=2200, description="Año de lectura: el de fin, o el de inicio."
+        default=None,
+        ge=1900,
+        le=2200,
+        description="Reading year: the year it ended, or else started.",
     )
     limit: int = Field(default=50, ge=1, le=500)
 
@@ -97,10 +100,10 @@ async def get_currently_reading(
 class GetReadingStats(BaseModel):
     group_by: stats.GroupBy | None = Field(
         default=None,
-        description="Sin él, el resumen del año como en la app: libros, páginas, objetivo, "
-        "páginas al día, temáticas, autores y lo más largo y lo más rápido.",
+        description="Without it, the year's summary as in the app: books, pages, goal, "
+        "pages per day, genres, authors, and the longest and the quickest.",
     )
-    year: int | None = Field(default=None, ge=1900, le=2200, description="Por defecto, este.")
+    year: int | None = Field(default=None, ge=1900, le=2200, description="This year by default.")
 
 
 async def get_reading_stats(
@@ -117,8 +120,7 @@ async def get_reading_stats(
     summary = found.model_dump(exclude={"days", "years"})
     return {
         **summary,
-        "pages_per_day_note": "estimación: las páginas de cada libro repartidas entre su inicio "
-        "y su fin",
+        "pages_per_day_note": "an estimate: each book's pages spread between its start and its end",
     }
 
 
@@ -139,9 +141,9 @@ class AddBook(BaseModel):
     @model_validator(mode="after")
     def _isbn_or_title(self) -> AddBook:
         if not self.isbn and not (self.title and self.title.strip()):
-            raise ValueError("hace falta el ISBN o el título")
+            raise ValueError("an ISBN or a title is needed")
         if self.isbn and isbn.to_isbn13(self.isbn) is None:
-            raise ValueError(f"«{self.isbn}» no es un ISBN válido")
+            raise ValueError(f"“{self.isbn}” is not a valid ISBN")
         return self
 
 
@@ -178,7 +180,7 @@ async def add_book(
         "resolved": added.edition == "catalog",
         "note": None
         if added.edition == "catalog"
-        else "Guardado sin resolver: su edición y su portada se eligen en la app.",
+        else "Saved unresolved: its edition and cover are chosen in the app.",
     }
 
 

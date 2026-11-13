@@ -81,7 +81,7 @@ async def capability(
     except (ValidationError, ValueError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     answer = await _edit(want, asked, hub_client)
-    print(f"quiero leerlo · pedido por {x_arga_module}", flush=True)
+    print(f"want to read · asked by {x_arga_module}", flush=True)
     return answer
 
 
@@ -126,7 +126,7 @@ async def read_stats(year: int | None = Query(default=None, ge=1900, le=2200)) -
 @app.put("/goals/{year}")
 async def set_goal(year: int, request: stats.GoalIn) -> stats.YearStats:
     if not 2000 <= year <= 2200:
-        raise HTTPException(status_code=422, detail="ese año no vale")
+        raise HTTPException(status_code=422, detail="that year is not valid")
     return await _edit(stats.set_goal, year, request)
 
 

@@ -57,13 +57,13 @@ async def test_without_a_person_nothing_is_seen(two_readers, role: str) -> None:
 
 
 async def test_an_edition_fetched_by_someone_is_theirs(two_readers) -> None:
-    await as_role(two_readers, WRITE, ANA, FETCHED, title="Traído por Ana", ref="OL1M", owner=ANA)
+    await as_role(two_readers, WRITE, ANA, FETCHED, title="Brought by Ana", ref="OL1M", owner=ANA)
 
     luis = await as_role(two_readers, READ, LUIS, "select title from library.library_edition")
     ana = await as_role(two_readers, READ, ANA, "select title from library.library_edition")
 
     assert luis == []
-    assert [row.title for row in ana] == ["Traído por Ana"]
+    assert [row.title for row in ana] == ["Brought by Ana"]
 
 
 async def test_writing_in_someone_elses_name_is_refused_by_postgres(two_readers) -> None:

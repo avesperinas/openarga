@@ -135,7 +135,7 @@ describe("Library con el kit de app", () => {
 
     act(() => host.querySelector<HTMLButtonElement>(".media-card-open")!.click());
 
-    expect(window.location.pathname).toBe(`/library/libro/${ID}`);
+    expect(window.location.pathname).toBe(`/library/books/${ID}`);
     expect(host.querySelector(".app-shell-detail h1")?.textContent).toContain("Libro sintético");
     expect(host.querySelector(".app-shell-main")?.textContent).toContain("Tus libros");
     expect(host.textContent).toContain("Terminado hoy");
@@ -145,7 +145,7 @@ describe("Library con el kit de app", () => {
     let answer!: (response: Response) => void;
     replies[`GET /api/library/books/${ID}`] = () => BOOK;
     replies[`PUT /api/library/books/${ID}`] = () => new Promise<Response>((resolve) => (answer = resolve));
-    window.history.replaceState(null, "", `/library/libro/${ID}`);
+    window.history.replaceState(null, "", `/library/books/${ID}`);
     act(() => root.render(<App />));
     await settle();
 

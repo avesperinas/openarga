@@ -26,8 +26,8 @@ async def read(api, title: str, started: str, finished: str, pages: int, **extra
 
 async def test_a_year_counts_what_was_finished_in_it(api) -> None:
     await read(api, "Largo", "2025-01-01", "2025-01-30", 600, genre="history", rating=4)
-    await read(api, "Rápido", "2025-03-01", "2025-03-02", 100, genre="novel", rating=5)
-    await read(api, "Del otro año", "2024-12-20", "2024-12-30", 300, genre="novel")
+    await read(api, "Quick", "2025-03-01", "2025-03-02", 100, genre="novel", rating=5)
+    await read(api, "From the other year", "2024-12-20", "2024-12-30", 300, genre="novel")
     await add(api, "En curso", status="reading")
     goal = await api.put("/goals/2025", json={"books": 12})
     assert goal.status_code == 200, goal.text
@@ -39,7 +39,7 @@ async def test_a_year_counts_what_was_finished_in_it(api) -> None:
     assert found["months"][0]["pages"] == 600 and found["months"][2]["books"] == 1
     assert [g["id"] for g in found["genres"]] == ["history", "novel"]
     assert found["longest"]["title"] == "Largo"
-    assert (found["fastest"]["title"], found["fastest"]["days"]) == ("Rápido", 2)
+    assert (found["fastest"]["title"], found["fastest"]["days"]) == ("Quick", 2)
     assert found["ratings"] == {"4": 1, "5": 1}
     assert found["days"]["2025-01-01"] == 20.0
     assert found["pages_per_day"] == round(700 / 365, 1)
