@@ -22,6 +22,8 @@ import {
   Skeleton,
   SplitBar,
   Stepper,
+  type Translate,
+  useT,
   useToast,
 } from "@openarga/ui";
 import { useEffect, useRef, useState } from "react";
@@ -41,6 +43,7 @@ import {
   shareRecipe,
   signIn,
 } from "./api";
+import { categoryName } from "./categories";
 import { ScreenHeader } from "./Header";
 import { KitchenPlan, KitchenTimes } from "./Kitchen";
 import { grams, kcal } from "./macros";
@@ -50,6 +53,7 @@ import { ShoppingSheet } from "./Shopping";
 import { quantityLabel } from "./units";
 
 export function RecipeScreen({ id, onBack, onEdit }: { id: string; onBack: () => void; onEdit: (id: string) => void }) {
+  const t = useT();
   const [servings, setServings] = useState<number | null>(null);
   const key = `recipe:${id}:${servings ?? ""}`;
   const found = useResource(key, () => readRecipe(id, servings ?? undefined), { persist: servings === null });
@@ -65,11 +69,11 @@ export function RecipeScreen({ id, onBack, onEdit }: { id: string; onBack: () =>
     try {
       await archiveRecipe(recipe.id);
       changed();
-      toast({ message: `Archivada · ${recipe.name}`, action: { label: "Deshacer", run: () => void unarchiveRecipe(recipe.id).then(changed) } });
+      toast({ message: t("recipe.archived_toast", { name: recipe.name }), action: { label: t("common.undo"), run: () => void unarchiveRecipe(recipe.id).then(changed) } });
       onBack();
     } catch (error) {
       if (error instanceof Unauthorised) return signIn();
-      setSharing(error instanceof Error ? error.message : "No se ha podido archivar la receta.");
+      setSharing(error instanceof Error ? error.message : t("recipe.archive_failed"));
     }
   };
   const restore = async () => {
@@ -85,12 +89,12 @@ export function RecipeScreen({ id, onBack, onEdit }: { id: string; onBack: () =>
   if (!recipe) {
     return (
       <Screen>
-        <ScreenHeader back={{ label: "Recetario", onClick: onBack }} title="Receta" />
+        <ScreenHeader back={{ label: t("tabs.recipes"), onClick: onBack }} title={t("recipe.title")} />
         <OfflineNotice />
         {found.error ? (
-          <ErrorState title="No se pudo leer la receta" detail={found.error.message} onRetry={found.refresh} />
+          <ErrorState title={t("recipe.read_failed")} detail={found.error.message} onRetry={found.refresh} />
         ) : (
-          <Skeleton label="Cargando la receta" />
+          <Skeleton label={t("recipe.loading")} />
         )}
       </Screen>
     );
@@ -99,14 +103,14 @@ export function RecipeScreen({ id, onBack, onEdit }: { id: string; onBack: () =>
   return (
     <Screen>
       <ScreenHeader
-        back={{ label: "Recetario", onClick: onBack }}
-        eyebrow={recipe.versions > 1 ? `Versión ${recipe.version} de ${recipe.versions}` : undefined}
+        back={{ label: t("tabs.recipes"), onClick: onBack }}
+        eyebrow={recipe.versions > 1 ? t("recipe.version", { version: recipe.version, of: recipe.versions }) : undefined}
         title={recipe.name}
       />
       <OfflineNotice />
 
       {recipe.tags.length > 0 && (
-        <Inline label="Etiquetas">
+        <Inline label={t("recipe.tags")}>
           {recipe.tags.map((tag) => (
             <Badge key={tag.id}>
               {tag.emoji && <span aria-hidden="true">{tag.emoji} </span>}
@@ -117,15 +121,15 @@ export function RecipeScreen({ id, onBack, onEdit }: { id: string; onBack: () =>
       )}
 
       {recipe.archived && (
-        <Notice tone="info" action={recipe.mine ? { label: "Sacar del archivo", onClick: () => void restore() } : undefined}>
-          Archivada: no sale en el recetario.
+        <Notice tone="info" action={recipe.mine ? { label: t("recipe.unarchive"), onClick: () => void restore() } : undefined}>
+          {t("recipe.archived_notice")}
         </Notice>
       )}
       <Banner hue={hueOf({ tags: recipe.tags.map((tag) => tag.name), name: recipe.name })} glyph={<Icon name={glyphOf(recipe.tags.map((tag) => tag.name))} />}>
         {recipe.kitchen.steps.length > 0 && <KitchenTimes kitchen={recipe.kitchen} />}
-        <GroupLabel>Para cuántas personas</GroupLabel>
+        <GroupLabel>{t("recipe.how_many")}</GroupLabel>
         <Stepper
-          label="Para cuántas personas"
+          label={t("recipe.how_many")}
           value={recipe.requested_servings}
           step={1}
           min={1}
@@ -134,22 +138,22 @@ export function RecipeScreen({ id, onBack, onEdit }: { id: string; onBack: () =>
           onChange={(value) => setServings(value ?? recipe.servings)}
         />
         {recipe.requested_servings !== recipe.servings && (
-          <Hint>Escrita para {recipe.servings}. Las cantidades ya están ajustadas.</Hint>
+          <Hint>{t("recipe.written_for", { servings: recipe.servings })}</Hint>
         )}
       </Banner>
 
-      <Section title="Ingredientes" count={recipe.groups.reduce((total, group) => total + group.ingredients.length, 0)}>
+      <Section title={t("recipe.ingredients")} count={recipe.groups.reduce((total, group) => total + group.ingredients.length, 0)}>
         {recipe.groups.map((group) => (
           <div key={group.category_id} className="recipes-group">
             <GroupLabel>
-              <span aria-hidden="true">{group.emoji}</span> {group.name}
+              <span aria-hidden="true">{group.emoji}</span> {categoryName(t, group.category_id, group.name)}
             </GroupLabel>
             <List>
               {group.ingredients.map((ingredient) => (
                 <CheckRow
                   key={ingredient.position}
                   title={ingredient.name}
-                  detail={ingredientDetail(ingredient)}
+                  detail={ingredientDetail(ingredient, t)}
                   checked={ready.includes(ingredient.position)}
                   onToggle={() =>
                     setReady((now) =>
@@ -170,17 +174,17 @@ export function RecipeScreen({ id, onBack, onEdit }: { id: string; onBack: () =>
         ingredients={recipe.groups.flatMap((group) => group.ingredients)}
       />
 
-      <Section title="Por ración">
+      <Section title={t("recipe.per_serving")}>
         <Macros recipe={recipe} />
         <Micros recipe={recipe} />
       </Section>
 
-      <Inline label="Acciones">
+      <Inline label={t("recipe.actions")}>
         <Button variant="tinted" icon="basket" onClick={() => setShopping(true)}>
-          Añadir a la lista
+          {t("shopping.title")}
         </Button>
         <Button icon="edit" onClick={() => onEdit(recipe.id)}>
-          Editar
+          {t("recipe.edit")}
         </Button>
         <SharePicker
           recipe={recipe}
@@ -192,18 +196,18 @@ export function RecipeScreen({ id, onBack, onEdit }: { id: string; onBack: () =>
               setSharing("");
             } catch (error) {
               if (error instanceof Unauthorised) return signIn();
-              setSharing(error instanceof Error ? error.message : "No se ha podido compartir la receta.");
+              setSharing(error instanceof Error ? error.message : t("recipe.share_failed"));
             }
           }}
         />
         {recipe.mine && !recipe.archived && (
           <Button icon="box" onClick={() => void archive()}>
-            Archivar
+            {t("recipe.archive")}
           </Button>
         )}
         {recipe.mine && (
           <Button variant="destructive" icon="trash" onClick={() => setDeleting(true)}>
-            Borrar
+            {t("common.delete")}
           </Button>
         )}
       </Inline>
@@ -211,10 +215,10 @@ export function RecipeScreen({ id, onBack, onEdit }: { id: string; onBack: () =>
       {shopping && <ShoppingSheet recipe={recipe} onClose={() => setShopping(false)} />}
       {deleting && (
         <ConfirmDelete
-          title="¿Borrar esta receta?"
+          title={t("recipe.delete_title")}
           subject={recipe.name}
-          consequence={deleteConsequence(recipe)}
-          action="Borrar receta"
+          consequence={deleteConsequence(recipe, t)}
+          action={t("recipe.delete")}
           onCancel={() => setDeleting(false)}
           onConfirm={() =>
             deleteRecipe(recipe.id)
@@ -224,7 +228,7 @@ export function RecipeScreen({ id, onBack, onEdit }: { id: string; onBack: () =>
               })
               .catch((error: unknown) => {
                 if (error instanceof Unauthorised) return signIn();
-                throw new Error("No se ha podido borrar la receta.");
+                throw new Error(t("recipe.delete_failed"));
               })
           }
         />
@@ -234,41 +238,45 @@ export function RecipeScreen({ id, onBack, onEdit }: { id: string; onBack: () =>
   );
 }
 
-export function ingredientDetail(ingredient: Pick<Recipe["groups"][number]["ingredients"][number], "quantity" | "unit" | "note" | "optional" | "food_id">): string {
+export function ingredientDetail(
+  ingredient: Pick<Recipe["groups"][number]["ingredients"][number], "quantity" | "unit" | "note" | "optional" | "food_id">,
+  t: Translate,
+): string {
   return [
-    quantityLabel(ingredient.quantity, ingredient.unit),
+    quantityLabel(ingredient.quantity, ingredient.unit, t),
     ingredient.note,
-    ingredient.optional ? "opcional" : null,
-    ingredient.food_id === null ? "sin macros" : null,
+    ingredient.optional ? t("ingredient.optional") : null,
+    ingredient.food_id === null ? t("ingredient.no_macros") : null,
   ]
     .filter(Boolean)
     .join(" · ");
 }
 
-export function deleteConsequence(recipe: Pick<Recipe, "versions" | "groups">): string {
+export function deleteConsequence(recipe: Pick<Recipe, "versions" | "groups">, t: Translate): string {
   const ingredients = recipe.groups.reduce((total, group) => total + group.ingredients.length, 0);
   const parts = [];
-  if (ingredients === 1) parts.push("su ingrediente");
-  if (ingredients > 1) parts.push(`sus ${ingredients} ingredientes`);
-  if (recipe.versions > 1) parts.push(`sus ${recipe.versions} versiones`);
-  return `${parts.length ? `Se borra con ${parts.join(" y ")}` : "Se borra"}. No se puede deshacer.`;
+  if (ingredients === 1) parts.push(t("delete.its_ingredient"));
+  if (ingredients > 1) parts.push(t("delete.its_ingredients", { count: ingredients }));
+  if (recipe.versions > 1) parts.push(t("delete.its_versions", { count: recipe.versions }));
+  return parts.length ? t("delete.with", { what: parts.join(t("common.and")) }) : t("delete.alone");
 }
 
 export function Macros({ recipe }: { recipe: Recipe }) {
+  const t = useT();
   const each = recipe.nutrition.per_serving;
   return (
     <Card>
       <Figures
-        label="Por ración"
+        label={t("recipe.per_serving")}
         items={[
           { label: "kcal", value: kcal(each.kcal), lit: true },
-          { label: "g proteína", value: grams(each.protein) },
-          { label: "g grasa", value: grams(each.fat) },
-          { label: "g hidratos", value: grams(each.carbs) },
+          { label: t("figure.protein"), value: grams(each.protein) },
+          { label: t("figure.fat"), value: grams(each.fat) },
+          { label: t("figure.carbs"), value: grams(each.carbs) },
         ]}
       />
-      <SplitBar label="De dónde salen las kcal" parts={kcalSplit(each)} />
-      <Hint>{totalLine(recipe)}</Hint>
+      <SplitBar label={t("recipe.kcal_from")} parts={kcalSplit(each, t)} />
+      <Hint>{totalLine(recipe, t)}</Hint>
       {recipe.nutrition.uncertainty && (
         <Hint tone="warning">{recipe.nutrition.uncertainty}</Hint>
       )}
@@ -276,17 +284,24 @@ export function Macros({ recipe }: { recipe: Recipe }) {
   );
 }
 
-export function totalLine(recipe: Pick<Recipe, "requested_servings" | "nutrition">): string {
+export function totalLine(recipe: Pick<Recipe, "requested_servings" | "nutrition">, t: Translate): string {
   const total = recipe.nutrition.total;
-  const head = recipe.requested_servings > 1 ? `Receta entera (${recipe.requested_servings} raciones)` : "Receta entera";
-  return `${head}: ${kcal(total.kcal)} kcal · ${grams(total.protein)} g proteína · ${grams(total.fat)} g grasa · ${grams(total.carbs)} g hidratos`;
+  const head =
+    recipe.requested_servings > 1 ? t("total.whole_servings", { count: recipe.requested_servings }) : t("total.whole");
+  return t("total.line", {
+    head,
+    kcal: kcal(total.kcal),
+    protein: grams(total.protein),
+    fat: grams(total.fat),
+    carbs: grams(total.carbs),
+  });
 }
 
-export function kcalSplit(macros: Pick<Recipe["nutrition"]["per_serving"], "protein" | "fat" | "carbs">) {
+export function kcalSplit(macros: Pick<Recipe["nutrition"]["per_serving"], "protein" | "fat" | "carbs">, t: Translate) {
   const parts = [
-    { label: "Proteína", kcal: macros.protein * 4, hue: 1 as const },
-    { label: "Grasa", kcal: macros.fat * 9, hue: 3 as const },
-    { label: "Hidratos", kcal: macros.carbs * 4, hue: 2 as const },
+    { label: t("nutrient.protein"), kcal: macros.protein * 4, hue: 1 as const },
+    { label: t("nutrient.fat"), kcal: macros.fat * 9, hue: 3 as const },
+    { label: t("nutrient.carbs"), kcal: macros.carbs * 4, hue: 2 as const },
   ];
   const total = parts.reduce((sum, part) => sum + part.kcal, 0);
   return parts.map((part) => ({
@@ -316,6 +331,7 @@ export function microRows(
 }
 
 export function Micros({ recipe }: { recipe: Recipe }) {
+  const t = useT();
   const [list, setList] = useState<NutrientInfo[]>([]);
   useEffect(() => {
     readNutrients()
@@ -326,19 +342,17 @@ export function Micros({ recipe }: { recipe: Recipe }) {
   if (rows.length === 0) return null;
   const partial = rows.filter((row) => row.partial).length;
   return (
-    <Collapsible title="Micronutrientes" subtitle={`${rows.length} por ración`}>
+    <Collapsible title={t("micros.title")} subtitle={t("micros.count", { count: rows.length })}>
       <KeyFigures
-        label="Micronutrientes por ración"
+        label={t("micros.label")}
         items={rows.map(({ info, value, partial }) => ({
-          label: info.name,
+          label: t(`nutrient.${info.key}`),
           value: `${grams(value)} ${info.unit}`,
-          foot: partial ? "dato incompleto" : undefined,
+          foot: partial ? t("micros.partial") : undefined,
         }))}
       />
       {partial > 0 && (
-        <Hint>
-          Los atenuados salen de menos del 80 % de la receta: algún ingrediente no trae ese dato.
-        </Hint>
+        <Hint>{t("micros.partial_hint")}</Hint>
       )}
     </Collapsible>
   );

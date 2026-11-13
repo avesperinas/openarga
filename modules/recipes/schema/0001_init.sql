@@ -408,7 +408,7 @@ alter table recipes.recipes_recipe_ingredient
 
 alter table recipes.recipes_food_category no force row level security;
 insert into recipes.recipes_food_category (id, name, emoji, position, user_id)
-values ('supplement', 'Suplementos', '💊', 13, null)
+values ('supplement', 'Supplements', '💊', 13, null)
 on conflict (id) do nothing;
 alter table recipes.recipes_food_category force row level security;
 
