@@ -1,6 +1,6 @@
 "use client";
 
-import { EmptyState, type IconStyle, styledIcon } from "@openarga/ui";
+import { EmptyState, type IconStyle, styledIcon, zonedDates } from "@openarga/ui";
 import * as React from "react";
 
 import { appIconOf } from "../lib/app-icons";
@@ -99,7 +99,7 @@ function Companion({
   );
 }
 
-const today = new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long" });
+const today = () => zonedDates({ weekday: "long", day: "numeric", month: "long" });
 
 export function Launcher({
   modules,
@@ -156,7 +156,7 @@ export function Launcher({
             <span className="launcher-band-text">
               <span className="launcher-band-name">{module.name}</span>
               <span className="launcher-band-date" suppressHydrationWarning>
-                {today.format(new Date())}
+                {today().format(new Date())}
               </span>
             </span>
           </a>

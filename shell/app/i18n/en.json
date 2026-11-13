@@ -1,0 +1,21 @@
+{
+  "region.title": "Language and region",
+  "region.language": "Language",
+  "region.timezone": "Time zone",
+  "region.currency": "Currency",
+  "region.country": "Country",
+  "region.country.none": "Not set",
+  "region.region": "Region",
+  "region.region.hint": "ISO 3166-2 code, for example {example}. Public holidays follow it.",
+  "region.area": "Home area",
+  "region.area.hint": "The area profile Outings uses, for example pamplona or munich.",
+  "region.save": "Save",
+  "region.saving": "Saving…",
+  "region.saved": "Saved. The page reloads to show it everywhere.",
+  "region.failed": "It could not be saved. Try again in a moment.",
+  "region.loading": "Loading your preferences…",
+  "region.unavailable": "Your preferences cannot be read right now.",
+  "region.invalid.region": "The region must be a code like {example} inside the chosen country.",
+  "region.invalid.area": "Lowercase letters, digits and hyphens only.",
+  "region.preview": "Dates, times and amounts will look like this: {sample}"
+}

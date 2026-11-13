@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 
 import { createApi, Unauthorised } from "./api";
 import { bindPerson, forgetSeen, loadSeen } from "./persist";
+import { RegionalRoot } from "./regional";
 import { reset, seed } from "./resource";
 
 const HYDRATE_MS = 50;
@@ -18,7 +19,11 @@ export async function mountApp(id: string, app: ReactNode, options: MountOptions
   const seen = loadSeen(id).then(seed);
   await Promise.race([seen, new Promise((resolve) => setTimeout(resolve, HYDRATE_MS))]);
 
-  createRoot(document.getElementById("root")!).render(<StrictMode>{app}</StrictMode>);
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <RegionalRoot>{app}</RegionalRoot>
+    </StrictMode>,
+  );
 
   void seen.then(() => whoIs(options.api ?? id, options.onPerson));
   stayOnOneVersion(id);

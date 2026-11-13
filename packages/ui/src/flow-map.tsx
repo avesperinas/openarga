@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { SERIES_COLORS } from "./analysis";
+import { locale } from "./regional";
 
 export interface MapNode {
   id: string;
@@ -126,7 +127,7 @@ export function FlowMap({
   label,
   nodes,
   links,
-  format = (value) => value.toLocaleString("es-ES"),
+  format = (value) => value.toLocaleString(locale()),
   onSelect,
 }: FlowMapProps) {
   const [focus, setFocus] = React.useState<string | null>(null);

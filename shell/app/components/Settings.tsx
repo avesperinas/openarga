@@ -4,6 +4,7 @@ import {
   CopyField,
   Hint,
   IconButton,
+  type Locale,
   Switch,
   ICON_STYLES,
   PreviewChoices,
@@ -23,6 +24,7 @@ import type { ModuleSummary } from "../lib/kernel";
 import { APP_NAME_MAX, APP_NAME_SETS, type AppNameSet, OPACITY_RANGE, type UiPreferences, appNameOf } from "../lib/preferences";
 import { AREAS, hiddenOf, orderOf } from "../lib/panels";
 import { Notifications } from "./Notifications";
+import { RegionSettings } from "./RegionSettings";
 import { Spaces } from "./Spaces";
 import { StartingDesk } from "./StartingDesk";
 import { usePlatformVersion } from "./Version";
@@ -40,13 +42,17 @@ export function Settings({
   preferences,
   onChange,
   modules = [],
+  locale = "en",
 }: {
   preferences: UiPreferences;
   onChange: (next: Partial<UiPreferences>) => void;
   modules?: ModuleSummary[];
+  locale?: Locale;
 }) {
   return (
     <div className="settings">
+      <RegionSettings locale={locale} />
+
       <Section title="Transparencia">
         <div className="settings-row">
           <Slider

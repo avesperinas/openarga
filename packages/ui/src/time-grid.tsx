@@ -25,6 +25,7 @@ import {
   wallMinutes,
 } from "./calendar-layout";
 import { Icon } from "./icons";
+import { dates } from "./regional";
 
 export interface TimeRange {
   start: Date;
@@ -96,9 +97,8 @@ type Gesture = {
   originalTop: number;
 };
 
-const LOCALE = "es-ES";
-const weekdayShort = new Intl.DateTimeFormat(LOCALE, { weekday: "short" });
-const weekdayLong = new Intl.DateTimeFormat(LOCALE, { weekday: "long", day: "numeric", month: "long" });
+const weekdayShort = () => dates({ weekday: "short" });
+const weekdayLong = () => dates({ weekday: "long", day: "numeric", month: "long" });
 
 export function TimeGrid({
   days,
@@ -625,7 +625,7 @@ export function TimeGrid({
                   const isToday = day === today;
                   const content = (
                     <>
-                      <span className="tg-day-name">{weekdayShort.format(date).replace(".", "")}</span>
+                      <span className="tg-day-name">{weekdayShort().format(date).replace(".", "")}</span>
                       {showDates && <span className="tg-day-number">{date.getDate()}</span>}
                     </>
                   );
@@ -636,7 +636,7 @@ export function TimeGrid({
                       className="tg-day"
                       data-today={isToday || undefined}
                       data-weekend={date.getDay() % 6 === 0 || undefined}
-                      aria-label={weekdayLong.format(date)}
+                      aria-label={weekdayLong().format(date)}
                       onClick={() => onDayClick(day)}
                     >
                       {content}
@@ -847,14 +847,14 @@ function eventData(event: CalendarEvent, now: Date, selectedId?: string | null) 
   };
 }
 
-const dayMonth = new Intl.DateTimeFormat(LOCALE, { weekday: "long", day: "numeric", month: "long" });
+const dayMonth = () => dates({ weekday: "long", day: "numeric", month: "long" });
 
 export function describe(event: CalendarEvent): string {
   const start = toDate(event.start);
   const end = toDate(event.end);
   const when = event.allDay || isStripEvent(event)
-    ? `${dayMonth.format(start)}, todo el día`
-    : `${dayMonth.format(start)}, ${formatSpan(start, end)}`;
+    ? `${dayMonth().format(start)}, todo el día`
+    : `${dayMonth().format(start)}, ${formatSpan(start, end)}`;
   const status = event.status === "cancelled" ? ", cancelado" : event.status === "tentative" ? ", por confirmar" : "";
   const title = `${event.title || "Sin título"}${event.background ? ", de fondo" : ""}`;
   const twin = event.duplicateOf ? `también en ${event.duplicateOf}` : null;

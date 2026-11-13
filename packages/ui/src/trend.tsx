@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { locale } from "./regional";
 
 export interface TrendPoint {
   day: string;
@@ -65,7 +66,7 @@ export function trendX(points: TrendPoint[]): number[] {
 }
 
 const shortDay = (day: string) =>
-  new Date(`${day}T12:00:00Z`).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "2-digit" });
+  new Date(`${day}T12:00:00Z`).toLocaleDateString(locale(), { day: "numeric", month: "short", year: "2-digit" });
 
 export function TrendChart({
   points,
@@ -74,7 +75,7 @@ export function TrendChart({
   bandName = "Objetivo",
   valueName = "Valor",
   averageName = "Tendencia",
-  format = (value) => value.toLocaleString("es-ES", { maximumFractionDigits: 1 }),
+  format = (value) => value.toLocaleString(locale(), { maximumFractionDigits: 1 }),
   formatDay = shortDay,
   marker = null,
   highlightName = "Destacado",

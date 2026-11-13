@@ -5,6 +5,7 @@ import * as React from "react";
 import { Button, Stepper } from "./controls";
 import { Card, Hint } from "./screen";
 import { TrendChart } from "./trend";
+import { locale, timeZone } from "./regional";
 
 export interface BodyWeightDay {
   day: string;
@@ -29,13 +30,13 @@ const DAY_MS = 86_400_000;
 const stamp = (day: string): number => Date.parse(`${day}T00:00:00Z`);
 
 const kilos = (value: number): string =>
-  value.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  value.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 export function weighedOn(day: string, today: string): string {
   const ago = Math.round((stamp(today) - stamp(day)) / DAY_MS);
   if (ago === 0) return "hoy";
   if (ago === 1) return "ayer";
-  return new Date(stamp(day)).toLocaleDateString("es-ES", {
+  return new Date(stamp(day)).toLocaleDateString(locale(), {
     day: "numeric",
     month: "short",
     timeZone: "UTC",
@@ -54,7 +55,7 @@ export function weightChange(days: BodyWeightDay[], back = 30): number | null {
 }
 
 export function BodyWeightCard({ history, onLog, today, note, window: span = 180 }: BodyWeightCardProps) {
-  const now = today ?? new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+  const now = today ?? new Date().toLocaleDateString("sv-SE", { timeZone: timeZone() });
   const latest = history?.latest ?? null;
   const [draft, setDraft] = React.useState<number | null>(null);
   const [busy, setBusy] = React.useState(false);

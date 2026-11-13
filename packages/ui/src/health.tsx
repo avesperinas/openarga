@@ -5,6 +5,7 @@ import * as React from "react";
 import { Icon } from "./icons";
 import { StatRow, StatTile } from "./reading";
 import { Hint } from "./screen";
+import { locale } from "./regional";
 
 const MINUTE = 60_000;
 
@@ -755,7 +756,7 @@ export function WorkoutHeart({ heart, start }: { heart: WorkoutHeartData; start:
         />
         <StatTile
           label="Carga"
-          value={Math.round(heart.load).toLocaleString("es-ES")}
+          value={Math.round(heart.load).toLocaleString(locale())}
           info="Cada minuto cuenta lo que su zona, de 1 a 5 (Edwards). Las zonas, sobre 220 menos tu edad."
         />
         {heart.kcal != null && (

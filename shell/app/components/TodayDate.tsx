@@ -1,15 +1,16 @@
 "use client";
 
+import { zonedDates } from "@openarga/ui";
 import * as React from "react";
 
-const LONG = new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long" });
+const long = () => zonedDates({ weekday: "long", day: "numeric", month: "long" });
 
 const CHECK_MS = 60_000;
 
 export function TodayDate({ initial }: { initial: string }) {
   const [shown, setShown] = React.useState(initial);
   React.useEffect(() => {
-    const check = () => setShown(LONG.format(new Date()));
+    const check = () => setShown(long().format(new Date()));
     check();
     const timer = window.setInterval(check, CHECK_MS);
     document.addEventListener("visibilitychange", check);

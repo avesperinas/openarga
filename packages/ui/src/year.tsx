@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { locale } from "./regional";
 
 export interface YearDay {
   day: string;
@@ -63,7 +64,7 @@ export function monthStarts(cells: YearCell[]): { week: number; label: string }[
 }
 
 const longDay = (day: string) =>
-  new Date(`${day}T12:00:00Z`).toLocaleDateString("es-ES", {
+  new Date(`${day}T12:00:00Z`).toLocaleDateString(locale(), {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -75,7 +76,7 @@ export function YearCalendar({
   label,
   end,
   goal,
-  format = (value) => value.toLocaleString("es-ES"),
+  format = (value) => value.toLocaleString(locale()),
   formatDay = longDay,
 }: YearCalendarProps) {
   const scroller = React.useRef<HTMLDivElement>(null);

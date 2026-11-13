@@ -1,3 +1,5 @@
+import { zonedDates } from "@openarga/ui";
+
 import { request } from "./session";
 
 export interface NotificationKind {
@@ -73,7 +75,7 @@ export const setQuiet = (from: string | null, to: string | null) =>
 export const sendTest = () => call<TestResult>("/test", { method: "POST" });
 
 const when = (iso: string) =>
-  new Date(iso).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  zonedDates({ day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
 export function deviceDetail(device: Device): string {
   const sent = device.last_sent ? `último aviso ${when(device.last_sent)}` : "aún sin avisos";

@@ -1,3 +1,4 @@
+import { intlLocale } from "@openarga/ui";
 import { headers } from "next/headers";
 
 import { Dashboard } from "./components/Dashboard";
@@ -21,9 +22,8 @@ import {
   widgetUrl,
 } from "./lib/kernel";
 import { appIcons } from "./lib/app-icons";
+import { type PersonPreferences, fromHeaders } from "./lib/regional";
 import { type AreaKey, type Contributor, placedAreas, shownAreas } from "./lib/panels";
-
-const LOCALE = "es-ES";
 
 export const dynamic = "force-dynamic";
 
@@ -31,11 +31,12 @@ const WIDGET_LIMIT_MS = 10_000;
 
 const PANEL_LIMIT_MS = 6_000;
 
-function today(): string {
-  return new Intl.DateTimeFormat(LOCALE, {
+function today(person: PersonPreferences): string {
+  return new Intl.DateTimeFormat(intlLocale(person.locale, person.country), {
     weekday: "long",
     day: "numeric",
     month: "long",
+    timeZone: person.timezone,
   }).format(new Date());
 }
 
@@ -45,6 +46,7 @@ async function guessDevice(): Promise<Device> {
 }
 
 export default async function Today() {
+  const person = fromHeaders(await headers());
   const [desks, device, catalogue, preferences, modules, wallpapers] = await Promise.all([
     readDesktops(),
     guessDevice(),
@@ -77,7 +79,7 @@ export default async function Today() {
   }
 
   return (
-    <Desktop initial={preferences} modules={launchable(modules)} wallpapers={wallpapers}>
+    <Desktop initial={preferences} person={person} modules={launchable(modules)} wallpapers={wallpapers}>
       <main className="page" aria-label="Hoy">
         <header className="desktop-brand">
           <span className="desktop-mark">
@@ -85,7 +87,7 @@ export default async function Today() {
             arga
           </span>
           <div className="desktop-actions">
-            <TodayDate initial={today()} />
+            <TodayDate initial={today(person)} />
             <Inbox />
           </div>
         </header>

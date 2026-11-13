@@ -18,17 +18,17 @@ import {
 } from "./calendar-layout";
 import { IconButton } from "./controls";
 import { describe } from "./time-grid";
+import { dates } from "./regional";
 
-const LOCALE = "es-ES";
 const WEEKDAYS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"];
 const INITIALS = ["L", "M", "X", "J", "V", "S", "D"];
-const monthTitle = new Intl.DateTimeFormat(LOCALE, { month: "long", year: "numeric" });
-const dayLong = new Intl.DateTimeFormat(LOCALE, { weekday: "long", day: "numeric", month: "long" });
+const monthTitle = () => dates({ month: "long", year: "numeric" });
+const dayLong = () => dates({ weekday: "long", day: "numeric", month: "long" });
 
 const capitalise = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 export function formatMonth(day: string): string {
-  return capitalise(monthTitle.format(dayStart(day)).replace(" de ", " "));
+  return capitalise(monthTitle().format(dayStart(day)).replace(" de ", " "));
 }
 
 const COMPACT_BELOW = 560;
@@ -364,14 +364,14 @@ export function MonthGrid({
                   <button
                     type="button"
                     className="mg-date"
-                    aria-label={dayLong.format(date)}
+                    aria-label={dayLong().format(date)}
                     onClick={(event) => {
                       event.stopPropagation();
                       onDayClick?.(day);
                     }}
                   >
                     {date.getDate() === 1 && !compact
-                      ? `${date.getDate()} ${new Intl.DateTimeFormat(LOCALE, { month: "short" }).format(date).replace(".", "")}`
+                      ? `${date.getDate()} ${dates({ month: "short" }).format(date).replace(".", "")}`
                       : date.getDate()}
                   </button>
                   {hidden > 0 && (
@@ -485,7 +485,7 @@ export function MiniMonth({ month, range = [], marked, weekNumbers = false, onSe
                   data-in-range={inRange.has(day) || undefined}
                   data-range-start={(inRange.has(day) && first) || undefined}
                   data-range-end={(inRange.has(day) && last) || undefined}
-                  aria-label={dayLong.format(date)}
+                  aria-label={dayLong().format(date)}
                   aria-current={day === today ? "date" : undefined}
                   onClick={() => onSelect(day)}
                 >

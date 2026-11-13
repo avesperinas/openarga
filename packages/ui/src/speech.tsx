@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { Icon } from "./icons";
+import { locale, numbers } from "./regional";
 
 const CHUNK = 220;
 const RATES = [1, 1.15, 1.3, 1.5, 0.9];
@@ -410,11 +411,11 @@ export function useAudioPlayer(
   };
 }
 
-const speedLabel = (rate: number) => `${String(rate).replace(".", ",")}×`;
+const speedLabel = (rate: number) => `${numbers({ maximumFractionDigits: 2 }).format(rate)}×`;
 
 export function ReadAloud({
   parts,
-  lang = "es-ES",
+  lang = locale(),
   title,
   onPart,
   audio = null,

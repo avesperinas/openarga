@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { OTHERS, SERIES_COLORS } from "./analysis";
 import { Icon } from "./icons";
+import { locale } from "./regional";
 
 export interface TableColumn<Row> {
   key: string;
@@ -174,7 +175,7 @@ export function ShareChart({
   label,
   items,
   order = [],
-  format = (value) => value.toLocaleString("es-ES"),
+  format = (value) => value.toLocaleString(locale()),
   center,
 }: ShareChartProps) {
   const shown = foldShares(items, order);

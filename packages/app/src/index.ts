@@ -13,4 +13,12 @@ export {
   useResource,
 } from "./resource";
 export { useRoute, withTransition } from "./route";
-export { FALLBACK as DEFAULT_PREFERENCES, type Preferences, forgetPreferences, loadPreferences, usePreferences } from "./preferences";
+export {
+  FALLBACK as DEFAULT_PREFERENCES,
+  type Preferences,
+  forgetPreferences,
+  loadPreferences,
+  rememberedPreferences,
+  usePreferences,
+} from "./preferences";
+export { RegionalRoot } from "./regional";

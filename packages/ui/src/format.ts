@@ -1,4 +1,4 @@
-const LOCALE = "es-ES";
+import { currency as defaultCurrency, dates, locale, numbers, timeZone, zonedDates } from "./regional";
 
 const GROUPED = { useGrouping: "always" } as unknown as Intl.NumberFormatOptions;
 
@@ -10,26 +10,19 @@ export function figureChars(value: number | string, unit?: string): number {
 export function compact(value: number, maximumFractionDigits = 1): string {
   if (!Number.isFinite(value)) return "—";
   if (Math.abs(value) < 10000) {
-    return new Intl.NumberFormat(LOCALE, { ...GROUPED, maximumFractionDigits }).format(value);
+    return numbers({ ...GROUPED, maximumFractionDigits }).format(value);
   }
-  return new Intl.NumberFormat(LOCALE, {
-    notation: "compact",
-    maximumFractionDigits,
-  }).format(value);
+  return numbers({ notation: "compact", maximumFractionDigits }).format(value);
 }
 
 export const plain = (value: number, maximumFractionDigits = 0): string =>
   Number.isFinite(value)
-    ? new Intl.NumberFormat(LOCALE, { ...GROUPED, maximumFractionDigits }).format(value)
+    ? numbers({ ...GROUPED, maximumFractionDigits }).format(value)
     : "—";
 
 export function signed(value: number, maximumFractionDigits = 1): string {
   if (!Number.isFinite(value)) return "—";
-  const formatted = new Intl.NumberFormat(LOCALE, {
-    maximumFractionDigits,
-    signDisplay: "exceptZero",
-  }).format(value);
-  return formatted;
+  return numbers({ maximumFractionDigits, signDisplay: "exceptZero" }).format(value);
 }
 
 export const percent = (value: number, maximumFractionDigits = 0): string =>
@@ -48,34 +41,29 @@ export function duration(minutes: number): string {
   return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
 }
 
-const ZONE = "Europe/Madrid";
-
-const capitalised = (text: string) => text.charAt(0).toLocaleUpperCase(LOCALE) + text.slice(1);
+const capitalised = (text: string) => text.charAt(0).toLocaleUpperCase(locale()) + text.slice(1);
 
 export function todayIso(now = new Date()): string {
-  return new Intl.DateTimeFormat("sv-SE", { timeZone: ZONE }).format(now);
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: timeZone() }).format(now);
 }
-
-const SHORT_DAY = new Intl.DateTimeFormat(LOCALE, { day: "numeric", month: "short", timeZone: "UTC" });
 
 export function shortDay(day: string): string {
-  return SHORT_DAY.format(new Date(`${day}T00:00:00Z`)).replace(".", "");
+  return dates({ day: "numeric", month: "short", timeZone: "UTC" })
+    .format(new Date(`${day}T00:00:00Z`))
+    .replace(".", "");
 }
-
-const LONG_DAY = new Intl.DateTimeFormat(LOCALE, { weekday: "long", day: "numeric", month: "long", timeZone: ZONE });
 
 export function longDay(instant: string | Date): string {
-  return capitalised(LONG_DAY.format(new Date(instant)));
+  return capitalised(zonedDates({ weekday: "long", day: "numeric", month: "long" }).format(new Date(instant)));
 }
 
-const CLOCK = new Intl.DateTimeFormat(LOCALE, { hour: "2-digit", minute: "2-digit", timeZone: ZONE });
+export const clock = (instant: string | Date): string =>
+  zonedDates({ hour: "2-digit", minute: "2-digit" }).format(new Date(instant));
 
-export const clock = (instant: string | Date): string => CLOCK.format(new Date(instant));
-
-export function money(value: number, currency = "EUR", cents: boolean | "auto" = "auto"): string {
+export function money(value: number, currency = defaultCurrency(), cents: boolean | "auto" = "auto"): string {
   if (!Number.isFinite(value)) return "—";
   const digits = cents === "auto" ? (Number.isInteger(value) ? 0 : 2) : cents ? 2 : 0;
-  return new Intl.NumberFormat(LOCALE, {
+  return numbers({
     style: "currency",
     currency,
     minimumFractionDigits: digits,

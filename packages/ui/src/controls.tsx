@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 
 import { useBodyHost, useEscape, useFocusTrap } from "./focus";
 import { Icon, IconBadge, type IconName } from "./icons";
+import { numbers } from "./regional";
 
 type NativeButton = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className" | "style">;
 
@@ -335,10 +336,10 @@ export function List({ children }: { children: React.ReactNode }) {
   );
 }
 
-const DECIMAL = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 2 });
+const DECIMAL = () => numbers({ maximumFractionDigits: 2 });
 
 export function formatDecimal(value: number | null): string {
-  return value === null ? "—" : DECIMAL.format(value);
+  return value === null ? "—" : DECIMAL().format(value);
 }
 
 export function parseDecimal(text: string): number | null {

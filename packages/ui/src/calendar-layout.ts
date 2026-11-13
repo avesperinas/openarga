@@ -1,3 +1,4 @@
+import { dates } from "./regional";
 export type Tone = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
 export const TONES: { tone: Tone; name: string }[] = [
@@ -364,11 +365,10 @@ export function monthDays(month: string): string[] {
   return dayRange(mondayOf(first), 42);
 }
 
-const LOCALE = "es-ES";
-const clock = new Intl.DateTimeFormat(LOCALE, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+const clock = () => dates({ hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 
 export function formatClock(date: Date): string {
-  return clock.format(date);
+  return clock().format(date);
 }
 
 export function formatSpan(start: Date, end: Date): string {
