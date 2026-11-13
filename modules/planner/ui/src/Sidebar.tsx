@@ -4,6 +4,7 @@ import * as React from "react";
 import type { Layer } from "./api";
 import { type AppGroup, shortName, sidebarGroups, usePreference } from "./data";
 import { statusLine } from "./Subscribe";
+import { t } from "./lang";
 
 declare const __PLANNER_ICON__: string;
 
@@ -51,11 +52,11 @@ export function Sidebar({
       key={layer.id}
       name={name}
       tone={layer.tone}
-      detail={[layer.display === "background" ? "De fondo" : null, detail].filter(Boolean).join(" · ") || undefined}
+      detail={[layer.display === "background" ? t("layer.background_short") : null, detail].filter(Boolean).join(" · ") || undefined}
       checked={layer.visible}
       failing={layer.subscription?.failing}
       onChange={() => onToggle(layer)}
-      action={{ icon: "edit", label: `Editar ${layer.name}`, onClick: () => onEditLayer(layer) }}
+      action={{ icon: "edit", label: t("action.edit_named", { name: layer.name }), onClick: () => onEditLayer(layer) }}
     />
   );
 
@@ -68,7 +69,7 @@ export function Sidebar({
       </div>
 
       <Button variant="primary" icon="plus" block onClick={onCreate}>
-        Nuevo evento
+        {t("event.new")}
       </Button>
 
       <MiniMonth
@@ -85,47 +86,47 @@ export function Sidebar({
       />
 
       <div className="cr-layers-scroll">
-        <section className="cr-layers" aria-label="Mis calendarios">
+        <section className="cr-layers" aria-label={t("side.mine")}>
           <header className="cr-section-head">
-            <GroupLabel>Mis calendarios</GroupLabel>
-            <IconButton icon="plus" label="Nueva capa" size="small" variant="plain" onClick={() => onEditLayer(null)} />
+            <GroupLabel>{t("side.mine")}</GroupLabel>
+            <IconButton icon="plus" label={t("layer.new")} size="small" variant="plain" onClick={() => onEditLayer(null)} />
           </header>
           <ToggleList>{groups.own.map((layer) => row(layer))}</ToggleList>
         </section>
 
         {groups.holidays.length > 0 && (
-          <section className="cr-layers" aria-label="Festivos">
+          <section className="cr-layers" aria-label={t("side.holidays")}>
             <header className="cr-section-head">
-              <GroupLabel>Festivos</GroupLabel>
-              <IconButton icon="settings" label="Suscripciones: añadir o quitar" size="small" variant="plain" onClick={onSubscribe} />
+              <GroupLabel>{t("side.holidays")}</GroupLabel>
+              <IconButton icon="settings" label={t("side.manage_subs")} size="small" variant="plain" onClick={onSubscribe} />
             </header>
             <ToggleList>
               {groups.holidays.map((layer) =>
-                row(layer, layer.name, layer.origin === "subscription" ? statusLine(layer, now) : "Tuyos · a mano"),
+                row(layer, layer.name, layer.origin === "subscription" ? statusLine(layer, now) : t("side.yours_by_hand")),
               )}
             </ToggleList>
-            {groups.resting.length > 0 && <Hint>{`${groups.resting.join(" y ")} ${groups.resting.length === 1 ? "libra" : "libran"} estos días`}</Hint>}
+            {groups.resting.length > 0 && <Hint>{t(groups.resting.length === 1 ? "side.resting.one" : "side.resting.other", { names: groups.resting.join(t("side.and")) })}</Hint>}
           </section>
         )}
 
-        <section className="cr-layers" aria-label="Suscripciones">
+        <section className="cr-layers" aria-label={t("subs.title")}>
           <header className="cr-section-head">
-            <GroupLabel>Suscripciones</GroupLabel>
-            <IconButton icon="settings" label="Suscripciones: añadir o quitar" size="small" variant="plain" onClick={onSubscribe} />
+            <GroupLabel>{t("subs.title")}</GroupLabel>
+            <IconButton icon="settings" label={t("side.manage_subs")} size="small" variant="plain" onClick={onSubscribe} />
           </header>
           {groups.subscriptions.length > 0 ? (
             <ToggleList>{groups.subscriptions.map((layer) => row(layer, layer.name, statusLine(layer, now)))}</ToggleList>
           ) : (
             <Button variant="plain" icon="globe" block onClick={onSubscribe}>
-              Festivos, partidos, carreras o un .ics, que se actualizan solos
+              {t("side.subscribe_hint")}
             </Button>
           )}
         </section>
 
         {groups.apps.length > 0 && (
-          <section className="cr-layers" aria-label="De tus apps">
+          <section className="cr-layers" aria-label={t("side.apps")}>
             <header className="cr-section-head">
-              <GroupLabel>De tus apps</GroupLabel>
+              <GroupLabel>{t("side.apps")}</GroupLabel>
             </header>
             <ToggleList>
               {groups.apps.map((group) => {
@@ -136,7 +137,7 @@ export function Sidebar({
                   <ToggleGroup
                     key={group.app}
                     name={group.name}
-                    count={`${shown} de ${group.layers.length}`}
+                    count={t("side.count", { shown, total: group.layers.length })}
                     tone={group.layers[0]?.tone}
                     state={shown === 0 ? "off" : shown === group.layers.length ? "on" : "mixed"}
                     onChange={() => toggleApp(group)}
@@ -154,7 +155,7 @@ export function Sidebar({
 
       <footer className="cr-sidebar-foot">
         <Button variant="plain" icon="settings" block onClick={onSettings}>
-          Ajustes
+          {t("side.settings")}
         </Button>
       </footer>
     </div>

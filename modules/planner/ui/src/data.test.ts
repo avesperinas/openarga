@@ -34,89 +34,89 @@ const occurrence: Occurrence = {
   href: "/training/sesion/1",
 };
 
-describe("lo que viene de otra app", () => {
-  it("no se arrastra si su app no deja moverlo desde aquí", () => {
+describe("what comes from another app", () => {
+  it("cannot be dragged if its app does not allow moving it from here", () => {
     const event = toGridEvent(occurrence, layer("app"));
 
     expect(event.readOnly).toBe(true);
     expect(event.subscribed).toBe(false);
   });
 
-  it("se arrastra si su app lo mueve (ADR-0085)", () => {
+  it("can be dragged if its app moves it (ADR-0085)", () => {
     expect(toGridEvent(occurrence, { ...layer("app"), movable: true }).readOnly).toBe(false);
   });
 
-  it("lo suscrito nunca, aunque dijese que sí", () => {
+  it("subscribed items never, even if they said yes", () => {
     expect(toGridEvent(occurrence, { ...layer("subscription"), movable: true }).readOnly).toBe(true);
   });
 
-  it("lo propio sí", () => {
+  it("your own items yes", () => {
     expect(toGridEvent(occurrence, layer("own")).readOnly).toBe(false);
   });
 });
 
-describe("una capa de fondo", () => {
+describe("a background layer", () => {
   const background: Layer = { ...layer("own"), display: "background" };
 
-  it("pinta lo suyo como fondo", () => {
+  it("paints its items as background", () => {
     expect(toGridEvent(occurrence, background).background).toBe(true);
     expect(toGridEvent(occurrence, layer("own")).background).toBe(false);
   });
 
-  it("lo que tiene hora no cuenta fuera de la rejilla, y lo de días enteros sí", () => {
+  it("timed items do not count outside the grid, and whole days do", () => {
     expect(counts(occurrence, background)).toBe(false);
     expect(counts({ ...occurrence, all_day: true, start: "2026-10-06", end: "2026-10-09" }, background)).toBe(true);
     expect(counts(occurrence, layer("own"))).toBe(true);
   });
 
-  it("un servidor anterior no dice nada y son eventos", () => {
+  it("an older server says nothing and they are events", () => {
     expect(toGridEvent(occurrence, layer("app")).background).toBe(false);
   });
 });
 
-describe("la barra en grupos y lo mismo dos veces", () => {
+describe("the sidebar in groups and the same thing twice", () => {
   const layer = (id: string, name: string, origin: "own" | "subscription" | "app", extra: Record<string, unknown> = {}) =>
     ({ id, name, tone: 1, origin, visible: true, position: 0, connection_id: null, ...extra }) as never;
   const layers = [
     layer("p", "Personal", "own"),
-    layer("t", "Trabajo", "own", { days_off_from: ["fc", "fl"] }),
-    layer("fl", "Festivos · Local", "own"),
-    layer("fc", "Festivos · Comunidad", "subscription", { subscription: { provider: "holidays" } }),
-    layer("eq", "Equipo", "subscription", { subscription: { provider: "football" } }),
-    layer("ca", "Carreras", "subscription", { subscription: { provider: "formula1" } }),
+    layer("t", "Work", "own", { days_off_from: ["fc", "fl"] }),
+    layer("fl", "Holidays · Local", "own"),
+    layer("fc", "Holidays · Region", "subscription", { subscription: { provider: "holidays" } }),
+    layer("eq", "Team", "subscription", { subscription: { provider: "football" } }),
+    layer("ca", "Races", "subscription", { subscription: { provider: "formula1" } }),
     layer("e1", "Travel · Plan", "app", { app: "travel:plan" }),
-    layer("e2", "Travel · Trayectos", "app", { app: "travel:legs" }),
-    layer("e3", "Travel · Viaje", "app", { app: "travel:trip" }),
+    layer("e2", "Travel · Legs", "app", { app: "travel:legs" }),
+    layer("e3", "Travel · Trip", "app", { app: "travel:trip" }),
     layer("r", "Training", "app", { app: "training" }),
   ];
 
-  it("cuatro grupos, los festivos juntos y las apps por app", () => {
+  it("four groups, holidays together and apps by app", () => {
     const groups = sidebarGroups(layers);
-    expect(groups.own.map((one: { name: string }) => one.name)).toEqual(["Personal", "Trabajo"]);
-    expect(groups.holidays.map((one: { name: string }) => one.name)).toEqual(["Festivos · Local", "Festivos · Comunidad"]);
-    expect(groups.subscriptions.map((one: { name: string }) => one.name)).toEqual(["Equipo", "Carreras"]);
+    expect(groups.own.map((one: { name: string }) => one.name)).toEqual(["Personal", "Work"]);
+    expect(groups.holidays.map((one: { name: string }) => one.name)).toEqual(["Holidays · Local", "Holidays · Region"]);
+    expect(groups.subscriptions.map((one: { name: string }) => one.name)).toEqual(["Team", "Races"]);
     expect(groups.apps.map((one) => [one.name, one.layers.length])).toEqual([
       ["Travel", 3],
       ["Training", 1],
     ]);
-    expect(groups.resting).toEqual(["Trabajo"]);
+    expect(groups.resting).toEqual(["Work"]);
     expect(shortName(layers[6] as never, "Travel")).toBe("Plan");
   });
 
-  it("lo tuyo a la misma hora y con título parecido a lo de una app es lo mismo", () => {
+  it("yours at the same time with a similar title to an app's is the same", () => {
     const occurrence = (id: string, calendar_id: string, title: string, start = "2027-01-16T09:00:00+01:00") =>
       ({ id, event_id: id, calendar_id, title, all_day: false, start, end: "2027-01-16T13:30:00+01:00", status: "confirmed" }) as never;
     const found = duplicatesOf(
       [
-        occurrence("mine", "p", "Museo (colección y jardines)"),
-        occurrence("theirs", "e1", "Museo: colección permanente y jardines"),
-        occurrence("lunch", "p", "Comida"),
-        occurrence("later", "p", "Museo", "2027-01-16T10:00:00+01:00"),
+        occurrence("mine", "p", "Museum (collection and gardens)"),
+        occurrence("theirs", "e1", "Museum: permanent collection and gardens"),
+        occurrence("lunch", "p", "Lunch"),
+        occurrence("later", "p", "Museum", "2027-01-16T10:00:00+01:00"),
       ],
       layers,
     );
     expect([...found.keys()]).toEqual(["mine"]);
-    expect(similar("Tour por la sierra", "Tour organizado por la sierra")).toBe(true);
-    expect(similar("Cena", "Comida")).toBe(false);
+    expect(similar("Tour of the hills", "Organised tour of the hills")).toBe(true);
+    expect(similar("Dinner", "Lunch")).toBe(false);
   });
 });

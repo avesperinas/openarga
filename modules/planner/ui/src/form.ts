@@ -1,6 +1,7 @@
 import { addDays, dayKey } from "@openarga/ui";
 
 import type { EventDraft, Occurrence } from "./api";
+import { t } from "./lang";
 
 export interface Form {
   title: string;
@@ -73,13 +74,13 @@ export function formOf(occurrence: Occurrence, rrule: string | null): Form {
 }
 
 export function problemOf(form: Form): string | null {
-  if (!form.title.trim()) return "Ponle un título.";
+  if (!form.title.trim()) return t("form.no_title");
   if (form.allDay) {
-    if (form.endDay < form.startDay) return "El último día va después del primero.";
+    if (form.endDay < form.startDay) return t("form.last_before_first");
     return null;
   }
-  if (at(form.endDay, form.endTime) < at(form.startDay, form.startTime)) return "El fin va después del inicio.";
-  if (form.url.trim() && !/^https?:\/\//.test(form.url.trim())) return "El enlace empieza por https://.";
+  if (at(form.endDay, form.endTime) < at(form.startDay, form.startTime)) return t("form.end_before_start");
+  if (form.url.trim() && !/^https?:\/\//.test(form.url.trim())) return t("form.bad_link");
   return null;
 }
 

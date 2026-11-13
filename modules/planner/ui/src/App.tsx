@@ -62,6 +62,7 @@ import {
   titleOf,
   visibleDays,
 } from "./views";
+import { t } from "./lang";
 
 const MOBILE = 720;
 
@@ -185,7 +186,7 @@ export function App() {
     const layer = data.layers.find((one) => one.id === awaiting);
     if (layer?.subscription?.updated_at || layer?.subscription?.failing) {
       setAwaiting(null);
-      if (layer.subscription.failing) toast({ message: `${layer.name}: ${layer.subscription.detail ?? "falla"}`, tone: "error" });
+      if (layer.subscription.failing) toast({ message: `${layer.name}: ${layer.subscription.detail ?? t("sub.failing_short")}`, tone: "error" });
       return;
     }
     const started = Date.now();
@@ -330,8 +331,8 @@ export function App() {
 
   const commands: Command[] = React.useMemo(
     () => [
-      { id: "new", label: "Nuevo evento", icon: "plus", shortcut: "C", run: () => openNew() },
-      { id: "today", label: "Ir a hoy", icon: "today", shortcut: "T", run: goToday },
+      { id: "new", label: t("event.new"), icon: "plus", shortcut: "C", run: () => openNew() },
+      { id: "today", label: t("cmd.today"), icon: "today", shortcut: "T", run: goToday },
       ...VIEWS.filter((v) => !(mobile && v.value === "week")).map((v) => ({
         id: `view-${v.value}`,
         label: `Ver ${v.label.toLowerCase()}`,
@@ -339,15 +340,15 @@ export function App() {
         shortcut: v.key.toUpperCase(),
         run: () => changeView(v.value),
       })),
-      { id: "layer-new", label: "Nueva capa", icon: "layers", run: () => setLayerEdit(null) },
-      { id: "subscribe", label: "Suscripciones", icon: "globe", run: () => setSubscribing(true) },
+      { id: "layer-new", label: t("layer.new"), icon: "layers", run: () => setLayerEdit(null) },
+      { id: "subscribe", label: t("subs.title"), icon: "globe", run: () => setSubscribing(true) },
       ...data.layers.map((layer) => ({
         id: `layer-${layer.id}`,
-        label: `${layer.visible ? "Ocultar" : "Mostrar"} ${layer.name}`,
+        label: t(layer.visible ? "cmd.hide" : "cmd.show", { name: layer.name }),
         icon: (layer.visible ? "eye-off" : "eye") as Command["icon"],
         run: () => void toggleLayer(layer),
       })),
-      ...(!mobile ? [{ id: "sidebar", label: sidebarOpen ? "Plegar la barra lateral" : "Desplegar la barra lateral", icon: "sidebar" as const, run: () => setSidebarPref(!sidebarOpen) }] : []),
+      ...(!mobile ? [{ id: "sidebar", label: sidebarOpen ? t("cmd.fold") : t("cmd.unfold"), icon: "sidebar" as const, run: () => setSidebarPref(!sidebarOpen) }] : []),
     ],
     [openNew, goToday, changeView, data.layers, toggleLayer, mobile, sidebarOpen, setSidebarPref],
   );
@@ -402,9 +403,9 @@ export function App() {
   const viewOptions = VIEWS.filter((v) => !(mobile && v.value === "week")).map((v) => ({ value: v.value, label: mobile ? v.short : v.label }));
 
   const stage = data.loading ? (
-    <Skeleton rows={8} label="Cargando el calendario" />
+    <Skeleton rows={8} label={t("app.loading")} />
   ) : data.failed ? (
-    <ErrorState title="Planner no contesta" detail={data.error ?? undefined} onRetry={data.reload} />
+    <ErrorState title={t("app.down")} detail={data.error ?? undefined} onRetry={data.reload} />
   ) : view === "month" ? (
       <MonthGrid
         month={`${monthOf(shown)}-01`}
@@ -495,7 +496,7 @@ export function App() {
             ) : (
               <IconButton
                 icon="sidebar"
-                label={sidebarOpen ? "Plegar la barra lateral" : "Desplegar la barra lateral"}
+                label={sidebarOpen ? t("cmd.fold") : t("cmd.unfold")}
                 variant="plain"
                 onClick={() => setSidebarPref(!sidebarOpen)}
               />
@@ -503,7 +504,7 @@ export function App() {
             {!mobile && (
               <>
                 <Button size="small" variant="secondary" onClick={goToday}>
-                  Hoy
+                  {t("day.today")}
                 </Button>
                 <div className="cr-arrows">
                   <IconButton icon="chevron-left" label="Anterior" size="small" variant="plain" onClick={() => go(step(shown, -1))} />
@@ -530,7 +531,7 @@ export function App() {
               {mobile ? (
                 <>
                   <Button size="small" variant="secondary" onClick={goToday}>
-                    Hoy
+                    {t("day.today")}
                   </Button>
                   <IconButton icon="search" label="Buscar" variant="plain" onClick={() => setPalette(true)} />
                   <AppHome app="planner" className="cr-home" />
@@ -542,7 +543,7 @@ export function App() {
                     <span>Buscar</span>
                     <kbd className="palette-key">⌘K</kbd>
                   </button>
-                  <SegmentedControl label="Vista" options={viewOptions} value={view} onChange={changeView} />
+                  <SegmentedControl label={t("app.view")} options={viewOptions} value={view} onChange={changeView} />
                 </>
               )}
             </div>
@@ -550,7 +551,7 @@ export function App() {
 
           {mobile && (
             <div className="cr-mobile-views">
-              <SegmentedControl label="Vista" options={viewOptions} value={view} onChange={changeView} />
+              <SegmentedControl label={t("app.view")} options={viewOptions} value={view} onChange={changeView} />
             </div>
           )}
 
@@ -576,8 +577,8 @@ export function App() {
           <OfflineNotice />
 
           {data.error && !data.failed && (
-            <Notice tone="negative" action={{ label: "Reintentar", onClick: () => void data.reload() }}>
-              No se ha podido cargar el calendario: {data.error}
+            <Notice tone="negative" action={{ label: t("action.retry"), onClick: () => void data.reload() }}>
+              {t("app.load_failed", { error: data.error ?? "" })}
             </Notice>
           )}
 
@@ -587,17 +588,17 @@ export function App() {
         </main>
 
         {mobile && opened && (
-          <Sheet title={opened.kind === "new" ? "Nuevo evento" : "Evento"} onClose={closePanel}>
+          <Sheet title={opened.kind === "new" ? t("event.new") : t("event.event")} onClose={closePanel}>
             {panel}
           </Sheet>
         )}
 
         {mobile && !opened && (
-          <CreateButton label="Evento" onClick={() => openNew()} />
+          <CreateButton label={t("event.event")} onClick={() => openNew()} />
         )}
 
         {mobile && mobileLayers && (
-          <Sheet title="Capas" onClose={() => setMobileLayers(false)}>
+          <Sheet title={t("app.layers")} onClose={() => setMobileLayers(false)}>
             <Sidebar
               layers={data.layers}
               range={days}
@@ -637,15 +638,15 @@ export function App() {
               const already = data.layers.some((one) => one.id === layer.id);
               data.setLayers((all) => [...all.filter((one) => one.id !== layer.id), layer]);
               if (already) {
-                toast({ message: `Ya la tenías: «${layer.name}»` });
+                toast({ message: t("toast.already", { name: layer.name }) });
                 return;
               }
               setAwaiting(layer.id);
-              toast({ message: `${layer.name}: llega en un minuto` });
+              toast({ message: t("toast.arriving", { name: layer.name }) });
             }}
             onUnsubscribed={(layer) => {
               data.setLayers((all) => all.filter((one) => one.id !== layer.id));
-              toast({ message: `Suscripción quitada · ${layer.name}` });
+              toast({ message: t("toast.unsubscribed", { name: layer.name }) });
             }}
           />
         )}
@@ -668,7 +669,7 @@ export function App() {
                 data.setLayers((all) => [...all, created]);
                 if (display === "events") setLastLayer(created.id);
               }
-              toast({ message: layerEdit ? "Capa guardada" : "Capa creada" });
+              toast({ message: layerEdit ? t("toast.layer_saved") : t("toast.layer_created") });
             }}
           />
         )}

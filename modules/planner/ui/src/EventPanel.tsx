@@ -27,6 +27,7 @@ import {
   updateEvent,
 } from "./api";
 import { type Form, changesOf, draftOf, formOf, moveStart, problemOf } from "./form";
+import { dateFormat, intl, t } from "./lang";
 
 export type Opened =
   | { kind: "new"; form: Form }
@@ -46,19 +47,19 @@ interface Props {
   twin?: Occurrence | null;
 }
 
-const dayLong = new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long" });
-const dayShort = new Intl.DateTimeFormat("es-ES", { weekday: "short", day: "numeric", month: "short" });
-const clock = new Intl.DateTimeFormat("es-ES", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+const dayLong = dateFormat({ weekday: "long", day: "numeric", month: "long" });
+const dayShort = dateFormat({ weekday: "short", day: "numeric", month: "short" });
+const clock = dateFormat({ hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 const cap = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 export function whenOf(occurrence: Occurrence): { day: string; time: string } {
   if (occurrence.all_day) {
     const first = dayStart(occurrence.start);
     const lastKey = addDays(occurrence.end, -1);
-    if (lastKey === occurrence.start) return { day: cap(dayLong.format(first)), time: "Todo el día" };
+    if (lastKey === occurrence.start) return { day: cap(dayLong.format(first)), time: t("event.all_day_cap") };
     return {
       day: `${cap(dayShort.format(first))} – ${dayShort.format(dayStart(lastKey))}`,
-      time: "Todo el día",
+      time: t("event.all_day_cap"),
     };
   }
   const start = new Date(occurrence.start);
@@ -74,7 +75,7 @@ export function whenOf(occurrence: Occurrence): { day: string; time: string } {
 
 function elsewhere(occurrence: Occurrence): string | null {
   if (occurrence.all_day || occurrence.tz === VIEWER_TZ) return null;
-  const there = new Intl.DateTimeFormat("es-ES", {
+  const there = new Intl.DateTimeFormat(intl(), {
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",
@@ -111,7 +112,7 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
     setBusy(true);
     try {
       await hideSubscribed(occurrence.id);
-      await onDone("Oculto");
+      await onDone(t("toast.hidden"));
       onClose();
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : String(failure));
@@ -125,7 +126,7 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
     setBusy(true);
     try {
       await cancelEvent(occurrence.event_id, "all", occurrence.original_start);
-      await onDone(`Quitado de ${layer?.name ?? "tu capa"}`);
+      await onDone(t("toast.removed_from", { layer: layer?.name ?? t("toast.your_layer") }));
       onClose();
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : String(failure));
@@ -141,7 +142,7 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
     setBusy(true);
     try {
       await cancelEvent(occurrence.event_id, scope, occurrence.original_start);
-      await onDone(scope === "this" || !series ? "Evento cancelado" : "Serie cancelada");
+      await onDone(scope === "this" || !series ? t("toast.event_cancelled") : t("toast.series_cancelled"));
       onClose();
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : String(failure));
@@ -171,7 +172,7 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
           try {
             if (opened.kind === "new") {
               await createEvent(draftOf(after, VIEWER_TZ));
-              await onDone("Evento creado");
+              await onDone(t("toast.created"));
               onClose();
               return;
             }
@@ -189,7 +190,7 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
               scope = chosen;
             }
             await updateEvent(current.event_id, changes, scope, current.original_start);
-            await onDone("Cambios guardados");
+            await onDone(t("toast.saved"));
             onClose();
           } catch (failure) {
             setError(failure instanceof Error ? failure.message : String(failure));
@@ -210,7 +211,7 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
       <header className="cr-panel-head">
         <span className="cr-panel-layer" data-tone={layer?.tone}>
           <span className="tone-dot" />
-          {layer?.name ?? "Capa"}
+          {layer?.name ?? t("layer.layer")}
           {layer?.origin === "subscription" && <Badge>Suscrita</Badge>}
           {layer?.origin === "app" && <Badge>App</Badge>}
         </span>
@@ -224,15 +225,15 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
       {twin && own && (
         <Notice
           tone="info"
-          title={`También está en ${layers.find((one) => one.id === twin.calendar_id)?.name ?? "otra capa"}`}
-          action={{ label: "Quitar el mío", onClick: () => void removeMine() }}
+          title={t("twin.also_in", { layer: layers.find((one) => one.id === twin.calendar_id)?.name ?? t("twin.other_layer") })}
+          action={{ label: t("twin.remove_mine"), onClick: () => void removeMine() }}
         >
-          «{twin.title}», a la misma hora.
+          {t("twin.same_time", { title: twin.title })}
           {twin.href && (
             <>
               {" "}
               <a className="cr-link" href={twin.href}>
-                Abrir el de su app
+                {t("twin.open_app")}
               </a>
             </>
           )}
@@ -242,7 +243,7 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
       <dl className="cr-facts">
         <div className="cr-fact">
           <dt>
-            <Icon name="clock" label="Cuándo" />
+            <Icon name="clock" label={t("field.when")} />
           </dt>
           <dd>
             <span className="cr-fact-main">{when.day}</span>
@@ -253,7 +254,7 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
         {occurrence.repeat && (
           <div className="cr-fact">
             <dt>
-              <Icon name="repeat" label="Se repite" />
+              <Icon name="repeat" label={t("field.repeats")} />
             </dt>
             <dd>
               <span className="cr-fact-main">{cap(occurrence.repeat)}</span>
@@ -264,7 +265,7 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
         {occurrence.location && (
           <div className="cr-fact">
             <dt>
-              <Icon name="pin" label="Lugar" />
+              <Icon name="pin" label={t("field.place")} />
             </dt>
             <dd>
               <a className="cr-link" href={mapLink(occurrence.location)} target="_blank" rel="noreferrer">
@@ -276,7 +277,7 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
         {occurrence.url && (
           <div className="cr-fact">
             <dt>
-              <Icon name="link" label="Enlace" />
+              <Icon name="link" label={t("field.link")} />
             </dt>
             <dd>
               <a className="cr-link" href={occurrence.url} target="_blank" rel="noreferrer">
@@ -288,7 +289,7 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
         {occurrence.notes && (
           <div className="cr-fact">
             <dt>
-              <Icon name="note" label="Notas" />
+              <Icon name="note" label={t("field.notes")} />
             </dt>
             <dd className="cr-notes">{occurrence.notes}</dd>
           </div>
@@ -299,19 +300,19 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
 
       {layer?.origin === "subscription" && (
         <footer className="cr-panel-foot">
-          <p className="cr-sheet-note">Lo trae la suscripción y se actualiza solo: no se edita, pero se puede quitar de la vista.</p>
+          <p className="cr-sheet-note">{t("event.subscribed_note")}</p>
           <Button variant="secondary" icon="eye-off" onClick={hide} disabled={busy}>
-            Ocultar
+            {t("action.hide")}
           </Button>
         </footer>
       )}
 
       {layer?.origin === "app" && (
         <footer className="cr-panel-foot">
-          <p className="cr-sheet-note">Lo pone {layer.name} y se actualiza solo: se cambia allí.</p>
+          <p className="cr-sheet-note">{t("event.app_note", { app: layer.name })}</p>
           {occurrence.href && (
             <Button variant="secondary" icon="chevron-right" onClick={() => occurrence.href && window.location.assign(occurrence.href)}>
-              Abrir en {layer.name}
+              {t("event.open_in", { layer: layer.name })}
             </Button>
           )}
         </footer>
@@ -320,7 +321,7 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
       {own && (
         <footer className="cr-panel-foot">
           <Button variant="secondary" icon="edit" onClick={() => setEditing(true)} disabled={busy}>
-            Editar
+            {t("action.edit")}
           </Button>
           <Button variant="plain" onClick={cancel} disabled={busy}>
             <span className="cr-danger">Cancelar evento</span>
@@ -392,8 +393,8 @@ function Editor({ opened, layers, busy, error, presentation, onCancel, onSave }:
         ref={titleRef}
         className="cr-title-input"
         value={form.title}
-        placeholder="Título"
-        aria-label="Título"
+        placeholder={t("field.title")}
+        aria-label={t("field.title")}
         maxLength={200}
         enterKeyHint="done"
         onChange={(event) => set("title", event.target.value)}
@@ -419,14 +420,14 @@ function Editor({ opened, layers, busy, error, presentation, onCancel, onSave }:
       <section className="cr-group">
         <div className="cr-switch-row">
           <span className="cr-switch-label" aria-hidden="true">
-            Todo el día
+            {t("event.all_day_cap")}
           </span>
-          <Switch label="Todo el día" checked={form.allDay} onChange={(value) => set("allDay", value)} />
+          <Switch label={t("event.all_day_cap")} checked={form.allDay} onChange={(value) => set("allDay", value)} />
         </div>
         <div className="cr-when">
           <div className="cr-when-row">
             <DateField
-              label={form.allDay ? "Desde" : "Empieza"}
+              label={form.allDay ? t("field.from") : t("field.starts")}
               value={form.startDay}
               onChange={(day) => day && setForm((f) => moveStart(f, day, f.startTime))}
             />
@@ -434,7 +435,7 @@ function Editor({ opened, layers, busy, error, presentation, onCancel, onSave }:
               <input
                 type="time"
                 className="cr-input"
-                aria-label="Hora de inicio"
+                aria-label={t("field.start_time")}
                 step={300}
                 value={form.startTime}
                 required
@@ -444,7 +445,7 @@ function Editor({ opened, layers, busy, error, presentation, onCancel, onSave }:
           </div>
           <div className="cr-when-row">
             <DateField
-              label={form.allDay ? "Hasta" : "Acaba"}
+              label={form.allDay ? t("field.to") : t("field.ends")}
               value={form.endDay}
               min={form.startDay}
               onChange={(day) => day && set("endDay", day)}
@@ -453,7 +454,7 @@ function Editor({ opened, layers, busy, error, presentation, onCancel, onSave }:
               <input
                 type="time"
                 className="cr-input"
-                aria-label="Hora de fin"
+                aria-label={t("field.end_time")}
                 step={300}
                 value={form.endTime}
                 required
@@ -473,8 +474,8 @@ function Editor({ opened, layers, busy, error, presentation, onCancel, onSave }:
       </section>
 
       <section className="cr-group">
-        <TextField label="Lugar" value={form.location} placeholder="Dónde" onChange={(value) => set("location", value)} />
-        <TextField label="Enlace" value={form.url} placeholder="https://" onChange={(value) => set("url", value)} />
+        <TextField label={t("field.place")} value={form.location} placeholder={t("field.where")} onChange={(value) => set("location", value)} />
+        <TextField label={t("field.link")} value={form.url} placeholder="https://" onChange={(value) => set("url", value)} />
         <label className="cr-textarea">
           <span className="cr-when-label">Notas</span>
           <textarea
@@ -491,10 +492,10 @@ function Editor({ opened, layers, busy, error, presentation, onCancel, onSave }:
 
       <footer className="cr-panel-foot">
         <Button variant="secondary" onClick={onCancel} disabled={busy}>
-          Cancelar
+          {t("action.cancel")}
         </Button>
         <Button variant="primary" type="submit" disabled={busy}>
-          {busy ? "Guardando…" : opened.kind === "new" ? "Crear" : "Guardar"}
+          {busy ? t("action.saving") : opened.kind === "new" ? t("action.create") : t("action.save")}
         </Button>
       </footer>
     </form>
