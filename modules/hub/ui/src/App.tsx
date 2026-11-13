@@ -2,6 +2,7 @@ import { withTransition } from "@openarga/app";
 import { AppSettings, AppShell, SETTINGS_TAB } from "@openarga/ui";
 import { useCallback, useEffect, useState } from "react";
 
+import { AiSettings } from "./AiSettings";
 import { ConnectionScreen } from "./Connection";
 import { APP } from "./Header";
 import { HomeScreen } from "./Home";
@@ -64,7 +65,11 @@ export function App() {
       {current.screen === "connection" && (
         <ConnectionScreen key={current.id} id={current.id} onBack={() => navigate(PATHS.status)} />
       )}
-      {current.screen === "settings" && <AppSettings app={APP} />}
+      {current.screen === "settings" && (
+        <AppSettings app={APP}>
+          <AiSettings />
+        </AppSettings>
+      )}
       {(current.screen === "status" || current.screen === "setup") && (
         <HomeScreen
           tab={current.screen}
