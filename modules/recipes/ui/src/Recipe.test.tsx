@@ -1,11 +1,16 @@
+import { configureRegional } from "@openarga/ui";
 import { renderToString } from "react-dom/server";
 
+import { english as t, inLocale } from "./i18n/testing";
 import { Macros, deleteConsequence, ingredientDetail, kcalSplit, microRows } from "./Recipe";
 import type { NutrientInfo, Recipe } from "./api";
 
+beforeEach(() => configureRegional({ locale: "en-US" }));
+afterEach(() => configureRegional({ locale: "es-ES" }));
+
 const BASE: Recipe = {
   id: "r1",
-  name: "Porrusalda",
+  name: "Leek soup",
   servings: 4,
   requested_servings: 4,
   space_id: null,
@@ -26,58 +31,58 @@ const BASE: Recipe = {
   },
 };
 
-test("la cifra que se mira es la de la ración, y el total va debajo", () => {
-  const html = renderToString(<Macros recipe={BASE} />).replaceAll("<!-- -->", "");
+test("the figure you look at is per serving, with the total below", () => {
+  const html = renderToString(inLocale(<Macros recipe={BASE} />)).replaceAll("<!-- -->", "");
 
-  expect(html).toContain("Por ración");
+  expect(html).toContain("Per serving");
   expect(html).toContain("<dd>279</dd>");
-  expect(html).toContain("<dd>7,3</dd>");
+  expect(html).toContain("<dd>7.3</dd>");
   expect(html).toContain('data-count="4"');
-  expect(html).toContain("Receta entera (4 raciones): 1.114 kcal");
+  expect(html).toContain("Whole recipe (4 servings): 1,114 kcal");
 });
 
-test("una cifra incompleta lleva dicho qué le falta, con nombres", () => {
+test("an incomplete figure says what it lacks, with names", () => {
   const incomplete = {
     ...BASE,
     nutrition: {
       ...BASE.nutrition,
       counted: 3,
       ingredients: 4,
-      uncertainty: "falta 1 de 4 ingredientes (Sofrito de la abuela)",
+      uncertainty: "1 of 4 ingredients missing (homemade sofrito)",
     },
   };
 
-  const html = renderToString(<Macros recipe={incomplete} />);
+  const html = renderToString(inLocale(<Macros recipe={incomplete} />));
 
-  expect(html).toContain("falta 1 de 4 ingredientes (Sofrito de la abuela)");
+  expect(html).toContain("1 of 4 ingredients missing (homemade sofrito)");
 });
 
-test("una macro que nadie declara sale como hueco y no como cero", () => {
-  const html = renderToString(<Macros recipe={BASE} />).replaceAll("<!-- -->", "");
+test("a macro nobody declares shows as a gap and not as zero", () => {
+  const html = renderToString(inLocale(<Macros recipe={BASE} />)).replaceAll("<!-- -->", "");
 
-  expect(html).not.toContain("0 g fibra");
+  expect(html).not.toContain("0 g fibre");
 });
 
-test("al borrar se dice qué se pierde: sus ingredientes y, si las hay, sus versiones", () => {
+test("deleting says what is lost: its ingredients and, if any, its versions", () => {
   const group = (ingredients: number) => ({ ingredients: Array.from({ length: ingredients }) }) as unknown as Recipe["groups"][number];
 
-  expect(deleteConsequence({ versions: 1, groups: [group(2)] })).toBe("Se borra con sus 2 ingredientes. No se puede deshacer.");
-  expect(deleteConsequence({ versions: 3, groups: [group(1)] })).toBe(
-    "Se borra con su ingrediente y sus 3 versiones. No se puede deshacer.",
+  expect(deleteConsequence({ versions: 1, groups: [group(2)] }, t)).toBe("It is deleted with its 2 ingredients. This cannot be undone.");
+  expect(deleteConsequence({ versions: 3, groups: [group(1)] }, t)).toBe(
+    "It is deleted with its ingredient and its 3 versions. This cannot be undone.",
   );
-  expect(deleteConsequence({ versions: 1, groups: [] })).toBe("Se borra. No se puede deshacer.");
+  expect(deleteConsequence({ versions: 1, groups: [] }, t)).toBe("It is deleted. This cannot be undone.");
 });
 
 const LIST: NutrientInfo[] = [
-  { key: "kcal", name: "Energía", unit: "kcal", group: "energy", front: true, digits: 0 },
-  { key: "iron", name: "Hierro", unit: "mg", group: "mineral", front: true, digits: 1 },
-  { key: "vitamin_d", name: "Vitamina D", unit: "µg", group: "vitamin", front: true, digits: 1 },
-  { key: "folate", name: "Folato", unit: "µg", group: "vitamin", front: true, digits: 0 },
-  { key: "selenium", name: "Selenio", unit: "µg", group: "mineral", front: false, digits: 1 },
+  { key: "kcal", name: "Energy", unit: "kcal", group: "energy", front: true, digits: 0 },
+  { key: "iron", name: "Iron", unit: "mg", group: "mineral", front: true, digits: 1 },
+  { key: "vitamin_d", name: "Vitamin D", unit: "µg", group: "vitamin", front: true, digits: 1 },
+  { key: "folate", name: "Folate", unit: "µg", group: "vitamin", front: true, digits: 0 },
+  { key: "selenium", name: "Selenium", unit: "µg", group: "mineral", front: false, digits: 1 },
 ];
 
-describe("los micros por ración", () => {
-  it("enseña los de portada que la receta tiene, sin macros ni los de «ver todos»", () => {
+describe("micros per serving", () => {
+  it("shows the front-page ones the recipe has, without macros nor the see-all ones", () => {
     const recipe = {
       nutrition: {
         ...BASE.nutrition,
@@ -92,24 +97,24 @@ describe("los micros por ración", () => {
     ]);
   });
 
-  it("sin nutrientes de una versión anterior, no enseña nada", () => {
+  it("without nutrients from an earlier version, it shows nothing", () => {
     expect(microRows(BASE, LIST)).toEqual([]);
   });
 });
 
-test("de dónde salen las kcal: 4 por gramo de proteína e hidratos y 9 de grasa", () => {
-  const split = kcalSplit({ protein: 25, fat: 10, carbs: 50 });
+test("where the kcal come from: 4 per gram of protein and carbs and 9 of fat", () => {
+  const split = kcalSplit({ protein: 25, fat: 10, carbs: 50 }, t);
   expect(split.map((part) => [part.label, part.value])).toEqual([
-    ["Proteína", "26 %"],
-    ["Grasa", "23 %"],
-    ["Hidratos", "51 %"],
+    ["Protein", "26 %"],
+    ["Fat", "23 %"],
+    ["Carbs", "51 %"],
   ]);
-  expect(kcalSplit({ protein: 0, fat: 0, carbs: 0 }).map((part) => part.value)).toEqual(["–", "–", "–"]);
+  expect(kcalSplit({ protein: 0, fat: 0, carbs: 0 }, t).map((part) => part.value)).toEqual(["–", "–", "–"]);
 });
 
-test("un ingrediente dice cuánto, su nota, si es opcional y si no suma macros", () => {
-  expect(ingredientDetail({ quantity: 2, unit: "unit", note: "en daditos", optional: false, food_id: "f" })).toBe("2 ud · en daditos");
-  expect(ingredientDetail({ quantity: 1, unit: "pinch", note: null, optional: true, food_id: null })).toBe(
-    "1 pizca · opcional · sin macros",
+test("an ingredient says how much, its note, whether optional and whether it adds no macros", () => {
+  expect(ingredientDetail({ quantity: 2, unit: "unit", note: "diced", optional: false, food_id: "f" }, t)).toBe("2 u · diced");
+  expect(ingredientDetail({ quantity: 1, unit: "pinch", note: null, optional: true, food_id: null }, t)).toBe(
+    "1 pinch · optional · no macros",
   );
 });

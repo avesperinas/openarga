@@ -3,7 +3,7 @@ from __future__ import annotations
 from recipes.gantt import Step, overlaps, schedule
 
 
-def test_sin_pasos_no_hay_diagrama() -> None:
+def test_without_steps_there_is_no_diagram() -> None:
     plan = schedule([])
 
     assert plan.steps == ()
@@ -11,8 +11,8 @@ def test_sin_pasos_no_hay_diagrama() -> None:
     assert plan.lanes == ()
 
 
-def test_un_paso_empieza_en_el_minuto_cero() -> None:
-    plan = schedule([Step(position=1, action="chop", text="Picar el puerro", minutes=10)])
+def test_one_step_starts_at_minute_zero() -> None:
+    plan = schedule([Step(position=1, action="chop", text="Chop the leek", minutes=10)])
 
     assert plan.steps[0].start == 0
     assert plan.steps[0].end == 10
@@ -20,10 +20,10 @@ def test_un_paso_empieza_en_el_minuto_cero() -> None:
     assert plan.active_minutes == 10
 
 
-def test_lo_que_depende_de_otro_espera_a_que_acabe() -> None:
+def test_what_depends_on_another_waits_for_it_to_finish() -> None:
     plan = schedule(
         [
-            Step(position=1, action="chop", text="Picar", minutes=10),
+            Step(position=1, action="chop", text="Chop", minutes=10),
             Step(position=2, action="saute", text="Pochar", minutes=15, after=(1,)),
         ]
     )
@@ -31,11 +31,11 @@ def test_lo_que_depende_de_otro_espera_a_que_acabe() -> None:
     assert [(one.start, one.end) for one in plan.steps] == [(0, 10), (10, 25)]
 
 
-def test_dos_pasos_que_te_tienen_delante_no_se_solapan() -> None:
+def test_two_attended_steps_do_not_overlap() -> None:
     plan = schedule(
         [
-            Step(position=1, action="chop", text="Picar el puerro", minutes=10),
-            Step(position=2, action="peel", text="Pelar la patata", minutes=8),
+            Step(position=1, action="chop", text="Chop the leek", minutes=10),
+            Step(position=2, action="peel", text="Peel the potato", minutes=8),
         ]
     )
 
@@ -44,20 +44,18 @@ def test_dos_pasos_que_te_tienen_delante_no_se_solapan() -> None:
     assert plan.active_minutes == 18
 
 
-def test_un_paso_desatendido_te_deja_seguir() -> None:
+def test_an_unattended_step_lets_you_go_on() -> None:
     plan = schedule(
         [
             Step(
                 position=1,
                 action="bake",
-                text="Al horno",
+                text="In the oven",
                 minutes=40,
                 attended=False,
                 equipment="oven",
             ),
-            Step(
-                position=2, action="chop", text="Picar la ensalada", minutes=10, equipment="board"
-            ),
+            Step(position=2, action="chop", text="Chop the salad", minutes=10, equipment="board"),
         ]
     )
 
@@ -66,18 +64,18 @@ def test_un_paso_desatendido_te_deja_seguir() -> None:
     assert plan.active_minutes == 10
 
 
-def test_lo_que_sale_del_horno_espera_al_horno() -> None:
+def test_what_comes_out_of_the_oven_waits_for_the_oven() -> None:
     plan = schedule(
         [
             Step(
                 position=1,
                 action="bake",
-                text="Al horno",
+                text="In the oven",
                 minutes=40,
                 attended=False,
                 equipment="oven",
             ),
-            Step(position=2, action="chop", text="Picar", minutes=10, equipment="board"),
+            Step(position=2, action="chop", text="Chop", minutes=10, equipment="board"),
             Step(position=3, action="serve", text="Emplatar", minutes=5, after=(1, 2)),
         ]
     )
@@ -88,7 +86,7 @@ def test_lo_que_sale_del_horno_espera_al_horno() -> None:
     assert plan.active_minutes == 15
 
 
-def test_el_cocinero_ocupado_retrasa_lo_siguiente_aunque_no_dependa_de_nada() -> None:
+def test_a_busy_cook_delays_the_next_step_even_if_it_depends_on_nothing() -> None:
     plan = schedule(
         [
             Step(
@@ -99,8 +97,8 @@ def test_el_cocinero_ocupado_retrasa_lo_siguiente_aunque_no_dependa_de_nada() ->
                 attended=False,
                 equipment="hob",
             ),
-            Step(position=2, action="chop", text="Picar", minutes=10),
-            Step(position=3, action="mix", text="Mezclar", minutes=5),
+            Step(position=2, action="chop", text="Chop", minutes=10),
+            Step(position=3, action="mix", text="Mix", minutes=5),
         ]
     )
 
@@ -108,14 +106,14 @@ def test_el_cocinero_ocupado_retrasa_lo_siguiente_aunque_no_dependa_de_nada() ->
     assert plan.total_minutes == 30
 
 
-def test_los_carriles_son_los_que_se_usan_y_en_su_orden() -> None:
+def test_the_lanes_are_those_used_in_their_order() -> None:
     plan = schedule(
         [
-            Step(position=1, action="chop", text="Picar", minutes=5, equipment="board"),
+            Step(position=1, action="chop", text="Chop", minutes=5, equipment="board"),
             Step(
                 position=2,
                 action="bake",
-                text="Hornear",
+                text="Bake",
                 minutes=20,
                 attended=False,
                 equipment="oven",
@@ -127,7 +125,7 @@ def test_los_carriles_son_los_que_se_usan_y_en_su_orden() -> None:
     assert plan.lanes == ("oven", "board", "none")
 
 
-def test_dos_cosas_en_el_mismo_fuego_a_la_vez_se_dicen() -> None:
+def test_two_things_on_the_same_hob_at_once_are_said() -> None:
     plan = schedule(
         [
             Step(
@@ -146,10 +144,10 @@ def test_dos_cosas_en_el_mismo_fuego_a_la_vez_se_dicen() -> None:
     assert overlaps(plan)[0].positions == [1, 2]
 
 
-def test_lo_que_no_ocupa_nada_nunca_choca() -> None:
+def test_what_takes_nothing_never_clashes() -> None:
     plan = schedule(
         [
-            Step(position=1, action="rest", text="Reposar la masa", minutes=60, attended=False),
+            Step(position=1, action="rest", text="Rest the dough", minutes=60, attended=False),
             Step(position=2, action="marinate", text="Marinar", minutes=30, attended=False),
         ]
     )
@@ -157,17 +155,17 @@ def test_lo_que_no_ocupa_nada_nunca_choca() -> None:
     assert overlaps(plan) == []
 
 
-def test_una_receta_entera_da_sus_dos_numeros() -> None:
+def test_a_whole_recipe_gives_its_two_numbers() -> None:
     plan = schedule(
         [
-            Step(position=1, action="chop", text="Picar el puerro", minutes=5, equipment="board"),
+            Step(position=1, action="chop", text="Chop the leek", minutes=5, equipment="board"),
             Step(
-                position=2, action="peel", text="Cascar las patatas", minutes=5, equipment="board"
+                position=2, action="peel", text="Break the potatoes", minutes=5, equipment="board"
             ),
             Step(
                 position=3,
                 action="saute",
-                text="Pochar el puerro",
+                text="Soften the leek",
                 minutes=10,
                 equipment="hob",
                 after=(1,),

@@ -29,7 +29,7 @@ async def hand_over_usda(client: httpx.AsyncClient) -> bool:
     with as_user(people[0]):
         done = await hub.hand_over_usda(client)
     if done:
-        print("publisher · la clave de USDA es ahora la credencial de la única persona", flush=True)
+        print("publisher · the USDA key is now the only person's credential", flush=True)
     return done
 
 
@@ -42,10 +42,10 @@ async def refresh(client: httpx.AsyncClient, user: UUID, fresh: bool) -> None:
     try:
         async with PUBLISHER.as_module() as connection:
             if filled := await pantry.refill(connection, client):
-                print(f"publisher · micros de {filled} alimento(s)", flush=True)
+                print(f"publisher · micros for {filled} food(s)", flush=True)
     except pantry.Unavailable as error:
         print(f"publisher · micros: {error}", file=sys.stderr, flush=True)
-    except Exception as error:  # noqa: BLE001 - los micros no paran lo que se publica
+    except Exception as error:  # noqa: BLE001 - micros do not stop what is published
         print(f"publisher · micros: {type(error).__name__}: {error}", file=sys.stderr, flush=True)
 
 

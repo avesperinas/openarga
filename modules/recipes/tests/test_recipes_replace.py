@@ -33,7 +33,7 @@ async def recipe_with(api, food_id: str) -> str:
         "steps": [
             {
                 "action": "boil",
-                "text": "Hervir la leche",
+                "text": "Boil the milk",
                 "minutes": 10,
                 "equipment": "hob",
                 "ingredients": [1],
@@ -54,10 +54,10 @@ async def recipe_with(api, food_id: str) -> str:
 
 async def test_recipes_get_a_new_version_and_the_old_food_is_archived(api, hub) -> None:
     old = await manual(
-        api, "Leche de marca equivocada", alias="leche", portions=[{"name": "vaso", "grams": 250}]
+        api, "Wrong-brand milk", alias="leche", portions=[{"name": "vaso", "grams": 250}]
     )
-    new = await manual(api, "Leche entera de la buena")
-    lender = await manual(api, "Yogur", micros_from=old["food_id"])
+    new = await manual(api, "The good whole milk")
+    lender = await manual(api, "Yoghurt", micros_from=old["food_id"])
     recipe_id = await recipe_with(api, old["food_id"])
 
     done = (
@@ -88,7 +88,7 @@ async def test_recipes_get_a_new_version_and_the_old_food_is_archived(api, hub) 
 
 async def test_repeating_it_redoes_nothing(api, hub) -> None:
     old = await manual(api, "Uno")
-    new = await manual(api, "Otro")
+    new = await manual(api, "Other")
     await recipe_with(api, old["food_id"])
     body = {"old_food_id": old["food_id"], "new_food_id": new["food_id"]}
 
@@ -99,8 +99,8 @@ async def test_repeating_it_redoes_nothing(api, hub) -> None:
 
 
 async def test_an_old_food_or_its_alias_now_write_the_new_one(api, hub) -> None:
-    old = await manual(api, "Leche vieja", alias="leche")
-    new = await manual(api, "Leche nueva")
+    old = await manual(api, "Old milk", alias="leche")
+    new = await manual(api, "New milk")
     await call(api, "replace_food", {"old_food_id": old["food_id"], "new_food_id": new["food_id"]})
 
     by_id = await recipe_with(api, old["food_id"])
@@ -109,7 +109,7 @@ async def test_an_old_food_or_its_alias_now_write_the_new_one(api, hub) -> None:
             api,
             "create_recipe",
             {
-                "name": "Café con leche",
+                "name": "Coffee with milk",
                 "servings": 1,
                 "ingredients": [{"name": "leche", "quantity": 200, "unit": "g"}],
             },
@@ -125,10 +125,10 @@ async def test_an_old_food_or_its_alias_now_write_the_new_one(api, hub) -> None:
 
 
 async def test_what_does_not_fit_is_refused(api, hub) -> None:
-    milk = await manual(api, "Leche")
-    capsule = await manual(api, "Omega 3", category_id="supplement", per_unit="cápsula")
-    other = await manual(api, "Leche de otra")
-    third = await manual(api, "Leche de la tercera")
+    milk = await manual(api, "Milk")
+    capsule = await manual(api, "Omega 3", category_id="supplement", per_unit="capsule")
+    other = await manual(api, "Another one's milk")
+    third = await manual(api, "The third one's milk")
     await call(
         api, "replace_food", {"old_food_id": milk["food_id"], "new_food_id": other["food_id"]}
     )
@@ -146,15 +146,15 @@ async def test_what_does_not_fit_is_refused(api, hub) -> None:
         api, "replace_food", {"old_food_id": third["food_id"], "new_food_id": milk["food_id"]}
     )
 
-    assert "por unidad" in mixed.json()["content"]["note"]
-    assert "sí mismo" in itself.json()["content"]["note"]
-    assert "ya se sustituyó" in elsewhere.json()["content"]["note"]
-    assert "ya está sustituido" in archived.json()["content"]["note"]
+    assert "per unit" in mixed.json()["content"]["note"]
+    assert "itself" in itself.json()["content"]["note"]
+    assert "was already replaced" in elsewhere.json()["content"]["note"]
+    assert "is already replaced" in archived.json()["content"]["note"]
 
 
 async def test_reading_it_is_not_enough(api, hub) -> None:
     old = await manual(api, "Uno")
-    new = await manual(api, "Otro")
+    new = await manual(api, "Other")
 
     refused = await call(
         api, "replace_food", {"old_food_id": old["food_id"], "new_food_id": new["food_id"]}, READ

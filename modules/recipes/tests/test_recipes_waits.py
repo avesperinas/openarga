@@ -47,8 +47,8 @@ async def test_searching_outside_waits_with_no_transaction_open(api, waits) -> N
 
 
 async def test_the_shopping_list_and_macros_are_asked_with_no_transaction_open(api, waits) -> None:
-    milk = await manual(api, "Leche entera")
-    oat = await manual(api, "Bebida de avena")
+    milk = await manual(api, "Whole milk")
+    oat = await manual(api, "Oat drink")
     recipe = await recipe_with(api, milk["food_id"])
 
     listed = await api.post(f"/recipes/{recipe}/shopping", json={"positions": [1]})

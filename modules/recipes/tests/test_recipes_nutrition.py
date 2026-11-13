@@ -20,7 +20,7 @@ def test_gramos_son_gramos() -> None:
     assert to_grams(300, "g", None) == 300
 
 
-def test_un_liquido_necesita_su_densidad() -> None:
+def test_a_liquid_needs_its_density() -> None:
     aceite = Convertible(density_g_ml=0.92)
 
     assert to_grams(100, "ml", aceite) == pytest.approx(92)
@@ -28,31 +28,31 @@ def test_un_liquido_necesita_su_densidad() -> None:
     assert to_grams(1, "tsp", aceite) == pytest.approx(4.6)
 
 
-def test_sin_densidad_un_liquido_no_se_estima() -> None:
+def test_without_density_a_liquid_is_not_estimated() -> None:
     assert to_grams(100, "ml", Convertible()) is None
 
 
-def test_una_unidad_necesita_cuanto_pesa_una() -> None:
+def test_a_unit_needs_what_one_weighs() -> None:
     huevo = Convertible(grams_per_unit=60)
 
     assert to_grams(2, "unit", huevo) == 120
     assert to_grams(0.5, "unit", Convertible()) is None
 
 
-def test_una_pizca_pesa_lo_mismo_para_todo() -> None:
+def test_a_pinch_weighs_the_same_for_everything() -> None:
     assert to_grams(1, "pinch", None) == 0.5
 
 
-def test_la_suma_sale_de_los_gramos_de_cada_uno() -> None:
+def test_the_sum_comes_from_each_ones_grams() -> None:
     total = totals(
         [
-            Item(quantity=300, unit="g", macros=LEEK, measures=Convertible(), label="Puerro"),
+            Item(quantity=300, unit="g", macros=LEEK, measures=Convertible(), label="Leek"),
             Item(
                 quantity=10,
                 unit="ml",
                 macros=OIL,
                 measures=Convertible(density_g_ml=0.92),
-                label="Aceite",
+                label="Oil",
             ),
         ]
     )
@@ -63,49 +63,49 @@ def test_la_suma_sale_de_los_gramos_de_cada_uno() -> None:
     assert total.complete
 
 
-def test_lo_que_no_se_puede_convertir_se_deja_fuera_y_se_dice() -> None:
+def test_what_cannot_be_converted_is_left_out_and_said() -> None:
     total = totals(
         [
-            Item(quantity=300, unit="g", macros=LEEK, measures=Convertible(), label="Puerro"),
-            Item(quantity=1, unit="unit", macros=None, measures=None, label="sofrito de casa"),
-            Item(quantity=0.5, unit="unit", macros=LEEK, measures=Convertible(), label="Cebolla"),
+            Item(quantity=300, unit="g", macros=LEEK, measures=Convertible(), label="Leek"),
+            Item(quantity=1, unit="unit", macros=None, measures=None, label="home sofrito"),
+            Item(quantity=0.5, unit="unit", macros=LEEK, measures=Convertible(), label="Onion"),
         ]
     )
 
     assert total.counted == 1
     assert total.total == 3
-    assert total.missing == ("sofrito de casa", "Cebolla")
+    assert total.missing == ("home sofrito", "Onion")
     assert not total.complete
-    assert uncertainty(total) == "faltan 2 de 3 ingredientes (sofrito de casa, Cebolla)"
+    assert uncertainty(total) == "2 of 3 ingredients missing (home sofrito, Onion)"
 
 
-def test_cuando_no_falta_nada_no_hay_nada_que_decir() -> None:
+def test_when_nothing_is_missing_there_is_nothing_to_say() -> None:
     total = totals([Item(quantity=100, unit="g", macros=LEEK, measures=Convertible(), label="P")])
 
     assert uncertainty(total) is None
 
 
-def test_una_sola_ausencia_se_dice_en_singular() -> None:
+def test_a_single_absence_is_said_in_the_singular() -> None:
     total = totals([Item(quantity=1, unit="unit", macros=None, label="sofrito")])
 
-    assert uncertainty(total) == "falta 1 de 1 ingredientes (sofrito)"
+    assert uncertainty(total) == "1 of 1 ingredients missing (sofrito)"
 
 
-def test_la_fibra_que_nadie_declara_no_es_cero() -> None:
+def test_fibre_nobody_declares_is_not_zero() -> None:
     total = totals([Item(quantity=10, unit="g", macros=OIL, measures=Convertible(), label="A")])
 
     assert total.fiber is None
     assert total.salt is None
 
 
-def test_escalar_multiplica_las_cantidades() -> None:
-    uno = Item(quantity=200, unit="g", macros=LEEK, measures=Convertible(), label="Puerro")
+def test_scaling_multiplies_the_quantities() -> None:
+    uno = Item(quantity=200, unit="g", macros=LEEK, measures=Convertible(), label="Leek")
 
     assert totals([uno], scale=1.5).grams == 300
     assert totals([uno], scale=1.5).kcal == pytest.approx(totals([uno]).kcal * 1.5, abs=0.2)
 
 
-def test_por_racion_es_lo_que_de_verdad_se_mira() -> None:
+def test_per_serving_is_what_really_counts() -> None:
     total = totals([Item(quantity=400, unit="g", macros=LEEK, measures=Convertible(), label="P")])
 
     each = per_serving(total, 4)
@@ -115,6 +115,6 @@ def test_por_racion_es_lo_que_de_verdad_se_mira() -> None:
     assert each.missing == total.missing
 
 
-def test_una_receta_para_cero_personas_no_existe() -> None:
-    with pytest.raises(ValueError, match="al menos una"):
+def test_a_recipe_for_zero_people_does_not_exist() -> None:
+    with pytest.raises(ValueError, match="at least one"):
         per_serving(totals([]), 0)

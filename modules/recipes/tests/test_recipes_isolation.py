@@ -24,7 +24,7 @@ async def as_role(engine, role: str, person: UUID | None, statement: str, **para
 
 @pytest.fixture
 async def two_cooks(schema):
-    for person, recipe, food in ((ANA, "Porrusalda", "Puerro"), (LUIS, "Marmitako", "Bonito")):
+    for person, recipe, food in ((ANA, "Leek soup", "Leek"), (LUIS, "Marmitako", "Bonito")):
         await as_role(
             schema,
             WRITE,
@@ -49,7 +49,7 @@ async def test_each_cook_reads_only_their_own_recipes(two_cooks, role: str) -> N
     ana = await as_role(two_cooks, role, ANA, "select name from recipes.recipes_recipe")
     luis = await as_role(two_cooks, role, LUIS, "select name from recipes.recipes_recipe")
 
-    assert [row.name for row in ana] == ["Porrusalda"]
+    assert [row.name for row in ana] == ["Leek soup"]
     assert [row.name for row in luis] == ["Marmitako"]
 
 

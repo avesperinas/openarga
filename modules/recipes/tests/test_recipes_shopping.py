@@ -6,7 +6,7 @@ import json
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
-from test_recipes_recipes import pantry, porrusalda  # noqa: F401 - la fixture se usa por nombre
+from test_recipes_recipes import leek_soup, pantry  # noqa: F401 - the fixture is used by name
 
 from recipes.main import MODULE_ID, app
 from recipes.shopping import quantity_label
@@ -59,35 +59,35 @@ async def positions(api, recipe_id: str, servings: int | None = None) -> dict[st
 
 
 async def test_the_chosen_ingredients_reach_the_list_scaled(api, pantry, shopping) -> None:  # noqa: F811
-    recipe = (await api.post("/recipes", json=porrusalda(pantry))).json()
+    recipe = (await api.post("/recipes", json=leek_soup(pantry))).json()
     where = await positions(api, recipe["id"])
 
     response = await api.post(
         f"/recipes/{recipe['id']}/shopping",
-        json={"servings": 2, "positions": [where["Puerro"], where["Patata"]]},
+        json={"servings": 2, "positions": [where["Leek"], where["Potato"]]},
     )
 
     assert response.status_code == 200, response.text
-    assert [one["name"] for one in response.json()["added"]] == ["Puerro", "Patata"]
+    assert [one["name"] for one in response.json()["added"]] == ["Leek", "Potato"]
     listed = (await shopping.get("/list")).json()
     items = {i["name"]: i["quantity"] for s in listed["groups"] for i in s["items"]}
-    assert items == {"Puerro": "200 g", "Patata": "300 g"}
+    assert items == {"Leek": "200 g", "Potato": "300 g"}
 
 
 async def test_what_was_already_on_the_list_stays_as_it_was(api, pantry, shopping) -> None:  # noqa: F811
-    recipe = (await api.post("/recipes", json=porrusalda(pantry))).json()
+    recipe = (await api.post("/recipes", json=leek_soup(pantry))).json()
     where = await positions(api, recipe["id"])
-    body = {"positions": [where["Puerro"]]}
+    body = {"positions": [where["Leek"]]}
 
     await api.post(f"/recipes/{recipe['id']}/shopping", json=body)
     again = await api.post(f"/recipes/{recipe['id']}/shopping", json=body)
 
-    assert again.json()["added"] == [{"name": "Puerro", "already_on_list": True}]
+    assert again.json()["added"] == [{"name": "Leek", "already_on_list": True}]
     assert again.json()["pending"] == 1
 
 
 async def test_without_declaring_it_the_kernel_says_no(api, pantry, shopping, schema) -> None:  # noqa: F811
-    recipe = (await api.post("/recipes", json=porrusalda(pantry))).json()
+    recipe = (await api.post("/recipes", json=leek_soup(pantry))).json()
     where = await positions(api, recipe["id"])
     async with schema.begin() as connection:
         await connection.execute(
@@ -99,7 +99,7 @@ async def test_without_declaring_it_the_kernel_says_no(api, pantry, shopping, sc
         )
 
     response = await api.post(
-        f"/recipes/{recipe['id']}/shopping", json={"positions": [where["Puerro"]]}
+        f"/recipes/{recipe['id']}/shopping", json={"positions": [where["Leek"]]}
     )
 
     assert response.status_code == 503
@@ -108,9 +108,7 @@ async def test_without_declaring_it_the_kernel_says_no(api, pantry, shopping, sc
 
 
 async def test_shopping_refuses_whoever_does_not_come_from_the_kernel(shopping) -> None:
-    response = await shopping.post(
-        "/capabilities/shopping.add", json={"items": [{"name": "Puerro"}]}
-    )
+    response = await shopping.post("/capabilities/shopping.add", json={"items": [{"name": "Leek"}]})
 
     assert response.status_code == 401
 
@@ -121,14 +119,14 @@ async def test_when_the_list_is_down_the_recipe_says_so(api, pantry, shopping, m
     from kernel import capabilities as kernel_capabilities
 
     def down(request: httpx.Request) -> httpx.Response:
-        raise httpx.ConnectError("no está")
+        raise httpx.ConnectError("not there")
 
     monkeypatch.setattr(kernel_capabilities, "module_transport", lambda: httpx.MockTransport(down))
-    recipe = (await api.post("/recipes", json=porrusalda(pantry))).json()
+    recipe = (await api.post("/recipes", json=leek_soup(pantry))).json()
     where = await positions(api, recipe["id"])
 
     response = await api.post(
-        f"/recipes/{recipe['id']}/shopping", json={"positions": [where["Puerro"]]}
+        f"/recipes/{recipe['id']}/shopping", json={"positions": [where["Leek"]]}
     )
 
     assert response.status_code == 503

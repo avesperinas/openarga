@@ -26,7 +26,7 @@ async def add_recipe(api, name: str, minutes: int, attended: bool = True) -> Non
         json={
             "name": name,
             "servings": 4,
-            "ingredients": [{"name": "Puerro", "quantity": 200, "unit": "g"}],
+            "ingredients": [{"name": "Leek", "quantity": 200, "unit": "g"}],
             "steps": [
                 {
                     "action": "simmer",
@@ -42,9 +42,9 @@ async def add_recipe(api, name: str, minutes: int, attended: bool = True) -> Non
 
 @pytest.fixture
 async def cooked(api):
-    await add_food(api, "Puerro")
-    await add_recipe(api, "Tortilla", 20)
-    await add_recipe(api, "Cocido", 180, attended=False)
+    await add_food(api, "Leek")
+    await add_recipe(api, "Omelette", 20)
+    await add_recipe(api, "Stew", 180, attended=False)
     return api
 
 
@@ -69,26 +69,26 @@ async def test_the_recipe_book_counts_what_there_is(cooked) -> None:
 
     assert body["state"] == "ready"
     stats = {one["label"]: one["value"] for one in body["body"]["stats"]}
-    assert stats["Recetas"] == 2
-    assert stats["De media"] == 100
-    assert stats["En 30 min"] == 1
+    assert stats["Recipes"] == 2
+    assert stats["On average"] == 100
+    assert stats["In 30 min"] == 1
 
 
 async def test_the_quick_card_only_brings_what_fits_on_a_weeknight(cooked) -> None:
     body = (await cooked.get("/widgets/quick")).json()
 
     assert body["state"] == "ready"
-    assert body["body"]["rows"] == [{"label": "Tortilla", "value": "20 min"}]
+    assert body["body"]["rows"] == [{"label": "Omelette", "value": "20 min"}]
 
 
 async def test_with_nothing_quick_the_card_says_so(api) -> None:
-    await add_food(api, "Puerro")
-    await add_recipe(api, "Cocido", 180, attended=False)
+    await add_food(api, "Leek")
+    await add_recipe(api, "Stew", 180, attended=False)
 
     body = (await api.get("/widgets/quick")).json()
 
     assert body["state"] == "empty"
-    assert "30 minutos" in body["body"]["detail"]
+    assert "30 minutes" in body["body"]["detail"]
 
 
 async def test_a_widget_reads_and_never_writes(cooked) -> None:

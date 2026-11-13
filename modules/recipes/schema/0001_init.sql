@@ -8,18 +8,18 @@ create table recipes.recipes_food_category (
 comment on table recipes.recipes_food_category is 'arga:catalog';
 
 insert into recipes.recipes_food_category (id, name, emoji, position, user_id) values
-    ('vegetable', 'Verdura',                 '🥬',  1, null),
-    ('fruit',     'Fruta',                   '🍎',  2, null),
-    ('protein',   'Carne',                   '🥩',  3, null),
-    ('fish',      'Pescado y marisco',       '🐟',  4, null),
-    ('dairy',     'Lácteos y huevos',        '🧀',  5, null),
-    ('grain',     'Cereales, pan y pasta',   '🌾',  6, null),
-    ('legume',    'Legumbres',               '🫘',  7, null),
-    ('fat',       'Grasas y aceites',        '🫒',  8, null),
-    ('spice',     'Especias y condimentos',  '🌶️',  9, null),
-    ('sweet',     'Azúcares y dulces',       '🍯', 10, null),
-    ('liquid',    'Caldos y bebidas',        '🍷', 11, null),
-    ('other',     'Otros',                   '🧂', 12, null);
+    ('vegetable', 'Vegetables',              '🥬',  1, null),
+    ('fruit',     'Fruit',                   '🍎',  2, null),
+    ('protein',   'Meat',                    '🥩',  3, null),
+    ('fish',      'Fish and seafood',        '🐟',  4, null),
+    ('dairy',     'Dairy and eggs',          '🧀',  5, null),
+    ('grain',     'Grains, bread and pasta', '🌾',  6, null),
+    ('legume',    'Pulses',                  '🫘',  7, null),
+    ('fat',       'Fats and oils',           '🫒',  8, null),
+    ('spice',     'Spices and seasonings',   '🌶️',  9, null),
+    ('sweet',     'Sugars and sweets',       '🍯', 10, null),
+    ('liquid',    'Stocks and drinks',       '🍷', 11, null),
+    ('other',     'Other',                   '🧂', 12, null);
 
 create table recipes.recipes_food (
     id             uuid    primary key default gen_random_uuid(),
@@ -128,18 +128,18 @@ declare
     version_id uuid;
 begin
     if tg_table_name = 'recipes_recipe_version' then
-        -- Borrar la receta entera se lleva sus versiones por delante, y eso sí vale: es la única
-        -- forma de perder una receta, y es explícita. Cuando llega aquí en cascada la receta ya
-        -- no está, y es lo que lo distingue de borrar una versión suelta, que perdería historial
-        -- sin que nadie lo pidiera.
+        -- Deleting the whole recipe takes its versions with it, and that is allowed: it is the
+        -- only way to lose a recipe, and it is explicit. When the cascade gets here the recipe is
+        -- already gone, which tells it apart from deleting a single version, which would lose
+        -- history nobody asked to lose.
         if tg_op = 'DELETE' and not exists (
             select 1 from recipes.recipes_recipe where id = old.recipe_id
         ) then
             return old;
         end if;
-        -- Sellar es la única escritura que se admite sobre una versión: de borrador a sellada.
+        -- Sealing is the only write allowed on a version: from draft to sealed.
         if old.sealed_at is not null then
-            raise exception 'la versión % de la receta está sellada y no se modifica', old.number
+            raise exception 'version % of the recipe is sealed and cannot change', old.number
                 using errcode = 'check_violation';
         end if;
         if tg_op = 'DELETE' then
@@ -148,14 +148,14 @@ begin
         return new;
     end if;
 
-    -- Y lo mismo con sus ingredientes: si la versión ya no está, la fila se va con ella.
+    -- The same for its ingredients: if the version is gone, the row goes with it.
     if tg_op = 'DELETE' and not exists (
         select 1 from recipes.recipes_recipe_version where id = old.version_id
     ) then
         return old;
     end if;
 
-    -- De qué versión cuelga la fila, antes y después del cambio: las dos tienen que ser borrador.
+    -- The version the row hangs from, before and after the change: both must be drafts.
     for version_id in
         select v from unnest(array[
             case when tg_op <> 'INSERT' then (to_jsonb(old) ->> 'version_id')::uuid end,
@@ -167,7 +167,7 @@ begin
             select 1 from recipes.recipes_recipe_version
             where id = version_id and sealed_at is not null
         ) then
-            raise exception 'la versión de la receta está sellada y no se modifica'
+            raise exception 'the recipe version is sealed and cannot change'
                 using errcode = 'check_violation';
         end if;
     end loop;
@@ -304,8 +304,8 @@ language plpgsql as $$
 declare
     version_id uuid;
 begin
-    -- De quién es y en qué espacio está no es el contenido: compartir y dejar de compartir lo
-    -- cambian también en lo sellado (ADR-0121).
+    -- Who owns it and which space it is in are not its content: sharing and unsharing change
+    -- them on sealed versions too (ADR-0121).
     if tg_op = 'UPDATE'
        and (to_jsonb(new) - 'space_id' - 'user_id') = (to_jsonb(old) - 'space_id' - 'user_id') then
         return new;
@@ -318,7 +318,7 @@ begin
             return old;
         end if;
         if old.sealed_at is not null then
-            raise exception 'la versión % de la receta está sellada y no se modifica', old.number
+            raise exception 'version % of the recipe is sealed and cannot change', old.number
                 using errcode = 'check_violation';
         end if;
         if tg_op = 'DELETE' then
@@ -344,7 +344,7 @@ begin
             select 1 from recipes.recipes_recipe_version
             where id = version_id and sealed_at is not null
         ) then
-            raise exception 'la versión de la receta está sellada y no se modifica'
+            raise exception 'the recipe version is sealed and cannot change'
                 using errcode = 'check_violation';
         end if;
     end loop;
@@ -408,7 +408,7 @@ alter table recipes.recipes_recipe_ingredient
 
 alter table recipes.recipes_food_category no force row level security;
 insert into recipes.recipes_food_category (id, name, emoji, position, user_id)
-values ('supplement', 'Suplementos', '💊', 13, null)
+values ('supplement', 'Supplements', '💊', 13, null)
 on conflict (id) do nothing;
 alter table recipes.recipes_food_category force row level security;
 
@@ -458,7 +458,7 @@ create index if not exists recipes_outbox_key on recipes.recipes_outbox (user_id
 
 create function recipes.fold(value text) returns text
 language sql immutable parallel safe as $$
-    select translate(lower(value), 'áàâäãéèêëíìîïóòôöõúùûüñç', 'aaaaaeeeeiiiiooooouuuunc')
+    select translate(lower(value), U&'\00e1\00e0\00e2\00e4\00e3\00e9\00e8\00ea\00eb\00ed\00ec\00ee\00ef\00f3\00f2\00f4\00f6\00f5\00fa\00f9\00fb\00fc\00f1\00e7', 'aaaaaeeeeiiiiooooouuuunc')
 $$;
 
 create function recipes.recipes_outbox_notify() returns trigger

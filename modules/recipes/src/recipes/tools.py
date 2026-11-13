@@ -29,28 +29,26 @@ def role_for_scopes(scopes: set[str]) -> str | None:
 
 class FindRecipes(BaseModel):
     include_archived: bool = Field(
-        default=False, description="También las archivadas, que no salen en el recetario."
+        default=False, description="Archived ones too, which do not show in the recipe book."
     )
     query: str | None = Field(
         default=None,
         max_length=60,
-        description="Parte del nombre de la receta, p. ej. `porru`. Sin ella, todas.",
+        description="Part of the recipe name, e.g. `stew`. Without it, all of them.",
     )
-    tag: str | None = Field(
-        default=None, max_length=40, description="Solo las que llevan esta etiqueta."
-    )
+    tag: str | None = Field(default=None, max_length=40, description="Only those with this tag.")
     ingredient: str | None = Field(
         default=None,
         max_length=60,
-        description="Solo las que llevan este alimento, por su alias, su nombre o parte de ellos.",
+        description="Only those with this food, by its alias, its name or part of them.",
     )
     max_minutes: int | None = Field(
         default=None,
         ge=1,
         le=2880,
         description=(
-            "Solo las que se hacen en este tiempo o menos, de principio a fin. Una receta sin "
-            "pasos no tiene tiempo y no entra en este filtro."
+            "Only those made in this time or less, start to finish. A recipe without steps "
+            "has no time and does not pass this filter."
         ),
     )
     max_active_minutes: int | None = Field(
@@ -58,12 +56,12 @@ class FindRecipes(BaseModel):
         ge=1,
         le=2880,
         description=(
-            "Solo las que te tienen delante este tiempo o menos. Es lo que de verdad decide si "
-            "algo entra un martes: una receta de dos horas con hora y media de horno son treinta "
-            "minutos de trabajo."
+            "Only those that need you there this long or less. That is what really decides "
+            "whether something fits a Tuesday: a two-hour recipe with an hour and a half of oven "
+            "is thirty minutes of work."
         ),
     )
-    limit: int = Field(default=50, ge=1, le=200, description="Cuántas devolver, como mucho.")
+    limit: int = Field(default=50, ge=1, le=200, description="How many to return, at most.")
 
 
 SEARCH = text(
@@ -160,15 +158,15 @@ async def find_recipes(connection: AsyncConnection, arguments: FindRecipes) -> d
 
 class GetRecipe(BaseModel):
     recipe_id: str = Field(
-        min_length=36, max_length=36, description="La receta, tal cual la da `find_recipes`."
+        min_length=36, max_length=36, description="The recipe, as `find_recipes` gives it."
     )
     servings: int | None = Field(
         default=None,
         ge=1,
         le=50,
         description=(
-            "Para cuánta gente la quieres. Escala las cantidades y las macros; lo guardado no "
-            "cambia. Sin esto, las raciones con las que está escrita."
+            "For how many people you want it. Scales quantities and macros; what is saved does "
+            "not change. Without this, the servings it is written for."
         ),
     )
 
@@ -177,15 +175,15 @@ async def get_recipe(connection: AsyncConnection, arguments: GetRecipe) -> dict[
     try:
         recipe = await recipes.read(connection, arguments.recipe_id, arguments.servings)
     except recipes.NotFound:
-        return {"recipe": None, "note": "esa receta no está en tu recetario"}
+        return {"recipe": None, "note": "that recipe is not in your recipe book"}
     return {"recipe": recipe.model_dump()}
 
 
 class FindFoods(BaseModel):
     query: str | None = Field(
-        default=None, max_length=60, description="Parte del alias o del nombre del alimento."
+        default=None, max_length=60, description="Part of the food's alias or name."
     )
-    limit: int = Field(default=100, ge=1, le=500, description="Cuántos, como mucho.")
+    limit: int = Field(default=100, ge=1, le=500, description="How many, at most.")
 
 
 async def find_foods(connection: AsyncConnection, arguments: FindFoods) -> dict[str, Any]:
@@ -252,7 +250,7 @@ class UpdateRecipe(recipes.RecipeIn):
     recipe_id: str = Field(
         min_length=36,
         max_length=36,
-        description="La receta a cambiar, tal cual la da `find_recipes`.",
+        description="The recipe to change, as `find_recipes` gives it.",
     )
 
 
@@ -280,7 +278,7 @@ async def create_recipe(connection: AsyncConnection, arguments: CreateRecipe) ->
     try:
         recipe_id = await recipes.create(connection, arguments, source="tool")
     except recipes.NotFound as error:
-        return {"saved": None, "note": f"no existe: {error}"}
+        return {"saved": None, "note": f"not found: {error}"}
     return {"saved": _saved(await recipes.read(connection, recipe_id))}
 
 
@@ -289,7 +287,7 @@ async def update_recipe(connection: AsyncConnection, arguments: UpdateRecipe) ->
     try:
         await recipes.update(connection, arguments.recipe_id, body, source="tool")
     except recipes.NotFound as error:
-        return {"saved": None, "note": f"no existe: {error}"}
+        return {"saved": None, "note": f"not found: {error}"}
     return {"saved": _saved(await recipes.read(connection, arguments.recipe_id))}
 
 
@@ -298,9 +296,9 @@ class SearchFoodSources(BaseModel):
         min_length=2,
         max_length=60,
         description=(
-            "Qué alimento buscar, en la forma en la que lo llamaría su ficha: `leek` o `puerro`, "
-            "no `puerros picados`. USDA está en inglés y OpenFoodFacts entiende las dos lenguas. "
-            "Un número de 8 a 14 dígitos se busca como código de barras."
+            "Which food to look for, the way its entry would name it: `leek`, not `chopped "
+            "leeks`. USDA is in English and Open Food Facts understands several languages. A "
+            "number of 8 to 14 digits is searched as a barcode."
         ),
     )
 
@@ -380,7 +378,7 @@ async def add_manual_food(connection: AsyncConnection, arguments: AddManualFood)
 
 class CorrectFood(foods.CorrectionIn):
     food_id: str = Field(
-        min_length=36, max_length=36, description="El alimento, tal cual lo da `find_foods`."
+        min_length=36, max_length=36, description="The food, as `find_foods` gives it."
     )
 
 
@@ -390,7 +388,7 @@ async def correct_food(connection: AsyncConnection, arguments: CorrectFood) -> d
     try:
         saved = await foods.correct(connection, arguments.food_id, body)
     except recipes.NotFound as error:
-        return {"food": None, "note": f"no existe: {error}"}
+        return {"food": None, "note": f"not found: {error}"}
     except recipes.Conflict as error:
         return {"food": None, "note": str(error)}
     return {"food": _food(saved)}
@@ -398,10 +396,10 @@ async def correct_food(connection: AsyncConnection, arguments: CorrectFood) -> d
 
 class ReplaceFood(BaseModel):
     old_food_id: str = Field(
-        min_length=36, max_length=36, description="El que sobra, tal cual lo da `find_foods`."
+        min_length=36, max_length=36, description="The one to drop, as `find_foods` gives it."
     )
     new_food_id: str = Field(
-        min_length=36, max_length=36, description="El que se queda, tal cual lo da `find_foods`."
+        min_length=36, max_length=36, description="The one that stays, as `find_foods` gives it."
     )
 
 
@@ -413,7 +411,7 @@ async def replace_food(
             connection, client, arguments.old_food_id, arguments.new_food_id
         )
     except recipes.NotFound as error:
-        return {"replaced": None, "note": f"no existe: {error}"}
+        return {"replaced": None, "note": f"not found: {error}"}
     except recipes.Conflict as error:
         return {"replaced": None, "note": str(error)}
     return {"replaced": done}
@@ -421,7 +419,7 @@ async def replace_food(
 
 class SetFoodAlias(foods.AliasIn):
     food_id: str = Field(
-        min_length=36, max_length=36, description="El alimento, tal cual lo da `find_foods`."
+        min_length=36, max_length=36, description="The food, as `find_foods` gives it."
     )
 
 
@@ -430,7 +428,7 @@ async def set_food_alias(connection: AsyncConnection, arguments: SetFoodAlias) -
     try:
         saved = await foods.set_alias(connection, arguments.food_id, body)
     except recipes.NotFound as error:
-        return {"food": None, "note": f"no existe: {error}"}
+        return {"food": None, "note": f"not found: {error}"}
     except recipes.Conflict as error:
         return {"food": None, "note": str(error)}
     return {"food": _food(saved)}
@@ -438,21 +436,21 @@ async def set_food_alias(connection: AsyncConnection, arguments: SetFoodAlias) -
 
 class DeleteRecipe(BaseModel):
     recipe_id: str = Field(
-        min_length=36, max_length=36, description="La receta, tal cual la da `find_recipes`."
+        min_length=36, max_length=36, description="The recipe, as `find_recipes` gives it."
     )
     name: str = Field(
         min_length=1,
         max_length=120,
         description=(
-            "El nombre de esa receta, tal como está guardado. Tiene que coincidir o no se borra "
-            "nada: es lo que separa un id equivocado de una receta perdida."
+            "That recipe's name, as it is saved. It has to match or nothing is deleted: it is "
+            "what separates a wrong id from a lost recipe."
         ),
     )
 
 
 class ArchiveRecipe(BaseModel):
     recipe_id: str = Field(
-        min_length=36, max_length=36, description="La receta, tal cual la da `find_recipes`."
+        min_length=36, max_length=36, description="The recipe, as `find_recipes` gives it."
     )
 
 
@@ -460,7 +458,7 @@ async def archive_recipe(connection: AsyncConnection, arguments: ArchiveRecipe) 
     try:
         await recipes.archive(connection, arguments.recipe_id, True)
     except recipes.NotFound:
-        return {"archived": None, "note": "esa receta no está en tu recetario"}
+        return {"archived": None, "note": "that recipe is not in your recipe book"}
     except recipes.Conflict as error:
         return {"archived": None, "note": str(error)}
     return {"archived": arguments.recipe_id}
@@ -470,7 +468,7 @@ async def unarchive_recipe(connection: AsyncConnection, arguments: ArchiveRecipe
     try:
         await recipes.archive(connection, arguments.recipe_id, False)
     except recipes.NotFound:
-        return {"unarchived": None, "note": "esa receta no está en tu recetario"}
+        return {"unarchived": None, "note": "that recipe is not in your recipe book"}
     except recipes.Conflict as error:
         return {"unarchived": None, "note": str(error)}
     return {"unarchived": arguments.recipe_id}
@@ -480,12 +478,13 @@ async def delete_recipe(connection: AsyncConnection, arguments: DeleteRecipe) ->
     try:
         recipe = await recipes.read(connection, arguments.recipe_id)
     except recipes.NotFound:
-        return {"deleted": None, "note": "esa receta no está en tu recetario"}
+        return {"deleted": None, "note": "that recipe is not in your recipe book"}
     if recipe.name.strip().casefold() != arguments.name.strip().casefold():
         return {
             "deleted": None,
             "note": (
-                f"esa receta se llama «{recipe.name}», no «{arguments.name}»; no he borrado nada"
+                f"that recipe is called '{recipe.name}', not '{arguments.name}'; "
+                "nothing was deleted"
             ),
         }
     try:
@@ -497,13 +496,12 @@ async def delete_recipe(connection: AsyncConnection, arguments: DeleteRecipe) ->
 
 class ShareRecipe(BaseModel):
     recipe_id: str = Field(
-        min_length=36, max_length=36, description="La receta, tal cual la da `find_recipes`."
+        min_length=36, max_length=36, description="The recipe, as `find_recipes` gives it."
     )
     space: str | None = Field(
         min_length=1,
         max_length=80,
-        description="El nombre del espacio con el que compartirla, o null para que vuelva a ser "
-        "solo tuya.",
+        description="The name of the space to share it with, or null to make it only yours again.",
     )
 
 
@@ -523,22 +521,21 @@ async def share_recipe(connection: AsyncConnection, arguments: ShareRecipe) -> d
         try:
             mine = await _fresh_spaces(connection)
         except spaces.Unavailable as error:
-            return {"recipe": None, "note": f"no sé tus espacios: {error}"}
+            return {"recipe": None, "note": f"your spaces are unknown: {error}"}
         wanted = arguments.space.strip().casefold()
         match = [one for one in mine if one["name"].strip().casefold() == wanted]
         if not match:
-            names = ", ".join(f"«{one['name']}»" for one in mine) or "ninguno"
+            names = ", ".join(f"'{one['name']}'" for one in mine) or "none"
             return {
                 "recipe": None,
-                "note": f"no estás en ningún espacio llamado «{arguments.space}»; los tuyos: "
-                f"{names}",
+                "note": f"you are in no space called '{arguments.space}'; yours: {names}",
             }
         space_id = match[0]["id"]
     try:
         await recipes.share(connection, arguments.recipe_id, space_id)
         recipe = await recipes.read(connection, arguments.recipe_id)
     except recipes.NotFound:
-        return {"recipe": None, "note": "esa receta no está en tu recetario"}
+        return {"recipe": None, "note": "that recipe is not in your recipe book"}
     except recipes.Conflict as error:
         return {"recipe": None, "note": str(error)}
     return {

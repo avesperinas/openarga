@@ -1,4 +1,4 @@
-const FROM = "áàâäãéèêëíìîïóòôöõúùûüñç";
+const FROM = "\u00e1\u00e0\u00e2\u00e4\u00e3\u00e9\u00e8\u00ea\u00eb\u00ed\u00ec\u00ee\u00ef\u00f3\u00f2\u00f4\u00f6\u00f5\u00fa\u00f9\u00fb\u00fc\u00f1\u00e7";
 const TO = "aaaaaeeeeiiiiooooouuuunc";
 
 export function fold(value: string | null | undefined): string {
@@ -23,6 +23,6 @@ export function ranked<T>(items: T[], query: string, names: (item: T) => (string
   return items
     .map((item) => ({ item, score: closeness(query, ...names(item)) }))
     .filter((one): one is { item: T; score: number } => one.score !== null)
-    .sort((a, b) => a.score - b.score || label(a.item).localeCompare(label(b.item), "es"))
+    .sort((a, b) => a.score - b.score || label(a.item).localeCompare(label(b.item)))
     .map(({ item }) => item);
 }

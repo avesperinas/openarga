@@ -105,9 +105,9 @@ ARCHIVE = text("""
 async def archive(connection: AsyncConnection, recipe_id: str, archived: bool = True) -> None:
     found = (await connection.execute(OWNER_OF, {"id": recipe_id})).first()
     if found is None:
-        raise NotFound(f"la receta {recipe_id}")
+        raise NotFound(f"recipe {recipe_id}")
     if not found.mine:
-        raise Conflict("solo quien creó la receta la archiva")
+        raise Conflict("only whoever created the recipe archives it")
     await connection.execute(ARCHIVE, {"id": recipe_id, "archive": archived})
 
 
@@ -126,25 +126,25 @@ class IngredientIn(BaseModel):
         min_length=1,
         max_length=40,
         description=(
-            'Con `unit: "unit"`, qué medida de casa del alimento cuenta la cantidad: '
-            '`quantity: 2, unit: "unit", portion: "loncha"`. Sin ella, la de por defecto '
+            'With `unit: "unit"`, which household measure of the food the quantity counts: '
+            '`quantity: 2, unit: "unit", portion: "slice"`. Without it, the default one '
             "(`grams_per_unit`)."
         ),
     )
     as_purchased: bool = Field(
         default=False,
         description=(
-            "La cantidad es en bruto, con lo que no se come (espina, piel, hueso): se le aplica "
-            "la parte comestible del alimento (`edible_fraction`)."
+            "The quantity is gross, with what is not eaten (bone, skin, peel): the food's "
+            "edible share (`edible_fraction`) is applied to it."
         ),
     )
 
     @model_validator(mode="after")
     def _one_or_the_other(self) -> IngredientIn:
         if (self.food_id is None) == (self.name is None):
-            raise ValueError("un ingrediente lleva `food_id` o `name`, nunca los dos ni ninguno")
+            raise ValueError("an ingredient has `food_id` or `name`, never both nor neither")
         if self.portion is not None and self.unit != "unit":
-            raise ValueError('una porción cuenta unidades: va con `unit: "unit"`')
+            raise ValueError('a portion counts units: it goes with `unit: "unit"`')
         return self
 
 
@@ -182,30 +182,30 @@ MAX_STEPS = 40
 
 
 class StepIn(BaseModel):
-    action: Action = Field(description="El verbo del paso.")
+    action: Action = Field(description="The step's verb.")
     text: str = Field(min_length=1, max_length=200)
     minutes: int = Field(ge=1, le=2880)
     attended: bool = True
     equipment: Equipment = Field(
         default="none",
         description=(
-            "Dónde pasa: es el carril del diagrama. `none` es lo que no ocupa nada (un reposo)."
+            "Where it happens: the diagram's lane. `none` is what takes nothing (a rest)."
         ),
     )
     after: list[int] = Field(
         default_factory=list,
         max_length=MAX_STEPS,
         description=(
-            "Los pasos que tienen que estar hechos antes, por su posición en `steps` contando "
-            "desde 1: el primer paso es el 1. Solo anteriores a este."
+            "The steps that must be done before, by their position in `steps` counting "
+            "from 1: the first step is 1. Only earlier ones."
         ),
     )
     ingredients: list[int] = Field(
         default_factory=list,
         max_length=MAX_INGREDIENTS,
         description=(
-            "Los ingredientes que entran en este paso, por su posición en `ingredients` contando "
-            "desde 1: el primer ingrediente es el 1."
+            "The ingredients that go into this step, by their position in `ingredients` "
+            "counting from 1: the first ingredient is 1."
         ),
     )
 
@@ -224,13 +224,13 @@ class RecipeIn(BaseModel):
             for after in step.after:
                 if after >= position:
                     raise ValueError(
-                        f"el paso {position} depende del {after}, que no va antes: un paso solo "
-                        f"puede depender de los anteriores"
+                        f"step {position} depends on {after}, which does not come before: a step "
+                        f"can only depend on earlier ones"
                     )
             for reference in step.ingredients:
                 if not 1 <= reference <= len(self.ingredients):
                     raise ValueError(
-                        f"el paso {position} usa el ingrediente {reference} y solo hay "
+                        f"step {position} uses ingredient {reference} and there are only "
                         f"{len(self.ingredients)}"
                     )
         return self
@@ -319,8 +319,8 @@ FOOD_BY_NAME = text(f"""
      where archived_at is null
        and (lower(btrim(alias)) = lower(btrim(:name)) or lower(btrim(name)) = lower(btrim(:name)))
      order by coalesce(lower(btrim(alias)) = lower(btrim(:name)), false) desc,
-              -- Lo tuyo antes que lo de un espacio: tu receta no depende de él si puede no
-              -- hacerlo (ADR-0121).
+              -- Yours before a space's: your recipe does not depend on the space if it can avoid
+              -- it (ADR-0121).
               coalesce(user_id = {ME}, false) desc, imported_at
      limit 1
 """)
@@ -567,7 +567,7 @@ async def update(
         )
     ).first()
     if row is None:
-        raise NotFound(f"la receta {recipe_id}")
+        raise NotFound(f"recipe {recipe_id}")
     return await _write_version(connection, recipe_id, request, source)
 
 
@@ -766,11 +766,11 @@ def _item(row: Any, scale: float) -> tuple[nutrition.Item, IngredientOut]:
 async def read(connection: AsyncConnection, recipe_id: str, servings: int | None = None) -> Recipe:
     head = (await connection.execute(RECIPE_ROW, {"id": recipe_id})).first()
     if head is None:
-        raise NotFound(f"la receta {recipe_id}")
+        raise NotFound(f"recipe {recipe_id}")
 
     wanted = servings or head.servings
     if wanted < 1 or wanted > 50:
-        raise Conflict("una receta se pide para entre 1 y 50 personas")
+        raise Conflict("a recipe is asked for between 1 and 50 people")
     scale = wanted / head.servings
 
     rows = (
@@ -899,9 +899,9 @@ OWNER_OF = text(f"""
 async def remove(connection: AsyncConnection, recipe_id: str) -> None:
     found = (await connection.execute(OWNER_OF, {"id": recipe_id})).first()
     if found is not None and found.space_id is not None and not found.mine:
-        raise Conflict("esta receta la compartió otra persona: solo ella la borra")
+        raise Conflict("another person shared this recipe: only they delete it")
     if (await connection.execute(DELETE_RECIPE, {"id": recipe_id})).rowcount == 0:
-        raise NotFound(f"la receta {recipe_id}")
+        raise NotFound(f"recipe {recipe_id}")
 
 
 PARTS = (
@@ -936,9 +936,9 @@ FREE_FOODS = text(f"""
 async def share(connection: AsyncConnection, recipe_id: str, space_id: str | None) -> None:
     found = (await connection.execute(OWNER_OF, {"id": recipe_id})).first()
     if found is None:
-        raise NotFound(f"la receta {recipe_id}")
+        raise NotFound(f"recipe {recipe_id}")
     if not found.mine:
-        raise Conflict("solo quien creó la receta la comparte o deja de compartirla")
+        raise Conflict("only whoever created the recipe shares or unshares it")
     if found.space_id == space_id:
         return
     take = found.space_id is not None

@@ -7,13 +7,16 @@ import "./app.css";
 import { mountApp } from "@openarga/app";
 
 import { App } from "./App";
+import { Localized } from "./i18n/Localized";
 import { Backdrop, applyRemembered } from "./Backdrop";
 
 applyRemembered();
 
 void mountApp(
   "recipes",
-  <Backdrop>
-    <App />
-  </Backdrop>,
+  <Localized>
+    <Backdrop>
+      <App />
+    </Backdrop>
+  </Localized>,
 );

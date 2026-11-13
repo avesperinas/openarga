@@ -51,7 +51,7 @@ export function DishSheet({
       .then((found) =>
         onChanged({
           message: t("dish.saved_recipe"),
-          action: { label: t("common.open"), run: () => window.location.assign(`/recipes/receta/${found.recipe_id}`) },
+          action: { label: t("common.open"), run: () => window.location.assign(`/recipes/recipe/${found.recipe_id}`) },
         }),
       )
       .catch(fail);

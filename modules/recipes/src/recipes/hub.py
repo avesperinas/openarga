@@ -31,7 +31,7 @@ async def search(client: httpx.AsyncClient, query: str) -> dict[str, Any]:
             return response.json()
         reason = f"Hub contesta {response.status_code}"
     except httpx.HTTPError as error:
-        reason = f"Hub no contesta ({type(error).__name__})"
+        reason = f"Hub is not answering ({type(error).__name__})"
     return {"candidates": [], "failed": [{"source": name, "reason": reason} for name in SOURCES]}
 
 

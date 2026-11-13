@@ -1,69 +1,69 @@
-# Diccionario de Recipes
+# Recipes glossary
 
-Los términos del dominio y cómo se calculan. Se inyecta en el contexto del agente: es lo que
-separa que acierte de que invente.
+The domain terms and how they are worked out. It goes into the agent's context: it is what
+separates getting it right from making it up.
 
-**Receta.** Un nombre, unas raciones, unos ingredientes y unos pasos. Lo que se enlaza y lo que se
-busca es la receta; lo que se lee es su **versión vigente**.
+**Recipe.** A name, some servings, some ingredients and some steps. What is linked and searched
+is the recipe; what is read is its **current version**.
 
-**Versión.** El contenido de una receta en un momento. Una vez sellada no se modifica nunca:
-editar escribe la siguiente. Por eso `update_recipe` puede aceptar la receta entera sin poder
-perder nada, y por eso se puede volver a la de antes (ADR-0042).
+**Version.** A recipe's content at one moment. Once sealed it never changes: editing writes the
+next one. That is why `update_recipe` can take the whole recipe without losing anything, and why
+you can go back to the previous one (ADR-0042).
 
-**Ración.** Para cuánta gente está escrita la receta. Pedirla para otras multiplica las cantidades
-por `pedidas / guardadas`; el número guardado no cambia.
+**Serving.** How many people the recipe is written for. Asking for another number multiplies the
+quantities by `asked / saved`; the saved number does not change.
 
-**Alimento.** Una entrada del catálogo con sus macros **por 100 g**, importada de USDA o de
-OpenFoodFacts y cacheada, o tecleada a mano cuando la fuente no la tiene. Un ingrediente de una
-receta apunta a un alimento; no lleva macros propias.
+**Food.** A catalogue entry with its macros **per 100 g**, imported from USDA or Open Food Facts
+and cached, or typed by hand when the source does not have it. A recipe ingredient points to a
+food; it has no macros of its own.
 
-**Procedencia.** De dónde salen las cifras de un alimento tecleado: «etiqueta HSN», «estimado por
-el modelo», «receta casera». Se ve en la ficha, porque un dato medido y uno estimado no valen lo
-mismo.
+**Provenance.** Where a typed food's figures come from: "HSN label", "estimated by the model",
+"home recipe". It shows on the food's card, because a measured figure and an estimated one are
+not worth the same.
 
-**Micros prestados.** Los nutrientes que un alimento no trae y toma de otro (`micros_from`): las
-macros de la etiqueta de un producto de marca y los micros de la ficha genérica de USDA. Nunca se
-prestan las macros ni lo que el alimento ya trae.
+**Borrowed micros.** The nutrients a food lacks and takes from another (`micros_from`): the label
+macros of a branded product and the micros of the generic USDA entry. Macros are never borrowed,
+nor anything the food already has.
 
-**Porción.** Una medida de casa de un alimento con sus gramos comestibles: «loncha», «puñado».
-Un ingrediente en `unit` con `portion` la usa; sin ella, cuenta `grams_per_unit`.
+**Portion.** A household measure of a food with its edible grams: "slice", "handful". An
+ingredient in `unit` with `portion` uses it; without it, `grams_per_unit` counts.
 
-**Sustituir.** Cambiar un alimento por otro en todas partes (`replace_food`): las recetas que lo
-usan reciben una versión nueva con el otro, lo apuntado en Macros se recalcula, y el viejo queda
-archivado con `replaced_by`. No se borra: las versiones anteriores de las recetas lo nombran.
+**Replace.** Swapping one food for another everywhere (`replace_food`): the recipes using it get
+a new version with the other, what was logged in Macros is recalculated, and the old one is
+archived with `replaced_by`. It is not deleted: earlier recipe versions name it.
 
-**Parte comestible.** Lo que se come de lo que se pesa entero (`edible_fraction`): una rueda de
-bonito de 730 g son unos 600 g limpios, 0,82. Solo se aplica a una cantidad marcada
-`as_purchased`.
+**Edible share.** What is eaten of what is weighed whole (`edible_fraction`): a 730 g tuna steak
+is about 600 g clean, 0.82. It only applies to a quantity marked `as_purchased`.
 
-**Alias.** Cómo llamas tú a un alimento, corto y en español: "pechuga de pollo" para el "Chicken,
-broiler or fryers, breast…" de USDA. Es lo que se lee en la receta y con lo que se escribe: un
-ingrediente dictado por nombre se busca primero por alias y después por el nombre de la fuente,
-que no se toca nunca porque dice de dónde salen las macros. Un alias nombra un solo alimento.
+**Alias.** What you call a food, short and in your language: "chicken breast" for USDA's "Chicken,
+broiler or fryers, breast…". It is what the recipe shows and what people type: an ingredient
+given by name is looked up first by alias and then by the source's name, which is never touched
+because it says where the macros come from. An alias names a single food.
 
-**Ingrediente sin resolver.** Un nombre que alguien puso y no está en el catálogo. Cuenta como
-ingrediente, **no suma macros** y la app pide resolverlo. Nunca se le asigna un alimento parecido:
-eso sería mentir en las macros.
+**Unresolved ingredient.** A name someone wrote that is not in the catalogue. It counts as an
+ingredient, **adds no macros** and the app asks to resolve it. A similar food is never assigned
+to it: that would be lying about the macros.
 
-**Macros.** Kilocalorías, proteína, grasa e hidratos. Se suman pasando cada cantidad a gramos:
-`g` directo, `ml` por la densidad, `tbsp` 15 ml, `tsp` 5 ml, `unit` por los gramos de una unidad,
-`pinch` 0,5 g. `kcal` no se deriva de las otras tres: la fuente la da medida.
+**Macros.** Kilocalories, protein, fat and carbs. They add up by turning each quantity into
+grams: `g` directly, `ml` by density, `tbsp` 15 ml, `tsp` 5 ml, `unit` by the grams of one unit,
+`pinch` 0.5 g. `kcal` is not derived from the other three: the source gives it measured.
 
-**Macros incompletas.** Las de una receta a la que le falta algún ingrediente por convertir o por
-resolver. Se devuelven igual, con cuántos faltan de cuántos. Media cebolla no son 50 g porque sí.
+**Incomplete macros.** Those of a recipe with some ingredient left to convert or resolve. They
+come back anyway, with how many are missing out of how many. Half an onion is not 50 g just
+because.
 
-**Paso.** Un verbo, una duración en minutos, el aparato que ocupa y de qué pasos depende.
+**Step.** A verb, a duration in minutes, the appliance it uses and the steps it depends on.
 
-**Paso atendido.** El que te tiene delante: picar, remover. Dos atendidos no pueden solaparse,
-porque solo hay una persona.
+**Attended step.** One that needs you there: chopping, stirring. Two attended steps cannot
+overlap, because there is only one person.
 
-**Paso desatendido.** El que corre solo: horno, reposo, marinado. Libera al cocinero, y es lo que
-permite que la receta dure menos que la suma de sus pasos.
+**Unattended step.** One that runs by itself: oven, resting, marinating. It frees the cook, and
+it is what lets the recipe take less than the sum of its steps.
 
-**Carril.** El aparato que ocupa un paso (fuego, horno, tabla…). Dos pasos del mismo carril a la
-vez se ven en el diagrama, que es como se descubre que no caben.
+**Lane.** The appliance a step uses (hob, oven, board…). Two steps in the same lane at once show
+in the diagram, which is how you find out they do not fit.
 
-**Tiempo total.** Desde que empiezas hasta que sirves, con los desatendidos corriendo en paralelo.
+**Total time.** From when you start until you serve, with unattended steps running in parallel.
 
-**Tiempo activo.** De ese total, cuánto estás tú delante. Es el número con el que se decide si una
-receta entra un martes.
+**Active time.** Of that total, how long you are there. It is the number that decides whether a
+recipe fits a Tuesday.

@@ -1,44 +1,45 @@
+import { type Translate, numbers } from "@openarga/ui";
+
 import type { Macros } from "./api";
 
-export const MACRO_LABELS: { key: keyof Macros; label: string; unit: string }[] = [
-  { key: "kcal", label: "kcal", unit: "" },
-  { key: "protein", label: "Proteína", unit: "g" },
-  { key: "fat", label: "Grasa", unit: "g" },
-  { key: "carbs", label: "Hidratos", unit: "g" },
-];
-
 const GROUPED = { useGrouping: "always" } as unknown as Intl.NumberFormatOptions;
-const NUMBER = new Intl.NumberFormat("es-ES", { ...GROUPED, maximumFractionDigits: 1 });
-const WHOLE = new Intl.NumberFormat("es-ES", { ...GROUPED, maximumFractionDigits: 0 });
+
+const one = () => numbers({ ...GROUPED, maximumFractionDigits: 1 });
+const whole = () => numbers({ ...GROUPED, maximumFractionDigits: 0 });
 
 export function kcal(value: number | null | undefined): string {
-  return value === null || value === undefined ? "—" : WHOLE.format(value);
+  return value === null || value === undefined ? "—" : whole().format(value);
 }
 
 export function grams(value: number | null | undefined): string {
   if (value === null || value === undefined) return "—";
-  return Math.abs(value) < 10 ? NUMBER.format(value) : WHOLE.format(value);
+  return Math.abs(value) < 10 ? one().format(value) : whole().format(value);
 }
 
 export function amount(value: number | null | undefined): string {
-  return value === null || value === undefined ? "—" : NUMBER.format(value);
+  return value === null || value === undefined ? "—" : one().format(value);
 }
 
-export function macroLine(macros: Macros): string {
+export function macroLine(macros: Macros, t: Translate): string {
   return [
     `${amount(macros.kcal)} kcal`,
-    `${amount(macros.protein)} P`,
-    `${amount(macros.fat)} G`,
-    `${amount(macros.carbs)} H`,
+    `${amount(macros.protein)} ${t("macro.p")}`,
+    `${amount(macros.fat)} ${t("macro.f")}`,
+    `${amount(macros.carbs)} ${t("macro.c")}`,
   ].join(" · ");
 }
 
-export function pantryLine(macros: Macros): string {
-  return [`P ${grams(macros.protein)}`, `G ${grams(macros.fat)}`, `H ${grams(macros.carbs)}`, "por 100 g"].join(" · ");
+export function pantryLine(macros: Macros, t: Translate): string {
+  return [
+    `${t("macro.p")} ${grams(macros.protein)}`,
+    `${t("macro.f")} ${grams(macros.fat)}`,
+    `${t("macro.c")} ${grams(macros.carbs)}`,
+    t("macro.per_100"),
+  ].join(" · ");
 }
 
-export function sourceLabel(source: string, corrected: boolean): string {
-  if (source === "manual") return "tuyo";
-  const name = source === "usda" ? "USDA" : "OpenFoodFacts";
-  return corrected ? `${name}, corregido` : name;
+export function sourceLabel(source: string, corrected: boolean, t: Translate): string {
+  if (source === "manual") return t("source.yours");
+  const name = source === "usda" ? "USDA" : "Open Food Facts";
+  return corrected ? t("source.corrected", { name }) : name;
 }

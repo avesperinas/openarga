@@ -7,8 +7,9 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 
 import type { Category, Food, RecipeSummary } from "./api";
 import { App } from "./App";
+import { english, inLocale } from "./i18n/testing";
 
-const FRUIT: Category = { id: "fruit", name: "Fruta", emoji: "🍌", position: 1 };
+const FRUIT: Category = { id: "fruit", name: "Fruit", emoji: "🍌", position: 1 };
 
 const food = (id: string, name: string): Food => ({
   id,
@@ -23,11 +24,11 @@ const food = (id: string, name: string): Food => ({
   corrected: false,
 });
 
-const FOODS = [food("a", "Batido de plátano"), food("b", "Plátano"), food("c", "Kiwi")];
+const FOODS = [food("a", "Caf\u00e9 latte"), food("b", "Caf\u00e9"), food("c", "Kiwi")];
 
-const PORRUSALDA: RecipeSummary = {
+const LEEK_SOUP: RecipeSummary = {
   id: "0a0a0a0a-0000-4000-8000-00000000a0a0",
-  name: "Porrusalda",
+  name: "Leek soup",
   servings: 4,
   version: 1,
   tags: [],
@@ -64,7 +65,7 @@ beforeEach(() => {
   void reset();
   asked = [];
   replies = {
-    "GET /api/recipes/recipes": () => [PORRUSALDA],
+    "GET /api/recipes/recipes": () => [LEEK_SOUP],
     "GET /api/recipes/categories": () => [FRUIT],
     "GET /api/recipes/foods": () => FOODS,
     "GET /api/recipes/version": () => ({ version: "1.0.0" }),
@@ -74,7 +75,7 @@ beforeEach(() => {
     vi.fn(async (url: string, init?: RequestInit) => {
       asked.push(`${init?.method ?? "GET"} ${url}`);
       const reply = replies[`${init?.method ?? "GET"} ${url}`];
-      if (!reply) return json({ detail: "no existe" }, 404);
+      if (!reply) return json({ detail: "not found" }, 404);
       const body = await reply();
       return body instanceof Response ? body : json(body);
     }),
@@ -96,12 +97,14 @@ const settle = () =>
     for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setTimeout(resolve, 0));
   });
 
+const retry = () => host.querySelector<HTMLButtonElement>("[role=alert] button");
+
 const button = (name: string) =>
   Array.from(host.querySelectorAll<HTMLButtonElement>("button")).find((one) => one.textContent?.includes(name));
 
 async function open(path = "/recipes/") {
   window.history.replaceState(null, "", path);
-  act(() => root.render(<App />));
+  act(() => root.render(inLocale(<App />)));
   await settle();
 }
 
@@ -121,106 +124,106 @@ async function serious(): Promise<string[]> {
     .map((one) => `${one.id}: ${one.nodes.map((node) => node.target.join(" ")).join(", ")}`);
 }
 
-describe("el recetario", () => {
-  it("mientras llega, el esqueleto", async () => {
+describe("the recipe book", () => {
+  it("while it loads, the skeleton", async () => {
     replies["GET /api/recipes/recipes"] = () => new Promise(() => undefined);
     await open();
     expect(host.querySelector(".skeleton")).not.toBeNull();
   });
 
-  it("vacío, el botón escribe la primera", async () => {
+  it("empty, the button writes the first one", async () => {
     replies["GET /api/recipes/recipes"] = () => [];
     await open();
-    act(() => button("Escribir la primera")!.click());
+    act(() => button(english("recipes.write_first"))!.click());
     await settle();
-    expect(window.location.pathname).toBe("/recipes/nueva");
+    expect(window.location.pathname).toBe("/recipes/new");
   });
 
-  it("si falla, lo dice y reintentar lo trae", async () => {
-    replies["GET /api/recipes/recipes"] = () => json({ detail: "la base no contesta" }, 503);
+  it("if it fails, it says so and retrying brings it", async () => {
+    replies["GET /api/recipes/recipes"] = () => json({ detail: "the database is not answering" }, 503);
     await open();
-    expect(host.textContent).toContain("No se pudo leer el recetario");
+    expect(host.textContent).toContain(english("recipes.read_failed"));
 
-    replies["GET /api/recipes/recipes"] = () => [PORRUSALDA];
-    act(() => button("Reintentar")!.click());
+    replies["GET /api/recipes/recipes"] = () => [LEEK_SOUP];
+    act(() => retry()!.click());
     await settle();
-    expect(host.textContent).toContain("Porrusalda");
+    expect(host.textContent).toContain("Leek soup");
   });
 
-  it("sin red, lo dice arriba", async () => {
+  it("offline, it says so at the top", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     await open();
-    expect(host.textContent).toContain("Sin conexión");
+    expect(host.querySelector('.notice[data-tone="warning"]')).not.toBeNull();
   });
 
-  it("axe-core sin errores graves", async () => {
+  it("axe-core without serious errors", async () => {
     await open();
     expect(await serious()).toEqual([]);
   });
 });
 
-describe("la despensa", () => {
-  it("busca sin tildes, y lo que empieza igual sale antes", async () => {
-    await open("/recipes/despensa");
-    type("platano");
+describe("the pantry", () => {
+  it("it searches without accents, and what starts the same comes first", async () => {
+    await open("/recipes/pantry");
+    type("cafe");
     await settle();
 
     const text = host.textContent ?? "";
-    expect(text).toContain("En tu despensa2");
-    expect(text).toContain("Plátano");
-    expect(text.indexOf("Plátano")).toBeLessThan(text.indexOf("Batido de plátano"));
+    expect(text).toContain(`${english("pantry.in_yours")}2`);
+    expect(text).toContain("Caf\u00e9");
+    expect(text.indexOf("Caf\u00e9")).toBeLessThan(text.indexOf("Caf\u00e9 latte"));
     expect(text).not.toContain("Kiwi");
   });
 
-  it("vacía, ofrece crear uno a mano", async () => {
+  it("empty, it offers to create one by hand", async () => {
     replies["GET /api/recipes/foods"] = () => [];
-    await open("/recipes/despensa");
-    expect(host.textContent).toContain("La despensa está vacía");
-    expect(button("Crear uno a mano")).toBeDefined();
+    await open("/recipes/pantry");
+    expect(host.textContent).toContain(english("pantry.empty"));
+    expect(button(english("pantry.create_one"))).toBeDefined();
   });
 
-  it("si falla, reintentar", async () => {
+  it("if it fails, retry", async () => {
     replies["GET /api/recipes/foods"] = () => json({ detail: "no" }, 500);
-    await open("/recipes/despensa");
-    expect(host.textContent).toContain("No se pudo leer la despensa");
+    await open("/recipes/pantry");
+    expect(host.textContent).toContain(english("pantry.read_failed"));
 
     replies["GET /api/recipes/foods"] = () => FOODS;
-    act(() => button("Reintentar")!.click());
+    act(() => retry()!.click());
     await settle();
     expect(host.textContent).toContain("Kiwi");
   });
 
-  it.each(["/recipes/despensa", "/recipes/ajustes"])("%s, axe-core sin errores graves", async (path) => {
+  it.each(["/recipes/pantry", "/recipes/settings"])("%s, axe-core without serious errors", async (path) => {
     await open(path);
     expect(await serious()).toEqual([]);
   });
 });
 
-describe("una receta", () => {
-  it("si no se puede leer, reintentar", async () => {
-    const path = `/api/recipes/recipes/${PORRUSALDA.id}`;
+describe("a recipe", () => {
+  it("if it cannot be read, retry", async () => {
+    const path = `/api/recipes/recipes/${LEEK_SOUP.id}`;
     replies[`GET ${path}`] = () => json({ detail: "no" }, 500);
-    await open(`/recipes/receta/${PORRUSALDA.id}`);
-    expect(host.textContent).toContain("No se pudo leer la receta");
-    expect(button("Reintentar")).toBeDefined();
+    await open(`/recipes/recipe/${LEEK_SOUP.id}`);
+    expect(host.textContent).toContain(english("recipe.read_failed"));
+    expect(retry()).not.toBeNull();
   });
 
-  it("el editor no enseña el formulario hasta tener la receta", async () => {
-    const path = `/api/recipes/recipes/${PORRUSALDA.id}`;
+  it("the editor does not show the form until it has the recipe", async () => {
+    const path = `/api/recipes/recipes/${LEEK_SOUP.id}`;
     replies[`GET ${path}`] = () => json({ detail: "no" }, 500);
-    await open(`/recipes/receta/${PORRUSALDA.id}/editar`);
+    await open(`/recipes/recipe/${LEEK_SOUP.id}/edit`);
     expect(host.querySelector("input[type=text], input:not([type])")).toBeNull();
-    expect(button("Reintentar")).toBeDefined();
+    expect(retry()).not.toBeNull();
   });
 });
 
-describe("tras cambiar un alimento", () => {
-  it("el recetario se vuelve a leer: sus macros o su nombre cambian las recetas", async () => {
-    replies["PUT /api/recipes/foods/c/alias"] = () => ({ ...FOODS[2]!, alias: "Kiwi verde" });
+describe("after changing a food", () => {
+  it("the recipe book is read again: its macros or name change the recipes", async () => {
+    replies["PUT /api/recipes/foods/c/alias"] = () => ({ ...FOODS[2]!, alias: "Green kiwi" });
     await open();
     act(() => root.unmount());
     root = createRoot(host);
-    await open("/recipes/despensa");
+    await open("/recipes/pantry");
 
     const row = Array.from(host.querySelectorAll<HTMLElement>("button, [role=button]")).find((one) =>
       one.textContent?.includes("Kiwi"),
@@ -228,7 +231,7 @@ describe("tras cambiar un alimento", () => {
     act(() => row.click());
     await settle();
     const save = Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find(
-      (one) => one.textContent === "Guardar",
+      (one) => one.textContent === english("common.save"),
     )!;
     act(() => save.click());
     await settle();

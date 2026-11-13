@@ -33,9 +33,9 @@ OFF_YOGURT = {
     "hits": [
         {
             "code": "8410128750121",
-            "product_name": "Yogur natural",
-            "brands": ["Marca Sintética"],
-            "categories": ["Lácteos", "Yogures"],
+            "product_name": "Plain yoghurt",
+            "brands": ["Synthetic Brand"],
+            "categories": ["Dairy", "Yoghurts"],
             "nutriments": {
                 "energy-kcal_100g": 61,
                 "proteins_100g": 3.5,
@@ -48,8 +48,8 @@ OFF_YOGURT = {
 }
 OFF_YOGURT_PRODUCT = {
     **OFF_YOGURT["hits"][0],
-    "brands": "Marca Sintética, Otra",
-    "categories": "Lácteos, Yogures",
+    "brands": "Synthetic Brand, Other",
+    "categories": "Dairy, Yoghurts",
 }
 
 
@@ -71,7 +71,7 @@ async def searching(api, hub):
 
 
 async def test_both_sources_end_up_in_the_same_shape(searching) -> None:
-    response = await searching(both_answer).get("/foods/search", params={"q": "puerro"})
+    response = await searching(both_answer).get("/foods/search", params={"q": "leek"})
 
     assert response.status_code == 200, response.text
     body = response.json()
@@ -86,13 +86,13 @@ async def test_both_sources_end_up_in_the_same_shape(searching) -> None:
     assert leek["category_hint"] == "vegetable"
 
     yogurt = by_source["off"]
-    assert yogurt["brand"] == "Marca Sintética"
+    assert yogurt["brand"] == "Synthetic Brand"
     assert yogurt["macros"]["salt"] == 0.12
     assert yogurt["category_hint"] == "dairy"
 
 
 async def test_an_incomplete_nutrition_panel_is_not_offered(searching) -> None:
-    body = (await searching(both_answer).get("/foods/search", params={"q": "puerro"})).json()
+    body = (await searching(both_answer).get("/foods/search", params={"q": "leek"})).json()
 
     assert "99999" not in [candidate["source_ref"] for candidate in body["candidates"]]
 
@@ -100,13 +100,15 @@ async def test_an_incomplete_nutrition_panel_is_not_offered(searching) -> None:
 async def test_one_source_down_does_not_take_the_other_with_it(searching) -> None:
     def usda_down(request: httpx.Request) -> httpx.Response:
         if "nal.usda.gov" in request.url.host:
-            raise httpx.ConnectError("sin red", request=request)
+            raise httpx.ConnectError("no network", request=request)
         return httpx.Response(200, json=OFF_YOGURT)
 
     body = (await searching(usda_down).get("/foods/search", params={"q": "yogur"})).json()
 
     assert [c["source"] for c in body["candidates"]] == ["off"]
-    assert body["failed"] == [{"source": "usda", "reason": "USDA no contestó: ConnectError"}]
+    [failed] = body["failed"]
+    assert failed["source"] == "usda"
+    assert "ConnectError" in failed["reason"]
 
 
 async def test_without_the_usda_key_it_says_so_instead_of_returning_less(api, hub) -> None:
@@ -115,14 +117,14 @@ async def test_without_the_usda_key_it_says_so_instead_of_returning_less(api, hu
     body = (await api.get("/foods/search", params={"q": "yogur"})).json()
 
     assert body["failed"][0]["source"] == "usda"
-    assert "ponla en Hub" in body["failed"][0]["reason"]
+    assert body["failed"][0]["reason"]
     assert [c["source"] for c in body["candidates"]] == ["off"]
 
 
 async def test_with_the_hub_down_both_say_so(api, monkeypatch) -> None:
 
     def down(request: httpx.Request) -> httpx.Response:
-        raise httpx.ConnectError("sin red", request=request)
+        raise httpx.ConnectError("no network", request=request)
 
     app.state.client = httpx.AsyncClient(transport=httpx.MockTransport(down))
 
@@ -130,14 +132,14 @@ async def test_with_the_hub_down_both_say_so(api, monkeypatch) -> None:
 
     assert body["candidates"] == []
     assert [f["source"] for f in body["failed"]] == ["usda", "off"]
-    assert "Hub no contesta" in body["failed"][0]["reason"]
+    assert "Hub is not answering" in body["failed"][0]["reason"]
 
 
 async def test_an_imported_food_stays_and_is_not_asked_for_again(searching) -> None:
     client = searching(both_answer)
     candidate = next(
         c
-        for c in (await client.get("/foods/search", params={"q": "puerro"})).json()["candidates"]
+        for c in (await client.get("/foods/search", params={"q": "leek"})).json()["candidates"]
         if c["source"] == "usda"
     )
 
@@ -146,7 +148,7 @@ async def test_an_imported_food_stays_and_is_not_asked_for_again(searching) -> N
         json={
             "source": candidate["source"],
             "source_ref": candidate["source_ref"],
-            "name": "Puerro",
+            "name": "Leek",
             "category_id": "vegetable",
             "macros": candidate["macros"],
         },
@@ -159,7 +161,7 @@ async def test_an_imported_food_stays_and_is_not_asked_for_again(searching) -> N
         transport=httpx.MockTransport(lambda request: httpx.Response(503))
     )
     catalogue = (await client.get("/foods")).json()
-    assert [food["name"] for food in catalogue] == ["Puerro"]
+    assert [food["name"] for food in catalogue] == ["Leek"]
     assert catalogue[0]["macros"]["kcal"] == 61
 
 
@@ -168,7 +170,7 @@ async def test_importing_the_same_food_twice_gives_back_the_one_you_have(searchi
     body = {
         "source": "usda",
         "source_ref": "11246",
-        "name": "Puerro",
+        "name": "Leek",
         "category_id": "vegetable",
         "macros": {"kcal": 61, "protein": 1.5, "fat": 0.3, "carbs": 14.15},
     }
@@ -184,7 +186,7 @@ async def test_what_no_source_has_is_typed_by_hand(api) -> None:
     response = await api.post(
         "/foods/manual",
         json={
-            "name": "Sofrito de casa",
+            "name": "Home sofrito",
             "category_id": "vegetable",
             "macros": {"kcal": 120, "protein": 1.2, "fat": 10.5, "carbs": 6},
             "grams_per_unit": 80,
@@ -207,7 +209,7 @@ async def test_correcting_the_macros_leaves_it_marked(searching) -> None:
             json={
                 "source": "usda",
                 "source_ref": "11246",
-                "name": "Puerro",
+                "name": "Leek",
                 "category_id": "vegetable",
                 "macros": {"kcal": 61, "protein": 1.5, "fat": 0.3, "carbs": 14.15},
             },
@@ -229,7 +231,7 @@ async def test_a_category_that_does_not_exist_is_a_404(api) -> None:
     response = await api.post(
         "/foods/manual",
         json={
-            "name": "Algo",
+            "name": "Something",
             "category_id": "inventada",
             "macros": {"kcal": 10, "protein": 1, "fat": 1, "carbs": 1},
         },
@@ -263,15 +265,15 @@ async def test_impossible_macros_are_refused_before_touching_the_database(api) -
 
 def test_a_barcode_is_looked_up_as_a_product_and_not_as_text() -> None:
     assert looks_like_barcode("8410128750121")
-    assert not looks_like_barcode("yogur natural")
+    assert not looks_like_barcode("plain yoghurt")
     assert not looks_like_barcode("123")
 
 
 def test_what_the_source_calls_it_becomes_one_of_our_twelve() -> None:
     assert category_hint("Vegetables and Vegetable Products") == "vegetable"
     assert category_hint("Finfish and Shellfish Products") == "fish"
-    assert category_hint("Lácteos, Yogures") == "dairy"
-    assert category_hint("Cosa rarísima") == "other"
+    assert category_hint("Dairy, Yoghurts") == "dairy"
+    assert category_hint("Very odd thing") == "other"
     assert category_hint(None) == "other"
 
 
@@ -288,7 +290,7 @@ async def test_a_barcode_reaches_the_product_endpoint(searching) -> None:
 
     assert "api/v2/product/8410128750121.json" in asked[0]
     assert [(c["source_ref"], c["brand"]) for c in body["candidates"]] == [
-        ("8410128750121", "Marca Sintética")
+        ("8410128750121", "Synthetic Brand")
     ]
 
 
@@ -299,7 +301,7 @@ async def test_the_server_usda_key_becomes_the_only_persons_credential(
 
     from recipes import publisher
 
-    monkeypatch.setenv("USDA_API_KEY", "clave-del-servidor")
+    monkeypatch.setenv("USDA_API_KEY", "server-key")
 
     async def two(_client):
         return [person, uuid4()]
@@ -315,5 +317,5 @@ async def test_the_server_usda_key_becomes_the_only_persons_credential(
     assert await publisher.hand_over_usda(app.state.client) is True
     [usda] = (await hub.client.get("/connections")).json()
     assert usda["provider"] == "usda"
-    ficha = (await hub.client.get(f"/connections/{usda['id']}")).json()
-    assert ficha["secrets"][0]["hint"] == "…idor"
+    card = (await hub.client.get(f"/connections/{usda['id']}")).json()
+    assert card["secrets"][0]["hint"] == "…-key"

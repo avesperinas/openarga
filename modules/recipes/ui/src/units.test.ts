@@ -1,11 +1,19 @@
+import { configureRegional } from "@openarga/ui";
+
+import { english as t, spanish } from "./i18n/testing";
 import { UNITS, quantityLabel } from "./units";
 
-test("las seis unidades tienen su forma corta", () => {
-  expect(UNITS.map((one) => one.value)).toEqual(["g", "ml", "unit", "tbsp", "tsp", "pinch"]);
+afterEach(() => configureRegional({ locale: "es-ES" }));
+
+test("the six units each have their short form", () => {
+  expect(UNITS).toEqual(["g", "ml", "unit", "tbsp", "tsp", "pinch"]);
 });
 
-test("una cantidad se lee corta y en español", () => {
-  expect(quantityLabel(400, "g")).toBe("400 g");
-  expect(quantityLabel(1.5, "unit")).toBe("1,5 ud");
-  expect(quantityLabel(2, "tbsp")).toBe("2 cda");
+test("a quantity reads short, in the person's language", () => {
+  configureRegional({ locale: "en-US" });
+  expect(quantityLabel(400, "g", t)).toBe("400 g");
+  expect(quantityLabel(1.5, "unit", t)).toBe("1.5 u");
+  expect(quantityLabel(2, "tbsp", t)).toBe("2 tbsp");
+  configureRegional({ locale: "es-ES" });
+  expect(quantityLabel(1.5, "unit", spanish)).toBe(`1,5 ${spanish("unit_short.unit")}`);
 });
