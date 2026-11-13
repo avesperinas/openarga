@@ -41,7 +41,7 @@ async def kernel(migrated, schema, person, monkeypatch):
                 "manifest": json.dumps(
                     {
                         "id": GYM,
-                        "name": "Gimnasio",
+                        "name": "Gym",
                         "version": "0.1.0",
                         "database": {"schema": GYM, "role": f"mod_{GYM}", "reads": []},
                         "api": {"prefix": f"/api/{GYM}"},
@@ -117,7 +117,7 @@ async def test_what_an_app_publishes_shows_up_in_its_own_layer(api, kernel) -> N
     [found] = await week(api)
     layers = (await api.get("/calendars")).json()
     [layer] = [one for one in layers if one["origin"] == "app"]
-    assert layer["name"] == "Gimnasio"
+    assert layer["name"] == "Gym"
     assert layer["app"] == GYM
     assert found["calendar_id"] == layer["id"]
     assert found["title"] == "Torso"
@@ -216,7 +216,7 @@ async def test_nobody_creates_an_event_in_an_app_layer(api, kernel) -> None:
 
 
 async def test_what_does_not_fit_is_dropped_and_the_rest_arrives(api, kernel) -> None:
-    await publish(kernel, session("bad", start="mañana"))
+    await publish(kernel, session("bad", start="tomorrow"))
     await publish(kernel, session("2"))
 
     assert [one["title"] for one in await week(api)] == ["Torso"]
@@ -273,34 +273,34 @@ async def test_an_app_that_does_not_serve_moving_stays_still(api, kernel) -> Non
 
 async def test_what_asks_for_its_own_layer_goes_to_a_separate_layer_of_the_app(api, kernel) -> None:
     await publish(kernel, session("1"))
-    await publish(kernel, session("2", title="Vuelo"), layer="Trayectos")
+    await publish(kernel, session("2", title="Flight"), layer="Commutes")
 
     found = {one["title"]: one["calendar_id"] for one in await week(api)}
     layers = {
         one["name"]: one for one in (await api.get("/calendars")).json() if one["origin"] == "app"
     }
 
-    assert set(layers) == {"Gimnasio", "Gimnasio · Trayectos"}
-    assert layers["Gimnasio · Trayectos"]["app"] == f"{GYM}:Trayectos"
+    assert set(layers) == {"Gym", "Gym · Commutes"}
+    assert layers["Gym · Commutes"]["app"] == f"{GYM}:Commutes"
     assert found == {
-        "Torso": layers["Gimnasio"]["id"],
-        "Vuelo": layers["Gimnasio · Trayectos"]["id"],
+        "Torso": layers["Gym"]["id"],
+        "Flight": layers["Gym · Commutes"]["id"],
     }
-    assert layers["Gimnasio · Trayectos"]["movable"] is False
+    assert layers["Gym · Commutes"]["movable"] is False
 
-    await api.patch(f"/calendars/{layers['Gimnasio']['id']}", json={"display": "background"})
+    await api.patch(f"/calendars/{layers['Gym']['id']}", json={"display": "background"})
     shown = {
         one["name"]: one["display"]
         for one in (await api.get("/calendars")).json()
         if one["origin"] == "app"
     }
-    assert shown == {"Gimnasio": "background", "Gimnasio · Trayectos": "events"}
+    assert shown == {"Gym": "background", "Gym · Commutes": "events"}
 
 
 async def test_what_was_kept_without_a_layer_moves_when_it_asks_for_one(
     api, kernel, schema
 ) -> None:
-    await publish(kernel, session("1", title="Vuelo"), layer="Trayectos")
+    await publish(kernel, session("1", title="Flight"), layer="Commutes")
     await week(api)
     async with schema.begin() as connection:
         await connection.execute(text('set local role "mod_planner"'))
@@ -308,7 +308,7 @@ async def test_what_was_kept_without_a_layer_moves_when_it_asks_for_one(
 
     [found] = await week(api)
     [aside] = [
-        one for one in (await api.get("/calendars")).json() if one["app"] == f"{GYM}:Trayectos"
+        one for one in (await api.get("/calendars")).json() if one["app"] == f"{GYM}:Commutes"
     ]
     assert found["calendar_id"] == aside["id"]
 
@@ -379,4 +379,4 @@ async def test_a_layer_named_after_its_id_takes_the_manifest_name_later(
     monkeypatch.setattr(apps, "app_names", asked)
     await week(api)
     [layer] = [one for one in (await api.get("/calendars")).json() if one["origin"] == "app"]
-    assert layer["name"] == "Gimnasio"
+    assert layer["name"] == "Gym"

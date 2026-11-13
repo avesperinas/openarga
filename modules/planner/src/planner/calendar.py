@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 import arga_recurrence as recurrence
 from arga_agenda import dated, uid
 from planner import apps, feeds
+from planner.words import say
 
 Scope = Literal["this", "following", "all"]
 Source = Literal["app", "tool"]
@@ -67,7 +68,7 @@ class CalendarIn(BaseModel):
     def _name(cls, value: str) -> str:
         value = value.strip()
         if not value:
-            raise ValueError("el nombre no puede ir vacío")
+            raise ValueError("the name cannot be empty")
         return value
 
 
@@ -156,7 +157,7 @@ async def _days_off_from(
 ) -> list[str]:
     ids = list(dict.fromkeys(str(one) for one in wanted))
     if calendar_id in ids:
-        raise Invalid("una capa no libra sus propios días")
+        raise Invalid("a layer cannot take its own days off")
     if not ids:
         return []
     found = set(
@@ -203,7 +204,7 @@ async def update_calendar(
         fields["name"] = fields["name"].strip()
     if "days_off_from" in fields:
         if current.origin != "own" and patch.days_off_from:
-            raise Invalid("solo una capa tuya libra días")
+            raise Invalid("only a layer of yours takes days off")
         fields["days_off_from"] = await _days_off_from(
             connection, calendar_id, patch.days_off_from or []
         )
@@ -234,7 +235,7 @@ def _zone(tz: str) -> ZoneInfo:
     try:
         return ZoneInfo(tz)
     except (ZoneInfoNotFoundError, ValueError) as error:
-        raise Invalid(f"{tz!r} no es una zona IANA, como Europe/Madrid") from error
+        raise Invalid(f"{tz!r} is not an IANA zone, such as Europe/Madrid") from error
 
 
 def _parse_when(value: Any, all_day: bool) -> Any:
@@ -245,7 +246,7 @@ def _parse_when(value: Any, all_day: bool) -> Any:
             return date.fromisoformat(value[:10])
         return datetime.fromisoformat(value)
     except ValueError as error:
-        raise ValueError(f"{value!r} no es {'una fecha' if all_day else 'una hora'}") from error
+        raise ValueError(f"{value!r} is not {'a date' if all_day else 'a time'}") from error
 
 
 def _rule_text(value: str | None) -> str | None:
@@ -257,7 +258,7 @@ def _rule_text(value: str | None) -> str | None:
     try:
         return recurrence.to_rrule(recurrence.parse(value))
     except ValueError as error:
-        raise ValueError(f"la repetición no se entiende: {error}") from error
+        raise ValueError(f"the repetition cannot be read: {error}") from error
 
 
 class EventIn(BaseModel):
@@ -288,7 +289,7 @@ class EventIn(BaseModel):
     def _title(cls, value: str) -> str:
         value = value.strip()
         if not value:
-            raise ValueError("el título no puede ir vacío")
+            raise ValueError("the title cannot be empty")
         return value
 
     @field_validator("location", "notes", "url")
@@ -339,7 +340,7 @@ class EventPatch(BaseModel):
             return None
         value = value.strip()
         if not value:
-            raise ValueError("el título no puede ir vacío")
+            raise ValueError("the title cannot be empty")
         return value
 
     @field_validator("location", "notes", "url")
@@ -476,7 +477,7 @@ async def _row(connection: AsyncConnection, event_id: str) -> Row:
     try:
         UUID(event_id)
     except ValueError as error:
-        raise NotFound(f"evento {event_id}") from error
+        raise NotFound(f"event {event_id}") from error
     found = (
         (
             await connection.execute(
@@ -488,7 +489,7 @@ async def _row(connection: AsyncConnection, event_id: str) -> Row:
         .first()
     )
     if found is None:
-        raise NotFound(f"evento {event_id}")
+        raise NotFound(f"event {event_id}")
     return Row(**found)
 
 
@@ -509,7 +510,7 @@ async def _own_calendar(connection: AsyncConnection, calendar_id: str | None) ->
         ).scalar_one()
     found = await calendar(connection, calendar_id)
     if found.origin != "own":
-        raise Invalid("lo suscrito no se edita: elige una capa propia")
+        raise Invalid("subscriptions are not edited: choose a layer of your own")
     return found.id
 
 
@@ -517,18 +518,16 @@ def _timing(all_day: bool, start: datetime | date, end: datetime | date, tz: str
     _zone(tz)
     if all_day:
         if isinstance(start, datetime) or isinstance(end, datetime):
-            raise Invalid("de todo el día, inicio y fin son fechas")
+            raise Invalid("all day, start and end are dates")
         if end <= start:
-            raise Invalid(
-                "de todo el día, el fin es el día siguiente al último: va después del inicio"
-            )
+            raise Invalid("all day, the end is the day after the last: it goes after the start")
         return {"start_at": None, "end_at": None, "start_date": start, "end_date": end}
     if not isinstance(start, datetime) or not isinstance(end, datetime):
         raise Invalid("con hora, inicio y fin son horas")
     if start.tzinfo is None or end.tzinfo is None:
         raise Invalid("con hora, inicio y fin van con su zona")
     if end < start:
-        raise Invalid("el fin va después del inicio")
+        raise Invalid("the end goes after the start")
     return {"start_at": start, "end_at": end, "start_date": None, "end_date": None}
 
 
@@ -539,7 +538,7 @@ def _check_rule(rrule: str | None, start: datetime | date) -> None:
     wall = start if not isinstance(start, datetime) else start.replace(tzinfo=None)
     first = recurrence.next_occurrence(rule, wall, wall)
     if first is None:
-        raise Invalid("la repetición acaba antes de empezar")
+        raise Invalid("the repetition ends before it starts")
 
 
 async def create(connection: AsyncConnection, request: EventIn, source: Source = "app") -> Event:
@@ -634,7 +633,7 @@ def parse_original(value: str, all_day: bool) -> datetime | date:
             return date.fromisoformat(value[:10])
         parsed = datetime.fromisoformat(value)
     except ValueError as error:
-        raise Invalid(f"{value!r} no es el inicio de una ocurrencia") from error
+        raise Invalid(f"{value!r} is not the start of an occurrence") from error
     return parsed.replace(tzinfo=None)
 
 
@@ -741,7 +740,7 @@ def _subscribed(row: feeds.FeedRow) -> Occurrence:
         id=f"feed:{row.id}",
         event_id=f"feed:{row.id}",
         calendar_id=row.calendar_id,
-        title=payload.get("title") or "(sin título)",
+        title=payload.get("title") or say("untitled"),
         all_day=bool(payload.get("all_day")),
         start=payload["start"],
         end=payload["end"],
@@ -791,9 +790,9 @@ async def occurrences(
     if start.tzinfo is None or end.tzinfo is None:
         raise Invalid("la ventana va con zona")
     if end <= start:
-        raise Invalid("la ventana acaba después de empezar")
+        raise Invalid("the window must end after it starts")
     if end - start > timedelta(days=MAX_WINDOW_DAYS):
-        raise Invalid(f"como mucho {MAX_WINDOW_DAYS} días de una vez")
+        raise Invalid(f"at most {MAX_WINDOW_DAYS} days at once")
     found = await _collect(connection, start, end, calendar_ids)
     return await _without_days_off(connection, found, end)
 
@@ -1097,7 +1096,7 @@ async def update(
 ) -> Event:
     row = await _row(connection, event_id)
     if row.status == "cancelled":
-        raise Invalid("el evento está cancelado")
+        raise Invalid("the event is cancelled")
     calendar_fields: dict[str, Any] = {}
     if "calendar_id" in patch.model_fields_set and patch.calendar_id is not None:
         calendar_fields["calendar_id"] = await _own_calendar(connection, patch.calendar_id)
@@ -1123,13 +1122,13 @@ async def update(
 
     if original is None:
         raise Invalid(
-            "en una serie, di qué ocurrencia (original_start) o que es la serie entera (all)"
+            "in a series, say which occurrence (original_start) or that it is the whole series (all)"
         )
     at = parse_original(original, row.all_day)
     rule = row.rule
     assert rule is not None
     if at not in _occurrences_of(rule, row.wall_start, at):
-        raise Invalid(f"{original} no es una ocurrencia de la serie")
+        raise Invalid(f"{original} is not an occurrence of the series")
 
     if scope == "all":
         timing, delta = _new_timing(row, patch, at)
@@ -1157,14 +1156,14 @@ async def update(
 
     if scope == "this":
         if rule_given or calendar_fields:
-            raise Invalid("la repetición y la capa se cambian en la serie, no en una ocurrencia")
+            raise Invalid("the repetition and the layer change in the series, not in an occurrence")
         timing, _ = _new_timing(row, patch, at)
         values = dict(_plain_fields(patch))
         if timing:
             values.update({k: timing[k] for k in ("start_at", "end_at", "start_date", "end_date")})
         if timing.get("all_day", row.all_day) != row.all_day:
             raise Invalid(
-                "una ocurrencia no cambia entre todo el día y con hora: cámbialo en la serie"
+                "an occurrence does not switch between all day and timed: change it in the series"
             )
         await _upsert_override(connection, row.id, _as_wall(at), values)
         return await _publish_event(connection, row.id, "updated")
@@ -1292,13 +1291,13 @@ async def cancel(
         return await _publish_event(connection, row.id, "cancelled")
     if original is None:
         raise Invalid(
-            "en una serie, di qué ocurrencia (original_start) o que es la serie entera (all)"
+            "in a series, say which occurrence (original_start) or that it is the whole series (all)"
         )
     at = parse_original(original, row.all_day)
     rule = row.rule
     assert rule is not None
     if at not in _occurrences_of(rule, row.wall_start, at):
-        raise Invalid(f"{original} no es una ocurrencia de la serie")
+        raise Invalid(f"{original} is not an occurrence of the series")
     if scope == "this":
         await _upsert_override(connection, row.id, _as_wall(at), {"cancelled": True})
         return await _publish_event(connection, row.id, "updated")

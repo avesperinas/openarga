@@ -1,18 +1,21 @@
-# Glosario de Planner
+# Planner glossary
 
-- **Capa**: un calendario con su nombre y su tono (Personal, Trabajo, Deporte). Cada evento está en
-  una. Una capa oculta no sale en la app ni en los widgets, pero sus eventos siguen existiendo.
-- **Evento** o **serie**: algo con título, inicio y fin. Una serie es un evento con repetición; se
-  guarda una vez y sus ocurrencias se calculan.
-- **Ocurrencia**: cada vez que una serie cae en el calendario. Se nombra por su `original_start`, el
-  inicio que le daba la regla aunque luego se haya movido. Para tocar solo una hay que pasarlo.
-- **Alcance** (`scope`): al cambiar o cancelar algo de una serie, `this` es solo esa ocurrencia,
-  `following` esa y las siguientes (la serie se corta y empieza otra), `all` la serie entera.
-- **Todo el día**: fechas sin hora. Para las tools, el último día va incluido ("del 1 al 3").
-- **Zona**: la de cada evento decide el cambio de hora. Una serie a las 10:00 de Madrid sigue a las
-  10:00 tras el cambio de hora. Una hora sin zona se lee en la de casa.
-- **Cancelar** no borra: el evento deja de verse y la fila se queda.
-- **Fondo**: una capa que no se ve como eventos sino como el marco en el que caen: el horario
-  laboral, un viaje. Lo suyo no ocupa tiempo; las lecturas lo devuelven aparte, en `backgrounds`.
-  Para saber si hay hueco cuentan los eventos, y el fondo dice en qué marco cae.
-- **Suscrita**: una capa que se llena sola desde fuera (festivos, deportes, un `.ics`). No se edita.
+- **Layer**: a calendar with its name and tone (Personal, Work, Sport). Every event is in one. A
+  hidden layer does not show in the app or the widgets, but its events still exist.
+- **Event** or **series**: something with a title, a start and an end. A series is an event with a
+  repetition; it is stored once and its occurrences are computed.
+- **Occurrence**: each time a series falls on the calendar. It is named by its `original_start`, the
+  start its rule gave it even if it was moved later. To touch only one, pass it.
+- **Scope** (`scope`): when changing or cancelling something in a series, `this` is only that
+  occurrence, `following` that one and the next ones (the series is cut and another starts), `all`
+  the whole series.
+- **All day**: dates without a time. For the tools, the last day is included ("from the 1st to the
+  3rd").
+- **Zone**: each event's zone decides daylight saving changes. A series at 10:00 in Madrid stays at
+  10:00 after the change. A time without a zone is read in the home zone.
+- **Cancel** does not delete: the event stops showing and the row stays.
+- **Background**: a layer that shows not as events but as the frame they fall in: working hours, a
+  trip. Its items take no time; reads return them apart, in `backgrounds`. Events decide whether
+  there is room, and the background says which frame it falls in.
+- **Subscribed**: a layer that fills itself from outside (holidays, sport, an `.ics`). It is not
+  edited.

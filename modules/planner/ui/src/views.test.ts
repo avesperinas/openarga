@@ -21,8 +21,8 @@ describe("la dirección", () => {
       expect(parsePlace(pathOf(place, TODAY), 1280, TODAY)).toEqual(place);
     }
     expect(pathOf({ view: "agenda", day: TODAY }, TODAY)).toBe("/planner/agenda");
-    expect(pathOf({ view: "month", day: "2026-10-01" }, TODAY)).toBe("/planner/mes/2026-10");
-    expect(pathOf({ view: "month", day: "2026-10-19" }, TODAY)).toBe("/planner/mes/2026-10-19");
+    expect(pathOf({ view: "month", day: "2026-10-01" }, TODAY)).toBe("/planner/month/2026-10");
+    expect(pathOf({ view: "month", day: "2026-10-19" }, TODAY)).toBe("/planner/month/2026-10-19");
   });
 });
 

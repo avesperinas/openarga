@@ -8,6 +8,8 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from planner.words import say
+
 EVENT = "calendar.event"
 FEED = "calendar.feed"
 RUN = "hub.run"
@@ -130,9 +132,9 @@ async def derive(connection: AsyncConnection) -> dict[str, int]:
                 NEW_LAYER,
                 {
                     "connection": feed.connection,
-                    "name": str(plugged.get("name") or feed.payload.get("label") or "Suscripción")[
-                        :60
-                    ],
+                    "name": str(
+                        plugged.get("name") or feed.payload.get("label") or say("subscription")
+                    )[:60],
                     "tone": tone if isinstance(tone, int) and 1 <= tone <= 10 else count % 10 + 1,
                 },
             )

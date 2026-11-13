@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets.panel import blocks_of, gather, panel
 from planner import widgets
+from planner.words import say, words
 
 
 def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
@@ -16,7 +17,11 @@ def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def nothing() -> HTTPException:
-    return HTTPException(status_code=404, detail="Planner aún no tiene nada que contar")
+    return HTTPException(status_code=404, detail="Planner has nothing to tell yet")
+
+
+def _events(count: int) -> str:
+    return say("panel.events.one" if count == 1 else "panel.events.other", count=count)
 
 
 def upcoming(entries: list[dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
@@ -82,17 +87,17 @@ async def build(connection: AsyncConnection) -> dict:
         hour = nxt["_start"].strftime("%H:%M")
         headlines.append(
             {
-                "text": f"La próxima, {nxt['title']} a las {hour}",
-                "emphasis": f"{nxt['title']} a las {hour}",
-                "status": f"{len(later)} {'cita' if len(later) == 1 else 'citas'}",
+                "text": say("panel.next", title=nxt["title"], hour=hour),
+                "emphasis": say("panel.next.emphasis", title=nxt["title"], hour=hour),
+                "status": _events(len(later)),
                 "priority": 50,
             }
         )
     elif timed:
         headlines.append(
             {
-                "text": "Ya no te queda nada más hoy",
-                "status": "Libre",
+                "text": say("panel.nothing_left"),
+                "status": say("panel.free"),
                 "tone": "positive",
                 "priority": 20,
             }
@@ -100,79 +105,77 @@ async def build(connection: AsyncConnection) -> dict:
     elif week:
         headlines.append(
             {
-                "text": "Hoy no tienes nada en el calendario",
-                "status": "Libre",
+                "text": say("panel.nothing_today"),
+                "status": say("panel.free"),
                 "tone": "positive",
                 "priority": 20,
             }
         )
-    blocks = blocks_of("agenda", found.get("today") or {}, label="Hoy", today=day)
+    blocks = blocks_of("agenda", found.get("today") or {}, label=say("panel.today"), today=day)
     if not timed:
-        blocks.insert(
-            0, {"type": "alert", "tone": "neutral", "text": "Hoy no tienes nada en el calendario"}
-        )
+        blocks.insert(0, {"type": "alert", "tone": "neutral", "text": say("panel.nothing_today")})
     if week:
         tiles = [
             {
-                "label": "Hoy",
-                "value": f"{len(timed)} {'cita' if len(timed) == 1 else 'citas'}"
-                if timed
-                else "Libre",
+                "label": say("panel.today"),
+                "value": _events(len(timed)) if timed else say("panel.free"),
             }
         ]
         if later:
-            tiles.append({"label": "La próxima", "value": later[0]["_start"].strftime("%H:%M")})
-        tiles.append({"label": "La semana", "value": str(len(week))})
+            tiles.append(
+                {"label": say("panel.next_tile"), "value": later[0]["_start"].strftime("%H:%M")}
+            )
+        tiles.append({"label": say("panel.week"), "value": str(len(week))})
         blocks.insert(1, {"type": "tiles", "items": tiles})
     tabs = [
         {
-            "id": "hoy",
-            "label": "Agenda",
+            "id": "today",
+            "label": say("panel.agenda"),
             "blocks": blocks,
-            "actions": [{"label": "Abrir Planner", "href": "/planner/"}],
+            "actions": [{"label": say("panel.open"), "href": "/planner/"}],
         }
     ]
-    after = blocks_of("upnext", found.get("upnext") or {}, label="Lo próximo")
+    after = blocks_of("upnext", found.get("upnext") or {}, label=say("panel.coming"))
     if after:
         tabs.append(
             {
-                "id": "proximo",
-                "label": "Próximo",
+                "id": "next",
+                "label": say("panel.upcoming"),
                 "blocks": after,
-                "actions": [{"label": "La semana", "href": "/planner/"}],
+                "actions": [{"label": say("panel.week"), "href": "/planner/"}],
             }
         )
     calendar = month_block(found.get("calendar"), now)
     if calendar:
         tabs.append(
             {
-                "id": "mes",
-                "label": "Mes",
+                "id": "month",
+                "label": say("panel.month"),
                 "blocks": [calendar],
-                "actions": [{"label": "Abrir el mes", "href": "/planner/"}],
+                "actions": [{"label": say("panel.open_month"), "href": "/planner/"}],
             }
         )
     questions = [
         {
-            "text": "¿Qué tengo hoy?",
-            "words": ["hoy", "agenda", "citas", "calendario", "reuniones"],
-            "tab": "hoy",
+            "text": say("panel.ask.today"),
+            "words": words("panel.ask.today.words"),
+            "tab": "today",
         }
     ]
     if after:
         questions.append(
             {
-                "text": "¿Qué tengo después?",
-                "words": ["proximo", "siguiente", "semana", "manana"],
-                "tab": "proximo",
+                "text": say("panel.ask.next"),
+                "words": words("panel.ask.next.words"),
+                "tab": "next",
             }
         )
     if calendar:
         questions.append(
             {
-                "text": "¿Qué tengo este mes?",
-                "words": ["mes", "calendario", "mensual"],
-                "tab": "mes",
+                "text": say("panel.ask.month"),
+                "words": words("panel.ask.month.words"),
+                "tab": "month",
             }
         )
     return panel("day", order=10, headlines=headlines, tabs=tabs, questions=questions)

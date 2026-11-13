@@ -13,15 +13,15 @@ async def test_panel_sin_datos_no_revienta(api):
             assert item["area"] == "day"
 
 
-async def test_con_todos_sus_widgets_llenos_el_panel_sella(monkeypatch):
+async def test_with_every_widget_full_the_panel_seals(monkeypatch):
     (item,) = await full_panel(home_panel, Path(__file__).parents[1] / "manifest.yaml", monkeypatch)
     assert item["area"] == "day"
     tabs = {tab["id"]: tab for tab in item["tabs"]}
-    (month,) = tabs["mes"]["blocks"]
+    (month,) = tabs["month"]["blocks"]
     assert month["type"] == "month" and month["marked"] == [3, 6, 8]
 
 
-async def test_lo_de_manana_no_cuenta_como_hoy(monkeypatch):
+async def test_tomorrow_does_not_count_as_today(monkeypatch):
     from datetime import datetime, timedelta
     from zoneinfo import ZoneInfo
 
@@ -40,12 +40,12 @@ async def test_lo_de_manana_no_cuenta_como_hoy(monkeypatch):
 
     monkeypatch.setattr(home_panel, "gather", gather)
     (item,) = served(await home_panel.build(None))
-    (agenda,) = [tab for tab in item["tabs"] if tab["id"] == "hoy"]
+    (agenda,) = [tab for tab in item["tabs"] if tab["id"] == "today"]
     alert, tiles, later = agenda["blocks"]
     assert alert["type"] == "alert"
     assert {tile["label"]: tile["value"] for tile in tiles["items"]} == {
-        "Hoy": "Libre",
-        "La semana": "3",
+        "Today": "Free",
+        "This week": "3",
     }
-    assert later["label"] == "Después" and [row["label"] for row in later["rows"]] == ["A", "B"]
-    assert [line["text"] for line in item["headlines"]] == ["Hoy no tienes nada en el calendario"]
+    assert [row["label"] for row in later["rows"]] == ["A", "B"]
+    assert [line["text"] for line in item["headlines"]] == ["Nothing on the calendar today"]

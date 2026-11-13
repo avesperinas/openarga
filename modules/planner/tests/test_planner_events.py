@@ -38,13 +38,13 @@ async def test_a_first_look_brings_the_personal_layer(api) -> None:
 
 
 async def test_timed_and_all_day_events_show_in_their_week(api) -> None:
-    await create(api, title="Dentista", start=at("2026-09-29T16:00"), end=at("2026-09-29T17:30"))
-    await create(api, title="Fiesta", all_day=True, start="2026-10-01", end="2026-10-02")
+    await create(api, title="Dentist", start=at("2026-09-29T16:00"), end=at("2026-09-29T17:30"))
+    await create(api, title="Holiday", all_day=True, start="2026-10-01", end="2026-10-02")
     await create(api, title="Otra semana", start=at("2026-10-07T10:00"), end=at("2026-10-07T11:00"))
 
     found = await window(api, "2026-09-28T00:00", "2026-10-05T00:00")
 
-    assert [o["title"] for o in found] == ["Fiesta", "Dentista"]
+    assert [o["title"] for o in found] == ["Holiday", "Dentist"]
     fiesta = found[0]
     assert (fiesta["all_day"], fiesta["start"], fiesta["end"]) == (True, "2026-10-01", "2026-10-02")
 
@@ -52,7 +52,7 @@ async def test_timed_and_all_day_events_show_in_their_week(api) -> None:
 async def test_a_weekly_series_stays_at_ten_across_the_clock_change(api) -> None:
     series = await create(
         api,
-        title="Planificación",
+        title="Planning",
         start=at("2026-10-19T10:00"),
         end=at("2026-10-19T10:30"),
         rrule="FREQ=WEEKLY;BYDAY=MO",
@@ -61,7 +61,7 @@ async def test_a_weekly_series_stays_at_ten_across_the_clock_change(api) -> None
 
     found = await window(api, "2026-10-19T00:00", "2026-11-03T00:00")
 
-    assert local_times(found, "Planificación") == [
+    assert local_times(found, "Planning") == [
         "2026-10-19 10:00",
         "2026-10-26 10:00",
         "2026-11-02 10:00",
@@ -73,7 +73,7 @@ async def test_a_weekly_series_stays_at_ten_across_the_clock_change(api) -> None
 async def test_just_this_one_moves_one_occurrence_and_names_it_by_where_it_was(api) -> None:
     series = await create(
         api,
-        title="Inglés",
+        title="English",
         start=at("2026-10-06T19:00"),
         end=at("2026-10-06T20:00"),
         rrule="FREQ=WEEKLY;BYDAY=TU,TH",
@@ -90,7 +90,7 @@ async def test_just_this_one_moves_one_occurrence_and_names_it_by_where_it_was(a
 
     found = await window(api, "2026-10-05T00:00", "2026-10-12T00:00")
 
-    assert local_times(found, "Inglés") == ["2026-10-06 19:00", "2026-10-08 18:00"]
+    assert local_times(found, "English") == ["2026-10-06 19:00", "2026-10-08 18:00"]
     moved = [o for o in found if o["moved"]]
     assert [o["original_start"] for o in moved] == ["2026-10-08T19:00:00"]
 
@@ -98,7 +98,7 @@ async def test_just_this_one_moves_one_occurrence_and_names_it_by_where_it_was(a
 async def test_following_splits_the_series_and_keeps_a_change_already_made(api) -> None:
     series = await create(
         api,
-        title="Gimnasio",
+        title="Gym",
         start=at("2026-10-05T07:30"),
         end=at("2026-10-05T08:30"),
         rrule="FREQ=WEEKLY;BYDAY=MO",
@@ -126,7 +126,7 @@ async def test_following_splits_the_series_and_keeps_a_change_already_made(api) 
 
     found = await window(api, "2026-10-05T00:00", "2026-11-03T00:00")
 
-    assert local_times(found, "Gimnasio") == [
+    assert local_times(found, "Gym") == [
         "2026-10-05 07:30",
         "2026-10-12 07:30",
         "2026-10-19 18:00",
@@ -142,7 +142,7 @@ async def test_following_splits_the_series_and_keeps_a_change_already_made(api) 
 async def test_moving_every_occurrence_to_another_day_moves_the_weekdays(api) -> None:
     series = await create(
         api,
-        title="Pádel",
+        title="Padel",
         start=at("2026-10-06T19:00"),
         end=at("2026-10-06T20:30"),
         rrule="FREQ=WEEKLY;BYDAY=TU",
@@ -156,11 +156,13 @@ async def test_moving_every_occurrence_to_another_day_moves_the_weekdays(api) ->
         },
     )
     assert response.status_code == 200, response.text
-    assert response.json()["repeat"] == "cada semana, el miércoles"
+    from arga_recurrence import describe, parse
+
+    assert response.json()["repeat"] == describe(parse("FREQ=WEEKLY;BYDAY=WE"))
 
     found = await window(api, "2026-10-05T00:00", "2026-10-19T00:00")
 
-    assert local_times(found, "Pádel") == ["2026-10-07 20:00", "2026-10-14 20:00"]
+    assert local_times(found, "Padel") == ["2026-10-07 20:00", "2026-10-14 20:00"]
 
 
 async def test_cancel_this_following_and_all(api) -> None:
@@ -215,7 +217,7 @@ async def test_what_makes_no_sense_is_said(api) -> None:
     backwards = await api.post(
         "/events",
         json={
-            "title": "Al revés",
+            "title": "Backwards",
             "start": at("2026-10-06T19:00"),
             "end": at("2026-10-06T18:00"),
             "tz": "Europe/Madrid",
@@ -234,7 +236,7 @@ async def test_what_makes_no_sense_is_said(api) -> None:
         json={"changes": {"title": "x"}, "scope": "this", "original_start": "2026-10-07T19:00:00"},
     )
     assert nowhere.status_code == 422
-    assert "no es una ocurrencia" in nowhere.json()["detail"]
+    assert "is not an occurrence" in nowhere.json()["detail"]
 
 
 async def test_layers_are_created_renamed_hidden_and_ordered(api) -> None:
@@ -259,7 +261,7 @@ async def test_search_finds_the_next_one_of_a_series_first(api) -> None:
     )
     await create(
         api,
-        title="Cena",
+        title="Dinner",
         start=at("2020-02-01T21:00"),
         end=at("2020-02-01T23:00"),
         notes="traer yoga mat",
@@ -267,7 +269,7 @@ async def test_search_finds_the_next_one_of_a_series_first(api) -> None:
 
     found = (await api.get("/search", params={"q": "yoga"})).json()
 
-    assert [o["title"] for o in found] == ["Clase de yoga", "Cena"]
+    assert [o["title"] for o in found] == ["Clase de yoga", "Dinner"]
     assert datetime.fromisoformat(found[0]["start"]) > datetime.now(MADRID)
     assert (await api.get("/search", params={"q": "arrieta"})).json()[0]["title"] == "Clase de yoga"
 
@@ -276,7 +278,7 @@ async def test_every_change_goes_to_the_outbox_in_the_common_dated_shape(api, sc
     from sqlalchemy import text
 
     created = await create(
-        api, title="Revisión", start=at("2026-10-06T10:00"), end=at("2026-10-06T11:00")
+        api, title="Review", start=at("2026-10-06T10:00"), end=at("2026-10-06T11:00")
     )
     await api.post(f"/events/{created['id']}/cancel", json={"scope": "all"})
 
@@ -297,8 +299,8 @@ async def test_every_change_goes_to_the_outbox_in_the_common_dated_shape(api, sc
 def test_titles_are_the_same_plan_with_or_without_details() -> None:
     from planner.calendar import similar
 
-    assert similar("Tour por la sierra", "Tour organizado por la sierra")
-    assert similar("Baños termales del centro", "Baños termales (centro)")
-    assert similar("Museo: colección permanente y jardines", "Museo (colección y jardines)")
-    assert not similar("Cena", "Comida")
-    assert not similar("Dentista", "Peluquería")
+    assert similar("Tour of the hills", "Organised tour of the hills")
+    assert similar("Thermal baths in the centre", "Thermal baths (centre)")
+    assert similar("Museum: permanent collection and gardens", "Museum (collection and gardens)")
+    assert not similar("Dinner", "Lunch")
+    assert not similar("Dentist", "Hairdresser")

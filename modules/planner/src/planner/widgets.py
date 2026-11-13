@@ -8,13 +8,16 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets import envelope
 from planner import calendar
+from planner.words import say
 
 KINDS = {"upnext": "upnext", "calendar": "calendar", "today": "agenda", "week": "week"}
 HOME_TZ = os.environ.get("PLANNER_DEFAULT_TZ", "Europe/Madrid")
 UPNEXT = 5
 LOOKAHEAD_DAYS = 60
 
-_days = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"]
+
+def _weekday(day: date) -> str:
+    return say(f"weekday.{day.weekday()}")
 
 
 async def _visible(connection: AsyncConnection, *, backgrounds: bool = True) -> list[str]:
@@ -38,7 +41,7 @@ async def upnext(connection: AsyncConnection, now: datetime | None = None) -> di
     zone = ZoneInfo(HOME_TZ)
     visible = await _visible(connection, backgrounds=False)
     if not visible:
-        return envelope(KINDS["upnext"], "empty", {"detail": "todas las capas están ocultas"})
+        return envelope(KINDS["upnext"], "empty", {"detail": say("widget.hidden")})
     found = await calendar.occurrences(
         connection, now, now + timedelta(days=LOOKAHEAD_DAYS), visible
     )
@@ -51,9 +54,9 @@ async def upnext(connection: AsyncConnection, now: datetime | None = None) -> di
                 continue
             at = datetime.combine(first, time(), zone)
             detail = (
-                "todo el día"
+                say("widget.all_day")
                 if first == today
-                else f"{_days[first.weekday()]} {first.day}, todo el día"
+                else say("widget.day_all_day", day=f"{_weekday(first)} {first.day}")
             )
         else:
             at = datetime.fromisoformat(one.start)
@@ -61,13 +64,13 @@ async def upnext(connection: AsyncConnection, now: datetime | None = None) -> di
                 continue
             local = at.astimezone(zone).date()
             detail = one.location or (
-                "hoy" if local == today else f"{_days[local.weekday()]} {local.day}"
+                say("widget.today") if local == today else f"{_weekday(local)} {local.day}"
             )
         events.append({"at": at.isoformat(), "title": one.title, "detail": detail})
     events.sort(key=lambda e: e["at"])
     if not events:
         return envelope(
-            KINDS["upnext"], "empty", {"detail": f"nada en los próximos {LOOKAHEAD_DAYS} días"}
+            KINDS["upnext"], "empty", {"detail": say("widget.nothing_ahead", days=LOOKAHEAD_DAYS)}
         )
     return envelope(KINDS["upnext"], "ready", {"events": events[:UPNEXT]})
 
@@ -107,7 +110,7 @@ def _day_start(day: date) -> datetime:
 async def agenda(connection: AsyncConnection, now: datetime | None = None) -> dict:
     local = (now or datetime.now(UTC)).astimezone(ZoneInfo(HOME_TZ)).date()
     if not await _visible(connection, backgrounds=False):
-        return envelope(KINDS["today"], "empty", {"detail": "todas las capas están ocultas"})
+        return envelope(KINDS["today"], "empty", {"detail": say("widget.hidden")})
     entries = await _entries(
         connection, _day_start(local), _day_start(local + timedelta(days=7)), backgrounds=False
     )
@@ -117,7 +120,7 @@ async def agenda(connection: AsyncConnection, now: datetime | None = None) -> di
 async def week(connection: AsyncConnection, now: datetime | None = None) -> dict:
     local = (now or datetime.now(UTC)).astimezone(ZoneInfo(HOME_TZ)).date()
     if not await _visible(connection, backgrounds=False):
-        return envelope(KINDS["week"], "empty", {"detail": "todas las capas están ocultas"})
+        return envelope(KINDS["week"], "empty", {"detail": say("widget.hidden")})
     entries = await _entries(
         connection, _day_start(local), _day_start(local + timedelta(days=7)), backgrounds=False
     )

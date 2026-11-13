@@ -3,10 +3,10 @@ import { addDays, dayKey, dayRange, dayStart, formatMonth, isoWeek, mondayOf } f
 export type View = "day" | "three" | "week" | "month" | "agenda";
 
 export const VIEWS: { value: View; label: string; short: string; slug: string; key: string }[] = [
-  { value: "day", label: "Día", short: "Día", slug: "dia", key: "d" },
-  { value: "three", label: "3 días", short: "3 días", slug: "3dias", key: "3" },
-  { value: "week", label: "Semana", short: "Semana", slug: "semana", key: "w" },
-  { value: "month", label: "Mes", short: "Mes", slug: "mes", key: "m" },
+  { value: "day", label: "Día", short: "Día", slug: "day", key: "d" },
+  { value: "three", label: "3 días", short: "3 días", slug: "3days", key: "3" },
+  { value: "week", label: "Semana", short: "Semana", slug: "week", key: "w" },
+  { value: "month", label: "Mes", short: "Mes", slug: "month", key: "m" },
   { value: "agenda", label: "Agenda", short: "Agenda", slug: "agenda", key: "a" },
 ];
 

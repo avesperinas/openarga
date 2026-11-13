@@ -169,7 +169,7 @@ async def unsubscribe(calendar_id: UUID) -> None:
         except calendar.NotFound as error:
             raise HTTPException(status_code=404, detail=f"no existe: {calendar_id}") from error
     if layer.origin != "subscription" or not layer.connection_id:
-        raise HTTPException(status_code=409, detail="esa capa no es una suscripción")
+        raise HTTPException(status_code=409, detail="that layer is not a subscription")
     try:
         await hub.unsubscribe(layer.connection_id)
     except hub.Refused as error:
