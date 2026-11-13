@@ -6,8 +6,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from vitals import body, heart, sleep, today, workouts
-from vitals.steps import MADRID
 from vitals.steps import today as current_day
+from vitals.steps import zone
 
 RESERVE = 0.25
 REST_DAYS = 30
@@ -58,7 +58,7 @@ def quiet_minutes(
 
 
 def clock_minute(day: date, moment: datetime) -> int:
-    local = moment.astimezone(MADRID)
+    local = moment.astimezone(zone())
     if local.date() != day:
         return -1 if local.date() < day else 1440
     return local.hour * 60 + local.minute
@@ -76,13 +76,13 @@ def excluded_minutes(day: date, spans: list[tuple[datetime, datetime]]) -> set[i
 async def tension(connection: AsyncConnection, day: date) -> tuple[Tension | None, str | None]:
     found = await heart.of_day(connection, day)
     if found is None or not found.buckets:
-        return None, "todavía no ha llegado el vitals de hoy"
+        return None, "today's heart rate has not arrived yet"
     steps = {one.minute: one.steps for one in found.buckets if one.steps is not None}
     if not steps:
-        return None, "el vitals de este día llegó sin los pasos de cada minuto"
+        return None, "this day's heart rate came without the steps of each minute"
     resting = await resting_reference(connection, day)
     if resting is None:
-        return None, "falta tu FC en reposo"
+        return None, "your resting heart rate is missing"
     top = await workouts.max_heart_rate(connection)
     threshold = resting + RESERVE * (top - resting)
     spans = [

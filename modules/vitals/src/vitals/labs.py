@@ -65,7 +65,7 @@ async def find(connection: AsyncConnection, wanted: str) -> Any:
         if key in (row.id, plain(row.name), *(plain(alias) for alias in row.aliases)):
             return row
     known = ", ".join(row.id for row in rows)
-    raise NotFound(f"el analito '{wanted}'; los que hay: {known}")
+    raise NotFound(f"analyte '{wanted}'; the known ones: {known}")
 
 
 def canonical(row: Any, value: float | None, unit: str | None) -> float | None:
@@ -150,7 +150,7 @@ EXISTS = text("select 1 from vitals.vitals_checkup where id = cast(:id as uuid)"
 
 async def _checkup_exists(connection: AsyncConnection, checkup_id: str) -> None:
     if not await connection.scalar(EXISTS, {"id": checkup_id}):
-        raise NotFound(f"la revisión {checkup_id}")
+        raise NotFound(f"check-up {checkup_id}")
 
 
 class ResultIn(BaseModel):
@@ -164,9 +164,9 @@ class ResultIn(BaseModel):
     @model_validator(mode="after")
     def _something(self) -> ResultIn:
         if self.value is None and not (self.value_text or "").strip():
-            raise ValueError("hace falta un valor, en número o en texto")
+            raise ValueError("a value is needed, as a number or as text")
         if self.ref_low is not None and self.ref_high is not None and self.ref_low > self.ref_high:
-            raise ValueError("el rango está al revés")
+            raise ValueError("the range is backwards")
         return self
 
 
@@ -397,10 +397,10 @@ async def save_document(
 ) -> None:
     await _checkup_exists(connection, checkup_id)
     if len(content) > PDF_LIMIT:
-        raise Conflict("el PDF pasa de 20 MB")
+        raise Conflict("the PDF is over 20 MB")
     if not content.startswith(b"%PDF-"):
-        raise Conflict("eso no es un PDF")
-    name = (filename or "").strip()[:200] or "revision.pdf"
+        raise Conflict("that is not a PDF")
+    name = (filename or "").strip()[:200] or "checkup.pdf"
     await connection.execute(
         SAVE_DOCUMENT,
         {"checkup": checkup_id, "filename": name, "size": len(content), "content": content},
@@ -410,7 +410,7 @@ async def save_document(
 async def document(connection: AsyncConnection, checkup_id: str) -> tuple[str, bytes]:
     row = (await connection.execute(READ_DOCUMENT, {"id": checkup_id})).one_or_none()
     if row is None:
-        raise NotFound(f"el PDF de la revisión {checkup_id}")
+        raise NotFound(f"the PDF of check-up {checkup_id}")
     return row.filename, bytes(row.content)
 
 

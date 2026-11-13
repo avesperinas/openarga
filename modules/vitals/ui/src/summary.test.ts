@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest";
 
+import { english } from "./i18n/testing";
 import { changeLine } from "./summary";
 
-describe("la última revisión contra la anterior", () => {
-  const ldl = { id: "ldl", name: "Colesterol LDL", panel: "lipidos" as const, unit: "mg/dL", about: "" };
+describe("the last check-up against the previous one", () => {
+  const ldl = { id: "ldl", name: "LDL cholesterol", panel: "lipids" as const, unit: "mg/dL", about: "" };
 
-  it("dice cuánto era, cuánto es y si entró o salió de rango", () => {
+  it("says what it was, what it is and whether it entered or left the range", () => {
     const change = { analyte: ldl, value: 150, previous: 120, unit: "mg/dL", change: 30, out: true, was_out: false };
-    expect(changeLine(change)).toBe("120 → 150 mg/dL, ahora fuera de rango");
-    expect(changeLine({ ...change, out: false, was_out: true })).toBe("120 → 150 mg/dL, vuelve al rango");
-    expect(changeLine({ ...change, out: false })).toBe("120 → 150 mg/dL");
+    expect(changeLine(change, english, "en")).toBe("120 → 150 mg/dL, now out of range");
+    expect(changeLine({ ...change, out: false, was_out: true }, english, "en")).toBe("120 → 150 mg/dL, back in range");
+    expect(changeLine({ ...change, out: false }, english, "en")).toBe("120 → 150 mg/dL");
   });
 });

@@ -10,13 +10,16 @@ import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
 import { Backdrop, applyRemembered } from "./Backdrop";
+import { Localized } from "./i18n/Localized";
 
 applyRemembered();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <Backdrop>
-      <App />
-    </Backdrop>
+    <Localized>
+      <Backdrop>
+        <App />
+      </Backdrop>
+    </Localized>
   </StrictMode>,
 );

@@ -1,4 +1,4 @@
-import { AppSettings, Button, CopyField, Hint, Section, SelectField, Skeleton, TextField } from "@openarga/ui";
+import { AppSettings, Button, CopyField, Hint, Section, SelectField, Skeleton, TextField, useLocale, useT } from "@openarga/ui";
 import { useEffect, useState } from "react";
 
 import { type Goal, Unauthorised, readGoals, readSteps, saveGoals, signIn } from "./api";
@@ -7,20 +7,17 @@ import { bandLabel, parseKg } from "./weight";
 
 type Way = "none" | "down" | "up";
 
-const WAYS: { value: Way; label: string }[] = [
-  { value: "none", label: "Sin objetivo" },
-  { value: "down", label: "Bajar" },
-  { value: "up", label: "Subir" },
-];
-
-const asText = (value: number | null) => (value === null ? "" : value.toLocaleString("es-ES"));
+const WAYS: Way[] = ["none", "down", "up"];
 
 export function parseSteps(text: string): number | null {
-  const value = Number(text.trim().replace(/[.\s]/g, ""));
+  const value = Number(text.trim().replace(/[.,\s]/g, ""));
   return text.trim() !== "" && Number.isInteger(value) && value >= 100 && value <= 100000 ? value : null;
 }
 
 export function SettingsScreen() {
+  const t = useT();
+  const locale = useLocale();
+  const asText = (value: number | null) => (value === null ? "" : value.toLocaleString(locale));
   const [goal, setGoal] = useState<Goal | null>(null);
   const [steps, setSteps] = useState("");
   const [low, setLow] = useState("");
@@ -39,9 +36,9 @@ export function SettingsScreen() {
       })
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        setSaying("No se pudieron leer los objetivos.");
+        setSaying(t("settings.read_failed"));
       });
-  }, []);
+  }, [locale, t]);
 
   const wanted: Goal = {
     steps_per_day: parseSteps(steps),
@@ -63,51 +60,56 @@ export function SettingsScreen() {
     saveGoals(wanted)
       .then((saved) => {
         setGoal(saved);
-        setSaying("Guardado.");
+        setSaying(t("settings.saved"));
       })
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        setSaying(error instanceof Error ? error.message : "No se pudo guardar.");
+        setSaying(error instanceof Error ? error.message : t("settings.save_failed"));
       });
   };
 
   return (
     <AppSettings app={APP}>
-      {goal === null && !saying && <Skeleton label="Cargando los objetivos" />}
+      {goal === null && !saying && <Skeleton label={t("settings.loading")} />}
       {goal !== null && (
-        <Section title="Objetivos">
+        <Section title={t("settings.goals")}>
           <div className="surface vitals-card">
             <TextField
-              label="Pasos al día"
+              label={t("settings.steps_per_day")}
               value={steps}
               onChange={setSteps}
               inputMode="numeric"
               placeholder="8000"
               invalid={bad.steps}
-              hint={bad.steps ? "Entre 100 y 100.000" : "Vacío, sin objetivo"}
+              hint={bad.steps ? t("settings.steps_bounds") : t("settings.empty_no_goal")}
             />
-            <SelectField label="Peso" value={way} onChange={setWay} options={WAYS} />
+            <SelectField
+              label={t("panel.weight")}
+              value={way}
+              onChange={setWay}
+              options={WAYS.map((value) => ({ value, label: t(`settings.way.${value}`) }))}
+            />
             <div className="vitals-log-fields">
               <TextField
-                label="Peso mínimo (kg)"
+                label={t("settings.weight_min")}
                 value={low}
                 onChange={setLow}
                 inputMode="decimal"
                 invalid={bad.low || upsideDown}
-                hint={bad.low ? "Entre 20 y 400 kilos" : undefined}
+                hint={bad.low ? t("weight.bounds") : undefined}
               />
               <TextField
-                label="Peso máximo (kg)"
+                label={t("settings.weight_max")}
                 value={high}
                 onChange={setHigh}
                 inputMode="decimal"
                 invalid={bad.high || upsideDown}
-                hint={upsideDown ? "El máximo no puede ser menor que el mínimo" : bad.high ? "Entre 20 y 400 kilos" : undefined}
+                hint={upsideDown ? t("settings.upside_down") : bad.high ? t("weight.bounds") : undefined}
               />
             </div>
-            <Hint>Banda de peso: {bandLabel(wanted)}</Hint>
+            <Hint>{t("settings.band", { band: bandLabel(wanted, t, locale) })}</Hint>
             <Button variant="primary" block disabled={!valid} onClick={save}>
-              Guardar
+              {t("common.save")}
             </Button>
           </div>
         </Section>
@@ -119,72 +121,76 @@ export function SettingsScreen() {
   );
 }
 
-export const SHORTCUT_FIELDS: { key: string; type: string; how: string }[] = [
-  { key: "resting_heart_rate", type: "Frecuencia cardiaca en reposo", how: "Media" },
-  { key: "heart_rate_avg", type: "Frecuencia cardiaca", how: "Media" },
-  { key: "heart_rate_min", type: "Frecuencia cardiaca", how: "Mínimo" },
-  { key: "heart_rate_max", type: "Frecuencia cardiaca", how: "Máximo" },
-  { key: "walking_heart_rate", type: "Promedio de frecuencia cardiaca al caminar", how: "Media" },
-  { key: "hrv_ms", type: "Variabilidad de la frecuencia cardiaca", how: "Media" },
-  { key: "vo2max", type: "VO₂ máx.", how: "Media" },
-  { key: "active_kcal", type: "Energía activa", how: "Suma" },
-  { key: "basal_kcal", type: "Energía en reposo", how: "Suma" },
-  { key: "distance_km", type: "Distancia a pie y corriendo (en km)", how: "Suma" },
-  { key: "exercise_min", type: "Minutos de ejercicio", how: "Suma" },
-  { key: "stand_min", type: "Tiempo de pie", how: "Suma" },
-  { key: "flights", type: "Pisos subidos", how: "Suma" },
-  { key: "walking_speed_kmh", type: "Velocidad al caminar (en km/h)", how: "Media" },
-  { key: "step_length_cm", type: "Longitud del paso al caminar (en cm)", how: "Media" },
-  { key: "headphone_db", type: "Exposición al audio de los auriculares", how: "Media" },
-  { key: "environment_db", type: "Nivel de ruido ambiental", how: "Media" },
+export const SHORTCUT_FIELDS: { key: string; how: "mean" | "sum" | "min" | "max" }[] = [
+  { key: "resting_heart_rate", how: "mean" },
+  { key: "heart_rate_avg", how: "mean" },
+  { key: "heart_rate_min", how: "min" },
+  { key: "heart_rate_max", how: "max" },
+  { key: "walking_heart_rate", how: "mean" },
+  { key: "hrv_ms", how: "mean" },
+  { key: "vo2max", how: "mean" },
+  { key: "active_kcal", how: "sum" },
+  { key: "basal_kcal", how: "sum" },
+  { key: "distance_km", how: "sum" },
+  { key: "exercise_min", how: "sum" },
+  { key: "stand_min", how: "sum" },
+  { key: "flights", how: "sum" },
+  { key: "walking_speed_kmh", how: "mean" },
+  { key: "step_length_cm", how: "mean" },
+  { key: "headphone_db", how: "mean" },
+  { key: "environment_db", how: "mean" },
 ];
 
 export const GOOGLE_REDIRECT = `${typeof window === "undefined" ? "" : window.location.origin}/hub/google/callback`;
 
-function GoogleHealth() {
-  const [last, setLast] = useState<string | null | undefined>(undefined);
+const GOOGLE_STEPS = ["google.step1", "google.step2", "google.step3", "google.step4"];
 
+const SHORTCUT_STEPS = [
+  "shortcut.step1",
+  "shortcut.step2",
+  "shortcut.step3",
+  "shortcut.step4",
+  "shortcut.step5",
+  "shortcut.step6",
+  "shortcut.step7",
+  "shortcut.step8",
+];
+
+function useLastReceived(): string | null | undefined {
+  const [last, setLast] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     readSteps()
       .then((found) => setLast(found.last_received))
       .catch(() => setLast(undefined));
   }, []);
+  return last;
+}
+
+function GoogleHealth() {
+  const t = useT();
+  const locale = useLocale();
+  const last = useLastReceived();
 
   return (
     <Section title="Google Health">
       <div className="surface vitals-card">
         <Hint>
           {last
-            ? `Último dato recibido: ${new Date(last).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })}`
-            : "Todavía no ha llegado nada."}
+            ? t("steps.last_received", {
+                when: new Date(last).toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" }),
+              })
+            : t("google.nothing_yet")}
         </Hint>
         <ol className="vitals-steps">
-          <li>
-            En tu proyecto de <strong>Google Cloud</strong>, con la API de Google Health habilitada, el cliente OAuth de tipo
-            web tiene que dejar volver a la dirección de abajo (<strong>Authorized redirect URIs</strong>). En{" "}
-            <strong>Data access</strong>, los ocho permisos de lectura de Google Health: actividad, métricas de salud,
-            sueño, perfil, ubicación, ECG, avisos de ritmo irregular y ajustes.
-          </li>
-          <li>
-            En <strong>Hub</strong>, categoría Salud, conecta <strong>Google Health</strong> con el Client ID y el
-            Client secret de ese cliente.
-          </li>
-          <li>
-            Google te pide permiso: marca todas las casillas. Al volver trae los últimos treinta días, y después lo nuevo
-            cada dos horas: pasos, vitals, sueño con fases, VFC, SpO₂, temperatura, entrenos, electrocardiogramas, avisos
-            de ritmo irregular y la batería de la pulsera. Si conectaste antes de que se pidieran el ECG, los avisos y los
-            ajustes, pulsa Reconectar en Hub.
-          </li>
-          <li>
-            Antes de dejar el atajo del iPhone, exporta Apple Salud y cárgalo con{" "}
-            <code>scripts/apple-health-steps.py</code>: así el histórico llega hasta el último día.
-          </li>
+          {GOOGLE_STEPS.map((key) => (
+            <li key={key}>{t(key)}</li>
+          ))}
         </ol>
-        <CopyField label="Dirección de vuelta" value={GOOGLE_REDIRECT} />
+        <CopyField label={t("google.redirect")} value={GOOGLE_REDIRECT} />
         <Button variant="tinted" onClick={() => window.location.assign("/hub/")}>
-          Abrir Hub
+          {t("settings.open_hub")}
         </Button>
-        <Hint>El Sleep Score y la Readiness no están en la API de Google: no llegan.</Hint>
+        <Hint>{t("google.missing")}</Hint>
       </div>
     </Section>
   );
@@ -193,65 +199,31 @@ function GoogleHealth() {
 export const PUSH_URL = `${typeof window === "undefined" ? "" : window.location.origin}/api/hub/push/apple-health`;
 
 function AppleHealth() {
-  const [last, setLast] = useState<string | null | undefined>(undefined);
-
-  useEffect(() => {
-    readSteps()
-      .then((found) => setLast(found.last_received))
-      .catch(() => setLast(undefined));
-  }, []);
+  const t = useT();
+  const locale = useLocale();
+  const last = useLastReceived();
 
   return (
-    <Section title="Apple Salud, el histórico">
+    <Section title={t("apple.title")}>
       <div className="surface vitals-card">
         <Hint>
           {last
-            ? `Último envío: ${new Date(last).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })}`
-            : "Todavía no ha llegado ningún envío del iPhone."}
+            ? t("apple.last_push", {
+                when: new Date(last).toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" }),
+              })
+            : t("apple.nothing_yet")}
         </Hint>
         <details className="vitals-fields">
-        <summary>Cómo se monta el atajo del iPhone</summary>
-        <ol className="vitals-steps">
-          <li>
-            En <strong>Hub</strong>, categoría Salud, conecta <strong>Apple Salud</strong> y copia el token: solo
-            se enseña esa vez.
-          </li>
-          <li>
-            En el iPhone, abre <strong>Atajos → Automatización → Nueva</strong>, elige <strong>Hora del día</strong>, las
-            23:30, cada día, y que se ejecute sin preguntar.
-          </li>
-          <li>
-            Añade <strong>Buscar muestras de salud</strong>: tipo Pasos, fecha de inicio en los últimos 7 días, un filtro
-            más <strong>Fuente contiene Watch</strong>, agrupadas por <strong>hora</strong> y sin límite. Así, si un día el
-            atajo no corre, lo recoge el siguiente.
-          </li>
-          <li>
-            Sobre ellas, <strong>Obtener detalles de muestras de salud</strong> → Fecha de inicio, y{" "}
-            <strong>Formatear fecha</strong> en formato <strong>ISO 8601</strong> con la hora. Y otra vez{" "}
-            <strong>Obtener detalles de muestras de salud</strong> → Valor.
-          </li>
-          <li>
-            Repite los dos pasos anteriores con <strong>Fuente no contiene Watch</strong>: el iPhone y cualquier otra app.
-          </li>
-          <li>
-            Añade <strong>Obtener contenido de URL</strong> con la dirección de abajo, método POST, una cabecera{" "}
-            <code>Authorization</code> con <code>Bearer</code>, un espacio y el token, y cuerpo JSON con cuatro campos de
-            texto: <code>watch_start</code> y <code>watch_steps</code> (las horas y los valores del Watch), y{" "}
-            <code>phone_start</code> y <code>phone_steps</code> (los del resto). Cada hora cuenta la fuente que más pasos
-            vio, como hace Salud: sin separarlas, el paseo que ven el iPhone y el Watch a la vez contaba dos veces.
-          </li>
-          <li>
-            Para el resto (corazón, calorías, distancia…), antes de <strong>Obtener contenido de URL</strong>: por cada
-            fila de la lista de abajo, <strong>Buscar muestras de salud</strong> de ese tipo con fecha de inicio hoy y{" "}
-            <strong>Calcular estadísticas</strong> con el cálculo que dice. Cada resultado va al cuerpo JSON con su
-            clave, y cuenta para el día más reciente. Las que no uses, se quedan fuera: ninguna es obligatoria.
-          </li>
-          <li>Si un día llega dos veces, se queda el último: a las 23:30 de hoy se corrige lo que se mandó ayer.</li>
-        </ol>
-        <CopyField label="Dirección del atajo" value={PUSH_URL} />
+          <summary>{t("shortcut.how")}</summary>
+          <ol className="vitals-steps">
+            {SHORTCUT_STEPS.map((key) => (
+              <li key={key}>{t(key)}</li>
+            ))}
+          </ol>
+          <CopyField label={t("shortcut.url")} value={PUSH_URL} />
         </details>
         <details className="vitals-fields">
-          <summary>Qué más puede mandar el atajo</summary>
+          <summary>{t("shortcut.more")}</summary>
           <dl>
             {SHORTCUT_FIELDS.map((one) => (
               <div key={one.key}>
@@ -259,20 +231,16 @@ function AppleHealth() {
                   <code>{one.key}</code>
                 </dt>
                 <dd>
-                  {one.type} · {one.how}
+                  {t(`shortcut.type.${one.key}`)} · {t(`shortcut.how.${one.how}`)}
                 </dd>
               </div>
             ))}
           </dl>
         </details>
         <Button variant="tinted" onClick={() => window.location.assign("/hub/")}>
-          Abrir Hub
+          {t("settings.open_hub")}
         </Button>
-        <Hint>
-          Los nombres de las acciones pueden cambiar un poco con la versión de iOS. El histórico de antes del atajo se carga
-          una vez desde el export de Apple Salud con <code>scripts/apple-health-steps.py</code>, que trae también el
-          la marcha, los anillos y la ficha: grupo sanguíneo, edad y altura.
-        </Hint>
+        <Hint>{t("apple.note")}</Hint>
       </div>
     </Section>
   );

@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from vitals import body, heart, kpis, memo, rhythm, sleep, steps, workouts
-from vitals.steps import MADRID, today
+from vitals.steps import today, zone
 
 WINDOW = 60
 ENOUGH = 14
@@ -17,12 +17,12 @@ ENOUGH = 14
 Status = Literal["below", "inside", "above"]
 
 BASELINES: tuple[tuple[str, str, str, int], ...] = (
-    ("sleep_min", "Sueño", "min", 0),
-    ("hrv_ms", "VFC", "ms", 0),
-    ("resting_heart_rate", "FC en reposo", "lpm", 0),
-    ("respiratory_rate", "Respiración", "rpm", 1),
+    ("sleep_min", "Sleep", "min", 0),
+    ("hrv_ms", "HRV", "ms", 0),
+    ("resting_heart_rate", "Resting HR", "bpm", 0),
+    ("respiratory_rate", "Breathing", "br/min", 1),
     ("spo2_pct", "SpO₂", "%", 1),
-    ("skin_temp_delta_c", "Temperatura de la piel", "°C", 1),
+    ("skin_temp_delta_c", "Skin temperature", "°C", 1),
 )
 
 
@@ -172,7 +172,7 @@ async def read(connection: AsyncConnection, now: date | None = None) -> Today:
         baselines=await baselines(connection, now),
         load=await workouts.load(connection, now=now, done=done),
         workouts=[
-            one for one in done if one.start.astimezone(MADRID).date() > now - timedelta(days=7)
+            one for one in done if one.start.astimezone(zone()).date() > now - timedelta(days=7)
         ],
         battery=devices[0] if devices else None,
     )

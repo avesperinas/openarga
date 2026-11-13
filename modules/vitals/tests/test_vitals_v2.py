@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 from sqlalchemy import text
-from test_vitals_google import INSERT, log  # noqa: F401 - el fixture del log, compartido
+from test_vitals_google import INSERT, log  # noqa: F401 - the shared log fixture
 
 from vitals import labs, notices, records, steps, today, workouts
-from vitals.steps import MADRID
 
 PROBE = "probe_gym"
+
+MADRID = ZoneInfo("Europe/Madrid")
 
 
 @pytest.fixture
@@ -74,7 +76,7 @@ def workout(id_: str, day: date, start: str, end: str, **extra) -> dict:
     return {
         "id": id_,
         "kind": "activity",
-        "name": "Pádel",
+        "name": "Padel",
         "start": at(day, start),
         "end": at(day, end),
         "tz": "Europe/Madrid",
@@ -116,7 +118,7 @@ async def test_a_workout_the_band_measured_takes_its_fine_heart(schema, gym, log
         {
             "id": "band:1",
             "kind": "PADEL",
-            "name": "Pádel",
+            "name": "Padel",
             "start": start,
             "end": at(DAY, "19:10"),
             "kcal": 140.0,
@@ -135,7 +137,7 @@ async def test_a_workout_the_band_measured_takes_its_fine_heart(schema, gym, log
 
     [found] = await as_vitals(schema, workouts.between, DAY, DAY)
 
-    assert (found.name, found.minutes, found.from_band, found.kcal) == ("Pádel", 10, True, 140.0)
+    assert (found.name, found.minutes, found.from_band, found.kcal) == ("Padel", 10, True, 140.0)
     assert found.heart.source == "band"
     assert found.heart.max == 165
     assert found.heart.zones == [2.0, 0.0, 4.0, 1.0, 3.0]
@@ -153,7 +155,7 @@ async def test_without_the_band_it_is_the_heart_of_the_day_in_its_hours(
     log,  # noqa: F811
 ) -> None:
     await heart_day(log, DAY, {7 * 60 + m: 90 + m for m in range(-5, 70)})
-    marks = [{"at": at(DAY, "07:05"), "label": "Press banca · 8 × 60 kg"}]
+    marks = [{"at": at(DAY, "07:05"), "label": "Bench press · 8 × 60 kg"}]
     await gym(workout("w:2", DAY, "07:00", "08:00", kind="strength", name="Push", marks=marks))
 
     [found] = await as_vitals(schema, workouts.between, DAY, DAY)
@@ -162,7 +164,7 @@ async def test_without_the_band_it_is_the_heart_of_the_day_in_its_hours(
     assert (found.kind, found.heart.source, found.from_band) == ("strength", "day", False)
     assert found.heart.avg == 119.5
     assert detail.beats[0].s == 0 and detail.beats[-1].s == 62 * 60
-    assert [one.label for one in detail.marks] == ["Press banca · 8 × 60 kg"]
+    assert [one.label for one in detail.marks] == ["Bench press · 8 × 60 kg"]
 
 
 async def test_what_was_withdrawn_is_gone_and_a_correction_wins(schema, gym) -> None:
@@ -293,12 +295,12 @@ async def test_the_band_says_when_it_runs_low_or_stops_syncing(schema, log) -> N
 
     assert sorted(one["kind"] for one in found) == ["battery_low", "not_synced"]
     battery = next(one for one in found if one["kind"] == "battery_low")
-    assert battery["title"] == "Fitbit Air: batería baja al 12 %"
+    assert battery["title"] == "Fitbit Air: low battery at 12 %"
 
 
 async def test_each_week_is_a_note_for_notebook(schema, gym, log) -> None:  # noqa: F811
     monday = workouts.monday(steps.today())
-    await gym(workout("w:week", monday, "12:00", "12:30", name="Bici"))
+    await gym(workout("w:week", monday, "12:00", "12:30", name="Cycling"))
 
     found = await as_vitals(
         schema,
@@ -306,14 +308,14 @@ async def test_each_week_is_a_note_for_notebook(schema, gym, log) -> None:  # no
     )
     [week] = [one for one in found if one["id"] == f"week:{monday.isoformat()}"]
 
-    assert week["folder"] == "Semanas"
-    assert (week["properties"]["entrenos"], week["properties"]["minutos_entreno"]) == (1, 30)
-    assert "Bici · 30 min" in week["body"]
+    assert week["folder"] == "Weeks"
+    assert (week["properties"]["workouts"], week["properties"]["workout_min"]) == (1, 30)
+    assert "Cycling · 30 min" in week["body"]
 
 
 async def test_the_tools_tell_today_and_each_workout(schema, gym, api, log) -> None:  # noqa: F811
     await heart_day(log, DAY, {12 * 60 + m: 120 for m in range(0, 40)})
-    await gym(workout("w:tool", DAY, "12:00", "12:30", name="Bici"))
+    await gym(workout("w:tool", DAY, "12:00", "12:30", name="Cycling"))
     headers = {"x-arga-scopes": "vitals:read"}
 
     listed = (await api.post("/tools/get_workouts", json={}, headers=headers)).json()["content"]
@@ -322,7 +324,7 @@ async def test_the_tools_tell_today_and_each_workout(schema, gym, api, log) -> N
     ]
     now = (await api.post("/tools/get_today", json={}, headers=headers)).json()["content"]
 
-    assert [w["name"] for w in listed["workouts"]] == ["Bici"]
+    assert [w["name"] for w in listed["workouts"]] == ["Cycling"]
     assert one["heart_per_minute"][0] == {"minute": 0, "avg": 120, "max": 120}
     assert len(one["heart_per_minute"]) == 33
     assert "status" in now["baselines"][0] and "weeks" not in now["load"]
@@ -337,7 +339,7 @@ async def test_a_checkup_gives_the_link_to_attach_its_pdf(api) -> None:
         )
     ).json()["content"]
 
-    assert found["attach_pdf_url"].endswith(f"/vitals/analiticas?adjuntar={found['checkup_id']}")
+    assert found["attach_pdf_url"].endswith(f"/vitals/labs?attach={found['checkup_id']}")
 
 
 async def test_today_brings_the_steps_and_the_last_pulse(schema, log) -> None:  # noqa: F811

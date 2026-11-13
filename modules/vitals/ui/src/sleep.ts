@@ -1,11 +1,10 @@
+import type { Locale, Translate } from "@openarga/ui";
+
 import type { Night, SleepStage } from "./api";
 
-export const STAGES: { id: SleepStage; name: string }[] = [
-  { id: "deep", name: "Profundo" },
-  { id: "rem", name: "REM" },
-  { id: "light", name: "Ligero" },
-  { id: "awake", name: "Despierto" },
-];
+export const STAGES: { id: SleepStage }[] = [{ id: "deep" }, { id: "rem" }, { id: "light" }, { id: "awake" }];
+
+export const stageName = (t: Translate, stage: SleepStage) => t(`stage.${stage}`);
 
 export function hours(minutes: number | null): string {
   if (minutes === null) return "—";
@@ -33,22 +32,22 @@ export function stageShares(night: Pick<Night, "stages">): Partial<Record<SleepS
   return Object.fromEntries(STAGES.filter((one) => stages[one.id] != null).map((one) => [one.id, Math.round(((stages[one.id] ?? 0) / total) * 100)]));
 }
 
-export function stageSeries(nights: Night[]): { key: SleepStage; name: string; values: number[] }[] {
+export function stageSeries(nights: Night[], t: Translate): { key: SleepStage; name: string; values: number[] }[] {
   return STAGES.map((one) => ({
     key: one.id,
-    name: one.name,
+    name: stageName(t, one.id),
     values: nights.map((night) => Math.round(((night.stages?.[one.id] ?? 0) / 60) * 10) / 10),
   }));
 }
 
-export function against(minutes: number, mean: number | null): string {
+export function against(minutes: number, mean: number | null, t: Translate): string {
   if (mean === null) return "";
   const gap = Math.round(minutes - mean);
-  if (gap === 0) return "como tu media";
-  return `${hours(Math.abs(gap))} ${gap > 0 ? "sobre" : "bajo"} tu media`;
+  if (gap === 0) return t("average.same");
+  return t(gap > 0 ? "average.above" : "average.below", { amount: hours(Math.abs(gap)) });
 }
 
-export function shortDay(day: string): string {
-  const [, month = "", date = ""] = day.split("-");
-  return `${Number(date)}/${Number(month)}`;
+export function shortDay(day: string, locale: Locale): string {
+  const [year = 1970, month = 1, date = 1] = day.split("-").map(Number);
+  return new Date(year, month - 1, date).toLocaleDateString(locale, { day: "numeric", month: "numeric" });
 }

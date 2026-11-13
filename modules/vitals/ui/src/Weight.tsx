@@ -14,16 +14,17 @@ import {
   StatTile,
   TextField,
   TrendChart,
+  useLocale,
+  useT,
 } from "@openarga/ui";
+import { usePreferences } from "@openarga/app";
 import { useCallback, useEffect, useState } from "react";
 
 import { AppVersion } from "./AppVersion";
 import { type Entry, Unauthorised, type WeightSummary, correctWeight, logWeight, readWeight, signIn } from "./api";
 import { ScreenHeader } from "./Header";
 import {
-  PERIODS,
   type Period,
-  SOURCES,
   bandFoot,
   changeTone,
   dayLabel,
@@ -31,13 +32,17 @@ import {
   inPeriod,
   kg,
   parseKg,
+  periods,
   signedKg,
+  sourceName,
   today,
 } from "./weight";
 
 const RECENT = 7;
 
 export function WeightScreen({ onBack }: { onBack?: () => void } = {}) {
+  const t = useT();
+  const locale = useLocale();
   const [summary, setSummary] = useState<WeightSummary | null>(null);
   const [problem, setProblem] = useState("");
   const [period, setPeriod] = useState<Period>("3m");
@@ -52,9 +57,9 @@ export function WeightScreen({ onBack }: { onBack?: () => void } = {}) {
       })
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        setProblem("No se pudo leer el peso.");
+        setProblem(t("weight.read_failed"));
       });
-  }, []);
+  }, [t]);
 
   useEffect(load, [load]);
 
@@ -66,33 +71,33 @@ export function WeightScreen({ onBack }: { onBack?: () => void } = {}) {
 
   return (
     <Screen>
-      <ScreenHeader title="Peso" back={onBack ? { label: "Salud", onClick: onBack } : undefined} />
+      <ScreenHeader title={t("panel.weight")} back={onBack ? { label: t("tabs.health"), onClick: onBack } : undefined} />
 
       {problem && (
         <Hint tone="warning">
           {problem}
         </Hint>
       )}
-      {summary === null && !problem && <Skeleton label="Cargando el peso" />}
+      {summary === null && !problem && <Skeleton label={t("weight.loading")} />}
 
       {summary && summary.latest && (
-        <StatRow label="Cómo va el peso">
+        <StatRow label={t("weight.how")}>
           <StatTile
-            label="Media de 7 días"
-            value={kg(summary.latest.avg7)}
-            foot={bandFoot(summary.latest.avg7, summary.goal, summary.against_goal)}
+            label={t("heart.mean_7")}
+            value={kg(summary.latest.avg7, locale)}
+            foot={bandFoot(summary.latest.avg7, summary.goal, summary.against_goal, t, locale)}
             tone={summary.against_goal === "inside" ? "positive" : summary.against_goal ? "warning" : "neutral"}
           />
           <StatTile
-            label="En 30 días"
-            value={summary.change_30 === null ? "—" : signedKg(summary.change_30)}
-            foot={summary.change_30 === null ? "Sin pesadas hace un mes" : "de media"}
+            label={t("weight.in_30")}
+            value={summary.change_30 === null ? "—" : signedKg(summary.change_30, locale)}
+            foot={summary.change_30 === null ? t("weight.none_month_ago") : t("weight.on_average")}
             tone={changeTone(summary.change_30, summary.against_goal)}
           />
           <StatTile
-            label="En 90 días"
-            value={summary.change_90 === null ? "—" : signedKg(summary.change_90)}
-            foot={summary.change_90 === null ? "Sin pesadas hace tres meses" : "de media"}
+            label={t("weight.in_90")}
+            value={summary.change_90 === null ? "—" : signedKg(summary.change_90, locale)}
+            foot={summary.change_90 === null ? t("weight.none_three_months_ago") : t("weight.on_average")}
             tone={changeTone(summary.change_90, summary.against_goal)}
           />
         </StatRow>
@@ -101,31 +106,34 @@ export function WeightScreen({ onBack }: { onBack?: () => void } = {}) {
       {summary && <LogWeight onLogged={load} />}
 
       {summary && summary.days.length === 0 && (
-        <EmptyState title={"Todavía no hay pesadas"}>Apunta la de hoy arriba, o pídeselo a Claude: «apunta 78,4 kilos». Con una semana de pesadas
-            sale la media, que es la que dice la tendencia.</EmptyState>
+        <EmptyState title={t("weight.none_title")}>{t("weight.none_text")}</EmptyState>
       )}
 
       {summary && summary.days.length > 0 && (
         <section className="surface vitals-card">
           <SegmentedControl
-            label="Periodo"
-            options={PERIODS.map((one) => ({ value: one.id, label: one.label }))}
+            label={t("figure.period")}
+            options={periods(t).map((one) => ({ value: one.id, label: one.label }))}
             value={period}
             onChange={setPeriod}
           />
           <TrendChart
-            label="El peso en el tiempo"
+            label={t("weight.over_time")}
             points={shown.map((one) => ({ day: one.day, value: one.kg, average: one.avg7 }))}
             band={band}
-            valueName="Peso del día"
-            averageName="Media de 7 días"
-            format={kg}
-            formatDay={(day) => dayLabel(day)}
+            valueName={t("weight.of_day")}
+            averageName={t("heart.mean_7")}
+            format={(value) => kg(value, locale)}
+            formatDay={(day) => dayLabel(day, locale)}
           />
           {range && (
             <Hint>
-              Mínimo {kg(range.min.kg)} el {dayLabel(range.min.day)} · máximo {kg(range.max.kg)} el{" "}
-              {dayLabel(range.max.day)}
+              {t("weight.range", {
+                min: kg(range.min.kg, locale),
+                min_day: dayLabel(range.min.day, locale),
+                max: kg(range.max.kg, locale),
+                max_day: dayLabel(range.max.day, locale),
+              })}
             </Hint>
           )}
         </section>
@@ -133,14 +141,14 @@ export function WeightScreen({ onBack }: { onBack?: () => void } = {}) {
 
       {summary && summary.entries.length > 0 && (
         <section className="vitals-group">
-          <GroupLabel>Últimas pesadas</GroupLabel>
+          <GroupLabel>{t("weight.latest")}</GroupLabel>
           <List>
             {summary.entries.slice(0, allEntries ? undefined : RECENT).map((one) => (
               <ListRow
                 key={one.id}
-                title={kg(one.kg)}
-                subtitle={SOURCES[one.source]}
-                detail={one.at ? `${dayLabel(one.day)}, ${one.at.slice(0, 5)}` : dayLabel(one.day)}
+                title={kg(one.kg, locale)}
+                subtitle={sourceName(t, one.source)}
+                detail={one.at ? `${dayLabel(one.day, locale)}, ${one.at.slice(0, 5)}` : dayLabel(one.day, locale)}
                 accessory="chevron-right"
                 onClick={() => setEditing(one)}
               />
@@ -148,7 +156,7 @@ export function WeightScreen({ onBack }: { onBack?: () => void } = {}) {
           </List>
           {!allEntries && summary.entries.length > RECENT && (
             <Button variant="plain" onClick={() => setAllEntries(true)}>
-              Ver las {summary.entries.length} últimas
+              {t("weight.see_latest", { count: summary.entries.length })}
             </Button>
           )}
         </section>
@@ -171,8 +179,11 @@ export function WeightScreen({ onBack }: { onBack?: () => void } = {}) {
 }
 
 function LogWeight({ onLogged }: { onLogged: () => void }) {
+  const t = useT();
+  const locale = useLocale();
+  const { timezone } = usePreferences();
   const [text, setText] = useState("");
-  const [day, setDay] = useState(today());
+  const [day, setDay] = useState(() => today(timezone));
   const [saying, setSaying] = useState("");
   const [busy, setBusy] = useState(false);
   const value = parseKg(text);
@@ -183,33 +194,33 @@ function LogWeight({ onLogged }: { onLogged: () => void }) {
     logWeight({ kg: value, day })
       .then(({ already }) => {
         setText("");
-        setSaying(already ? "Esa pesada ya estaba apuntada." : "");
+        setSaying(already ? t("weight.already") : "");
         onLogged();
       })
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        setSaying(error instanceof Error ? error.message : "No se pudo apuntar.");
+        setSaying(error instanceof Error ? error.message : t("weight.log_failed"));
       })
       .finally(() => setBusy(false));
   };
 
   return (
-    <section className="surface vitals-card vitals-log" aria-label="Apuntar el peso">
+    <section className="surface vitals-card vitals-log" aria-label={t("weight.log_title")}>
       <div className="vitals-log-fields">
         <TextField
-          label="Peso (kg)"
+          label={t("weight.kg_label")}
           value={text}
           onChange={setText}
           inputMode="decimal"
-          placeholder="78,4"
+          placeholder={(78.4).toLocaleString(locale)}
           invalid={text.trim() !== "" && value === null}
-          hint={text.trim() !== "" && value === null ? "Entre 20 y 400 kilos" : undefined}
+          hint={text.trim() !== "" && value === null ? t("weight.bounds") : undefined}
           onSubmit={submit}
         />
-        <DateField label="Día" value={day} onChange={setDay} />
+        <DateField label={t("common.day")} value={day} onChange={setDay} />
       </div>
       <Button variant="primary" block disabled={value === null || busy} onClick={submit}>
-        Apuntar
+        {t("weight.log")}
       </Button>
       {saying && <Hint>{saying}</Hint>}
     </section>
@@ -217,7 +228,9 @@ function LogWeight({ onLogged }: { onLogged: () => void }) {
 }
 
 function CorrectWeight({ entry, onClose, onDone }: { entry: Entry; onClose: () => void; onDone: () => void }) {
-  const [text, setText] = useState(entry.kg.toLocaleString("es-ES"));
+  const t = useT();
+  const locale = useLocale();
+  const [text, setText] = useState(entry.kg.toLocaleString(locale));
   const [day, setDay] = useState(entry.day);
   const [problem, setProblem] = useState("");
   const value = parseKg(text);
@@ -228,24 +241,24 @@ function CorrectWeight({ entry, onClose, onDone }: { entry: Entry; onClose: () =
       .then(onDone)
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        setProblem(error instanceof Error ? error.message : "No se pudo corregir.");
+        setProblem(error instanceof Error ? error.message : t("weight.correct_failed"));
       });
   };
 
   return (
-    <Sheet title="Corregir la pesada" onClose={onClose} action={{ label: "Guardar", onClick: save, disabled: value === null }}>
+    <Sheet title={t("weight.correct_title")} onClose={onClose} action={{ label: t("common.save"), onClick: save, disabled: value === null }}>
       <div className="vitals-sheet">
         <TextField
-          label="Peso (kg)"
+          label={t("weight.kg_label")}
           value={text}
           onChange={setText}
           inputMode="decimal"
           invalid={value === null}
-          hint={value === null ? "Entre 20 y 400 kilos" : undefined}
+          hint={value === null ? t("weight.bounds") : undefined}
           onSubmit={save}
         />
-        <DateField label="Día" value={day} onChange={setDay} />
-        <Hint>{SOURCES[entry.source]}</Hint>
+        <DateField label={t("common.day")} value={day} onChange={setDay} />
+        <Hint>{sourceName(t, entry.source)}</Hint>
         {problem && (
           <Hint tone="warning">
             {problem}

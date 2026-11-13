@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_contracts as contracts
 from vitals import body, heart, memo
-from vitals.steps import MADRID, arrived, today
+from vitals.steps import arrived, today, zone
 
 _WORKOUTS = f"""
     select distinct on (payload->'{contracts.WORKOUT}'->>'id')
@@ -138,7 +138,7 @@ VERSION = "_version"
 
 
 def started_on(found: dict) -> date:
-    return datetime.fromisoformat(found["start"]).astimezone(MADRID).date()
+    return datetime.fromisoformat(found["start"]).astimezone(zone()).date()
 
 
 async def _exercise_versions(connection: AsyncConnection, done: list[dict]) -> dict[str, Any]:
@@ -190,22 +190,22 @@ async def heart_days(
 
 
 def spanned(found: dict) -> set[date]:
-    first = datetime.fromisoformat(found["start"]).astimezone(MADRID).date()
-    last = (datetime.fromisoformat(found["end"]) + timedelta(minutes=3)).astimezone(MADRID).date()
+    first = datetime.fromisoformat(found["start"]).astimezone(zone()).date()
+    last = (datetime.fromisoformat(found["end"]) + timedelta(minutes=3)).astimezone(zone()).date()
     return {first + timedelta(days=n) for n in range((last - first).days + 1)}
 
 
 async def _day_beats(
     connection: AsyncConnection, start: datetime, end: datetime, days: Days | None = None
 ) -> list[Beat]:
-    first, last = start.astimezone(MADRID), (end + timedelta(minutes=3)).astimezone(MADRID)
+    first, last = start.astimezone(zone()), (end + timedelta(minutes=3)).astimezone(zone())
     if days is None:
         days = await heart_days(connection, first.date(), last.date())
     beats = []
     for day, payload in sorted(days.items()):
         if not first.date() <= day <= last.date():
             continue
-        midnight = datetime.combine(day, datetime.min.time(), MADRID)
+        midnight = datetime.combine(day, datetime.min.time(), zone())
         for bucket in payload.get("buckets", []):
             moment = midnight + timedelta(minutes=bucket["minute"])
             if first <= moment < last:
@@ -339,7 +339,7 @@ async def spans(
     out = []
     for found in await _done(connection):
         start = datetime.fromisoformat(found["start"])
-        if first <= start.astimezone(MADRID).date() <= last:
+        if first <= start.astimezone(zone()).date() <= last:
             out.append((start, datetime.fromisoformat(found["end"])))
     return sorted(out)
 
@@ -366,10 +366,10 @@ async def load(
     first = monday(now) - timedelta(weeks=weeks - 1)
     if done is None:
         done = await between(connection, first, now)
-    done = [one for one in done if first <= one.start.astimezone(MADRID).date() <= now]
+    done = [one for one in done if first <= one.start.astimezone(zone()).date() <= now]
     by_week: dict[date, list[Workout]] = {first + timedelta(weeks=i): [] for i in range(weeks)}
     for one in done:
-        by_week.setdefault(monday(one.start.astimezone(MADRID).date()), []).append(one)
+        by_week.setdefault(monday(one.start.astimezone(zone()).date()), []).append(one)
     out = [
         Week(
             start=start,

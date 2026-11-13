@@ -9,10 +9,13 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from arga_module import preferences
 from vitals import memo
 
-MADRID = ZoneInfo("Europe/Madrid")
-WEEKDAYS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+
+def zone() -> ZoneInfo:
+    return preferences.current().zone
+
 
 Period = Literal["day", "week", "month", "year"]
 
@@ -154,7 +157,7 @@ class Summary(BaseModel):
 
 
 def today() -> date:
-    return datetime.now(MADRID).date()
+    return datetime.now(zone()).date()
 
 
 async def read(

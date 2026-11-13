@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
-from test_vitals_google import log  # noqa: F401 - el fixture del log, compartido
+from test_vitals_google import log  # noqa: F401 - the shared log fixture
 from test_vitals_v2 import DAY, as_vitals, gym, heart_day, profile_of_age, workout  # noqa: F401
 
 from vitals import night, sleep, steps, workouts
-from vitals.steps import MADRID
+
+MADRID = ZoneInfo("Europe/Madrid")
 
 
 def test_a_full_night_is_a_hundred() -> None:
@@ -101,11 +103,11 @@ async def test_the_heart_of_a_workout_only_for_the_app_that_published_it(
     api,
     monkeypatch,
 ) -> None:
-    monkeypatch.setenv("MODULE_REGISTRATION_TOKEN", "el-token")
+    monkeypatch.setenv("MODULE_REGISTRATION_TOKEN", "the-token")
     await profile_of_age(log, 40)
     await heart_day(log, DAY, {19 * 60 + m: 130 for m in range(0, 30)})
     await gym(workout("probe_gym:padel", DAY, "19:00", "19:30"))
-    kernel = {"x-module-token": "el-token", "x-arga-module": "probe_gym"}
+    kernel = {"x-module-token": "the-token", "x-arga-module": "probe_gym"}
 
     refused = await api.post("/capabilities/workout.heart", json={"id": "probe_gym:padel"})
     other = await api.post(
@@ -117,7 +119,7 @@ async def test_the_heart_of_a_workout_only_for_the_app_that_published_it(
         "/capabilities/workout.heart", json={"id": "probe_gym:padel"}, headers=kernel
     )
     missing = await api.post(
-        "/capabilities/workout.heart", json={"id": "probe_gym:nada"}, headers=kernel
+        "/capabilities/workout.heart", json={"id": "probe_gym:nothing"}, headers=kernel
     )
 
     assert refused.status_code == 401
@@ -153,7 +155,7 @@ async def test_the_sleep_widget_is_the_score_of_the_last_night(schema, log) -> N
 
     assert found["state"] == "ready"
     assert (found["body"]["value"], found["body"]["target"]) == (94, 100)
-    assert found["body"]["label"].startswith("excelente · 7 h 30")
+    assert found["body"]["label"].startswith("excellent · 7 h 30")
     validate("ring", found["body"])
 
 
@@ -169,7 +171,7 @@ async def test_the_week_widget_counts_workouts_time_and_hard_minutes(schema, gym
 
     assert found["state"] == "ready"
     stats = {one["label"]: one["value"] for one in found["body"]["stats"]}
-    assert (stats["Entrenos"], stats["Tiempo"], stats["Zona 3+"]) == (1, "0 h 45", 45)
+    assert (stats["Workouts"], stats["Time"], stats["Zone 3+"]) == (1, "0 h 45", 45)
 
 
 def test_falling_asleep_counts_the_awake_start_of_the_night() -> None:

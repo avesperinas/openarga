@@ -31,7 +31,7 @@ async def test_the_ldl_card_compares_with_the_previous_checkup(api) -> None:
     assert found["body"]["value"] == 151
     assert found["body"]["previous"] == 118
     assert found["body"]["good_when"] == "down"
-    assert "fuera" in found["body"]["detail"]
+    assert "out of range" in found["body"]["detail"]
 
 
 async def test_the_weight_card_knows_which_way_is_good(api) -> None:
@@ -57,7 +57,7 @@ async def test_the_way_asked_for_wins_over_the_band(api) -> None:
 
 
 async def test_a_widget_it_does_not_have_is_a_404(api) -> None:
-    assert (await api.get("/widgets/inventado")).status_code == 404
+    assert (await api.get("/widgets/made-up")).status_code == 404
 
 
 async def test_the_weight_card_shows_the_last_weighing_when_weighing_is_rare(api) -> None:
@@ -71,8 +71,8 @@ async def test_the_weight_card_shows_the_last_weighing_when_weighing_is_rare(api
     validate("kpi-delta", found["body"])
     assert found["body"]["value"] == 76.6
     assert found["body"]["previous"] == 76.5
-    assert found["body"]["since"] == "desde el 08/08/2026"
-    assert found["body"]["detail"] == "pesada del 24/09"
+    assert found["body"]["since"] == "since August 8, 2026"
+    assert found["body"]["detail"] == "weighed on September 24"
 
 
 async def test_the_weight_card_averages_the_last_week_of_weighings(api) -> None:
@@ -84,7 +84,7 @@ async def test_the_weight_card_averages_the_last_week_of_weighings(api) -> None:
     assert found["state"] == "ready"
     assert found["body"]["value"] == 76.5
     assert found["body"]["previous"] == 77
-    assert found["body"]["detail"] == "media de 2 pesadas hasta el 24/09"
+    assert found["body"]["detail"] == "average of 2 weigh-ins up to September 24"
 
 
 async def test_a_single_weighing_is_enough_for_the_weight_card(api) -> None:
@@ -94,7 +94,7 @@ async def test_a_single_weighing_is_enough_for_the_weight_card(api) -> None:
 
     assert found["state"] == "ready"
     assert found["body"]["previous"] == 76.6
-    assert found["body"]["since"] == "sin pesadas anteriores"
+    assert found["body"]["since"] == "no earlier weigh-ins"
 
 
 def _day(text_: str, count: int):
@@ -113,12 +113,12 @@ def test_the_steps_card_falls_back_to_the_last_day_and_says_which() -> None:
     today = date(2026, 9, 28)
     days = [_day("2026-09-24", 9000), _day("2026-09-27", 6400)]
 
-    assert last_steps(days, today) == (days[1], "de ayer")
-    assert last_steps(days[:1], today) == (days[0], "del jueves 24")
-    assert last_steps([_day("2026-09-12", 5000)], today)[1] == "del 12 de septiembre"
+    assert last_steps(days, today) == (days[1], "yesterday")
+    assert last_steps(days[:1], today) == (days[0], "Thursday 24")
+    assert last_steps([_day("2026-09-12", 5000)], today)[1] == "September 12"
     assert last_steps([*days, _day("2026-09-28", 1200)], today)[1] is None
     assert last_steps([], today) is None
-    assert last_steps([_day("2026-09-29", 300), days[1]], today) == (days[1], "de ayer")
+    assert last_steps([_day("2026-09-29", 300), days[1]], today) == (days[1], "yesterday")
 
 
 async def test_the_steps_card_shows_the_last_day_when_today_has_none(api, schema, person) -> None:
@@ -158,7 +158,7 @@ async def test_the_steps_card_shows_the_last_day_when_today_has_none(api, schema
     validate("ring", found["body"])
     assert found["body"]["value"] == 6400
     assert found["body"]["target"] == 8000
-    assert found["body"]["label"] == "de ayer"
+    assert found["body"]["label"] == "yesterday"
     assert "unit" not in found["body"]
 
 
@@ -201,9 +201,9 @@ async def test_the_week_card_has_seven_days_ending_today(api, schema, person) ->
     validate(KINDS["steps_week"], found["body"])
     assert found["body"]["series"] == [0, 0, 0, 5000, 0, 9000, 0]
     assert found["body"]["highlight"] == 6
-    assert found["body"]["labels"][-1] == "LMXJVSD"[today.weekday()]
+    assert found["body"]["labels"][-1] == "MTWTFSS"[today.weekday()]
     assert found["body"]["value"] == 7000
-    assert found["body"]["detail"] == "media diaria · objetivo cumplido 1 de 7"
+    assert found["body"]["detail"] == "daily average · goal met 1 of 7"
 
 
 async def test_the_weight_card_draws_the_last_three_months(api) -> None:

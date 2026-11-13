@@ -1,18 +1,19 @@
-import { Heading, Hint, SegmentedControl, Skeleton, StatRow, StatTile, TrendChart } from "@openarga/ui";
+import { Heading, Hint, SegmentedControl, Skeleton, StatRow, StatTile, TrendChart, useLocale, useT } from "@openarga/ui";
 import { useEffect, useState } from "react";
 
 import { type FigureSeries, readFigure } from "./api";
+import { figureName } from "./body";
 import { heartSummary } from "./heart";
+import { decimal, unitName } from "./words";
 
 type Pick = "resting_heart_rate" | "hrv_ms" | "vo2max";
 
-const OPTIONS: { value: Pick; label: string }[] = [
-  { value: "resting_heart_rate", label: "FC en reposo" },
-  { value: "hrv_ms", label: "VFC" },
-  { value: "vo2max", label: "VO₂ máx." },
-];
+const PICKS: Pick[] = ["resting_heart_rate", "hrv_ms", "vo2max"];
 
 export function HeartTrends() {
+  const t = useT();
+  const locale = useLocale();
+  const options = PICKS.map((value) => ({ value, label: t(`heart.pick.${value}`) }));
   const [picked, setPicked] = useState<Pick>("resting_heart_rate");
   const [found, setFound] = useState<FigureSeries | null>(null);
   const [missing, setMissing] = useState(false);
@@ -25,27 +26,28 @@ export function HeartTrends() {
       .catch(() => setMissing(true));
   }, [picked]);
 
-  const summary = found ? heartSummary(found, picked === "resting_heart_rate") : null;
+  const summary = found ? heartSummary(found, picked === "resting_heart_rate", t, locale) : null;
+  const name = found ? figureName(t, found.figure) : "";
 
   return (
-    <section className="surface vitals-card health-figures" aria-label="El corazón en el tiempo">
-      <Heading>Corazón</Heading>
-      <SegmentedControl label="Qué cifra" options={OPTIONS} value={picked} onChange={setPicked} />
-      {!found && !missing && <Skeleton label="Cargando la cifra" />}
-      {(missing || (found && !summary)) && <Hint>Todavía no hay datos de esta cifra.</Hint>}
+    <section className="surface vitals-card health-figures" aria-label={t("heart.over_time")}>
+      <Heading>{t("group.heart")}</Heading>
+      <SegmentedControl label={t("heart.which")} options={options} value={picked} onChange={setPicked} />
+      {!found && !missing && <Skeleton label={t("heart.loading")} />}
+      {(missing || (found && !summary)) && <Hint>{t("heart.no_data")}</Hint>}
       {found && summary && (
         <>
-          <StatRow label={found.figure.name}>
-            <StatTile label="Ahora, media de 7" value={summary.now} />
-            <StatTile label="Hace un mes" value={summary.month} foot={summary.change} tone={summary.tone} />
+          <StatRow label={name}>
+            <StatTile label={t("heart.now")} value={summary.now} />
+            <StatTile label={t("heart.month_ago")} value={summary.month} foot={summary.change} tone={summary.tone} />
             <StatTile label={summary.bestLabel} value={summary.best} foot={summary.bestDay} />
           </StatRow>
           <TrendChart
-            label={`${found.figure.name} de los últimos 90 días`}
+            label={t("heart.last_90", { name })}
             points={summary.points}
-            valueName={found.figure.name}
-            averageName="Media de 7 días"
-            format={(value) => `${value.toLocaleString("es-ES", { maximumFractionDigits: found.figure.digits })} ${found.figure.unit}`}
+            valueName={name}
+            averageName={t("heart.mean_7")}
+            format={(value) => `${decimal(value, locale, found.figure.digits)} ${unitName(t, found.figure.unit)}`}
           />
         </>
       )}

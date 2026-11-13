@@ -8,7 +8,7 @@ import arga_contracts as contracts
 from vitals import body, labs, steps, weight
 
 APP = "vitals"
-UNITS = {"lpm": "bpm", "ml/kg·min": "ml/kg/min", "%": "percent", "": "count"}
+UNITS = {"bpm": "bpm", "br/min": "br/min", "ml/kg·min": "ml/kg/min", "%": "percent", "": "count"}
 LAB_UNITS = {"mg/dL": "mg/dL", "%": "percent", "": "points"}
 
 
@@ -21,10 +21,10 @@ def _point(key: str, label: str, unit: str, kind: str, day: Any, value: float) -
 async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
     found: list[dict[str, Any]] = []
     counted, _ = await steps.read(connection)
-    found += [_point("steps", "Pasos", "steps", "amount", one.day, one.steps) for one in counted]
+    found += [_point("steps", "Steps", "steps", "amount", one.day, one.steps) for one in counted]
     rows = (await connection.execute(weight.ALL)).all()
     found += [
-        _point("weight", "Peso", "kg", "level", one.day, one.kg)
+        _point("weight", "Weight", "kg", "level", one.day, one.kg)
         for one in weight.daily([(row.day, float(row.kg)) for row in rows])
     ]
     for found_lab in await labs.evolutions(connection):

@@ -13,7 +13,11 @@ import {
   Skeleton,
   TextField,
   TrendChart,
+  type Locale,
+  useLocale,
+  useT,
 } from "@openarga/ui";
+import { usePreferences } from "@openarga/app";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AppVersion } from "./AppVersion";
@@ -33,20 +37,23 @@ import {
   uploadDocument,
 } from "./api";
 import { ScreenHeader } from "./Header";
-import { PANELS, cellShort, cellText, number, parseNumber, rangeText } from "./labs";
+import { PANELS, analyteName, cellShort, cellText, number, panelName, parseNumber, rangeText } from "./labs";
+import { plural } from "./words";
 import { dayLabel, today } from "./weight";
 
 type Row = LabTable["rows"][number];
 
 const SHOWN = 4;
 
-function checkupLabel(day: string): string {
+function checkupLabel(day: string, locale: Locale): string {
   const date = new Date(`${day}T12:00:00Z`);
-  const month = date.toLocaleDateString("es-ES", { month: "short", timeZone: "UTC" }).replace(".", "").slice(0, 3);
+  const month = date.toLocaleDateString(locale, { month: "short", timeZone: "UTC" }).replace(".", "").slice(0, 3);
   return `${month} ${String(date.getUTCFullYear()).slice(2)}`;
 }
 
 export function LabsScreen({ onBack }: { onBack?: () => void } = {}) {
+  const t = useT();
+  const locale = useLocale();
   const [labs, setLabs] = useState<LabTable | null>(null);
   const [problem, setProblem] = useState("");
   const [picked, setPicked] = useState<Analyte | null>(null);
@@ -57,15 +64,15 @@ export function LabsScreen({ onBack }: { onBack?: () => void } = {}) {
       .then(setLabs)
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        setProblem("No se pudieron leer las analíticas.");
+        setProblem(t("labs.read_failed"));
       });
-  }, []);
+  }, [t]);
 
   useEffect(load, [load]);
 
   useEffect(() => {
     if (!labs) return;
-    const wanted = new URLSearchParams(window.location.search).get("adjuntar");
+    const wanted = new URLSearchParams(window.location.search).get("attach");
     const found = wanted ? labs.checkups.find((one) => one.id === wanted) : undefined;
     if (found) {
       setAdding(found);
@@ -85,56 +92,55 @@ export function LabsScreen({ onBack }: { onBack?: () => void } = {}) {
 
   return (
     <Screen>
-      <ScreenHeader title="Analíticas" back={onBack ? { label: "Salud", onClick: onBack } : undefined} />
+      <ScreenHeader title={t("labs.title")} back={onBack ? { label: t("tabs.health"), onClick: onBack } : undefined} />
       {problem && (
         <Hint tone="warning">
           {problem}
         </Hint>
       )}
-      {labs === null && !problem && <Skeleton label="Cargando las analíticas" />}
+      {labs === null && !problem && <Skeleton label={t("labs.loading")} />}
 
       {labs && checkups.length === 0 && (
-        <EmptyState title={"Todavía no hay revisiones"}>Dale el PDF de una revisión a Claude y pídele que la cargue en Vitals, o créala aquí y añade sus valores.</EmptyState>
+        <EmptyState title={t("labs.none_title")}>{t("labs.none_text")}</EmptyState>
       )}
 
       {labs && (
         <Button variant="tinted" icon="plus" onClick={() => setAdding("checkup")}>
-          Nueva revisión
+          {t("labs.new")}
         </Button>
       )}
 
       {labs && labs.rows.length > 0 && (
-        <section ref={table} className="vitals-labs" aria-label="Valores por revisión">
-          <Hint>
-            En rojo y con flecha, lo que queda fuera del rango de ese informe. Toca un analito para ver su evolución.
-          </Hint>
+        <section ref={table} className="vitals-labs" aria-label={t("labs.values_by_checkup")}>
+          <Hint>{t("labs.legend")}</Hint>
           <div className="vitals-labs-panels">
             {PANELS.map((panel) => {
-              const rows = labs.rows.filter((row) => row.analyte.panel === panel.id);
+              const rows = labs.rows.filter((row) => row.analyte.panel === panel);
               if (rows.length === 0) return null;
+              const label = panelName(t, panel);
               return (
-                <div key={panel.id} className="vitals-group">
-                  <GroupLabel>{panel.label}</GroupLabel>
+                <div key={panel} className="vitals-group">
+                  <GroupLabel>{label}</GroupLabel>
                   <DataTable<Row>
-                    label={`${panel.label}: valores por revisión`}
+                    label={t("labs.panel_values", { panel: label })}
                     rowKey={(row) => row.analyte.id}
                     rows={rows}
                     onRowClick={(row) => setPicked(row.analyte)}
                     columns={[
                       {
                         key: "name",
-                        label: "Analito",
+                        label: t("labs.analyte"),
                         cell: (row) => (
                           <>
-                            <span className="vitals-analyte">{row.analyte.name}</span>
+                            <span className="vitals-analyte">{analyteName(t, row.analyte)}</span>
                             {row.analyte.unit && <span className="vitals-analyte-unit">{row.analyte.unit}</span>}
                           </>
                         ),
-                        csv: (row) => row.analyte.name,
+                        csv: (row) => analyteName(t, row.analyte),
                       },
                       ...shown.map((checkup) => ({
                         key: checkup.id,
-                        label: checkupLabel(checkup.day),
+                        label: checkupLabel(checkup.day, locale),
                         numeric: true,
                         cell: (row: Row) => {
                           const cell = row.cells[checkup.id];
@@ -143,10 +149,10 @@ export function LabsScreen({ onBack }: { onBack?: () => void } = {}) {
                             <span
                               className="vitals-value"
                               data-out={cell.out ? "" : undefined}
-                              title={cellText(cell)}
-                              aria-label={cellText(cell)}
+                              title={cellText(cell, locale)}
+                              aria-label={cellText(cell, locale)}
                             >
-                              {cellShort(cell)}
+                              {cellShort(cell, locale)}
                             </span>
                           );
                         },
@@ -159,23 +165,21 @@ export function LabsScreen({ onBack }: { onBack?: () => void } = {}) {
             })}
           </div>
           {checkups.length > shown.length && (
-            <Hint>
-              Se ven las {SHOWN} revisiones más recientes; al tocar un analito, su evolución trae las {checkups.length}.
-            </Hint>
+            <Hint>{t("labs.shown", { shown: SHOWN, count: checkups.length })}</Hint>
           )}
         </section>
       )}
 
       {labs && checkups.length > 0 && (
         <section className="vitals-group">
-          <GroupLabel>Revisiones</GroupLabel>
+          <GroupLabel>{t("labs.checkups")}</GroupLabel>
           <List>
             {checkups.map((one) => (
               <ListRow
                 key={one.id}
-                title={dayLabel(one.day)}
+                title={dayLabel(one.day, locale)}
                 subtitle={one.center ?? undefined}
-                detail={`${one.values} ${one.values === 1 ? "valor" : "valores"}${one.out ? ` · ${one.out} fuera` : ""}`}
+                detail={`${plural(t, "labs.values", one.values)}${one.out ? ` · ${t("labs.out", { count: one.out })}` : ""}`}
                 tone={one.out ? "warning" : undefined}
                 accessory="chevron-right"
                 onClick={() => setAdding(one)}
@@ -208,6 +212,8 @@ export function LabsScreen({ onBack }: { onBack?: () => void } = {}) {
 }
 
 export function EvolutionSheet({ analyte, onClose }: { analyte: Analyte; onClose: () => void }) {
+  const t = useT();
+  const locale = useLocale();
   const [found, setFound] = useState<Evolution | null>(null);
 
   useEffect(() => {
@@ -217,36 +223,38 @@ export function EvolutionSheet({ analyte, onClose }: { analyte: Analyte; onClose
   }, [analyte]);
 
   const last = found?.points.at(-1);
+  const name = analyteName(t, analyte);
+  const aboutKey = `analyte.${analyte.id}.about`;
+  const about = t(aboutKey) === aboutKey ? analyte.about : t(aboutKey);
 
   return (
-    <Sheet title={analyte.name} onClose={onClose}>
+    <Sheet title={name} onClose={onClose}>
       <div className="vitals-sheet">
-        <Hint>{analyte.about}</Hint>
-        {found === null && <Skeleton label="Cargando la evolución" />}
-        {found && found.points.length === 0 && (
-          <Hint>Solo hay valores en texto, o en una unidad que no se sabe pasar a {analyte.unit}.</Hint>
-        )}
+        <Hint>{about}</Hint>
+        {found === null && <Skeleton label={t("labs.loading_evolution")} />}
+        {found && found.points.length === 0 && <Hint>{t("labs.only_text", { unit: analyte.unit ?? "" })}</Hint>}
         {found && found.points.length > 0 && (
           <TrendChart
-            label={`${analyte.name} en cada revisión`}
+            label={t("labs.each_checkup", { name })}
             points={found.points.map((one) => ({ day: one.day, value: one.value }))}
             band={last ? { low: last.ref_low || null, high: last.ref_high } : null}
-            bandName="Rango de referencia"
-            valueName={analyte.name}
-            format={(value) => number(value, analyte.unit)}
-            formatDay={(day) => dayLabel(day)}
+            bandName={t("labs.reference_range")}
+            valueName={name}
+            format={(value) => number(value, locale, analyte.unit)}
+            formatDay={(day) => dayLabel(day, locale)}
           />
         )}
         {last && (
           <Hint>
-            Último: {number(last.value, analyte.unit)} el {dayLabel(last.day)}
-            {rangeText(last.ref_low, last.ref_high) && `, rango ${rangeText(last.ref_low, last.ref_high, analyte.unit)}`}.
+            {t("labs.last", { value: number(last.value, locale, analyte.unit), day: dayLabel(last.day, locale) })}
+            {rangeText(last.ref_low, last.ref_high, locale) &&
+              `, ${t("labs.range", { range: rangeText(last.ref_low, last.ref_high, locale, analyte.unit) })}`}
+            .
           </Hint>
         )}
         {found && found.skipped > 0 && (
           <Hint>
-            {found.skipped} {found.skipped === 1 ? "valor está" : "valores están"} en una unidad que no se sabe pasar a{" "}
-            {analyte.unit}: salen en la tabla.
+            {plural(t, "labs.skipped", found.skipped, { unit: analyte.unit ?? "" })}
           </Hint>
         )}
       </div>
@@ -255,7 +263,9 @@ export function EvolutionSheet({ analyte, onClose }: { analyte: Analyte; onClose
 }
 
 function NewCheckup({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
-  const [day, setDay] = useState(today());
+  const t = useT();
+  const { timezone } = usePreferences();
+  const [day, setDay] = useState(() => today(timezone));
   const [center, setCenter] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [problem, setProblem] = useState("");
@@ -270,18 +280,22 @@ function NewCheckup({ onClose, onDone }: { onClose: () => void; onDone: () => vo
       })
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        setProblem(error instanceof Error ? error.message : "No se pudo crear.");
+        setProblem(error instanceof Error ? error.message : t("common.create_failed"));
         setBusy(false);
       });
   };
 
   return (
-    <Sheet title="Nueva revisión" onClose={onClose} action={{ label: busy ? "Guardando…" : "Crear", onClick: save, disabled: busy || !day }}>
+    <Sheet
+      title={t("labs.new")}
+      onClose={onClose}
+      action={{ label: busy ? t("common.saving") : t("common.create"), onClick: save, disabled: busy || !day }}
+    >
       <div className="vitals-sheet">
-        <DateField label="Día" value={day} onChange={setDay} />
-        <TextField label="Centro" value={center} onChange={setCenter} placeholder="El servicio de prevención" />
+        <DateField label={t("common.day")} value={day} onChange={setDay} />
+        <TextField label={t("labs.center")} value={center} onChange={setCenter} placeholder={t("labs.center_placeholder")} />
         <label className="text-field-label" htmlFor="vitals-pdf">
-          PDF del informe
+          {t("labs.report_pdf")}
         </label>
         <input id="vitals-pdf" type="file" accept="application/pdf" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
         {problem && (
@@ -295,6 +309,8 @@ function NewCheckup({ onClose, onDone }: { onClose: () => void; onDone: () => vo
 }
 
 function CheckupSheet({ checkup, onClose, onChanged }: { checkup: Checkup; onClose: () => void; onChanged: () => void }) {
+  const t = useT();
+  const locale = useLocale();
   const [analytes, setAnalytes] = useState<Analyte[]>([]);
   const [analyte, setAnalyte] = useState("ldl");
   const [value, setValue] = useState("");
@@ -320,7 +336,7 @@ function CheckupSheet({ checkup, onClose, onChanged }: { checkup: Checkup; onClo
       ref_high: parseNumber(high),
     })
       .then(() => {
-        setSaying(`${picked?.name ?? analyte} apuntado.`);
+        setSaying(t("labs.logged", { name: picked ? analyteName(t, picked) : analyte }));
         setValue("");
         setLow("");
         setHigh("");
@@ -328,32 +344,32 @@ function CheckupSheet({ checkup, onClose, onChanged }: { checkup: Checkup; onClo
       })
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        setSaying(error instanceof Error ? error.message : "No se pudo apuntar.");
+        setSaying(error instanceof Error ? error.message : t("weight.log_failed"));
       });
   };
 
   const upload = (file: File) => {
     uploadDocument(checkup.id, file)
       .then(() => {
-        setSaying("PDF guardado.");
+        setSaying(t("labs.pdf_saved"));
         onChanged();
       })
-      .catch((error: unknown) => setSaying(error instanceof Error ? error.message : "No se pudo subir."));
+      .catch((error: unknown) => setSaying(error instanceof Error ? error.message : t("labs.upload_failed")));
   };
 
   return (
-    <Sheet title={dayLabel(checkup.day)} onClose={onClose}>
+    <Sheet title={dayLabel(checkup.day, locale)} onClose={onClose}>
       <div className="vitals-sheet">
         {checkup.center && <Hint>{checkup.center}</Hint>}
         {checkup.document ? (
           <Button variant="tinted" onClick={() => window.open(documentUrl(checkup.id), "_blank", "noopener")}>
-            Abrir el PDF
+            {t("labs.open_pdf")}
           </Button>
         ) : (
-          <Hint>Sin PDF todavía.</Hint>
+          <Hint>{t("labs.no_pdf")}</Hint>
         )}
         <label className="text-field-label" htmlFor="vitals-pdf-again">
-          {checkup.document ? "Sustituir el PDF" : "Subir el PDF"}
+          {checkup.document ? t("labs.replace_pdf") : t("labs.upload_pdf")}
         </label>
         <input
           id="vitals-pdf-again"
@@ -362,23 +378,23 @@ function CheckupSheet({ checkup, onClose, onChanged }: { checkup: Checkup; onClo
           onChange={(event) => event.target.files?.[0] && upload(event.target.files[0])}
         />
 
-        <GroupLabel>Añadir o corregir un valor</GroupLabel>
+        <GroupLabel>{t("labs.add_value")}</GroupLabel>
         <SelectField
-          label="Analito"
+          label={t("labs.analyte")}
           value={analyte}
           onChange={setAnalyte}
-          options={analytes.map((one) => ({ value: one.id, label: one.name }))}
+          options={analytes.map((one) => ({ value: one.id, label: analyteName(t, one) }))}
         />
         <div className="vitals-log-fields">
-          <TextField label="Valor" value={value} onChange={setValue} placeholder="133 o Negativo" />
-          <TextField label="Unidad" value={unit} onChange={setUnit} placeholder={picked?.unit ?? ""} />
+          <TextField label={t("labs.value")} value={value} onChange={setValue} placeholder={t("labs.value_placeholder")} />
+          <TextField label={t("labs.unit")} value={unit} onChange={setUnit} placeholder={picked?.unit ?? ""} />
         </div>
         <div className="vitals-log-fields">
-          <TextField label="Rango, mínimo" value={low} onChange={setLow} inputMode="decimal" />
-          <TextField label="Rango, máximo" value={high} onChange={setHigh} inputMode="decimal" />
+          <TextField label={t("labs.range_min")} value={low} onChange={setLow} inputMode="decimal" />
+          <TextField label={t("labs.range_max")} value={high} onChange={setHigh} inputMode="decimal" />
         </div>
         <Button variant="primary" block disabled={!value.trim()} onClick={add}>
-          Apuntar
+          {t("weight.log")}
         </Button>
         {saying && <Hint>{saying}</Hint>}
       </div>

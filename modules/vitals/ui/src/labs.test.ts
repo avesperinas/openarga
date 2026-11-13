@@ -4,43 +4,44 @@ import { cellShort, cellText, number, parseNumber, rangeText } from "./labs";
 
 const cell = { value: 151, value_text: null, unit: "mg/dL", ref_low: 0, ref_high: 130, out: true };
 
-describe("cómo se lee un valor", () => {
-  it("lo que queda fuera lleva flecha, además del color", () => {
-    expect(cellText(cell)).toBe("151 ↑");
-    expect(cellText({ ...cell, value: 30, ref_low: 40, ref_high: null })).toBe("30 ↓");
-    expect(cellText({ ...cell, value: 118, out: false })).toBe("118");
-    expect(cellText({ ...cell, value: null, value_text: "Negativo", out: false })).toBe("Negativo");
+describe("how a value reads", () => {
+  it("what falls outside carries an arrow, besides the colour", () => {
+    expect(cellText(cell, "en")).toBe("151 ↑");
+    expect(cellText({ ...cell, value: 30, ref_low: 40, ref_high: null }, "en")).toBe("30 ↓");
+    expect(cellText({ ...cell, value: 118, out: false }, "en")).toBe("118");
+    expect(cellText({ ...cell, value: null, value_text: "Negative", out: false }, "en")).toBe("Negative");
   });
 
-  it("en la tabla, un texto largo se queda en tres letras y los números no se tocan", () => {
-    expect(cellShort({ ...cell, value: null, value_text: "Negativo", out: false })).toBe("Neg.");
-    expect(cellShort({ ...cell, value: null, value_text: "Norm", out: false })).toBe("Norm");
-    expect(cellShort(cell)).toBe("151 ↑");
+  it("in the table, a long text stays at three letters and numbers are untouched", () => {
+    expect(cellShort({ ...cell, value: null, value_text: "Negative", out: false }, "en")).toBe("Neg.");
+    expect(cellShort({ ...cell, value: null, value_text: "Norm", out: false }, "en")).toBe("Norm");
+    expect(cellShort(cell, "en")).toBe("151 ↑");
   });
 
-  it("el rango se escribe como en un informe", () => {
-    expect(rangeText(60, 110, "mg/dL")).toBe("60–110 mg/dL");
-    expect(rangeText(0, 130)).toBe("≤ 130");
-    expect(rangeText(null, 130)).toBe("≤ 130");
-    expect(rangeText(40, null)).toBe("≥ 40");
-    expect(rangeText(null, null)).toBe("");
+  it("the range is written like in a report", () => {
+    expect(rangeText(60, 110, "en", "mg/dL")).toBe("60–110 mg/dL");
+    expect(rangeText(0, 130, "en")).toBe("≤ 130");
+    expect(rangeText(null, 130, "en")).toBe("≤ 130");
+    expect(rangeText(40, null, "en")).toBe("≥ 40");
+    expect(rangeText(null, null, "en")).toBe("");
   });
 
-  it("los decimales dependen del tamaño", () => {
-    expect(number(4.74)).toBe("4,74");
-    expect(number(15.2)).toBe("15,2");
-    expect(number(211)).toBe("211");
+  it("the decimals depend on the size, and the mark on the language", () => {
+    expect(number(4.74, "en")).toBe("4.74");
+    expect(number(15.2, "en")).toBe("15.2");
+    expect(number(211, "en")).toBe("211");
+    expect(number(4.74, "es")).toBe("4,74");
   });
 
-  it("acepta coma decimal", () => {
+  it("accepts a decimal comma", () => {
     expect(parseNumber("133,5")).toBe(133.5);
     expect(parseNumber("")).toBeNull();
-    expect(parseNumber("mucho")).toBeNull();
+    expect(parseNumber("a lot")).toBeNull();
   });
 });
 
-describe("la densidad de la orina", () => {
-  it("un punto es decimal, no de miles", () => {
+describe("urine specific gravity", () => {
+  it("a dot is a decimal, not thousands", () => {
     expect(parseNumber("1.010")).toBe(1.01);
   });
 });

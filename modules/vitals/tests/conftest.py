@@ -74,3 +74,9 @@ def forget():
     memo.forget()
     workouts.BUILT.clear()
     yield
+
+
+@pytest.fixture(autouse=True)
+def zone(monkeypatch: pytest.MonkeyPatch) -> str:
+    monkeypatch.setenv("OPENARGA_TIMEZONE", "Europe/Madrid")
+    return "Europe/Madrid"

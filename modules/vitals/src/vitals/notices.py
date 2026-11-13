@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_contracts import notify
 from vitals import rhythm
+from vitals.text import t
 
 BATTERY, SYNC, ECG, IRN = "battery_low", "not_synced", "ecg", "irn"
 LOW = 20
@@ -24,15 +25,19 @@ async def build(connection: AsyncConnection, now: datetime | None = None) -> lis
     out = []
     for device in await rhythm.devices(connection):
         if _low(device):
-            level = f" al {device.battery_pct} %" if device.battery_pct is not None else ""
+            level = (
+                t("notice.battery_level", value=device.battery_pct)
+                if device.battery_pct is not None
+                else ""
+            )
             out.append(
                 notify.notification(
                     BATTERY,
-                    f"battery:{device.id}:{now.astimezone(notify.MADRID).date().isoformat()}",
-                    f"{device.name}: batería baja{level}",
+                    f"battery:{device.id}:{now.astimezone(notify.zone()).date().isoformat()}",
+                    t("notice.battery", name=device.name, level=level),
                     "/vitals/",
                     now,
-                    body="Cárgala para que sigan llegando el vitals y el sueño.",
+                    body=t("notice.battery_body"),
                 )
             )
         if device.last_sync is not None and now - device.last_sync > STALE:
@@ -40,10 +45,10 @@ async def build(connection: AsyncConnection, now: datetime | None = None) -> lis
                 notify.notification(
                     SYNC,
                     f"sync:{device.id}:{device.last_sync.isoformat()}",
-                    f"{device.name} lleva un día sin sincronizar",
+                    t("notice.sync", name=device.name),
                     "/vitals/",
                     device.last_sync + STALE,
-                    body="Abre la app de Google Health con la pulsera cerca.",
+                    body=t("notice.sync_body"),
                 )
             )
     for one in await rhythm.ecgs(connection):
@@ -51,10 +56,10 @@ async def build(connection: AsyncConnection, now: datetime | None = None) -> lis
             notify.notification(
                 ECG,
                 f"ecg:{one.id}",
-                "Electrocardiograma nuevo",
-                "/vitals/cuerpo",
+                t("notice.ecg"),
+                "/vitals/body",
                 one.end,
-                body=one.result_text or "Sin resultado del aparato.",
+                body=one.result_text or t("notice.ecg_empty"),
             )
         )
     for one in await rhythm.irns(connection):
@@ -62,11 +67,14 @@ async def build(connection: AsyncConnection, now: datetime | None = None) -> lis
             notify.notification(
                 IRN,
                 f"irn:{one.id}",
-                "Aviso de ritmo irregular de la pulsera",
-                "/vitals/cuerpo",
+                t("notice.irn"),
+                "/vitals/body",
                 one.end,
-                body=f"Entre {one.start.astimezone(notify.MADRID):%H:%M} y "
-                f"{one.end.astimezone(notify.MADRID):%H:%M}.",
+                body=t(
+                    "notice.irn_body",
+                    start=f"{one.start.astimezone(notify.zone()):%H:%M}",
+                    end=f"{one.end.astimezone(notify.zone()):%H:%M}",
+                ),
             )
         )
     return out

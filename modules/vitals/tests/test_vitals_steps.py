@@ -10,7 +10,7 @@ from sqlalchemy import text
 from vitals import steps
 
 OTHER = UUID("00000000-0000-4000-8000-00000000b0b0")
-KERNEL_LIKE = "kernel_como_en_produccion"
+KERNEL_LIKE = "kernel_as_in_production"
 
 INSERT = text("""
     insert into kernel.events (ts, ingested_at, module, source, type, payload, dedup_hash, user_id)

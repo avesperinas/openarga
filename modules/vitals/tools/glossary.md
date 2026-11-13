@@ -1,37 +1,39 @@
-# Glosario de Vitals
+# Vitals glossary
 
-**Pesada.** Un peso en kilos en un día, con su hora si se sabe. El mismo peso el mismo día es la
-misma pesada: apuntarla otra vez no la duplica.
+**Weigh-in.** A weight in kilograms on a day, with its time if known. The same weight on the same
+day is the same weigh-in: logging it again does not duplicate it.
 
-**Peso del día.** La media de las pesadas de ese día. Un día sin pesada no tiene peso: no se
-inventa.
+**Weight of the day.** The average of that day's weigh-ins. A day without a weigh-in has no weight:
+it is not made up.
 
-**Media móvil de 7 días.** La media del peso de los días con pesada entre ese día y los seis
-anteriores. Es la tendencia: un kilo de agua de un día no la mueve.
+**7-day moving average.** The average weight of the days with a weigh-in between that day and the
+six before. It is the trend: a kilo of water on one day does not move it.
 
-**Cambio a 30 y a 90 días.** La media móvil del último día con pesada menos la de hace 30 (o 90)
-días. Si entonces no hubo pesadas en la semana de alrededor, no hay cambio que dar.
+**Change over 30 and 90 days.** The moving average of the last day with a weigh-in minus the one
+30 (or 90) days before. If there were no weigh-ins in the surrounding week back then, there is no
+change to give.
 
-**Banda de peso.** El objetivo de peso es una banda, con mínimo, máximo o los dos. Por encima de la
-banda lo bueno es bajar, por debajo subir, y dentro quedarse.
+**Weight band.** The weight goal is a band, with a minimum, a maximum or both. Above the band the
+good direction is down, below it up, and inside it staying.
 
-**Pasos del día.** Los que manda el iPhone con el atajo. Un día llega varias veces mientras pasa y
-vale el último que llegó. Un día sin dato es que el iPhone no mandó nada, no un día de cero pasos:
-las medias solo cuentan los días con dato.
+**Steps of the day.** The ones the phone or the band sends. A day arrives several times while it
+goes on and the last one that arrived wins. A day without data means nothing was sent, not a day of
+zero steps: averages only count days with data.
 
-**Racha.** Días seguidos con los pasos del objetivo cumplidos. Hoy no la rompe mientras no acabe.
+**Streak.** Days in a row with the steps goal met. Today does not break it until it is over.
 
-**Revisión.** Una revisión médica o una analítica: un día, un centro y su PDF.
+**Check-up.** A medical check-up or a lab test: a day, a centre and its PDF.
 
-**Rango de referencia.** El que trae el informe de cada revisión para cada valor, con dos extremos
-o con uno ("≤ 130"). Cada laboratorio da el suyo, y un valor está **fuera de rango** cuando queda
-fuera del de su propio informe.
+**Reference range.** The one each check-up report gives for each value, with two ends or one
+("≤ 130"). Each lab gives its own, and a value is **out of range** when it falls outside the one in
+its own report.
 
-**Unidad canónica.** La unidad en la que se compara un analito entre revisiones (mg/dL para el
-colesterol). Un valor en otra unidad se convierte si se sabe cómo; si no, sale en la tabla pero no
-en la evolución.
+**Canonical unit.** The unit an analyte is compared in across check-ups (mg/dL for cholesterol). A
+value in another unit is converted when the conversion is known; otherwise it shows in the table but
+not in the evolution.
 
-**LDL.** El colesterol que llevan las lipoproteínas de baja densidad. Es la cifra de colesterol de
-la portada: la última revisión contra la anterior.
+**LDL.** The cholesterol carried by low-density lipoproteins. It is the cholesterol figure on the
+front page: the last check-up against the previous one.
 
-Vitals no diagnostica ni aconseja: dice qué es cada cifra y cómo va contra su objetivo, no qué hacer.
+Vitals neither diagnoses nor advises: it says what each figure is and how it stands against its
+goal, not what to do.

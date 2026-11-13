@@ -1,4 +1,4 @@
-import { SETTINGS_TAB, TabBar } from "@openarga/ui";
+import { SETTINGS_TAB, TabBar, useT } from "@openarga/ui";
 import { useCallback, useEffect, useState } from "react";
 
 import { FigureScreen, HeartDayScreen, RhythmScreen } from "./Figure";
@@ -30,20 +30,20 @@ type Tab = "today" | "training" | "sleep" | "health" | "settings";
 
 const PATHS: Record<Page, string> = {
   today: `${ROOT}/`,
-  training: `${ROOT}/entrenar`,
-  sleep: `${ROOT}/sueno`,
-  health: `${ROOT}/salud`,
-  steps: `${ROOT}/pasos`,
-  weight: `${ROOT}/peso`,
-  body: `${ROOT}/cuerpo`,
-  labs: `${ROOT}/analiticas`,
-  heartday: `${ROOT}/salud/vitals-del-dia`,
-  rhythm: `${ROOT}/salud/ritmo`,
-  figure: `${ROOT}/salud/cifra`,
-  settings: `${ROOT}/ajustes`,
+  training: `${ROOT}/training`,
+  sleep: `${ROOT}/sleep`,
+  health: `${ROOT}/health`,
+  steps: `${ROOT}/steps`,
+  weight: `${ROOT}/weight`,
+  body: `${ROOT}/body`,
+  labs: `${ROOT}/labs`,
+  heartday: `${ROOT}/health/heart-day`,
+  rhythm: `${ROOT}/health/rhythm`,
+  figure: `${ROOT}/health/figure`,
+  settings: `${ROOT}/settings`,
 };
 
-const FIGURE = new RegExp(`^${ROOT}/salud/cifra/([a-z0-9_]+)$`);
+const FIGURE = new RegExp(`^${ROOT}/health/figure/([a-z0-9_]+)$`);
 
 export function figureOf(pathname: string): string | null {
   return FIGURE.exec(pathname.replace(/\/+$/, ""))?.[1] ?? null;
@@ -76,6 +76,7 @@ export function tabOf(page: Page): Tab {
 }
 
 export function App() {
+  const t = useT();
   const [path, setPath] = useState(() => window.location.pathname);
 
   useEffect(() => {
@@ -111,14 +112,14 @@ export function App() {
       {current === "figure" && <FigureScreen id={figureOf(path) ?? ""} onBack={toHealth} />}
       {current === "settings" && <SettingsScreen />}
       <TabBar
-        label="Secciones"
+        label={t("tabs.label")}
         active={tabOf(current)}
         onSelect={(tab) => navigate(PATHS[tab])}
         items={[
-          { id: "today", label: "Hoy", icon: "today" },
-          { id: "training", label: "Entrenar", icon: "flame" },
-          { id: "sleep", label: "Dormir", icon: "moon" },
-          { id: "health", label: "Salud", icon: "heart" },
+          { id: "today", label: t("tabs.today"), icon: "today" },
+          { id: "training", label: t("tabs.training"), icon: "flame" },
+          { id: "sleep", label: t("tabs.sleep"), icon: "moon" },
+          { id: "health", label: t("tabs.health"), icon: "heart" },
           SETTINGS_TAB,
         ]}
       />

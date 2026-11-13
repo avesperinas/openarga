@@ -45,7 +45,7 @@ async def test_steps_weight_and_ldl_are_figures_of_their_day(api, schema, person
     assert found["vitals.weight@2026-09-01"]["kind"] == "level"
     assert found["vitals.ldl@2026-03-12"]["unit"] == "mg/dL"
     assert round(found["vitals.ldl@2026-03-12"]["value"]) == 162
-    assert found["vitals.lab:cholesterol@2026-03-12"]["label"] == "Colesterol total"
+    assert found["vitals.lab:cholesterol@2026-03-12"]["label"] == "Total cholesterol"
     assert found["vitals.lab:cholesterol@2026-03-12"]["value"] == 231
 
 
@@ -62,11 +62,11 @@ async def test_the_history_goes_once_to_the_outbox(api, schema) -> None:
 async def test_two_checkups_on_one_day_publish_what_the_cover_shows(api, schema) -> None:
     analytes = (await api.get("/analytes")).json()[:40]
     plan = [
-        ("2026-09-15", "Prevención", 120),
+        ("2026-09-15", "Occupational health", 120),
         ("2026-09-15", "Laboratorio", 150),
-        ("2026-03-02", "Centro A", 115),
-        ("2025-03-04", "Centro A", 110),
-        ("2024-03-02", "Centro A", 100),
+        ("2026-03-02", "Centre A", 115),
+        ("2025-03-04", "Centre A", 110),
+        ("2024-03-02", "Centre A", 100),
     ]
     for day, center, base in plan:
         checkup = (await api.post("/checkups", json={"day": day, "center": center})).json()["id"]

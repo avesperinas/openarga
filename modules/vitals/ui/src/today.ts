@@ -1,45 +1,49 @@
-import { type VitalTone, type WeekDayState, plain } from "@openarga/ui";
+import { type Locale, type Translate, type VitalTone, type WeekDayState } from "@openarga/ui";
 
 import type { Baseline, Load, Score, Today, Workout } from "./api";
 
-const number = (value: number) => plain(Math.round(value));
+const number = (value: number, locale: Locale) => Math.round(value).toLocaleString(locale);
 
 export interface Verdict {
+  code: string;
   verdict: string;
   tone: VitalTone;
 }
 
-export function sleepVerdict(score: Score | null | undefined): Verdict | null {
+const verdict = (t: Translate, code: string, tone: VitalTone): Verdict => ({ code, verdict: t(`verdict.${code}`), tone });
+
+export function sleepVerdict(score: Score | null | undefined, t: Translate): Verdict | null {
   if (!score) return null;
-  if (score.quality === "excellent") return { verdict: "Excelente", tone: "good" };
-  if (score.quality === "good") return { verdict: "Buena", tone: "good" };
-  if (score.quality === "fair") return { verdict: "Regular", tone: "fair" };
-  return { verdict: "Mala", tone: "poor" };
+  if (score.quality === "excellent") return verdict(t, "excellent", "good");
+  if (score.quality === "good") return verdict(t, "good", "good");
+  if (score.quality === "fair") return verdict(t, "fair", "fair");
+  return verdict(t, "poor", "poor");
 }
 
-export function recoveryVerdict(score: number | null | undefined): Verdict | null {
+export function recoveryVerdict(score: number | null | undefined, t: Translate): Verdict | null {
   if (score === null || score === undefined) return null;
-  if (score >= 60) return { verdict: "Mejor que de costumbre", tone: "good" };
-  if (score >= 40) return { verdict: "Como siempre", tone: "neutral" };
-  return { verdict: "Peor que de costumbre", tone: "fair" };
+  if (score >= 60) return verdict(t, "better", "good");
+  if (score >= 40) return verdict(t, "usual", "neutral");
+  return verdict(t, "worse", "fair");
 }
 
-export function recoveryLine(hrvZ: number | null, restingZ: number | null): string | undefined {
-  const word = (z: number | null) => (z === null ? null : z >= 0.5 ? "alta" : z <= -0.5 ? "baja" : "normal");
-  const hrv = word(hrvZ);
-  const rest = restingZ === null ? null : restingZ >= 0.5 ? "alto" : restingZ <= -0.5 ? "bajo" : "normal";
-  const parts = [hrv && `VFC ${hrv}`, rest && `reposo ${rest}`].filter(Boolean);
+export function recoveryLine(hrvZ: number | null, restingZ: number | null, t: Translate): string | undefined {
+  const level = (z: number | null) => (z === null ? null : z >= 0.5 ? "high" : z <= -0.5 ? "low" : "normal");
+  const hrv = level(hrvZ);
+  const rest = level(restingZ);
+  const parts = [hrv && t(`recovery.hrv.${hrv}`), rest && t(`recovery.resting.${rest}`)].filter(Boolean);
   return parts.length > 0 ? parts.join(", ") : undefined;
 }
 
-export function moveVerdict(steps: Today["steps"]): Verdict & { detail: string } {
+export function moveVerdict(steps: Today["steps"], t: Translate, locale: Locale): Verdict & { detail: string } {
   const today = steps.today ?? 0;
   const reached = steps.goal !== null && steps.goal > 0 && today >= steps.goal;
   const mean = steps.mean_7_past ?? steps.mean_7;
   return {
-    verdict: `${number(today)} pasos`,
+    code: reached ? "reached" : "moving",
+    verdict: t("steps.count", { count: number(today, locale) }),
     tone: reached ? "good" : "neutral",
-    detail: mean !== null ? `media de 7 días: ${number(mean)}` : "sin media todavía",
+    detail: mean !== null ? t("verdict.mean_7", { value: number(mean, locale) }) : t("verdict.no_mean"),
   };
 }
 
@@ -57,40 +61,27 @@ export function expectedByNow(mean: number | null, now: Date): number | null {
   return (mean * daysStarted(now)) / 7;
 }
 
-export function trainVerdict(share: number | null): Verdict {
-  if (share === null) return { verdict: "Sin media aún", tone: "neutral" };
-  if (share >= 1.15) return { verdict: "Por encima de tu ritmo", tone: "good" };
-  if (share >= 0.85) return { verdict: "A tu ritmo", tone: "good" };
-  if (share >= 0.6) return { verdict: "Algo por debajo", tone: "neutral" };
-  return { verdict: "Por debajo de tu ritmo", tone: "fair" };
+export function trainVerdict(share: number | null, t: Translate): Verdict {
+  if (share === null) return verdict(t, "no_pace", "neutral");
+  if (share >= 1.15) return verdict(t, "above_pace", "good");
+  if (share >= 0.85) return verdict(t, "on_pace", "good");
+  if (share >= 0.6) return verdict(t, "slightly_below", "neutral");
+  return verdict(t, "below_pace", "fair");
 }
 
-export function daySentence(parts: { sleep?: Verdict | null; recovery?: Verdict | null; train?: Verdict | null }): string {
+export function daySentence(
+  parts: { sleep?: Verdict | null; recovery?: Verdict | null; train?: Verdict | null },
+  t: Translate,
+): string {
   const first: string[] = [];
-  if (parts.sleep) {
-    const said: Record<string, string> = {
-      Excelente: "Dormiste muy bien",
-      Buena: "Dormiste bien",
-      Regular: "Dormiste regular",
-      Mala: "Dormiste mal",
-    };
-    first.push(said[parts.sleep.verdict] ?? "Dormiste");
-  }
-  if (parts.recovery) first.push(`llegas ${parts.recovery.verdict.toLowerCase()}`);
+  if (parts.sleep) first.push(t(`sentence.slept.${parts.sleep.code}`));
+  if (parts.recovery) first.push(t(`sentence.start.${parts.recovery.code}`));
   const sentences: string[] = [];
   if (first.length > 0) {
-    const joined = first.join(" y ");
+    const joined = first.join(t("sentence.and"));
     sentences.push(`${joined.charAt(0).toUpperCase()}${joined.slice(1)}.`);
   }
-  if (parts.train && parts.train.verdict !== "Sin media aún") {
-    const words: Record<string, string> = {
-      "Por encima de tu ritmo": "vas por encima de tu ritmo",
-      "A tu ritmo": "vas a tu ritmo",
-      "Algo por debajo": "vas algo por debajo de tu ritmo",
-      "Por debajo de tu ritmo": "vas por debajo de tu ritmo",
-    };
-    sentences.push(`Esta semana ${words[parts.train.verdict] ?? ""}.`);
-  }
+  if (parts.train && parts.train.code !== "no_pace") sentences.push(t(`sentence.week.${parts.train.code}`));
   return sentences.join(" ");
 }
 

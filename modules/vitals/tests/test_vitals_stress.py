@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
-from test_vitals_google import log  # noqa: F401 - el fixture del log, compartido
+from test_vitals_google import log  # noqa: F401 - the shared log fixture
 from test_vitals_v2 import DAY as YESTERDAY
 from test_vitals_v2 import as_vitals, gym, profile_of_age, workout  # noqa: F401
 
@@ -45,7 +45,10 @@ async def minutes(log, day, values: dict[int, tuple[float, int]], with_steps=Tru
     )
 
 
-@pytest.mark.parametrize("day", [DAY, SHORT, LONG], ids=["ayer", "marzo", "octubre"])
+MADRID = ZoneInfo("Europe/Madrid")
+
+
+@pytest.mark.parametrize("day", [DAY, SHORT, LONG], ids=["yesterday", "march", "october"])
 async def test_only_a_high_pulse_while_still_counts(schema, gym, log, day) -> None:  # noqa: F811
     await profile_of_age(log, 40)
     await resting(log, 60, until=day)
@@ -72,11 +75,11 @@ async def test_only_a_high_pulse_while_still_counts(schema, gym, log, day) -> No
     assert tension.minutes == 30
 
 
-@pytest.mark.parametrize("day", [SHORT, LONG], ids=["marzo", "octubre"])
+@pytest.mark.parametrize("day", [SHORT, LONG], ids=["march", "october"])
 def test_the_minutes_left_out_are_clock_minutes_when_the_clocks_change(day) -> None:
 
     def clock(on: date, hour: int, minute: int = 0) -> datetime:
-        return datetime(on.year, on.month, on.day, hour, minute, tzinfo=stress.MADRID)
+        return datetime(on.year, on.month, on.day, hour, minute, tzinfo=MADRID)
 
     session = tuple(datetime.fromisoformat(clock(day, 12, m).isoformat()) for m in (0, 40))
     night = (clock(day - timedelta(days=1), 23), clock(day, 7).astimezone(UTC))
@@ -92,7 +95,7 @@ async def test_without_the_steps_of_each_minute_it_says_so(schema, log) -> None:
     found, missing = await as_vitals(schema, stress.tension, DAY)
 
     assert found is None
-    assert missing == "el vitals de este día llegó sin los pasos de cada minuto"
+    assert missing == "this day's heart rate came without the steps of each minute"
 
 
 async def test_how_you_start_the_day_against_your_normal(schema, log) -> None:  # noqa: F811

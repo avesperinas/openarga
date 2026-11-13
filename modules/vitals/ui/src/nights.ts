@@ -1,4 +1,4 @@
-import type { QualityDay, StageShare, TrendPoint } from "@openarga/ui";
+import type { QualityDay, StageShare, Translate, TrendPoint } from "@openarga/ui";
 
 import type { Night, NightDetail, Score, SleepMeans } from "./api";
 import { hours } from "./sleep";
@@ -32,23 +32,22 @@ export function stageShareList(night: Pick<NightDetail, "stages">, usual: SleepM
     .map((stage) => ({ stage, minutes: stages[stage] ?? 0, usual: usual.nights > 0 ? (usual.stages[stage] ?? null) : null }));
 }
 
-export const SCORE_INFO =
-  "La nota es nuestra, con la cuenta a la vista: Google no da la de Fitbit. Duración, hasta 50: lo dormido contra 8 h. Profundidad, hasta 25: la parte de lo dormido en profundo o REM, llena con un 45 %. Tranquilidad, hasta 25: lo despierto en la cama, llena con un 5 % o menos y vacía con un 25 %. Sin fases, la duración sobre 100. 90 o más es excelente; 80, buena; 60, regular.";
-
-export function scoreParts(score: Score): { label: string; value: string; share: number }[] {
+export function scoreParts(score: Score, t: Translate): { label: string; value: string; share: number }[] {
   const parts: { label: string; got: number | null; top: number }[] = [
-    { label: "Duración", got: score.duration, top: 50 },
-    { label: "Profundidad", got: score.depth, top: 25 },
-    { label: "Tranquilidad", got: score.calm, top: 25 },
+    { label: t("score.duration"), got: score.duration, top: 50 },
+    { label: t("score.depth"), got: score.depth, top: 25 },
+    { label: t("score.calm"), got: score.calm, top: 25 },
   ];
   return parts.flatMap((one) =>
-    one.got === null ? [] : [{ label: one.label, value: `${Math.round(one.got)} de ${one.top}`, share: one.got / one.top }],
+    one.got === null
+      ? []
+      : [{ label: one.label, value: t("score.of", { got: Math.round(one.got), top: one.top }), share: one.got / one.top }],
   );
 }
 
-export function againstUsual(minutes: number, mean: number | null): string | undefined {
+export function againstUsual(minutes: number, mean: number | null, t: Translate): string | undefined {
   if (mean === null) return undefined;
   const gap = Math.round(minutes - mean);
-  if (Math.abs(gap) < 5) return "como tu normal";
-  return `${hours(Math.abs(gap))} ${gap > 0 ? "más" : "menos"} que tu normal`;
+  if (Math.abs(gap) < 5) return t("usual.same");
+  return t(gap > 0 ? "usual.more" : "usual.less", { amount: hours(Math.abs(gap)) });
 }

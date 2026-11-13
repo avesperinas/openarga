@@ -12,7 +12,6 @@ import {
   PartBars,
   List,
   ListRow,
-  QUALITY_NAMES,
   QualityMonth,
   Screen,
   SeriesChart,
@@ -21,6 +20,9 @@ import {
   StageBreakdown,
   TrendChart,
   YearCalendar,
+  type Translate,
+  useLocale,
+  useT,
 } from "@openarga/ui";
 import { useEffect, useMemo, useState } from "react";
 
@@ -36,10 +38,9 @@ import {
   signIn,
 } from "./api";
 import { ScreenHeader } from "./Header";
-import { INFO } from "./info";
 import { wakeTiles } from "./rhythm";
+import { figureName } from "./body";
 import {
-  SCORE_INFO,
   againstUsual,
   monthsOf,
   scoreDays,
@@ -51,8 +52,11 @@ import {
 import { STAGES, hours, shortDay, stageSeries, timeOf } from "./sleep";
 import { baselineTile, groupLine } from "./workouts";
 import { dayLabel } from "./weight";
+import { decimal } from "./words";
 
 export function SleepScreen({ onSettings }: { onSettings: () => void }) {
+  const t = useT();
+  const locale = useLocale();
   const [summary, setSummary] = useState<SleepSummary | null>(null);
   const [problem, setProblem] = useState("");
   const [day, setDay] = useState<string | null>(null);
@@ -67,9 +71,9 @@ export function SleepScreen({ onSettings }: { onSettings: () => void }) {
       })
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        setProblem("No se pudo leer el sueño.");
+        setProblem(t("sleep.read_failed"));
       });
-  }, []);
+  }, [t]);
 
   const nights = summary?.nights ?? [];
   const months = useMemo(() => monthsOf(nights), [nights]);
@@ -83,17 +87,13 @@ export function SleepScreen({ onSettings }: { onSettings: () => void }) {
 
   return (
     <Screen wide>
-      <ScreenHeader title="Sueño" />
+      <ScreenHeader title={t("panel.sleep")} />
       {problem && <Hint tone="warning">{problem}</Hint>}
-      {summary === null && !problem && <Skeleton label="Cargando el sueño" />}
+      {summary === null && !problem && <Skeleton label={t("sleep.loading")} />}
 
       {summary && summary.last === null && (
-        <EmptyState
-          title="Todavía no ha llegado ninguna noche"
-          action={{ label: "Ir a Ajustes", onClick: onSettings }}
-        >
-          El sueño llega de la pulsera por Google Health. En Ajustes está cómo
-          conectarla.
+        <EmptyState title={t("sleep.none_title")} action={{ label: t("common.to_settings"), onClick: onSettings }}>
+          {t("sleep.none_text")}
         </EmptyState>
       )}
 
@@ -101,12 +101,10 @@ export function SleepScreen({ onSettings }: { onSettings: () => void }) {
 
       <Columns count={2} stack>
         {month && nights.length > 0 && (
-          <section className="surface vitals-card" aria-label="El mes">
-            <InfoHeading info={INFO.calendar}>
-              Calidad de cada noche
-            </InfoHeading>
+          <section className="surface vitals-card" aria-label={t("sleep.the_month")}>
+            <InfoHeading info={t("info.calendar")}>{t("sleep.quality_each")}</InfoHeading>
             <QualityMonth
-              label="La nota de cada noche del mes"
+              label={t("sleep.score_each_month")}
               month={month}
               days={scoreDays(nights)}
               selected={day}
@@ -126,11 +124,11 @@ export function SleepScreen({ onSettings }: { onSettings: () => void }) {
         {recent.length > 1 && summary && (
           <section
             className="surface vitals-card health-figures"
-            aria-label="El horario"
+            aria-label={t("sleep.the_schedule")}
           >
-            <InfoHeading info={INFO.schedule}>Horario de sueño</InfoHeading>
+            <InfoHeading info={t("info.schedule")}>{t("sleep.schedule")}</InfoHeading>
             <SleepSchedule
-              label="De qué hora a qué hora dormiste las últimas noches"
+              label={t("today.schedule_label")}
               nights={recent
                 .slice(-14)
                 .map((one) => ({
@@ -139,7 +137,7 @@ export function SleepScreen({ onSettings }: { onSettings: () => void }) {
                   end: one.end,
                   quality: one.score?.quality ?? null,
                 }))}
-              formatDay={shortDay}
+              formatDay={(day) => shortDay(day, locale)}
             />
             <Regularity summary={summary} />
           </section>
@@ -147,33 +145,31 @@ export function SleepScreen({ onSettings }: { onSettings: () => void }) {
       </Columns>
       <Columns count={2} stack>
         {nights.length > 2 && (
-          <section className="surface vitals-card" aria-label="Las tendencias">
-            <InfoHeading info={INFO.trend}>Tendencia</InfoHeading>
+          <section className="surface vitals-card" aria-label={t("sleep.the_trends")}>
+            <InfoHeading info={t("info.trend")}>{t("sleep.trend")}</InfoHeading>
             <TrendChart
-              label="La nota de cada noche y su media de 7"
+              label={t("sleep.trend_label")}
               points={scoreTrend(nights.slice(-90))}
               band={{ low: 80, high: 100 }}
-              bandName="Buena o mejor"
-              valueName="Nota"
-              averageName="Media de 7 noches"
+              bandName={t("sleep.good_or_better")}
+              valueName={t("sleep.score")}
+              averageName={t("sleep.mean_7")}
               format={(value) => String(Math.round(value))}
             />
             {recent.some((one) => one.stages) && (
               <Collapsible
-                title="Fases de cada noche"
-                subtitle="Horas de cada fase en las últimas noches"
+                title={t("sleep.stages_each")}
+                subtitle={t("sleep.stages_hours")}
               >
                 <SeriesChart
-                  label="Horas de cada fase en las últimas noches"
+                  label={t("sleep.stages_hours")}
                   kind="stacked"
                   palette="stages"
-                  labels={recent.map((one) => shortDay(one.day))}
-                  series={stageSeries(recent)}
+                  labels={recent.map((one) => shortDay(one.day, locale))}
+                  series={stageSeries(recent, t)}
                   order={STAGES.map((one) => one.id)}
                   format={(value) => hours(value * 60)}
-                  axisFormat={(value) =>
-                    `${value.toLocaleString("es-ES", { maximumFractionDigits: 1 })} h`
-                  }
+                  axisFormat={(value) => `${decimal(value, locale, 1)} h`}
                 />
               </Collapsible>
             )}
@@ -181,21 +177,21 @@ export function SleepScreen({ onSettings }: { onSettings: () => void }) {
         )}
 
         {nights.length > 7 && (
-          <section className="surface vitals-card" aria-label="El año">
-            <InfoHeading info={INFO.year}>El año</InfoHeading>
+          <section className="surface vitals-card" aria-label={t("steps.the_year")}>
+            <InfoHeading info={t("info.year")}>{t("steps.the_year")}</InfoHeading>
             <YearCalendar
-              label="La nota de cada noche del año"
+              label={t("sleep.score_each_year")}
               days={scoreDays(nights)}
               goal={80}
-              format={(value) => `nota ${value}`}
+              format={(value) => t("sleep.score_value", { value })}
             />
-            <Hint>En verde, las noches buenas o mejores (80 o más).</Hint>
+            <Hint>{t("sleep.green")}</Hint>
           </section>
         )}
       </Columns>
 
       {summary?.last && <PatternsCard />}
-      <Hint>Vitals enseña cifras; no diagnostica ni aconseja.</Hint>
+      <Hint>{t("summary.disclaimer")}</Hint>
       <AppVersion />
     </Screen>
   );
@@ -208,6 +204,8 @@ function NightCard({
   day: string;
   onDay: (day: string) => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const [page, setPage] = useState<NightPage | null>(null);
   const [problem, setProblem] = useState("");
 
@@ -217,34 +215,34 @@ function NightCard({
       .then(setPage)
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        setProblem("No se pudo leer esa noche.");
+        setProblem(t("sleep.night_failed"));
       });
-  }, [day]);
+  }, [day, t]);
 
   if (problem) return <Hint tone="warning">{problem}</Hint>;
   if (!page || page.night.day !== day)
-    return <Skeleton label="Cargando la noche" />;
+    return <Skeleton label={t("sleep.night_loading")} />;
   const { night, mean_30: usual } = page;
   const score = night.score;
-  const woke = wakeTiles(night);
+  const woke = wakeTiles(night, t);
 
   return (
     <section
       className="surface vitals-card health-figures"
-      aria-label={`La noche del ${dayLabel(night.day)}`}
+      aria-label={t("sleep.night_of", { day: dayLabel(night.day, locale) })}
     >
       <div className="vitals-night-head">
         <IconButton
           icon="chevron-left"
-          label="Noche anterior"
+          label={t("sleep.previous")}
           variant="plain"
           disabled={!page.previous}
           onClick={() => page.previous && onDay(page.previous)}
         />
-        <Heading>{`La noche del ${dayLabel(night.day)}`}</Heading>
+        <Heading>{t("sleep.night_of", { day: dayLabel(night.day, locale) })}</Heading>
         <IconButton
           icon="chevron-right"
-          label="Noche siguiente"
+          label={t("sleep.next")}
           variant="plain"
           disabled={!page.next}
           onClick={() => page.next && onDay(page.next)}
@@ -257,45 +255,45 @@ function NightCard({
             value={score.value}
             target={100}
             display={String(score.value)}
-            caption={QUALITY_NAMES[score.quality]}
+            caption={t(`verdict.${score.quality}`)}
             quality={score.quality}
-            label="Nota del sueño"
+            label={t("sleep.sleep_score")}
             size="l"
-            info={SCORE_INFO}
+            info={t("score.info")}
           />
         )}
         <KeyFigures
-          label="La noche"
+          label={t("sleep.the_night")}
           items={[
             {
-              label: "Dormido",
+              label: t("sleep.asleep"),
               value: hours(night.minutes_asleep),
-              foot: againstUsual(night.minutes_asleep, usual.asleep),
-              info: INFO.sleepMinutes,
+              foot: againstUsual(night.minutes_asleep, usual.asleep, t),
+              info: t("info.sleepMinutes"),
             },
             {
-              label: "En la cama",
+              label: t("sleep.in_bed"),
               value: `${timeOf(night.start)} – ${timeOf(night.end)}`,
               foot: night.minutes_in_bed
                 ? hours(night.minutes_in_bed)
                 : undefined,
-              info: INFO.inBed,
+              info: t("info.inBed"),
             },
             ...(night.minutes_to_fall_asleep != null
               ? [
                   {
-                    label: "Tardaste en dormirte",
+                    label: t("sleep.fell_asleep"),
                     value: hours(night.minutes_to_fall_asleep),
-                    info: INFO.fellAsleep,
+                    info: t("info.fellAsleep"),
                   },
                 ]
               : []),
             ...(night.nap_minutes > 0
               ? [
                   {
-                    label: "Siestas",
+                    label: t("sleep.naps"),
                     value: hours(night.nap_minutes),
-                    info: INFO.naps,
+                    info: t("info.naps"),
                   },
                 ]
               : []),
@@ -304,47 +302,46 @@ function NightCard({
       </div>
 
       {score && (
-        <PartBars label="La nota, por partes" parts={scoreParts(score)} />
+        <PartBars label={t("sleep.score_parts")} parts={scoreParts(score, t)} />
       )}
 
       {night.segments.length > 0 && (
         <>
-          <InfoHeading info={INFO.hypnogram}>Las fases de la noche</InfoHeading>
+          <InfoHeading info={t("info.hypnogram")}>{t("sleep.night_stages")}</InfoHeading>
           <Hypnogram
             segments={night.segments}
             start={night.start}
             end={night.end}
             pulse={page.heart}
-            label="Las fases de la noche, con el vitals encima"
+            label={t("sleep.hypnogram_label")}
           />
         </>
       )}
       {(night.stages || page.figures.length > 0 || woke.length > 0) && (
         <Collapsible
-          title="Más de la noche"
-          subtitle={moreLine(page, woke.length)}
+          title={t("sleep.more")}
+          subtitle={moreLine(page, woke.length, t)}
         >
           {night.stages && (
             <>
-              <InfoHeading info={INFO.stages}>Cuánto de cada fase</InfoHeading>
+              <InfoHeading info={t("info.stages")}>{t("sleep.how_much_each")}</InfoHeading>
               <StageBreakdown stages={stageShareList(night, usual)} />
             </>
           )}
           {page.figures.length > 0 && (
             <>
-              <InfoHeading info={INFO.normal}>
-                La noche contra tu normal
-              </InfoHeading>
+              <InfoHeading info={t("info.normal")}>{t("sleep.against_normal")}</InfoHeading>
               <KeyFigures
-                label="La noche contra tu normal"
+                label={t("sleep.against_normal")}
                 items={page.figures.map((one) => {
-                  const tile = baselineTile(one);
+                  const tile = baselineTile(one, t, locale);
+                  const info = NIGHT_INFO[one.id];
                   return {
-                    label: one.name,
+                    label: figureName(t, { id: one.id, name: one.name }),
                     value: tile.value,
                     foot: tile.foot,
                     tone: tile.tone === "warning" ? "warning" : undefined,
-                    info: NIGHT_INFO[one.id],
+                    info: info ? t(info) : undefined,
                   };
                 })}
               />
@@ -352,8 +349,8 @@ function NightCard({
           )}
           {woke.length > 0 && (
             <KeyFigures
-              label="Los despertares"
-              items={woke.map((one) => ({ ...one, info: INFO.awakenings }))}
+              label={t("sleep.awakenings")}
+              items={woke.map((one) => ({ ...one, info: t("info.awakenings") }))}
             />
           )}
         </Collapsible>
@@ -363,6 +360,7 @@ function NightCard({
 }
 
 function Regularity({ summary }: { summary: SleepSummary }) {
+  const t = useT();
   const [found, setFound] = useState<SleepPatterns | null>(null);
   useEffect(() => {
     readSleepPatterns()
@@ -372,43 +370,43 @@ function Regularity({ summary }: { summary: SleepSummary }) {
   const mean = summary.mean_30;
   return (
     <KeyFigures
-      label="Regularidad"
+      label={t("sleep.regularity")}
       items={[
         {
-          label: "Te duermes, de media",
+          label: t("sleep.fall_asleep_avg"),
           value: clockText(mean.fell_asleep_at),
           foot:
             found?.fell_asleep_spread != null
               ? `± ${found.fell_asleep_spread} min`
               : undefined,
-          info: INFO.regularity,
+          info: t("info.regularity"),
         },
         {
-          label: "Te despiertas, de media",
+          label: t("sleep.wake_avg"),
           value: clockText(mean.woke_at),
           foot:
             found?.woke_spread != null
               ? `± ${found.woke_spread} min`
               : undefined,
-          info: INFO.regularity,
+          info: t("info.regularity"),
         },
         {
-          label: "Dormido, media de 30",
+          label: t("sleep.asleep_30"),
           value: hours(mean.asleep),
-          foot: `${mean.nights} noches`,
+          foot: t("group.nights.other", { count: mean.nights }),
         },
       ]}
     />
   );
 }
 
-function moreLine(page: NightPage, awakenings: number): string {
+function moreLine(page: NightPage, awakenings: number, t: Translate): string {
   const hrv = page.figures.find((one) => one.id === "hrv_ms");
   return [
-    page.night.stages ? "Fases" : null,
-    hrv && hrv.value !== null ? `VFC ${Math.round(hrv.value)} ms` : null,
+    page.night.stages ? t("sleep.stages") : null,
+    hrv && hrv.value !== null ? t("group.hrv", { value: Math.round(hrv.value) }) : null,
     awakenings > 0 && page.night.awakenings
-      ? `${page.night.awakenings} ${page.night.awakenings === 1 ? "despertar" : "despertares"}`
+      ? t(page.night.awakenings === 1 ? "sleep.awakening.one" : "sleep.awakening.other", { count: page.night.awakenings })
       : null,
   ]
     .filter(Boolean)
@@ -416,10 +414,10 @@ function moreLine(page: NightPage, awakenings: number): string {
 }
 
 const NIGHT_INFO: Record<string, string> = {
-  hrv_ms: INFO.hrv,
-  respiratory_rate: INFO.respiration,
-  spo2_pct: INFO.spo2,
-  skin_temp_delta_c: INFO.skinTemp,
+  hrv_ms: "info.hrv",
+  respiratory_rate: "info.respiration",
+  spo2_pct: "info.spo2",
+  skin_temp_delta_c: "info.skinTemp",
 };
 
 function clockText(minutes: number | null): string {
@@ -429,6 +427,8 @@ function clockText(minutes: number | null): string {
 }
 
 function PatternsCard() {
+  const t = useT();
+  const locale = useLocale();
   const [found, setFound] = useState<SleepPatterns | null>(null);
   useEffect(() => {
     readSleepPatterns()
@@ -439,21 +439,22 @@ function PatternsCard() {
   return (
     <section
       className="surface vitals-card"
-      aria-label="El sueño y el día de antes"
+      aria-label={t("sleep.day_before")}
     >
-      <InfoHeading info={INFO.afterTraining}>
-        El sueño y el día de antes
-      </InfoHeading>
+      <InfoHeading info={t("info.afterTraining")}>{t("sleep.day_before")}</InfoHeading>
       <List>
-        {found.comparisons.map((one) => (
-          <ListRow
-            key={one.label}
-            title={one.label}
-            subtitle={`${groupLine(one.after)}. El resto: ${groupLine(one.rest)}.`}
-          />
-        ))}
+        {found.comparisons.map((one) => {
+          const key = `pattern.${one.id}`;
+          return (
+            <ListRow
+              key={one.id}
+              title={t(key) === key ? one.label : t(key)}
+              subtitle={t("sleep.compared", { after: groupLine(one.after, t, locale), rest: groupLine(one.rest, t, locale) })}
+            />
+          );
+        })}
       </List>
-      <Hint>Medias de los últimos 90 días. No dicen por qué.</Hint>
+      <Hint>{t("sleep.averages_90")}</Hint>
     </section>
   );
 }

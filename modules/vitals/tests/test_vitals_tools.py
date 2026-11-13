@@ -27,7 +27,7 @@ async def test_loading_a_history_twice_repeats_nothing(api) -> None:
     found = (await api.get("/weight")).json()
 
     assert len(found["entries"]) == 3
-    assert {one["source"] for one in found["entries"]} == {"historico"}
+    assert {one["source"] for one in found["entries"]} == {"history"}
 
 
 async def test_with_only_read_postgres_refuses_to_log(api) -> None:
@@ -75,7 +75,7 @@ async def test_the_arguments_are_described_for_the_model(api) -> None:
 async def test_claude_loads_a_checkup_and_reads_it_back(api) -> None:
     created = await api.post(
         "/tools/record_checkup",
-        json={"date": "2026-09-02", "center": "Prevención de prueba"},
+        json={"date": "2026-09-02", "center": "Test occupational health"},
         headers=WRITE,
     )
     checkup_id = created.json()["content"]["checkup_id"]

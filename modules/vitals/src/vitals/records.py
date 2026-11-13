@@ -10,16 +10,16 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 import arga_contracts as contracts
 from arga_contracts import records as write
 from vitals import body, labs, sleep, steps, weight, workouts
-from vitals.steps import MADRID, today
+from vitals.steps import today, zone
 
 APP = "vitals"
 DAY_PROPERTIES = {
-    "resting_heart_rate": "fc_reposo",
-    "hrv_ms": "vfc_ms",
+    "resting_heart_rate": "resting_hr",
+    "hrv_ms": "hrv_ms",
     "vo2max": "vo2max",
-    "active_kcal": "kcal_activas",
-    "exercise_min": "ejercicio_min",
-    "distance_km": "distancia_km",
+    "active_kcal": "active_kcal",
+    "exercise_min": "exercise_min",
+    "distance_km": "distance_km",
 }
 
 RESULTS = text("""
@@ -47,7 +47,7 @@ def _range(low: float | None, high: float | None) -> str:
 
 def _checkup_title(one: labs.Checkup) -> str:
     return (
-        f"{one.day.isoformat()} {one.center}" if one.center else f"{one.day.isoformat()} Revisión"
+        f"{one.day.isoformat()} {one.center}" if one.center else f"{one.day.isoformat()} Check-up"
     )
 
 
@@ -59,25 +59,25 @@ def checkup(one: labs.Checkup, results: list[Any]) -> dict[str, Any]:
         out = labs.out_of_range(value, low, high)
         shown = _number(value) if value is not None else (row.value_text or "")
         rows.append([row.name, f"**{shown}**" if out else shown, row.unit or "", _range(low, high)])
-    properties: dict[str, Any] = {"fecha": one.day.isoformat(), "valores": one.values}
+    properties: dict[str, Any] = {"date": one.day.isoformat(), "values": one.values}
     if one.center:
-        properties["centro"] = one.center
+        properties["center"] = one.center
     if one.out:
-        properties["fuera_de_rango"] = one.out
-    lead = f"Revisión del {write.long_date(one.day)}" + (f" en {one.center}" if one.center else "")
-    outside = f"{one.out} fuera de rango, en negrita." if one.out else "Todo dentro de rango."
+        properties["out_of_range"] = one.out
+    lead = f"Check-up of {write.long_date(one.day)}" + (f" at {one.center}" if one.center else "")
+    outside = f"{one.out} out of range, in bold." if one.out else "Everything in range."
     return contracts.record(
         id=f"checkup:{one.id}",
         title=_checkup_title(one),
-        kind="Revisión",
-        href="/vitals/analiticas",
-        folder="Revisiones",
+        kind="Check-up",
+        href="/vitals/labs",
+        folder="Check-ups",
         properties=properties,
         body=write.sections(
-            f"{lead}. {one.values} {'valor' if one.values == 1 else 'valores'}. "
+            f"{lead}. {one.values} {'value' if one.values == 1 else 'values'}. "
             + (outside if one.values else ""),
-            write.table(["Analito", "Valor", "Unidad", "Referencia"], rows),
-            f"## Notas\n\n{one.notes}" if one.notes else None,
+            write.table(["Analyte", "Value", "Unit", "Reference"], rows),
+            f"## Notes\n\n{one.notes}" if one.notes else None,
         ),
     )
 
@@ -93,12 +93,12 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
     lines: dict[date, list[str]] = defaultdict(list)
     rows = (await connection.execute(weight.ALL)).all()
     for one in weight.daily([(row.day, float(row.kg)) for row in rows]):
-        days[one.day]["peso_kg"] = one.kg
-        lines[one.day].append(f"- Peso: {write.trimmed(one.kg)} kg")
+        days[one.day]["weight_kg"] = one.kg
+        lines[one.day].append(f"- Weight: {write.trimmed(one.kg)} kg")
     counted, _ = await steps.read(connection)
     for one in counted:
-        days[one.day]["pasos"] = one.steps
-        lines[one.day].append(f"- Pasos: {write.number(one.steps)}")
+        days[one.day]["steps"] = one.steps
+        lines[one.day].append(f"- Steps: {write.number(one.steps)}")
     measured = await body.read(connection)
     for metric in body.METRICS:
         for point in measured.get(metric.id, []):
@@ -111,15 +111,15 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
             )
     for one in checkups:
         lines[one.day].append(
-            f"- Revisión: {write.link(APP, f'checkup:{one.id}', _checkup_title(one))}"
+            f"- Check-up: {write.link(APP, f'checkup:{one.id}', _checkup_title(one))}"
         )
     found.extend(await weeks(connection, days))
     for day in sorted(set(days) | set(lines)):
         found.append(
             contracts.record(
                 id=f"day:{day.isoformat()}",
-                title="Salud",
-                kind="Día",
+                title="Health",
+                kind="Day",
                 href="/vitals/",
                 day=day,
                 properties=days.get(day, {}),
@@ -145,46 +145,46 @@ async def weeks(connection: AsyncConnection, days: dict[date, dict[str, Any]]) -
     for index in range(WEEKS):
         start = first + timedelta(weeks=index)
         end = start + timedelta(days=6)
-        mine = [one for one in done if start <= one.start.astimezone(MADRID).date() <= end]
+        mine = [one for one in done if start <= one.start.astimezone(zone()).date() <= end]
         slept = [one.minutes_asleep for one in nights if start <= one.day <= end]
         dates = [start + timedelta(days=i) for i in range(7)]
         span = [days[one] for one in dates if one in days]
-        paces = _mean([one["pasos"] for one in span if "pasos" in one])
-        kilos = _mean([one["peso_kg"] for one in span if "peso_kg" in one])
+        paces = _mean([one["steps"] for one in span if "steps" in one])
+        kilos = _mean([one["weight_kg"] for one in span if "weight_kg" in one])
         if not (mine or slept or paces or kilos):
             continue
         properties: dict[str, Any] = {
-            "semana": start.isoformat(),
-            "entrenos": len(mine),
-            "minutos_entreno": sum(one.minutes for one in mine),
-            "carga": round(sum(one.heart.load for one in mine), 1),
+            "week": start.isoformat(),
+            "workouts": len(mine),
+            "workout_min": sum(one.minutes for one in mine),
+            "load": round(sum(one.heart.load for one in mine), 1),
         }
         lines = [
-            f"- Entrenos: {len(mine)}, {sum(one.minutes for one in mine)} min, carga "
-            f"{write.trimmed(properties['carga'], 1)}"
+            f"- Workouts: {len(mine)}, {sum(one.minutes for one in mine)} min, load "
+            f"{write.trimmed(properties['load'], 1)}"
         ]
         if slept:
-            properties["sueno_min"] = round(_mean(slept))
-            hours, minutes = divmod(properties["sueno_min"], 60)
-            lines.append(f"- Sueño medio: {hours} h {minutes:02d} min ({len(slept)} noches)")
+            properties["sleep_min"] = round(_mean(slept))
+            hours, minutes = divmod(properties["sleep_min"], 60)
+            lines.append(f"- Average sleep: {hours} h {minutes:02d} min ({len(slept)} nights)")
         if paces:
-            properties["pasos_media"] = round(paces)
-            lines.append(f"- Pasos al día: {write.number(paces)}")
+            properties["average_steps"] = round(paces)
+            lines.append(f"- Steps per day: {write.number(paces)}")
         if kilos:
-            properties["peso_kg"] = round(kilos, 1)
-            lines.append(f"- Peso medio: {write.trimmed(kilos, 1)} kg")
+            properties["weight_kg"] = round(kilos, 1)
+            lines.append(f"- Average weight: {write.trimmed(kilos, 1)} kg")
         listed = [
-            f"- {one.start.astimezone(MADRID):%a %d} · {one.name} · {one.minutes} min"
-            + (f" · media {round(one.heart.avg)} lpm" if one.heart.avg else "")
+            f"- {one.start.astimezone(zone()):%a %d} · {one.name} · {one.minutes} min"
+            + (f" · average {round(one.heart.avg)} bpm" if one.heart.avg else "")
             for one in sorted(mine, key=lambda one: one.start)
         ]
         out.append(
             contracts.record(
                 id=f"week:{start.isoformat()}",
-                title=f"Semana del {write.long_date(start)}",
-                kind="Semana",
-                href="/vitals/entrenar",
-                folder="Semanas",
+                title=f"Week of {write.long_date(start)}",
+                kind="Week",
+                href="/vitals/training",
+                folder="Weeks",
                 properties=properties,
                 body=write.sections("\n".join(lines), "\n".join(listed) if listed else None),
             )

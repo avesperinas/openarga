@@ -16,6 +16,9 @@ import {
   VitalCard,
   VitalCards,
   WeekDots,
+  type Translate,
+  useLocale,
+  useT,
 } from "@openarga/ui";
 import { useTick } from "@openarga/app/fresh";
 import { useEffect, useState } from "react";
@@ -36,7 +39,6 @@ import {
 } from "./api";
 import { minuteLabel } from "./heart";
 import { ScreenHeader } from "./Header";
-import { INFO } from "./info";
 import { bandFigure } from "./rhythm";
 import { hours, shortDay } from "./sleep";
 import {
@@ -58,8 +60,6 @@ export function localDay(now: Date = new Date()): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-const LONG = new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long" });
-
 function weekAgo(now: Date): string {
   const before = new Date(now);
   before.setDate(before.getDate() - 7);
@@ -69,6 +69,8 @@ function weekAgo(now: Date): string {
 export type Go = (place: "sleep" | "training" | "steps") => void;
 
 export function TodayScreen({ go }: { go?: Go } = {}) {
+  const t = useT();
+  const locale = useLocale();
   const [today, setToday] = useState<Today | null>(null);
   const [line, setLine] = useState<DayLine | null>(null);
   const [stress, setStress] = useState<Stress | null>(null);
@@ -87,88 +89,91 @@ export function TodayScreen({ go }: { go?: Go } = {}) {
       .then(setToday)
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        if (!again) setProblem("No se pudo leer hoy.");
+        if (!again) setProblem(t("today.read_failed"));
       });
-  }, [tick]);
+  }, [tick, t]);
 
   const night = line?.night ?? null;
-  const sleep = sleepVerdict(night?.score);
+  const sleep = sleepVerdict(night?.score, t);
   const morning = stress?.morning ?? null;
-  const ready = recoveryVerdict(morning?.score);
-  const move = today ? moveVerdict(today.steps) : null;
+  const ready = recoveryVerdict(morning?.score, t);
+  const move = today ? moveVerdict(today.steps, t, locale) : null;
   const paced = today ? loadPace(today.load, now) : null;
-  const train = paced ? trainVerdict(paced.share) : null;
+  const train = paced ? trainVerdict(paced.share, t) : null;
   const week = today ? thisWeek(today.workouts, now) : [];
   const trainedToday = week.filter((one) => localDay(new Date(one.start)) === localDay(now));
-  const sentence = daySentence({ sleep, recovery: ready, train });
+  const sentence = daySentence({ sleep, recovery: ready, train }, t);
   const tone = worstTone([sleep?.tone, ready?.tone, train?.tone]);
   const battery = today?.battery ?? null;
-  const band = battery ? bandFigure(battery) : null;
+  const band = battery ? bandFigure(battery, t) : null;
   const buckets = line?.heart?.buckets ?? [];
   const hrv = today?.baselines.find((one) => one.id === "hrv_ms");
   const resting = today?.baselines.find((one) => one.id === "resting_heart_rate");
 
   const cards = today && (
-    <VitalCards label="Cómo estás hoy">
+    <VitalCards label={t("today.how_are_you")}>
       {night?.score && sleep && (
         <VitalCard
-          label="Sueño"
+          label={t("panel.sleep")}
           icon="moon"
           ring={{ value: night.score.value, target: 100, display: String(night.score.value) }}
           verdict={sleep.verdict}
           tone={sleep.tone}
           detail={[
             hours(night.minutes_asleep),
-            night.minutes_to_fall_asleep != null ? `tardaste ${minutesLabel(night.minutes_to_fall_asleep)}` : null,
+            night.minutes_to_fall_asleep != null ? t("today.took", { time: minutesLabel(night.minutes_to_fall_asleep) }) : null,
           ]
             .filter(Boolean)
             .join(" · ")}
-          info={INFO.sleepScore}
+          info={t("info.sleepScore")}
           onOpen={go ? () => go("sleep") : undefined}
         />
       )}
       {morning?.score != null && ready && (
         <VitalCard
-          label="Recuperación"
+          label={t("today.recovery")}
           icon="heart"
           ring={{ value: morning.score, target: 100, display: String(morning.score), mark: 0.5 }}
           verdict={ready.verdict}
           tone={ready.tone}
-          detail={recoveryLine(morning.hrv_z, morning.resting_z)}
-          info={INFO.readiness}
+          detail={recoveryLine(morning.hrv_z, morning.resting_z, t)}
+          info={t("info.readiness")}
           onOpen={() => setRecovery(true)}
         />
       )}
       {move && (
         <VitalCard
-          label="Movimiento"
+          label={t("today.movement")}
           icon="today"
           ring={{
             value: today.steps.today ?? 0,
             target: today.steps.goal ?? Math.max(1, today.steps.mean_30 ?? 1),
-            display: (today.steps.today ?? 0).toLocaleString("es-ES"),
+            display: (today.steps.today ?? 0).toLocaleString(locale),
           }}
           verdict={move.verdict}
           tone={move.tone}
           detail={move.detail}
-          info={INFO.steps}
+          info={t("info.steps")}
           onOpen={go ? () => go("steps") : undefined}
         />
       )}
       {train && paced && (
         <VitalCard
-          label="Entreno"
+          label={t("training.workout")}
           icon="flame"
           ring={{
             value: today.load.this_week,
             target: paced.expected ? Math.max(paced.expected, today.load.this_week) : Math.max(1, today.load.this_week),
-            display: Math.round(today.load.this_week).toLocaleString("es-ES"),
+            display: Math.round(today.load.this_week).toLocaleString(locale),
             mark: paced.expected ? Math.min(1, paced.expected / Math.max(paced.expected, today.load.this_week)) : undefined,
           }}
           verdict={train.verdict}
           tone={train.tone}
-          detail={`hoy: ${trainedToday.length > 0 ? trainedToday.map((one) => one.name).join(", ") : "nada"} · semana: ${week.length}`}
-          info={INFO.load}
+          detail={t("today.trained", {
+            today: trainedToday.length > 0 ? trainedToday.map((one) => one.name).join(", ") : t("today.nothing"),
+            week: week.length,
+          })}
+          info={t("info.load")}
           onOpen={go ? () => go("training") : undefined}
         />
       )}
@@ -176,26 +181,26 @@ export function TodayScreen({ go }: { go?: Go } = {}) {
   );
 
   const day = (buckets.length > 1 || stress?.tension) && (
-    <section className="surface vitals-card" aria-label="Tu día">
-      <InfoHeading info={INFO.dayPulse}>Tu día</InfoHeading>
+    <section className="surface vitals-card" aria-label={t("today.your_day")}>
+      <InfoHeading info={t("info.dayPulse")}>{t("today.your_day")}</InfoHeading>
       {buckets.length > 1 && (
         <SeriesChart
-          label="El vitals de hoy"
+          label={t("today.heart_today")}
           kind="lines"
           labels={buckets.map((one) => minuteLabel(one.minute))}
-          series={[{ key: "avg", name: "Vitals", values: buckets.map((one) => one.avg) }]}
-          format={(value) => `${Math.round(value)} lpm`}
+          series={[{ key: "avg", name: t("today.heart_rate"), values: buckets.map((one) => one.avg) }]}
+          format={(value) => t("common.bpm", { value: Math.round(value) })}
         />
       )}
       {stress?.tension && (
         <>
           <HourStrip
-            label="Minutos de vitals alto estando quieto, por hora"
+            label={t("today.tension_label")}
             values={stress.tension.by_hour}
             format={(value) => `${Math.round(value)} min`}
             now={now.getHours()}
           />
-          <Hint>{tensionLine(stress.tension.by_hour, stress.tension.minutes)}</Hint>
+          <Hint>{tensionLine(stress.tension.by_hour, stress.tension.minutes, t)}</Hint>
         </>
       )}
     </section>
@@ -203,14 +208,14 @@ export function TodayScreen({ go }: { go?: Go } = {}) {
 
   const aside = today && (
     <>
-      <section className="surface vitals-card" aria-label="Esta semana">
-        <Heading>Esta semana</Heading>
-        <WeekDots days={weekDots(today.workouts, now)} label={`${week.length} entrenos esta semana`} size="large" />
+      <section className="surface vitals-card" aria-label={t("today.this_week")}>
+        <Heading>{t("today.this_week")}</Heading>
+        <WeekDots days={weekDots(today.workouts, now)} label={t("training.workouts_week", { count: week.length })} size="large" />
         {nights && nights.nights.length > 1 && (
           <SleepSchedule
-            label="De qué hora a qué hora dormiste las últimas noches"
+            label={t("today.schedule_label")}
             nights={nights.nights.slice(-7).map((one) => ({ day: one.day, start: one.start, end: one.end, quality: one.score?.quality ?? null }))}
-            formatDay={shortDay}
+            formatDay={(day) => shortDay(day, locale)}
           />
         )}
       </section>
@@ -220,12 +225,15 @@ export function TodayScreen({ go }: { go?: Go } = {}) {
 
   return (
     <Screen wide>
-      <ScreenHeader eyebrow={capital(LONG.format(now))} title="Hoy" />
+      <ScreenHeader
+        eyebrow={capital(new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" }).format(now))}
+        title={t("tabs.today")}
+      />
       {problem && <Hint tone="warning">{problem}</Hint>}
-      {today === null && !problem && <Skeleton label="Cargando hoy" />}
+      {today === null && !problem && <Skeleton label={t("today.loading")} />}
       {today && (
         <Panes
-          asideLabel="Tu semana"
+          asideLabel={t("today.your_week")}
           main={
             <>
               {sentence && (
@@ -234,21 +242,26 @@ export function TodayScreen({ go }: { go?: Go } = {}) {
               {cards}
               {day}
               {buckets.length === 0 && !night && (
-                <Hint>Todavía no ha llegado nada de hoy: la pulsera pasa sus datos al sincronizar con el móvil.</Hint>
+                <Hint>{t("today.nothing_yet")}</Hint>
               )}
             </>
           }
           aside={aside}
         />
       )}
-      <Hint>Vitals enseña cifras y rangos; no diagnostica ni aconseja.</Hint>
+      <Hint>{t("summary.disclaimer")}</Hint>
       <AppVersion />
       {recovery && morning?.score != null && (
-        <Sheet title="Cómo llegas" onClose={() => setRecovery(false)}>
-          <RingFigure share={morning.score / 100} value={String(morning.score)} label={ready?.verdict ?? ""} detail="50 es lo de siempre" />
-          {hrv && <BaselineBar baseline={hrv} label="Variabilidad (VFC)" />}
-          {resting && <BaselineBar baseline={resting} label="Vitals en reposo" />}
-          <Hint>{INFO.readiness}</Hint>
+        <Sheet title={t("today.how_you_start")} onClose={() => setRecovery(false)}>
+          <RingFigure
+            share={morning.score / 100}
+            value={String(morning.score)}
+            label={ready?.verdict ?? ""}
+            detail={t("today.fifty_usual")}
+          />
+          {hrv && <BaselineBar baseline={hrv} label={t("metric.hrv_ms.name")} />}
+          {resting && <BaselineBar baseline={resting} label={t("today.resting_heart")} />}
+          <Hint>{t("info.readiness")}</Hint>
         </Sheet>
       )}
     </Screen>
@@ -256,6 +269,8 @@ export function TodayScreen({ go }: { go?: Go } = {}) {
 }
 
 function BaselineBar({ baseline, label }: { baseline: Baseline; label: string }) {
+  const t = useT();
+  const locale = useLocale();
   return (
     <RangeBar
       label={label}
@@ -264,18 +279,21 @@ function BaselineBar({ baseline, label }: { baseline: Baseline; label: string })
       low={baseline.low}
       high={baseline.high}
       state={rangeState(baseline)}
-      figure={baselineValue(baseline, baseline.value)}
+      figure={baselineValue(baseline, baseline.value, t, locale)}
       detail={
         baseline.low !== null && baseline.high !== null
-          ? `tu normal: ${baselineValue(baseline, baseline.low)} – ${baselineValue(baseline, baseline.high)}`
-          : `aún sin tu normal (${baseline.days} de 14 días)`
+          ? t("today.your_normal", {
+              low: baselineValue(baseline, baseline.low, t, locale),
+              high: baselineValue(baseline, baseline.high, t, locale),
+            })
+          : t("baseline.not_yet", { days: baseline.days })
       }
     />
   );
 }
 
-export function tensionLine(byHour: number[], minutes: number): string {
-  if (minutes <= 0) return "Sin ratos de tensión hoy.";
+export function tensionLine(byHour: number[], minutes: number, t: Translate): string {
+  if (minutes <= 0) return t("tension.none");
   let best = 0;
   let from = 0;
   for (let hour = 0; hour < byHour.length - 1; hour += 1) {
@@ -285,7 +303,7 @@ export function tensionLine(byHour: number[], minutes: number): string {
       from = hour;
     }
   }
-  return `${minutesLabel(minutes)} de tensión, sobre todo de ${from} a ${from + 2}.`;
+  return t("tension.line", { time: minutesLabel(minutes), from, to: from + 2 });
 }
 
 function capital(text: string): string {

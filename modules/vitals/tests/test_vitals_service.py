@@ -66,7 +66,7 @@ async def test_without_a_scope_a_tool_call_never_opens_the_database(bare) -> Non
 
 
 async def test_a_tool_that_does_not_exist_is_a_404(bare) -> None:
-    response = await bare.post("/tools/borrar_todo", json={}, headers={"x-arga-scopes": ""})
+    response = await bare.post("/tools/delete_everything", json={}, headers={"x-arga-scopes": ""})
 
     assert response.status_code == 404
 
@@ -118,7 +118,7 @@ async def publish_and_check(api, schema, person, kernel_app) -> None:
     def down(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/internal/users":
             return httpx.Response(200, json=[{"id": str(person)}])
-        raise httpx.ConnectError("el kernel no contesta", request=request)
+        raise httpx.ConnectError("the kernel does not answer", request=request)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(down)) as client:
         failed = await publisher.run_once(client)

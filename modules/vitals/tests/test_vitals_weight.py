@@ -140,20 +140,20 @@ async def test_a_band_upside_down_is_refused(api) -> None:
 
 
 async def test_another_app_logs_a_weight_through_the_kernel_token_only(api, monkeypatch) -> None:
-    monkeypatch.setenv("MODULE_REGISTRATION_TOKEN", "el-token")
+    monkeypatch.setenv("MODULE_REGISTRATION_TOKEN", "the-token")
     body = {"kg": 81.2, "day": "2026-09-03"}
 
     refused = await api.post("/capabilities/weight.log", json=body)
     unknown = await api.post(
-        "/capabilities/weight.erase", json=body, headers={"x-module-token": "el-token"}
+        "/capabilities/weight.erase", json=body, headers={"x-module-token": "the-token"}
     )
     logged = await api.post(
         "/capabilities/weight.log",
         json=body,
-        headers={"x-module-token": "el-token", "x-arga-module": "training"},
+        headers={"x-module-token": "the-token", "x-arga-module": "training"},
     )
     again = await api.post(
-        "/capabilities/weight.log", json=body, headers={"x-module-token": "el-token"}
+        "/capabilities/weight.log", json=body, headers={"x-module-token": "the-token"}
     )
 
     assert refused.status_code == 401
@@ -171,7 +171,7 @@ async def test_another_app_logs_a_weight_through_the_kernel_token_only(api, monk
     fixed = await api.post(
         "/capabilities/weight.log",
         json={"kg": 80.8, "day": "2026-09-03"},
-        headers={"x-module-token": "el-token"},
+        headers={"x-module-token": "the-token"},
     )
     assert (fixed.json()["id"], fixed.json()["kg"]) == (logged.json()["id"], 80.8)
     found = (await api.get("/weight")).json()
