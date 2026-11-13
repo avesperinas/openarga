@@ -43,9 +43,11 @@ def allowed(name: str) -> bool:
 
 
 def spanish(name: str) -> bool:
+    if (ROOT / name).is_symlink():
+        return False
     try:
         text = (ROOT / name).read_text(encoding="utf-8")
-    except (UnicodeDecodeError, FileNotFoundError):
+    except (UnicodeDecodeError, OSError):
         return False
     if name.endswith("manifest.yaml"):
         text = "\n".join(line for line in text.splitlines() if not MANIFEST_LOCALE_LINE.match(line))
