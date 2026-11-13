@@ -9,6 +9,8 @@ if _worker and _urls:
 
 # Modules' tests were written for an instance in Madrid; each sets its own zone when it cares.
 os.environ.setdefault("OPENARGA_TIMEZONE", "Europe/Madrid")
+# Tests run against an instance whose AI is the fake provider unless they choose another.
+os.environ.setdefault("OPENARGA_AI_PROVIDER", "fake")
 
 _WITH_DATABASE = ("kernel", "modules", "mcp", "tests", "packages/contracts", "packages/testing")
 

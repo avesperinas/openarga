@@ -18,6 +18,8 @@ from arga_contracts.records import Every
 from arga_module.schedule import Schedule
 from arga_tenancy import as_user, kernel_url, users
 from hub import capabilities, catalogue, credentials, notices, sync
+from hub.ai import runs as ai_run
+from hub.ai import tools as ai_tools
 from hub.db import as_module, engine
 
 MODULE = "hub"
@@ -136,6 +138,7 @@ async def serve() -> None:
         async def people() -> list[UUID]:
             return await users(kernel)
 
+        _runs = asyncio.create_task(ai_runs(kernel))
         beat()
         say(f"calendarios: {', '.join(f'{p} ({s.expression})' for p, s in SCHEDULES.items())}")
         now = datetime.now(UTC).replace(second=0, microsecond=0)
@@ -150,6 +153,22 @@ async def serve() -> None:
                 if done:
                     say(f"{now:%Y-%m-%d %H:%M}: {done}")
             await asyncio.sleep(20)
+
+
+AI_EVERY_SECONDS = float(os.environ.get("AI_RUN_EVERY_SECONDS", "15"))
+
+
+async def ai_runs(kernel: httpx.AsyncClient) -> None:
+    async with httpx.AsyncClient(timeout=60.0) as outside:
+        web = ai_tools.Web(outside)
+        while True:
+            try:
+                ran = await ai_run.drain(kernel, outside, web)
+                if ran:
+                    say(f"ai.run: {ran} run(s) finished")
+            except (httpx.HTTPError, SQLAlchemyError) as error:
+                say(f"ai.run waits: {type(error).__name__}")
+            await asyncio.sleep(AI_EVERY_SECONDS)
 
 
 def main() -> int:

@@ -10,6 +10,7 @@ dependencies = [
   "arga-crypto",
   "arga-nutrients",
   "arga-contracts",
+  "arga-mcp",
   "fastapi>=0.115",
   "uvicorn[standard]>=0.32",
   "sqlalchemy[asyncio]>=2.0",
@@ -28,6 +29,7 @@ arga-module = { workspace = true }
 arga-widgets = { workspace = true }
 arga-crypto = { workspace = true }
 arga-contracts = { workspace = true }
+arga-mcp = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]
