@@ -37,8 +37,8 @@ async def refresh(client: httpx.AsyncClient, user: UUID, fresh: bool) -> None:
     if weekly.due(user):
         async with PUBLISHER.as_module() as connection:
             asked = await weekly.ask(connection, datetime.now(UTC))
-        if asked and asked.get("outcome") == "queued":
-            print(f"publisher · weekly agenda asked of the AI ({user})", flush=True)
+        if asked and asked.status in ("queued", "done"):
+            print(f"publisher · weekly agenda {asked.status} by the AI ({user})", flush=True)
     await fichas.refresh(client, engine, MODULE, records.build, RECORDS, user)
     await cifras.refresh(engine, MODULE, metrics.build, METRICS, user)
     await avisos.refresh(client, engine, MODULE, foryou.build, NOTICES, user)

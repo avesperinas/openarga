@@ -191,7 +191,7 @@ async def test_mine_is_only_what_you_saved_or_sent_to_planner(api) -> None:
     assert [one["id"] for one in got.json()["events"]] == [saved, sent]
 
 
-async def test_find_events_and_the_brief_are_tools_for_claude(api, area) -> None:
+async def test_find_events_and_the_brief_are_tools_for_the_ai(api, area) -> None:
     await add(api, found("Synthetic Film Festival", 20, town=area.near.towns[1], highlight=True))
     await api.post("/interests", json={"kind": "mute", "term": "conference"})
 

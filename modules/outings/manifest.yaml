@@ -22,7 +22,7 @@ inlets:
 
 consumes: [hub.run, hub.connection]
 
-uses: [sources.catalogue, sources.plug, sources.unplug, places.search, places.photo, claude.run, trips.idea, notify.sync]
+uses: [sources.catalogue, sources.plug, sources.unplug, places.search, places.photo, ai.run, trips.idea, notify.sync]
 
 notifications:
   - kind: for_you

@@ -143,7 +143,7 @@ async def test_unsharing_keeps_the_photo_someone_else_put(call, people) -> None:
     assert photo.status_code == 200
 
 
-async def test_claude_shares_a_wish_by_the_spaces_name(call, people) -> None:
+async def test_the_ai_shares_a_wish_by_the_spaces_name(call, people) -> None:
     wish = await irati(call)
 
     async def tool(name: str, arguments: dict):
