@@ -23,6 +23,7 @@ import * as React from "react";
 
 import { type Layer, type Source, type SubscriptionMenu, readSubscriptionMenu, searchSource, subscribe, unsubscribe } from "./api";
 import { statusLine } from "./Subscribe";
+import { t } from "./lang";
 
 interface Props {
   onClose: () => void;
@@ -88,25 +89,25 @@ export function SubscriptionsSheet({ onClose, onSubscribed, onUnsubscribed }: Pr
   const groups = listed.map((group) => ({ ...group, sources: menu?.sources.filter((one) => one.group === group.id) ?? [] }));
   const known = new Set(listed.map((one) => one.id));
   const rest = menu?.sources.filter((one) => !known.has(one.group)) ?? [];
-  if (rest.length) groups.push({ id: "rest", title: "Más", sources: rest });
+  if (rest.length) groups.push({ id: "rest", title: t("subs.more"), sources: rest });
 
   return (
-    <Sheet title="Suscripciones" onClose={onClose}>
+    <Sheet title={t("subs.title")} onClose={onClose}>
       <div className="cr-subscribe">
         {error && menu && (
           <p className="cr-error" role="alert">
             {error}
           </p>
         )}
-        {!menu && !error && <Skeleton rows={4} label="Cargando las suscripciones" />}
-        {!menu && error && <ErrorState title="Hub no contesta" detail={error} onRetry={load} />}
+        {!menu && !error && <Skeleton rows={4} label={t("subs.loading")} />}
+        {!menu && error && <ErrorState title={t("subs.hub_down")} detail={error} onRetry={load} />}
         {menu && menu.sources.length === 0 && menu.others.length === 0 && (
           <EmptyState
             icon="globe"
-            title="Nada que suscribir todavía"
-            action={{ label: "Ir a Hub", icon: "chevron-right", onClick: () => window.location.assign("/hub") }}
+            title={t("subs.empty")}
+            action={{ label: t("subs.to_hub"), icon: "chevron-right", onClick: () => window.location.assign("/hub") }}
           >
-            Las fuentes de calendario las ofrece Hub.
+            {t("subs.empty_body")}
           </EmptyState>
         )}
         {groups
@@ -136,7 +137,7 @@ export function SubscriptionsSheet({ onClose, onSubscribed, onUnsubscribed }: Pr
             </List>
           </section>
         )}
-        <Hint>Lo suscrito se actualiza solo y no se edita. Quitar una suscripción no toca tus eventos.</Hint>
+        <Hint>{t("subs.note")}</Hint>
       </div>
     </Sheet>
   );
@@ -177,7 +178,7 @@ function SourceBlock({
           <span className="cr-source-subtitle">{source.subtitle}</span>
         </span>
         <Button size="small" variant="tinted" icon="plus" onClick={onAdd}>
-          Añadir
+          {t("action.add")}
         </Button>
       </div>
       {source.subscribed.length > 0 && (
@@ -189,7 +190,7 @@ function SourceBlock({
               subtitle={statusLine(layer, now)}
               hue={layer.tone}
               tone={layer.subscription?.failing ? "warning" : undefined}
-              action={{ icon: "trash", label: `Quitar ${layer.name}`, onClick: () => onRemove(layer) }}
+              action={{ icon: "trash", label: t("action.remove_named", { name: layer.name }), onClick: () => onRemove(layer) }}
               disabled={busy === layer.id}
             />
           ))}
@@ -206,7 +207,7 @@ function SourceForm({ source, onBack, onSubscribed }: { source: Source; onBack: 
   const [error, setError] = React.useState<string | null>(null);
 
   const inlet = source.inlets?.[0];
-  const settings = inlet?.settings?.length ? inlet.settings : FALLBACK;
+  const settings = inlet?.settings?.length ? inlet.settings : fallback();
   const values = inletValues(settings, chosen, proposedSourceName(source, answers), source.tone);
   const search = React.useCallback(
     (ask: string, query?: string, parent?: string) => searchSource(source.provider, ask, query, parent),
@@ -217,7 +218,7 @@ function SourceForm({ source, onBack, onSubscribed }: { source: Source; onBack: 
     const lacks = sourceMissing(source.asks, answers);
     if (lacks) return setError(lacks);
     const name = String(values.name ?? "").trim();
-    if (!name) return setError("Ponle un nombre.");
+    if (!name) return setError(t("form.no_name"));
     setBusy(true);
     setError(null);
     try {
@@ -230,7 +231,7 @@ function SourceForm({ source, onBack, onSubscribed }: { source: Source; onBack: 
   };
 
   return (
-    <Sheet title={source.title} onClose={onBack} action={{ label: busy ? "Suscribiendo…" : "Suscribirse", onClick: () => void save(), disabled: busy }}>
+    <Sheet title={source.title} onClose={onBack} action={{ label: busy ? t("subs.subscribing") : t("subs.subscribe"), onClick: () => void save(), disabled: busy }}>
       <div className="cr-subscribe">
         <SourceQuestions asks={source.asks} answers={answers} onChange={setAnswers} search={search} onError={setError} />
         <InletSettings settings={settings} values={values} onChange={setChosen} />
@@ -244,7 +245,7 @@ function SourceForm({ source, onBack, onSubscribed }: { source: Source; onBack: 
   );
 }
 
-const FALLBACK = [
-  { key: "name", kind: "text", label: "Nombre de la capa" },
-  { key: "tone", kind: "tone", label: "Tono" },
+const fallback = () => [
+  { key: "name", kind: "text", label: t("subs.layer_name") },
+  { key: "tone", kind: "tone", label: t("field.tone") },
 ];

@@ -3,12 +3,9 @@ import * as React from "react";
 
 import type { Display, Layer, Scope } from "./api";
 import { statusLine } from "./Subscribe";
+import { t } from "./lang";
 
-const SCOPES: Record<Scope, { edit: string; cancel: string }> = {
-  this: { edit: "Solo este", cancel: "Solo este" },
-  following: { edit: "Este y los siguientes", cancel: "Este y los siguientes" },
-  all: { edit: "Todos", cancel: "Todos" },
-};
+const scopeLabel = (scope: Scope) => t(`scope.${scope}`);
 
 export interface ScopeQuestion {
   question: "edit" | "cancel";
@@ -19,9 +16,9 @@ export interface ScopeQuestion {
 export function ScopeDialog({ ask }: { ask: ScopeQuestion }) {
   const close = React.useCallback(() => ask.resolve(null), [ask]);
   return (
-    <Sheet title={ask.question === "edit" ? "Es un evento que se repite" : "¿Cancelar un evento que se repite?"} onClose={close}>
+    <Sheet title={ask.question === "edit" ? t("scope.edit_title") : t("scope.cancel_title")} onClose={close}>
       <p className="cr-sheet-note">
-        {ask.question === "edit" ? "¿A cuáles se aplica el cambio?" : "Lo cancelado deja de verse; no se borra."}
+        {ask.question === "edit" ? t("scope.edit_ask") : t("scope.cancel_note")}
       </p>
       <div className="cr-scope">
         {ask.allowed.map((scope, index) => (
@@ -32,20 +29,20 @@ export function ScopeDialog({ ask }: { ask: ScopeQuestion }) {
             autoFocus={index === 0}
             onClick={() => ask.resolve(scope)}
           >
-            {SCOPES[scope][ask.question]}
+            {scopeLabel(scope)}
           </Button>
         ))}
         <Button block variant="plain" onClick={close}>
-          {ask.question === "edit" ? "No cambiar nada" : "No cancelar"}
+          {ask.question === "edit" ? t("scope.keep") : t("scope.dont_cancel")}
         </Button>
       </div>
     </Sheet>
   );
 }
 
-const DISPLAYS: { value: Display; label: string }[] = [
-  { value: "events", label: "Eventos" },
-  { value: "background", label: "Fondo" },
+const displays = (): { value: Display; label: string }[] => [
+  { value: "events", label: t("display.events") },
+  { value: "background", label: t("display.background") },
 ];
 
 export function LayerSheet({
@@ -71,7 +68,7 @@ export function LayerSheet({
   const offSources = layers.filter((one) => one.id !== layer?.id && one.origin !== "app");
   const save = async () => {
     if (!name.trim()) {
-      setError("Ponle un nombre.");
+      setError(t("form.no_name"));
       return;
     }
     setBusy(true);
@@ -86,12 +83,12 @@ export function LayerSheet({
   };
   return (
     <Sheet
-      title={subscribed ? "Suscripción" : layer?.origin === "app" ? "Capa de una app" : layer ? "Capa" : "Nueva capa"}
+      title={subscribed ? t("layer.subscription") : layer?.origin === "app" ? t("layer.from_app") : layer ? t("layer.layer") : t("layer.new")}
       onClose={onClose}
-      action={{ label: busy ? "Guardando…" : layer ? "Guardar" : "Crear capa", onClick: () => void save(), disabled: busy }}
+      action={{ label: busy ? t("action.saving") : layer ? t("action.save") : t("layer.create"), onClick: () => void save(), disabled: busy }}
     >
-      <TextField label="Nombre" value={name} placeholder="Trabajo, Familia, Deporte…" autoFocus onChange={setName} onSubmit={() => void save()} invalid={!!error} hint={error ?? undefined} />
-      <div className="cr-tones" role="radiogroup" aria-label="Tono">
+      <TextField label={t("field.name")} value={name} placeholder={t("layer.placeholder")} autoFocus onChange={setName} onSubmit={() => void save()} invalid={!!error} hint={error ?? undefined} />
+      <div className="cr-tones" role="radiogroup" aria-label={t("field.tone")}>
         {TONES.map((one) => (
           <button
             key={one.tone}
@@ -107,40 +104,39 @@ export function LayerSheet({
         ))}
       </div>
       <div className="cr-display">
-        <span className="cr-display-label">Se ve como</span>
-        <SegmentedControl label="Se ve como" options={DISPLAYS} value={display} onChange={setDisplay} />
+        <span className="cr-display-label">{t("display.label")}</span>
+        <SegmentedControl label={t("display.label")} options={displays()} value={display} onChange={setDisplay} />
         <p className="cr-sheet-note">
           {display === "background"
-            ? "El marco en el que caen los eventos, como el horario laboral o un viaje: tiñe su tramo y los eventos van encima. No cuenta como ocupado ni sale en lo próximo."
-            : "Cada evento ocupa su hueco en la rejilla."}
+            ? t("display.background_hint")
+            : t("display.events_hint")}
         </p>
       </div>
       {own && offSources.length > 0 && (
         <div className="cr-display">
-          <span className="cr-display-label">Días libres</span>
+          <span className="cr-display-label">{t("daysoff.label")}</span>
           <CheckChips
-            label="Días libres"
+            label={t("daysoff.label")}
             options={offSources.map((one) => ({ value: one.id, label: one.name }))}
             values={daysOffFrom}
             onChange={setDaysOffFrom}
           />
           <p className="cr-sheet-note">
-            Lo que se repite en esta capa no sale los días que estas tienen algo de todo el día: tu jornada, un festivo o
-            unas vacaciones. Lo que pongas a mano ese día sí sale.
+            {t("daysoff.hint")}
           </p>
         </div>
       )}
       {layer?.origin === "app" && (
-        <p className="cr-sheet-note">Se llena sola con lo que tiene fecha en la app. Lo suyo se cambia allí.</p>
+        <p className="cr-sheet-note">{t("layer.app_note")}</p>
       )}
       {subscribed && layer && (
         <div className="cr-subscription-foot">
           <p className="cr-sheet-note" data-failing={layer.subscription?.failing || undefined}>
-            {statusLine(layer, now)}. Lo suscrito se actualiza solo y no se edita.
+            {statusLine(layer, now)}. {t("layer.sub_note")}
           </p>
           {layer.connection_id && (
             <a className="cr-link" href={`/hub/${layer.connection_id}`}>
-              Ver en Hub: pausarla o ver cada pasada. Se quita en Suscripciones
+              {t("layer.hub_link")}
             </a>
           )}
         </div>

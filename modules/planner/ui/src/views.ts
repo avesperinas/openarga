@@ -1,13 +1,14 @@
 import { addDays, dayKey, dayRange, dayStart, formatMonth, isoWeek, mondayOf } from "@openarga/ui";
+import { dateFormat, t } from "./lang";
 
 export type View = "day" | "three" | "week" | "month" | "agenda";
 
 export const VIEWS: { value: View; label: string; short: string; slug: string; key: string }[] = [
-  { value: "day", label: "Día", short: "Día", slug: "day", key: "d" },
-  { value: "three", label: "3 días", short: "3 días", slug: "3days", key: "3" },
-  { value: "week", label: "Semana", short: "Semana", slug: "week", key: "w" },
-  { value: "month", label: "Mes", short: "Mes", slug: "month", key: "m" },
-  { value: "agenda", label: "Agenda", short: "Agenda", slug: "agenda", key: "a" },
+  { value: "day", slug: "day", key: "d", get label() { return t("view.day"); }, get short() { return t("view.day"); } },
+  { value: "three", slug: "3days", key: "3", get label() { return t("view.three"); }, get short() { return t("view.three"); } },
+  { value: "week", slug: "week", key: "w", get label() { return t("view.week"); }, get short() { return t("view.week"); } },
+  { value: "month", slug: "month", key: "m", get label() { return t("view.month"); }, get short() { return t("view.month"); } },
+  { value: "agenda", slug: "agenda", key: "a", get label() { return t("view.agenda"); }, get short() { return t("view.agenda"); } },
 ];
 
 export const ROOT = "/planner";
@@ -86,9 +87,9 @@ export function switchView(place: Place, view: View, today: string): Place {
   return { view, day: place.day };
 }
 
-const monthShort = new Intl.DateTimeFormat("es-ES", { month: "short" });
-const monthLong = new Intl.DateTimeFormat("es-ES", { month: "long" });
-const dayLong = new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long" });
+const monthShort = dateFormat({ month: "short" });
+const monthLong = dateFormat({ month: "long" });
+const dayLong = dateFormat({ weekday: "long", day: "numeric", month: "long" });
 
 const cap = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
@@ -99,7 +100,7 @@ export function titleOf(place: Place): { title: string; week?: number } {
     const date = dayStart(place.day);
     return { title: cap(dayLong.format(date)), week: isoWeek(place.day) };
   }
-  if (place.view === "agenda") return { title: "Agenda" };
+  if (place.view === "agenda") return { title: t("view.agenda") };
   const first = dayStart(days[0]!);
   const last = dayStart(days[days.length - 1]!);
   const week = place.view === "week" ? isoWeek(days[0]!) : undefined;
