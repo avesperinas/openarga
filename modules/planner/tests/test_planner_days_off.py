@@ -102,9 +102,7 @@ async def test_work_does_not_show_on_a_subscribed_holiday(api, kernel) -> None:
 async def test_the_local_ones_go_in_a_layer_of_your_own(api, kernel) -> None:
     holidays = await subscribed_holidays(api, kernel)
     local = await layer(api, "Festivos locales")
-    await event(
-        api, local["id"], "Local test holiday", "2026-10-15", "2026-10-16", all_day=True
-    )
+    await event(api, local["id"], "Local test holiday", "2026-10-15", "2026-10-16", all_day=True)
     work, _ = await workweek(api)
 
     await api.patch(
