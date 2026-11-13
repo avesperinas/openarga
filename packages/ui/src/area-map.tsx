@@ -11,6 +11,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { feature as topoFeature } from "topojson-client";
 
 import { Icon, type IconName } from "./icons";
+import { say } from "./words";
 
 export type Box = [[number, number], [number, number]];
 
@@ -662,7 +663,7 @@ export function AreaMap({
   return (
     <div className="area-map" role="region" aria-label={label} data-compact={compact || undefined}>
       <div ref={container} className="area-map-canvas" />
-      {failed && <p className="area-map-failed">No se ha podido cargar el mapa.</p>}
+      {failed && <p className="area-map-failed">{say("area_map.failed")}</p>}
     </div>
   );
 }
