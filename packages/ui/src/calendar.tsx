@@ -7,8 +7,8 @@ import { Icon, type IconName } from "./icons";
 import { type AgendaEntry, MonthWithEntries, onDay, parseEntries } from "./agenda";
 import type { Layout } from "./sizes";
 import { useWidgetLayout } from "./Widget";
+import { dates } from "./regional";
 
-const LOCALE = "es-ES";
 const WEEK = ["L", "M", "X", "J", "V", "S", "D"];
 
 function monthGrid(reference: Date): { days: number; offset: number } {
@@ -54,10 +54,10 @@ function PlainCalendar({ month, marked = [], today }: WidgetCalendarProps) {
     reference.getFullYear() === now.getFullYear() && reference.getMonth() === now.getMonth();
   const highlighted = today ?? (isCurrentMonth ? now.getDate() : undefined);
 
-  const title = new Intl.DateTimeFormat(LOCALE, { month: "long" }).format(reference);
+  const title = dates({ month: "long" }).format(reference);
 
   if (layout === "tiny") {
-    const weekday = new Intl.DateTimeFormat(LOCALE, { weekday: "short" }).format(now);
+    const weekday = dates({ weekday: "short" }).format(now);
     return (
       <div className="calendar-today">
         <p className="calendar-today-weekday">{weekday}</p>
@@ -67,7 +67,7 @@ function PlainCalendar({ month, marked = [], today }: WidgetCalendarProps) {
   }
 
   if (layout === "narrow" && highlighted !== undefined) {
-    const weekday = new Intl.DateTimeFormat(LOCALE, { weekday: "short" }).format(now);
+    const weekday = dates({ weekday: "short" }).format(now);
     const monday = highlighted - ((offset + highlighted - 1) % 7);
     return (
       <div className="calendar-narrow">
@@ -181,7 +181,7 @@ export function whenLabel(at: Date, now: Date = new Date()): string {
     new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
   const days = Math.round((midnight(at) - midnight(now)) / DAY_MS);
   const allDay = at.getHours() === 0 && at.getMinutes() === 0;
-  const time = new Intl.DateTimeFormat(LOCALE, { hour: "2-digit", minute: "2-digit" }).format(at);
+  const time = dates({ hour: "2-digit", minute: "2-digit" }).format(at);
   const day =
     days === 0
       ? "Hoy"
@@ -190,8 +190,8 @@ export function whenLabel(at: Date, now: Date = new Date()): string {
         : days === -1
           ? "Ayer"
           : days > 1 && days < 7
-            ? new Intl.DateTimeFormat(LOCALE, { weekday: "long" }).format(at)
-            : new Intl.DateTimeFormat(LOCALE, {
+            ? dates({ weekday: "long" }).format(at)
+            : dates({
                 day: "numeric",
                 month: "short",
                 ...(at.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }),
@@ -221,15 +221,15 @@ export function dayLabel(at: Date, now: Date = new Date()): string {
       : days === 1
         ? "Mañana"
         : days > 1 && days < 7
-          ? new Intl.DateTimeFormat(LOCALE, { weekday: "long" }).format(at)
-          : new Intl.DateTimeFormat(LOCALE, { weekday: "short", day: "numeric", month: "short" }).format(at);
+          ? dates({ weekday: "long" }).format(at)
+          : dates({ weekday: "short", day: "numeric", month: "short" }).format(at);
   return day.charAt(0).toUpperCase() + day.slice(1);
 }
 
 const clock = (at: Date): string =>
   at.getHours() === 0 && at.getMinutes() === 0
     ? "Todo el día"
-    : new Intl.DateTimeFormat(LOCALE, { hour: "2-digit", minute: "2-digit" }).format(at);
+    : dates({ hour: "2-digit", minute: "2-digit" }).format(at);
 
 export function WidgetUpNext({ events }: { events: Upcoming[] }) {
   const layout = useWidgetLayout();
@@ -395,8 +395,8 @@ export function MonthCalendar({
   weekLabel,
 }: MonthCalendarProps) {
   const reference = new Date(year, month, 1);
-  const title = new Intl.DateTimeFormat(LOCALE, { month: "long", year: "numeric" }).format(reference);
-  const long = new Intl.DateTimeFormat(LOCALE, { weekday: "long", day: "numeric", month: "long" });
+  const title = dates({ month: "long", year: "numeric" }).format(reference);
+  const long = dates({ weekday: "long", day: "numeric", month: "long" });
 
   return (
     <div className="month" data-labelled={weekLabel ? "" : undefined}>

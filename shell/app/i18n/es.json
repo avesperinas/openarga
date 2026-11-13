@@ -1,0 +1,21 @@
+{
+  "region.title": "Idioma y región",
+  "region.language": "Idioma",
+  "region.timezone": "Zona horaria",
+  "region.currency": "Moneda",
+  "region.country": "País",
+  "region.country.none": "Sin elegir",
+  "region.region": "Región",
+  "region.region.hint": "Código ISO 3166-2, por ejemplo {example}. Los festivos la siguen.",
+  "region.area": "Zona de casa",
+  "region.area.hint": "El perfil de zona que usa Planes, por ejemplo pamplona o munich.",
+  "region.save": "Guardar",
+  "region.saving": "Guardando…",
+  "region.saved": "Guardado. La página se recarga para verlo en todas partes.",
+  "region.failed": "No se ha podido guardar. Prueba otra vez en un momento.",
+  "region.loading": "Cargando tus preferencias…",
+  "region.unavailable": "Ahora mismo no se pueden leer tus preferencias.",
+  "region.invalid.region": "La región es un código como {example} dentro del país elegido.",
+  "region.invalid.area": "Solo minúsculas, números y guiones.",
+  "region.preview": "Fechas, horas e importes se verán así: {sample}"
+}

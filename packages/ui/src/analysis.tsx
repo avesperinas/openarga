@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { locale } from "./regional";
 
 export const SERIES_COLORS = 5;
 export const OTHERS = "__others__";
@@ -111,7 +112,7 @@ export function SeriesChart({
   labels,
   series,
   kind = "bars",
-  format = (value) => value.toLocaleString("es-ES"),
+  format = (value) => value.toLocaleString(locale()),
   label,
   order = [],
   axisFormat,

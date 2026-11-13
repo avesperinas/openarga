@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { InfoButton } from "./health";
+import { locale } from "./regional";
 
 export type Hue = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type MoneyTone = "positive" | "negative" | "neutral";
@@ -200,7 +201,7 @@ export function GainChart({
   value,
   contributed,
   label,
-  format = (amount) => amount.toLocaleString("es-ES"),
+  format = (amount) => amount.toLocaleString(locale()),
 }: {
   labels: string[];
   value: (number | null)[];

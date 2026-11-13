@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { locale } from "./regional";
 
 export interface FlowNode {
   id: string;
@@ -119,7 +120,7 @@ export function Sankey({
   nodes,
   links,
   label,
-  format = (value) => value.toLocaleString("es-ES"),
+  format = (value) => value.toLocaleString(locale()),
   rowHeight = ROW,
   vertical = false,
   share,

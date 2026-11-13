@@ -79,7 +79,7 @@ export function TabBar({ modules }: { modules: ModuleSummary[] }) {
 
       {open === "settings" && desktop && (
         <Overlay label="Ajustes" onClose={() => setOpen(null)}>
-          <Settings preferences={desktop.preferences} onChange={desktop.change} modules={modules} />
+          <Settings preferences={desktop.preferences} onChange={desktop.change} modules={modules} locale={desktop.person.locale} />
         </Overlay>
       )}
 

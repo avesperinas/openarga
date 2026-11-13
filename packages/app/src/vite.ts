@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import react from "@vitejs/plugin-react";
 import { type Plugin, type Rollup, type UserConfig, mergeConfig } from "vite";
@@ -101,6 +102,10 @@ export function appTestConfig({ id, dir }: Pick<AppOptions, "id" | "dir">) {
   return {
     esbuild: { jsx: "automatic" as const },
     define: iconDefine(id, dir),
-    test: { environment: "node" as const, globals: true },
+    test: {
+      environment: "node" as const,
+      globals: true,
+      setupFiles: [fileURLToPath(new URL("./test-setup.ts", import.meta.url))],
+    },
   };
 }

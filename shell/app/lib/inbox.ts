@@ -1,3 +1,5 @@
+import { dates, regional } from "@openarga/ui";
+
 import { request } from "./session";
 
 export interface Notice {
@@ -18,7 +20,6 @@ export interface Day {
 }
 
 const BASE = "/api/kernel/notifications/inbox";
-const LOCALE = "es-ES";
 
 export async function readInbox(): Promise<Notice[]> {
   const response = await request(BASE, { headers: { accept: "application/json" } });
@@ -39,7 +40,7 @@ const dayKey = (date: Date) => `${date.getFullYear()}-${date.getMonth() + 1}-${d
 export function byDay(notices: Notice[], now: Date = new Date()): Day[] {
   const today = dayKey(now);
   const yesterday = dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
-  const long = new Intl.DateTimeFormat(LOCALE, { weekday: "long", day: "numeric", month: "long" });
+  const long = dates({ weekday: "long", day: "numeric", month: "long" });
   const days: Day[] = [];
   for (const notice of [...notices].sort((a, b) => b.sent_at.localeCompare(a.sent_at))) {
     const at = new Date(notice.sent_at);
@@ -47,7 +48,7 @@ export function byDay(notices: Notice[], now: Date = new Date()): Day[] {
     let day = days.at(-1);
     if (!day || day.key !== key) {
       const label = key === today ? "Hoy" : key === yesterday ? "Ayer" : long.format(at);
-      day = { key, label: label.charAt(0).toLocaleUpperCase(LOCALE) + label.slice(1), notices: [] };
+      day = { key, label: label.charAt(0).toLocaleUpperCase(regional().locale) + label.slice(1), notices: [] };
       days.push(day);
     }
     day.notices.push(notice);
@@ -56,4 +57,4 @@ export function byDay(notices: Notice[], now: Date = new Date()): Day[] {
 }
 
 export const timeOf = (iso: string) =>
-  new Intl.DateTimeFormat(LOCALE, { hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+  dates({ hour: "2-digit", minute: "2-digit" }).format(new Date(iso));

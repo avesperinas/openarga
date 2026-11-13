@@ -4,8 +4,8 @@ import * as React from "react";
 
 import { dayLabel, isoDay } from "./calendar";
 import { useWidgetLayout } from "./Widget";
+import { dates } from "./regional";
 
-const LOCALE = "es-ES";
 const DAY_MS = 86_400_000;
 
 export interface AgendaEntry {
@@ -56,7 +56,7 @@ export function onDay(entries: Parsed[], day: Date): Parsed[] {
 }
 
 const clock = (date: Date) =>
-  new Intl.DateTimeFormat(LOCALE, { hour: "2-digit", minute: "2-digit" }).format(date);
+  dates({ hour: "2-digit", minute: "2-digit" }).format(date);
 
 export function untilLabel(from: Date, to: Date, now: Date = new Date()): string {
   if (from.getTime() <= now.getTime()) return to.getTime() > now.getTime() ? "Ahora" : "Terminado";
@@ -286,7 +286,7 @@ export function WidgetWeek({ entries, now: given }: { entries: AgendaEntry[]; no
     entries: onDay(all, day),
   }));
   const weekday = (day: Date) =>
-    new Intl.DateTimeFormat(LOCALE, { weekday: "short" }).format(day).replace(".", "");
+    dates({ weekday: "short" }).format(day).replace(".", "");
 
   if (layout === "tiny") {
     const count = days.reduce((total, day) => total + day.entries.length, 0);
@@ -375,7 +375,7 @@ export function MonthWithEntries({
   const length = new Date(reference.getFullYear(), reference.getMonth() + 1, 0).getDate();
   const weeks = Math.ceil((offset + length) / 7);
   const cells = Array.from({ length: weeks * 7 }, (_, index) => addDays(first, index - offset));
-  const title = new Intl.DateTimeFormat(LOCALE, { month: "long" }).format(reference);
+  const title = dates({ month: "long" }).format(reference);
 
   const grid = (
     <div className="month-entries">

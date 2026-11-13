@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 
 import "./shell.css";
 import { FIRST_PAINT } from "./lib/preferences";
+import { fromHeaders } from "./lib/regional";
 
 export const metadata: Metadata = {
   title: "arga",
@@ -20,9 +22,10 @@ export const viewport: Viewport = {
   width: "device-width",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const person = fromHeaders(await headers());
   return (
-    <html lang="es">
+    <html lang={person.locale}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: FIRST_PAINT }} />
       </head>

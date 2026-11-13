@@ -1,9 +1,10 @@
 "use client";
 
-import { ConfirmDelete, Hint, Icon, Section, WallpaperLayer } from "@openarga/ui";
+import { ConfirmDelete, Hint, Icon, Section, WallpaperLayer, configureRegional, regionalFrom } from "@openarga/ui";
 import * as React from "react";
 
 import type { ModuleSummary } from "../lib/kernel";
+import { type PersonPreferences, instanceDefaults } from "../lib/regional";
 import { type UiPreferences, apply, remember } from "../lib/preferences";
 import { request } from "../lib/session";
 import {
@@ -20,6 +21,7 @@ const SAVE_DEBOUNCE = 400;
 const Context = React.createContext<{
   current: Wallpaper;
   preferences: UiPreferences;
+  person: PersonPreferences;
   choose: (id: string) => void;
   change: (next: Partial<UiPreferences>) => void;
   mine: Wallpaper[];
@@ -36,15 +38,18 @@ export const useDesktop = () => React.useContext(Context);
 
 export function Desktop({
   initial,
+  person = instanceDefaults({}),
   modules,
   wallpapers,
   children,
 }: {
   initial: UiPreferences;
+  person?: PersonPreferences;
   modules: ModuleSummary[];
   wallpapers: Wallpaper[];
   children: React.ReactNode;
 }) {
+  configureRegional(regionalFrom(person));
   const [preferences, setPreferences] = React.useState(initial);
   const [mine, setMine] = React.useState(wallpapers);
   const [failed, setFailed] = React.useState<string | null>(null);
@@ -140,6 +145,7 @@ export function Desktop({
       value={{
         current,
         preferences,
+        person,
         choose,
         change,
         mine,

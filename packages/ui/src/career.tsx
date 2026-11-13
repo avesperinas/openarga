@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { locale } from "./regional";
 
 export type CareerHue = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
@@ -117,7 +118,7 @@ export function PeriodBars({
   periods,
   groups,
   label,
-  format = (value) => value.toLocaleString("es-ES"),
+  format = (value) => value.toLocaleString(locale()),
   axisFormat,
   spans,
   onSpan,
@@ -352,7 +353,7 @@ export function waterfallBars(steps: WaterfallStep[]): { step: WaterfallStep; fr
 export function Waterfall({
   steps,
   label,
-  format = (value) => value.toLocaleString("es-ES"),
+  format = (value) => value.toLocaleString(locale()),
 }: {
   steps: WaterfallStep[];
   label: string;

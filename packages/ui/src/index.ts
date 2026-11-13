@@ -499,3 +499,16 @@ export type {
 } from "./knowing";
 export { I18nProvider, LOCALES, SOURCE_LOCALE, createT, missingKeys, resolveLocale, useLocale, useT } from "./i18n";
 export type { Catalog, Catalogs, Locale, Translate, Vars } from "./i18n";
+
+export {
+  type Regional,
+  type RegionalPreferences,
+  configureRegional,
+  dates,
+  intlLocale,
+  numbers,
+  onRegionalChange,
+  regional,
+  regionalFrom,
+  zonedDates,
+} from "./regional";

@@ -5,8 +5,8 @@ import * as React from "react";
 import { dayLabel } from "./calendar";
 import { Icon } from "./icons";
 import { type Hue, useWidgetLayout, useWidgetSize } from "./Widget";
+import { dates } from "./regional";
 
-const LOCALE = "es-ES";
 const DAY_MS = 86_400_000;
 
 export interface TaskData {
@@ -43,7 +43,7 @@ export function dueLabel(due: string, now: Date = new Date()): string {
   if (days === 0) {
     return dateOnly
       ? "Hoy"
-      : new Intl.DateTimeFormat(LOCALE, { hour: "2-digit", minute: "2-digit" }).format(at);
+      : dates({ hour: "2-digit", minute: "2-digit" }).format(at);
   }
   return dayLabel(at, now);
 }

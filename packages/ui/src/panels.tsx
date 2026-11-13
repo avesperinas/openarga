@@ -6,6 +6,7 @@ import type { AgendaEntry } from "./agenda";
 import { WidgetCalendar } from "./calendar";
 import { SplitBar } from "./nutrition";
 import { Treemap } from "./money";
+import { currency, locale, numbers } from "./regional";
 
 export type PanelHue = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type PanelTone = "positive" | "warning" | "negative" | "neutral";
@@ -89,20 +90,22 @@ export interface PanelHeadline {
 
 export type PanelAct = (widget: string, verb: "complete" | "reopen" | "add", id: string) => Promise<void> | void;
 
-const LOCALE = "es-ES";
-const whole = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0, useGrouping: "always" as unknown as boolean });
-const oneDecimal = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 });
+const whole = () => numbers({ maximumFractionDigits: 0, useGrouping: "always" as unknown as boolean });
+const oneDecimal = () => numbers({ maximumFractionDigits: 1 });
 
 export function panelValue(value: number, unit: PanelUnit = "number"): string {
-  if (unit === "money") return `${whole.format(value)} €`;
-  if (unit === "kg") return `${oneDecimal.format(value)} kg`;
-  if (unit === "percent") return `${whole.format(value)} %`;
+  if (unit === "money")
+    return numbers({ style: "currency", currency: currency(), maximumFractionDigits: 0, minimumFractionDigits: 0, useGrouping: "always" as unknown as boolean })
+      .format(value)
+      .replace(/\u00a0/g, " ");
+  if (unit === "kg") return `${oneDecimal().format(value)} kg`;
+  if (unit === "percent") return `${whole().format(value)} %`;
   if (unit === "hours") {
     const hours = Math.floor(value);
     const minutes = Math.round((value - hours) * 60);
     return minutes ? `${hours} h ${minutes} min` : `${hours} h`;
   }
-  return Math.abs(value) >= 100 ? whole.format(value) : oneDecimal.format(value);
+  return Math.abs(value) >= 100 ? whole().format(value) : oneDecimal().format(value);
 }
 
 export function Emphasised({ text, emphasis }: { text: string; emphasis?: string }) {
@@ -225,7 +228,7 @@ function TimelineBlock({ items, now }: { items: { start: string; end: string; ti
   const current = now.getHours() + now.getMinutes() / 60;
   const ticks = [startHour, ...[12, 16, 20].filter((hour) => hour > startHour), endHour];
   return (
-    <figure className="panel-timeline" aria-label={items.map((one) => `${one.title}, ${new Date(one.start).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit" })}`).join("; ") || "Nada hoy"}>
+    <figure className="panel-timeline" aria-label={items.map((one) => `${one.title}, ${new Date(one.start).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" })}`).join("; ") || "Nada hoy"}>
       <div className="panel-timeline-track" aria-hidden="true">
         <span className="panel-timeline-past" style={{ width: `${Math.min(100, Math.max(0, at(current)))}%` }} />
         {items.map((one) => (

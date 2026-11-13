@@ -709,6 +709,10 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(jsdom@30.1.0)(supports-color@7.2.0)
 
   packages/app:
+    dependencies:
+      '@openarga/ui':
+        specifier: workspace:*
+        version: link:../ui
     devDependencies:
       '@types/node':
         specifier: ^22.10.0
