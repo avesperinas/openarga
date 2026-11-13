@@ -187,7 +187,7 @@ describe("la estantería", () => {
 describe("las estadísticas", () => {
   it("un año sin libros lleva a la estantería", async () => {
     replies["GET /api/library/stats"] = () => EMPTY_YEAR;
-    await open("/library/estadisticas");
+    await open("/library/stats");
     expect(host.textContent).toContain("Nada leído en 2026");
 
     act(() => button("Ir a la estantería")!.click());
@@ -197,7 +197,7 @@ describe("las estadísticas", () => {
 
   it("si fallan, reintentar", async () => {
     replies["GET /api/library/stats"] = () => json({ detail: "no" }, 500);
-    await open("/library/estadisticas");
+    await open("/library/stats");
     expect(host.textContent).toContain("No se han podido leer las cifras");
 
     replies["GET /api/library/stats"] = () => YEAR;
@@ -207,7 +207,7 @@ describe("las estadísticas", () => {
   });
 
   it("axe-core sin errores graves", async () => {
-    await open("/library/estadisticas");
+    await open("/library/stats");
     expect(host.textContent).toContain("Páginas por mes");
     expect(await serious()).toEqual([]);
   });
@@ -217,7 +217,7 @@ describe("la ficha", () => {
   it("si no se puede abrir, reintentar", async () => {
     replies["GET /api/library/books"] = () => [];
     replies[`GET /api/library/books/${ID}`] = () => json({ detail: "no" }, 500);
-    await open(`/library/libro/${ID}`);
+    await open(`/library/books/${ID}`);
     expect(host.textContent).toContain("No se ha podido abrir el libro");
 
     replies[`GET /api/library/books/${ID}`] = () => BOOK;
@@ -227,7 +227,7 @@ describe("la ficha", () => {
   });
 
   it("axe-core sin errores graves", async () => {
-    await open(`/library/libro/${ID}`);
+    await open(`/library/books/${ID}`);
     expect(await serious()).toEqual([]);
   });
 });

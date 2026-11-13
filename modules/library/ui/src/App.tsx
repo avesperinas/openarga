@@ -14,17 +14,17 @@ export type Route = { tab: "shelf" } | { tab: "stats" } | { tab: "settings" } | 
 
 export function route(pathname: string): Route {
   const path = pathname.replace(/\/+$/, "");
-  if (path === `${ROOT}/estadisticas`) return { tab: "stats" };
-  if (path === `${ROOT}/ajustes`) return { tab: "settings" };
-  const book = new RegExp(`^${ROOT}/libro/([0-9a-f-]{36})$`).exec(path);
+  if (path === `${ROOT}/stats`) return { tab: "stats" };
+  if (path === `${ROOT}/settings`) return { tab: "settings" };
+  const book = new RegExp(`^${ROOT}/books/([0-9a-f-]{36})$`).exec(path);
   if (book) return { tab: "book", id: book[1]! };
   return { tab: "shelf" };
 }
 
 export function pathOf(to: Route): string {
-  if (to.tab === "stats") return `${ROOT}/estadisticas`;
-  if (to.tab === "settings") return `${ROOT}/ajustes`;
-  if (to.tab === "book") return `${ROOT}/libro/${to.id}`;
+  if (to.tab === "stats") return `${ROOT}/stats`;
+  if (to.tab === "settings") return `${ROOT}/settings`;
+  if (to.tab === "book") return `${ROOT}/books/${to.id}`;
   return `${ROOT}/`;
 }
 

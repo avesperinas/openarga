@@ -31,64 +31,65 @@ tools:
   - name: find_books
     scope: library:read
     description: >
-      Busca en la biblioteca por título o autor, temática, estado o año de lectura. Un libro es una
-      lectura: leído dos veces son dos, cada una con su `book_id`, sus fechas y su valoración.
-      Estados: want (quiero leerlo), reading, read, abandoned. Lo que se está leyendo trae
-      `days_so_far`, los días que lleva contando el de inicio.
+      Searches the library by title or author, genre, status or reading year. A book is a reading:
+      read twice is two, each with its `book_id`, its dates and its rating. Statuses: want (want
+      to read it), reading, read, abandoned. What is being read carries `days_so_far`, the days so
+      far counting the first.
   - name: get_currently_reading
     scope: library:read
     description: >
-      Lo que se está leyendo ahora: desde cuándo, cuántos días lleva y cuántas páginas tiene.
+      What is being read now: since when, how many days so far and how many pages it has.
   - name: get_reading_stats
     scope: library:read
     description: >
-      Lo leído en un año, con las mismas cifras que la app: libros y páginas de lo terminado ese
-      año, objetivo, valoración media, páginas al día (una estimación: las páginas de cada libro
-      repartidas entre su inicio y su fin), temáticas, autores, formatos, idiomas y lo más largo y
-      lo más rápido. Con `group_by`, libros, páginas y valoración media por año, mes, temática,
-      autor o formato.
+      What was read in a year, with the same figures as the app: books and pages of what was
+      finished that year, goal, average rating, pages per day (an estimate: each book's pages
+      spread between its start and its end), genres, authors, formats, languages, and the longest
+      and the quickest. With `group_by`, books, pages and average rating by year, month, genre,
+      author or format.
   - name: add_book
     scope: library:write
     description: >
-      Añade un libro a la biblioteca. Con el ISBN, Library trae del catálogo sus datos y su
-      portada; sin él, guarda el título y el autor sin resolver y la edición se elige en la app.
-      No busques el libro en internet para esto: da el ISBN si lo tienes, o el título y el autor.
-      Las fechas van con el estado: leyendo lleva inicio, leído lleva inicio y fin.
+      Adds a book to the library. With the ISBN, Library brings its details and cover from the
+      catalog; without it, it saves the title and author unresolved and the edition is chosen in
+      the app. Do not look the book up on the internet for this: give the ISBN if you have it, or
+      the title and the author. Dates go with the status: reading has a start, read has a start
+      and an end.
   - name: start_reading
     scope: library:write
-    description: Marca un libro como empezado en una fecha, hoy si no se dice.
+    description: Marks a book as started on a date, today if none is given.
   - name: finish_reading
     scope: library:write
     description: >
-      Marca un libro como terminado en una fecha, hoy si no se dice, con su valoración si se da.
-      Hace falta que tenga fecha de inicio.
+      Marks a book as finished on a date, today if none is given, with its rating if one is given.
+      It needs a start date.
   - name: rate_book
     scope: library:write
-    description: Pone o cambia la valoración de un libro, de 0 a 5 de medio en medio punto.
+    description: Sets or changes a book's rating, from 0 to 5 in half points.
 
 ui:
   widgets:
     - id: reading
-      title: Leyendo
+      title: Reading
       kind: list
       sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/library/widgets/reading
       refresh: 900
       link: /library
     - id: goal
-      title: Objetivo del año
+      title: Goal of the year
       kind: ring
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/library/widgets/goal
       refresh: 900
-      link: /library/estadisticas
+      link: /library/stats
     - id: pages
-      title: Páginas por mes
+      title: Pages per month
       kind: bars
       sizes: ["2x2", "2x1", "4x1", "4x2", "4x4"]
       endpoint: /api/library/widgets/pages
       refresh: 900
-      link: /library/estadisticas
+      link: /library/stats
   view: /library
   hue: 5
   family: wellbeing

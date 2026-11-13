@@ -33,8 +33,8 @@ async def test_the_genres_are_the_fixed_list(bare) -> None:
     genres = (await bare.get("/genres")).json()
 
     assert len(genres) == 11
-    assert genres[0] == {"id": "novel", "name": "Novela"}
-    assert genres[-1] == {"id": "other", "name": "Otros"}
+    assert genres[0] == {"id": "novel", "name": "Novel"}
+    assert genres[-1] == {"id": "other", "name": "Other"}
 
 
 async def test_a_finished_book_reaches_the_log_once_with_its_owner(
@@ -70,7 +70,7 @@ async def test_a_finished_book_reaches_the_log_once_with_its_owner(
 
 
 async def publish_and_check(api, schema, person, kernel_app) -> None:
-    added = await add(api, "Cien años de soledad", status="read", pages=471)
+    added = await add(api, "A hundred years of synthetic", status="read", pages=471)
     await api.put(f"/books/{added['id']}", json=reading_of(await read_book(api, added["id"])))
 
     def down(request: httpx.Request) -> httpx.Response:

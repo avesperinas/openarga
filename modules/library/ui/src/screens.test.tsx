@@ -36,10 +36,10 @@ describe("las direcciones", () => {
   it("cada pantalla tiene la suya y vuelve a ella", () => {
     const id = "00000000-0000-4000-8000-000000000001";
     expect(route("/library/")).toEqual({ tab: "shelf" });
-    expect(route("/library/estadisticas")).toEqual({ tab: "stats" });
-    expect(route(`/library/libro/${id}`)).toEqual({ tab: "book", id });
-    expect(route("/library/libro/otra-cosa")).toEqual({ tab: "shelf" });
-    expect(pathOf({ tab: "book", id })).toBe(`/library/libro/${id}`);
+    expect(route("/library/stats")).toEqual({ tab: "stats" });
+    expect(route(`/library/books/${id}`)).toEqual({ tab: "book", id });
+    expect(route("/library/books/otra-cosa")).toEqual({ tab: "shelf" });
+    expect(pathOf({ tab: "book", id })).toBe(`/library/books/${id}`);
   });
 });
 

@@ -8,21 +8,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from library.library import GENRES, today
+from library.library import genre_names, today
+from library.words import say
 
-FORMATS = {"paper": "Papel", "ebook": "Ebook", "audio": "Audio"}
-LANGUAGES = {
-    "es": "Español",
-    "en": "Inglés",
-    "eu": "Euskera",
-    "ca": "Catalán",
-    "gl": "Gallego",
-    "fr": "Francés",
-    "de": "Alemán",
-    "it": "Italiano",
-    "pt": "Portugués",
-}
-MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic")
+FORMATS = ("paper", "ebook", "audio")
+LANGUAGES = ("es", "en", "eu", "ca", "gl", "fr", "de", "it", "pt")
+
+
+def _names(prefix: str, keys: tuple[str, ...]) -> dict[str, str]:
+    return {key: say(f"{prefix}.{key}") for key in keys}
+
 
 READ = text("""
     select r.id, r.started_on, r.finished_on, r.rating, r.format, r.genre,
@@ -126,7 +121,7 @@ async def year_stats(connection: AsyncConnection, year: int | None = None) -> Ye
     goal = await connection.scalar(GOAL, {"year": year})
 
     months = [
-        Month(month=index + 1, label=label, books=0, pages=0) for index, label in enumerate(MONTHS)
+        Month(month=index, label=say(f"month.{index}"), books=0, pages=0) for index in range(1, 13)
     ]
     genres: dict[str, list] = defaultdict(list)
     formats: dict[str, list] = defaultdict(list)
@@ -163,9 +158,9 @@ async def year_stats(connection: AsyncConnection, year: int | None = None) -> Ye
         pages_per_day=round(sum(days.values()) / max(elapsed, 1), 1) if elapsed > 0 else 0.0,
         months=months,
         days=days,
-        genres=_shares(genres, GENRES),
-        formats=_shares(formats, FORMATS),
-        languages=_shares(languages, {**LANGUAGES, "?": "Sin idioma"}),
+        genres=_shares(genres, genre_names()),
+        formats=_shares(formats, _names("format", FORMATS)),
+        languages=_shares(languages, {**_names("language", LANGUAGES), "?": say("language.none")}),
         authors=_shares(authors)[:10],
         ratings={key: ratings[key] for key in sorted(ratings, key=float)},
         longest=_highlight(max(with_pages, key=lambda row: row.pages)) if with_pages else None,

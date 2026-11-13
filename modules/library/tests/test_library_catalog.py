@@ -8,15 +8,15 @@ WORK = {
     "docs": [
         {
             "key": "/works/OL1W",
-            "title": "Un libro sintético",
-            "author_name": ["Autora Sintética"],
+            "title": "A synthetic book",
+            "author_name": ["Synthetic Author"],
             "number_of_pages_median": 432,
             "subject": ["Fiction", "Magic realism"],
             "editions": {
                 "docs": [
                     {
                         "key": "/books/OL2M",
-                        "title": "Un libro sintético",
+                        "title": "A synthetic book",
                         "isbn": ["9788420471839"],
                         "language": ["spa"],
                         "publish_year": [2007],
@@ -79,7 +79,7 @@ async def test_a_scanned_isbn_is_added_with_cover_pages_and_a_proposed_genre(api
     assert cover.content == JPEG
     assert cover.headers["content-type"] == "image/jpeg"
 
-    again = (await api.get("/catalog/search", params={"q": "libro"})).json()
+    again = (await api.get("/catalog/search", params={"q": "book"})).json()
     assert [f["source"] for f in again["failed"]] == ["openlibrary", "google_books"]
 
 
@@ -88,14 +88,14 @@ async def test_reading_it_again_does_not_fetch_it_again(api, hub) -> None:
     hub.answer(library)
     [candidate] = [
         c
-        for c in (await api.get("/catalog/search", params={"q": "libro"})).json()["candidates"]
+        for c in (await api.get("/catalog/search", params={"q": "book"})).json()["candidates"]
         if c["source"] == "openlibrary"
     ]
     first = (
         await api.post("/books/catalog", json={"candidate": candidate, "reading": READ})
     ).json()
 
-    found = (await api.get("/catalog/search", params={"q": "libro"})).json()["candidates"][0]
+    found = (await api.get("/catalog/search", params={"q": "book"})).json()["candidates"][0]
     second = await api.post(
         "/books/catalog", json={"candidate": candidate, "reading": {"status": "want"}}
     )
@@ -114,7 +114,7 @@ async def test_without_a_cover_the_book_is_saved_anyway(api, hub) -> None:
     hub.answer(no_cover)
     [candidate] = [
         c
-        for c in (await api.get("/catalog/search", params={"q": "libro"})).json()["candidates"]
+        for c in (await api.get("/catalog/search", params={"q": "book"})).json()["candidates"]
         if c["source"] == "openlibrary"
     ]
 
@@ -132,7 +132,7 @@ async def test_with_the_hub_down_both_sources_say_so(api, schema) -> None:
 
     app.state.client = httpx.AsyncClient(transport=httpx.MockTransport(down))
     try:
-        found = (await api.get("/catalog/search", params={"q": "libro"})).json()
+        found = (await api.get("/catalog/search", params={"q": "book"})).json()
     finally:
         await app.state.client.aclose()
 

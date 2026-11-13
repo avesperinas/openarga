@@ -1,7 +1,7 @@
 [project]
 name = "library"
 version = "0.1.0"
-description = "Módulo Library de OpenArga"
+description = "OpenArga Library module"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "arga-tenancy",

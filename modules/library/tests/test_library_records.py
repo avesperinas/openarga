@@ -20,7 +20,7 @@ async def add(api, title: str, reading: dict, **edition) -> dict:
     response = await api.post(
         "/books",
         json={
-            "edition": {"title": title, "authors": ["Autora Sintética"], **edition},
+            "edition": {"title": title, "authors": ["Synthetic Author"], **edition},
             "reading": {"genre": "novel", **reading},
         },
     )
@@ -34,61 +34,58 @@ async def built() -> list[dict]:
         return await records.build(connection)
 
 
-async def test_each_book_is_a_ficha_and_its_days_go_to_the_diary(api) -> None:
+async def test_each_book_is_a_record_and_its_days_go_to_the_diary(api) -> None:
     read = await add(
         api,
-        "Un libro sintético",
+        "A synthetic book",
         {
             "status": "read",
             "started_on": "2026-08-01",
             "finished_on": "2026-08-20",
             "rating": 4.5,
-            "note": "Me gustó el final.",
+            "note": "I liked the ending.",
         },
         pages=320,
         year=2001,
     )
-    other = await add(api, "Otro sintético", {"status": "reading", "started_on": "2026-08-20"})
-    await add(api, "Pendiente", {"status": "want"})
+    other = await add(api, "Another synthetic", {"status": "reading", "started_on": "2026-08-20"})
+    await add(api, "Pending", {"status": "want"})
 
     found = {one["id"]: one for one in await built()}
 
-    ficha = found[f"book:{read['id']}"]
-    assert ficha == contracts.record(**ficha)
-    assert ficha["folder"] == "Libros" and ficha["kind"] == "Libro"
-    assert ficha["href"] == f"/library/libro/{read['id']}"
-    assert ficha["properties"] == {
-        "autores": ["Autora Sintética"],
-        "estado": "leído",
-        "genero": "novela",
-        "formato": "papel",
-        "valoracion": 4.5,
-        "empezado": "2026-08-01",
-        "terminado": "2026-08-20",
-        "dias": 20,
-        "paginas": 320,
-        "anio": 2001,
+    record = found[f"book:{read['id']}"]
+    assert record == contracts.record(**record)
+    assert record["folder"] == "Books" and record["kind"] == "Book"
+    assert record["href"] == f"/library/books/{read['id']}"
+    assert record["properties"] == {
+        "authors": ["Synthetic Author"],
+        "status": "read",
+        "genre": "novel",
+        "format": "paper",
+        "rating": 4.5,
+        "started": "2026-08-01",
+        "finished": "2026-08-20",
+        "days": 20,
+        "pages": 320,
+        "year": 2001,
     }
-    assert ficha["body"].startswith("**Autora Sintética** · 2001 · 320 páginas · papel · Novela")
-    assert (
-        "Leído del 1 de agosto de 2026 al 20 de agosto de 2026, en 20 días. ★★★★½ (4,5)"
-        in (ficha["body"])
-    )
-    assert "## Nota\n\nMe gustó el final." in ficha["body"]
+    assert record["body"].startswith("**Synthetic Author** · 2001 · 320 pages · Paper · Novel")
+    assert "Read from 2026-08-01 to 2026-08-20, in 20 days. ★★★★½ (4,5)" in (record["body"])
+    assert "## Note\n\nI liked the ending." in record["body"]
 
     day = found["day:2026-08-20"]
     assert day["day"] == "2026-08-20"
     assert day["body"] == (
-        f"- Empezaste [[library:book:{other['id']}|Otro sintético]]\n"
-        f"- Terminaste [[library:book:{read['id']}|Un libro sintético]] · ★★★★½ (4,5)"
+        f"- You finished [[library:book:{read['id']}|A synthetic book]] · ★★★★½ (4,5)\n"
+        f"- You started [[library:book:{other['id']}|Another synthetic]]"
     )
     assert "day:2026-08-01" in found
-    pending = next(one for one in found.values() if one["title"] == "Pendiente")
-    assert pending["properties"]["estado"] == "quiero leer"
+    pending = next(one for one in found.values() if one["title"] == "Pending")
+    assert pending["properties"]["status"] == "want to read"
 
 
 async def test_what_changed_is_queued_once(api) -> None:
-    await add(api, "Uno", {"status": "want"})
+    await add(api, "One", {"status": "want"})
     async with engine().begin() as connection:
         await connection.execute(text('set local role "mod_library"'))
         first = await write.publish(connection, "library", await records.build(connection))
@@ -139,7 +136,7 @@ async def test_library_the_kernel_and_notebook_put_a_book_in_the_notes(
     to_kernel, notes = notebook
     read = await add(
         api,
-        "Un libro sintético",
+        "A synthetic book",
         {"status": "read", "started_on": "2026-08-01", "finished_on": "2026-08-20"},
     )
 
@@ -155,7 +152,7 @@ async def test_library_the_kernel_and_notebook_put_a_book_in_the_notes(
     await worker()
 
     found = (
-        await notes.get("/notes/resolve", params={"target": "Books/Libros/Un libro sintético"})
+        await notes.get("/notes/resolve", params={"target": "Books/Books/A synthetic book"})
     ).json()["note"]
     assert found is not None
     note = (await notes.get(f"/notes/{found['id']}")).json()
@@ -177,7 +174,7 @@ async def test_library_the_kernel_and_notebook_put_a_book_in_the_notes(
     assert rated.status_code == 200, rated.text
     await worker()
     again = (await notes.get(f"/notes/{found['id']}")).json()
-    assert again["properties"]["valoracion"] == 3
+    assert again["properties"]["rating"] == 3
 
     async with engine().begin() as connection:
         await connection.execute(text('set local role "mod_library"'))
@@ -186,4 +183,4 @@ async def test_library_the_kernel_and_notebook_put_a_book_in_the_notes(
         )
     await worker()
     trash = [one["title"] for one in (await notes.get("/trash")).json()]
-    assert "Un libro sintético" in trash
+    assert "A synthetic book" in trash

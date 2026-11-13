@@ -43,7 +43,7 @@ async def test_grouped_by_author(api) -> None:
 async def test_a_book_without_isbn_is_saved_unresolved_and_then_started_and_finished(
     api, hub
 ) -> None:
-    added = (await call(api, "add_book", {"title": "Sin ISBN", "authors": ["Alguien"]})).json()[
+    added = (await call(api, "add_book", {"title": "No ISBN", "authors": ["Someone"]})).json()[
         "content"
     ]
     book_id = added["added"]["book_id"]
@@ -51,14 +51,14 @@ async def test_a_book_without_isbn_is_saved_unresolved_and_then_started_and_fini
     started = await call(api, "start_reading", {"book_id": book_id, "on": "2026-09-01"})
     finished = await call(api, "finish_reading", {"book_id": book_id, "on": "2026-09-10"})
     rated = await call(api, "rate_book", {"book_id": book_id, "rating": 3.5})
-    found = (await call(api, "find_books", {"query": "alguien"}, READ)).json()["content"]
+    found = (await call(api, "find_books", {"query": "someone"}, READ)).json()["content"]
     reading = (await call(api, "get_currently_reading", {}, READ)).json()["content"]
 
     assert added["resolved"] is False
     assert started.json()["content"]["book"]["status"] == "reading"
     assert finished.json()["content"]["book"]["days"] == 10
     assert rated.json()["content"]["book"]["rating"] == 3.5
-    assert [b["title"] for b in found["books"]] == ["Sin ISBN"]
+    assert [b["title"] for b in found["books"]] == ["No ISBN"]
     assert reading == {"reading": []}
 
 
@@ -94,7 +94,7 @@ async def test_bad_dates_or_unknown_books_are_said_not_crashed(api, hub) -> None
     )
 
     assert bad.status_code == 409
-    assert "inicio y de fin" in bad.json()["detail"]
+    assert "a start date and an end date" in bad.json()["detail"]
     assert missing.status_code == 404
 
 
@@ -106,10 +106,10 @@ async def test_reading_scope_cannot_write(api, hub) -> None:
 
 async def test_a_typed_book_is_resolved_in_the_app(api, hub) -> None:
     hub.answer(Library())
-    added = (await call(api, "add_book", {"title": "Un libro"})).json()["content"]["added"]
+    added = (await call(api, "add_book", {"title": "A book"})).json()["content"]["added"]
     [candidate] = [
         c
-        for c in (await api.get("/catalog/search", params={"q": "libro"})).json()["candidates"]
+        for c in (await api.get("/catalog/search", params={"q": "book"})).json()["candidates"]
         if c["source"] == "openlibrary"
     ]
     candidate.pop("genre_hint")
@@ -123,7 +123,7 @@ async def test_a_typed_book_is_resolved_in_the_app(api, hub) -> None:
 
 
 async def test_what_is_being_read_says_how_many_days_it_has_been(api, hub) -> None:
-    added = (await call(api, "add_book", {"title": "Empezado hoy", "authors": ["Alguien"]})).json()
+    added = (await call(api, "add_book", {"title": "Empezado hoy", "authors": ["Someone"]})).json()
     await call(api, "start_reading", {"book_id": added["content"]["added"]["book_id"]})
 
     found = (await call(api, "find_books", {"status": "reading"}, READ)).json()["content"]

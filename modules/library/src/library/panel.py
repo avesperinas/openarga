@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets.panel import blocks_of, gather, panel
 from library import widgets
+from library.words import say, words
 
 
 def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
@@ -14,15 +15,15 @@ def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def nothing() -> HTTPException:
-    return HTTPException(status_code=404, detail="Library aún no tiene nada que contar")
+    return HTTPException(status_code=404, detail="Library has nothing to tell yet")
 
 
 async def build(connection: AsyncConnection) -> dict:
     found = await gather(connection, widgets.RENDERERS, ["reading", "goal", "pages"])
     goal = ready(found.get("goal"))
-    blocks = blocks_of("ring", found.get("goal") or {}, label="Libros del año", hue=5)
-    blocks += blocks_of("bars", found.get("pages") or {}, label="Páginas por mes")
-    blocks += blocks_of("list", found.get("reading") or {}, label="Leyendo")
+    blocks = blocks_of("ring", found.get("goal") or {}, label=say("panel.goal"), hue=5)
+    blocks += blocks_of("bars", found.get("pages") or {}, label=say("panel.pages"))
+    blocks += blocks_of("list", found.get("reading") or {}, label=say("panel.reading"))
     if not blocks:
         raise nothing()
     headlines = []
@@ -31,41 +32,40 @@ async def build(connection: AsyncConnection) -> dict:
         if ahead >= 0:
             headlines.append(
                 {
-                    "text": (
-                        f"Vas al día con los libros: {round(goal['value'])} "
-                        f"de {round(goal['target'])}"
+                    "text": say(
+                        "panel.on_pace", value=round(goal["value"]), target=round(goal["target"])
                     ),
-                    "emphasis": "al día",
+                    "emphasis": say("panel.on_pace.emphasis"),
                     "tone": "positive",
-                    "status": "Al día",
+                    "status": say("panel.on_pace.status"),
                     "priority": 25,
                 }
             )
         else:
             headlines.append(
                 {
-                    "text": f"Vas {-ahead} "
-                    + ("libro" if ahead == -1 else "libros")
-                    + " por detrás de tu meta",
+                    "text": say(
+                        "panel.behind.one" if ahead == -1 else "panel.behind.other", count=-ahead
+                    ),
                     "emphasis": f"{-ahead}",
                     "tone": "warning",
-                    "status": "Por detrás",
+                    "status": say("panel.behind.status"),
                     "priority": 30,
                 }
             )
     tabs = [
         {
-            "id": "lectura",
-            "label": "Lectura",
+            "id": "reading",
+            "label": say("panel.tab"),
             "blocks": blocks,
-            "actions": [{"label": "Abrir Library", "href": "/library/"}],
+            "actions": [{"label": say("panel.open"), "href": "/library/"}],
         }
     ]
     questions = [
         {
-            "text": "¿Llego a mi meta de libros?",
-            "words": ["libros", "leer", "lectura", "leyendo"],
-            "tab": "lectura",
+            "text": say("panel.ask"),
+            "words": words("panel.ask.words"),
+            "tab": "reading",
         }
     ]
     return panel("leisure", order=30, headlines=headlines, tabs=tabs, questions=questions)

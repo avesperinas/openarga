@@ -1,13 +1,13 @@
-# Library · diccionario
+# Library glossary
 
-- **Lectura**: una vez que lees un libro. Leerlo dos veces son dos lecturas, cada una con sus
-  fechas y su valoración. Lo que la app llama "libro" es una lectura con los datos de su edición.
-- **Edición**: el libro concreto, identificado por su ISBN-13. Viene de un catálogo (Open Library,
-  Google Books) o se teclea cuando no está en ninguno.
-- **Estado**: `want` (quiero leerlo), `reading` (leyendo), `read` (leído), `abandoned` (lo dejé).
-  Las fechas lo acompañan: leyendo lleva inicio, leído lleva inicio y fin.
-- **Valoración**: de 0 a 5, de medio en medio punto.
-- **Temática**: una por lectura, de una lista fija: novela, ensayo, historia, ciencia, biografía,
-  negocio, fantasía y ciencia ficción, policiaca, poesía, cómic, otros.
-- **Páginas al día**: sin progreso página a página, las páginas de un libro se reparten a partes
-  iguales entre su inicio y su fin. Es una estimación.
+- **Reading**: one time you read a book. Reading it twice is two readings, each with its dates and
+  rating. What the app calls a "book" is a reading with its edition's details.
+- **Edition**: the concrete book, identified by its ISBN-13. It comes from a catalog (Open Library,
+  Google Books) or is typed in when it is in none.
+- **Status**: `want` (want to read it), `reading`, `read`, `abandoned`. The dates go with it:
+  reading has a start, read has a start and an end.
+- **Rating**: from 0 to 5, in half points.
+- **Genre**: one per reading, from a fixed list: novel, essay, history, science, biography,
+  business, fantasy and science fiction, crime, poetry, comics, other.
+- **Pages per day**: with no page-by-page progress, a book's pages are spread evenly between its
+  start and its end. It is an estimate.

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import date, datetime
-from typing import Literal, Self
+from typing import Literal, Self, get_args
 from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -10,6 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from library import isbn
+from library.words import say
 
 MADRID = ZoneInfo("Europe/Madrid")
 
@@ -29,19 +30,11 @@ Genre = Literal[
     "other",
 ]
 
-GENRES: dict[str, str] = {
-    "novel": "Novela",
-    "essay": "Ensayo",
-    "history": "Historia",
-    "science": "Ciencia",
-    "biography": "Biografía",
-    "business": "Negocio",
-    "fantasy_scifi": "Fantasía y ciencia ficción",
-    "crime": "Policiaca",
-    "poetry": "Poesía",
-    "comic": "Cómic",
-    "other": "Otros",
-}
+GENRES: tuple[str, ...] = get_args(Genre)
+
+
+def genre_names() -> dict[str, str]:
+    return {key: say(f"genre.{key}") for key in GENRES}
 
 
 class NotFound(Exception):
@@ -139,7 +132,7 @@ def _book(row) -> Book:
 
 
 def genres() -> list[GenreOut]:
-    return [GenreOut(id=key, name=name) for key, name in GENRES.items()]
+    return [GenreOut(id=key, name=name) for key, name in genre_names().items()]
 
 
 async def books(
@@ -164,7 +157,7 @@ async def book(connection: AsyncConnection, reading_id: str) -> Book:
         )
     ).one_or_none()
     if row is None:
-        raise NotFound(f"el libro {reading_id}")
+        raise NotFound(f"book {reading_id}")
     return _book(row)
 
 
@@ -188,7 +181,7 @@ class ReadingIn(BaseModel):
     @classmethod
     def _half_points(cls, value: float | None) -> float | None:
         if value is not None and value * 2 != int(value * 2):
-            raise ValueError("la valoración va de medio en medio punto")
+            raise ValueError("the rating goes in half points")
         return value
 
     @field_validator("note")
@@ -200,18 +193,18 @@ class ReadingIn(BaseModel):
     def _dates_say_the_status(self) -> Self:
         started, finished = self.started_on, self.finished_on
         if self.status == "want" and (started or finished):
-            raise ValueError("un libro que quieres leer todavía no tiene fechas")
+            raise ValueError("a book you want to read has no dates yet")
         if self.status == "reading" and (started is None or finished is not None):
-            raise ValueError("leyendo es con fecha de inicio y sin fecha de fin")
+            raise ValueError("reading has a start date and no end date")
         if self.status == "read" and (started is None or finished is None):
-            raise ValueError("leído es con fecha de inicio y de fin")
+            raise ValueError("read has a start date and an end date")
         if self.status == "abandoned" and started is None:
-            raise ValueError("para dejarlo hay que haberlo empezado: falta la fecha de inicio")
+            raise ValueError("to abandon it you must have started it: the start date is missing")
         if started and finished and finished < started:
             raise ValueError("la fecha de fin es anterior a la de inicio")
         future = today()
         if (started and started > future) or (finished and finished > future):
-            raise ValueError("las fechas no pueden ser de después de hoy")
+            raise ValueError("dates cannot be after today")
         return self
 
 
@@ -241,13 +234,13 @@ class EditionIn(BaseModel):
             return None
         normal = isbn.to_isbn13(value)
         if normal is None:
-            raise ValueError(f"«{value}» no es un ISBN válido")
+            raise ValueError(f"“{value}” is not a valid ISBN")
         return normal
 
     @model_validator(mode="after")
     def _has_title(self) -> Self:
         if not self.title:
-            raise ValueError("falta el título")
+            raise ValueError("the title is missing")
         return self
 
 
@@ -368,7 +361,7 @@ async def update_reading(connection: AsyncConnection, reading_id: str, request: 
         await connection.execute(UPDATE_READING, {"id": reading_id, **_reading_params(request)})
     ).one_or_none()
     if updated is None:
-        raise NotFound(f"el libro {reading_id}")
+        raise NotFound(f"book {reading_id}")
     found = await book(connection, reading_id)
     await _announce(connection, found)
     return found
@@ -377,7 +370,7 @@ async def update_reading(connection: AsyncConnection, reading_id: str, request: 
 async def update_edition(connection: AsyncConnection, reading_id: str, request: EditionIn) -> Book:
     current = await book(connection, reading_id)
     if current.edition != "manual":
-        raise Conflict("los datos de un libro del catálogo vienen de su fuente y no se editan")
+        raise Conflict("a catalog book's details come from its source and are not edited")
     await connection.execute(UPDATE_MANUAL, {"id": reading_id, **_edition_params(request)})
     return await book(connection, reading_id)
 
@@ -420,7 +413,7 @@ def _first_message(error: ValueError) -> str:
 async def start(connection: AsyncConnection, reading_id: str, request: StartIn) -> Book:
     current = await book(connection, reading_id)
     if current.status in ("read", "abandoned"):
-        raise Conflict("ya lo terminaste: para releerlo, apúntalo otra vez")
+        raise Conflict("you already finished it: to reread it, add it again")
     reading = _as_reading(
         current, status="reading", started_on=request.on or today(), finished_on=None
     )
@@ -435,7 +428,7 @@ async def rate(connection: AsyncConnection, reading_id: str, rating: float) -> B
 async def finish(connection: AsyncConnection, reading_id: str, request: FinishIn) -> Book:
     current = await book(connection, reading_id)
     if current.started_on is None:
-        raise Conflict("falta cuándo lo empezaste")
+        raise Conflict("when you started it is missing")
     changes: dict = {"status": "read", "finished_on": request.on or today()}
     if request.rating is not None:
         changes["rating"] = request.rating
@@ -612,7 +605,7 @@ RESOLVE = text("""
 async def resolve(connection: AsyncConnection, reading_id: str, request: ResolveIn, client) -> Book:
     current = await book(connection, reading_id)
     if current.edition != "manual":
-        raise Conflict("este libro ya es del catálogo")
+        raise Conflict("this book is already in the catalog")
     edition_id = await _edition_for(connection, request.candidate, client)
     await connection.execute(RESOLVE, {"id": reading_id, "edition": edition_id})
     return await book(connection, reading_id)
