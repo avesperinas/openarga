@@ -226,5 +226,7 @@ def uncertainty(total: Totals) -> str | None:
     if not total.missing:
         return None
     named = ", ".join(name for name in total.missing if name)
-    count = t("nutrition.missing", count=len(total.missing), total=total.total)
+    missing = len(total.missing)
+    key = "nutrition.missing.one" if missing == 1 else "nutrition.missing.other"
+    count = t(key, count=missing, total=total.total)
     return f"{count} ({named})" if named else count
