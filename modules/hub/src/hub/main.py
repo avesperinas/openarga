@@ -19,6 +19,7 @@ from sqlalchemy.exc import IntegrityError
 from arga_module.service import Service
 from arga_tenancy import as_user, kernel_url, require_person
 from hub import (
+    ai,
     apps,
     banks,
     capabilities,
@@ -51,6 +52,7 @@ service = Service(
     ui_dist=Path(__file__).resolve().parents[2] / "ui" / "dist",
 )
 app = service.app
+app.include_router(ai.router)
 _started = app.router.lifespan_context
 
 

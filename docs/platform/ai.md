@@ -39,3 +39,26 @@ or writing the weekly insights. Those calls go through one layer in the hub (ADR
 
 Without a provider, everything works except automatic insights and automatic event discovery. In
 the demo and in tests, a fake provider answers.
+
+## Configuring the AI layer
+
+The instance sets defaults with environment variables; each person can override every one of them,
+their key included, in Connections (`GET/PUT /api/hub/ai/settings`, `PUT/DELETE /api/hub/ai/key`).
+
+| Variable | Meaning |
+|---|---|
+| `OPENARGA_AI_PROVIDER` | `none`, `fake`, `anthropic` or `openai`. Unset: `fake` when `CONNECTIONS_MODE=fake`, else `none`. |
+| `OPENARGA_AI_BASE_URL` | Endpoint. Required for `openai` (for Ollama, `http://ollama:11434/v1`); for `anthropic`, only to go through a proxy. |
+| `OPENARGA_AI_FAST_MODEL`, `OPENARGA_AI_SMART_MODEL` | The model behind each role. Anthropic defaults to `claude-haiku-5-5` and `claude-opus-5-5`; an OpenAI-compatible endpoint has no default. |
+| `OPENARGA_AI_MONTHLY_TOKENS` | Tokens (input plus output) each person may spend per calendar month. Unset: no limit. |
+| `OPENARGA_AI_KEY` | A shared key, used only by people who have not set their own. Not needed for Ollama. |
+
+A person's key is stored encrypted with `HUB_CREDENTIALS_KEY` and never returned by the API.
+
+Every call is an **attempt** in `hub.ai_attempt`: app, capability, role, provider, model, tokens,
+outcome. `GET /api/hub/ai/attempts` lists a person's own with what they spent this month. When the
+month's budget is spent, `ai.extract` answers `429` and the attempt is logged as `over_budget`.
+
+`ai.extract` checks `output_schema` before calling anyone, and validates the answer against it. With
+Anthropic it uses structured outputs; with an OpenAI-compatible endpoint it asks for a JSON schema
+response and falls back to JSON mode where the endpoint does not support schemas.

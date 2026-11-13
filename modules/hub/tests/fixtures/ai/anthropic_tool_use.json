@@ -1,0 +1,15 @@
+{
+  "id": "msg_01Xsynthetic0000000000002",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-opus-5-5",
+  "content": [
+    {"type": "thinking", "thinking": "", "signature": "c3ludGhldGljMg=="},
+    {"type": "text", "text": "Looking at this week's sessions."},
+    {"type": "tool_use", "id": "toolu_01synthetic", "name": "training_get_sessions", "input": {"days": 7}}
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "stop_details": null,
+  "usage": {"input_tokens": 1830, "output_tokens": 61, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}
+}

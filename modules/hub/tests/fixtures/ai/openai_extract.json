@@ -1,0 +1,14 @@
+{
+  "id": "chatcmpl-synthetic1",
+  "object": "chat.completion",
+  "created": 1794000000,
+  "model": "llama3.3",
+  "choices": [
+    {
+      "index": 0,
+      "message": {"role": "assistant", "content": "```json\n{\"events\": [{\"title\": \"Jazz night\", \"day\": \"2026-11-20\"}], \"page\": \"Agenda\"}\n```"},
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {"prompt_tokens": 380, "completion_tokens": 41, "total_tokens": 421}
+}
