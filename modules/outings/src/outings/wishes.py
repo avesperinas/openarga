@@ -11,7 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_tenancy import CURRENT_USER_SQL as ME
-from outings.common import MADRID, Conflict, NotFound
+from outings.common import Conflict, NotFound, zone
 
 Kind = Literal["eat", "plan", "getaway", "trip"]
 PHOTO_LIMIT = 8 * 1024 * 1024
@@ -458,4 +458,4 @@ async def share(connection: AsyncConnection, wish_id: str, space_id: str | None)
 
 
 def done_day(found: Wish) -> date | None:
-    return found.done_at.astimezone(MADRID).date() if found.done_at else None
+    return found.done_at.astimezone(zone()).date() if found.done_at else None

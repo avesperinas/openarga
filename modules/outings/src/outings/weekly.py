@@ -3,14 +3,13 @@ from __future__ import annotations
 import time
 from datetime import datetime
 from typing import Any
-from zoneinfo import ZoneInfo
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from outings import by_hand, hub
+from outings.common import zone
 
-MADRID = ZoneInfo("Europe/Madrid")
 CAPABILITY = "claude.run"
 FROM_HOUR = 6
 EVERY_SECONDS = 3600.0
@@ -18,7 +17,7 @@ ASKED: dict[object, float] = {}
 
 
 def key(now: datetime) -> str | None:
-    local = now.astimezone(MADRID)
+    local = now.astimezone(zone())
     if local.weekday() == 0 and local.hour < FROM_HOUR:
         return None
     year, week, _ = local.isocalendar()

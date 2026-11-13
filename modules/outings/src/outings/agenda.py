@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from arga_agenda import KEY as AGENDA
 from arga_agenda import dated, uid
 from outings import profile
-from outings.common import MADRID, TZ, Conflict, NotFound, enqueue, today
+from outings.common import Conflict, NotFound, enqueue, today, zone
 from outings.profile import fold
 
 EVENT = "leisure.event"
@@ -453,7 +453,7 @@ def _dated(found: Event, cancelled: bool = False) -> dict[str, Any]:
     common = {
         "uid": uid("outings", "event", found.id),
         "title": found.title,
-        "tz": TZ,
+        "tz": zone().key,
         "location": where[:300] if where else None,
         "status": "cancelled" if cancelled else "confirmed",
         "href": f"/outings/events/{found.id}",
@@ -462,7 +462,7 @@ def _dated(found: Event, cancelled: bool = False) -> dict[str, Any]:
         hour, minute = (int(part) for part in found.time.split(":"))
         start = datetime(
             found.starts_on.year, found.starts_on.month, found.starts_on.day, hour % 24, minute,
-            tzinfo=MADRID,
+            tzinfo=zone(),
         )  # fmt: skip
         return dated(**common, start=start, end=start + timedelta(hours=2), all_day=False)
     return dated(

@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 from typing import Annotated, Literal
-from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from outings import agenda
+from outings import agenda, common
 from outings.common import Conflict, NotFound, today
 from outings.profile import Zone
 
@@ -51,9 +50,6 @@ def score(event: agenda.Event, liked: list[str]) -> int:
     return points
 
 
-MADRID = ZoneInfo("Europe/Madrid")
-
-
 class Found(BaseModel):
     first: date
     last: date
@@ -84,7 +80,7 @@ async def search(
     if zone:
         found = [one for one in found if one.zone == zone]
     if since:
-        found = [one for one in found if one.first_seen.astimezone(MADRID).date() >= since]
+        found = [one for one in found if one.first_seen.astimezone(common.zone()).date() >= since]
     if query and query.strip():
         found = [one for one in found if matches(one, query)]
     if sort == "best":
