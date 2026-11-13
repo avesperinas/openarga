@@ -11,8 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_contracts as contracts
 import arga_nutrients
-from macros import weight
-from macros.common import TZ, Conflict, today
+from macros import catalog, weight
+from macros.common import Conflict, today, zone
 
 Profile = Literal["any", "training", "rest"]
 Kind = Literal["training", "rest"]
@@ -81,20 +81,20 @@ class GoalIn(BaseModel):
     @model_validator(mode="after")
     def _coherent(self) -> GoalIn:
         if self.nutrient not in arga_nutrients.KEYS:
-            raise ValueError(f"'{self.nutrient}' no es un nutriente de arga")
+            raise ValueError(f"'{self.nutrient}' is not an arga nutrient")
         if self.min is not None and self.max is not None and self.min > self.max:
-            raise ValueError("el mínimo va por debajo del máximo")
+            raise ValueError("the minimum goes below the maximum")
         if self.unit == "per_kg":
             if self.nutrient not in PER_KG:
-                raise ValueError("por kilo solo van las kcal, la proteína, los hidratos y la grasa")
+                raise ValueError("only kcal, protein, carbs and fat go per kilo")
             top = PER_KG_MAX[self.nutrient]
             if (self.min or 0) > top or (self.max or 0) > top:
-                raise ValueError(f"más de {top:g} por kilo no es un objetivo: ¿era en gramos?")
+                raise ValueError(f"more than {top:g} per kilo is not a goal: was it in grams?")
         if self.unit == "kcal_pct":
             if self.nutrient not in arga_nutrients.KCAL_PER_GRAM:
-                raise ValueError(f"{self.nutrient} no aporta kcal: su objetivo va en cantidad")
+                raise ValueError(f"{self.nutrient} has no kcal: its goal is an amount")
             if (self.min or 0) > 100 or (self.max or 0) > 100:
-                raise ValueError("un % de las kcal va de 0 a 100")
+                raise ValueError("a share of kcal goes from 0 to 100")
         return self
 
 
@@ -194,9 +194,9 @@ async def day_kind(connection: AsyncConnection, day: date) -> DayKind:
 
 
 async def _workouts_on(connection: AsyncConnection, day: date) -> list[str]:
-    zone = ZoneInfo(TZ)
-    since = datetime.combine(day - timedelta(days=1), datetime.min.time(), zone)
-    until = datetime.combine(day + timedelta(days=2), datetime.min.time(), zone)
+    zone_ = zone()
+    since = datetime.combine(day - timedelta(days=1), datetime.min.time(), zone_)
+    until = datetime.combine(day + timedelta(days=2), datetime.min.time(), zone_)
     names = []
     for row in (await connection.execute(WORKOUTS, {"since": since, "until": until})).all():
         try:
@@ -272,7 +272,7 @@ def _goal(key: str, resolved: Resolved) -> Goal:
     assert resolved.goal is not None
     return Goal(
         nutrient=key,
-        name=nutrient.name,
+        name=catalog.nutrient(key),
         unit=nutrient.unit,
         basis=resolved.goal.basis,
         min=resolved.goal.min,
@@ -433,4 +433,4 @@ async def _write_legacy_reference(connection: AsyncConnection, request: GoalIn) 
 
 def check_known(nutrient: str) -> None:
     if nutrient not in arga_nutrients.KEYS:
-        raise Conflict(f"'{nutrient}' no es un nutriente de arga")
+        raise Conflict(f"'{nutrient}' is not an arga nutrient")

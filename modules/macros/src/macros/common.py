@@ -9,8 +9,15 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-TZ = "Europe/Madrid"
-MADRID = ZoneInfo(TZ)
+from arga_module import preferences
+
+
+def timezone() -> str:
+    return preferences.current().timezone
+
+
+def zone() -> ZoneInfo:
+    return preferences.current().zone
 
 
 class NotFound(LookupError):
@@ -26,15 +33,15 @@ class Unavailable(RuntimeError):
 
 
 def now() -> datetime:
-    return datetime.now(MADRID)
+    return datetime.now(zone())
 
 
 def today() -> date:
     return now().date()
 
 
-def local_day(moment: datetime, tz: str = TZ) -> date:
-    return moment.astimezone(ZoneInfo(tz)).date()
+def local_day(moment: datetime, tz: str | None = None) -> date:
+    return moment.astimezone(ZoneInfo(tz or timezone())).date()
 
 
 def is_uuid(value: str | None) -> bool:

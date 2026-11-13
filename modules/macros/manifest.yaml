@@ -17,7 +17,7 @@ connectors: []
 
 inlets:
   - id: profile
-    title: Ficha de salud
+    title: Health profile
     contracts: [health.profile]
 
 uses: [pantry.search, pantry.import, pantry.nutrients, recipes.search, recipes.nutrients, recipes.create, weight.log, notify.sync]
@@ -34,7 +34,7 @@ publishes:
 
 notifications:
   - kind: protein
-    label: Proteína pendiente
+    label: Protein to go
     default: false
 
 api:
@@ -44,216 +44,217 @@ tools:
   - name: find_food
     scope: macros:read
     description: >
-      Busca qué apuntar: en tu despensa (con tus nombres), en tus recetas y, si no hay, en USDA y
-      Open Food Facts. Úsala **antes** de `log_intake`, una vez por cosa que te cuenten
-      («café con leche» son dos: café y leche), y apunta con los ids que devuelve: `food_id` de la
-      despensa, `recipe_id` de una receta, o `source` y `source_ref` de un candidato de fuera, que
-      se guarda en la despensa al apuntarlo. Dice también cuánto se apuntó la última vez con ese
-      nombre, que suele ser la mejor cantidad a ojo.
+      Finds what to log: in your pantry (with your names), in your recipes and, if nothing is there,
+      in USDA and Open Food Facts. Use it **before** `log_intake`, once per thing you are told
+      ("coffee with milk" is two: coffee and milk), and log with the ids it returns: `food_id` from
+      the pantry, `recipe_id` from a recipe, or `source` and `source_ref` from an outside
+      candidate, which is saved in the pantry when logged. It also says how much was logged last
+      time under that name, which is usually the best guess for the quantity.
   - name: get_day
     scope: macros:read
     description: >
-      Un día: lo apuntado con sus ids y su comida (`meal`), las comidas (`meals`, cada una con
-      lo que suma y los ids de sus entradas), los totales, el objetivo y lo que queda, cada
-      objetivo frente a lo comido (`goals`, con `status` low, ok, high o none y su cobertura),
-      si es de entreno o de descanso, y las bebidas en su cifra (cafeína en mg, alcohol en gramos
-      y en unidades de 10 g, agua en litros). Con la cafeína, la hora de la última dosis y la que
-      queda en el cuerpo ahora (vida media de 5 h). Con `nutrient` (`sugars`, `sodium`…,
-      `omega3_epa_dha` suma EPA y DHA, `water` el agua bebida y la de los alimentos), además qué
-      de lo comido lo pone, sumado por nombre y de más a menos con su parte del total
-      (`contributors`), y lo que no trae ese dato: para contestar «¿por qué tanto azúcar?» con lo
-      que fue en vez de suponerlo. `partial` son los micros de los que falta el
-      dato en buena parte de lo comido: no los des como reales. Lo marcado `estimated` es una
-      cantidad calculada a ojo. Sin fecha, hoy.
+      One day: what was logged with its ids and its meal (`meal`), the meals (`meals`, each with
+      what it adds up to and the ids of its entries), the totals, the target and what is left,
+      each goal against what was eaten (`goals`, with `status` low, ok, high or none and its
+      coverage), whether it is a training or a rest day, and drinks in their own figure (caffeine
+      in mg, alcohol in grams and in units of 10 g, water in litres). With caffeine, the time of
+      the last dose and how much is left in the body now (5 h half-life). With `nutrient`
+      (`sugars`, `sodium`…, `omega3_epa_dha` adds EPA and DHA, `water` the water drunk and the
+      water in foods), also which of the things eaten bring it, summed by name from most to least
+      with their share of the total (`contributors`), and what lacks that figure: to answer "why so
+      much sugar?" with what it was instead of guessing. `partial` marks the micros missing from a
+      good part of what was eaten: do not give them as real. Lines marked `estimated` are
+      quantities guessed by eye. Without a date, today.
   - name: get_week
     scope: macros:read
     description: >
-      Siete días hasta la fecha dada (hoy si no se da): la media de los días con algo apuntado,
-      qué días se pasaron o no llegaron al objetivo de kcal, y cada micronutriente frente a su
-      referencia (EFSA para tu sexo y edad), con su cobertura. Y el gasto estimado (`expenditure`):
-      lo que se gasta al día según lo comido los días completos de las cuatro semanas hasta ayer
-      y cómo cambió el peso, con lo que se propone para mantener o bajar 0,3 kg por semana (nunca
-      por debajo del metabolismo basal). Sin 14 días completos o sin peso, `missing` dice qué
-      falta. Proponlo; ponerlo es `set_goal` de kcal, solo si la persona dice que sí. Una cobertura baja quiere decir que
-      parte de lo comido no trae ese dato: la cifra no es la real y no se debe dar como tal.
-      Las medias son de los días marcados completos si hay 3 o más (`counted` dice cuántos);
-      con `only_complete: false`, de todos los días con algo apuntado.
+      Seven days up to the given date (today if none): the average of the days with something
+      logged, which days went over or under the kcal target, and each micronutrient against its
+      reference (EFSA for the person's sex and age), with its coverage. And the estimated
+      expenditure (`expenditure`): what is spent per day according to what was eaten on the
+      complete days of the four weeks up to yesterday and how the weight changed, with what is
+      proposed to keep it or lose 0.3 kg a week (never below the basal metabolic rate). Without 14
+      complete days or without weight, `missing` says what is lacking. Propose it; setting it is
+      `set_goal` for kcal, only if the person says yes. Low coverage means part of what was eaten
+      lacks that figure: the number is not the real one and must not be given as such. Averages
+      are over the days marked complete if there are 3 or more (`counted` says how many); with
+      `only_complete: false`, over every day with something logged.
   - name: get_suggestions
     scope: macros:read
     description: >
-      Para mejorar la dieta: los nutrientes que más le faltan de media (los días completos de la
-      semana) y, para cada uno, los alimentos que la persona ya suele comer que más lo aportan,
-      con la ración que suele tomar. Úsala para «¿qué me falta?» o «¿cómo mejoro?». Puedes añadir
-      alimentos que no come, pero dilo así: los de la lista son los suyos.
+      To improve the diet: the nutrients most lacking on average (the complete days of the week)
+      and, for each, the foods the person already eats that bring the most of it, with the portion
+      they usually have. Use it for "what am I missing?" or "how do I improve?". You may add foods
+      they do not eat, but say so: the ones in the list are theirs.
   - name: log_intake
     scope: macros:write
     description: >
-      Apunta lo que alguien comió o bebió, en un solo objeto: la hora o la comida (`meal`:
-      breakfast, morning, lunch, snack, dinner o night; sin hora, a la de siempre de esa comida),
-      la frase tal como la dijo y sus líneas. Cada línea es un alimento (`food_id`, o `source` y `source_ref` de fuera) en g,
-      ml o unit; una receta (`recipe_id`) en raciones; algo a ojo (`quick`) en kcal con su nombre;
-      o agua (`water`) en ml, solo el agua bebida como agua. Un alimento en `unit` puede decir
-      qué medida de casa cuenta (`portion: "loncha"`, de las que da `find_food`), y uno pesado
-      entero `as_purchased: true` para descontar espina, piel o hueso. Un suplemento (`per_unit`
-      en `find_food`) se apunta siempre en `unit`: «2 cápsulas» son `quantity: 2, unit: "unit"`. **No acepta nutrientes**:
-      salen del alimento de la despensa: si un **alimento** no está, impórtalo o créalo antes en
-      Recipes. Un plato hecho en casa con varios ingredientes **no es una receta**: apúntalo
-      como sus líneas, cada una con su alimento y su cantidad, y el mismo `dish` con el nombre
-      del plato («Ensalada de pasta con atún»). No crees una receta para apuntar una comida;
-      solo si la persona pide guardarla. Lo que se repite cada día (el café, los suplementos)
-      va en un menú. Pon
-      los gramos que te parezcan razonables y marca `estimated: true` cuando los calculas tú
-      (una taza de leche, un plato de lentejas, lo que ves en una foto). Pesos que dice la
-      persona y raciones de receta no son estimados. Si no tienes claro qué alimento es (entre
-      varios parecidos, o lo que ves en una foto), marca la línea `unsure: true`: la app lo
-      pregunta en su fila, igual que lo que se apunta por primera vez. Con `planned: true` queda planificado (la
-      cena de esta noche): no suma hasta `confirm_intake`.
+      Logs what someone ate or drank, in a single object: the time or the meal (`meal`: breakfast,
+      morning, lunch, snack, dinner or night; without a time, at that meal's usual time), the
+      sentence as it was said, and its lines. Each line is a food (`food_id`, or `source` and
+      `source_ref` from outside) in g, ml or unit; a recipe (`recipe_id`) in servings; a quick
+      estimate (`quick`) in kcal with its name; or water (`water`) in ml, only water drunk as
+      water. A food in `unit` can say which household measure counts (`portion: "slice"`, from
+      those `find_food` gives), and one weighed whole `as_purchased: true` to discount bones, skin
+      or peel. A supplement (`per_unit` in `find_food`) is always logged in `unit`: "2 capsules" is
+      `quantity: 2, unit: "unit"`. **It does not accept nutrients**: they come from the pantry
+      food; if a **food** is missing, import or create it in Recipes first. A home-made dish with
+      several ingredients **is not a recipe**: log it as its lines, each with its food and
+      quantity, and the same `dish` with the dish name ("Pasta salad with tuna"). Do not create a
+      recipe to log a meal; only if the person asks to save it. What repeats every day (coffee,
+      supplements) goes in a menu. Put the grams that seem reasonable and mark `estimated: true`
+      when you work them out (a cup of milk, a plate of lentils, what you see in a photo). Weights
+      the person gives and recipe servings are not estimated. If you are not sure which food it is
+      (between several similar ones, or what you see in a photo), mark the line `unsure: true`:
+      the app asks about it in its row, as with anything logged for the first time. With
+      `planned: true` it stays planned (tonight's dinner): it does not count until
+      `confirm_intake`.
   - name: mark_day_complete
     scope: macros:write
     description: >
-      Da un día (hoy si no se dice) por completo: todo lo comido está apuntado. Solo los días
-      completos cuentan para el gasto estimado de `get_week`; con `complete: false`, deja de
-      contar. Úsala cuando la persona lo diga («ya está, hoy no como más»), nunca por tu cuenta.
+      Marks a day (today if not said) as complete: everything eaten is logged. Only complete days
+      count for the estimated expenditure in `get_week`; with `complete: false`, it stops
+      counting. Use it when the person says so ("that's it, I'm not eating more today"), never on
+      your own.
   - name: confirm_intake
     scope: macros:write
     description: >
-      Confirma una entrada planificada (de `log_intake` con `planned`, de un menú diario):
-      desde ese momento suma al día. Sin `eaten_at`, a la hora planificada. Si se comió distinto,
-      corrígela con `update_intake`, antes o después.
+      Confirms a planned entry (from `log_intake` with `planned`, or from a daily menu): from then on
+      it counts for the day. Without `eaten_at`, at the planned time. If it was eaten differently,
+      correct it with `update_intake`, before or after.
   - name: save_template
     scope: macros:write
     description: >
-      Guarda «lo de siempre» con un nombre («suplementos de mañana», «café con leche»): sus
-      líneas como en `log_intake`, sin nutrientes. Con `daily_at` ("08:00") se repite: cada día
-      aparece planificada a esa hora, para confirmarla. Un nombre que ya existe se sobrescribe.
+      Saves "the usual" under a name ("morning supplements", "coffee with milk"): its lines as in
+      `log_intake`, without nutrients. With `daily_at` ("08:00") it repeats: each day it appears
+      planned at that time, to be confirmed. An existing name is overwritten.
   - name: get_usual
     scope: macros:read
     description: >
-      Lo habitual de una comida (`meal`; sin ella, la de ahora) un día (hoy si no se dice): lo
-      que se apuntó en ella el día de antes (`yesterday`), «lo de siempre» (`usual`, la
-      combinación que más se repite, con sus `item_ids`), lo que más se apunta en ella con su
-      cantidad de la última vez (`items`), lo reciente de otras comidas (`recent`) y los menús
-      guardados (`menus`). Para «lo de siempre», «como ayer» o «200 g, como la última vez»: luego
-      `repeat_intake` con esos ids.
+      The usual for a meal (`meal`; without it, the current one) on a day (today if not said): what
+      was logged in it the day before (`yesterday`), "the usual" (`usual`, the combination that
+      repeats most, with its `item_ids`), what is logged most in it with the quantity of last time
+      (`items`), recent things from other meals (`recent`) and saved menus (`menus`). For "the
+      usual", "like yesterday" or "200 g, like last time": then `repeat_intake` with those ids.
   - name: repeat_intake
     scope: macros:write
     description: >
-      Vuelve a apuntar lo ya apuntado, con sus mismos números: unas líneas (`item_ids`), unas
-      entradas (`entry_ids`), o toda una comida de un día (`from_day` con `from_meal`: «lo mismo
-      que ayer en la comida»). Va a la comida `meal` (sin ella, a la misma de donde sale) del día
-      `day` (hoy si no se dice), a su hora de siempre. No acepta nutrientes ni cantidades: para
-      cambiar algo, `update_intake` después.
+      Logs again what was already logged, with the same numbers: some lines (`item_ids`), some
+      entries (`entry_ids`), or a whole meal of a day (`from_day` with `from_meal`: "the same as
+      yesterday's lunch"). It goes into meal `meal` (without it, the one it comes from) of day
+      `day` (today if not said), at its usual time. It accepts no nutrients or quantities: to
+      change something, `update_intake` afterwards.
   - name: log_template
     scope: macros:write
     description: >
-      Apunta un menú en un paso, por su nombre o su id: «tómate los suplementos de
-      mañana». Se resuelve con lo que la despensa diga hoy. Con `planned: true`, planificada.
+      Logs a menu in one step, by its name or its id: "take the morning supplements". It is resolved
+      with what the pantry says today. With `planned: true`, planned.
   - name: delete_template
     scope: macros:write
     description: >
-      Borra un menú. Lo ya apuntado con él se queda.
+      Deletes a menu. What was already logged with it stays.
   - name: get_outdated_recipes
     scope: macros:read
     description: >
-      Las recetas que tienen una versión nueva en Recipes respecto a lo apuntado en los últimos
-      90 días: cuántas líneas siguen con la versión anterior y de qué días. Para ofrecer
-      recalcularlas, no para hacerlo sin preguntar.
+      The recipes with a new version in Recipes compared with what was logged in the last 90 days:
+      how many lines still have the previous version and from which days. To offer recalculating
+      them, not to do it without asking.
   - name: recalculate_recipe_intakes
     scope: macros:write
     description: >
-      Recalcula lo apuntado de una receta con versiones anteriores, con la vigente: las mismas
-      raciones (o gramos) y lo que lleva ahora. Cambia lo de días pasados, así que solo cuando la
-      persona lo pide.
+      Recalculates what was logged from earlier versions of a recipe with the current one: the same
+      servings (or grams) and what it holds now. It changes past days, so only when the person
+      asks.
   - name: update_intake
     scope: macros:write
     description: >
-      Cambia una entrada ya apuntada: su hora o su comida (`meal`, en el mismo día), la cantidad
-      de alguna línea, líneas nuevas o líneas fuera. Solo lo que se dice; el resto se queda. Las cantidades se recalculan con los
-      nutrientes que se guardaron al apuntarla.
+      Changes an entry already logged: its time or its meal (`meal`, on the same day), the quantity
+      of some line, new lines or lines removed. Only what is said; the rest stays. Quantities are
+      recalculated with the nutrients saved when it was logged.
   - name: delete_intake
     scope: macros:write
     description: >
-      Borra una entrada entera (`entry_id`) o una sola línea (`item_id`). Una entrada que se queda
-      sin líneas se borra con la última.
+      Deletes a whole entry (`entry_id`) or a single line (`item_id`). An entry left without lines is
+      deleted with its last one.
   - name: set_target
     scope: macros:write
     description: >
-      Atajo para las cuatro de siempre: kcal, proteína, hidratos y grasa en gramos, desde una
-      fecha (hoy si no se dice), para todos los días. Las kcal, los hidratos y la grasa quedan
-      como rango de ±10 % alrededor de la cifra, y la proteína como mínimo. Para un rango exacto,
-      un % de las kcal, otro nutriente o un tipo de día, `set_goal`.
+      Shortcut for the usual four: kcal, protein, carbs and fat in grams, from a date (today if not
+      said), for every day. Kcal, carbs and fat become a ±10 % range around the figure, and
+      protein a minimum. For an exact range, a share of kcal, another nutrient or a kind of day,
+      `set_goal`.
   - name: get_goals
     scope: macros:read
     description: >
-      Los objetivos que mandan un día (hoy si no se dice), para cada nutriente que tenga: su
-      `min`, su `max` o los dos, en cantidad (`amount`, la unidad del nutriente) o en % de las kcal
-      (`kcal_pct`), y de dónde sale cada uno: `own` lo puso la persona, `legacy` es su objetivo o
-      referencia de antes, `efsa` es la ingesta de referencia para su sexo, edad y peso. Dice
-      también si el día es de entreno o de descanso, y por qué (`manual` o un `workout` recibido),
-      porque los de un tipo de día mandan sobre los de todos los días.
+      The goals that apply on a day (today if not said), for each nutrient that has one: its `min`,
+      its `max` or both, as an amount (`amount`, the nutrient's unit) or as a share of kcal
+      (`kcal_pct`), and where each comes from: `own` was set by the person, `legacy` is their
+      earlier goal or reference, `efsa` is the reference intake for their sex, age and weight. It
+      also says whether the day is a training or a rest day, and why (`manual` or a received
+      `workout`), because those of a kind of day override those for every day.
   - name: set_goal
     scope: macros:write
     description: >
-      Pone el objetivo de un nutriente como rango, desde una fecha (hoy si no se dice): `min`,
-      `max` o los dos. Unos son mínimos (fibra, proteína), otros topes (saturada, sodio, cafeína)
-      y otros rangos (kcal). Con `unit: "kcal_pct"` va en % de las kcal del día, de 0 a 100 (la
-      saturada por debajo del 7 %: `max: 7`); solo para lo que aporta kcal. Con `unit: "per_kg"`
-      va por kilo de peso y sigue al último peso que haya (1,8 g de proteína por kilo:
-      `min: 1.8`); solo las kcal y las tres macros. `profile` lo limita a
-      los días de entreno (`training`) o de descanso (`rest`); sin él, vale para todos. Sin `min`
-      ni `max`, ese nutriente queda sin objetivo; con `reset: true`, vuelve al de la EFSA. Lo de
-      antes de esa fecha se sigue midiendo con lo que había.
+      Sets a nutrient's goal as a range, from a date (today if not said): `min`, `max` or both.
+      Some are minimums (fibre, protein), others caps (saturated fat, sodium, caffeine) and others
+      ranges (kcal). With `unit: "kcal_pct"` it is a share of the day's kcal, from 0 to 100
+      (saturated fat below 7 %: `max: 7`); only for what has kcal. With `unit: "per_kg"` it is per
+      kilo of body weight and follows the latest weight (1.8 g of protein per kilo: `min: 1.8`);
+      only kcal and the three macros. `profile` limits it to training days (`training`) or rest
+      days (`rest`); without it, it applies to all. Without `min` or `max`, that nutrient has no
+      goal; with `reset: true`, it goes back to EFSA's. Days before that date are still measured
+      with what there was.
   - name: set_day_kind
     scope: macros:write
     description: >
-      Dice si un día (hoy si no se dice) es de entreno (`training`) o de descanso (`rest`), para
-      que manden sus objetivos. Con `kind: null` vuelve a decidirse solo: un día con un entreno
-      registrado en Training o la pulsera es de entreno.
+      Says whether a day (today if not said) is a training (`training`) or rest (`rest`) day, so
+      that its goals apply. With `kind: null` it is decided again by itself: a day with a workout
+      recorded in Training or the band is a training day.
 
 ui:
   widgets:
     - id: today
-      title: Hoy
+      title: Today
       kind: ring
       sizes: ["2x2", "1x1", "2x1", "1x2", "4x2"]
       endpoint: /api/macros/widgets/today
       refresh: 300
       link: /macros
     - id: macros_today
-      title: Macros de hoy
+      title: Today's macros
       kind: stats
       sizes: ["2x1", "4x1", "2x2", "4x2"]
       endpoint: /api/macros/widgets/macros_today
       refresh: 300
       link: /macros
     - id: week_short
-      title: Lo que falta esta semana
+      title: What is missing this week
       kind: list
       sizes: ["2x2", "2x4", "4x2"]
       endpoint: /api/macros/widgets/week_short
       refresh: 1800
-      link: /macros/semana
+      link: /macros/week
     - id: goals_today
-      title: Objetivos de hoy
+      title: Today's goals
       kind: list
       sizes: ["2x2", "2x4", "4x2"]
       endpoint: /api/macros/widgets/goals_today
       refresh: 300
       link: /macros
     - id: log
-      title: Apuntar
+      title: Log
       kind: shortcuts
       sizes: ["1x1", "2x1"]
       endpoint: /api/macros/widgets/log
       refresh: 900
-      link: /macros/apuntar
+      link: /macros/log
     - id: compliance
-      title: Cumplimiento
+      title: Compliance
       kind: heatmap
       sizes: ["4x2", "2x2", "4x1"]
       endpoint: /api/macros/widgets/compliance
       refresh: 1800
-      link: /macros/semana
+      link: /macros/week
   view: /macros
   hue: 4
   family: health

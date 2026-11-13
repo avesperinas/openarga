@@ -1,7 +1,7 @@
 [project]
 name = "macros"
 version = "0.1.0"
-description = "Módulo Macros de OpenArga: lo que comes y bebes, con macros y micronutrientes"
+description = "OpenArga Macros module: what you eat and drink, with macros and micronutrients"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "arga-tenancy",

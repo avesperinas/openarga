@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 
-from macros.common import MADRID, today
+from macros.common import today
+
+MADRID = ZoneInfo("Europe/Madrid")
 
 READ = {"x-arga-scopes": "macros:read"}
 WRITE = {"x-arga-scopes": "macros:read macros:write"}
@@ -25,11 +28,11 @@ async def log(api, food: str, grams: float, when: str) -> None:
 
 async def test_micros_come_grouped_and_what_is_unknown_is_not_zero(api, world) -> None:
     salmon = await world.manual_food(
-        "Salmón",
+        "Salmon",
         {"kcal": 200, "protein": 20, "fat": 13, "carbs": 0},
         nutrients={"omega3_epa": 0.8, "omega3_dha": 1.2, "water": 64},
     )
-    bread = await world.manual_food("Pan", {"kcal": 250, "protein": 8, "fat": 3, "carbs": 50})
+    bread = await world.manual_food("Bread", {"kcal": 250, "protein": 8, "fat": 3, "carbs": 50})
     await log(api, salmon, 100, at(14))
     await log(api, bread, 100, at(14))
     water = await api.post(
@@ -75,7 +78,7 @@ async def test_who_adds_a_nutrient_is_said_by_name_and_share(api, world) -> None
 
 async def test_caffeine_says_how_much_is_left_and_the_last_dose(api, world) -> None:
     coffee = await world.manual_food(
-        "Café", {"kcal": 2, "protein": 0.1, "fat": 0, "carbs": 0}, nutrients={"caffeine": 40}
+        "Coffee", {"kcal": 2, "protein": 0.1, "fat": 0, "carbs": 0}, nutrients={"caffeine": 40}
     )
     await log(api, coffee, 200, at(8, days_ago=1))
     await log(api, coffee, 200, at(13, days_ago=1))
@@ -128,7 +131,7 @@ async def test_the_new_widgets_say_how_goals_go(api, world) -> None:
     compliance = (await api.get("/widgets/compliance")).json()
 
     assert goals["state"] == "ready"
-    kcal = next(row for row in goals["body"]["rows"] if row["label"] == "Energía")
-    assert (kcal["value"], kcal["tone"]) == ("2.000 kcal", "positive")
+    kcal = next(row for row in goals["body"]["rows"] if row["label"] == "Energy")
+    assert (kcal["value"], kcal["tone"]) == ("2,000 kcal", "positive")
     assert compliance["state"] == "ready"
     assert len(compliance["body"]["values"]) == 28

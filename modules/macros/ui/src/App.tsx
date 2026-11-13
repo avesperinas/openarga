@@ -1,5 +1,5 @@
 import { withTransition } from "@openarga/app";
-import { AppSettings, AppShell, SETTINGS_TAB, ToastHost } from "@openarga/ui";
+import { AppSettings, AppShell, SETTINGS_TAB, ToastHost, useT } from "@openarga/ui";
 import { useCallback, useEffect, useState } from "react";
 
 import { AppVersion } from "./AppVersion";
@@ -20,27 +20,28 @@ export type Route =
 
 export function route(pathname: string): Route {
   const path = pathname.replace(/\/+$/, "");
-  const day = new RegExp(`^${ROOT}/dia/(\\d{4}-\\d{2}-\\d{2})$`).exec(path);
+  const day = new RegExp(`^${ROOT}/day/(\\d{4}-\\d{2}-\\d{2})$`).exec(path);
   if (day) return { tab: "today", day: day[1]! };
-  if (path === `${ROOT}/apuntar`) return { tab: "today", add: true };
-  if (path === `${ROOT}/semana`) return { tab: "week" };
-  if (path === `${ROOT}/objetivo`) return { tab: "goals" };
-  if (path === `${ROOT}/ajustes`) return { tab: "settings" };
+  if (path === `${ROOT}/log`) return { tab: "today", add: true };
+  if (path === `${ROOT}/week`) return { tab: "week" };
+  if (path === `${ROOT}/goals`) return { tab: "goals" };
+  if (path === `${ROOT}/settings`) return { tab: "settings" };
   return { tab: "today" };
 }
 
 export function pathOf(to: Route): string {
-  if (to.tab === "today" && to.day) return `${ROOT}/dia/${to.day}`;
-  if (to.tab === "today" && to.add) return `${ROOT}/apuntar`;
-  if (to.tab === "week") return `${ROOT}/semana`;
-  if (to.tab === "goals") return `${ROOT}/objetivo`;
-  if (to.tab === "settings") return `${ROOT}/ajustes`;
+  if (to.tab === "today" && to.day) return `${ROOT}/day/${to.day}`;
+  if (to.tab === "today" && to.add) return `${ROOT}/log`;
+  if (to.tab === "week") return `${ROOT}/week`;
+  if (to.tab === "goals") return `${ROOT}/goals`;
+  if (to.tab === "settings") return `${ROOT}/settings`;
   return `${ROOT}/`;
 }
 
 type Tab = Route["tab"];
 
 export function App() {
+  const t = useT();
   const [path, setPath] = useState(() => window.location.pathname);
 
   useEffect(() => {
@@ -65,13 +66,13 @@ export function App() {
   return (
     <ToastHost>
       <AppShell<Tab>
-        label="Secciones"
+        label={t("tabs.label")}
         active={current.tab}
         onSelect={(id) => go({ tab: id } as Route)}
         tabs={[
-          { id: "today", label: "Hoy", icon: "today" },
-          { id: "week", label: "Semana", icon: "chart" },
-          { id: "goals", label: "Objetivo", icon: "target" },
+          { id: "today", label: t("tabs.today"), icon: "today" },
+          { id: "week", label: t("tabs.week"), icon: "chart" },
+          { id: "goals", label: t("tabs.goals"), icon: "target" },
           SETTINGS_TAB,
         ]}
       >

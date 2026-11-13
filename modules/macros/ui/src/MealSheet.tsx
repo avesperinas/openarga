@@ -1,8 +1,8 @@
-import { ConfirmPanel, Hint, Sheet, TextField } from "@openarga/ui";
+import { ConfirmPanel, Hint, Sheet, TextField, useT } from "@openarga/ui";
 import { useState } from "react";
 
 import { type Entry, type Meal, menuFromMeal, moveMeal, removeMeal, repeatMeal } from "./api";
-import { mealLine, timeOf, todayIso } from "./words";
+import { clockOf, mealLine, plural, todayIso } from "./words";
 
 export type MealStep = "repeat" | "time" | "menu" | "delete";
 
@@ -30,39 +30,41 @@ export function MealSheet({
   onClose: () => void;
   onChanged: (message?: string) => void;
 }) {
+  const t = useT();
   const today = todayIso();
-  const first = entries[0] ? timeOf(entries[0].eaten_at) : meal.usual_at;
+  const first = entries[0] ? clockOf(entries[0].eaten_at) : meal.usual_at;
   const [at, setAt] = useState(first);
   const [name, setName] = useState(() => menuName(meal, entries));
   const count = entries.reduce((total, entry) => total + entry.items.length, 0);
-  const things = count === 1 ? "1 cosa" : `${count} cosas`;
+  const things = plural(t, "things", count);
+  const name_ = meal.label.toLowerCase();
 
   return (
     <Sheet title={meal.label} onClose={onClose}>
-      <Hint>{mealLine(meal)}</Hint>
+      <Hint>{mealLine(meal, t)}</Hint>
 
       {step === "repeat" && (
         <ConfirmPanel
-          title={`¿Repetir ${meal.label.toLowerCase()} hoy?`}
-          detail={`Se apuntan hoy las mismas ${things}, con sus mismos números.`}
-          action="Repetir hoy"
+          title={t("meal.repeat_title", { meal: name_ })}
+          detail={t("meal.repeat_detail", { things })}
+          action={t("meal.repeat")}
           onCancel={onClose}
-          onConfirm={() => repeatMeal(day, meal.meal, today).then(() => onChanged(`Apuntado hoy · ${meal.label}`))}
+          onConfirm={() => repeatMeal(day, meal.meal, today).then(() => onChanged(t("meal.repeated", { meal: meal.label })))}
         />
       )}
 
       {step === "time" && (
         <>
-          <TextField label="Hora" type="time" value={at} onChange={setAt} autoFocus />
+          <TextField label={t("common.time")} type="time" value={at} onChange={setAt} autoFocus />
           <ConfirmPanel
-            title={`¿Mover ${meal.label.toLowerCase()}?`}
-            changes={[{ label: "Hora", from: first, to: HHMM.test(at) ? at : "—" }]}
-            detail={count > 1 ? `Se mueven las ${things}.` : undefined}
-            action="Cambiar la hora"
+            title={t("meal.move_title", { meal: name_ })}
+            changes={[{ label: t("common.time"), from: first, to: HHMM.test(at) ? at : "—" }]}
+            detail={count > 1 ? t("meal.move_detail", { things }) : undefined}
+            action={t("meal.move")}
             onCancel={onClose}
             onConfirm={() => {
-              if (!HHMM.test(at)) throw new Error("Pon la hora como 08:30");
-              return moveMeal(day, meal.meal, at).then(() => onChanged(`${meal.label} a las ${at}`));
+              if (!HHMM.test(at)) throw new Error(t("common.time_format"));
+              return moveMeal(day, meal.meal, at).then(() => onChanged(t("meal.moved", { meal: meal.label, at })));
             }}
           />
         </>
@@ -70,17 +72,17 @@ export function MealSheet({
 
       {step === "menu" && (
         <>
-          <TextField label="Nombre del menú" value={name} onChange={setName} autoFocus />
-          <Hint>Un menú se apunta de un toque al añadir, con lo que la despensa diga entonces.</Hint>
+          <TextField label={t("menu.name")} value={name} onChange={setName} autoFocus />
+          <Hint>{t("menu.hint")}</Hint>
           <ConfirmPanel
-            title="¿Guardar como menú?"
-            changes={[{ label: "Menú", to: name.trim() || "—" }]}
-            detail={`Con las ${things} de ${meal.label.toLowerCase()}.`}
-            action="Guardar menú"
+            title={t("menu.save_title")}
+            changes={[{ label: t("menu.menu"), to: name.trim() || "—" }]}
+            detail={t("menu.save_detail", { things, meal: name_ })}
+            action={t("menu.save")}
             onCancel={onClose}
             onConfirm={() => {
-              if (!name.trim()) throw new Error("Ponle un nombre");
-              return menuFromMeal(day, meal.meal, name.trim(), null).then(() => onChanged("Menú guardado"));
+              if (!name.trim()) throw new Error(t("common.name_it"));
+              return menuFromMeal(day, meal.meal, name.trim(), null).then(() => onChanged(t("menu.saved")));
             }}
           />
         </>
@@ -88,12 +90,12 @@ export function MealSheet({
 
       {step === "delete" && (
         <ConfirmPanel
-          title={`¿Borrar ${meal.label.toLowerCase()}?`}
-          detail={`Se ${count === 1 ? "borra 1 cosa" : `borran ${things}`} y deja de contar en el día. No se puede deshacer.`}
-          action={`Borrar ${meal.label.toLowerCase()}`}
+          title={t("meal.delete_title", { meal: name_ })}
+          detail={t("meal.delete_detail", { things })}
+          action={t("meal.delete", { meal: name_ })}
           destructive
           onCancel={onClose}
-          onConfirm={() => removeMeal(day, meal.meal).then(() => onChanged(`Borrado · ${meal.label}`))}
+          onConfirm={() => removeMeal(day, meal.meal).then(() => onChanged(t("common.deleted", { name: meal.label })))}
         />
       )}
     </Sheet>

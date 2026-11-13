@@ -24,23 +24,23 @@ def test_every_tool_of_the_manifest_is_served() -> None:
 
 
 async def test_a_coffee_with_milk_two_servings_of_lentils_and_a_beer(api, world) -> None:
-    await world.imported("coffee", alias="café")
-    await world.imported("milk", alias="leche")
-    lentils = await world.imported("lentils", alias="lentejas")
+    await world.imported("coffee", alias="coffee")
+    await world.imported("milk", alias="semi milk")
+    lentils = await world.imported("lentils", alias="dry lentils")
     recipe = (
         await world.recipes.post(
             "/recipes",
             json={
-                "name": "Lentejas",
+                "name": "Lentil stew",
                 "servings": 4,
                 "ingredients": [{"food_id": lentils["id"], "quantity": 400, "unit": "g"}],
             },
         )
     ).json()
 
-    coffee = (await call(api, "find_food", {"query": "café"}, READ))["pantry"][0]
-    milk = (await call(api, "find_food", {"query": "leche"}, READ))["pantry"][0]
-    stew = (await call(api, "find_food", {"query": "lentejas"}, READ))["recipes"][0]
+    coffee = (await call(api, "find_food", {"query": "coffee"}, READ))["pantry"][0]
+    milk = (await call(api, "find_food", {"query": "semi milk"}, READ))["pantry"][0]
+    stew = (await call(api, "find_food", {"query": "stew"}, READ))["recipes"][0]
     beer = (await call(api, "find_food", {"query": "beer"}, READ))["outside"][0]
     assert stew["recipe_id"] == recipe["id"]
 
@@ -48,7 +48,7 @@ async def test_a_coffee_with_milk_two_servings_of_lentils_and_a_beer(api, world)
         api,
         "log_intake",
         {
-            "said": "un café con leche, dos raciones de lentejas y un botellín",
+            "said": "a coffee with milk, two servings of lentils and a small beer",
             "items": [
                 {"food_id": coffee["food_id"], "quantity": 150, "unit": "ml", "estimated": True},
                 {"food_id": milk["food_id"], "quantity": 100, "unit": "ml", "estimated": True},
@@ -75,7 +75,7 @@ async def test_a_coffee_with_milk_two_servings_of_lentils_and_a_beer(api, world)
     assert day["drinks"]["alcohol_g"] == pytest.approx(9.8, abs=0.1)
     assert day["drinks"]["alcohol_units"] == pytest.approx(1.0, abs=0.1)
     assert day["totals"]["calcium"] == 120
-    assert day["entries"][0]["said"].startswith("un café con leche")
+    assert day["entries"][0]["said"].startswith("a coffee with milk")
 
 
 async def test_the_model_cannot_write_a_figure(api, world) -> None:
@@ -135,10 +135,10 @@ async def test_update_and_delete_by_ids(api, world) -> None:
 
 async def test_errors_come_back_as_words_the_model_can_read(api, world) -> None:
     answer = await call(api, "delete_intake", {"entry_id": "00000000-0000-4000-8000-000000000000"})
-    assert "no" in answer["error"] or "entrada" in answer["error"]
+    assert "not found" in answer["error"] or "entry" in answer["error"]
     world.recipes_down()
-    down = await call(api, "find_food", {"query": "café"}, READ)
-    assert "Recipes no contesta" in down["error"]
+    down = await call(api, "find_food", {"query": "coffee"}, READ)
+    assert "Recipes is not answering" in down["error"]
 
 
 async def test_set_target_and_the_day_says_what_is_left(api, world) -> None:

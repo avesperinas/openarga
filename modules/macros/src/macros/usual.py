@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from macros import meals, templates
-from macros.common import TZ
+from macros.common import timezone
 
 HABIT_DAYS = 60
 RECENT_DAYS = 14
@@ -89,7 +89,7 @@ async def usual(connection: AsyncConnection, meal: meals.Meal, day: date) -> Usu
             ITEMS, {"first": day - timedelta(days=HABIT_DAYS), "last": day - timedelta(days=1)}
         )
     ).all()
-    in_meal = [row for row in rows if meals.meal_of(row.eaten_at, row.tz or TZ) == meal]
+    in_meal = [row for row in rows if meals.meal_of(row.eaten_at, row.tz or timezone()) == meal]
 
     yesterday = [_item(row, 1) for row in reversed(in_meal) if row.day == day - timedelta(days=1)]
 

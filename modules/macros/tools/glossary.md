@@ -1,27 +1,28 @@
-# Glosario de Macros
+# Macros glossary
 
-**Entrada**: un momento en que comiste o bebiste, con su hora: el desayuno, el café de las once. Si
-vino de Claude, guarda la frase tal como se dijo.
+**Entry**: a moment when you ate or drank, with its time: breakfast, the eleven o'clock coffee. If
+it came from the assistant, it keeps the sentence as it was said.
 
-**Línea**: lo que tomaste en esa entrada. Cuatro clases: un **alimento** de la despensa de Recipes
-(en gramos, mililitros o unidades), una **receta** de Recipes (en raciones), algo **a ojo** (en
-kcal, con las macros si se dicen) y **agua** (en ml, solo la bebida como agua).
+**Line**: what you had in that entry. Four kinds: a **food** from the Recipes pantry (in grams,
+millilitres or units), a **recipe** from Recipes (in servings), a **quick** estimate (in kcal, with
+the macros if they are given) and **water** (in ml, only water drunk as water).
 
-**Estimada** (≈): la cantidad la calculó Claude a ojo. Un peso que diste tú o una ración de receta
-no lo son. La aproximación está siempre en la cantidad, nunca en los nutrientes.
+**Estimated** (≈): the quantity was worked out by the assistant by eye. A weight you gave or a
+recipe serving is not. The approximation is always in the quantity, never in the nutrients.
 
-**Nutrientes**: salen de la despensa, por 100 g o por ración, multiplicados por la cantidad. Se
-guardan al apuntar y no cambian si mañana se corrige el alimento. Solo cambian si el alimento se
-**sustituye** por otro en Recipes (`replace_food`): entonces lo apuntado pasa al nuevo y se
-recalcula con lo suyo. Lo que un alimento no trae no está, que no es lo mismo que cero.
+**Nutrients**: they come from the pantry, per 100 g or per serving, multiplied by the quantity. They
+are saved when logged and do not change if the food is corrected tomorrow. They only change if the
+food is **replaced** by another in Recipes (`replace_food`): then what was logged moves to the new
+one and is recalculated with its values. What a food does not bring is missing, which is not the
+same as zero.
 
-**Cobertura**: de un nutriente en un periodo, qué parte de las kcal viene de líneas que sí traen ese
-dato. Por debajo del 80 %, la cifra no es la tuya: faltan datos.
+**Coverage**: for a nutrient over a period, the share of kcal that comes from lines that do bring
+that figure. Below 80 %, the number is not yours: data is missing.
 
-**Referencia**: con qué se compara cada micro. Las de la EFSA para tu sexo y edad (de la ficha de
-Apple Salud), o la tuya si la cambias. **Mínimo** (llegar), **máximo** (no pasarse) o **fracción de
-las kcal** (grasa saturada y azúcares, por debajo del 10 %).
+**Reference**: what each micro is compared with. EFSA's for your sex and age (from the health
+profile), or yours if you change it. **Minimum** (reach it), **maximum** (do not go over) or **share
+of kcal** (saturated fat and sugars, below 10 %).
 
-**Objetivo del día**: kcal, proteína, hidratos y grasa, desde una fecha. Vale hasta que pones otro.
+**Daily target**: kcal, protein, carbs and fat, from a date. It holds until you set another.
 
-**Unidad de alcohol**: 10 g de etanol.
+**Alcohol unit**: 10 g of ethanol.

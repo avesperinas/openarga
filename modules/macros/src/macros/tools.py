@@ -24,7 +24,7 @@ from macros import (
     templates,
     usual,
 )
-from macros.common import MADRID, Conflict, NotFound, Unavailable, now, today
+from macros.common import Conflict, NotFound, Unavailable, now, today, zone
 
 MODULE = "macros"
 WRITE_ROLE = f"mod_{MODULE}"
@@ -46,7 +46,7 @@ def _short(values: dict[str, float]) -> dict[str, float]:
 def _entry(entry: intake.Entry) -> dict[str, Any]:
     return {
         "entry_id": entry.id,
-        "time": entry.eaten_at.astimezone(MADRID).strftime("%H:%M"),
+        "time": entry.eaten_at.astimezone(zone()).strftime("%H:%M"),
         "day": entry.day.isoformat(),
         "meal": entry.meal,
         "said": entry.said,
@@ -71,7 +71,7 @@ class FindFood(BaseModel):
     query: str = Field(
         min_length=2,
         max_length=60,
-        description="Una sola cosa, como se diría: `café`, `leche semidesnatada`, `lentejas`.",
+        description="One thing, as it would be said: `coffee`, `semi-skimmed milk`, `lentils`.",
     )
 
 
@@ -126,14 +126,14 @@ async def find_food(
 
 
 class GetDay(BaseModel):
-    day: date | None = Field(default=None, description="Sin fecha, hoy.")
+    day: date | None = Field(default=None, description="Without a date, today.")
     nutrient: str | None = Field(
         default=None,
         min_length=2,
         max_length=40,
         description=(
-            "Con una clave de nutriente (`sugars`, `sodium`…, o `omega3_epa_dha` o `water`), "
-            "además qué de lo comido lo pone, de más a menos (`contributors`)."
+            "With a nutrient key (`sugars`, `sodium`…, or `omega3_epa_dha` or `water`), "
+            "also which of the things eaten bring it, from most to least (`contributors`)."
         ),
     )
 
@@ -203,7 +203,7 @@ def _goal_state(one: goals.GoalState) -> dict[str, Any]:
 
 
 class GetGoals(BaseModel):
-    day: date | None = Field(default=None, description="Sin fecha, hoy.")
+    day: date | None = Field(default=None, description="Without a date, today.")
 
 
 async def get_goals(connection: AsyncConnection, arguments: GetGoals) -> dict[str, Any]:
@@ -219,10 +219,11 @@ async def set_goal(connection: AsyncConnection, arguments: SetGoal) -> dict[str,
 
 
 class SetDayKind(BaseModel):
-    day: date | None = Field(default=None, description="Sin fecha, hoy.")
+    day: date | None = Field(default=None, description="Without a date, today.")
     kind: Literal["training", "rest"] | None = Field(
         description=(
-            "`training` o `rest`; null vuelve a decidirlo solo (un entreno ese día es entreno)."
+            "`training` or `rest`; null decides it again by itself"
+            " (a workout that day is training)."
         )
     )
 
@@ -233,9 +234,9 @@ async def set_day_kind(connection: AsyncConnection, arguments: SetDayKind) -> di
 
 
 class MarkDayComplete(BaseModel):
-    day: date | None = Field(default=None, description="Sin fecha, hoy.")
+    day: date | None = Field(default=None, description="Without a date, today.")
     complete: bool = Field(
-        default=True, description="`false` lo deja como no completo: algo quedó sin apuntar."
+        default=True, description="`false` leaves it as not complete: something was not logged."
     )
 
 
@@ -248,21 +249,21 @@ async def mark_day_complete(
 
 
 class GetWeek(BaseModel):
-    last: date | None = Field(default=None, description="El último de los siete días; hoy.")
+    last: date | None = Field(default=None, description="The last of the seven days; today.")
     all_micros: bool = Field(
-        default=False, description="Todos los micronutrientes, no solo los de portada."
+        default=False, description="Every micronutrient, not only the front-page ones."
     )
     only_complete: bool = Field(
         default=True,
         description=(
-            "Las medias, de los días marcados completos (si hay 3 o más)."
-            " Con `false`, de todos los días con algo apuntado."
+            "Averages over the days marked complete (if there are 3 or more)."
+            " With `false`, over every day with something logged."
         ),
     )
 
 
 class GetSuggestions(BaseModel):
-    last: date | None = Field(default=None, description="El último de los siete días; hoy.")
+    last: date | None = Field(default=None, description="The last of the seven days; today.")
 
 
 async def get_suggestions(connection: AsyncConnection, arguments: GetSuggestions) -> dict[str, Any]:
@@ -314,25 +315,25 @@ class LogIntake(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     eaten_at: datetime | None = Field(
-        default=None, description="Cuándo, con zona. Sin ella, ahora."
+        default=None, description="When, with time zone. Without it, now."
     )
     meal: meals.Meal | None = Field(
         default=None,
         description=(
-            "La comida: breakfast, morning, lunch, snack, dinner o night. Sin `eaten_at`, va a su "
-            "hora de siempre hoy (o ahora, si es la de ahora); con `eaten_at`, ese día, y a esa "
-            "hora si cae en ella."
+            "The meal: breakfast, morning, lunch, snack, dinner or night. Without `eaten_at`, "
+            "it goes at its usual time today (or now, if it is the current one); with "
+            "`eaten_at`, that day, and at that time if it falls within the meal."
         ),
     )
     said: str | None = Field(
-        default=None, max_length=1000, description="La frase tal como la dijo la persona."
+        default=None, max_length=1000, description="The sentence as the person said it."
     )
     items: list[intake.ItemIn] = Field(min_length=1, max_length=intake.MAX_ITEMS)
     planned: bool = Field(
         default=False,
         description=(
-            "Lo que aún no se ha comido (la cena de esta noche): queda planificado y no suma "
-            "hasta `confirm_intake`."
+            "Something not eaten yet (tonight's dinner): it stays planned and does not count "
+            "until `confirm_intake`."
         ),
     )
 
@@ -356,9 +357,10 @@ async def log_intake(
 
 
 class ConfirmIntake(BaseModel):
-    entry_id: str = Field(description="La entrada planificada, tal cual la da `get_day`.")
+    entry_id: str = Field(description="The planned entry, as `get_day` gives it.")
     eaten_at: datetime | None = Field(
-        default=None, description="Cuándo se comió, con zona. Sin ella, a la hora planificada."
+        default=None,
+        description="When it was eaten, with time zone. Without it, at the planned time.",
     )
 
 
@@ -377,8 +379,10 @@ async def save_template(connection: AsyncConnection, arguments: SaveTemplate) ->
 
 
 class GetUsual(BaseModel):
-    meal: meals.Meal | None = Field(default=None, description="La comida; sin ella, la de ahora.")
-    day: date | None = Field(default=None, description="Sin fecha, hoy.")
+    meal: meals.Meal | None = Field(
+        default=None, description="The meal; without it, the current one."
+    )
+    day: date | None = Field(default=None, description="Without a date, today.")
 
 
 async def get_usual(connection: AsyncConnection, arguments: GetUsual) -> dict[str, Any]:
@@ -392,20 +396,20 @@ class RepeatIntake(BaseModel):
 
     item_ids: list[str] = Field(default_factory=list, max_length=intake.MAX_ITEMS)
     entry_ids: list[str] = Field(default_factory=list, max_length=intake.MAX_ITEMS)
-    from_day: date | None = Field(default=None, description="El día de la comida que se repite.")
+    from_day: date | None = Field(default=None, description="The day of the meal being repeated.")
     from_meal: meals.Meal | None = None
     meal: meals.Meal | None = Field(
-        default=None, description="A qué comida; sin ella, a la misma de donde sale."
+        default=None, description="Into which meal; without it, the same one it comes from."
     )
-    day: date | None = Field(default=None, description="A qué día; sin él, hoy.")
+    day: date | None = Field(default=None, description="Into which day; without it, today.")
 
     @model_validator(mode="after")
     def _one_source(self) -> RepeatIntake:
         given = [bool(self.item_ids), bool(self.entry_ids), self.from_day is not None]
         if sum(given) != 1:
-            raise ValueError("una fuente: item_ids, entry_ids, o from_day con from_meal")
+            raise ValueError("one source: item_ids, entry_ids, or from_day with from_meal")
         if self.from_day is not None and self.from_meal is None:
-            raise ValueError("from_day va con from_meal")
+            raise ValueError("from_day goes with from_meal")
         return self
 
 
@@ -428,13 +432,11 @@ async def repeat_intake(connection: AsyncConnection, arguments: RepeatIntake) ->
 
 
 class LogTemplate(BaseModel):
-    template: str = Field(
-        min_length=1, max_length=80, description="El nombre de la plantilla, o su id."
-    )
+    template: str = Field(min_length=1, max_length=80, description="The template name, or its id.")
     eaten_at: datetime | None = Field(
-        default=None, description="Cuándo, con zona; sin ella, ahora."
+        default=None, description="When, with time zone; without it, now."
     )
-    planned: bool = Field(default=False, description="Planificada en vez de comida.")
+    planned: bool = Field(default=False, description="Planned instead of eaten.")
 
 
 async def log_template(
@@ -483,11 +485,11 @@ class UpdateIntake(BaseModel):
     entry_id: str
     eaten_at: datetime | None = None
     meal: meals.Meal | None = Field(
-        default=None, description="Pasarla a otra comida del mismo día, a su hora de siempre."
+        default=None, description="Move it to another meal of the same day, at its usual time."
     )
     change: list[intake.ItemChange] = Field(default_factory=list)
     add: list[intake.ItemIn] = Field(default_factory=list)
-    remove: list[str] = Field(default_factory=list, description="item_id de las líneas fuera.")
+    remove: list[str] = Field(default_factory=list, description="item_id of the lines to remove.")
 
 
 async def update_intake(
@@ -515,7 +517,7 @@ class DeleteIntake(BaseModel):
     @model_validator(mode="after")
     def _one(self) -> DeleteIntake:
         if bool(self.entry_id) == bool(self.item_id):
-            raise ValueError("o entry_id o item_id, uno de los dos")
+            raise ValueError("either entry_id or item_id, one of the two")
         return self
 
 

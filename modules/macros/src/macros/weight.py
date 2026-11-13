@@ -14,7 +14,7 @@ from macros.common import Unavailable, today
 
 MODULE = "macros"
 
-DOWN = "Salud no contesta ahora: el peso no se ha apuntado. Prueba en un momento."
+DOWN = "Vitals is not answering now: the weight was not logged. Try again in a moment."
 
 DAYS = text(f"{contracts.body_weight_days('macros.events')} order by day")
 

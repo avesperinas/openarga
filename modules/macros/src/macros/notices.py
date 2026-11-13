@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_contracts import notify
-from macros import metrics, summary
+from macros import catalog, metrics, summary
 from macros.common import today
 
 KIND = "protein"
@@ -49,9 +49,11 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
         notify.notification(
             KIND,
             f"protein:{day.isoformat()}",
-            f"Te faltan {missing:.0f} g de proteína",
+            catalog.t("notice.protein_title", grams=f"{missing:.0f}"),
             "/macros/",
             notify.at(day, at),
-            body=f"Llevas {eaten:.0f} g de {target.protein:.0f} g hoy.",
+            body=catalog.t(
+                "notice.protein_body", eaten=f"{eaten:.0f}", target=f"{target.protein:.0f}"
+            ),
         )
     ]

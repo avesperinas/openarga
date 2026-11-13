@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 
 from macros import meals
-from macros.common import MADRID, today
+from macros.common import today
+
+MADRID = ZoneInfo("Europe/Madrid")
 
 COFFEE = {"kcal": 2, "protein": 0.3, "fat": 0, "carbs": 0}
 TOAST = {"kcal": 266, "protein": 7.6, "fat": 3.3, "carbs": 50.6}
@@ -63,7 +66,7 @@ async def log(api, food: str, grams: float, **body):
 async def test_without_history_each_meal_has_its_default_hour_and_then_the_median(
     api, world
 ) -> None:
-    toast = await world.manual_food("Tostada", TOAST)
+    toast = await world.manual_food("Toast", TOAST)
     day = (await api.get("/day")).json()
     usual = {one["meal"]: one["usual_at"] for one in day["meals"]}
     assert usual == {
@@ -83,8 +86,8 @@ async def test_without_history_each_meal_has_its_default_hour_and_then_the_media
 async def test_the_day_comes_by_meals_with_their_ids_and_night_only_with_something(
     api, world
 ) -> None:
-    coffee = await world.manual_food("Café", COFFEE)
-    toast = await world.manual_food("Tostada", TOAST)
+    coffee = await world.manual_food("Coffee", COFFEE)
+    toast = await world.manual_food("Toast", TOAST)
     past = today() - timedelta(days=3)
     breakfast = await log(api, coffee, 150, eaten_at=iso(past, "08:00"))
     second = await log(api, toast, 100, eaten_at=iso(past, "09:10"))
@@ -108,11 +111,11 @@ async def test_the_day_comes_by_meals_with_their_ids_and_night_only_with_somethi
     await log(api, toast, 30, eaten_at=iso(past, "01:30"))
     day = (await api.get("/day", params={"day": past.isoformat()})).json()
     assert day["meals"][0]["meal"] == "night"
-    assert day["meals"][0]["label"] == "Noche"
+    assert day["meals"][0]["label"] == "Night"
 
 
 async def test_logging_with_the_meal_puts_it_at_its_usual_hour(api, world) -> None:
-    toast = await world.manual_food("Tostada", TOAST)
+    toast = await world.manual_food("Toast", TOAST)
     past = today() - timedelta(days=2)
 
     logged = await log(api, toast, 50, meal="lunch", eaten_at=iso(past, "09:00"))
@@ -130,8 +133,8 @@ async def test_logging_with_the_meal_puts_it_at_its_usual_hour(api, world) -> No
 
 
 async def test_like_yesterday_copies_that_meal_with_its_numbers(api, world) -> None:
-    coffee = await world.manual_food("Café", COFFEE)
-    toast = await world.manual_food("Tostada", TOAST)
+    coffee = await world.manual_food("Coffee", COFFEE)
+    toast = await world.manual_food("Toast", TOAST)
     yesterday = today() - timedelta(days=1)
     await log(api, coffee, 150, eaten_at=iso(yesterday, "08:00"))
     await log(api, toast, 100, eaten_at=iso(yesterday, "08:05"))
@@ -143,7 +146,7 @@ async def test_like_yesterday_copies_that_meal_with_its_numbers(api, world) -> N
     )
     assert copied.status_code == 201, copied.text
     entry = copied.json()
-    assert [item["name"] for item in entry["items"]] == ["Café", "Tostada"]
+    assert [item["name"] for item in entry["items"]] == ["Coffee", "Toast"]
     assert entry["nutrients"]["kcal"] == pytest.approx(3 + 266)
     assert (entry["day"], entry["meal"]) == (today().isoformat(), "breakfast")
 
@@ -154,8 +157,8 @@ async def test_like_yesterday_copies_that_meal_with_its_numbers(api, world) -> N
 
 
 async def test_the_meal_sheet_moves_saves_as_menu_and_deletes(api, world) -> None:
-    coffee = await world.manual_food("Café", COFFEE)
-    toast = await world.manual_food("Tostada", TOAST)
+    coffee = await world.manual_food("Coffee", COFFEE)
+    toast = await world.manual_food("Toast", TOAST)
     past = today() - timedelta(days=4)
     await log(api, coffee, 150, eaten_at=iso(past, "08:00"))
     await log(api, toast, 100, eaten_at=iso(past, "09:00"))
@@ -168,7 +171,7 @@ async def test_the_meal_sheet_moves_saves_as_menu_and_deletes(api, world) -> Non
 
     menu = await api.post(
         "/templates/from-meal",
-        json={"day": past.isoformat(), "meal": "breakfast", "name": "Desayuno de siempre"},
+        json={"day": past.isoformat(), "meal": "breakfast", "name": "Usual breakfast"},
     )
     assert menu.status_code == 201, menu.text
     assert [one["food_id"] for one in menu.json()["items"]] == [coffee, toast]
@@ -180,8 +183,8 @@ async def test_the_meal_sheet_moves_saves_as_menu_and_deletes(api, world) -> Non
 
 
 async def test_one_thing_moves_to_another_meal_and_leaves_the_rest(api, world) -> None:
-    coffee = await world.manual_food("Café", COFFEE)
-    toast = await world.manual_food("Tostada", TOAST)
+    coffee = await world.manual_food("Coffee", COFFEE)
+    toast = await world.manual_food("Toast", TOAST)
     past = today() - timedelta(days=5)
     entry = (
         await api.post(
@@ -213,7 +216,7 @@ async def test_one_thing_moves_to_another_meal_and_leaves_the_rest(api, world) -
 
 
 async def test_get_day_says_the_meal_and_the_ids(api, world) -> None:
-    toast = await world.manual_food("Tostada", TOAST)
+    toast = await world.manual_food("Toast", TOAST)
     past = today() - timedelta(days=6)
     entry = await log(api, toast, 100, eaten_at=iso(past, "14:00"))
     found = (

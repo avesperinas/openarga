@@ -5,40 +5,41 @@ from datetime import timedelta
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets import envelope
+from macros import catalog, meals, summary
 from macros import goals as ranges
-from macros import meals, summary
+from macros.catalog import t
 from macros.common import now, today
-
-NUMBER = "{:,.0f}"
 
 
 def _n(value: float) -> str:
-    return NUMBER.format(value).replace(",", ".")
+    return catalog.number(value)
 
 
 async def for_today(connection: AsyncConnection) -> dict:
     found = await summary.day(connection, today())
     kcal = found.nutrients.get("kcal", 0.0)
     protein = found.nutrients.get("protein")
-    detail = f"{_n(protein)} g de proteína" if protein is not None else None
+    detail = t("widget.protein", value=_n(protein)) if protein is not None else None
     goal = found.target.kcal if found.target else None
     if not found.entries:
-        return envelope("ring", "empty", {"detail": "Nada apuntado hoy"})
+        return envelope("ring", "empty", {"detail": t("widget.nothing_today")})
     if not goal:
-        return envelope("ring", "empty", {"detail": f"{_n(kcal)} kcal · pon un objetivo en Macros"})
+        return envelope("ring", "empty", {"detail": t("widget.set_goal", kcal=_n(kcal))})
     body = {"value": round(kcal), "target": round(goal), "unit": "kcal", "show": "value"}
     if detail:
         body["detail"] = detail
     if found.target and found.target.protein:
-        body["label"] = f"{_n(protein or 0)} / {_n(found.target.protein)} g proteína"
+        body["label"] = t(
+            "widget.protein_of", value=_n(protein or 0), target=_n(found.target.protein)
+        )
     return envelope("ring", "ready", body)
 
 
 async def macros_today(connection: AsyncConnection) -> dict:
     found = await summary.day(connection, today())
     if not found.entries:
-        return envelope("stats", "empty", {"detail": "Nada apuntado hoy"})
-    labels = (("protein", "Proteína"), ("carbs", "Hidratos"), ("fat", "Grasa"))
+        return envelope("stats", "empty", {"detail": t("widget.nothing_today")})
+    labels = [(key, catalog.nutrient(key)) for key in ("protein", "carbs", "fat")]
     return envelope(
         "stats",
         "ready",
@@ -54,12 +55,12 @@ async def macros_today(connection: AsyncConnection) -> dict:
 async def week_short(connection: AsyncConnection) -> dict:
     found = await summary.week(connection, today())
     if not found.days_logged:
-        return envelope("list", "empty", {"detail": "Nada apuntado esta semana"})
+        return envelope("list", "empty", {"detail": t("widget.nothing_week")})
     if all(micro.value is None for micro in found.micros):
-        return envelope("list", "empty", {"detail": "Lo apuntado no trae micronutrientes"})
+        return envelope("list", "empty", {"detail": t("widget.no_micros")})
     low = [micro for micro in found.micros if micro.status == "low"]
     if not low:
-        return envelope("list", "empty", {"detail": "Llegas a todo lo de portada esta semana"})
+        return envelope("list", "empty", {"detail": t("widget.all_front")})
     rows = []
     for micro in low:
         assert micro.value is not None
@@ -70,14 +71,14 @@ async def week_short(connection: AsyncConnection) -> dict:
         rows.append(
             {
                 "label": micro.name,
-                "value": f"{share} %" + (" · faltan datos" if micro.partial else ""),
+                "value": f"{share} %" + (f" · {t('widget.data_missing')}" if micro.partial else ""),
                 "tone": "neutral" if micro.partial else "warning",
             }
         )
     return envelope(
         "list",
         "ready",
-        {"rows": rows, "detail": f"Media de {found.days_logged} días frente a tu objetivo"},
+        {"rows": rows, "detail": t("widget.week_mean", days=found.days_logged)},
     )
 
 
@@ -88,7 +89,7 @@ FRONT = ("kcal", "protein", "carbs", "fat", "fiber", "sugars", "saturated_fat", 
 async def goals_today(connection: AsyncConnection) -> dict:
     found = await summary.day(connection, today())
     if not found.entries:
-        return envelope("list", "empty", {"detail": "Nada apuntado hoy"})
+        return envelope("list", "empty", {"detail": t("widget.nothing_today")})
     states = {one.nutrient: one for one in found.goals}
     rows = []
     for key in FRONT:
@@ -103,18 +104,20 @@ async def goals_today(connection: AsyncConnection) -> dict:
             }
         )
     if not rows:
-        return envelope("list", "empty", {"detail": "Sin objetivos que comparar"})
+        return envelope("list", "empty", {"detail": t("widget.no_goals")})
     ok = sum(1 for one in found.goals if one.status == "ok")
     measured = sum(1 for one in found.goals if one.status != "none")
-    return envelope("list", "ready", {"rows": rows, "detail": f"{ok} de {measured} en rango"})
+    return envelope(
+        "list", "ready", {"rows": rows, "detail": t("widget.in_range", ok=ok, measured=measured)}
+    )
 
 
 def _figure(one: ranges.GoalState) -> str:
     unit = one.unit
     digits = 0 if unit == "kcal" or (one.value or 0) >= 100 else 1
-    value = f"{one.value:,.{digits}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    value = catalog.number(one.value or 0, digits)
     if one.basis == "kcal_pct" and one.share is not None:
-        return f"{value} {unit} · {one.share:.0f} %".replace(".", ",")
+        return f"{value} {unit} · {one.share:.0f} %"
     return f"{value} {unit}"
 
 
@@ -133,11 +136,11 @@ async def compliance(connection: AsyncConnection) -> dict:
             else 0.0
         )
     if not any_logged:
-        return envelope("heatmap", "empty", {"detail": "Nada apuntado en cuatro semanas"})
+        return envelope("heatmap", "empty", {"detail": t("widget.nothing_four_weeks")})
     return envelope(
         "heatmap",
         "ready",
-        {"values": values, "columns": 7, "detail": "Parte de los objetivos en rango, cada día"},
+        {"values": values, "columns": 7, "detail": t("widget.compliance")},
     )
 
 
@@ -147,7 +150,11 @@ async def log_shortcut(connection: AsyncConnection) -> dict:
     return envelope(
         "shortcuts",
         "ready",
-        {"actions": [{"label": f"Apuntar {meal}", "href": "/macros/apuntar", "icon": "plus"}]},
+        {
+            "actions": [
+                {"label": t("widget.log_meal", meal=meal), "href": "/macros/log", "icon": "plus"}
+            ]
+        },
     )
 
 

@@ -33,7 +33,7 @@ USDA = {
 OFF = {
     "8400000000017": {
         "code": "8400000000017",
-        "product_name": "Galletas de marca",
+        "product_name": "Branded biscuits",
         "nutriments": {
             "energy-kcal_100g": 480,
             "proteins_100g": 6,
@@ -93,7 +93,7 @@ class Router(httpx.AsyncBaseTransport):
 
 class Down(httpx.AsyncBaseTransport):
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
-        raise httpx.ConnectError("caído", request=request)
+        raise httpx.ConnectError("down", request=request)
 
 
 class World:
@@ -182,7 +182,7 @@ async def world(schema, database_url, monkeypatch):
         AsyncClient(transport=ASGITransport(app=recipes_app), base_url="http://recipes") as recipes,
     ):
         response = await hub.post(
-            "/connections", json={"provider": "usda", "secrets": {"api_key": "de-prueba"}}
+            "/connections", json={"provider": "usda", "secrets": {"api_key": "test-only"}}
         )
         assert response.status_code == 201, response.text
         yield World(recipes, hub, monkeypatch)

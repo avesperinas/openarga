@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from macros import weight
+from macros import catalog, weight
 from macros.common import Conflict
 
 KCAL_PER_KG = 7700.0
@@ -58,7 +58,7 @@ async def is_complete(connection: AsyncConnection, day: date) -> bool:
 
 async def mark(connection: AsyncConnection, day: date, complete: bool, today: date) -> bool:
     if day > today:
-        raise Conflict("un día que no ha llegado no está completo")
+        raise Conflict("a day that has not come yet cannot be complete")
     await connection.execute(MARK if complete else UNMARK, {"day": day})
     return complete
 
@@ -98,15 +98,12 @@ async def estimate(connection: AsyncConnection, today: date) -> Expenditure:
     }
     out = Expenditure(kcal=None, days=len(eaten), first=first, last=last)
     if len(eaten) < MIN_DAYS:
-        out.missing = (
-            f"hacen falta {MIN_DAYS} días completos en las últimas cuatro semanas y hay "
-            f"{len(eaten)}: márcalos al final de cada día"
-        )
+        out.missing = catalog.t("expenditure.missing_days", needed=MIN_DAYS, have=len(eaten))
         return out
     history = await weight.history(connection)
     weighed = [one for one in history.days if first <= one.day <= last]
     if len(weighed) < 2 or (weighed[-1].day - weighed[0].day).days < MIN_WEIGHT_SPAN:
-        out.missing = "hace falta el peso de al menos dos días separados una semana, en Salud"
+        out.missing = catalog.t("expenditure.missing_weight")
         return out
     per_day = slope([((one.day - first).days, one.kg) for one in weighed])
     intake = sum(eaten.values()) / len(eaten)
@@ -127,9 +124,8 @@ async def estimate(connection: AsyncConnection, today: date) -> Expenditure:
 
 
 def proposal_label(one: Proposal) -> str:
-    kcal = f"{one.kcal:,.0f}".replace(",", ".")
+    kcal = catalog.number(one.kcal)
     if one.rate_kg_week == 0:
-        return f"Para mantener el peso, {kcal} kcal"
-    verb = "bajar" if one.rate_kg_week < 0 else "subir"
-    amount = f"{abs(one.rate_kg_week):g}".replace(".", ",")
-    return f"Para {verb} {amount} kg por semana, {kcal} kcal"
+        return catalog.t("expenditure.keep", kcal=kcal)
+    way = "lose" if one.rate_kg_week < 0 else "gain"
+    return catalog.t(f"expenditure.{way}", amount=catalog.short(abs(one.rate_kg_week)), kcal=kcal)

@@ -16,6 +16,9 @@ import {
   Section,
   Skeleton,
   SwipeArea,
+  type Translate,
+  useLocale,
+  useT,
   useToast,
 } from "@openarga/ui";
 import { useState } from "react";
@@ -73,6 +76,8 @@ export function TodayScreen({
   onDay: (day: string) => void;
   onAddDone?: () => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const today = todayIso();
   const shown = day ?? today;
   const found = useResource(`day:${shown}`, () => readDay(shown), {
@@ -100,9 +105,9 @@ export function TodayScreen({
     void confirmEntry(entry.id)
       .then(() => {
         toast({
-          message: `Apuntado · ${entry.said ?? entry.items.map((one) => one.name).join(", ")}`,
+          message: t("toast.logged", { what: entry.said ?? entry.items.map((one) => one.name).join(", ") }),
           action: {
-            label: "Deshacer",
+            label: t("common.undo"),
             run: () => void unconfirmEntry(entry.id).then(reload),
           },
         });
@@ -113,7 +118,7 @@ export function TodayScreen({
           message:
             reason instanceof Error
               ? reason.message
-              : "No se ha podido confirmar",
+              : t("toast.confirm_failed"),
           tone: "error",
         }),
       );
@@ -124,8 +129,8 @@ export function TodayScreen({
         reload();
         if (done)
           toast({
-            message: "Día completo",
-            action: { label: "Deshacer", run: () => complete(false) },
+            message: t("complete.done"),
+            action: { label: t("common.undo"), run: () => complete(false) },
           });
       })
       .catch((reason: unknown) =>
@@ -133,7 +138,7 @@ export function TodayScreen({
           message:
             reason instanceof Error
               ? reason.message
-              : "No se ha podido guardar",
+              : t("common.save_failed"),
           tone: "error",
         }),
       );
@@ -148,21 +153,21 @@ export function TodayScreen({
         onPrevious={() => onDay(shiftDay(shown, -1))}
       >
         <ScreenHeader
-          eyebrow={shown === today ? longDate(today) : undefined}
-          title={dayTitle(shown, today)}
+          eyebrow={shown === today ? longDate(today, locale) : undefined}
+          title={dayTitle(shown, today, t, locale)}
         />
         <div className="macros-daynav">
           <IconButton
             icon="chevron-left"
-            label="Día anterior"
+            label={t("day.previous")}
             onClick={() => onDay(shiftDay(shown, -1))}
           />
           {shown !== today && (
-            <Button onClick={() => onDay(today)}>Volver a hoy</Button>
+            <Button onClick={() => onDay(today)}>{t("day.back_today")}</Button>
           )}
           <IconButton
             icon="chevron-right"
-            label="Día siguiente"
+            label={t("day.next")}
             disabled={shown >= today}
             onClick={() => onDay(shiftDay(shown, 1))}
           />
@@ -172,7 +177,7 @@ export function TodayScreen({
         {!data ? (
           found.error ? (
             <ErrorState
-              title="Macros no contesta"
+              title={t("common.not_answering")}
               detail={found.error.message}
               onRetry={found.refresh}
             />
@@ -181,15 +186,12 @@ export function TodayScreen({
           )
         ) : (
           <Panes
-            asideLabel="Lo del día"
+            asideLabel={t("day.aside")}
             main={
               <>
                 {data.entries.length > 0 && <DaySummary day={data} />}
                 {data.entries.length === 0 && (
-                  <Hint>
-                    Lo normal es contárselo a Claude: «un café con leche y una
-                    tostada».
-                  </Hint>
+                  <Hint>{t("day.tell_assistant")}</Hint>
                 )}
                 {shown === today && <OutdatedNotice onChanged={reload} />}
 
@@ -217,34 +219,31 @@ export function TodayScreen({
                 {data.entries.some((entry) =>
                   entry.items.some((item) => item.kind === "quick"),
                 ) && (
-                  <Hint>
-                    Lo apuntado a ojo solo dice sus kcal: los micros de ese día
-                    salen a medias.
-                  </Hint>
+                  <Hint>{t("day.quick_partial")}</Hint>
                 )}
 
                 {data.entries.length > 0 && (
                   <List>
                     <ListRow
                       title={
-                        data.complete ? "Día completo" : "¿Está todo apuntado?"
+                        data.complete ? t("complete.done") : t("complete.ask")
                       }
                       subtitle={
                         data.complete
-                          ? "Cuenta para el gasto estimado"
-                          : "Márcalo al acabar el día: solo los completos cuentan para el gasto estimado"
+                          ? t("complete.counts")
+                          : t("complete.hint")
                       }
                       action={
                         data.complete
                           ? {
                               icon: "undo",
-                              label: "Ya no está completo",
+                              label: t("complete.undo"),
                               onClick: () => complete(false),
                             }
                           : {
                               icon: "done",
                               kind: "check",
-                              label: "Día completo",
+                              label: t("complete.done"),
                               onClick: () => complete(true),
                             }
                       }
@@ -265,15 +264,15 @@ export function TodayScreen({
                 {data.entries.length > 0 && (
                   <>
                     <Collapsible
-                      title="Objetivos y micronutrientes"
-                      subtitle={goalsLine(data.goals ?? [])}
+                      title={t("day.goals_micros")}
+                      subtitle={goalsLine(data.goals ?? [], t)}
                     >
                       <DayDetail day={data} only="goals" />
                       <DayDetail day={data} only="groups" />
                     </Collapsible>
                     <Collapsible
-                      title="El día por horas"
-                      subtitle="Las kcal de cada hora y la cafeína"
+                      title={t("day.by_hour")}
+                      subtitle={t("day.by_hour_hint")}
                     >
                       <DayDetail day={data} only="hours" />
                     </Collapsible>
@@ -281,7 +280,7 @@ export function TodayScreen({
                 )}
                 {onWeek && (
                   <Button variant="plain" icon="chart" onClick={onWeek}>
-                    Ver cómo comes esta semana
+                    {t("day.see_week")}
                   </Button>
                 )}
               </>
@@ -291,7 +290,7 @@ export function TodayScreen({
       </SwipeArea>
 
       <CreateButton
-        label={now?.label ?? "Añadir"}
+        label={now?.label ?? t("common.add")}
         onClick={() => setAdding(now?.meal ?? true)}
       />
 
@@ -305,9 +304,9 @@ export function TodayScreen({
             setAdding(null);
             reload();
             toast({
-              message: `Apuntado · ${what}`,
+              message: t("toast.logged", { what }),
               action: {
-                label: "Deshacer",
+                label: t("common.undo"),
                 run: () => void removeEntry(entry.id).then(reload),
               },
             });
@@ -362,25 +361,25 @@ export function TodayScreen({
   );
 }
 
-export function tookLabel(entry: Pick<Entry, "items">): string {
+export function tookLabel(entry: Pick<Entry, "items">, t: Translate): string {
   const taken = entry.items.every(
     (item) =>
       item.unit === "unit" || item.unit === "ml" || item.kind === "water",
   );
-  return taken ? "Me lo he tomado" : "Me lo he comido";
+  return taken ? t("planned.taken") : t("planned.eaten");
 }
 
-export function plannedLabel(entry: Pick<Entry, "eaten_at" | "said">): string {
-  return ["Planificado", timeOf(entry.eaten_at), entry.said]
+export function plannedLabel(entry: Pick<Entry, "eaten_at" | "said">, t: Translate): string {
+  return [t("day.planned"), timeOf(entry.eaten_at), entry.said]
     .filter(Boolean)
     .join(" · ");
 }
 
-export function goalsLine(goals: { status: string }[]): string {
+export function goalsLine(goals: { status: string }[], t: Translate): string {
   const counted = goals.filter((goal) => goal.status !== "none");
-  if (counted.length === 0) return "Sin objetivos con dato todavía";
+  if (counted.length === 0) return t("goals.no_data");
   const ok = counted.filter((goal) => goal.status === "ok").length;
-  return `${ok} de ${counted.length} en zona`;
+  return t("goals.in_zone", { ok, count: counted.length });
 }
 
 export function mealTitle(
@@ -415,6 +414,8 @@ function MealBlock({
   onConfirm: (entry: Entry) => void;
   onDish: (entry: Entry, dish: string) => void;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const said = entries
     .map((entry) => entry.said)
     .filter((one): one is string => Boolean(one));
@@ -423,34 +424,34 @@ function MealBlock({
   return (
     <Section
       title={mealTitle(meal, entries.length === 0)}
-      action={{ label: "Añadir", icon: "plus", onClick: onAdd }}
+      action={{ label: t("common.add"), icon: "plus", onClick: onAdd }}
       menu={
         entries.length === 0
           ? undefined
           : {
-              label: `Acciones de ${name}`,
+              label: t("meal.actions", { meal: name }),
               items: [
                 ...(today
                   ? []
                   : [
                       {
-                        label: "Repetir hoy",
+                        label: t("meal.repeat"),
                         icon: "repeat" as const,
                         onSelect: () => onAct("repeat"),
                       },
                     ]),
                 {
-                  label: "Cambiar la hora",
+                  label: t("meal.move"),
                   icon: "clock",
                   onSelect: () => onAct("time"),
                 },
                 {
-                  label: "Guardar como menú",
+                  label: t("menu.save_as"),
                   icon: "bookmark",
                   onSelect: () => onAct("menu"),
                 },
                 {
-                  label: "Borrar",
+                  label: t("common.delete"),
                   icon: "trash",
                   tone: "danger",
                   onSelect: () => onAct("delete"),
@@ -460,9 +461,7 @@ function MealBlock({
       }
     >
       {said.map((one) => (
-        <Hint key={one}>
-          «{one}»
-        </Hint>
+        <Hint key={one}>{t("said", { said: one })}</Hint>
       ))}
       {empty && meal.started && (
         <UsualRows meal={meal} day={day} onLogged={onLogged} />
@@ -477,7 +476,7 @@ function MealBlock({
                   <ListRow
                     key={`${entry.id}:${row.name}`}
                     title={row.name}
-                    subtitle={doubt ? `${doubtLine(doubt.doubt)} · ${doubt.name}` : row.items.map((one) => one.name).join(", ")}
+                    subtitle={doubt ? `${doubtLine(doubt.doubt, t)} · ${doubt.name}` : row.items.map((one) => one.name).join(", ")}
                     tone={doubt ? "warning" : undefined}
                     value={`${amount(row.items.reduce((sum, one) => sum + (one.nutrients.kcal ?? 0), 0), 0)} kcal`}
                     accessory="chevron-right"
@@ -492,8 +491,8 @@ function MealBlock({
                   title={item.name}
                   subtitle={
                     item.doubt
-                      ? `${doubtLine(item.doubt)} · tócalo para confirmar`
-                      : [quantityLabel(item), itemTag(item)]
+                      ? `${doubtLine(item.doubt, t)} · ${t("doubt.tap")}`
+                      : [quantityLabel(item, t, locale), itemTag(item, t)]
                           .filter(Boolean)
                           .join(" · ")
                   }
@@ -512,13 +511,13 @@ function MealBlock({
       )}
       {planned.map((entry) => (
         <div key={entry.id} className="macros-planned">
-          {planned.length > 1 && <GroupLabel>{plannedLabel(entry)}</GroupLabel>}
+          {planned.length > 1 && <GroupLabel>{plannedLabel(entry, t)}</GroupLabel>}
           <List>
             {entry.items.map((item) => (
               <ListRow
                 key={item.id}
                 title={item.name}
-                subtitle={`Planificado · ${quantityLabel(item)}`}
+                subtitle={`${t("day.planned")} · ${quantityLabel(item, t, locale)}`}
                 value={
                   item.kind === "water"
                     ? ""
@@ -530,7 +529,7 @@ function MealBlock({
             ))}
           </List>
           <Inline
-            label={`Lo planificado: ${entry.items.map((one) => one.name).join(", ")}`}
+            label={t("planned.label", { names: entry.items.map((one) => one.name).join(", ") })}
           >
             <Button
               size="small"
@@ -538,14 +537,14 @@ function MealBlock({
               icon="done"
               onClick={() => onConfirm(entry)}
             >
-              {tookLabel(entry)}
+              {tookLabel(entry, t)}
             </Button>
             <Button
               size="small"
               variant="plain"
               onClick={() => entry.items[0] && onItem(entry, entry.items[0])}
             >
-              Cambiar
+              {t("planned.change")}
             </Button>
           </Inline>
         </div>
@@ -563,6 +562,7 @@ function UsualRows({
   day: string;
   onLogged: () => void;
 }) {
+  const t = useT();
   const found = useResource(`usual:${day}:${meal.meal}`, () =>
     readUsualOf(meal.meal, day),
   );
@@ -575,9 +575,9 @@ function UsualRows({
       .then((entry) => {
         onLogged();
         toast({
-          message: `Apuntado · ${what}`,
+          message: t("toast.logged", { what }),
           action: {
-            label: "Deshacer",
+            label: t("common.undo"),
             run: () => void removeEntry(entry.id).then(onLogged),
           },
         });
@@ -587,7 +587,7 @@ function UsualRows({
           message:
             reason instanceof Error
               ? reason.message
-              : "No se ha podido apuntar",
+              : t("weight.log_failed"),
           tone: "error",
         }),
       );
@@ -600,26 +600,26 @@ function UsualRows({
     <List>
       {usual.yesterday.length > 0 && (
         <ListRow
-          title="Como ayer"
+          title={t("usual.like_yesterday")}
           subtitle={`${usual.yesterday.map((one) => one.name).join(" + ")} · ${amount(kcal, 0)} kcal`}
           action={{
             icon: "plus",
-            label: `Apuntar como ayer en ${meal.label.toLowerCase()}`,
+            label: t("usual.log_like_yesterday", { meal: meal.label.toLowerCase() }),
             onClick: () =>
               logged(
                 repeatMeal(shiftDay(day, -1), meal.meal, day),
-                `${meal.label} como ayer`,
+                t("usual.meal_like_yesterday", { meal: meal.label }),
               ),
           }}
         />
       )}
       {usual.usual && (
         <ListRow
-          title="Lo de siempre"
+          title={t("usual.usual")}
           subtitle={`${usual.usual.label} · ${amount(usual.usual.kcal, 0)} kcal`}
           action={{
             icon: "plus",
-            label: `Apuntar lo de siempre en ${meal.label.toLowerCase()}`,
+            label: t("usual.log_usual", { meal: meal.label.toLowerCase() }),
             onClick: () =>
               logged(
                 repeatItems(usual.usual!.item_ids, meal.meal, day),

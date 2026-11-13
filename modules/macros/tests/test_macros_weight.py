@@ -78,7 +78,7 @@ async def test_with_the_keeper_down_nothing_is_logged_and_it_says_so(
     refused = await api.post("/weight", json={"kg": 61.3, "day": "2026-09-25"})
 
     assert refused.status_code == 503
-    assert "Salud no contesta" in refused.json()["detail"]
+    assert "Vitals is not answering" in refused.json()["detail"]
     assert "Error" not in refused.json()["detail"]
     found = (await api.get("/weight")).json()
     assert "2026-09-25" not in [one["day"] for one in found["days"]]

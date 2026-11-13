@@ -1,4 +1,4 @@
-import { Button, Card, Hint, TextField } from "@openarga/ui";
+import { Button, Card, Hint, TextField, useT } from "@openarga/ui";
 import { useEffect, useState } from "react";
 
 import { readSettings, saveSettings } from "./api";
@@ -6,6 +6,7 @@ import { readSettings, saveSettings } from "./api";
 const HHMM = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export function NoticeSettings() {
+  const t = useT();
   const [at, setAt] = useState("");
   const [state, setState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
 
@@ -28,9 +29,9 @@ export function NoticeSettings() {
   };
 
   return (
-    <Card title="Aviso de proteína">
+    <Card title={t("notice.title")}>
       <TextField
-        label="A qué hora"
+        label={t("notice.at")}
         type="time"
         value={at}
         onChange={(value) => {
@@ -38,11 +39,11 @@ export function NoticeSettings() {
           setState("idle");
         }}
         onSubmit={save}
-        hint="Si a esa hora no llegas a tu objetivo de proteína, te avisa. Se enciende en Ajustes → Avisos de arga."
+        hint={t("notice.hint")}
       />
-      {state === "failed" && <Hint tone="warning">No se pudo guardar.</Hint>}
+      {state === "failed" && <Hint tone="warning">{t("common.save_failed")}</Hint>}
       <Button variant="primary" disabled={!valid || state === "saving"} onClick={save}>
-        {state === "saved" ? "Guardado" : "Guardar"}
+        {state === "saved" ? t("common.saved") : t("common.save")}
       </Button>
     </Card>
   );

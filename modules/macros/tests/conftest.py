@@ -79,4 +79,4 @@ def person(request: pytest.FixtureRequest):
     current_user.reset(token)
 
 
-from macros_world import world  # noqa: E402, F401 - la fixture se usa por nombre
+from macros_world import world  # noqa: E402, F401 - the fixture is used by name

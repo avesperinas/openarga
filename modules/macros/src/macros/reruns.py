@@ -74,7 +74,7 @@ async def recalculate(
     connection: AsyncConnection, client: httpx.AsyncClient, recipe_id: str
 ) -> dict[str, Any]:
     if not is_uuid(recipe_id):
-        raise NotFound(f"la receta {recipe_id}")
+        raise NotFound(f"recipe {recipe_id}")
     current = await pantry.recipe(client, recipe_id)
     basis = arga_nutrients.only_known(current["per_serving"])
     basis["_grams"] = float(current.get("grams_per_serving") or 0)

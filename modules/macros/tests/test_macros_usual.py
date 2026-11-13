@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 
-from macros.common import MADRID, today
+from macros.common import today
+
+MADRID = ZoneInfo("Europe/Madrid")
 
 WRITE = {"x-arga-scopes": "macros:write"}
 READ = {"x-arga-scopes": "macros:read"}
@@ -103,5 +106,5 @@ async def test_the_desktop_shortcut_opens_the_sheet_to_log(api, schema) -> None:
     found = (await api.get("/widgets/log")).json()
     assert found["state"] == "ready"
     [action] = found["body"]["actions"]
-    assert action["href"] == "/macros/apuntar"
-    assert action["label"].startswith("Apuntar ")
+    assert action["href"] == "/macros/log"
+    assert action["label"].startswith("Log ")
