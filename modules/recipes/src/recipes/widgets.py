@@ -38,7 +38,11 @@ async def recipe_book(connection: AsyncConnection) -> dict:
     stats = [{"label": t("widget.recipes"), "value": row.recipes}]
     if row.average_minutes is not None:
         stats.append(
-            {"label": t("widget.average"), "value": round(float(row.average_minutes)), "unit": "min"}
+            {
+                "label": t("widget.average"),
+                "value": round(float(row.average_minutes)),
+                "unit": "min",
+            }
         )
     stats.append({"label": t("widget.in_30"), "value": row.quick})
     return envelope(KINDS["recipes"], "ready", {"stats": stats})

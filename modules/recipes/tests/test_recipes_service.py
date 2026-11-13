@@ -65,7 +65,7 @@ async def test_a_new_installation_has_an_empty_recipe_book(api) -> None:
 
 
 async def test_a_widget_that_does_not_exist_is_a_404(api) -> None:
-    response = await api.get("/widgets/lo-que-sea")
+    response = await api.get("/widgets/whatever")
 
     assert response.status_code == 404
     assert MODULE_ID in response.json()["detail"]
@@ -80,7 +80,7 @@ def test_the_scopes_decide_the_postgres_role() -> None:
 
 
 async def test_a_tool_that_does_not_exist_is_a_404(bare) -> None:
-    response = await bare.post("/tools/borralo_todo", json={}, headers={"x-arga-scopes": ""})
+    response = await bare.post("/tools/delete_everything", json={}, headers={"x-arga-scopes": ""})
 
     assert response.status_code == 404
     assert MODULE_ID in response.json()["detail"]

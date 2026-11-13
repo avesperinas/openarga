@@ -43,8 +43,8 @@ NUTRIENTS_HELP = (
     "out: what is missing does not count as zero."
 )
 PROVENANCE_HELP = (
-    "Where these figures come from, briefly: \"HSN label\", \"estimated by the model\", "
-    "\"home recipe\". It shows on the food's card: say it honestly, because a measured figure "
+    'Where these figures come from, briefly: "HSN label", "estimated by the model", '
+    '"home recipe". It shows on the food\'s card: say it honestly, because a measured figure '
     "and an estimated one are not worth the same."
 )
 PORTIONS_HELP = (
@@ -58,8 +58,8 @@ EDIBLE_HELP = (
     "value, all of it is eaten."
 )
 PER_UNIT_HELP = (
-    "For a supplement taken in units: the unit's name, \"capsule\", \"tablet\", \"scoop\", "
-    "\"drop\". Then `macros` and `nutrients` are what **one** unit has, as the label gives "
+    'For a supplement taken in units: the unit\'s name, "capsule", "tablet", "scoop", '
+    '"drop". Then `macros` and `nutrients` are what **one** unit has, as the label gives '
     "it, not per 100 g; and it is counted only in units. `grams_per_unit`, if known, is what "
     "one weighs. Without this, everything is per 100 g."
 )
@@ -189,7 +189,9 @@ class ManualIn(_Measures):
     @model_validator(mode="after")
     def _per_unit_borrows_nothing(self) -> ManualIn:
         if self.per_unit and self.micros_from:
-            raise ValueError("a per-unit food does not take micros from another, which are per 100 g")
+            raise ValueError(
+                "a per-unit food does not take micros from another, which are per 100 g"
+            )
         return self
 
 

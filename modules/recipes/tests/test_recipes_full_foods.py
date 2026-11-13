@@ -6,9 +6,9 @@ READ = {"x-arga-scopes": "recipes:read"}
 WRITE = {"x-arga-scopes": "recipes:read recipes:write"}
 
 FISH_OIL_CAPSULE = {
-    "name": "Omega 3 sintético",
+    "name": "Synthetic omega 3",
     "category_id": "other",
-    "provenance": "etiqueta del bote",
+    "provenance": "jar label",
     "macros": {"kcal": 900, "protein": 0, "fat": 100, "carbs": 0},
     "nutrients": {
         "omega3_epa": {"amount": 18000, "unit": "mg"},
@@ -37,12 +37,12 @@ async def test_what_no_source_has_is_created_with_every_nutrient_and_where_it_co
     food = await manual(api)
 
     assert food["source"] == "manual"
-    assert food["provenance"] == "etiqueta del bote"
+    assert food["provenance"] == "jar label"
     assert food["nutrients"]["omega3_epa"] == 18
     assert food["nutrients"]["omega3_dha"] == 12
     assert food["nutrients"]["vitamin_e"] == 1
     listed = (await call(api, "find_foods", {"query": "omega"}, READ)).json()["content"]["foods"]
-    assert listed[0]["provenance"] == "etiqueta del bote"
+    assert listed[0]["provenance"] == "jar label"
 
 
 async def test_a_key_or_a_unit_that_does_not_fit_is_refused_with_its_reason(api) -> None:
@@ -51,21 +51,21 @@ async def test_a_key_or_a_unit_that_does_not_fit_is_refused_with_its_reason(api)
         "add_manual_food",
         {
             **FISH_OIL_CAPSULE,
-            "nutrients": {"vitamina_d": 5, "caffeine": {"amount": 3, "unit": "kcal"}},
+            "nutrients": {"vitamin_dd": 5, "caffeine": {"amount": 3, "unit": "kcal"}},
         },
     )
 
     assert wrong.status_code == 422
     detail = wrong.text
-    assert "vitamina_d" in detail and "list_nutrients" in detail
-    assert "caffeine: va en mg" in detail
+    assert "vitamin_dd" in detail and "list_nutrients" in detail
+    assert "caffeine" in detail and "mg" in detail
 
 
 async def test_more_of_something_than_the_100_g_it_weighs_is_refused(api) -> None:
     wrong = await call(api, "add_manual_food", {**FISH_OIL_CAPSULE, "nutrients": {"iron": 200_000}})
 
     assert wrong.status_code == 422
-    assert "pesa más que los 100 g" in wrong.text
+    assert "iron" in wrong.text and "100 g" in wrong.text
 
 
 async def test_the_nutrient_keys_are_listed_with_their_units(api) -> None:
@@ -94,14 +94,14 @@ async def test_correcting_changes_only_what_is_sent(api) -> None:
     assert corrected["nutrients"]["vitamin_d"] == 10
     assert "vitamin_e" not in corrected["nutrients"]
     assert corrected["nutrients"]["omega3_epa"] == 18
-    assert corrected["provenance"] == "etiqueta del bote"
+    assert corrected["provenance"] == "jar label"
 
 
 async def test_portions_are_not_a_correction_of_the_figures(api, schema) -> None:
     created = await api.post(
         "/foods/manual",
         json={
-            "name": "Jamón sintético",
+            "name": "Synthetic ham",
             "category_id": "protein",
             "macros": {"kcal": 250, "protein": 30, "fat": 14, "carbs": 0},
         },
@@ -119,25 +119,25 @@ async def test_portions_are_not_a_correction_of_the_figures(api, schema) -> None
         await call(
             api,
             "correct_food",
-            {"food_id": food_id, "portions": [{"name": "loncha", "grams": 15}]},
+            {"food_id": food_id, "portions": [{"name": "slice", "grams": 15}]},
         )
     ).json()["content"]["food"]
 
-    assert saved["portions"] == [{"name": "loncha", "grams": 15}]
+    assert saved["portions"] == [{"name": "slice", "grams": 15}]
     assert saved["corrected"] is False
 
 
 async def test_micros_are_borrowed_where_missing_never_the_macros(api) -> None:
     generic = await manual(
         api,
-        name="Salmón genérico",
-        provenance="ficha de referencia",
+        name="Generic salmon",
+        provenance="reference entry",
         macros={"kcal": 208, "protein": 20, "fat": 13, "carbs": 0},
         nutrients={"vitamin_d": 11, "omega3_epa": 0.86, "sodium": 59},
     )
     branded = await manual(
         api,
-        name="Salmón ahumado de marca",
+        name="Branded smoked salmon",
         provenance="etiqueta",
         macros={"kcal": 180, "protein": 22, "fat": 10, "carbs": 0.5},
         nutrients={"sodium": 1200},
@@ -160,13 +160,13 @@ async def test_micros_are_borrowed_where_missing_never_the_macros(api) -> None:
 
 async def test_borrowing_does_not_chain_and_not_from_itself(api) -> None:
     first = await manual(api, name="Uno")
-    second = await manual(api, name="Dos", micros_from=first["food_id"])
+    second = await manual(api, name="Two", micros_from=first["food_id"])
 
     chained = (
         await call(
             api,
             "add_manual_food",
-            {**FISH_OIL_CAPSULE, "name": "Tres", "micros_from": second["food_id"]},
+            {**FISH_OIL_CAPSULE, "name": "Three", "micros_from": second["food_id"]},
         )
     ).json()
     itself = (
@@ -176,19 +176,19 @@ async def test_borrowing_does_not_chain_and_not_from_itself(api) -> None:
     ).json()
 
     assert chained["content"]["food"] is None
-    assert "apunta al original" in chained["content"]["note"]
+    assert "point to the original" in chained["content"]["note"]
     assert itself["content"]["food"] is None
-    assert "sí mismo" in itself["content"]["note"]
+    assert "itself" in itself["content"]["note"]
 
 
 async def test_a_recipe_counts_house_portions_and_what_is_eaten_of_a_whole_piece(api) -> None:
     ham = await manual(
         api,
-        name="Jamón",
+        name="Ham",
         provenance="etiqueta",
         macros={"kcal": 250, "protein": 30, "fat": 14, "carbs": 0},
         nutrients={},
-        portions=[{"name": "Loncha", "grams": 15}, {"name": "taco", "grams": 40}],
+        portions=[{"name": "Slice", "grams": 15}, {"name": "chunk", "grams": 40}],
     )
     tuna = await manual(
         api,
@@ -199,10 +199,10 @@ async def test_a_recipe_counts_house_portions_and_what_is_eaten_of_a_whole_piece
         edible_fraction=0.82,
     )
     body = {
-        "name": "Bonito con jamón",
+        "name": "Tuna with ham",
         "servings": 2,
         "ingredients": [
-            {"food_id": ham["food_id"], "quantity": 3, "unit": "unit", "portion": "loncha"},
+            {"food_id": ham["food_id"], "quantity": 3, "unit": "unit", "portion": "slice"},
             {"food_id": tuna["food_id"], "quantity": 730, "unit": "g", "as_purchased": True},
         ],
     }
@@ -215,7 +215,7 @@ async def test_a_recipe_counts_house_portions_and_what_is_eaten_of_a_whole_piece
     grams = {
         one["name"]: one["grams"] for group in recipe["groups"] for one in group["ingredients"]
     }
-    assert grams["Jamón"] == 45
+    assert grams["Ham"] == 45
     assert grams["Bonito"] == pytest.approx(598.6)
     assert recipe["nutrition"]["per_serving"]["kcal"] == pytest.approx(
         (45 * 2.5 + 598.6 * 1.4) / 2, abs=0.2
@@ -227,21 +227,21 @@ async def test_a_portion_goes_with_units_only(api) -> None:
         api,
         "create_recipe",
         {
-            "name": "Mal",
+            "name": "Bad",
             "servings": 1,
-            "ingredients": [{"name": "Jamón", "quantity": 3, "unit": "g", "portion": "loncha"}],
+            "ingredients": [{"name": "Ham", "quantity": 3, "unit": "g", "portion": "slice"}],
         },
     )
 
     assert wrong.status_code == 422
-    assert "una porción cuenta unidades" in wrong.text
+    assert "a portion counts units" in wrong.text
 
 
 CAPSULE = {
-    "name": "Omega 3 en cápsulas",
+    "name": "Omega 3 in capsules",
     "category_id": "supplement",
-    "provenance": "etiqueta del bote",
-    "per_unit": "cápsula",
+    "provenance": "jar label",
+    "per_unit": "capsule",
     "macros": {"kcal": 9, "protein": 0, "fat": 1, "carbs": 0},
     "nutrients": {
         "omega3_epa": {"amount": 330, "unit": "mg"},
@@ -255,19 +255,19 @@ async def test_a_supplement_keeps_its_figures_per_unit(api) -> None:
     food = await manual(api, **CAPSULE)
 
     assert food["category"] == "supplement"
-    assert food["per"] == "cápsula"
+    assert food["per"] == "capsule"
     assert food["per_100g"]["kcal"] == 9
     assert food["nutrients"]["omega3_epa"] == 0.33
-    listed = (await call(api, "find_foods", {"query": "omega 3 en"}, READ)).json()["content"]
-    assert listed["foods"][0]["per"] == "cápsula"
+    listed = (await call(api, "find_foods", {"query": "omega 3 in"}, READ)).json()["content"]
+    assert listed["foods"][0]["per"] == "capsule"
 
 
 async def test_a_supplement_neither_borrows_nor_lends_micros(api) -> None:
     capsule = await manual(api, **CAPSULE)
-    generic = await manual(api, name="Salmón genérico", nutrients={"vitamin_d": 11})
+    generic = await manual(api, name="Generic salmon", nutrients={"vitamin_d": 11})
 
     borrowing = await call(
-        api, "add_manual_food", {**CAPSULE, "name": "Otro", "micros_from": generic["food_id"]}
+        api, "add_manual_food", {**CAPSULE, "name": "Other", "micros_from": generic["food_id"]}
     )
     lending = (
         await call(
@@ -276,20 +276,20 @@ async def test_a_supplement_neither_borrows_nor_lends_micros(api) -> None:
     ).json()["content"]
 
     assert borrowing.status_code == 422
-    assert "por unidad" in borrowing.text
+    assert "per-unit" in borrowing.text
     assert lending["food"] is None
-    assert "por unidad" in lending["note"]
+    assert "per unit" in lending["note"]
 
 
 async def test_a_recipe_counts_a_supplement_by_units_and_not_in_grams(api) -> None:
     capsule = await manual(api, **CAPSULE)
     body = {
-        "name": "Batido con omega",
+        "name": "Shake with omega",
         "servings": 1,
         "ingredients": [{"food_id": capsule["food_id"], "quantity": 2, "unit": "unit"}],
     }
     in_grams = {
-        "name": "Batido mal medido",
+        "name": "Badly measured shake",
         "servings": 1,
         "ingredients": [{"food_id": capsule["food_id"], "quantity": 2, "unit": "g"}],
     }

@@ -154,9 +154,7 @@ def build(steps: list[Step], ingredients: list[Ingredient]) -> Grid:
 
     notes = list(repeated) + list(shared)
     if steps and not cells:
-        notes.append(
-            t("grid.no_uses")
-        )
+        notes.append(t("grid.no_uses"))
     if orphans:
         names = ", ".join(named[p] for p in orphans)
         notes.append(t("grid.orphans", names=names))

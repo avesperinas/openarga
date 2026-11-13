@@ -17,45 +17,45 @@ async def add_food(api, name: str, category: str, macros: dict, **measures) -> s
 @pytest.fixture
 async def pantry(api) -> dict[str, str]:
     return {
-        "puerro": await add_food(
+        "leek": await add_food(
             api,
-            "Puerro",
+            "Leek",
             "vegetable",
             {"kcal": 61, "protein": 1.5, "fat": 0.3, "carbs": 14.15},
             grams_per_unit=90,
         ),
-        "patata": await add_food(
+        "potato": await add_food(
             api,
-            "Patata",
+            "Potato",
             "vegetable",
             {"kcal": 77, "protein": 2, "fat": 0.1, "carbs": 17.5},
         ),
-        "aceite": await add_food(
+        "oil": await add_food(
             api,
-            "Aceite de oliva",
+            "Olive oil",
             "fat",
             {"kcal": 884, "protein": 0, "fat": 100, "carbs": 0},
             density_g_ml=0.92,
         ),
-        "bacalao": await add_food(
+        "cod": await add_food(
             api,
-            "Bacalao",
+            "Cod",
             "fish",
             {"kcal": 82, "protein": 18, "fat": 0.7, "carbs": 0},
         ),
     }
 
 
-def porrusalda(pantry: dict[str, str], **overrides) -> dict:
+def leek_soup(pantry: dict[str, str], **overrides) -> dict:
     body = {
-        "name": "Porrusalda",
+        "name": "Leek soup",
         "servings": 4,
-        "tags": ["invierno", "olla"],
+        "tags": ["winter", "pot"],
         "ingredients": [
-            {"food_id": pantry["puerro"], "quantity": 400, "unit": "g", "note": "en rodajas"},
-            {"food_id": pantry["patata"], "quantity": 600, "unit": "g"},
-            {"food_id": pantry["aceite"], "quantity": 30, "unit": "ml"},
-            {"food_id": pantry["bacalao"], "quantity": 200, "unit": "g", "optional": True},
+            {"food_id": pantry["leek"], "quantity": 400, "unit": "g", "note": "sliced"},
+            {"food_id": pantry["potato"], "quantity": 600, "unit": "g"},
+            {"food_id": pantry["oil"], "quantity": 30, "unit": "ml"},
+            {"food_id": pantry["cod"], "quantity": 200, "unit": "g", "optional": True},
         ],
     }
     body.update(overrides)
@@ -63,30 +63,30 @@ def porrusalda(pantry: dict[str, str], **overrides) -> dict:
 
 
 async def test_a_recipe_is_created_with_its_first_version_sealed(api, pantry) -> None:
-    response = await api.post("/recipes", json=porrusalda(pantry))
+    response = await api.post("/recipes", json=leek_soup(pantry))
 
     assert response.status_code == 201, response.text
     recipe = response.json()
-    assert recipe["name"] == "Porrusalda"
+    assert recipe["name"] == "Leek soup"
     assert recipe["version"] == 1
     assert recipe["versions"] == 1
     assert recipe["source"] == "app"
-    assert [tag["name"] for tag in recipe["tags"]] == ["invierno", "olla"]
+    assert [tag["name"] for tag in recipe["tags"]] == ["pot", "winter"]
 
 
 async def test_the_ingredients_come_grouped_by_category_with_their_emoji(api, pantry) -> None:
-    recipe = (await api.post("/recipes", json=porrusalda(pantry))).json()
+    recipe = (await api.post("/recipes", json=leek_soup(pantry))).json()
 
     groups = {group["category_id"]: group for group in recipe["groups"]}
     assert list(groups) == ["vegetable", "fish", "fat"]
     assert groups["vegetable"]["emoji"] == "🥬"
-    assert [i["name"] for i in groups["vegetable"]["ingredients"]] == ["Puerro", "Patata"]
-    assert groups["vegetable"]["ingredients"][0]["note"] == "en rodajas"
+    assert [i["name"] for i in groups["vegetable"]["ingredients"]] == ["Leek", "Potato"]
+    assert groups["vegetable"]["ingredients"][0]["note"] == "sliced"
     assert groups["fish"]["ingredients"][0]["optional"] is True
 
 
 async def test_the_macros_are_added_up_in_grams(api, pantry) -> None:
-    recipe = (await api.post("/recipes", json=porrusalda(pantry))).json()
+    recipe = (await api.post("/recipes", json=leek_soup(pantry))).json()
 
     total = recipe["nutrition"]["total"]
     assert total["kcal"] == pytest.approx(1114, abs=2)
@@ -97,7 +97,7 @@ async def test_the_macros_are_added_up_in_grams(api, pantry) -> None:
 
 
 async def test_asking_for_more_people_scales_the_quantities(api, pantry) -> None:
-    created = (await api.post("/recipes", json=porrusalda(pantry))).json()
+    created = (await api.post("/recipes", json=leek_soup(pantry))).json()
 
     for_six = (await api.get(f"/recipes/{created['id']}", params={"servings": 6})).json()
 
@@ -114,40 +114,40 @@ async def test_asking_for_more_people_scales_the_quantities(api, pantry) -> None
 
 
 async def test_an_ingredient_that_cannot_be_converted_is_counted_and_said(api, pantry) -> None:
-    body = porrusalda(pantry)
-    body["ingredients"].append({"name": "Sofrito de la abuela", "quantity": 1, "unit": "unit"})
+    body = leek_soup(pantry)
+    body["ingredients"].append({"name": "Grandma's sofrito", "quantity": 1, "unit": "unit"})
 
     recipe = (await api.post("/recipes", json=body)).json()
 
     assert recipe["nutrition"]["counted"] == 4
     assert recipe["nutrition"]["ingredients"] == 5
-    assert "falta" in recipe["nutrition"]["uncertainty"]
-    assert "Sofrito de la abuela" in recipe["nutrition"]["uncertainty"]
+    assert "missing" in recipe["nutrition"]["uncertainty"]
+    assert "Grandma's sofrito" in recipe["nutrition"]["uncertainty"]
     unresolved = [
         i for group in recipe["groups"] for i in group["ingredients"] if i["food_id"] is None
     ]
-    assert [i["name"] for i in unresolved] == ["Sofrito de la abuela"]
+    assert [i["name"] for i in unresolved] == ["Grandma's sofrito"]
     assert unresolved[0]["grams"] is None
 
 
 async def test_an_ingredient_by_name_finds_what_is_already_in_the_pantry(api, pantry) -> None:
     body = {
-        "name": "Puerros solos",
+        "name": "Just leeks",
         "servings": 2,
-        "ingredients": [{"name": "puerro", "quantity": 200, "unit": "g"}],
+        "ingredients": [{"name": "leek", "quantity": 200, "unit": "g"}],
     }
 
     recipe = (await api.post("/recipes", json=body)).json()
 
     assert recipe["nutrition"]["counted"] == 1
-    assert recipe["groups"][0]["ingredients"][0]["food_id"] == pantry["puerro"]
+    assert recipe["groups"][0]["ingredients"][0]["food_id"] == pantry["leek"]
 
 
 async def test_editing_writes_the_next_version_and_keeps_the_old_one(api, pantry) -> None:
-    created = (await api.post("/recipes", json=porrusalda(pantry))).json()
-    lighter = porrusalda(pantry)
+    created = (await api.post("/recipes", json=leek_soup(pantry))).json()
+    lighter = leek_soup(pantry)
     lighter["ingredients"][2]["quantity"] = 10
-    lighter["note"] = "menos aceite"
+    lighter["note"] = "less oil"
 
     updated = await api.put(f"/recipes/{created['id']}", json=lighter)
 
@@ -155,13 +155,13 @@ async def test_editing_writes_the_next_version_and_keeps_the_old_one(api, pantry
     body = updated.json()
     assert body["version"] == 2
     assert body["versions"] == 2
-    assert body["note"] == "menos aceite"
+    assert body["note"] == "less oil"
     assert body["nutrition"]["total"]["kcal"] < created["nutrition"]["total"]["kcal"]
 
 
 async def test_the_previous_version_is_still_there_untouched(api, pantry, schema) -> None:
-    created = (await api.post("/recipes", json=porrusalda(pantry))).json()
-    await api.put(f"/recipes/{created['id']}", json=porrusalda(pantry, name="Porrusalda ligera"))
+    created = (await api.post("/recipes", json=leek_soup(pantry))).json()
+    await api.put(f"/recipes/{created['id']}", json=leek_soup(pantry, name="Light leek soup"))
 
     async with schema.begin() as connection:
         await connection.execute(text('set local role "mod_recipes"'))
@@ -180,8 +180,8 @@ async def test_the_previous_version_is_still_there_untouched(api, pantry, schema
 
 
 async def test_every_saved_version_is_queued_for_the_log(api, pantry, schema) -> None:
-    created = (await api.post("/recipes", json=porrusalda(pantry))).json()
-    await api.put(f"/recipes/{created['id']}", json=porrusalda(pantry))
+    created = (await api.post("/recipes", json=leek_soup(pantry))).json()
+    await api.put(f"/recipes/{created['id']}", json=leek_soup(pantry))
 
     async with schema.begin() as connection:
         await connection.execute(text('set local role "mod_recipes"'))
@@ -201,7 +201,7 @@ async def test_every_saved_version_is_queued_for_the_log(api, pantry, schema) ->
     ]
     assert all(row.published_at is None for row in rows)
     payload = rows[0].payload if isinstance(rows[0].payload, dict) else json.loads(rows[0].payload)
-    assert payload["name"] == "Porrusalda"
+    assert payload["name"] == "Leek soup"
     assert payload["ingredients"] == 4
 
 
@@ -218,7 +218,7 @@ async def test_an_ingredient_is_a_food_or_a_name_never_both(api, pantry) -> None
             "name": "Confusa",
             "servings": 2,
             "ingredients": [
-                {"food_id": pantry["puerro"], "name": "puerro", "quantity": 100, "unit": "g"}
+                {"food_id": pantry["leek"], "name": "leek", "quantity": 100, "unit": "g"}
             ],
         },
     )
@@ -246,25 +246,25 @@ async def test_a_food_that_does_not_exist_is_a_404(api) -> None:
 
 
 async def test_two_recipes_cannot_share_a_name(api, pantry) -> None:
-    await api.post("/recipes", json=porrusalda(pantry))
+    await api.post("/recipes", json=leek_soup(pantry))
 
-    again = await api.post("/recipes", json=porrusalda(pantry))
+    again = await api.post("/recipes", json=leek_soup(pantry))
 
     assert again.status_code == 409
 
 
 async def test_the_recipe_book_lists_what_has_been_saved(api, pantry) -> None:
-    await api.post("/recipes", json=porrusalda(pantry))
+    await api.post("/recipes", json=leek_soup(pantry))
 
     listed = (await api.get("/recipes")).json()
 
-    assert [recipe["name"] for recipe in listed] == ["Porrusalda"]
+    assert [recipe["name"] for recipe in listed] == ["Leek soup"]
     assert listed[0]["servings"] == 4
-    assert sorted(listed[0]["tags"]) == ["invierno", "olla"]
+    assert sorted(listed[0]["tags"]) == ["pot", "winter"]
 
 
 async def test_deleting_takes_its_versions_with_it(api, pantry) -> None:
-    created = (await api.post("/recipes", json=porrusalda(pantry))).json()
+    created = (await api.post("/recipes", json=leek_soup(pantry))).json()
 
     gone = await api.delete(f"/recipes/{created['id']}")
 
@@ -274,25 +274,25 @@ async def test_deleting_takes_its_versions_with_it(api, pantry) -> None:
 
 
 def con_pasos(pantry: dict[str, str]) -> dict:
-    body = porrusalda(pantry)
+    body = leek_soup(pantry)
     body["steps"] = [
         {
             "action": "chop",
-            "text": "Picar el puerro en rodajas",
+            "text": "Slice the leek",
             "minutes": 5,
             "equipment": "board",
             "ingredients": [1],
         },
         {
             "action": "peel",
-            "text": "Cascar las patatas",
+            "text": "Break the potatoes",
             "minutes": 5,
             "equipment": "board",
             "ingredients": [2],
         },
         {
             "action": "saute",
-            "text": "Pochar el puerro en el aceite",
+            "text": "Soften the leek in the oil",
             "minutes": 10,
             "equipment": "hob",
             "after": [1],
@@ -329,22 +329,22 @@ async def test_each_step_says_what_goes_in_it(api, pantry) -> None:
     recipe = (await api.post("/recipes", json=con_pasos(pantry))).json()
 
     steps = {one["position"]: one for one in recipe["kitchen"]["steps"]}
-    assert steps[1]["ingredients"] == ["Puerro"]
-    assert steps[3]["ingredients"] == ["Aceite de oliva"]
+    assert steps[1]["ingredients"] == ["Leek"]
+    assert steps[3]["ingredients"] == ["Olive oil"]
     assert steps[4]["ingredients"] == []
 
 
 async def test_an_unattended_step_lets_the_cook_carry_on(api, pantry) -> None:
-    body = porrusalda(pantry)
+    body = leek_soup(pantry)
     body["steps"] = [
         {
             "action": "bake",
-            "text": "Al horno",
+            "text": "In the oven",
             "minutes": 40,
             "attended": False,
             "equipment": "oven",
         },
-        {"action": "chop", "text": "Picar la ensalada", "minutes": 10, "equipment": "board"},
+        {"action": "chop", "text": "Chop the salad", "minutes": 10, "equipment": "board"},
     ]
 
     kitchen = (await api.post("/recipes", json=body)).json()["kitchen"]
@@ -355,37 +355,37 @@ async def test_an_unattended_step_lets_the_cook_carry_on(api, pantry) -> None:
 
 
 async def test_a_step_that_depends_on_a_later_one_is_refused_with_its_reason(api, pantry) -> None:
-    body = porrusalda(pantry)
+    body = leek_soup(pantry)
     body["steps"] = [
-        {"action": "chop", "text": "Picar", "minutes": 5, "after": [2]},
-        {"action": "mix", "text": "Mezclar", "minutes": 5},
+        {"action": "chop", "text": "Chop", "minutes": 5, "after": [2]},
+        {"action": "mix", "text": "Mix", "minutes": 5},
     ]
 
     response = await api.post("/recipes", json=body)
 
     assert response.status_code == 422
-    assert "anteriores" in response.text
+    assert "earlier ones" in response.text
 
 
 async def test_a_step_cannot_use_an_ingredient_that_is_not_there(api, pantry) -> None:
-    body = porrusalda(pantry)
-    body["steps"] = [{"action": "chop", "text": "Picar", "minutes": 5, "ingredients": [99]}]
+    body = leek_soup(pantry)
+    body["steps"] = [{"action": "chop", "text": "Chop", "minutes": 5, "ingredients": [99]}]
 
     response = await api.post("/recipes", json=body)
 
     assert response.status_code == 422
-    assert "solo hay" in response.text
+    assert "there are only" in response.text
 
 
 async def test_an_unknown_verb_is_refused(api, pantry) -> None:
-    body = porrusalda(pantry)
+    body = leek_soup(pantry)
     body["steps"] = [{"action": "flambear", "text": "Flambear", "minutes": 2}]
 
     assert (await api.post("/recipes", json=body)).status_code == 422
 
 
 async def test_two_things_on_the_same_hob_are_said_not_forbidden(api, pantry) -> None:
-    body = porrusalda(pantry)
+    body = leek_soup(pantry)
     body["steps"] = [
         {"action": "simmer", "text": "Caldo", "minutes": 40, "attended": False, "equipment": "hob"},
         {"action": "fry", "text": "Sofrito", "minutes": 15, "equipment": "hob"},
@@ -397,7 +397,7 @@ async def test_two_things_on_the_same_hob_are_said_not_forbidden(api, pantry) ->
 
 
 async def test_a_recipe_without_steps_has_an_empty_diagram_and_not_an_error(api, pantry) -> None:
-    recipe = (await api.post("/recipes", json=porrusalda(pantry))).json()
+    recipe = (await api.post("/recipes", json=leek_soup(pantry))).json()
 
     assert recipe["kitchen"]["steps"] == []
     assert recipe["kitchen"]["total_minutes"] == 0
@@ -420,10 +420,10 @@ async def test_the_recipe_comes_with_its_grid_drawn(api, pantry) -> None:
 
     made = recipe["kitchen"]["grid"]
     assert [row["name"] for row in made["rows"]] == [
-        "Puerro",
-        "Aceite de oliva",
-        "Patata",
-        "Bacalao",
+        "Leek",
+        "Olive oil",
+        "Potato",
+        "Cod",
     ]
     assert [(c["position"], c["column"], c["row"], c["span"]) for c in made["cells"]] == [
         (1, 1, 1, 1),
@@ -432,7 +432,7 @@ async def test_the_recipe_comes_with_its_grid_drawn(api, pantry) -> None:
         (4, 3, 1, 3),
     ]
     assert made["columns"] == 3
-    assert made["notes"] == ["no entra en ningún paso: Bacalao"]
+    assert made["notes"] == ["goes into no step: Cod"]
 
 
 async def test_a_step_says_what_it_depends_on_so_editing_does_not_lose_it(api, pantry) -> None:
@@ -448,7 +448,7 @@ async def test_a_step_says_what_it_depends_on_so_editing_does_not_lose_it(api, p
 async def test_an_archived_recipe_leaves_the_book_and_the_search_but_still_opens(
     api, pantry
 ) -> None:
-    recipe = (await api.post("/recipes", json=porrusalda(pantry))).json()
+    recipe = (await api.post("/recipes", json=leek_soup(pantry))).json()
     assert (await api.post(f"/recipes/{recipe['id']}/archive")).status_code == 204
 
     book = (await api.get("/recipes")).json()

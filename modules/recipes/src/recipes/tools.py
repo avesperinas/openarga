@@ -36,9 +36,7 @@ class FindRecipes(BaseModel):
         max_length=60,
         description="Part of the recipe name, e.g. `stew`. Without it, all of them.",
     )
-    tag: str | None = Field(
-        default=None, max_length=40, description="Only those with this tag."
-    )
+    tag: str | None = Field(default=None, max_length=40, description="Only those with this tag.")
     ingredient: str | None = Field(
         default=None,
         max_length=60,
@@ -485,7 +483,8 @@ async def delete_recipe(connection: AsyncConnection, arguments: DeleteRecipe) ->
         return {
             "deleted": None,
             "note": (
-                f"that recipe is called '{recipe.name}', not '{arguments.name}'; nothing was deleted"
+                f"that recipe is called '{recipe.name}', not '{arguments.name}'; "
+                "nothing was deleted"
             ),
         }
     try:
@@ -529,8 +528,7 @@ async def share_recipe(connection: AsyncConnection, arguments: ShareRecipe) -> d
             names = ", ".join(f"'{one['name']}'" for one in mine) or "none"
             return {
                 "recipe": None,
-                "note": f"you are in no space called '{arguments.space}'; yours: "
-                f"{names}",
+                "note": f"you are in no space called '{arguments.space}'; yours: {names}",
             }
         space_id = match[0]["id"]
     try:

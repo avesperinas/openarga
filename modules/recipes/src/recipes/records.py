@@ -32,7 +32,7 @@ def recipe(found: recipes.Recipe) -> dict[str, Any]:
         lines = "\n".join(
             f"- {one.name}: {_amount(one)}"
             + (f" · {one.note}" if one.note else "")
-            + (" (opcional)" if one.optional else "")
+            + (" (optional)" if one.optional else "")
             for one in group.ingredients
         )
         groups.append(f"### {group.emoji} {group.name}\n\n{lines}")
