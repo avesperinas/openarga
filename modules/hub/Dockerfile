@@ -42,6 +42,7 @@ COPY packages/widgets/pyproject.toml packages/widgets/pyproject.toml
 COPY packages/crypto/pyproject.toml packages/crypto/pyproject.toml
 COPY packages/contracts/pyproject.toml packages/contracts/pyproject.toml
 COPY packages/agenda/pyproject.toml packages/agenda/pyproject.toml
+COPY mcp/pyproject.toml mcp/pyproject.toml
 RUN uv sync --frozen --no-dev --package hub --no-install-workspace
 
 COPY modules/hub/src modules/hub/src
@@ -52,6 +53,7 @@ COPY packages/widgets/src packages/widgets/src
 COPY packages/crypto/src packages/crypto/src
 COPY packages/contracts/src packages/contracts/src
 COPY packages/agenda/src packages/agenda/src
+COPY mcp/src mcp/src
 RUN uv sync --frozen --no-dev --package hub --no-editable
 
 FROM python:3.12-slim AS runtime

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 from typing import Annotated, Any
 
 import httpx
@@ -9,7 +8,7 @@ import jsonschema
 from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel, Field
 
-from arga_contracts.ai import ExtractRequest, ExtractResponse, RunRequest, RunResponse
+from arga_contracts.ai import ExtractRequest, ExtractResponse
 from arga_contracts.ai import Usage as UsageOut
 from arga_crypto import NotConfigured
 from arga_tenancy import require_person
@@ -97,15 +96,9 @@ async def _close(attempt, status: str, usage: Usage, detail: str | None = None) 
 
 
 async def run(module: str, body: dict[str, Any]) -> dict[str, Any]:
-    request = RunRequest.model_validate(body)
-    run_id = hashlib.sha256(f"{module}:{request.key}".encode()).hexdigest()[:16]
-    return RunResponse(
-        status="done",
-        run_id=run_id,
-        summary="The fake AI provider did nothing. Configure a provider in Connections.",
-        provider="fake",
-        model="fake",
-    ).model_dump()
+    from hub.ai.runs import enqueue
+
+    return await enqueue(module, body)
 
 
 class KeyIn(BaseModel):

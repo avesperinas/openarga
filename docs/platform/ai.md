@@ -62,3 +62,24 @@ month's budget is spent, `ai.extract` answers `429` and the attempt is logged as
 `ai.extract` checks `output_schema` before calling anyone, and validates the answer against it. With
 Anthropic it uses structured outputs; with an OpenAI-compatible endpoint it asks for a JSON schema
 response and falls back to JSON mode where the endpoint does not support schemas.
+
+## How `ai.run` works
+
+`ai.run` answers at once: `queued` with a `run_id`, or `repeated` when the same app already asked
+with the same `key` (a key that failed can be asked again). The hub worker then runs the task:
+
+1. It lists OpenArga's tools as the MCP server does, with the app's scopes: every module's `read`
+   and the app's own `write`. A tool that writes to another app is never offered. Calls go to each
+   module with `x-arga-scopes` and the person's `x-arga-user`, so the module runs them as the
+   matching Postgres role, exactly as for an MCP client.
+2. With `web: true` it adds `web_fetch` and, when a search engine is configured, `web_search`.
+   `web_fetch` only reaches public addresses, checks every redirect, and returns the page as text.
+3. The loop stops when the model answers without calling tools, after `max_steps`, when the model
+   declines, or when the month's budget runs out (`over_budget`). The attempt keeps the steps, the
+   tokens and the final summary.
+
+| Variable | Meaning |
+|---|---|
+| `OPENARGA_SEARXNG_URL` | A SearXNG instance with the JSON format enabled. |
+| `OPENARGA_BRAVE_KEY` | A Brave Search API key, used when there is no SearXNG. |
+| `AI_RUN_EVERY_SECONDS` | How often the worker looks for queued runs (default 15). |
