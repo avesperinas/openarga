@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from recipes.catalog import t
 from recipes.gantt import Step
 
 
@@ -60,10 +61,13 @@ def _first_use(steps: list[Step]) -> tuple[dict[int, int], list[str]]:
             else:
                 owner[ingredient] = step.position
     return owner, [
-        f"el ingrediente {ingredient} entra además en el paso "
-        + " y el ".join(str(position) for position in positions)
+        t("grid.ingredient_again", ingredient=ingredient, steps=_steps(positions))
         for ingredient, positions in sorted(repeated.items())
     ]
+
+
+def _steps(positions: list[int]) -> str:
+    return t("grid.and").join(str(position) for position in positions)
 
 
 def _first_consumer(steps: list[Step]) -> tuple[dict[int, int], list[str]]:
@@ -76,8 +80,7 @@ def _first_consumer(steps: list[Step]) -> tuple[dict[int, int], list[str]]:
             else:
                 consumer[earlier] = step.position
     return consumer, [
-        f"lo del paso {earlier} entra además en el paso "
-        + " y el ".join(str(position) for position in positions)
+        t("grid.step_again", step=earlier, steps=_steps(positions))
         for earlier, positions in sorted(shared.items())
     ]
 
@@ -151,13 +154,10 @@ def build(steps: list[Step], ingredients: list[Ingredient]) -> Grid:
 
     notes = list(repeated) + list(shared)
     if steps and not cells:
-        notes.append(
-            "ningún paso dice qué ingredientes entran en él, así que no hay nada que juntar: "
-            "dilo en cada paso y la rejilla se dibuja sola"
-        )
+        notes.append(t("grid.no_uses"))
     if orphans:
         names = ", ".join(named[p] for p in orphans)
-        notes.append(f"no entra en ningún paso: {names}")
+        notes.append(t("grid.orphans", names=names))
 
     return Grid(
         rows=tuple(rows),

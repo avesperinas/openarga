@@ -15,6 +15,8 @@ import {
   Stepper,
   Switch,
   TextField,
+  type Translate,
+  useT,
 } from "@openarga/ui";
 import { useEffect, useState } from "react";
 
@@ -36,8 +38,8 @@ import {
 } from "./api";
 import { ScreenHeader } from "./Header";
 import { macroLine } from "./macros";
-import { ACTIONS, EQUIPMENT, USUALLY_UNATTENDED } from "./steps";
-import { UNITS, quantityLabel } from "./units";
+import { ACTIONS, EQUIPMENT, USUALLY_UNATTENDED, actionName, equipmentName } from "./steps";
+import { UNITS, quantityLabel, unitName, unitShort } from "./units";
 
 interface Draft {
   name: string;
@@ -115,6 +117,7 @@ export function EditorScreen({
   onDone: (id: string) => void;
   onCancel: () => void;
 }) {
+  const t = useT();
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [pantry, setPantry] = useState<Food[]>([]);
   const [adding, setAdding] = useState(false);
@@ -155,7 +158,7 @@ export function EditorScreen({
       onDone(saved.id);
     } catch (error) {
       if (error instanceof Unauthorised) return signIn();
-      setProblem(error instanceof Error ? error.message : "No se pudo guardar.");
+      setProblem(error instanceof Error ? error.message : t("editor.save_failed"));
     } finally {
       setSaving(false);
     }
@@ -164,31 +167,31 @@ export function EditorScreen({
   return (
     <Screen>
       <ScreenHeader
-        back={{ label: id ? "Receta" : "Recetario", onClick: onCancel }}
-        title={id ? "Editar receta" : "Receta nueva"}
+        back={{ label: id ? t("recipe.title") : t("tabs.recipes"), onClick: onCancel }}
+        title={id ? t("editor.edit") : t("editor.new")}
       />
       <OfflineNotice />
       {!loaded && unread !== null && (
         <ErrorState
-          title="No se pudo leer la receta"
+          title={t("recipe.read_failed")}
           detail={unread || undefined}
           onRetry={() => setAttempt((n) => n + 1)}
         />
       )}
-      {!loaded && unread === null && <Skeleton label="Cargando la receta" />}
+      {!loaded && unread === null && <Skeleton label={t("recipe.loading")} />}
       {loaded && (
         <>
           <TextField
-            label="Nombre"
+            label={t("editor.name")}
             value={draft.name}
             onChange={(name) => setDraft({ ...draft, name })}
-            placeholder="Porrusalda"
+            placeholder={t("editor.name_placeholder")}
           />
 
           <div className="surface recipes-panel">
-            <GroupLabel>Para cuántas personas</GroupLabel>
+            <GroupLabel>{t("recipe.how_many")}</GroupLabel>
             <Stepper
-              label="Para cuántas personas"
+              label={t("recipe.how_many")}
               value={draft.servings}
               step={1}
               min={1}
@@ -199,57 +202,57 @@ export function EditorScreen({
           </div>
 
           <TextField
-            label="Etiquetas"
+            label={t("recipe.tags")}
             value={draft.tags}
             onChange={(tags) => setDraft({ ...draft, tags })}
-            placeholder="invierno, olla, rápido"
-            hint="Separadas por comas."
+            placeholder={t("editor.tags_placeholder")}
+            hint={t("editor.tags_hint")}
           />
 
           <section className="recipes-group">
-            <GroupLabel>Ingredientes</GroupLabel>
-            {draft.ingredients.length === 0 && <Hint>Todavía ninguno. Sin ingredientes no hay macros que sumar.</Hint>}
+            <GroupLabel>{t("recipe.ingredients")}</GroupLabel>
+            {draft.ingredients.length === 0 && <Hint>{t("editor.no_ingredients")}</Hint>}
             <List>
               {draft.ingredients.map((one, index) => (
                 <ListRow
                   key={`${one.label}-${index}`}
                   title={one.label}
-                  detail={quantityLabel(one.quantity, one.unit)}
-                  action={{ icon: "close", label: `Quitar ${one.label}`, onClick: () => setDraft({ ...draft, ...withoutIngredient(draft, index) }) }}
+                  detail={quantityLabel(one.quantity, one.unit, t)}
+                  action={{ icon: "close", label: t("editor.remove", { name: one.label }), onClick: () => setDraft({ ...draft, ...withoutIngredient(draft, index) }) }}
                 />
               ))}
             </List>
             <Button icon="plus" onClick={() => setAdding(true)}>
-              Añadir ingrediente
+              {t("editor.add_ingredient")}
             </Button>
           </section>
 
           <section className="recipes-group">
-            <GroupLabel>Pasos</GroupLabel>
+            <GroupLabel>{t("kitchen.steps")}</GroupLabel>
             {draft.steps.length === 0 && (
-              <Hint>Sin pasos no hay diagrama. Cada uno lleva su duración y si te tiene delante.</Hint>
+              <Hint>{t("editor.no_steps")}</Hint>
             )}
             <List>
               {draft.steps.map((step, index) => (
                 <ListRow
                   key={`${step.text}-${index}`}
                   title={`${index + 1}. ${step.text}`}
-                  subtitle={stepLine(step, index, draft.ingredients)}
-                  action={{ icon: "close", label: `Quitar paso ${index + 1}`, onClick: () => setDraft({ ...draft, steps: withoutStep(draft.steps, index) }) }}
+                  subtitle={stepLine(step, index, draft.ingredients, t)}
+                  action={{ icon: "close", label: t("editor.remove_step", { number: index + 1 }), onClick: () => setDraft({ ...draft, steps: withoutStep(draft.steps, index) }) }}
                 />
               ))}
             </List>
             <Button icon="plus" onClick={() => setAddingStep(true)}>
-              Añadir paso
+              {t("editor.add_step")}
             </Button>
           </section>
 
           {problem && <Hint tone="warning">{problem}</Hint>}
 
           <div className="recipes-actions">
-            <Button onClick={onCancel}>Cancelar</Button>
+            <Button onClick={onCancel}>{t("common.cancel")}</Button>
             <Button variant="primary" disabled={!canSave(draft) || saving} onClick={() => void save()}>
-              {saving ? "Guardando…" : "Guardar"}
+              {saving ? t("common.saving") : t("common.save")}
             </Button>
           </div>
 
@@ -290,6 +293,7 @@ function IngredientSheet({
   onClose: () => void;
   onAdd: (ingredient: IngredientIn & { label: string }) => void;
 }) {
+  const t = useT();
   const [chosen, setChosen] = useState<Food | null>(null);
   const [quantity, setQuantity] = useState("100");
   const [unit, setUnit] = useState<Unit>("g");
@@ -298,10 +302,10 @@ function IngredientSheet({
 
   return (
     <Sheet
-      title="Añadir ingrediente"
+      title={t("editor.add_ingredient")}
       onClose={onClose}
       action={{
-        label: "Añadir",
+        label: t("common.add"),
         disabled: !chosen || !Number.isFinite(amount) || amount <= 0,
         onClick: () =>
           chosen &&
@@ -314,30 +318,30 @@ function IngredientSheet({
           }),
       }}
     >
-      {pantry.length === 0 && <Hint>La despensa está vacía. Busca un alimento en la pestaña Despensa y vuelve.</Hint>}
+      {pantry.length === 0 && <Hint>{t("editor.empty_pantry")}</Hint>}
       <ChoiceChips
-        label="Alimento"
+        label={t("editor.food")}
         value={chosen?.id ?? null}
         onChange={(id) => setChosen(pantry.find((food) => food.id === id) ?? null)}
         options={[...pantry]
-          .sort((a, b) => labelOf(a).localeCompare(labelOf(b), "es"))
+          .sort((a, b) => labelOf(a).localeCompare(labelOf(b)))
           .map((food) => ({ value: food.id, label: labelOf(food) }))}
       />
-      {chosen && <Hint>{macroLine(chosen.macros)} por 100 g.</Hint>}
-      <TextField label="Cantidad" inputMode="decimal" value={quantity} onChange={setQuantity} />
+      {chosen && <Hint>{t("editor.per_100", { line: macroLine(chosen.macros, t) })}</Hint>}
+      <TextField label={t("editor.quantity")} inputMode="decimal" value={quantity} onChange={setQuantity} />
       <SegmentedControl
-        label="Unidad"
+        label={t("editor.unit")}
         value={unit}
         onChange={setUnit}
-        options={UNITS.slice(0, 3).map((one) => ({ value: one.value, label: one.short }))}
+        options={UNITS.slice(0, 3).map((one) => ({ value: one, label: unitShort(t, one) }))}
       />
       <ChoiceChips
-        label="Otras unidades"
+        label={t("editor.other_units")}
         value={unit}
         onChange={setUnit}
-        options={UNITS.slice(3).map((one) => ({ value: one.value, label: one.label }))}
+        options={UNITS.slice(3).map((one) => ({ value: one, label: unitName(t, one) }))}
       />
-      <TextField label="Cómo va" value={note} onChange={setNote} placeholder="en rodajas" />
+      <TextField label={t("editor.note")} value={note} onChange={setNote} placeholder={t("editor.note_placeholder")} />
     </Sheet>
   );
 }
@@ -374,6 +378,7 @@ function StepSheet({
   onClose: () => void;
   onAdd: (step: StepIn) => void;
 }) {
+  const t = useT();
   const [action, setAction] = useState("chop");
   const [text, setText] = useState("");
   const [minutes, setMinutes] = useState(10);
@@ -390,10 +395,10 @@ function StepSheet({
 
   return (
     <Sheet
-      title={`Paso ${position}`}
+      title={t("editor.step", { number: position })}
       onClose={onClose}
       action={{
-        label: "Añadir",
+        label: t("common.add"),
         disabled: text.trim().length === 0,
         onClick: () =>
           onAdd({
@@ -407,15 +412,20 @@ function StepSheet({
           }),
       }}
     >
-      <TextField label="Qué se hace" value={text} onChange={setText} placeholder="Pochar el puerro en el aceite" />
+      <TextField
+        label={t("editor.what")}
+        value={text}
+        onChange={setText}
+        placeholder={t("editor.what_placeholder")}
+      />
       <ChoiceChips
-        label="Verbo"
+        label={t("editor.verb")}
         value={action}
         onChange={chooseAction}
-        options={Object.entries(ACTIONS).map(([value, label]) => ({ value, label }))}
+        options={ACTIONS.map((value) => ({ value, label: actionName(t, value) }))}
       />
       <Stepper
-        label="Cuánto dura (minutos)"
+        label={t("editor.minutes")}
         value={minutes}
         step={5}
         min={1}
@@ -425,14 +435,14 @@ function StepSheet({
         onChange={(value) => setMinutes(value ?? 1)}
       />
       <ChoiceChips
-        label="Dónde"
+        label={t("editor.where")}
         value={equipment}
         onChange={setEquipment}
-        options={Object.entries(EQUIPMENT).map(([value, label]) => ({ value, label }))}
+        options={EQUIPMENT.map((value) => ({ value, label: equipmentName(t, value) }))}
       />
       {ingredients.length > 0 && (
         <CheckChips
-          label="Qué entra aquí"
+          label={t("editor.uses")}
           values={uses}
           onChange={setUses}
           options={ingredients.map((one, index) => ({
@@ -442,14 +452,14 @@ function StepSheet({
         />
       )}
       <Switch
-        label="Te tiene delante"
+        label={t("editor.attended")}
         checked={attended}
         onChange={(value) => {
           setTouched(true);
           setAttended(value);
         }}
       />
-      {position > 1 && <Switch label="Empieza a la vez que el anterior" checked={together} onChange={setTogether} />}
+      {position > 1 && <Switch label={t("editor.together")} checked={together} onChange={setTogether} />}
     </Sheet>
   );
 }
@@ -458,13 +468,14 @@ export function stepLine(
   step: { action: string; minutes: number; equipment: string; attended: boolean; after: number[]; ingredients: number[] },
   index: number,
   ingredients: { label: string }[],
+  t: Translate,
 ): string {
   return [
-    ACTIONS[step.action] ?? step.action,
+    actionName(t, step.action),
     `${step.minutes} min`,
-    EQUIPMENT[step.equipment] ?? step.equipment,
-    !step.attended ? "corre solo" : null,
-    step.after.length === 0 && index > 0 ? "a la vez que el anterior" : null,
+    equipmentName(t, step.equipment),
+    !step.attended ? t("kitchen.runs_alone") : null,
+    step.after.length === 0 && index > 0 ? t("editor.with_previous") : null,
     step.ingredients.length > 0
       ? step.ingredients
           .map((one) => ingredients[one - 1]?.label)

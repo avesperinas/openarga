@@ -18,7 +18,7 @@ async def run(engine, statement: str, **params):
 async def draft(schema):
     (recipe,) = await run(
         schema,
-        "insert into recipes.recipes_recipe (name, servings) values ('Porrusalda', 4) returning id",
+        "insert into recipes.recipes_recipe (name, servings) values ('Leek soup', 4) returning id",
     )
     (version,) = await run(
         schema,
@@ -30,7 +30,7 @@ async def draft(schema):
         schema,
         "insert into recipes.recipes_food "
         "(name, source, source_ref, category_id, kcal_100g, protein_100g, fat_100g, carbs_100g) "
-        "values ('Puerro', 'usda', '11246', 'vegetable', 61, 1.5, 0.3, 14.2) returning id",
+        "values ('Leek', 'usda', '11246', 'vegetable', 61, 1.5, 0.3, 14.2) returning id",
     )
     return schema, recipe.id, version.id, food.id
 
@@ -69,11 +69,11 @@ async def test_a_sealed_version_is_never_rewritten(draft) -> None:
     with pytest.raises(DBAPIError) as refused:
         await run(
             engine,
-            "update recipes.recipes_recipe_version set note = 'menos sal' where id = :v",
+            "update recipes.recipes_recipe_version set note = 'less salt' where id = :v",
             v=version,
         )
 
-    assert "sellada" in str(refused.value)
+    assert "sealed" in str(refused.value)
 
 
 async def test_a_sealed_version_takes_no_more_ingredients(draft) -> None:
@@ -83,7 +83,7 @@ async def test_a_sealed_version_takes_no_more_ingredients(draft) -> None:
     with pytest.raises(DBAPIError) as refused:
         await add_ingredient(engine, version, food)
 
-    assert "sellada" in str(refused.value)
+    assert "sealed" in str(refused.value)
 
 
 async def test_an_ingredient_of_a_sealed_version_is_not_removed(draft) -> None:
@@ -98,7 +98,7 @@ async def test_an_ingredient_of_a_sealed_version_is_not_removed(draft) -> None:
             v=version,
         )
 
-    assert "sellada" in str(refused.value)
+    assert "sealed" in str(refused.value)
 
 
 async def test_only_one_version_can_be_open_at_a_time(draft) -> None:
@@ -123,7 +123,7 @@ async def test_an_ingredient_is_a_food_or_a_name_to_resolve_but_never_both(draft
             engine,
             "insert into recipes.recipes_recipe_ingredient "
             "(version_id, position, food_id, unresolved_name, quantity, unit) "
-            "values (:v, 1, :f, 'puerro del huerto', 200, 'g')",
+            "values (:v, 1, :f, 'garden leek', 200, 'g')",
             v=version,
             f=food,
         )
@@ -141,7 +141,7 @@ async def test_an_ingredient_is_a_food_or_a_name_to_resolve_but_never_both(draft
             engine,
             "insert into recipes.recipes_recipe_ingredient "
             "(version_id, position, unresolved_name, quantity, unit) "
-            "values (:v, 3, 'sofrito de casa', 1, 'unit')",
+            "values (:v, 3, 'home sofrito', 1, 'unit')",
             v=version,
         )
         == 1
@@ -151,7 +151,7 @@ async def test_an_ingredient_is_a_food_or_a_name_to_resolve_but_never_both(draft
 async def test_the_outbox_does_not_publish_the_same_thing_twice(schema) -> None:
     encolar = (
         "insert into recipes.recipes_outbox (type, payload, dedup_hash) "
-        "values ('recipes.recipe_saved', '{\"recipe\": \"x\"}'::jsonb, 'receta:x:v1')"
+        "values ('recipes.recipe_saved', '{\"recipe\": \"x\"}'::jsonb, 'recipe:x:v1')"
     )
     assert await run(schema, encolar) == 1
 
@@ -165,7 +165,7 @@ async def test_a_food_is_imported_once_per_source(schema) -> None:
     importar = (
         "insert into recipes.recipes_food "
         "(name, source, source_ref, category_id, kcal_100g, protein_100g, fat_100g, carbs_100g) "
-        "values ('Puerro', 'usda', '11246', 'vegetable', 61, 1.5, 0.3, 14.2)"
+        "values ('Leek', 'usda', '11246', 'vegetable', 61, 1.5, 0.3, 14.2)"
     )
     assert await run(schema, importar) == 1
 
@@ -186,7 +186,7 @@ async def test_deleting_the_recipe_takes_its_versions_but_a_loose_one_stays(draf
             "delete from recipes.recipes_recipe_version where id = :v",
             v=version,
         )
-    assert "sellada" in str(refused.value)
+    assert "sealed" in str(refused.value)
 
     assert await run(engine, "delete from recipes.recipes_recipe where id = :r", r=recipe) == 1
     assert (

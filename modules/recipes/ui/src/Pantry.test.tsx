@@ -1,12 +1,17 @@
+import { configureRegional } from "@openarga/ui";
 import { renderToString } from "react-dom/server";
 
+import { english as t, inLocale } from "./i18n/testing";
 import { FoodSheet, Outside, foodDetails, groupByCategory, matches, perLabel, replacements } from "./Pantry";
 import type { Candidate, Category, Food, SearchOut } from "./api";
 
+beforeEach(() => configureRegional({ locale: "en-US" }));
+afterEach(() => configureRegional({ locale: "es-ES" }));
+
 const CATEGORIES: Category[] = [
-  { id: "vegetable", name: "Verdura", emoji: "🥬", position: 1 },
-  { id: "dairy", name: "Lácteos y huevos", emoji: "🧀", position: 5 },
-  { id: "fish", name: "Pescado y marisco", emoji: "🐟", position: 4 },
+  { id: "vegetable", name: "Vegetables", emoji: "🥬", position: 1 },
+  { id: "dairy", name: "Dairy and eggs", emoji: "🧀", position: 5 },
+  { id: "fish", name: "Fish and seafood", emoji: "🐟", position: 4 },
 ];
 
 const macros = { kcal: 61, protein: 1.5, fat: 0.3, carbs: 14.15, fiber: null, salt: null };
@@ -26,46 +31,46 @@ function food(id: string, name: string, category_id: string): Food {
   };
 }
 
-test("la despensa se agrupa por categoría, en el orden del catálogo y sin las vacías", () => {
+test("the pantry groups by category, in catalogue order and without empty ones", () => {
   const grouped = groupByCategory(
-    [food("1", "Puerro", "vegetable"), food("2", "Yogur", "dairy"), food("3", "Cebolla", "vegetable")],
+    [food("1", "Leek", "vegetable"), food("2", "Yogur", "dairy"), food("3", "Onion", "vegetable")],
     CATEGORIES,
   );
 
   expect(grouped.map(({ category }) => category.id)).toEqual(["vegetable", "dairy"]);
-  expect(grouped[0]?.items.map((one) => one.name)).toEqual(["Cebolla", "Puerro"]);
+  expect(grouped[0]?.items.map((one) => one.name)).toEqual(["Leek", "Onion"]);
 });
 
-test("dentro de cada categoría manda cómo lo llamas tú, no cómo lo llama la fuente", () => {
+test("within each category what you call it wins, not what the source calls it", () => {
   const grouped = groupByCategory(
     [
-      { ...food("1", "Onions, raw", "vegetable"), alias: "Cebolla" },
-      { ...food("2", "Garlic, raw", "vegetable"), alias: "Ajo" },
+      { ...food("1", "Yellow onions, raw", "vegetable"), alias: "Onion" },
+      { ...food("2", "Allium sativum", "vegetable"), alias: "Garlic" },
       food("3", "Beets, raw", "vegetable"),
     ],
     CATEGORIES,
   );
 
-  expect(grouped[0]?.items.map((one) => one.id)).toEqual(["2", "3", "1"]);
+  expect(grouped[0]?.items.map((one) => one.id)).toEqual(["3", "2", "1"]);
 });
 
-test("un alimento se busca por su alias y por el nombre de su fuente", () => {
-  const onion = { ...food("1", "Onions, raw", "vegetable"), alias: "Cebolla" };
+test("a food is found by its alias and by its source's name", () => {
+  const onion = { ...food("1", "Allium cepa, raw", "vegetable"), alias: "Onion" };
 
-  expect(matches(onion, "cebo")).toBe(true);
+  expect(matches(onion, "alli")).toBe(true);
   expect(matches(onion, "onion")).toBe(true);
-  expect(matches(onion, "ajo")).toBe(false);
+  expect(matches(onion, "garlic")).toBe(false);
 });
 
-test("la ficha de un alimento enseña tu alias y deja a la vista de dónde vino", () => {
-  const onion = { ...food("1", "Onions, raw", "vegetable"), alias: "Cebolla" };
+test("a food's card shows your alias and where it came from", () => {
+  const onion = { ...food("1", "Onions, raw", "vegetable"), alias: "Onion" };
 
   const html = renderToString(
-    <FoodSheet food={onion} onClose={() => undefined} onSaved={() => undefined} />,
+    inLocale(<FoodSheet food={onion} onClose={() => undefined} onSaved={() => undefined} />),
   ).replaceAll("<!-- -->", "");
 
-  expect(html).toContain("Cebolla");
-  expect(html).toContain("USDA: «Onions, raw»");
+  expect(html).toContain("Onion");
+  expect(html).toContain("USDA: “Onions, raw”");
 });
 
 const CANDIDATE: Candidate = {
@@ -78,53 +83,53 @@ const CANDIDATE: Candidate = {
   known_id: null,
 };
 
-test("un candidato dice de dónde sale y qué macros trae", () => {
+test("a candidate says where it comes from and what macros it has", () => {
   const found: SearchOut = { candidates: [CANDIDATE], failed: [] };
 
-  const html = renderToString(<Outside found={found} onAdd={() => undefined} />).replaceAll("<!-- -->", "");
+  const html = renderToString(inLocale(<Outside found={found} onAdd={() => undefined} />)).replaceAll("<!-- -->", "");
 
   expect(html).toContain("Leeks, raw");
-  expect(html).toContain("61 kcal · 1,5 P · 0,3 G · 14,2 H · USDA");
+  expect(html).toContain("61 kcal · 1.5 P · 0.3 F · 14.2 C · USDA");
 });
 
-test("lo que ya tienes se marca, para no volver a añadirlo creyendo que es nuevo", () => {
+test("what you already have is marked, so you do not add it again thinking it is new", () => {
   const found: SearchOut = { candidates: [{ ...CANDIDATE, known_id: "abc" }], failed: [] };
 
-  const html = renderToString(<Outside found={found} onAdd={() => undefined} />).replaceAll("<!-- -->", "");
+  const html = renderToString(inLocale(<Outside found={found} onAdd={() => undefined} />)).replaceAll("<!-- -->", "");
 
-  expect(html).toContain("ya la tienes");
+  expect(html).toContain("you already have it");
 });
 
-test("una fuente que no contestó se dice, con su motivo", () => {
+test("a source that did not answer is said, with its reason", () => {
   const found: SearchOut = {
     candidates: [CANDIDATE],
-    failed: [{ source: "usda", reason: "sin USDA_API_KEY: solo se busca en OpenFoodFacts" }],
+    failed: [{ source: "usda", reason: "no USDA_API_KEY: only Open Food Facts is searched" }],
   };
 
-  const html = renderToString(<Outside found={found} onAdd={() => undefined} />);
+  const html = renderToString(inLocale(<Outside found={found} onAdd={() => undefined} />));
 
-  expect(html).toContain("sin USDA_API_KEY");
+  expect(html).toContain("no USDA_API_KEY");
 });
 
-test("un candidato con cifras imposibles se aparta y se dice cuál", () => {
+test("a candidate with impossible figures is set aside and named", () => {
   const found: SearchOut = {
     candidates: [CANDIDATE],
     failed: [],
-    discarded: [{ source: "off", name: "Café sintético", reason: "3210 g de sal por 100 g" }],
+    discarded: [{ source: "off", name: "Synthetic coffee", reason: "3210 g of salt per 100 g" }],
   };
 
-  const html = renderToString(<Outside found={found} onAdd={() => undefined} />);
+  const html = renderToString(inLocale(<Outside found={found} onAdd={() => undefined} />));
 
-  expect(html).toContain("Café sintético (3210 g de sal por 100 g)");
+  expect(html).toContain("Synthetic coffee (3210 g of salt per 100 g)");
 });
 
-test("sin candidatos se ofrece la salida, en vez de dejar la pantalla muda", () => {
-  const html = renderToString(<Outside found={{ candidates: [], failed: [] }} onAdd={() => undefined} />);
+test("without candidates the way out is offered instead of a silent screen", () => {
+  const html = renderToString(inLocale(<Outside found={{ candidates: [], failed: [] }} onAdd={() => undefined} />));
 
-  expect(html).toContain("Puedes crearlo a mano");
+  expect(html).toContain("You can create it by hand");
 });
 
-test("la ficha dice de dónde salen las cifras, sus medidas y lo que se come", () => {
+test("the card says where the figures come from, its measures and what is eaten", () => {
   const food = {
     id: "f1",
     name: "Bonito",
@@ -136,33 +141,33 @@ test("la ficha dice de dónde salen las cifras, sus medidas y lo que se come", (
     density_g_ml: null,
     grams_per_unit: null,
     corrected: true,
-    provenance: "estimado por el modelo",
+    provenance: "estimated by the model",
     micros_from: "f2",
-    micros_from_label: "Atún genérico",
+    micros_from_label: "Generic tuna",
     borrowed: ["vitamin_d", "omega3_epa"],
     edible_fraction: 0.82,
-    portions: [{ name: "rueda", grams: 600 }],
+    portions: [{ name: "steak", grams: 600 }],
   } as Food;
 
-  expect(foodDetails(food)).toEqual([
-    "Cifras de: estimado por el modelo.",
-    "2 nutrientes prestados de «Atún genérico».",
-    "Medidas: rueda, 600 g.",
-    "Se come el 82 % de lo que se pesa entero.",
+  expect(foodDetails(food, t)).toEqual([
+    "Figures from: estimated by the model.",
+    "2 nutrients borrowed from “Generic tuna”.",
+    "Measures: steak, 600 g.",
+    "82 % of what is weighed whole is eaten.",
   ]);
 });
 
-test("un suplemento dice sus cifras por unidad", () => {
-  const capsule = { nutrients_per: "unit", unit_name: "cápsula" } as Food;
+test("a supplement gives its figures per unit", () => {
+  const capsule = { nutrients_per: "unit", unit_name: "capsule" } as Food;
   const plain = { nutrients_per: "100g", unit_name: null } as Food;
 
-  expect(perLabel(capsule)).toBe("cápsula");
-  expect(perLabel(plain)).toBe("100 g");
+  expect(perLabel(capsule, t)).toBe("capsule");
+  expect(perLabel(plain, t)).toBe("100 g");
 });
 
-test("se sustituye por otro de la despensa que vaya igual, nunca por sí mismo", () => {
-  const milk = { id: "a", name: "Leche", alias: null, nutrients_per: "100g" } as Food;
-  const other = { id: "b", name: "Leche entera", alias: null, nutrients_per: "100g" } as Food;
+test("it is replaced by another pantry food measured alike, never by itself", () => {
+  const milk = { id: "a", name: "Milk", alias: null, nutrients_per: "100g" } as Food;
+  const other = { id: "b", name: "Whole milk", alias: null, nutrients_per: "100g" } as Food;
   const capsule = { id: "c", name: "Omega 3", alias: null, nutrients_per: "unit" } as Food;
 
   expect(replacements(milk, [milk, capsule, other]).map((one) => one.id)).toEqual(["b"]);

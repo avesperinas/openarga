@@ -32,17 +32,17 @@ async def people(schema, database_url, monkeypatch):
             found = await kernel.post("/internal/users", json={"subject": subject})
             ids[name] = found.json()["id"]
         ana = {USER_HEADER: ids["ana"]}
-        casa = (await kernel.post("/internal/spaces", json={"name": "Casa"}, headers=ana)).json()
-        code = (await kernel.post(f"/internal/spaces/{casa['id']}/invites", headers=ana)).json()
+        home = (await kernel.post("/internal/spaces", json={"name": "Home"}, headers=ana)).json()
+        code = (await kernel.post(f"/internal/spaces/{home['id']}/invites", headers=ana)).json()
         await kernel.post(
             "/internal/spaces/join",
             json={"code": code["code"]},
             headers={USER_HEADER: ids["luis"]},
         )
-    yield {**ids, "casa": casa["id"]}
+    yield {**ids, "home": home["id"]}
     async with schema.begin() as connection:
         await connection.execute(
-            text("delete from kernel.spaces where id = :id"), {"id": casa["id"]}
+            text("delete from kernel.spaces where id = :id"), {"id": home["id"]}
         )
         await connection.execute(
             text("delete from kernel.users where subject = any(:s)"),
@@ -57,7 +57,7 @@ async def call(people):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://a") as client:
 
         async def send(name: str, method: str, path: str, headers=None, **kw):
-            spaces_of = {"ana": [people["casa"]], "luis": [people["casa"]], "eva": []}[name]
+            spaces_of = {"ana": [people["home"]], "luis": [people["home"]], "eva": []}[name]
             sent = {
                 USER_HEADER: people[name],
                 SPACES_HEADER: ",".join(spaces_of),
@@ -79,17 +79,17 @@ async def food(call, name: str, macros: dict, **measures) -> str:
     return response.json()["id"]
 
 
-async def porrusalda(call) -> str:
-    puerro = await food(call, "Puerro", {"kcal": 61, "protein": 1.5, "fat": 0.3, "carbs": 14.15})
-    patata = await food(call, "Patata", {"kcal": 77, "protein": 2, "fat": 0.1, "carbs": 17.5})
+async def leek_soup(call) -> str:
+    puerro = await food(call, "Leek", {"kcal": 61, "protein": 1.5, "fat": 0.3, "carbs": 14.15})
+    patata = await food(call, "Potato", {"kcal": 77, "protein": 2, "fat": 0.1, "carbs": 17.5})
     created = await call(
         "ana",
         "POST",
         "/recipes",
         json={
-            "name": "Porrusalda",
+            "name": "Leek soup",
             "servings": 4,
-            "tags": ["invierno"],
+            "tags": ["winter"],
             "ingredients": [
                 {"food_id": puerro, "quantity": 400, "unit": "g"},
                 {"food_id": patata, "quantity": 600, "unit": "g"},
@@ -101,17 +101,17 @@ async def porrusalda(call) -> str:
 
 
 async def test_a_shared_recipe_is_cooked_by_the_space_with_all_its_macros(call, people) -> None:
-    recipe = await porrusalda(call)
+    recipe = await leek_soup(call)
     before = await call("luis", "GET", f"/recipes/{recipe}")
 
-    shared = await call("ana", "PUT", f"/recipes/{recipe}/space", json={"space_id": people["casa"]})
+    shared = await call("ana", "PUT", f"/recipes/{recipe}/space", json={"space_id": people["home"]})
     luis = (await call("luis", "GET", f"/recipes/{recipe}")).json()
     eva = await call("eva", "GET", f"/recipes/{recipe}")
     listed = (await call("luis", "GET", "/recipes")).json()
 
     assert before.status_code == 404
     assert shared.status_code == 200, shared.text
-    assert (shared.json()["space_id"], shared.json()["mine"]) == (people["casa"], True)
+    assert (shared.json()["space_id"], shared.json()["mine"]) == (people["home"], True)
     assert luis["mine"] is False
     assert (luis["nutrition"]["counted"], luis["nutrition"]["ingredients"]) == (2, 2)
     assert (
@@ -119,13 +119,13 @@ async def test_a_shared_recipe_is_cooked_by_the_space_with_all_its_macros(call, 
         == shared.json()["nutrition"]["per_serving"]["kcal"]
     )
     assert luis["tags"] == []
-    assert [(one["name"], one["space_id"] is not None) for one in listed] == [("Porrusalda", True)]
+    assert [(one["name"], one["space_id"] is not None) for one in listed] == [("Leek soup", True)]
     assert eva.status_code == 404
 
 
 async def test_a_member_writes_a_new_version_that_is_born_in_the_space(call, people) -> None:
-    recipe = await porrusalda(call)
-    await call("ana", "PUT", f"/recipes/{recipe}/space", json={"space_id": people["casa"]})
+    recipe = await leek_soup(call)
+    await call("ana", "PUT", f"/recipes/{recipe}/space", json={"space_id": people["home"]})
     current = (await call("luis", "GET", f"/recipes/{recipe}")).json()
     ingredients = [
         {"food_id": one["food_id"], "quantity": one["quantity"] * 2, "unit": one["unit"]}
@@ -137,24 +137,24 @@ async def test_a_member_writes_a_new_version_that_is_born_in_the_space(call, peo
         "luis",
         "PUT",
         f"/recipes/{recipe}",
-        json={"name": "Porrusalda", "servings": 8, "tags": ["de Luis"], "ingredients": ingredients},
+        json={"name": "Leek soup", "servings": 8, "tags": ["Luis's"], "ingredients": ingredients},
     )
     ana = (await call("ana", "GET", f"/recipes/{recipe}")).json()
 
     assert edited.status_code == 200, edited.text
     assert (ana["version"], ana["servings"], ana["versions"]) == (2, 8, 2)
-    assert [tag["name"] for tag in ana["tags"]] == ["invierno"]
-    assert [tag["name"] for tag in edited.json()["tags"]] == ["de Luis"]
+    assert [tag["name"] for tag in ana["tags"]] == ["winter"]
+    assert [tag["name"] for tag in edited.json()["tags"]] == ["Luis's"]
 
 
 async def test_only_whoever_created_it_shares_unshares_or_deletes_it(call, people) -> None:
-    recipe = await porrusalda(call)
-    await call("ana", "PUT", f"/recipes/{recipe}/space", json={"space_id": people["casa"]})
+    recipe = await leek_soup(call)
+    await call("ana", "PUT", f"/recipes/{recipe}/space", json={"space_id": people["home"]})
 
     unshare = await call("luis", "PUT", f"/recipes/{recipe}/space", json={"space_id": None})
     delete = await call("luis", "DELETE", f"/recipes/{recipe}")
     outsider = await call(
-        "eva", "PUT", f"/recipes/{recipe}/space", json={"space_id": people["casa"]}
+        "eva", "PUT", f"/recipes/{recipe}/space", json={"space_id": people["home"]}
     )
 
     assert (unshare.status_code, delete.status_code) == (409, 409)
@@ -163,15 +163,15 @@ async def test_only_whoever_created_it_shares_unshares_or_deletes_it(call, peopl
 
 
 async def test_unsharing_takes_back_every_version_and_sealed_stays_sealed(call, people) -> None:
-    recipe = await porrusalda(call)
-    await call("ana", "PUT", f"/recipes/{recipe}/space", json={"space_id": people["casa"]})
+    recipe = await leek_soup(call)
+    await call("ana", "PUT", f"/recipes/{recipe}/space", json={"space_id": people["home"]})
     current = (await call("luis", "GET", f"/recipes/{recipe}")).json()
     await call(
         "luis",
         "PUT",
         f"/recipes/{recipe}",
         json={
-            "name": "Porrusalda",
+            "name": "Leek soup",
             "servings": 6,
             "ingredients": [
                 {"food_id": one["food_id"], "quantity": one["quantity"], "unit": one["unit"]}
@@ -197,7 +197,7 @@ async def test_unsharing_takes_back_every_version_and_sealed_stays_sealed(call, 
             .scalars()
             .all()
         )
-        with pytest.raises(Exception, match="sellada"):
+        with pytest.raises(Exception, match="sealed"):
             await connection.execute(
                 text(
                     "update recipes.recipes_recipe_version set note = 'tocada' "
@@ -213,7 +213,7 @@ async def test_unsharing_takes_back_every_version_and_sealed_stays_sealed(call, 
 
 
 async def test_claude_shares_a_recipe_by_the_spaces_name(call, people) -> None:
-    recipe = await porrusalda(call)
+    recipe = await leek_soup(call)
 
     async def tool(name: str, arguments: dict) -> dict:
         response = await call(
@@ -226,13 +226,13 @@ async def test_claude_shares_a_recipe_by_the_spaces_name(call, people) -> None:
         assert response.status_code == 200, response.text
         return response.json()["content"]
 
-    unknown = await tool("ana", {"recipe_id": recipe, "space": "Oficina"})
-    shared = await tool("ana", {"recipe_id": recipe, "space": "casa"})
+    unknown = await tool("ana", {"recipe_id": recipe, "space": "Office"})
+    shared = await tool("ana", {"recipe_id": recipe, "space": "home"})
     by_luis = await tool("luis", {"recipe_id": recipe, "space": None})
 
-    assert unknown["recipe"] is None and "«Casa»" in unknown["note"]
+    assert unknown["recipe"] is None and "'Home'" in unknown["note"]
     assert (shared["recipe"]["shared"], shared["recipe"]["mine"]) == (True, True)
-    assert by_luis["recipe"] is None and "solo quien" in by_luis["note"]
+    assert by_luis["recipe"] is None and "only whoever" in by_luis["note"]
 
 
 def app_connection(person: str):

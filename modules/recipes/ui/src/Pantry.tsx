@@ -14,6 +14,8 @@ import {
   Sheet,
   Skeleton,
   TextField,
+  type Translate,
+  useT,
 } from "@openarga/ui";
 import { useMemo, useState } from "react";
 
@@ -35,6 +37,7 @@ import {
   signIn,
   changed,
 } from "./api";
+import { categoryName } from "./categories";
 import { ScreenHeader } from "./Header";
 import { kcal, macroLine, pantryLine, sourceLabel } from "./macros";
 import { closeness, ranked } from "./search";
@@ -42,6 +45,7 @@ import { closeness, ranked } from "./search";
 export const FOODS = "foods";
 
 export function PantryScreen() {
+  const t = useT();
   const read = useResource(FOODS, readFoods, { persist: true });
   const foods = read.data ?? null;
   const categories = useResource("categories", readCategories, { persist: true }).data ?? [];
@@ -68,7 +72,7 @@ export function PantryScreen() {
       setFound(await searchFoods(query.trim()));
     } catch (error) {
       if (error instanceof Unauthorised) return signIn();
-      setProblem("No se pudo buscar fuera. Inténtalo en un momento.");
+      setProblem(t("pantry.search_failed"));
     } finally {
       setSearching(false);
     }
@@ -85,27 +89,27 @@ export function PantryScreen() {
 
   return (
     <Screen>
-      <ScreenHeader title="Despensa" />
+      <ScreenHeader title={t("tabs.pantry")} />
       <OfflineNotice />
 
       <TextField
-        label="Buscar un alimento"
+        label={t("pantry.search")}
         type="search"
         value={query}
         onChange={setQuery}
-        placeholder="puerro, yogur, 8410128750121…"
+        placeholder={t("pantry.search_placeholder")}
         onSubmit={() => query.trim().length >= 2 && void lookOutside()}
-        hint="Un código de barras también vale."
+        hint={t("pantry.barcode")}
       />
 
       <div className="recipes-actions">
         {query.trim().length >= 2 && (
           <Button variant="tinted" disabled={searching} onClick={() => void lookOutside()}>
-            {searching ? "Buscando fuera…" : "Buscar fuera"}
+            {searching ? t("pantry.searching_outside") : t("pantry.search_outside")}
           </Button>
         )}
         <Button variant="plain" icon="plus" onClick={() => setByHand(true)}>
-          Crear a mano
+          {t("pantry.by_hand")}
         </Button>
       </div>
 
@@ -117,30 +121,29 @@ export function PantryScreen() {
 
       {found && <Outside found={found} onAdd={setAdding} />}
 
-      {read.loading && <Skeleton label="Cargando la despensa" />}
+      {read.loading && <Skeleton label={t("pantry.loading")} />}
       {foods === null && read.error && (
-        <ErrorState title="No se pudo leer la despensa" detail={read.error.message} onRetry={read.refresh} />
+        <ErrorState title={t("pantry.read_failed")} detail={read.error.message} onRetry={read.refresh} />
       )}
       {foods !== null && foods.length === 0 && (
         <EmptyState
-          title="La despensa está vacía"
-          action={{ label: "Crear uno a mano", icon: "plus", onClick: () => setByHand(true) }}
+          title={t("pantry.empty")}
+          action={{ label: t("pantry.create_one"), icon: "plus", onClick: () => setByHand(true) }}
         >
-          Las macros no se teclean: se buscan fuera una vez y se quedan aquí. A partir de entonces, cocinar no necesita
-          internet. Escribe arriba qué buscas y pulsa «Buscar fuera».
+          {t("pantry.empty_detail")}
         </EmptyState>
       )}
 
       {needle && foods !== null && foods.length > 0 && (
         <section className="recipes-group">
-          <GroupLabel count={mine.length}>En tu despensa</GroupLabel>
+          <GroupLabel count={mine.length}>{t("pantry.in_yours")}</GroupLabel>
           {mine.length > 0 ? (
             <List>
               {mine.map((food) => (
                 <ListRow
                   key={food.id}
                   title={labelOf(food)}
-                  subtitle={pantryLine(food.macros)}
+                  subtitle={pantryLine(food.macros, t)}
                   value={`${kcal(food.macros.kcal)} kcal`}
                   accessory="chevron-right"
                   onClick={() => setOpen(food)}
@@ -148,7 +151,7 @@ export function PantryScreen() {
               ))}
             </List>
           ) : (
-            <Hint>Nada con «{needle}» en tu despensa. Pulsa «Buscar fuera».</Hint>
+            <Hint>{t("pantry.nothing_with", { needle })}</Hint>
           )}
         </section>
       )}
@@ -156,14 +159,14 @@ export function PantryScreen() {
       {grouped.map(({ category, items }) => (
         <section key={category.id} className="recipes-group">
           <GroupLabel>
-            <span aria-hidden="true">{category.emoji}</span> {category.name}
+            <span aria-hidden="true">{category.emoji}</span> {categoryName(t, category.id, category.name)}
           </GroupLabel>
           <List>
             {items.map((food) => (
               <ListRow
                 key={food.id}
                 title={labelOf(food)}
-                subtitle={pantryLine(food.macros)}
+                subtitle={pantryLine(food.macros, t)}
                 value={`${kcal(food.macros.kcal)} kcal`}
                 accessory="chevron-right"
                 onClick={() => setOpen(food)}
@@ -215,15 +218,16 @@ export function groupByCategory(
       category,
       items: foods
         .filter((food) => food.category_id === category.id)
-        .sort((a, b) => labelOf(a).localeCompare(labelOf(b), "es")),
+        .sort((a, b) => labelOf(a).localeCompare(labelOf(b))),
     }))
     .filter(({ items }) => items.length > 0);
 }
 
 export function Outside({ found, onAdd }: { found: SearchOut; onAdd: (c: Candidate) => void }) {
+  const t = useT();
   return (
     <section className="recipes-group">
-      <GroupLabel>De fuera</GroupLabel>
+      <GroupLabel>{t("pantry.outside")}</GroupLabel>
       {found.failed.map((failure) => (
         <Hint key={failure.source} tone="warning">
           {failure.reason}
@@ -231,22 +235,22 @@ export function Outside({ found, onAdd }: { found: SearchOut; onAdd: (c: Candida
       ))}
       {(found.discarded ?? []).length > 0 && (
         <Hint>
-          {found.discarded!.length === 1
-            ? "Uno venía con cifras imposibles y no sale"
-            : `${found.discarded!.length} venían con cifras imposibles y no salen`}
-          : {found.discarded!.map((one) => `${one.name} (${one.reason})`).join(", ")}.
+          {t(found.discarded!.length === 1 ? "pantry.discarded.one" : "pantry.discarded.other", {
+            count: found.discarded!.length,
+            names: found.discarded!.map((one) => `${one.name} (${one.reason})`).join(", "),
+          })}
         </Hint>
       )}
       {found.candidates.length === 0 && (
-        <Hint>Ninguna fuente lo tiene. Puedes crearlo a mano.</Hint>
+        <Hint>{t("pantry.no_source")}</Hint>
       )}
       <List>
         {found.candidates.map((candidate) => (
           <ListRow
             key={`${candidate.source}:${candidate.source_ref}`}
             title={candidate.brand ? `${candidate.name} · ${candidate.brand}` : candidate.name}
-            detail={`${macroLine(candidate.macros)} · ${sourceLabel(candidate.source, false)}${
-              candidate.known_id ? " · ya la tienes" : ""
+            detail={`${macroLine(candidate.macros, t)} · ${sourceLabel(candidate.source, false, t)}${
+              candidate.known_id ? ` · ${t("pantry.already_have")}` : ""
             }`}
             accessory={candidate.known_id ? "done" : "plus"}
             onClick={() => onAdd(candidate)}
@@ -268,6 +272,7 @@ function AddSheet({
   onClose: () => void;
   onAdded: (food: Food) => void;
 }) {
+  const t = useT();
   const [alias, setAlias] = useState("");
   const [category, setCategory] = useState(candidate.category_hint);
   const [saving, setSaving] = useState(false);
@@ -288,7 +293,7 @@ function AddSheet({
         }),
       );
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : "No se pudo añadir.");
+      setProblem(error instanceof Error ? error.message : t("pantry.add_failed"));
     } finally {
       setSaving(false);
     }
@@ -296,16 +301,16 @@ function AddSheet({
 
   return (
     <Sheet
-      title="Añadir a la despensa"
+      title={t("pantry.add_title")}
       onClose={onClose}
-      action={{ label: saving ? "Guardando…" : "Añadir", onClick: () => void save(), disabled: saving }}
+      action={{ label: saving ? t("common.saving") : t("common.add"), onClick: () => void save(), disabled: saving }}
     >
       <TextField
-        label="Cómo lo llamas"
+        label={t("pantry.alias")}
         value={alias}
         onChange={setAlias}
         placeholder={candidate.name}
-        hint="Vacío, se queda como lo llama la fuente."
+        hint={t("pantry.alias_empty")}
       />
       {problem && (
         <Hint tone="warning">
@@ -313,38 +318,43 @@ function AddSheet({
         </Hint>
       )}
       <Hint>
-        {macroLine(candidate.macros)} por 100 g, según {sourceLabel(candidate.source, false)}.
+        {t("pantry.per_100_from", {
+          line: macroLine(candidate.macros, t),
+          source: sourceLabel(candidate.source, false, t),
+        })}
       </Hint>
       <ChoiceChips
-        label="Categoría"
+        label={t("pantry.category")}
         value={category}
         onChange={setCategory}
-        options={categories.map((one) => ({ value: one.id, label: `${one.emoji} ${one.name}` }))}
+        options={categories.map((one) => ({ value: one.id, label: `${one.emoji} ${categoryName(t, one.id, one.name)}` }))}
       />
     </Sheet>
   );
 }
 
-export function perLabel(food: Food): string {
-  return food.nutrients_per === "unit" ? (food.unit_name ?? "unidad") : "100 g";
+export function perLabel(food: Food, t: Translate): string {
+  return food.nutrients_per === "unit" ? (food.unit_name ?? t("pantry.unit")) : "100 g";
 }
 
-export function foodDetails(food: Food): string[] {
+export function foodDetails(food: Food, t: Translate): string[] {
   const lines: string[] = [];
-  if (food.provenance) lines.push(`Cifras de: ${food.provenance}.`);
+  if (food.provenance) lines.push(t("food.figures_from", { provenance: food.provenance }));
   if (food.micros_from && (food.borrowed ?? []).length > 0) {
     const count = food.borrowed!.length;
     lines.push(
-      `${count} ${count === 1 ? "nutriente prestado" : "nutrientes prestados"} de ` +
-        `«${food.micros_from_label ?? "otro alimento"}».`,
+      t(count === 1 ? "food.borrowed.one" : "food.borrowed.other", {
+        count,
+        from: food.micros_from_label ?? t("food.another"),
+      }),
     );
   }
   const portions = food.portions ?? [];
   if (portions.length > 0) {
-    lines.push(`Medidas: ${portions.map((one) => `${one.name}, ${one.grams} g`).join(" · ")}.`);
+    lines.push(t("food.measures", { list: portions.map((one) => `${one.name}, ${one.grams} g`).join(" · ") }));
   }
   if (food.edible_fraction != null && food.edible_fraction < 1) {
-    lines.push(`Se come el ${Math.round(food.edible_fraction * 100)} % de lo que se pesa entero.`);
+    lines.push(t("food.edible", { pct: Math.round(food.edible_fraction * 100) }));
   }
   return lines;
 }
@@ -362,6 +372,7 @@ export function FoodSheet({
   onSaved: (food: Food) => void;
   onReplaced?: (old: Food) => void;
 }) {
+  const t = useT();
   const [alias, setAlias] = useState(food.alias ?? "");
   const [saving, setSaving] = useState(false);
   const [problem, setProblem] = useState("");
@@ -372,8 +383,7 @@ export function FoodSheet({
     const chosen = candidates.find((one) => one.id === target);
     if (!chosen) return;
     const sure = window.confirm(
-      `¿Sustituir «${labelOf(food)}» por «${labelOf(chosen)}» en tus recetas y en lo apuntado en Macros? ` +
-        "Las recetas guardan una versión nueva y lo de antes se queda en su historial.",
+      t("food.replace_confirm", { old: labelOf(food), new: labelOf(chosen) }),
     );
     if (!sure) return;
     setSaving(true);
@@ -381,13 +391,13 @@ export function FoodSheet({
     try {
       const done = await replaceFood(food.id, chosen.id);
       if (!done.macros.done) {
-        setProblem(`Hecho en las recetas, pero Macros no se ha actualizado: ${done.macros.note}. Vuelve a sustituir.`);
+        setProblem(t("food.replace_partial", { note: done.macros.note ?? "" }));
         return;
       }
       onReplaced(food);
     } catch (error) {
       if (error instanceof Unauthorised) return signIn();
-      setProblem(error instanceof Error ? error.message : "No se pudo sustituir.");
+      setProblem(error instanceof Error ? error.message : t("food.replace_failed"));
     } finally {
       setSaving(false);
     }
@@ -400,7 +410,7 @@ export function FoodSheet({
       onSaved(await setFoodAlias(food.id, alias.trim() || null));
     } catch (error) {
       if (error instanceof Unauthorised) return signIn();
-      setProblem(error instanceof Error ? error.message : "No se pudo guardar.");
+      setProblem(error instanceof Error ? error.message : t("editor.save_failed"));
     } finally {
       setSaving(false);
     }
@@ -410,14 +420,14 @@ export function FoodSheet({
     <Sheet
       title={labelOf(food)}
       onClose={onClose}
-      action={{ label: saving ? "Guardando…" : "Guardar", onClick: () => void save(), disabled: saving }}
+      action={{ label: saving ? t("common.saving") : t("common.save"), onClick: () => void save(), disabled: saving }}
     >
       <TextField
-        label="Cómo lo llamas"
+        label={t("pantry.alias")}
         value={alias}
         onChange={setAlias}
         placeholder={food.name}
-        hint="Es el nombre que sale en tus recetas. Vacío, se ve el de la fuente."
+        hint={t("food.alias_hint")}
       />
       {problem && (
         <Hint tone="warning">
@@ -425,18 +435,18 @@ export function FoodSheet({
         </Hint>
       )}
       <Hint>
-        {sourceLabel(food.source, food.corrected)}: «{food.name}»
+        {t("food.source_name", { source: sourceLabel(food.source, food.corrected, t), name: food.name })}
       </Hint>
       <Hint>
-        {macroLine(food.macros)} por {perLabel(food)}.
+        {t("food.per", { line: macroLine(food.macros, t), per: perLabel(food, t) })}
       </Hint>
-      {foodDetails(food).map((line) => (
+      {foodDetails(food, t).map((line) => (
         <Hint key={line}>{line}</Hint>
       ))}
       {candidates.length > 0 && (
         <>
           <SelectField
-            label="Sustituir por"
+            label={t("food.replace_with")}
             value={target}
             onChange={setTarget}
             options={[
@@ -446,7 +456,7 @@ export function FoodSheet({
           />
           {target && (
             <Button variant="destructive" disabled={saving} onClick={() => void replace()}>
-              Sustituir en recetas y registros
+              {t("food.replace")}
             </Button>
           )}
         </>
@@ -459,7 +469,7 @@ export function replacements(food: Food, others: Food[]): Food[] {
   const per = food.nutrients_per ?? "100g";
   return others
     .filter((one) => one.id !== food.id && (one.nutrients_per ?? "100g") === per)
-    .sort((a, b) => labelOf(a).localeCompare(labelOf(b), "es"));
+    .sort((a, b) => labelOf(a).localeCompare(labelOf(b)));
 }
 
 function ManualSheet({
@@ -471,6 +481,7 @@ function ManualSheet({
   onClose: () => void;
   onAdded: (food: Food) => void;
 }) {
+  const t = useT();
   const [name, setName] = useState("");
   const [category, setCategory] = useState("other");
   const [values, setValues] = useState({ kcal: "", protein: "", fat: "", carbs: "" });
@@ -502,23 +513,23 @@ function ManualSheet({
 
   return (
     <Sheet
-      title="Crear un alimento"
+      title={t("manual.title")}
       onClose={onClose}
-      action={{ label: saving ? "Guardando…" : "Crear", onClick: () => void save(), disabled: !complete || saving }}
+      action={{ label: saving ? t("common.saving") : t("manual.create"), onClick: () => void save(), disabled: !complete || saving }}
     >
-      <TextField label="Nombre" value={name} onChange={setName} placeholder="Sofrito de casa" />
-      <Hint>Por 100 g, que es como se suman.</Hint>
+      <TextField label={t("editor.name")} value={name} onChange={setName} placeholder={t("manual.placeholder")} />
+      <Hint>{t("manual.per_100")}</Hint>
       <div className="recipes-macro-fields">
         <TextField label="kcal" inputMode="decimal" value={values.kcal} onChange={(v) => setValues({ ...values, kcal: v })} />
-        <TextField label="Proteína (g)" inputMode="decimal" value={values.protein} onChange={(v) => setValues({ ...values, protein: v })} />
-        <TextField label="Grasa (g)" inputMode="decimal" value={values.fat} onChange={(v) => setValues({ ...values, fat: v })} />
-        <TextField label="Hidratos (g)" inputMode="decimal" value={values.carbs} onChange={(v) => setValues({ ...values, carbs: v })} />
+        <TextField label={t("manual.protein")} inputMode="decimal" value={values.protein} onChange={(v) => setValues({ ...values, protein: v })} />
+        <TextField label={t("manual.fat")} inputMode="decimal" value={values.fat} onChange={(v) => setValues({ ...values, fat: v })} />
+        <TextField label={t("manual.carbs")} inputMode="decimal" value={values.carbs} onChange={(v) => setValues({ ...values, carbs: v })} />
       </div>
       <ChoiceChips
-        label="Categoría"
+        label={t("pantry.category")}
         value={category}
         onChange={setCategory}
-        options={categories.map((one) => ({ value: one.id, label: `${one.emoji} ${one.name}` }))}
+        options={categories.map((one) => ({ value: one.id, label: `${one.emoji} ${categoryName(t, one.id, one.name)}` }))}
       />
     </Sheet>
   );

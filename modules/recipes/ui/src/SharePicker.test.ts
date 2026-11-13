@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { english as t } from "./i18n/testing";
 import type { Space } from "./api";
 import { sharedSubtitle, sharedTitle, withWhom } from "./SharePicker";
 
-const casa: Space = {
-  id: "casa",
-  name: "Casa",
+const home: Space = {
+  id: "home",
+  name: "Home",
   me: "ana",
   members: [
     { user_id: "ana", name: "Ana" },
@@ -13,25 +14,25 @@ const casa: Space = {
   ],
 };
 
-describe("con quién se comparte una receta", () => {
-  it("solo tuyo, sin espacio", () => {
-    const trip = { space_id: null, mine: true };
-    expect(sharedTitle(trip, [casa])).toBe("Solo tuya");
-    expect(sharedSubtitle(trip, [casa])).toBe("Solo la ves tú");
+describe("who a recipe is shared with", () => {
+  it("only yours, without a space", () => {
+    const recipe = { space_id: null, mine: true };
+    expect(sharedTitle(recipe, [home], t)).toBe("Only yours");
+    expect(sharedSubtitle(recipe, [home], t)).toBe("Only you see it");
   });
 
-  it("compartido por ti, con quién lo ve", () => {
-    const trip = { space_id: "casa", mine: true };
-    expect(sharedTitle(trip, [casa])).toBe("Casa");
-    expect(sharedSubtitle(trip, [casa])).toBe("La ven y la cocinan: Tú y Luis");
+  it("shared by you, with who sees it", () => {
+    const recipe = { space_id: "home", mine: true };
+    expect(sharedTitle(recipe, [home], t)).toBe("Home");
+    expect(sharedSubtitle(recipe, [home], t)).toBe("They see it and cook it: You and Luis");
   });
 
-  it("compartido contigo, dicho", () => {
-    const trip = { space_id: "casa", mine: false };
-    expect(sharedSubtitle(trip, [casa])).toBe("La ven y la cocinan: Tú y Luis. Te la compartieron");
+  it("shared with you, said", () => {
+    const recipe = { space_id: "home", mine: false };
+    expect(sharedSubtitle(recipe, [home], t)).toBe("They see it and cook it: You and Luis. Someone shared it with you");
   });
 
-  it("sin nadie más en el espacio", () => {
-    expect(withWhom({ ...casa, members: [{ user_id: "ana", name: "Ana" }] })).toBe("Solo tú, de momento");
+  it("with nobody else in the space", () => {
+    expect(withWhom({ ...home, members: [{ user_id: "ana", name: "Ana" }] }, t)).toBe("Only you, for now");
   });
 });

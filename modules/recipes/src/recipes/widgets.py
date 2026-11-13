@@ -4,6 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets import envelope
+from recipes.catalog import t
 
 KINDS = {"recipes": "stats", "quick": "list"}
 
@@ -32,14 +33,18 @@ QUICK = text("""
 async def recipe_book(connection: AsyncConnection) -> dict:
     row = (await connection.execute(SUMMARY, {"quick": QUICK_MINUTES})).one()
     if row.recipes == 0:
-        return envelope(KINDS["recipes"], "empty", {"detail": "sin recetas todavía"})
+        return envelope(KINDS["recipes"], "empty", {"detail": t("widget.no_recipes")})
 
-    stats = [{"label": "Recetas", "value": row.recipes}]
+    stats = [{"label": t("widget.recipes"), "value": row.recipes}]
     if row.average_minutes is not None:
         stats.append(
-            {"label": "De media", "value": round(float(row.average_minutes)), "unit": "min"}
+            {
+                "label": t("widget.average"),
+                "value": round(float(row.average_minutes)),
+                "unit": "min",
+            }
         )
-    stats.append({"label": "En 30 min", "value": row.quick})
+    stats.append({"label": t("widget.in_30"), "value": row.quick})
     return envelope(KINDS["recipes"], "ready", {"stats": stats})
 
 
@@ -49,7 +54,7 @@ async def quick_recipes(connection: AsyncConnection) -> dict:
         return envelope(
             KINDS["quick"],
             "empty",
-            {"detail": f"nada por debajo de {QUICK_MINUTES} minutos"},
+            {"detail": t("widget.none_quick", minutes=QUICK_MINUTES)},
         )
     return envelope(
         KINDS["quick"],

@@ -46,7 +46,7 @@ async def body(connection: AsyncConnection, recipe_id: str, request: ShoppingIn)
     recipe = await recipes.read(connection, recipe_id, request.servings)
     items = entries(recipe, request.positions)
     if not items:
-        raise recipes.Conflict("ninguno de esos ingredientes está en la receta")
+        raise recipes.Conflict("none of those ingredients is in the recipe")
     return contracts.shopping_add(items=items)
 
 
@@ -54,7 +54,7 @@ async def send(client: httpx.AsyncClient, body: dict[str, Any]) -> dict[str, Any
     try:
         response = await hub.ask(client, contracts.SHOPPING_ADD, body)
     except httpx.HTTPError as error:
-        raise Unavailable(f"el kernel no contesta ({type(error).__name__})") from error
+        raise Unavailable(f"the kernel is not answering ({type(error).__name__})") from error
     if response.status_code != 200:
         try:
             detail = response.json().get("detail")

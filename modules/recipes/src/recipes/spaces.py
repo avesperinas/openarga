@@ -20,7 +20,7 @@ async def of_caller() -> list[dict]:
                 f"{kernel_url()}/internal/spaces", headers=user_headers(), timeout=10.0
             )
     except httpx.HTTPError as error:
-        raise Unavailable("el kernel no contesta") from error
+        raise Unavailable("the kernel is not answering") from error
     if response.status_code != 200:
         raise Unavailable(f"el kernel contesta {response.status_code}")
     return response.json()

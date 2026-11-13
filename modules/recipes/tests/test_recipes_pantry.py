@@ -90,7 +90,7 @@ async def test_the_recipe_shows_its_micros_per_serving_with_their_coverage(
         await api.post(
             "/foods/manual",
             json={
-                "name": "Chorizo de casa",
+                "name": "Home chorizo",
                 "category_id": "protein",
                 "macros": {"kcal": 400, "protein": 20, "fat": 35, "carbs": 0},
             },
@@ -100,7 +100,7 @@ async def test_the_recipe_shows_its_micros_per_serving_with_their_coverage(
         await api.post(
             "/recipes",
             json={
-                "name": "Lentejas",
+                "name": "Lentils",
                 "servings": 4,
                 "ingredients": [
                     {"food_id": lentils["id"], "quantity": 400, "unit": "g"},
@@ -202,7 +202,7 @@ async def test_an_app_that_uses_pantry_search_finds_the_lentils_through_the_kern
     assert response.status_code == 200, response.text
     [found] = response.json()["foods"]
     assert (found["label"], found["nutrients"]["iron"]) == ("lentejas", 6.5)
-    again = await ask(kernel, "pantry.nutrients", {"ids": [found["id"], "no-es-un-id"]})
+    again = await ask(kernel, "pantry.nutrients", {"ids": [found["id"], "not-an-id"]})
     assert [one["id"] for one in again.json()["foods"]] == [found["id"]]
 
 
@@ -232,7 +232,7 @@ async def test_a_recipe_is_found_and_gives_its_serving_and_version(api, kernel) 
         await api.post(
             "/recipes",
             json={
-                "name": "Lentejas estofadas",
+                "name": "Stewed lentils",
                 "servings": 2,
                 "ingredients": [{"food_id": lentils["id"], "quantity": 200, "unit": "g"}],
             },
@@ -240,7 +240,7 @@ async def test_a_recipe_is_found_and_gives_its_serving_and_version(api, kernel) 
     ).json()
     await kernel.declare(["recipes.search", "recipes.nutrients"])
 
-    [found] = (await ask(kernel, "recipes.search", {"query": "estofadas"})).json()["recipes"]
+    [found] = (await ask(kernel, "recipes.search", {"query": "stewed"})).json()["recipes"]
     serving = (await ask(kernel, "recipes.nutrients", {"id": found["id"]})).json()
 
     assert serving["version_id"] == recipe["version_id"]

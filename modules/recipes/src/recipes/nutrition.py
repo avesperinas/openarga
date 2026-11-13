@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import arga_nutrients
+from recipes.catalog import t
 
 TBSP_ML = 15.0
 TSP_ML = 5.0
@@ -204,7 +205,7 @@ def _micros(summed: list[tuple[float, Mapping[str, float], float]]) -> dict[str,
 
 def per_serving(total: Totals, servings: int) -> Totals:
     if servings < 1:
-        raise ValueError("una receta es para al menos una persona")
+        raise ValueError("a recipe is for at least one person")
     return Totals(
         kcal=_round(total.kcal / servings),
         protein=_round(total.protein / servings),
@@ -225,7 +226,7 @@ def uncertainty(total: Totals) -> str | None:
     if not total.missing:
         return None
     named = ", ".join(name for name in total.missing if name)
-    count = f"falta {len(total.missing)} de {total.total} ingredientes"
-    if len(total.missing) > 1:
-        count = f"faltan {len(total.missing)} de {total.total} ingredientes"
+    missing = len(total.missing)
+    key = "nutrition.missing.one" if missing == 1 else "nutrition.missing.other"
+    count = t(key, count=missing, total=total.total)
     return f"{count} ({named})" if named else count

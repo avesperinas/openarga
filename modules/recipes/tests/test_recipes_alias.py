@@ -32,34 +32,34 @@ def call(api, name: str, arguments: dict, headers: dict = WRITE):
 async def test_the_alias_is_yours_and_the_source_name_stays(api) -> None:
     food = await imported(api, CHICKEN, "171077")
 
-    named = await api.put(f"/foods/{food['id']}/alias", json={"alias": "  Pechuga de pollo "})
+    named = await api.put(f"/foods/{food['id']}/alias", json={"alias": "  Chicken breast "})
 
     assert named.status_code == 200, named.text
-    assert named.json()["alias"] == "Pechuga de pollo"
+    assert named.json()["alias"] == "Chicken breast"
     assert named.json()["name"] == CHICKEN
     assert named.json()["source"] == "usda"
 
 
 async def test_the_alias_is_given_when_importing(api) -> None:
-    food = await imported(api, CHICKEN, "171077", alias="Pechuga de pollo")
+    food = await imported(api, CHICKEN, "171077", alias="Chicken breast")
 
-    assert food["alias"] == "Pechuga de pollo"
+    assert food["alias"] == "Chicken breast"
     assert food["name"] == CHICKEN
 
 
 async def test_the_pantry_is_searched_and_ordered_by_what_you_call_it(api) -> None:
-    await imported(api, CHICKEN, "171077", alias="Pollo")
-    await imported(api, LEEK, "11246", alias="Ajo tierno")
+    await imported(api, CHICKEN, "171077", alias="Hen")
+    await imported(api, LEEK, "11246", alias="Baby garlic")
 
     everything = (await api.get("/foods")).json()
-    found = (await api.get("/foods", params={"query": "pollo"})).json()
+    found = (await api.get("/foods", params={"query": "hen"})).json()
 
-    assert [food["alias"] for food in everything] == ["Ajo tierno", "Pollo"]
+    assert [food["alias"] for food in everything] == ["Baby garlic", "Hen"]
     assert [food["name"] for food in found] == [CHICKEN]
 
 
 async def test_emptying_the_alias_takes_it_off(api) -> None:
-    food = await imported(api, CHICKEN, "171077", alias="Pollo")
+    food = await imported(api, CHICKEN, "171077", alias="Chicken")
 
     cleared = await api.put(f"/foods/{food['id']}/alias", json={"alias": "   "})
 
@@ -67,10 +67,10 @@ async def test_emptying_the_alias_takes_it_off(api) -> None:
 
 
 async def test_one_alias_names_one_food(api) -> None:
-    await imported(api, CHICKEN, "171077", alias="Pollo")
+    await imported(api, CHICKEN, "171077", alias="Chicken")
     other = await imported(api, LEEK, "11246")
 
-    clash = await api.put(f"/foods/{other['id']}/alias", json={"alias": "pollo"})
+    clash = await api.put(f"/foods/{other['id']}/alias", json={"alias": "chicken"})
 
     assert clash.status_code == 409
     assert CHICKEN in clash.json()["detail"]
@@ -78,24 +78,24 @@ async def test_one_alias_names_one_food(api) -> None:
 
 async def test_a_food_that_is_not_there_is_a_404(api) -> None:
     missing = await api.put(
-        "/foods/00000000-0000-4000-8000-000000000000/alias", json={"alias": "Pollo"}
+        "/foods/00000000-0000-4000-8000-000000000000/alias", json={"alias": "Chicken"}
     )
 
     assert missing.status_code == 404
 
 
 async def test_the_recipe_reads_with_your_names(api) -> None:
-    food = await imported(api, CHICKEN, "171077", alias="Pechuga de pollo")
+    food = await imported(api, CHICKEN, "171077", alias="Chicken breast")
     recipe = await api.post(
         "/recipes",
         json={
-            "name": "Pollo a la plancha",
+            "name": "Grilled chicken",
             "servings": 2,
             "ingredients": [{"food_id": food["id"], "quantity": 300, "unit": "g"}],
             "steps": [
                 {
                     "action": "grill",
-                    "text": "A la plancha",
+                    "text": "Grilled",
                     "minutes": 10,
                     "equipment": "hob",
                     "ingredients": [1],
@@ -106,22 +106,22 @@ async def test_the_recipe_reads_with_your_names(api) -> None:
     assert recipe.status_code == 201, recipe.text
 
     body = recipe.json()
-    assert body["groups"][0]["ingredients"][0]["name"] == "Pechuga de pollo"
-    assert body["kitchen"]["steps"][0]["ingredients"] == ["Pechuga de pollo"]
-    assert body["kitchen"]["grid"]["rows"][0]["name"] == "Pechuga de pollo"
+    assert body["groups"][0]["ingredients"][0]["name"] == "Chicken breast"
+    assert body["kitchen"]["steps"][0]["ingredients"] == ["Chicken breast"]
+    assert body["kitchen"]["grid"]["rows"][0]["name"] == "Chicken breast"
 
 
 async def test_a_dictated_recipe_finds_the_food_by_its_alias(api) -> None:
-    await imported(api, CHICKEN, "171077", alias="Pechuga de pollo")
+    await imported(api, CHICKEN, "171077", alias="Chicken breast")
 
     saved = (
         await call(
             api,
             "create_recipe",
             {
-                "name": "Pollo a la plancha",
+                "name": "Grilled chicken",
                 "servings": 2,
-                "ingredients": [{"name": "pechuga de pollo", "quantity": 300, "unit": "g"}],
+                "ingredients": [{"name": "chicken breast", "quantity": 300, "unit": "g"}],
             },
         )
     ).json()["content"]["saved"]
@@ -131,50 +131,50 @@ async def test_a_dictated_recipe_finds_the_food_by_its_alias(api) -> None:
 
 
 async def test_recipes_are_found_by_the_alias_of_an_ingredient(api) -> None:
-    food = await imported(api, CHICKEN, "171077", alias="Pechuga de pollo")
+    food = await imported(api, CHICKEN, "171077", alias="Chicken breast")
     await api.post(
         "/recipes",
         json={
-            "name": "Pollo a la plancha",
+            "name": "Grilled chicken",
             "servings": 2,
             "ingredients": [{"food_id": food["id"], "quantity": 300, "unit": "g"}],
         },
     )
 
-    found = (await call(api, "find_recipes", {"ingredient": "pechuga"}, headers=READ)).json()
+    found = (await call(api, "find_recipes", {"ingredient": "breast"}, headers=READ)).json()
 
-    assert [one["name"] for one in found["content"]["recipes"]] == ["Pollo a la plancha"]
+    assert [one["name"] for one in found["content"]["recipes"]] == ["Grilled chicken"]
 
 
 async def test_the_model_names_a_food_and_the_pantry_shows_it(api) -> None:
     food = await imported(api, CHICKEN, "171077")
 
     named = (
-        await call(api, "set_food_alias", {"food_id": food["id"], "alias": "Pechuga de pollo"})
+        await call(api, "set_food_alias", {"food_id": food["id"], "alias": "Chicken breast"})
     ).json()["content"]["food"]
-    found = (await call(api, "find_foods", {"query": "pechuga"}, headers=READ)).json()
+    found = (await call(api, "find_foods", {"query": "breast"}, headers=READ)).json()
 
-    assert named["alias"] == "Pechuga de pollo"
+    assert named["alias"] == "Chicken breast"
     assert named["name"] == CHICKEN
-    assert [one["alias"] for one in found["content"]["foods"]] == ["Pechuga de pollo"]
+    assert [one["alias"] for one in found["content"]["foods"]] == ["Chicken breast"]
 
 
 async def test_a_taken_alias_is_said_to_the_model_and_nothing_changes(api) -> None:
-    await imported(api, CHICKEN, "171077", alias="Pollo")
+    await imported(api, CHICKEN, "171077", alias="Chicken")
     other = await imported(api, LEEK, "11246")
 
-    answer = (await call(api, "set_food_alias", {"food_id": other["id"], "alias": "Pollo"})).json()[
-        "content"
-    ]
+    answer = (
+        await call(api, "set_food_alias", {"food_id": other["id"], "alias": "Chicken"})
+    ).json()["content"]
 
     assert answer["food"] is None
-    assert "ya es el alias" in answer["note"]
+    assert "is already the alias" in answer["note"]
 
 
 async def test_naming_a_food_with_only_the_read_scope_is_refused_by_postgres(api) -> None:
     food = await imported(api, CHICKEN, "171077")
 
-    refused = await call(api, "set_food_alias", {"food_id": food["id"], "alias": "Pollo"}, READ)
+    refused = await call(api, "set_food_alias", {"food_id": food["id"], "alias": "Chicken"}, READ)
 
     assert refused.status_code == 403
     assert "mod_recipes_read" in refused.json()["detail"]

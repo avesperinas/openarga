@@ -1,6 +1,7 @@
-import { ACTIONS, EQUIPMENT, USUALLY_UNATTENDED, whenLabel } from "./steps";
+import { ACTIONS, EQUIPMENT, USUALLY_UNATTENDED, actionName, equipmentName, whenLabel } from "./steps";
+import { english as t, spanish } from "./i18n/testing";
 
-test("cada verbo del esquema tiene su palabra en español", () => {
+test("every verb in the schema has its word in both languages", () => {
   const schema = [
     "wash", "peel", "chop", "mix", "knead", "season", "coat",
     "fry", "saute", "boil", "simmer", "steam", "bake", "roast", "grill", "toast",
@@ -8,22 +9,25 @@ test("cada verbo del esquema tiene su palabra en español", () => {
     "assemble", "serve",
   ];
 
-  expect(Object.keys(ACTIONS).sort()).toEqual(schema.sort());
+  expect([...ACTIONS].sort()).toEqual(schema.sort());
+  for (const action of ACTIONS) {
+    expect(actionName(t, action)).not.toBe(`action.${action}`);
+    expect(actionName(spanish, action)).not.toBe(`action.${action}`);
+  }
 });
 
-test("y cada aparato también", () => {
-  expect(Object.keys(EQUIPMENT).sort()).toEqual(
-    ["air_fryer", "board", "bowl", "fridge", "hob", "none", "oven"].sort(),
-  );
+test("and so does every appliance", () => {
+  expect([...EQUIPMENT].sort()).toEqual(["air_fryer", "board", "bowl", "fridge", "hob", "none", "oven"].sort());
+  expect(equipmentName(t, "air_fryer")).toBe("Air fryer");
 });
 
-test("lo que suele correr solo se propone como tal, y todo eso es un verbo conocido", () => {
-  for (const action of USUALLY_UNATTENDED) expect(ACTIONS[action]).toBeDefined();
+test("what usually runs by itself is offered as such, and all of it is a known verb", () => {
+  for (const action of USUALLY_UNATTENDED) expect(ACTIONS).toContain(action);
   expect(USUALLY_UNATTENDED.has("bake")).toBe(true);
   expect(USUALLY_UNATTENDED.has("chop")).toBe(false);
 });
 
-test("el momento de un paso se lee en minutos desde que te pones", () => {
-  expect(whenLabel(0, 5)).toBe("min 0 a 5");
-  expect(whenLabel(20, 20)).toBe("min 20");
+test("a step's moment reads in minutes from when you start", () => {
+  expect(whenLabel(0, 5, t)).toBe("min 0 to 5");
+  expect(whenLabel(20, 20, t)).toBe("min 20");
 });

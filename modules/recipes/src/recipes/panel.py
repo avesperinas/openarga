@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets.panel import blocks_of, gather, panel
 from recipes import widgets
+from recipes.catalog import t
 
 
 def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
@@ -14,29 +15,29 @@ def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def nothing() -> HTTPException:
-    return HTTPException(status_code=404, detail="Argiñano aún no tiene nada que contar")
+    return HTTPException(status_code=404, detail="Recipes has nothing to tell yet")
 
 
 async def build(connection: AsyncConnection) -> dict:
     found = await gather(connection, widgets.RENDERERS, ["quick", "recipes"])
-    blocks = blocks_of("list", found.get("quick") or {}, label="En media hora") + blocks_of(
+    blocks = blocks_of("list", found.get("quick") or {}, label=t("panel.quick")) + blocks_of(
         "stats", found.get("recipes") or {}
     )
     if not blocks:
         raise nothing()
     tabs = [
         {
-            "id": "cocina",
-            "label": "Cocina",
+            "id": "kitchen",
+            "label": t("panel.kitchen"),
             "blocks": blocks,
-            "actions": [{"label": "Recetario", "href": "/recipes/"}],
+            "actions": [{"label": t("panel.book"), "href": "/recipes/"}],
         }
     ]
     questions = [
         {
-            "text": "¿Qué cocino?",
-            "words": ["receta", "cocinar", "cenar", "comer", "recetas"],
-            "tab": "cocina",
+            "text": t("panel.question"),
+            "words": t("panel.words").split(","),
+            "tab": "kitchen",
         }
     ]
     return panel("home", order=30, tabs=tabs, questions=questions)

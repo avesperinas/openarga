@@ -2,32 +2,34 @@ import { describe, expect, it } from "vitest";
 
 import { closeness, fold, ranked } from "./search";
 
-describe("buscar sin tildes (T-V26)", () => {
-  it("quita mayúsculas, tildes, diéresis y virgulilla", () => {
-    expect(fold("Ñoquis de CALABAZA, pequeños, pingüino")).toBe("noquis de calabaza, pequenos, pinguino");
+const BANANA = "Pl\u00e1tano";
+
+describe("searching without accents (T-V26)", () => {
+  it("drops capitals, accents, diaereses and tildes", () => {
+    expect(fold("\u00d1oquis of PUMPKIN, sm\u00e0ll, ping\u00fcino")).toBe("noquis of pumpkin, small, pinguino");
   });
 
-  it("la misma escala que la API", () => {
-    expect(closeness("platano", "Plátano")).toBe(0);
-    expect(closeness("plat", "Plátano")).toBe(1);
-    expect(closeness("plat", "Batido de plátano")).toBe(2);
-    expect(closeness("tano", "Batido de plátano")).toBe(3);
-    expect(closeness("kiwi", "Plátano")).toBeNull();
+  it("the same scale as the API", () => {
+    expect(closeness("platano", BANANA)).toBe(0);
+    expect(closeness("plat", BANANA)).toBe(1);
+    expect(closeness("plat", `Shake with ${BANANA}`)).toBe(2);
+    expect(closeness("tano", `Shake with ${BANANA}`)).toBe(3);
+    expect(closeness("kiwi", BANANA)).toBeNull();
   });
 
-  it("lo que empieza igual, antes; por el alias o por el nombre de la fuente", () => {
+  it("what starts the same goes first; by alias or by the source's name", () => {
     const foods = [
-      { alias: null, name: "Batido de plátano" },
-      { alias: "Plátano", name: "Bananas, raw" },
-      { alias: null, name: "Chocolate con plátano" },
+      { alias: null, name: `${BANANA} shake` },
+      { alias: BANANA, name: "Bananas, raw" },
+      { alias: null, name: `Chocolate with ${BANANA}` },
       { alias: null, name: "Kiwi" },
     ];
     const label = (one: (typeof foods)[number]) => one.alias ?? one.name;
     expect(ranked(foods, "platano", (one) => [one.alias, one.name], label).map(label)).toEqual([
-      "Plátano",
-      "Batido de plátano",
-      "Chocolate con plátano",
+      BANANA,
+      `${BANANA} shake`,
+      `Chocolate with ${BANANA}`,
     ]);
-    expect(ranked(foods, "banana", (one) => [one.alias, one.name], label).map(label)).toEqual(["Plátano"]);
+    expect(ranked(foods, "banana", (one) => [one.alias, one.name], label).map(label)).toEqual([BANANA]);
   });
 });
