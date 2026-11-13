@@ -82,7 +82,7 @@ async def test_the_map_files_of_this_version_are_cached_for_good(
     assert missing.status_code == 404
 
 
-async def test_each_area_has_its_own_map_folder_under_the_names_the_map_asks_for(
+async def test_each_area_has_its_own_map_folder_and_shares_the_fonts(
     bare, tmp_path, monkeypatch
 ) -> None:
     (tmp_path / "index.html").write_text("<div id=root></div>")
@@ -95,14 +95,13 @@ async def test_each_area_has_its_own_map_folder_under_the_names_the_map_asks_for
     (tmp_path / "map" / "fonts" / "0-255.pbf").write_bytes(b"font")
     monkeypatch.setenv("UI_DIST", str(tmp_path))
 
-    region = await bare.get("/outings/map/v-abc123/pamplona/navarra.pmtiles")
-    named = await bare.get("/outings/map/v-abc123/pamplona/region.pmtiles")
-    relief = await bare.get("/outings/map/v-abc123/pamplona/relieve-comarca.json")
+    region = await bare.get("/outings/map/v-abc123/pamplona/region.pmtiles")
+    relief = await bare.get("/outings/map/v-abc123/pamplona/relief-near.json")
     font = await bare.get("/outings/map/v-abc123/pamplona/fonts/0-255.pbf")
-    other = await bare.get("/outings/map/v-abc123/munich/navarra.pmtiles")
+    other = await bare.get("/outings/map/v-abc123/munich/region.pmtiles")
     sneaky = await bare.get("/outings/map/v-abc123/pamplona/%2E%2E/%2E%2E/index.html")
 
-    assert region.content == b"region" and named.content == b"region"
+    assert region.content == b"region"
     assert relief.status_code == 200 and font.content == b"font"
     assert other.status_code == 404 and sneaky.status_code == 404
 
@@ -121,4 +120,5 @@ async def test_the_area_says_its_names_boxes_and_whether_it_has_a_map(
     assert default["id"] == area.id and default["near"] == area.near.name
     assert default["region_box"] == list(area.region.box)
     assert default["map"] is (area.id == "pamplona")
-    assert asked["id"] == "munich" and asked["map"] is False
+    assert asked["id"] == "munich" and asked["map"] is False and asked["relief"] is None
+    assert default["relief"] == (area.map.relief.attribution if area.map.relief else None)

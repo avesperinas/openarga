@@ -308,6 +308,7 @@ export interface Area {
   near_box: [number, number, number, number];
   region_box: [number, number, number, number];
   map: boolean;
+  relief: string | null;
 }
 
 export const readArea = () => get<Area>("/area");

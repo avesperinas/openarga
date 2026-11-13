@@ -1,18 +1,33 @@
-import type { AreaView } from "@openarga/ui/area-map";
+import type { AreaViews, Box } from "@openarga/ui/area-map";
 
-import { type Area, MAP_BASE, type Zone, readArea } from "./api";
+import { type Area, MAP_BASE, readArea } from "./api";
 import { useLoad } from "./Loads";
 
-// TODO(ui): AreaMap still names its views after the first area; it should take the profile's boxes.
-export const VIEW: Record<Zone, AreaView> = { near: "comarca", region: "navarra" };
+export interface AreaMapSetup {
+  base: string;
+  views: AreaViews;
+  reliefCredit?: string;
+}
 
-export const mapBase = (area: Area) => `${MAP_BASE}${area.id}/`;
+const box = ([west, south, east, north]: Area["near_box"]): Box => [
+  [west, south],
+  [east, north],
+];
+
+export function mapOf(area: Area): AreaMapSetup | null {
+  if (!area.map) return null;
+  return {
+    base: `${MAP_BASE}${area.id}/`,
+    views: { near: box(area.near_box), region: box(area.region_box) },
+    reliefCredit: area.relief ?? undefined,
+  };
+}
 
 export function useArea(): Area | null {
   return useLoad("area", readArea).data;
 }
 
-export function useMapBase(): string | null {
+export function useAreaMap(): AreaMapSetup | null {
   const area = useArea();
-  return area?.map ? mapBase(area) : null;
+  return area ? mapOf(area) : null;
 }

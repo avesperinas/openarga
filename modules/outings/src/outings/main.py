@@ -254,6 +254,7 @@ class AreaOut(BaseModel):
     near_box: profile.Box
     region_box: profile.Box
     map: bool
+    relief: str | None
 
 
 @app.get("/area")
@@ -267,6 +268,7 @@ async def read_area() -> AreaOut:
         near_box=found.near.box,
         region_box=found.region.box,
         map=maps.has_map(service.ui_dist(), found.id),
+        relief=found.map.relief.attribution if found.map.relief else None,
     )
 
 
