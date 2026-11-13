@@ -141,6 +141,6 @@ async def test_what_the_app_refuses_comes_back_with_its_reason(api, kernel, trai
     )
 
     assert refused.status_code == 409
-    assert "hora" in refused.json()["detail"]
+    assert "Training" in refused.json()["detail"]
     [same] = await shown(api)
     assert same["start"] == found["start"]
