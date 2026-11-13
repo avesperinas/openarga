@@ -1,17 +1,13 @@
+import { type Translate, numbers } from "@openarga/ui";
+
 import type { Unit } from "./api";
 
-export const UNITS: { value: Unit; label: string; short: string }[] = [
-  { value: "g", label: "gramos", short: "g" },
-  { value: "ml", label: "mililitros", short: "ml" },
-  { value: "unit", label: "unidades", short: "ud" },
-  { value: "tbsp", label: "cucharadas", short: "cda" },
-  { value: "tsp", label: "cucharaditas", short: "cdta" },
-  { value: "pinch", label: "pizcas", short: "pizca" },
-];
+export const UNITS: Unit[] = ["g", "ml", "unit", "tbsp", "tsp", "pinch"];
 
-const NUMBER = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 2 });
+export const unitName = (t: Translate, unit: Unit): string => t(`unit.${unit}`);
 
-export function quantityLabel(quantity: number, unit: Unit): string {
-  const found = UNITS.find((one) => one.value === unit);
-  return `${NUMBER.format(quantity)} ${found?.short ?? unit}`;
+export const unitShort = (t: Translate, unit: Unit): string => t(`unit_short.${unit}`);
+
+export function quantityLabel(quantity: number, unit: Unit, t: Translate): string {
+  return `${numbers({ maximumFractionDigits: 2 }).format(quantity)} ${UNITS.includes(unit) ? unitShort(t, unit) : unit}`;
 }

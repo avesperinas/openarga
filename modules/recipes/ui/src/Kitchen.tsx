@@ -1,56 +1,56 @@
-import { duration, Figures, Hint, RecipeGrid, Section, StepItem, StepList } from "@openarga/ui";
+import { duration, Figures, Hint, RecipeGrid, Section, StepItem, StepList, useT } from "@openarga/ui";
 import { useState } from "react";
 
 import type { Ingredient, Kitchen } from "./api";
-import { ACTIONS, EQUIPMENT, whenLabel } from "./steps";
+import { actionName, equipmentName, whenLabel } from "./steps";
 import { quantityLabel } from "./units";
 
 export function KitchenTimes({ kitchen }: { kitchen: Pick<Kitchen, "total_minutes" | "active_minutes"> }) {
+  const t = useT();
   return (
     <Figures
-      label="Cuánto lleva"
+      label={t("kitchen.how_long")}
       items={[
-        { label: "De principio a fin", value: duration(kitchen.total_minutes) },
-        { label: "Tú delante", value: duration(kitchen.active_minutes), lit: true },
+        { label: t("kitchen.total"), value: duration(kitchen.total_minutes) },
+        { label: t("kitchen.active"), value: duration(kitchen.active_minutes), lit: true },
       ]}
     />
   );
 }
 
 export function KitchenPlan({ kitchen, ingredients }: { kitchen: Kitchen; ingredients: Ingredient[] }) {
+  const t = useT();
   const [done, setDone] = useState<number[]>([]);
   if (kitchen.steps.length === 0) {
     return (
-      <Section title="En la cocina">
-        <Hint>
-          Esta receta todavía no tiene pasos. Con ellos sale el diagrama y el tiempo que lleva.
-        </Hint>
+      <Section title={t("kitchen.title")}>
+        <Hint>{t("kitchen.no_steps")}</Hint>
       </Section>
     );
   }
 
   const amounts = new Map(ingredients.map((one) => [one.position, one]));
   const note = (minutes: number, attended: boolean) =>
-    attended ? duration(minutes) : `${duration(minutes)} · corre solo`;
+    attended ? duration(minutes) : `${duration(minutes)} · ${t("kitchen.runs_alone")}`;
 
   return (
-    <Section title="En la cocina">
+    <Section title={t("kitchen.title")}>
       <div className="surface recipes-panel">
         <RecipeGrid
-          label="Qué se junta con qué"
+          label={t("kitchen.grid")}
           columns={kitchen.grid.columns}
           rows={kitchen.grid.rows.map((row) => {
             const found = amounts.get(row.position);
             return {
               id: row.position,
               label: row.name,
-              amount: found ? quantityLabel(found.quantity, found.unit) : undefined,
+              amount: found ? quantityLabel(found.quantity, found.unit, t) : undefined,
               unused: row.orphan,
             };
           })}
           cells={kitchen.grid.cells.map((cell) => ({
             id: cell.position,
-            label: ACTIONS[cell.action] ?? cell.action,
+            label: actionName(t, cell.action),
             detail: cell.text,
             note: note(cell.minutes, cell.attended),
             column: cell.column,
@@ -60,7 +60,7 @@ export function KitchenPlan({ kitchen, ingredients }: { kitchen: Kitchen; ingred
           }))}
           bands={kitchen.grid.bands.map((band) => ({
             id: band.position,
-            label: `${ACTIONS[band.action] ?? band.action}: ${band.text}`,
+            label: `${actionName(t, band.action)}: ${band.text}`,
             note: note(band.minutes, band.attended),
           }))}
         />
@@ -72,22 +72,24 @@ export function KitchenPlan({ kitchen, ingredients }: { kitchen: Kitchen; ingred
         ))}
         {kitchen.overlaps.map((clash) => (
           <Hint key={clash.equipment} tone="warning">
-            Los pasos {clash.positions.join(" y ")} piden{" "}
-            {(EQUIPMENT[clash.equipment] ?? clash.equipment).toLowerCase()} a la vez.
+            {t("kitchen.clash", {
+              steps: clash.positions.join(t("common.and")),
+              equipment: equipmentName(t, clash.equipment).toLowerCase(),
+            })}
           </Hint>
         ))}
       </div>
 
-      <StepList label="Pasos">
+      <StepList label={t("kitchen.steps")}>
         {kitchen.steps.map((step, index) => (
           <StepItem
             key={step.position}
             number={index + 1}
-            when={whenLabel(step.start, step.end)}
+            when={whenLabel(step.start, step.end, t)}
             text={step.text}
             detail={[
-              `${ACTIONS[step.action] ?? step.action} · ${duration(step.minutes)}`,
-              ...(step.attended ? [] : ["corre solo"]),
+              `${actionName(t, step.action)} · ${duration(step.minutes)}`,
+              ...(step.attended ? [] : [t("kitchen.runs_alone")]),
               ...(step.ingredients.length > 0 ? [step.ingredients.join(", ")] : []),
             ].join(" · ")}
             done={done.includes(step.position)}
