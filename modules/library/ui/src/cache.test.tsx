@@ -13,9 +13,9 @@ const BOOK: Book = {
   id: ID,
   edition: "catalog",
   edition_id: "e",
-  title: "Libro sintético",
+  title: "Synthetic book",
   subtitle: null,
-  authors: ["Autora Sintética"],
+  authors: ["Synthetic Author"],
   pages: 300,
   language: "es",
   year: 2020,
@@ -86,7 +86,7 @@ beforeEach(() => {
       const key = `${init?.method ?? "GET"} ${url}`;
       asked.push(key);
       const reply = replies[key];
-      if (!reply) return json({ detail: "no existe" }, 404);
+      if (!reply) return json({ detail: "not found" }, 404);
       const body = await reply(init);
       return body instanceof Response ? body : json(body);
     }),
@@ -111,24 +111,24 @@ const tab = (name: string) =>
   Array.from(host.querySelectorAll<HTMLButtonElement>(".tab-bar button")).find((one) => one.textContent?.includes(name))!;
 const times = (key: string) => asked.filter((one) => one === key).length;
 
-describe("Library con el kit de app", () => {
-  it("de la estantería a las estadísticas y vuelta: los libros se piden una vez y no vuelve el esqueleto", async () => {
+describe("Library with the app kit", () => {
+  it("from the shelf to the stats and back: books are asked for once and the skeleton does not come back", async () => {
     act(() => root.render(<App />));
     await settle();
-    expect(host.textContent).toContain("Libro sintético");
+    expect(host.textContent).toContain("Synthetic book");
 
-    act(() => tab("Estadísticas").click());
+    act(() => tab("Stats").click());
     await settle();
-    act(() => tab("Estantería").click());
+    act(() => tab("Shelf").click());
 
     expect(host.querySelector(".skeleton")).toBeNull();
-    expect(host.textContent).toContain("Libro sintético");
+    expect(host.textContent).toContain("Synthetic book");
     await settle();
     expect(times("GET /api/library/books")).toBe(1);
     expect(times("GET /api/library/stats")).toBe(1);
   });
 
-  it("abrir un libro desde la estantería lo pinta sin esperar a su ficha", async () => {
+  it("opening a book from the shelf paints it without waiting for its record", async () => {
     replies[`GET /api/library/books/${ID}`] = () => new Promise(() => undefined);
     act(() => root.render(<App />));
     await settle();
@@ -136,12 +136,12 @@ describe("Library con el kit de app", () => {
     act(() => host.querySelector<HTMLButtonElement>(".media-card-open")!.click());
 
     expect(window.location.pathname).toBe(`/library/books/${ID}`);
-    expect(host.querySelector(".app-shell-detail h1")?.textContent).toContain("Libro sintético");
-    expect(host.querySelector(".app-shell-main")?.textContent).toContain("Tus libros");
-    expect(host.textContent).toContain("Terminado hoy");
+    expect(host.querySelector(".app-shell-detail h1")?.textContent).toContain("Synthetic book");
+    expect(host.querySelector(".app-shell-main")?.textContent).toContain("Your books");
+    expect(host.textContent).toContain("Finished today");
   });
 
-  it("«Terminado hoy» se ve antes de que conteste, y vuelve atrás si el servidor no lo acepta", async () => {
+  it("“Finished today” shows before the answer, and goes back if the server refuses it", async () => {
     let answer!: (response: Response) => void;
     replies[`GET /api/library/books/${ID}`] = () => BOOK;
     replies[`PUT /api/library/books/${ID}`] = () => new Promise<Response>((resolve) => (answer = resolve));
@@ -149,15 +149,15 @@ describe("Library con el kit de app", () => {
     act(() => root.render(<App />));
     await settle();
 
-    const finish = Array.from(host.querySelectorAll("button")).find((one) => one.textContent?.includes("Terminado hoy"))!;
+    const finish = Array.from(host.querySelectorAll("button")).find((one) => one.textContent?.includes("Finished today"))!;
     act(() => finish.click());
     await settle();
-    expect(host.textContent).toContain("Leído");
-    expect(host.textContent).not.toContain("Terminado hoy");
+    expect(host.querySelector(".app-shell-detail")?.textContent).toContain("Read");
+    expect(host.textContent).not.toContain("Finished today");
 
-    answer(json({ detail: "leído es con fecha de inicio y de fin" }, 409));
+    answer(json({ detail: "read has a start date and an end date" }, 409));
     await settle();
-    expect(host.textContent).toContain("Terminado hoy");
-    expect(host.textContent).toContain("leído es con fecha de inicio y de fin");
+    expect(host.textContent).toContain("Finished today");
+    expect(host.textContent).toContain("read has a start date and an end date");
   });
 });

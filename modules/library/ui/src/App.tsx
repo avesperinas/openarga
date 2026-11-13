@@ -5,6 +5,7 @@ import { useCallback } from "react";
 import { type Genre, readGenres } from "./api";
 import { BookScreen } from "./BookScreen";
 import { APP } from "./Header";
+import { t } from "./lang";
 import { LibraryScreen } from "./Library";
 import { StatsScreen } from "./Stats";
 
@@ -36,12 +37,12 @@ export function App() {
 
   return (
     <AppShell
-      label="Secciones"
+      label={t("app.sections")}
       active={current.tab === "stats" || current.tab === "settings" ? current.tab : "shelf"}
       onSelect={(tab) => navigate({ tab })}
       tabs={[
-        { id: "shelf", label: "Estantería", icon: "book" },
-        { id: "stats", label: "Estadísticas", icon: "chart" },
+        { id: "shelf", label: t("tab.shelf"), icon: "book" },
+        { id: "stats", label: t("tab.stats"), icon: "chart" },
         SETTINGS_TAB,
       ]}
       detail={

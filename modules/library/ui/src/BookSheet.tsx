@@ -5,6 +5,7 @@ import { type Book, type Edition, type Genre, type Reading, saveEdition, saveRea
 import { EditionFields } from "./EditionFields";
 import { ReadingFields } from "./ReadingFields";
 import { authorsOf } from "./words";
+import { t } from "./lang";
 
 function readingOf(book: Book): Reading {
   const { status, started_on, finished_on, rating, format, genre, note } = book;
@@ -50,20 +51,20 @@ export function BookSheet({
     <Sheet
       title={book.title}
       onClose={onClose}
-      action={{ label: "Guardar", onClick: () => void save(), disabled: saving || !edition.title.trim() }}
+      action={{ label: t("action.save"), onClick: () => void save(), disabled: saving || !edition.title.trim() }}
     >
       {typed ? (
         <EditionFields edition={edition} onChange={setEdition} />
       ) : (
         <Hint>
-          {[authorsOf(book), book.pages ? `${book.pages} páginas` : "", book.year?.toString() ?? ""]
+          {[authorsOf(book), book.pages ? t("edition.pages", { pages: book.pages }) : "", book.year?.toString() ?? ""]
             .filter(Boolean)
             .join(" · ")}
         </Hint>
       )}
       {book.days !== null && (
         <Hint>
-          {book.days === 1 ? "Lo leíste en un día." : `Lo leíste en ${book.days} días.`}
+          {book.days === 1 ? t("book.read_in_one") : t("book.read_in", { days: book.days })}
         </Hint>
       )}
       <ReadingFields reading={reading} genres={genres} onChange={setReading} />

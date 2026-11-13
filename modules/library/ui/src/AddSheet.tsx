@@ -17,6 +17,7 @@ import { EditionFields } from "./EditionFields";
 import { ReadingFields } from "./ReadingFields";
 import { Scanner } from "./Scanner";
 import { candidateDetail, failedNote } from "./words";
+import { t } from "./lang";
 
 const EMPTY_EDITION: Edition = { title: "", authors: [] };
 export const EMPTY_READING: Reading = {
@@ -103,11 +104,11 @@ export function AddSheet({
 
   return (
     <Sheet
-      title="Añadir libro"
+      title={t("add.title")}
       onClose={onClose}
       action={
         step.kind === "chosen" || step.kind === "manual"
-          ? { label: "Añadir", onClick: () => void save(), disabled: saving || !saveable }
+          ? { label: t("action.add"), onClick: () => void save(), disabled: saving || !saveable }
           : undefined
       }
     >
@@ -116,26 +117,26 @@ export function AddSheet({
       {step.kind === "search" && (
         <div className="library-fields">
           <TextField
-            label="Buscar"
+            label={t("action.search")}
             type="search"
             value={query}
             onChange={setQuery}
-            placeholder="título, autor o ISBN"
+            placeholder={t("add.placeholder")}
             autoFocus
             onSubmit={() => void search(query)}
           />
           <div className="library-actions">
             <Button variant="tinted" onClick={() => void search(query)} disabled={query.trim().length < 2}>
-              Buscar
+              {t("action.search")}
             </Button>
             <Button variant="secondary" onClick={() => setStep({ kind: "scan" })}>
-              Escanear código
+              {t("add.scan")}
             </Button>
           </div>
-          {searching && <Skeleton rows={3} label="Buscando" />}
+          {searching && <Skeleton rows={3} label={t("add.searching")} />}
           {found && failedNote(found.failed) && <Hint tone="warning">{failedNote(found.failed)}</Hint>}
           {found && found.candidates.length === 0 && !searching && (
-            <Hint>No sale en ningún catálogo. Puedes teclearlo.</Hint>
+            <Hint>{t("add.none")}</Hint>
           )}
           {found && found.candidates.length > 0 && (
             <List>
@@ -152,7 +153,7 @@ export function AddSheet({
             </List>
           )}
           <Button variant="plain" onClick={() => setStep({ kind: "manual" })}>
-            Teclearlo a mano
+            {t("add.manual")}
           </Button>
         </div>
       )}
@@ -162,11 +163,11 @@ export function AddSheet({
           <div>
             <p className="library-chosen-title">{step.candidate.title}</p>
             <Hint>{candidateDetail(step.candidate, true)}</Hint>
-            {step.candidate.known_id && <Hint tone="warning">Ya está en tu biblioteca: esto será otra lectura.</Hint>}
+            {step.candidate.known_id && <Hint tone="warning">{t("add.known")}</Hint>}
           </div>
           <ReadingFields reading={reading} genres={genres} onChange={setReading} />
           <Button variant="plain" onClick={() => setStep({ kind: "search" })}>
-            Elegir otro
+            {t("add.other")}
           </Button>
         </div>
       )}
