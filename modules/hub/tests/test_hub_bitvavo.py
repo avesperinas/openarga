@@ -159,7 +159,7 @@ async def test_bitvavo_is_one_per_person(api) -> None:
     )
 
     assert again.status_code == 409
-    assert "Ya tienes Bitvavo" in again.json()["detail"]
+    assert "Bitvavo is already connected" in again.json()["detail"]
 
 
 async def test_what_arga_does_not_know_is_not_connected(api) -> None:
@@ -173,7 +173,7 @@ async def test_what_arga_does_not_know_is_not_connected(api) -> None:
     [
         ({"api_key": KEY}, "Falta secreto"),
         ({"api_key": "no es una clave", "api_secret": SECRET}, "Clave de API"),
-        ({"api_key": KEY, "api_secret": SECRET, "otra": "x"}, "no pide otra"),
+        ({"api_key": KEY, "api_secret": SECRET, "otra": "x"}, "does not ask for otra"),
     ],
 )
 async def test_what_is_pasted_has_to_be_what_it_asks_for(api, secrets_in, said) -> None:

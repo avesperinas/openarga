@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from hub import catalogue, credentials, rules
 from hub.extractors import EXTRACTORS
 from hub.sync import CLIENTS, NORMALISE, SETTINGS, used_today
+from hub.words import say
 
 WARNING = timedelta(days=14)
 FAILURES = 2
@@ -70,21 +71,21 @@ def reason_of(
     empty: bool = False,
 ) -> str | None:
     if state == "pending" and missing:
-        return f"A {label} le falta su credencial: pégala en su ficha."
+        return say("connection.reason.missing", label=label)
     if state == "pending":
-        return f"{label} espera a que termines de autorizarla."
+        return say("connection.reason.pending", label=label)
     if state == "expired" and expires is not None:
-        return f"El acceso a {label} caducó el {expires:%d/%m/%Y}; hay que reconectarlo."
+        return say("connection.reason.expired", label=label, date=expires.date().isoformat())
     if state == "expiring" and expires is not None:
         days = max(0, (expires - now).days)
-        return f"El acceso a {label} caduca en {days} día{'s' if days != 1 else ''}."
+        key = "connection.reason.expiring.one" if days == 1 else "connection.reason.expiring.other"
+        return say(key, label=label, days=days)
     if state == "failing" and empty:
-        return (
-            f"{label} no ha dado ninguna cuenta. Si tu aplicación de Enable Banking está en modo "
-            "restringido, enlaza en su panel las cuentas de este banco y después reconéctalo."
-        )
+        return say("connection.reason.no_accounts", label=label)
     if state == "failing":
-        return f"{label} está fallando: {detail}" if detail else f"{label} está fallando."
+        if detail:
+            return say("connection.reason.failing_detail", label=label, detail=detail)
+        return say("connection.reason.failing", label=label)
     return None
 
 
@@ -154,14 +155,10 @@ URGENCY: dict[State, int] = {
 }
 
 
-BRIEF: dict[State, str] = {
-    "expired": "Caducada",
-    "failing": "Fallando",
-    "expiring": "Por caducar",
-    "pending": "A medias",
-    "paused": "En pausa",
-    "active": "Al día",
-}
+def brief(state: State) -> str:
+    return say(f"connection.brief.{state}")
+
+
 TONE: dict[State, str] = {
     "expired": "negative",
     "failing": "negative",
@@ -190,7 +187,7 @@ def clean_secret(provider: catalogue.Provider, key: str, raw: str) -> str:
     if not value:
         raise Refused(f"Falta {secret.label.lower()}")
     if len(value) > credentials.MAX_LENGTH:
-        raise Refused(f"{secret.label}: es demasiado larga")
+        raise Refused(f"{secret.label}: too long")
     client = CLIENTS.get(provider.id)
     normalise = client.normalise if client else NORMALISE.get(provider.id, lambda _k, raw: raw)
     try:
@@ -206,7 +203,7 @@ def clean_secrets(
     allowed = wanted + list(provider.internal if partial else ())
     unknown = sorted(set(raw) - set(allowed))
     if unknown:
-        raise Refused(f"{provider.name} no pide {', '.join(unknown)}")
+        raise Refused(f"{provider.name} does not ask for {', '.join(unknown)}")
     return {
         key: clean_secret(provider, key, raw.get(key) or "")
         for key in allowed
@@ -217,7 +214,7 @@ def clean_secrets(
 def clean_label(provider: catalogue.Provider, label: str | None) -> str:
     cleaned = " ".join((label or "").split()) or provider.name
     if len(cleaned) > 80:
-        raise Refused("El nombre no puede pasar de 80 caracteres")
+        raise Refused("The name cannot be longer than 80 characters")
     return cleaned
 
 
@@ -237,9 +234,7 @@ async def free_label(
         return cleaned
     for row in await database.execute(LABELS, {"provider": provider.id}):
         if row.id != besides and row.label.casefold() == cleaned.casefold():
-            raise Refused(
-                f"Ya tienes una cuenta de {provider.name} que se llama '{row.label}'", 409
-            )
+            raise Refused(f"You already have a {provider.name} account called '{row.label}'", 409)
     return cleaned
 
 
@@ -303,16 +298,16 @@ async def create(
     if not provider.available:
         where = catalogue.APPS.get(provider.lives_in or "")
         raise Refused(
-            f"{provider.name} todavía se configura en {where}"
+            f"{provider.name} is still configured in {where}"
             if where
-            else f"{provider.name} todavía no se puede conectar",
+            else f"{provider.name} cannot be connected yet",
             409,
         )
     if provider.created_in and from_app != provider.created_in:
         app = catalogue.APPS.get(provider.created_in, provider.created_in)
-        raise Refused(f"Las conexiones de {provider.name} se crean desde {app}", 409)
+        raise Refused(f"{provider.name} connections are created from {app}", 409)
     if provider.authorizes and from_app is None:
-        raise Refused(f"{provider.name} se conecta yendo a autorizarlo, no con una clave", 409)
+        raise Refused(f"{provider.name} connects by authorising it, not with a key", 409)
     name = await free_label(database, provider, label)
     cleaned = clean_secrets(provider, secrets, partial=from_app is not None)
     if provider.settings and from_app is None:
@@ -324,7 +319,7 @@ async def create(
         except ValueError as error:
             raise Refused(str(error)) from error
     if provider.single and await first_of(database, provider.id) is not None:
-        raise Refused(f"Ya tienes {provider.name} conectado: cambia su clave en su ficha", 409)
+        raise Refused(f"{provider.name} is already connected: change its key in its page", 409)
     created = await database.scalar(
         INSERT,
         {
@@ -472,7 +467,7 @@ def summary(item: Connection) -> dict:
         "label": item.label,
         "category": item.category,
         "state": item.state,
-        "brief": BRIEF[item.state],
+        "brief": brief(item.state),
         "tone": TONE[item.state],
         "reason": item.reason,
         "consent_expires_at": item.consent_expires_at,

@@ -1,0 +1,18 @@
+{
+  "connection.brief.active": "Al día",
+  "connection.brief.expired": "Caducada",
+  "connection.brief.expiring": "Por caducar",
+  "connection.brief.failing": "Fallando",
+  "connection.brief.paused": "En pausa",
+  "connection.brief.pending": "A medias",
+  "connection.reason.expired": "El acceso a {label} caducó el {date}; hay que reconectarlo.",
+  "connection.reason.expiring.one": "El acceso a {label} caduca en 1 día.",
+  "connection.reason.expiring.other": "El acceso a {label} caduca en {days} días.",
+  "connection.reason.failing": "{label} está fallando.",
+  "connection.reason.failing_detail": "{label} está fallando: {detail}",
+  "connection.reason.missing": "A {label} le falta su credencial: pégala en su ficha.",
+  "connection.reason.no_accounts": "{label} no ha dado ninguna cuenta. Si tu aplicación de Enable Banking está en modo restringido, enlaza en su panel las cuentas de este banco y después reconéctalo.",
+  "connection.reason.pending": "{label} espera a que termines de autorizarla.",
+  "widget.status.all_good": "todo al día",
+  "widget.status.empty": "nada conectado todavía"
+}
