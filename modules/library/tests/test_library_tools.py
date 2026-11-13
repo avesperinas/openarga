@@ -87,7 +87,7 @@ async def test_an_isbn_nobody_has_is_kept_for_the_app(api, hub) -> None:
     assert content["added"]["isbn13"] == "9780306406157"
 
 
-async def test_bad_dates_or_unknown_books_are_said_not_crashed(api) -> None:
+async def test_bad_dates_or_unknown_books_are_said_not_crashed(api, hub) -> None:
     bad = await call(api, "add_book", {"title": "Mal", "status": "read"})
     missing = await call(
         api, "rate_book", {"book_id": "00000000-0000-4000-8000-000000000000", "rating": 4}
@@ -98,7 +98,7 @@ async def test_bad_dates_or_unknown_books_are_said_not_crashed(api) -> None:
     assert missing.status_code == 404
 
 
-async def test_reading_scope_cannot_write(api) -> None:
+async def test_reading_scope_cannot_write(api, hub) -> None:
     response = await call(api, "add_book", {"title": "No"}, READ)
 
     assert response.status_code == 403

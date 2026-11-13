@@ -63,6 +63,7 @@ async def hub(schema, database_url, monkeypatch):
     async with AsyncClient(transport=ASGITransport(app=hub_app), base_url="http://hub") as client:
         yield Hub(client, monkeypatch)
     await app.state.client.aclose()
+    del app.state.client
     for cached in (hub_db.engine, kernel_db.engine):
         await cached().dispose()
         cached.cache_clear()
