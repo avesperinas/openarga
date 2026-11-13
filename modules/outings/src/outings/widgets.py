@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets import envelope
 from outings import agenda, explore, wishes
-from outings.common import MADRID
+from outings.common import zone
 from outings.words import say
 
 KINDS = {"weekend": "upnext", "wishes": "list"}
@@ -19,7 +19,7 @@ def at(event: agenda.Event) -> str:
         hour, minute = (int(part) for part in event.time.split(":"))
         moment = datetime(
             event.starts_on.year, event.starts_on.month, event.starts_on.day, hour % 24, minute,
-            tzinfo=MADRID,
+            tzinfo=zone(),
         )  # fmt: skip
         return moment.isoformat()
     return event.starts_on.isoformat()

@@ -6,7 +6,7 @@ import { AppVersion } from "./AppVersion";
 import { type AgendaEvent, readMine } from "./api";
 import { useAreaMap } from "./area";
 import { ScreenHeader } from "./Header";
-import { t } from "./lang";
+import { dayIn, t } from "./lang";
 import { Pending, useLoad } from "./Loads";
 import { categoryOf, dayTitle, eventLine, isoDay, longDay, marksOf, monthName, onDay, shortDay, span, until } from "./words";
 
@@ -28,13 +28,13 @@ export function AgendaScreen({
   onOpenId: (id: string) => void;
   onExplore: () => void;
 }) {
-  const today = isoDay(new Date());
+  const today = dayIn(new Date());
   const [year, setYear] = useState(() => Number(today.slice(0, 4)));
   const [month, setMonth] = useState(() => Number(today.slice(5, 7)) - 1);
   const [selected, setSelected] = useState(today);
   const [first, last] = monthSpan(year, month);
   const { data: mine, found } = useLoad(`mine:${first}`, () => readMine(first, last));
-  const until_ = isoDay(new Date(Date.now() + 120 * 86_400_000));
+  const until_ = dayIn(new Date(Date.now() + 120 * 86_400_000));
   const { data: ahead, found: aheadFound } = useLoad("coming", () => readMine(today, until_));
   const coming = ahead?.events ?? null;
   const both = {

@@ -9,8 +9,13 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-TZ = "Europe/Madrid"
-MADRID = ZoneInfo(TZ)
+from arga_contracts import notify
+from arga_module import preferences
+
+
+def zone() -> ZoneInfo:
+    person = preferences.current()
+    return person.zone if person != preferences.defaults() else notify.zone()
 
 
 class NotFound(LookupError):
@@ -24,7 +29,7 @@ class Conflict(ValueError):
 
 
 def now() -> datetime:
-    return datetime.now(MADRID)
+    return datetime.now(zone())
 
 
 def today() -> date:

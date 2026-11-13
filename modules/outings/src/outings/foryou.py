@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -10,10 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_contracts import notify
 from outings import agenda, explore, places, profile
-from outings.common import today
+from outings.common import today, zone
 from outings.words import say
 
-MADRID = ZoneInfo("Europe/Madrid")
 AHEAD_DAYS = 45
 NEAR_KM = 5.0
 NEAR = 4
@@ -94,7 +92,7 @@ def _when(event: agenda.Event) -> str:
 
 
 def _arrived_on(event: agenda.Event) -> date:
-    return event.first_seen.astimezone(MADRID).date()
+    return event.first_seen.astimezone(zone()).date()
 
 
 HREF = "/outings/explore"

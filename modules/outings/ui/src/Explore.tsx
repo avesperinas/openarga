@@ -8,8 +8,8 @@ import { type AgendaEvent, type Category, type When, Unauthorised, readExplore, 
 import { ScreenHeader } from "./Header";
 import { Pending, useLoad } from "./Loads";
 import { UpdateSheet } from "./UpdateSheet";
-import { t } from "./lang";
-import { WHEN_VALUES, type ZoneFilter, categories, dayTitle, freshSince, freshTitle, isoDay, monthTitle, whens, zones } from "./words";
+import { dayIn, t } from "./lang";
+import { WHEN_VALUES, type ZoneFilter, categories, dayTitle, freshSince, freshTitle, monthTitle, whens, zones } from "./words";
 
 type Filter = "all" | Category;
 
@@ -36,7 +36,7 @@ export function ExploreScreen({ onOpen }: { onOpen: (event: AgendaEvent) => void
   const [zone, setZone] = useState<ZoneFilter>(fromNotice ? "all" : kept.zone);
   const [filter, setFilter] = useState<Filter>(fromNotice ? "all" : kept.filter);
   const [byDate, setByDate] = useState(fromNotice ? false : kept.byDate);
-  const today = isoDay(new Date());
+  const today = dayIn(new Date());
   const fresh = freshSince(arrived.get("new"), today);
   const [allFresh, setAllFresh] = useState(fresh.fromNotice);
 

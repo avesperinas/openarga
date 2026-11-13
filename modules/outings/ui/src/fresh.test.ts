@@ -2,7 +2,7 @@ import { missingKeys } from "@openarga/ui";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { nearDefault } from "./EventScreen";
-import { CATALOGS, setLocale } from "./lang";
+import { CATALOGS, dayIn, setLocale } from "./lang";
 import { freshSince, freshTitle, kindOf } from "./words";
 
 describe("what is new in Explore", () => {
@@ -44,5 +44,13 @@ describe("the language", () => {
     expect(kindOf("trip").label).toBe(CATALOGS.es!["kind.trip"]);
     setLocale("en");
     expect(kindOf("trip").label).toBe("Trip");
+  });
+});
+
+describe("today", () => {
+  it("is the day in the person's time zone", () => {
+    const late = new Date("2026-11-13T02:30:00Z");
+    expect(dayIn(late, "Europe/Madrid")).toBe("2026-11-13");
+    expect(dayIn(late, "America/New_York")).toBe("2026-11-12");
   });
 });
