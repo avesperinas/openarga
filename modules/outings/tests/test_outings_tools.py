@@ -15,7 +15,7 @@ async def call(api, name: str, body: dict, headers: dict = WRITE):
     return await api.post(f"/tools/{name}", json=body, headers=headers)
 
 
-async def test_this_weekend_says_the_same_to_claude_and_on_the_widget(api, kernel) -> None:
+async def test_this_weekend_says_the_same_to_the_ai_and_on_the_widget(api, kernel) -> None:
     friday, sunday = agenda.window("weekend")
     await Hub(kernel).bring(
         leisure("Weekend orchestra", friday, time="20:00"),

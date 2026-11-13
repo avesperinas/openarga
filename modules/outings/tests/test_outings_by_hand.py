@@ -24,7 +24,7 @@ async def add(api, *events: dict):
     return await api.post("/tools/add_events", json={"events": list(events)}, headers=WRITE)
 
 
-async def test_what_claude_finds_goes_in_with_its_page_and_twice_is_once(api) -> None:
+async def test_what_the_ai_finds_goes_in_with_its_page_and_twice_is_once(api) -> None:
     first = await add(api, found("Synthetic Pintxo Days", 5, summary="Twenty bars."))
     again = await add(api, found("Synthetic Pintxo Days", 5, summary="Twenty bars."))
 

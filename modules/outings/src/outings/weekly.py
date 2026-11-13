@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import time
 from datetime import datetime
-from typing import Any
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from arga_contracts import ai
+from arga_contracts.ai import RunRequest, RunResponse
 from outings import by_hand, hub
 from outings.common import zone
 
-CAPABILITY = "claude.run"
 FROM_HOUR = 6
 EVERY_SECONDS = 3600.0
 ASKED: dict[object, float] = {}
@@ -32,18 +32,15 @@ def due(user: object, clock: float | None = None) -> bool:
     return True
 
 
-async def ask(connection: AsyncConnection, now: datetime) -> dict[str, Any] | None:
+async def ask(connection: AsyncConnection, now: datetime) -> RunResponse | None:
     week = key(now)
     if week is None:
         return None
-    body = {
-        "key": week,
-        "prompt": await by_hand.brief(connection),
-        "tools": ["WebSearch", "WebFetch"],
-        "wait_for_room": True,
-    }
+    body = RunRequest(role="smart", task=await by_hand.brief(connection), key=week, web=True)
     try:
-        response = await hub.ask(CAPABILITY, body, seconds=30)
+        response = await hub.ask(ai.RUN, body.model_dump(), seconds=30)
     except httpx.HTTPError:
         return None
-    return response.json() if response.status_code == 200 else None
+    if response.status_code != 200:
+        return None
+    return RunResponse.model_validate(response.json())
