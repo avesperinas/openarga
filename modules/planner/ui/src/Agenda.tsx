@@ -2,9 +2,10 @@ import { EmptyState, Icon, addDays, dayKey, dayStart, formatClock } from "@opena
 import * as React from "react";
 
 import type { Layer, Occurrence } from "./api";
+import { dateFormat, t } from "./lang";
 
-const dayName = new Intl.DateTimeFormat("es-ES", { weekday: "long" });
-const dayDate = new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "long" });
+const dayName = dateFormat({ weekday: "long" });
+const dayDate = dateFormat({ day: "numeric", month: "long" });
 const cap = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 interface Props {
@@ -47,10 +48,10 @@ export function Agenda({ days, occurrences, layers, today, now, selectedId, onOp
       <EmptyState
         icon="calendar"
         hue={6}
-        title="Nada en los próximos 60 días"
-        action={{ label: "Nuevo evento", icon: "plus", onClick: onCreate }}
+        title={t("agenda.empty")}
+        action={{ label: t("event.new"), icon: "plus", onClick: onCreate }}
       >
-        También se crea arrastrando en la semana.
+        {t("agenda.empty_body")}
       </EmptyState>
     );
   }
@@ -59,7 +60,7 @@ export function Agenda({ days, occurrences, layers, today, now, selectedId, onOp
     <div className="cr-agenda">
       {groups.map(({ day, list }) => {
         const date = dayStart(day);
-        const label = day === today ? "Hoy" : day === addDays(today, 1) ? "Mañana" : cap(dayName.format(date));
+        const label = day === today ? t("day.today") : day === addDays(today, 1) ? t("day.tomorrow") : cap(dayName.format(date));
         return (
           <section
             key={day}
@@ -90,7 +91,7 @@ export function Agenda({ days, occurrences, layers, today, now, selectedId, onOp
                       onClick={() => onOpen(occurrence)}
                     >
                       <span className="cr-agenda-time">
-                        {occurrence.all_day ? "Todo el día" : startsToday ? formatClock(start) : "Sigue"}
+                        {occurrence.all_day ? t("event.all_day_cap") : startsToday ? formatClock(start) : t("agenda.continues")}
                       </span>
                       <span className="cr-agenda-bar" aria-hidden="true" />
                       <span className="cr-agenda-body">

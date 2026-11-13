@@ -25,7 +25,7 @@ const DINNER: Occurrence = {
   id: "e1",
   event_id: "00000000-0000-4000-8000-000000000001",
   calendar_id: PERSONAL.id,
-  title: "Cena sintética",
+  title: "Synthetic dinner",
   all_day: false,
   start: new Date(Date.now() + 2 * 3600_000).toISOString(),
   end: new Date(Date.now() + 3 * 3600_000).toISOString(),
@@ -109,6 +109,8 @@ const settle = () =>
     for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setTimeout(resolve, 0));
   });
 
+const retry = () => document.querySelector<HTMLButtonElement>('.empty-state[role="alert"] button') ?? undefined;
+
 const button = (name: string) =>
   Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find((one) => one.textContent?.includes(name));
 
@@ -131,74 +133,74 @@ async function serious(): Promise<string[]> {
     .map((one) => `${one.id}: ${one.nodes.map((node) => node.target.join(" ")).join(", ")}`);
 }
 
-describe("la semana", () => {
-  it("mientras llega, el esqueleto", async () => {
+describe("the week", () => {
+  it("while it arrives, the skeleton", async () => {
     replies["GET /api/planner/occurrences"] = () => new Promise(() => undefined);
     await open();
     expect(host.querySelector(".skeleton")).not.toBeNull();
   });
 
-  it("con lo suyo, sus eventos", async () => {
+  it("with its items, its events", async () => {
     await open();
-    expect(host.textContent).toContain("Cena sintética");
+    expect(host.textContent).toContain("Synthetic dinner");
   });
 
-  it("si falla, lo dice y reintentar lo trae", async () => {
-    replies["GET /api/planner/occurrences"] = () => json({ detail: "la base no contesta" }, 503);
+  it("if it fails, it says so and retrying brings it", async () => {
+    replies["GET /api/planner/occurrences"] = () => json({ detail: "the database is not answering" }, 503);
     await open();
-    expect(host.textContent).toContain("Planner no contesta");
-    expect(host.textContent).toContain("la base no contesta");
+    expect(host.textContent).toContain("Planner is not answering");
+    expect(host.textContent).toContain("the database is not answering");
 
     replies["GET /api/planner/occurrences"] = () => [DINNER];
-    await act(async () => button("Reintentar")!.click());
+    await act(async () => retry()!.click());
     await settle();
-    expect(host.textContent).toContain("Cena sintética");
+    expect(host.textContent).toContain("Synthetic dinner");
   });
 
-  it("sin red, lo dice arriba", async () => {
+  it("offline, it says so at the top", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     await open();
-    expect(host.textContent).toContain("Sin conexión");
+    expect(host.querySelector('.notice[data-tone="warning"]')).not.toBeNull();
   });
 });
 
-describe("la agenda", () => {
-  it("sin nada, el botón crea el primero", async () => {
+describe("the agenda", () => {
+  it("with nothing, the button creates the first", async () => {
     replies["GET /api/planner/occurrences"] = () => [];
     await open("/planner/agenda");
-    expect(host.textContent).toContain("Nada en los próximos 60 días");
-    act(() => button("Nuevo evento")!.click());
+    expect(host.textContent).toContain("Nothing in the next 60 days");
+    act(() => button("New event")!.click());
     await settle();
-    expect(document.body.textContent).toContain("Crear");
+    expect(document.body.textContent).toContain("Create");
   });
 });
 
-describe("un evento", () => {
-  it("se abre al lado, por la dirección", async () => {
+describe("an event", () => {
+  it("opens alongside, from the address", async () => {
     await open(`/planner/semana?event=${DINNER.event_id}`);
     const detail = host.querySelector('[role="region"][aria-label="Evento"]');
-    expect(detail?.textContent).toContain("Cena sintética");
+    expect(detail?.textContent).toContain("Synthetic dinner");
     expect(detail?.textContent).toContain("Casa");
   });
 });
 
-describe("las suscripciones", () => {
-  it("si Hub no contesta, se reintenta; sin fuentes, lleva a Hub", async () => {
+describe("the subscriptions", () => {
+  it("if Hub is not answering, it retries; without sources, it leads to Hub", async () => {
     replies["GET /api/planner/subscriptions/catalogue"] = () => json({ detail: "sin hub" }, 503);
     await open();
-    await act(async () => button("Suscripciones")?.click() ?? document.querySelector<HTMLButtonElement>('[aria-label="Suscripciones: añadir o quitar"]')!.click());
+    await act(async () => button("Subscriptions")?.click() ?? document.querySelector<HTMLButtonElement>('[aria-label="Subscriptions: add or remove"]')!.click());
     await settle();
-    expect(document.body.textContent).toContain("Hub no contesta");
+    expect(document.body.textContent).toContain("Hub is not answering");
 
     replies["GET /api/planner/subscriptions/catalogue"] = () => ({ groups: [], sources: [], others: [] });
-    await act(async () => button("Reintentar")!.click());
+    await act(async () => retry()!.click());
     await settle();
-    expect(document.body.textContent).toContain("Nada que suscribir todavía");
-    expect(button("Ir a Hub")).toBeDefined();
+    expect(document.body.textContent).toContain("Nothing to subscribe to yet");
+    expect(button("Go to Hub")).toBeDefined();
   });
 });
 
-describe("axe-core sin errores graves", () => {
+describe("axe-core without serious errors", () => {
   it.each(["/planner/semana", "/planner/mes", "/planner/agenda", "/planner/dia", `/planner/semana?event=${DINNER.event_id}`])(
     "%s",
     async (path) => {
