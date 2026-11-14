@@ -7,6 +7,7 @@ import { WidgetCalendar } from "./calendar";
 import { SplitBar } from "./nutrition";
 import { Treemap } from "./money";
 import { currency, locale, numbers } from "./regional";
+import { say } from "./words";
 
 export type PanelHue = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type PanelTone = "positive" | "warning" | "negative" | "neutral";
@@ -142,13 +143,13 @@ export function PanelTrend({ points, unit = "number", label }: { points: { label
   };
   const point = points[shown]!;
   return (
-    <figure className="panel-trend" aria-label={`${label ?? "Evolución"}: de ${panelValue(points[0]!.value, unit)} a ${panelValue(points[points.length - 1]!.value, unit)}`}>
+    <figure className="panel-trend" aria-label={say("panel.trend", { label: label ?? say("panel.evolution"), from: panelValue(points[0]!.value, unit), to: panelValue(points[points.length - 1]!.value, unit) })}>
       <div
         ref={plot}
         className="panel-trend-plot"
         role="slider"
         tabIndex={0}
-        aria-label={label ?? "Evolución"}
+        aria-label={label ?? say("panel.evolution")}
         aria-valuemin={0}
         aria-valuemax={points.length - 1}
         aria-valuenow={shown}
@@ -228,7 +229,7 @@ function TimelineBlock({ items, now }: { items: { start: string; end: string; ti
   const current = now.getHours() + now.getMinutes() / 60;
   const ticks = [startHour, ...[12, 16, 20].filter((hour) => hour > startHour), endHour];
   return (
-    <figure className="panel-timeline" aria-label={items.map((one) => `${one.title}, ${new Date(one.start).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" })}`).join("; ") || "Nada hoy"}>
+    <figure className="panel-timeline" aria-label={items.map((one) => `${one.title}, ${new Date(one.start).toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" })}`).join("; ") || say("panel.nothing_today")}>
       <div className="panel-timeline-track" aria-hidden="true">
         <span className="panel-timeline-past" style={{ width: `${Math.min(100, Math.max(0, at(current)))}%` }} />
         {items.map((one) => (
@@ -476,7 +477,7 @@ export function PanelBlockView({ block, onAct, now = new Date() }: { block: Pane
         <div className="panel-treemap">
           {block.label && <p className="panel-label">{block.label}</p>}
           <Treemap
-            label={block.label ?? "Por partes"}
+            label={block.label ?? say("panel.by_parts")}
             height={120}
             items={block.items.map((item) => ({ key: item.label, label: item.label, value: item.value, detail: panelValue(item.value, "money"), hue: item.hue }))}
           />
@@ -543,7 +544,7 @@ export function AreaPanel({
   const blocks = (active?.blocks ?? []).filter((block) => focus || !block.detail);
   const actions = (list: PanelTab["actions"]) =>
     list && list.length > 0 ? (
-      <nav className="area-panel-actions" aria-label={`Acciones de ${area.label}`}>
+      <nav className="area-panel-actions" aria-label={say("panel.actions", { area: area.label })}>
         {list.map((action) => (
           <a key={action.href + action.label} className="panel-action" data-primary={action.primary || undefined} href={action.href}>
             {action.label}
@@ -575,7 +576,7 @@ export function AreaPanel({
             </span>
           )}
           {onExpand && (
-            <button type="button" className="area-panel-expand" aria-label={focus ? `Cerrar ${area.label}` : `Abrir ${area.label} en grande`} onClick={onExpand}>
+            <button type="button" className="area-panel-expand" aria-label={focus ? say("panel.close", { area: area.label }) : say("panel.expand", { area: area.label })} onClick={onExpand}>
               <svg viewBox="0 0 12 12" aria-hidden="true">
                 {focus ? <path d="M2 2l8 8M10 2l-8 8" /> : <path d="M7 1h4v4M5 11H1V7M11 1L7 5M1 11l4-4" />}
               </svg>
@@ -590,7 +591,7 @@ export function AreaPanel({
       )}
       {board ? (
         <div className="area-panel-board" data-many={tabs.length > 4 || undefined}>
-          {tabs.length === 0 && <p className="panel-foot">Aún no hay nada que contar aquí.</p>}
+          {tabs.length === 0 && <p className="panel-foot">{say("panel.empty")}</p>}
           {tabs.map((one) => (
             <section key={one.id} className="area-panel-column" aria-label={one.label}>
               <h3 className="area-panel-column-title">{one.label}</h3>
@@ -608,7 +609,7 @@ export function AreaPanel({
       ) : (
         <>
       {tabs.length > 1 && (
-        <div className="area-panel-tabs" role="tablist" aria-label={`Pestañas de ${area.label}`}>
+        <div className="area-panel-tabs" role="tablist" aria-label={say("panel.tabs", { area: area.label })}>
           {tabs.map((one) => (
             <button key={one.id} type="button" role="tab" aria-selected={one.id === active?.id} onClick={() => choose(one.id)}>
               {one.label}
@@ -618,7 +619,7 @@ export function AreaPanel({
       )}
       <div className="area-panel-blocks" role={tabs.length > 1 ? "tabpanel" : undefined}>
         {blocks.length === 0 ? (
-          <p className="panel-foot">Aún no hay nada que contar aquí.</p>
+          <p className="panel-foot">{say("panel.empty")}</p>
         ) : (
           blocks.map((block, index) => (
             <div key={`${active?.id}-${index}`} className="area-panel-block" data-type={block.type}>
@@ -669,7 +670,7 @@ export function PageTabs({ items, current, onSelect }: { items: PageTab[]; curre
     active?.scrollIntoView?.({ block: "nearest", inline: "nearest", behavior: "smooth" });
   }, [current]);
   return (
-    <div className="page-tabs" role="tablist" aria-label="Páginas" ref={list}>
+    <div className="page-tabs" role="tablist" aria-label={say("panel.pages")} ref={list}>
       {items.map((item, index) => (
         <button
           key={item.key}
@@ -703,7 +704,7 @@ export interface AreaOrb {
 
 export function AreaOrbs({ items, onSelect }: { items: AreaOrb[]; onSelect?: (key: string) => void }) {
   return (
-    <ul className="area-orbs" aria-label="Cómo va cada parte">
+    <ul className="area-orbs" aria-label={say("panel.parts")}>
       {items.map((item) => (
         <li key={item.key}>
           <button type="button" className="area-orb" data-hue={item.hue} data-tone={item.tone} onClick={() => onSelect?.(item.key)} aria-label={`${item.label}${item.status ? `: ${item.status}` : ""}`}>

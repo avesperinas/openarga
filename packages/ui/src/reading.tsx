@@ -5,6 +5,7 @@ import * as React from "react";
 import { OTHERS, SERIES_COLORS } from "./analysis";
 import { Icon } from "./icons";
 import { locale } from "./regional";
+import { say } from "./words";
 
 export interface TableColumn<Row> {
   key: string;
@@ -33,7 +34,7 @@ export function DataTable<Row>({
   onRowClick,
   rowTone,
   footer,
-  empty = "Nada que enseñar",
+  empty = say("reading.empty"),
 }: DataTableProps<Row>) {
   if (rows.length === 0) return <p className="data-table-empty">{empty}</p>;
   return (
@@ -142,7 +143,7 @@ export function foldShares(items: ShareItem[], order: string[] = [], max = SERIE
   };
   kept.sort((a, b) => position(a.key) - position(b.key));
   if (rest.length === 0) return kept;
-  return [...kept, { key: OTHERS, name: "Otros", value: rest.reduce((sum, one) => sum + one.value, 0) }];
+  return [...kept, { key: OTHERS, name: say("reading.others"), value: rest.reduce((sum, one) => sum + one.value, 0) }];
 }
 
 export function percentOf(value: number, total: number): string {
@@ -180,7 +181,7 @@ export function ShareChart({
 }: ShareChartProps) {
   const shown = foldShares(items, order);
   const total = shown.reduce((sum, one) => sum + one.value, 0);
-  if (shown.length === 0 || total <= 0) return <p className="widget-note">Sin datos que repartir</p>;
+  if (shown.length === 0 || total <= 0) return <p className="widget-note">{say("reading.no_shares")}</p>;
   let angle = 0;
   const colour = (key: string, index: number) => (key === OTHERS ? "others" : String(index));
   return (
@@ -260,7 +261,7 @@ export function StatTile({ label, value, foot, tone = "neutral", progress, onCli
         type="button"
         className="stat-tile-info"
         aria-label={
-          explaining ? `Cerrar cómo se calcula ${label.toLowerCase()}` : `Cómo se calcula ${label.toLowerCase()}`
+          explaining ? say("stat.close_explain", { label: label.toLowerCase() }) : say("stat.explain", { label: label.toLowerCase() })
         }
         aria-expanded={explaining}
         onClick={() => setExplaining(!explaining)}
@@ -323,7 +324,7 @@ export interface MultiSelectFieldProps<T extends string> {
   hideLabel?: boolean;
 }
 
-export function MultiSelectField<T extends string>({ label, options, values, onChange, all = "Todas", hideLabel }: MultiSelectFieldProps<T>) {
+export function MultiSelectField<T extends string>({ label, options, values, onChange, all = say("select.all"), hideLabel }: MultiSelectFieldProps<T>) {
   const id = React.useId();
   const [open, setOpen] = React.useState(false);
   const box = React.useRef<HTMLDivElement>(null);
@@ -381,7 +382,7 @@ export function MultiSelectField<T extends string>({ label, options, values, onC
           {values.length > 0 && (
             <li role="none">
               <button type="button" className="multi-select-option multi-select-clear" onClick={() => onChange([])}>
-                Quitar la selección
+                {say("select.clear")}
               </button>
             </li>
           )}
