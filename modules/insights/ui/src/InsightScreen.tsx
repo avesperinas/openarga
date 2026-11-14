@@ -20,12 +20,13 @@ import { useState } from "react";
 import { INSIGHTS, type Insight, type Proposal, type Rating, markRead, rateInsight } from "./api";
 import { ScreenHeader } from "./Header";
 import { DOMAINS, RATINGS, against, amount, changeOf, paragraphs, versus, when } from "./words";
+import { t } from "./lang";
 
 export const insightKey = (id: string) => `insight:${id}`;
 
 export function Proposals({ proposals }: { proposals: Proposal[] }) {
   return (
-    <Card title="La semana que viene">
+    <Card title={t("insight.next_week")}>
       <List>
         {proposals.map((one, index) => (
           <ListRow
@@ -35,16 +36,16 @@ export function Proposals({ proposals }: { proposals: Proposal[] }) {
           />
         ))}
       </List>
-      <Hint>Para aplicar una, díselo a Claude: «aplica la 1 de la semana».</Hint>
+      <Hint>{t("insight.apply_hint")}</Hint>
     </Card>
   );
 }
 
 export function spoken(insight: Insight): string[] {
   const proposals = insight.proposals?.length
-    ? ["La semana que viene.", ...insight.proposals.map((one, index) => `${index + 1}. ${one.what}.`)]
-    : [`Qué haría: ${insight.action}`];
-  return [insight.title, ...paragraphs(insight.body), `Qué afecta: ${insight.affects}`, ...proposals];
+    ? [`${t("insight.next_week")}.`, ...insight.proposals.map((one, index) => `${index + 1}. ${one.what}.`)]
+    : [`${t("insight.would_do")}: ${insight.action}`];
+  return [insight.title, ...paragraphs(insight.body), `${t("insight.affects")}: ${insight.affects}`, ...proposals];
 }
 
 export function InsightScreen({
@@ -68,7 +69,7 @@ export function InsightScreen({
     const wanted = insight.rating === rating ? null : rating;
     setProblem("");
     mutate<Insight>(key, { ...insight, rating: wanted }, { request: () => rateInsight(insight.id, wanted) }).catch(() =>
-      setProblem("No se pudo guardar la valoración."),
+      setProblem(t("insight.rate_failed")),
     );
   };
 
@@ -77,18 +78,18 @@ export function InsightScreen({
       <ScreenHeader
         eyebrow={
           insight
-            ? `${insight.kind === "weekly" ? "Tu semana" : DOMAINS[insight.domain]} · ${when(insight.created_at)}`
+            ? `${insight.kind === "weekly" ? t("insight.your_week") : DOMAINS[insight.domain]} · ${when(insight.created_at)}`
             : undefined
         }
         title={insight?.title}
-        back={{ label: "Consejos", onClick: onBack }}
+        back={{ label: t("inbox.title"), onClick: onBack }}
       />
       <OfflineNotice />
 
       {problem && <Hint tone="warning">{problem}</Hint>}
-      {found.loading && <Skeleton label="Abriendo el consejo" />}
+      {found.loading && <Skeleton label={t("insight.opening")} />}
       {insight === null && found.error && (
-        <ErrorState title="No se pudo abrir el consejo" detail={found.error.message} onRetry={found.refresh} />
+        <ErrorState title={t("insight.open_failed")} detail={found.error.message} onRetry={found.refresh} />
       )}
 
       {insight && (
@@ -98,7 +99,7 @@ export function InsightScreen({
             <Prose text={insight.body} />
           </Card>
 
-          <Card title="Tus cifras">
+          <Card title={t("insight.figures")}>
             <Stack>
               {insight.figures.map((figure) => {
                 const change = changeOf(figure);
@@ -117,20 +118,20 @@ export function InsightScreen({
             </Stack>
           </Card>
 
-          <Card title="Qué afecta">
+          <Card title={t("insight.affects")}>
             <Prose text={insight.affects} />
           </Card>
 
           {insight.proposals?.length ? (
             <Proposals proposals={insight.proposals} />
           ) : (
-            <Card title="Qué haría">
+            <Card title={t("insight.would_do")}>
               <Prose text={insight.action} />
             </Card>
           )}
 
-          <Card title="¿Te sirve?">
-            <ChoiceChips label="Tu valoración" options={RATINGS} value={insight.rating} onChange={rate} />
+          <Card title={t("insight.useful")}>
+            <ChoiceChips label={t("insight.rating")} options={RATINGS} value={insight.rating} onChange={rate} />
           </Card>
 
           <Button variant="primary" block icon="note" onClick={() => onAnswer(insight.id)}>

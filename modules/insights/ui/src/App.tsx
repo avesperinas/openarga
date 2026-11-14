@@ -13,6 +13,7 @@ import { PillScreen } from "./Pill";
 import { ProfileSettings } from "./ProfileSettings";
 import { TodayScreen } from "./Today";
 import { YouScreen } from "./You";
+import { t } from "./lang";
 
 const ROOT = "/insights";
 
@@ -96,14 +97,14 @@ export function App() {
   return (
     <AppContext.Provider value={app}>
       <AppShell
-        label="Secciones"
+        label={t("nav.sections")}
         active={current.tab}
         onSelect={(tab) => navigate(PATHS[tab as Tab])}
         tabs={[
-          { id: "today", label: "Hoy", icon: "today" },
-          { id: "inbox", label: "Consejos", icon: "paw" },
-          { id: "library", label: "Biblioteca", icon: "book" },
-          { id: "you", label: "Tú", icon: "spark" },
+          { id: "today", label: t("nav.today"), icon: "today" },
+          { id: "inbox", label: t("inbox.title"), icon: "paw" },
+          { id: "library", label: t("library.title"), icon: "book" },
+          { id: "you", label: t("nav.you"), icon: "spark" },
           SETTINGS_TAB,
         ]}
       >
@@ -152,7 +153,7 @@ export function App() {
         )}
       </AppShell>
       {current.tab !== "chat" && current.tab !== "settings" && (
-        <ChatFab label={`Hablar con ${app.name}`} onClick={() => navigate(PATHS.chat)} />
+        <ChatFab label={t("chat.with", { name: app.name })} onClick={() => navigate(PATHS.chat)} />
       )}
     </AppContext.Provider>
   );

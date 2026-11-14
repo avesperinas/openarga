@@ -17,18 +17,19 @@ import { AppVersion } from "./AppVersion";
 import { INSIGHTS, type Insight, readInsights, readRuns, readSignals } from "./api";
 import { ScreenHeader, useApp } from "./Header";
 import { DOMAIN_HUES, DOMAIN_ICONS, DOMAINS, amount, changeOf, lastLook, when } from "./words";
+import { t } from "./lang";
 
-export function sections(insights: Insight[]): { title: string; insights: Insight[] }[] {
+export function sections(insights: Insight[]): { title: string; unread: boolean; insights: Insight[] }[] {
   const unread = insights.filter((one) => one.read_at === null);
   const read = insights.filter((one) => one.read_at !== null);
   return [
-    { title: "Sin leer", insights: unread },
-    { title: "Leídos", insights: read },
+    { title: t("inbox.unread"), unread: true, insights: unread },
+    { title: t("inbox.read"), unread: false, insights: read },
   ].filter((section) => section.insights.length > 0);
 }
 
 export const origin = (insight: Insight) =>
-  `${insight.kind === "weekly" ? "Tu semana" : DOMAINS[insight.domain]} · ${when(insight.created_at)}`;
+  `${insight.kind === "weekly" ? t("insight.your_week") : DOMAINS[insight.domain]} · ${when(insight.created_at)}`;
 
 export function headline(insight: Insight): string | null {
   const first = insight.figures[0];
@@ -46,33 +47,32 @@ export function InboxScreen({ onOpen, onSettings }: { onOpen: (id: string) => vo
 
   return (
     <Screen>
-      <ScreenHeader title="Consejos" />
+      <ScreenHeader title={t("inbox.title")} />
       <OfflineNotice />
 
       {runs !== undefined && <Hint>{lastLook(runs, app.name)}</Hint>}
-      {found.loading && <Skeleton label="Cargando los consejos" />}
+      {found.loading && <Skeleton label={t("inbox.loading")} />}
       {insights === null && found.error && (
-        <ErrorState title="No se pudieron leer los consejos" detail={found.error.message} onRetry={found.refresh} />
+        <ErrorState title={t("inbox.failed")} detail={found.error.message} onRetry={found.refresh} />
       )}
 
       {insights !== null && insights.length === 0 && (
         <EmptyState
-          title={`${app.name} todavía no te ha dicho nada`}
+          title={t("inbox.empty", { name: app.name })}
           action={{
-            label: "Contarle qué te importa",
+            label: t("inbox.tell"),
             icon: "spark",
             onClick: onSettings,
           }}
         >
-          Mira tus datos y solo te escribe cuando algo se sale de lo tuyo: con tus cifras, lo que afecta y qué harías.
-          Cuéntale en Ajustes qué te importa, y lo tendrá en cuenta.
+          {t("inbox.empty_detail")}
         </EmptyState>
       )}
 
       {insights !== null &&
         sections(insights).map((section) =>
-          section.title === "Sin leer" ? (
-            <Section key={section.title} title="Sin leer" count={section.insights.length}>
+          section.unread ? (
+            <Section key={section.title} title={section.title} count={section.insights.length}>
               {section.insights.map((one) => (
                 <MediaCard
                   key={one.id}
@@ -102,7 +102,7 @@ export function InboxScreen({ onOpen, onSettings }: { onOpen: (id: string) => vo
         )}
 
       {signals.length > 0 && (
-        <Section title="Lo que ve esta semana" count={signals.length}>
+        <Section title={t("inbox.signals")} count={signals.length}>
           <List>
             {signals.map((one) => (
               <ListRow

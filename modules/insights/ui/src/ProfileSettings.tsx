@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { PROFILE, type Profile, Unauthorised, readProfile, saveProfile, signIn } from "./api";
 import { NAME } from "./Header";
+import { t } from "./lang";
 
 export function ProfileSettings({ onSaved }: { onSaved: (profile: Profile) => void }) {
   const [name, setName] = useState("");
@@ -36,12 +37,12 @@ export function ProfileSettings({ onSaved }: { onSaved: (profile: Profile) => vo
   if (!loaded && unread !== null)
     return (
       <ErrorState
-        title="No se pudo leer tu perfil"
+        title={t("profile.failed")}
         detail={unread || undefined}
         onRetry={() => setAttempt((n) => n + 1)}
       />
     );
-  if (!loaded) return <Skeleton label="Cargando lo que sabe de ti" />;
+  if (!loaded) return <Skeleton label={t("profile.loading")} />;
 
   const save = () => {
     setState("saving");
@@ -54,31 +55,31 @@ export function ProfileSettings({ onSaved }: { onSaved: (profile: Profile) => vo
   };
 
   return (
-    <Card title="Tú y Insights">
+    <Card title={t("profile.title")}>
       <TextField
-        label="Su nombre"
+        label={t("profile.name")}
         value={name}
         placeholder={NAME}
-        hint="El que quieras. Sin nombre, se llama Insights."
+        hint={t("profile.name_hint")}
         onChange={(value) => {
           setName(value);
           setState("idle");
         }}
       />
       <TextAreaField
-        label="Lo que quieres que sepa de ti"
+        label={t("profile.about")}
         value={about}
         rows={8}
         max={8000}
-        placeholder="Qué te importa ahora, tus metas, tu contexto y de qué no quieres que te hable."
+        placeholder={t("profile.about_placeholder")}
         onChange={(value) => {
           setAbout(value);
           setState("idle");
         }}
       />
-      {state === "failed" && <Hint tone="warning">No se pudo guardar.</Hint>}
+      {state === "failed" && <Hint tone="warning">{t("error.save")}</Hint>}
       <Button variant="primary" disabled={!loaded || state === "saving"} onClick={save}>
-        {state === "saved" ? "Guardado" : "Guardar"}
+        {state === "saved" ? t("action.saved") : t("action.save")}
       </Button>
     </Card>
   );

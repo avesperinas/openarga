@@ -43,11 +43,12 @@ import {
 } from "./api";
 import { ScreenHeader, useApp } from "./Header";
 import { KINDS, detailOf, familyOf, glyphOf } from "./taste-words";
+import { currentLocale, t } from "./lang";
 
 const REACTIONS: { value: PillReaction; label: string; icon: "heart" | "done" | "repeat" }[] = [
-  { value: "interested", label: "Me interesa", icon: "heart" },
-  { value: "known", label: "Ya lo sabía", icon: "done" },
-  { value: "other", label: "Otro tema", icon: "repeat" },
+  { value: "interested", get label() { return t("reaction.interested"); }, icon: "heart" },
+  { value: "known", get label() { return t("reaction.known"); }, icon: "done" },
+  { value: "other", get label() { return t("reaction.other"); }, icon: "repeat" },
 ];
 
 const VOICES: Record<string, string> = { es: "es-ES", de: "de-DE", en: "en-GB", fr: "fr-FR", it: "it-IT", eu: "eu-ES" };
@@ -80,12 +81,12 @@ export function useAsk(initial: Ask | null, onReady: (ask: Ask) => void) {
 
 export function railOf(pill: Pill, picks: Recommendation[]): RailItem[] {
   return [
-    { id: "leer", label: "Leer", icon: "book" as const },
-    { id: "contar", label: "Para contar", icon: "lightbulb" as const },
-    ...(pill.branches.length ? [{ id: "mas", label: "Saber más", icon: "arrow-right" as const }] : []),
-    ...(picks.length ? [{ id: "seguir", label: "Seguir", icon: "bookmark" as const }] : []),
-    ...(pill.glossary.length ? [{ id: "vocabulario", label: "Vocabulario", icon: "globe" as const }] : []),
-    { id: "fuentes", label: "Fuentes", icon: "link" as const },
+    { id: "read", label: t("pill.read"), icon: "book" as const },
+    { id: "tell", label: t("pill.to_tell"), icon: "lightbulb" as const },
+    ...(pill.branches.length ? [{ id: "more", label: t("pill.more"), icon: "arrow-right" as const }] : []),
+    ...(picks.length ? [{ id: "follow", label: t("pill.follow"), icon: "bookmark" as const }] : []),
+    ...(pill.glossary.length ? [{ id: "vocabulary", label: t("pill.vocabulary"), icon: "globe" as const }] : []),
+    { id: "sources", label: t("pill.sources"), icon: "link" as const },
   ];
 }
 
@@ -141,7 +142,7 @@ export function PillReader({
       .then(setAsked)
       .catch((error: unknown) => {
         setBranching(null);
-        setProblem(error instanceof Error ? error.message : "No se pudo pedir.");
+        setProblem(error instanceof Error ? error.message : t("error.ask"));
       });
   };
 
@@ -149,7 +150,7 @@ export function PillReader({
     setSaved((now) => ({ ...now, [pick.id]: true }));
     void savePick(pick.id)
       .then(() => invalidate(PICKS))
-      .catch((error: unknown) => setProblem(error instanceof Error ? error.message : "No se pudo guardar."));
+      .catch((error: unknown) => setProblem(error instanceof Error ? error.message : t("error.save")));
   };
 
   const opened = new Map(descendants.map((child) => [child.topic.toLowerCase(), child.id]));
@@ -158,41 +159,40 @@ export function PillReader({
   return (
     <>
       <MotifBackdrop glyph={glyphOf(family)} hue={family.hue} />
-      <SectionRail label="Partes de la píldora" items={railOf(pill, picks)} />
+      <SectionRail label={t("pill.parts")} items={railOf(pill, picks)} />
       <ArticleReader
-        id="leer"
+        id="read"
         topic={<TopicChip name={family.name} glyph={glyphOf(family)} hue={family.hue} />}
-        eyebrow={pill.hook ?? `${pill.minutes} min de lectura`}
+        eyebrow={pill.hook ?? t("pill.minutes", { minutes: pill.minutes })}
         headline={pill.headline}
         lead={pill.lead}
         sections={pill.sections}
-        highlight={{ label: "Para contar", text: pill.to_tell, id: "contar" }}
-        coda={pill.to_think ? { label: "Para pensar:", text: pill.to_think } : undefined}
-        lang={pill.language !== "es" ? pill.language : undefined}
+        highlight={{ label: t("pill.to_tell"), text: pill.to_tell, id: "tell" }}
+        coda={pill.to_think ? { label: t("pill.to_think"), text: pill.to_think } : undefined}
+        lang={pill.language !== currentLocale() ? pill.language : undefined}
         listen={{ lang: voiceOf(pill.language), audio: audioOf(pill), artwork: ARTWORK }}
       >
-        <ReactionBar label="¿Qué te ha parecido?" options={REACTIONS} value={reaction} onChange={react} />
+        <ReactionBar label={t("pill.reaction")} options={REACTIONS} value={reaction} onChange={react} />
       </ArticleReader>
 
       {problem && <Notice tone="warning">{problem}</Notice>}
       {waiting?.state === "waiting" && (
         <Card>
           <Working>
-            {app.name} está escribiendo {waiting.branch ? `«${waiting.branch}»` : "otra píldora"}: llega en uno o dos minutos y
-            te avisa
+            {waiting.branch ? t("pill.writing_branch", { name: app.name, branch: waiting.branch }) : t("today.writing_another", { name: app.name })}
           </Working>
         </Card>
       )}
       {waiting && (waiting.state === "failed" || waiting.state === "refused") && (
-        <Notice tone="warning" title="No ha salido">
-          {waiting.detail ?? "Tu Claude no pudo escribirla."}
+        <Notice tone="warning" title={t("pill.failed")}>
+          {waiting.detail ?? t("pill.not_written")}
         </Notice>
       )}
 
       {branches.length > 0 && (
         <BranchList
-          id="mas"
-          title="Quiero saber más sobre…"
+          id="more"
+          title={t("pill.know_more")}
           items={branches}
           busy={branching}
           onOpen={(index) => {
@@ -204,8 +204,8 @@ export function PillReader({
       )}
 
       {picks.length > 0 && (
-        <section id="seguir" aria-label="Para seguir">
-          <Card title="Para seguir">
+        <section id="follow" aria-label={t("pill.to_follow")}>
+          <Card title={t("pill.to_follow")}>
             {picks.map((pick) => (
               <ResourceRow
                 key={pick.id}
@@ -218,7 +218,7 @@ export function PillReader({
                 why={pick.why}
                 saved={saved[pick.id] || pick.state !== "new"}
                 onSave={() => save(pick)}
-                saveLabel="Guardar en tu biblioteca"
+                saveLabel={t("pill.save")}
               />
             ))}
           </Card>
@@ -226,8 +226,8 @@ export function PillReader({
       )}
 
       {pill.glossary.length > 0 && (
-        <section id="vocabulario" aria-label="Vocabulario">
-          <Card title="Vocabulario">
+        <section id="vocabulary" aria-label={t("pill.vocabulary")}>
+          <Card title={t("pill.vocabulary")}>
             <List>
               {pill.glossary.map((word) => (
                 <ListRow key={word.word} title={word.word} subtitle={word.meaning} />
@@ -237,8 +237,8 @@ export function PillReader({
         </section>
       )}
 
-      <section id="fuentes" aria-label="Fuentes">
-        <Card title="De dónde sale">
+      <section id="sources" aria-label={t("pill.sources")}>
+        <Card title={t("pill.where_from")}>
           {pill.sources.map((source) => (
             <ResourceRow key={source.url} icon="link" title={source.title} href={source.url} saved={false} />
           ))}
@@ -254,10 +254,10 @@ export function PillScreen({ id, onBack, onOpen }: { id: string; onBack: () => v
   const out = found.data;
   return (
     <Screen>
-      <ScreenHeader back={{ label: out?.parent ? "La anterior" : "Volver", onClick: out?.parent ? () => onOpen(out.parent!.id) : onBack }} />
+      <ScreenHeader back={{ label: out?.parent ? t("pill.previous") : t("action.back"), onClick: out?.parent ? () => onOpen(out.parent!.id) : onBack }} />
       <OfflineNotice />
-      {found.loading && !out && <Skeleton label="Abriendo la píldora" />}
-      {!out && found.error && <ErrorState title="No se pudo abrir la píldora" detail={found.error.message} onRetry={found.refresh} />}
+      {found.loading && !out && <Skeleton label={t("pill.opening")} />}
+      {!out && found.error && <ErrorState title={t("pill.open_failed")} detail={found.error.message} onRetry={found.refresh} />}
       {out && <PillReader key={out.pill.id} pill={out.pill} picks={out.picks} descendants={out.children} families={families} onOpen={onOpen} />}
     </Screen>
   );

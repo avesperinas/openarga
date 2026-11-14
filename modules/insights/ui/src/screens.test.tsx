@@ -7,11 +7,11 @@ import { amount, lastLook, paragraphs, versus, when } from "./words";
 import { PATIENCE_MS, sends, stale, thinkingFor, threadLine } from "./Chat";
 
 const figure = (extra: Partial<Figure> = {}): Figure => ({
-  label: "gasto en restaurantes",
+  label: "restaurant spending",
   value: 412,
   unit: "€",
   baseline: 258,
-  baseline_label: "tu media de 12 meses",
+  baseline_label: "your 12-month average",
   ...extra,
 });
 
@@ -19,37 +19,37 @@ const insight = (id: string, read: boolean): Insight => ({
   id,
   kind: "alert",
   domain: "money",
-  topic: "money.gasto:restaurantes",
+  topic: "money.spend:restaurants",
   title: id,
-  body: "texto",
+  body: "text",
   figures: [figure()],
-  affects: "el colchón",
-  action: "Dos cenas fuera menos este mes",
+  affects: "the cushion",
+  action: "Two fewer dinners out this month",
   created_at: "2026-10-08T07:00:00Z",
   read_at: read ? "2026-10-08T08:00:00Z" : null,
   rating: null,
   rated_at: null,
 });
 
-test("cada cifra dice cuánto se separa de lo tuyo", () => {
-  expect(versus(figure())).toBe("+60 % frente a 258 €, tu media de 12 meses");
-  expect(versus(figure({ value: 6.1, baseline: 7.2, unit: "h", baseline_label: "tu media" }))).toBe(
-    "−15 % frente a 7,2 h, tu media",
+test("each figure says how far it is from your usual", () => {
+  expect(versus(figure())).toBe("+60 % against 258 €, your 12-month average");
+  expect(versus(figure({ value: 6.1, baseline: 7.2, unit: "h", baseline_label: "your average" }))).toBe(
+    "−15 % against 7.2 h, your average",
   );
-  expect(amount(8400, "pasos")).toBe("8400 pasos");
+  expect(amount(8400, "steps")).toBe("8,400 steps");
 });
 
-test("lo no leído va arriba, y una sección vacía no se pinta", () => {
+test("what is unread goes on top, and an empty section is not drawn", () => {
   const found = sections([insight("a", true), insight("b", false), insight("c", true)]);
 
   expect(found.map((one) => [one.title, one.insights.map((i) => i.id)])).toEqual([
-    ["Sin leer", ["b"]],
-    ["Leídos", ["a", "c"]],
+    ["Unread", ["b"]],
+    ["Read", ["a", "c"]],
   ]);
-  expect(sections([insight("a", true)]).map((one) => one.title)).toEqual(["Leídos"]);
+  expect(sections([insight("a", true)]).map((one) => one.title)).toEqual(["Read"]);
 });
 
-test("cada sección, cada consejo y cada píldora tienen su dirección", () => {
+test("each section, piece of advice and pill has its address", () => {
   expect(route("/insights/")).toEqual({ tab: "today", pill: null });
   expect(route("/insights/pildora/0a0a0a0a-0000-4000-8000-00000000a0a0")).toEqual({
     tab: "today",
@@ -73,34 +73,34 @@ test("cada sección, cada consejo y cada píldora tienen su dirección", () => {
   });
 });
 
-test("hoy, ayer y el día", () => {
+test("today, yesterday and the day", () => {
   const now = new Date("2026-10-08T12:00:00");
-  expect(when("2026-10-08T07:00:00", now)).toBe("hoy");
-  expect(when("2026-10-07T23:00:00", now)).toBe("ayer");
-  expect(when("2026-10-01T10:00:00", now)).toBe("jueves, 1 de octubre");
+  expect(when("2026-10-08T07:00:00", now)).toBe("today");
+  expect(when("2026-10-07T23:00:00", now)).toBe("yesterday");
+  expect(when("2026-10-01T10:00:00", now)).toBe("Thursday 1 October");
 });
 
-test("los párrafos se separan por una línea en blanco", () => {
+test("paragraphs are separated by a blank line", () => {
   expect(paragraphs("Uno.\n\nDos\nsigue.\n\n\n")).toEqual(["Uno.", "Dos\nsigue."]);
 });
 
-test("la bandeja se pinta sin romperse antes de tener datos", () => {
+test("the inbox draws without breaking before it has data", () => {
 
-  expect(renderToString(<InboxScreen onOpen={() => undefined} onSettings={() => undefined} />)).toContain("Consejos");
+  expect(renderToString(<InboxScreen onOpen={() => undefined} onSettings={() => undefined} />)).toContain("Advice");
 });
 
-test("una conversación dice si espera, si falló o cuándo fue", () => {
+test("a conversation says whether it waits, failed or when it was", () => {
   const base = { id: "t", title: "x", insight_id: null, created_at: "2026-10-08T07:00:00Z", updated_at: new Date().toISOString() };
 
-  expect(threadLine({ ...base, waiting_since: "2026-10-08T07:00:00Z", problem: null }, "Txuri")).toBe("Txuri está pensando…");
-  expect(threadLine({ ...base, waiting_since: null, problem: "sin permiso" }, "Txuri")).toBe("No ha podido contestar");
-  expect(threadLine({ ...base, waiting_since: null, problem: null }, "Txuri")).toBe("hoy");
+  expect(threadLine({ ...base, waiting_since: "2026-10-08T07:00:00Z", problem: null }, "Txuri")).toBe("Txuri is thinking…");
+  expect(threadLine({ ...base, waiting_since: null, problem: "not allowed" }, "Txuri")).toBe("It could not answer");
+  expect(threadLine({ ...base, waiting_since: null, problem: null }, "Txuri")).toBe("today");
   const now = Date.parse("2026-10-08T07:00:00Z");
   expect(stale({ waiting_since: "2026-10-08T07:00:00Z" }, now + PATIENCE_MS + 1)).toBe(true);
   expect(stale({ waiting_since: "2026-10-08T07:00:00Z" }, now + 1000)).toBe(false);
 });
 
-test("cuánto lleva pensando, en segundos y luego en minutos", () => {
+test("how long it has been thinking, in seconds and then minutes", () => {
   const since = "2026-10-08T07:00:00Z";
   const at = (seconds: number) => Date.parse(since) + seconds * 1000;
 
@@ -109,7 +109,7 @@ test("cuánto lleva pensando, en segundos y luego en minutos", () => {
   expect(thinkingFor(since, at(120))).toBe("2 min");
 });
 
-test("Enter envía y Mayúsculas+Enter no; tampoco mientras se compone un acento", () => {
+test("Enter sends and Shift+Enter does not; nor while an accent is composed", () => {
   const key = (shiftKey: boolean, isComposing = false) =>
     ({ key: "Enter", shiftKey, nativeEvent: { isComposing } }) as never;
 
@@ -129,59 +129,59 @@ const run = (extra: Partial<LastRun> = {}): LastRun => ({
   ...extra,
 });
 
-test("dice cuándo miró por última vez y qué pasó", () => {
+test("it says when it last looked and what happened", () => {
   const now = new Date("2026-10-13T12:00:00Z");
 
   expect(lastLook([], "Txuri", now)).toBe(
-    "Txuri mira tus datos cada mañana desde las siete y el domingo te hace el resumen.",
+    "Txuri looks at your data every morning from seven and gives you the summary on Sunday.",
   );
-  expect(lastLook([run()], "Txuri", now)).toMatch(/^Miró hoy a las \d\d:00: nada nuevo/);
-  expect(lastLook([run({ state: "waiting" })], "Txuri", now)).toMatch(/está en marcha/);
-  expect(lastLook([run({ state: "refused", detail: "Insights no tiene permiso." })], "Txuri", now)).toBe(
-    "Insights no tiene permiso.",
+  expect(lastLook([run()], "Txuri", now)).toMatch(/^It looked today at \d\d:00: nothing new/);
+  expect(lastLook([run({ state: "waiting" })], "Txuri", now)).toMatch(/is running/);
+  expect(lastLook([run({ state: "refused", detail: "Insights is not allowed." })], "Txuri", now)).toBe(
+    "Insights is not allowed.",
   );
-  expect(lastLook([run(), run({ kind: "weekly", asked_at: "2026-10-13T08:00:00Z", state: "error", detail: "Cortada" })], "Txuri", now)).toMatch(
-    /^El resumen de la semana de hoy a las \d\d:00 no salió: Cortada$/,
+  expect(lastLook([run(), run({ kind: "weekly", asked_at: "2026-10-13T08:00:00Z", state: "error", detail: "Cut off" })], "Txuri", now)).toMatch(
+    /^The week's summary of today at \d\d:00 did not come out: Cut off$/,
   );
 });
 
-test("dice con qué cuenta miró y qué va a pasar si no salió", () => {
+test("it says what it ran with and what happens if it did not come out", () => {
   const now = new Date("2026-10-13T12:00:00Z");
 
-  expect(lastLook([run({ state: "ok", ran_with: "Otra" })], "Txuri", now)).toMatch(
-    /con tu cuenta «Otra», porque la de siempre no podía/,
+  expect(lastLook([run({ state: "ok", ran_with: "Other" })], "Txuri", now)).toMatch(
+    /with “Other”/,
   );
   expect(
     lastLook(
-      [run({ state: "skipped", detail: "Sin hueco", fix: "Tus cuentas de Claude van sin hueco: se vuelve a pedir sola." })],
+      [run({ state: "skipped", detail: "No room", fix: "It will be asked again on its own." })],
       "Txuri",
       now,
     ),
-  ).toMatch(/no salió: Sin hueco Tus cuentas de Claude van sin hueco: se vuelve a pedir sola\.$/);
+  ).toMatch(/did not come out: No room It will be asked again on its own\.$/);
 });
 
-describe("la bandeja, con la cifra que lo dice (T-B22)", () => {
-  it("el cambio solo, de dónde viene y la cifra en una línea", async () => {
+describe("the inbox, with the figure that says it (T-B22)", () => {
+  it("the change alone, where it comes from and the figure in one line", async () => {
     const { changeOf, against } = await import("./words");
     const { origin, headline } = await import("./Inbox");
-    const figure = { label: "Sueño", value: 6.2, unit: "h", baseline: 7.25, baseline_label: "tu media" };
+    const figure = { label: "Sleep", value: 6.2, unit: "h", baseline: 7.25, baseline_label: "your average" };
     expect(changeOf(figure)).toBe("−14 %");
     expect(changeOf({ ...figure, baseline: 0 })).toBeNull();
-    expect(against(figure)).toBe("frente a 7,3 h, tu media");
+    expect(against(figure)).toBe("against 7.3 h, your average");
     const insight = {
       kind: "alert",
       domain: "body",
       created_at: new Date().toISOString(),
       figures: [figure],
     } as never;
-    expect(origin(insight)).toBe("Cuerpo · hoy");
-    expect(headline(insight)).toBe("Sueño 6,2 h · −14 %");
+    expect(origin(insight)).toBe("Body · today");
+    expect(headline(insight)).toBe("Sleep 6.2 h · −14 %");
     expect(headline({ ...(insight as object), figures: [] } as never)).toBeNull();
   });
 });
 
-describe("la píldora en voz alta (ADR-0182)", () => {
-  it("con voz, el audio del servidor y su línea de tiempo; sin ella, la del dispositivo", async () => {
+describe("the pill read aloud (ADR-0182)", () => {
+  it("with a voice, the server audio and its timeline; without it, the device's", async () => {
     const { audioOf } = await import("./api");
     const base = { id: "0a0a0a0a-0000-4000-8000-00000000a0a0" } as Parameters<typeof audioOf>[0];
     expect(audioOf({ ...base, audio: { duration: 90, timeline: [0, 4] } })).toEqual({

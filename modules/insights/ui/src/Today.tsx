@@ -27,6 +27,7 @@ import { ScreenHeader, useApp } from "./Header";
 import { POLL_MS, PillReader, useAsk } from "./Pill";
 import { familyOf, glyphOf, longDay } from "./taste-words";
 import { DOMAIN_HUES, DOMAIN_ICONS, DOMAINS, when } from "./words";
+import { t } from "./lang";
 
 export function pillState(today: Today): "ready" | "writing" | "failed" | "later" | "off" {
   if (today.pill) return "ready";
@@ -75,7 +76,7 @@ export function TodayScreen({
       .then(setAsked)
       .catch((error: unknown) => {
         setAsking(false);
-        setProblem(error instanceof Error ? error.message : "No se pudo pedir.");
+        setProblem(error instanceof Error ? error.message : t("error.ask"));
       });
   };
 
@@ -83,7 +84,7 @@ export function TodayScreen({
     setAnswering(true);
     void answerQuestion(id, given)
       .then(() => invalidate(TODAY))
-      .catch(() => setProblem("No se pudo guardar la respuesta."))
+      .catch(() => setProblem(t("error.answer")))
       .finally(() => setAnswering(false));
   };
 
@@ -98,39 +99,38 @@ export function TodayScreen({
       <ScreenHeader />
       <ReaderHero
         eyebrow={longDay(today?.day ?? new Date().toISOString())}
-        title="Tu píldora"
+        title={t("today.title")}
         actions={
           <>
             {today && today.streak > 0 && <StreakBadge days={today.streak} />}
-            <FloatButton icon="spark" label="Sorpréndeme con otro tema" tone="accent" busy={asking} onClick={surpriseMe} />
+            <FloatButton icon="spark" label={t("today.surprise")} tone="accent" busy={asking} onClick={surpriseMe} />
           </>
         }
       />
       <OfflineNotice />
 
-      {found.loading && !today && <Skeleton label="Preparando tu día" />}
-      {!today && found.error && <ErrorState title="No se pudo abrir tu día" detail={found.error.message} onRetry={found.refresh} />}
+      {found.loading && !today && <Skeleton label={t("today.loading")} />}
+      {!today && found.error && <ErrorState title={t("today.failed")} detail={found.error.message} onRetry={found.refresh} />}
 
       {problem && <Notice tone="warning">{problem}</Notice>}
       {surprise?.state === "waiting" && (
         <Card>
-          <Working>{app.name} está escribiendo otra píldora: llega en uno o dos minutos y te avisa</Working>
+          <Working>{t("today.writing_another", { name: app.name })}</Working>
         </Card>
       )}
 
       {today && (
         <>
           {!today.onboarding.done && today.onboarding.answered === 0 && (
-            <Notice title="Que te conozca" action={{ label: "Empezar", onClick: onStart }}>
-              Doce preguntas de un toque, tres minutos, y {app.name} acierta desde el primer día con tus temas, tus formatos y tu
-              hora.
+            <Notice title={t("today.meet")} action={{ label: t("today.start"), onClick: onStart }}>
+              {t("today.meet_detail", { name: app.name })}
             </Notice>
           )}
 
           {today.question?.id && (
             <QuestionCard
               key={today.question.id}
-              eyebrow={`${app.name} te pregunta`}
+              eyebrow={t("today.asks", { name: app.name })}
               kind={today.question.kind}
               text={today.question.text}
               why={today.question.why}
@@ -142,8 +142,8 @@ export function TodayScreen({
           )}
 
           {today.facts.length > 0 && (
-            <Section title="Datos de hoy" count={today.facts.length}>
-              <Carousel label="Datos de hoy">
+            <Section title={t("today.facts")} count={today.facts.length}>
+              <Carousel label={t("today.facts")}>
                 {today.facts.map((fact, index) => {
                   const family = familyOf(families, fact.family_key);
                   const reaction = facts[fact.id] ?? fact.reaction;
@@ -177,17 +177,17 @@ export function TodayScreen({
           {today.waiting.map((one) => (
             <Card key={one.id}>
               <Working>
-                {app.name} está escribiendo {one.branch ? `«${one.branch}»` : "otra píldora"}
+                {one.branch ? t("today.writing_branch", { name: app.name, branch: one.branch }) : t("today.writing_other", { name: app.name })}
               </Working>
             </Card>
           ))}
 
           {today.latest && (
-            <Section title={`Lo último de ${app.name}`} count={today.unread || undefined}>
+            <Section title={t("today.latest", { name: app.name })} count={today.unread || undefined}>
               <MediaCard
                 media={<IconBadge name={DOMAIN_ICONS[today.latest.domain]} hue={DOMAIN_HUES[today.latest.domain]} />}
                 title={today.latest.title}
-                lines={[`${today.latest.kind === "weekly" ? "Tu semana" : DOMAINS[today.latest.domain]} · ${when(today.latest.created_at)}`]}
+                lines={[`${today.latest.kind === "weekly" ? t("insight.your_week") : DOMAINS[today.latest.domain]} · ${when(today.latest.created_at)}`]}
                 onOpen={() => onOpenInsight(today.latest!.id)}
               />
             </Section>
@@ -204,14 +204,14 @@ function PillPending({ today, name, onAsk, busy }: { today: Today; name: string;
   if (state === "writing") {
     return (
       <Card>
-        <Working>{name} está escribiendo tu píldora de hoy: llega a las {today.settings.pill_time}</Working>
+        <Working>{t("today.writing_today", { name, time: today.settings.pill_time })}</Working>
       </Card>
     );
   }
   if (state === "failed") {
     return (
-      <Notice tone="warning" title="Tu píldora de hoy no ha salido" action={{ label: "Pedir otra ahora", onClick: onAsk }}>
-        {today.asked?.detail ?? "Tu Claude no pudo escribirla."} Se vuelve a intentar sola.
+      <Notice tone="warning" title={t("today.pill_failed")} action={{ label: t("today.ask_another"), onClick: onAsk }}>
+        {today.asked?.detail ?? t("pill.not_written")} {t("today.retries")}
       </Notice>
     );
   }
@@ -219,11 +219,10 @@ function PillPending({ today, name, onAsk, busy }: { today: Today; name: string;
     <EmptyState
       icon="spark"
       hue={5}
-      title={state === "off" ? "La píldora diaria está apagada" : `Tu píldora llega a las ${today.settings.pill_time}`}
-      action={busy ? undefined : { label: "Pídela ahora", icon: "spark", onClick: onAsk }}
+      title={state === "off" ? t("today.off") : t("today.arrives", { time: today.settings.pill_time })}
+      action={busy ? undefined : { label: t("today.ask_now"), icon: "spark", onClick: onAsk }}
     >
-      Unos {today.settings.pill_minutes} minutos sobre algo que te interesa, con un dato para contar, tres temas para saber más y
-      lo que leer, ver o escuchar después.
+      {t("today.pill_about", { minutes: today.settings.pill_minutes })}
     </EmptyState>
   );
 }

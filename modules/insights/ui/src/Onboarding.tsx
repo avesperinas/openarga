@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { type Answer, type Onboarding, TASTES, TODAY, answerStart, readOnboarding } from "./api";
 import { ScreenHeader, useApp } from "./Header";
+import { t } from "./lang";
 
 export function OnboardingScreen({ onBack, onDone }: { onBack: () => void; onDone: () => void }) {
   const app = useApp();
@@ -24,36 +25,35 @@ export function OnboardingScreen({ onBack, onDone }: { onBack: () => void; onDon
         invalidate(TASTES);
         invalidate(TODAY);
       })
-      .catch(() => setProblem("No se pudo guardar. Inténtalo otra vez."))
+      .catch(() => setProblem(t("error.save_again")))
       .finally(() => setBusy(false));
   };
 
   return (
     <Screen>
-      <ScreenHeader eyebrow={`${app.name} quiere conocerte`} title="Que te conozca" back={{ label: "Volver", onClick: onBack }} />
+      <ScreenHeader eyebrow={t("start.eyebrow", { name: app.name })} title={t("today.meet")} back={{ label: t("action.back"), onClick: onBack }} />
       <OfflineNotice />
       {problem && <Notice tone="warning">{problem}</Notice>}
-      {!now && found.loading && <Skeleton label="Preparando las preguntas" />}
-      {!now && found.error && <ErrorState title="No se pudieron abrir las preguntas" detail={found.error.message} onRetry={found.refresh} />}
+      {!now && found.loading && <Skeleton label={t("start.loading")} />}
+      {!now && found.error && <ErrorState title={t("start.failed")} detail={found.error.message} onRetry={found.refresh} />}
       {now && question && (
         <QuestionCard
           key={question.bank_key}
-          eyebrow="Que te conozca"
+          eyebrow={t("today.meet")}
           progress={{ done: now.answered, total: now.total }}
           kind={question.kind}
           text={question.text}
           why={question.why}
           options={question.options}
           busy={busy}
-          skipLabel="Saltar"
+          skipLabel={t("start.skip")}
           onSkip={() => reply(null)}
           onAnswer={reply}
         />
       )}
       {now && !question && (
-        <EmptyState icon="done" hue={2} title="Ya te conoce un poco más" action={{ label: "Ver lo que sabe de ti", icon: "arrow-right", onClick: onDone }}>
-          Con esto elige tus temas, tu hora y lo que te recomienda. Lo que vaya viendo en tus lecturas, tus estudios y tus viajes te
-          lo propondrá en Tú para que lo confirmes.
+        <EmptyState icon="done" hue={2} title={t("start.done")} action={{ label: t("start.see"), icon: "arrow-right", onClick: onDone }}>
+          {t("start.done_detail")}
         </EmptyState>
       )}
     </Screen>
