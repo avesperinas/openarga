@@ -11,6 +11,7 @@ import { feature as topoFeature } from "topojson-client";
 import { Icon } from "./icons";
 import { EUROPE_VIEW, type RouteMode, boundsOf, distanceKm, graticuleLines, routeArc } from "./globe";
 import { usePrefersReducedMotion } from "./motion";
+import { say } from "./words";
 
 export type MapLevel = "country" | "region" | "none";
 
@@ -658,7 +659,7 @@ export function WorldMap({
       <div ref={container} className="world-map-canvas" role="region" aria-label={label} />
       {failed && (
         <p className="world-map-failed" role="status">
-          No se han podido cargar los países del mapa. Vuelve a abrirlo en un momento.
+          {say("world_map.failed")}
         </p>
       )}
     </div>
@@ -701,7 +702,7 @@ export function TimeBar({ min, max, value, onChange, playing, onPlay, onPause }:
         <button
           type="button"
           className="time-bar-play"
-          aria-label={playing ? "Pausar" : "Reproducir los viajes en orden"}
+          aria-label={playing ? say("world_map.pause") : say("world_map.play")}
           onClick={playing ? onPause : onPlay}
         >
           <Icon name={playing ? "pause" : "play"} />

@@ -4,6 +4,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 
 import { IconButton } from "./controls";
+import { say } from "./words";
 
 export interface RecipeGridRow {
   id: string | number;
@@ -141,21 +142,21 @@ export function RecipeGrid(props: RecipeGridProps) {
     <div className="recipe-grid-controls">
       <IconButton
         icon="minus"
-        label="Ver más pequeño"
+        label={say("grid.smaller")}
         size="small"
         disabled={scale === ZOOM[0]}
         onClick={() => setScale(zoomStep(scale, -1))}
       />
       <IconButton
         icon="plus"
-        label="Ver más grande"
+        label={say("grid.bigger")}
         size="small"
         disabled={scale === ZOOM[ZOOM.length - 1]}
         onClick={() => setScale(zoomStep(scale, 1))}
       />
       <IconButton
         icon={full ? "close" : "expand"}
-        label={full ? "Cerrar" : "Ampliar a pantalla completa"}
+        label={full ? say("grid.close") : say("grid.full_screen")}
         size="small"
         onClick={() => setFull(!full)}
       />

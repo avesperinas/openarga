@@ -1,17 +1,18 @@
 import { dates } from "./regional";
+import { say } from "./words";
 export type Tone = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
 export const TONES: { tone: Tone; name: string }[] = [
-  { tone: 1, name: "Azul" },
-  { tone: 2, name: "Verde" },
-  { tone: 3, name: "Ámbar" },
-  { tone: 4, name: "Rojo" },
-  { tone: 5, name: "Violeta" },
-  { tone: 6, name: "Turquesa" },
-  { tone: 7, name: "Rosa" },
-  { tone: 8, name: "Grafito" },
-  { tone: 9, name: "Naranja" },
-  { tone: 10, name: "Cacao" },
+  { tone: 1, get name() { return say("colour.blue"); } },
+  { tone: 2, get name() { return say("colour.green"); } },
+  { tone: 3, get name() { return say("colour.amber"); } },
+  { tone: 4, get name() { return say("colour.red"); } },
+  { tone: 5, get name() { return say("colour.violet"); } },
+  { tone: 6, get name() { return say("colour.teal"); } },
+  { tone: 7, get name() { return say("colour.pink"); } },
+  { tone: 8, get name() { return say("colour.graphite"); } },
+  { tone: 9, get name() { return say("colour.orange"); } },
+  { tone: 10, get name() { return say("colour.cocoa"); } },
 ];
 
 export type EventStatus = "confirmed" | "tentative" | "cancelled";

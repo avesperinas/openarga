@@ -8,6 +8,7 @@ import { type AgendaEntry, MonthWithEntries, onDay, parseEntries } from "./agend
 import type { Layout } from "./sizes";
 import { useWidgetLayout } from "./Widget";
 import { dates } from "./regional";
+import { say } from "./words";
 
 const WEEK = ["L", "M", "X", "J", "V", "S", "D"];
 
@@ -147,7 +148,7 @@ function WeekDays({
   vertical?: boolean;
 }) {
   return (
-    <ol className="calendar-week" data-vertical={vertical || undefined} aria-label="Esta semana">
+    <ol className="calendar-week" data-vertical={vertical || undefined} aria-label={say("calendar.this_week")}>
       {Array.from({ length: 7 }, (_, index) => {
         const day = monday + index;
         const inMonth = day >= 1 && day <= days;
@@ -184,11 +185,11 @@ export function whenLabel(at: Date, now: Date = new Date()): string {
   const time = dates({ hour: "2-digit", minute: "2-digit" }).format(at);
   const day =
     days === 0
-      ? "Hoy"
+      ? say("day.today")
       : days === 1
-        ? "Mañana"
+        ? say("day.tomorrow")
         : days === -1
-          ? "Ayer"
+          ? say("day.yesterday")
           : days > 1 && days < 7
             ? dates({ weekday: "long" }).format(at)
             : dates({
@@ -217,9 +218,9 @@ export function dayLabel(at: Date, now: Date = new Date()): string {
   const days = Math.round((midnight(at) - midnight(now)) / DAY_MS);
   const day =
     days === 0
-      ? "Hoy"
+      ? say("day.today")
       : days === 1
-        ? "Mañana"
+        ? say("day.tomorrow")
         : days > 1 && days < 7
           ? dates({ weekday: "long" }).format(at)
           : dates({ weekday: "short", day: "numeric", month: "short" }).format(at);
@@ -228,13 +229,13 @@ export function dayLabel(at: Date, now: Date = new Date()): string {
 
 const clock = (at: Date): string =>
   at.getHours() === 0 && at.getMinutes() === 0
-    ? "Todo el día"
+    ? say("calendar.all_day")
     : dates({ hour: "2-digit", minute: "2-digit" }).format(at);
 
 export function WidgetUpNext({ events }: { events: Upcoming[] }) {
   const layout = useWidgetLayout();
   if (events.length === 0) {
-    return <p className="widget-empty">Nada a la vista</p>;
+    return <p className="widget-empty">{say("calendar.nothing_ahead")}</p>;
   }
   const parsed = events
     .map((event) => ({ ...event, when: event.at instanceof Date ? event.at : new Date(event.at) }))
@@ -401,9 +402,9 @@ export function MonthCalendar({
   return (
     <div className="month" data-labelled={weekLabel ? "" : undefined}>
       <header className="month-head">
-        <IconButton icon="chevron-left" label="Mes anterior" size="small" variant="plain" onClick={onPrevious} />
+        <IconButton icon="chevron-left" label={say("calendar.previous_month")} size="small" variant="plain" onClick={onPrevious} />
         <h2 className="month-title">{title.charAt(0).toUpperCase() + title.slice(1)}</h2>
-        <IconButton icon="chevron-right" label="Mes siguiente" size="small" variant="plain" onClick={onNext} />
+        <IconButton icon="chevron-right" label={say("calendar.next_month")} size="small" variant="plain" onClick={onNext} />
       </header>
       <div className="month-grid" role="grid" aria-label={title}>
         <div className="month-row" role="row">

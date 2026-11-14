@@ -2,6 +2,7 @@ import type * as React from "react";
 
 import type { AppNameSet } from "./app-names";
 import collection from "../wallpapers.json";
+import { say } from "./words";
 
 export interface Wallpaper {
   id: string;
@@ -75,16 +76,16 @@ export const APP_HUES: Record<string, number> = {
 export type AppBackground = "app" | "plain" | `hue-${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8}`;
 
 export const APP_BACKGROUNDS: { value: AppBackground; label: string }[] = [
-  { value: "app", label: "Su color" },
-  { value: "plain", label: "Liso" },
-  { value: "hue-1", label: "Azul" },
-  { value: "hue-2", label: "Verde" },
-  { value: "hue-3", label: "Ámbar" },
-  { value: "hue-4", label: "Rojo" },
-  { value: "hue-5", label: "Violeta" },
-  { value: "hue-6", label: "Turquesa" },
-  { value: "hue-7", label: "Rosa" },
-  { value: "hue-8", label: "Pizarra" },
+  { value: "app", get label() { return say("background.app"); } },
+  { value: "plain", get label() { return say("background.plain"); } },
+  { value: "hue-1", get label() { return say("colour.blue"); } },
+  { value: "hue-2", get label() { return say("colour.green"); } },
+  { value: "hue-3", get label() { return say("colour.amber"); } },
+  { value: "hue-4", get label() { return say("colour.red"); } },
+  { value: "hue-5", get label() { return say("colour.violet"); } },
+  { value: "hue-6", get label() { return say("colour.teal"); } },
+  { value: "hue-7", get label() { return say("colour.pink"); } },
+  { value: "hue-8", get label() { return say("colour.slate"); } },
 ];
 
 const isBackground = (value: unknown): value is AppBackground =>
@@ -129,9 +130,9 @@ export interface UiPreferences {
 export type IconStyle = "solid" | "ink" | "paper";
 
 export const ICON_STYLES: { value: IconStyle; label: string; hint: string }[] = [
-  { value: "solid", label: "Color", hint: "El fondo del color de su familia y el dibujo en blanco." },
-  { value: "ink", label: "Tinta", hint: "El fondo oscuro y el dibujo en el color de su familia." },
-  { value: "paper", label: "Papel", hint: "El fondo claro y el dibujo en el color de su familia." },
+  { value: "solid", get label() { return say("icon_style.solid"); }, get hint() { return say("icon_style.solid.hint"); } },
+  { value: "ink", get label() { return say("icon_style.ink"); }, get hint() { return say("icon_style.ink.hint"); } },
+  { value: "paper", get label() { return say("icon_style.paper"); }, get hint() { return say("icon_style.paper.hint"); } },
 ];
 
 export function styledIcon(src: string, style: IconStyle | undefined): string {

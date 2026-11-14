@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { Icon, type IconName } from "./icons";
 import { ReadAloud, type SpokenAudio } from "./speech";
+import { say } from "./words";
 
 export type ReaderHue = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
@@ -499,7 +500,7 @@ export function FactCard({ index, total, text, detail, topic, hue, source, liked
       <p className="fact-card-text">{text}</p>
       {detail && (
         <details className="fact-card-more">
-          <summary>Por qué</summary>
+          <summary>{say("fact.why")}</summary>
           <p>{detail}</p>
         </details>
       )}
@@ -512,12 +513,12 @@ export function FactCard({ index, total, text, detail, topic, hue, source, liked
         )}
         <span className="fact-card-actions">
           {onLike && (
-            <button type="button" className="fact-card-react" aria-pressed={liked} aria-label="Me interesa" onClick={onLike}>
+            <button type="button" className="fact-card-react" aria-pressed={liked} aria-label={say("fact.interested")} onClick={onLike}>
               <Icon name="heart" />
             </button>
           )}
           {onKnown && (
-            <button type="button" className="fact-card-react" aria-pressed={known} aria-label="Ya lo sabía" onClick={onKnown}>
+            <button type="button" className="fact-card-react" aria-pressed={known} aria-label={say("fact.known")} onClick={onKnown}>
               <Icon name="done" />
             </button>
           )}
@@ -529,7 +530,7 @@ export function FactCard({ index, total, text, detail, topic, hue, source, liked
 
 export function StreakBadge({ days }: { days: number }) {
   return (
-    <span className="streak-badge glass" role="img" aria-label={days === 1 ? "Racha: 1 día" : `Racha: ${days} días seguidos`}>
+    <span className="streak-badge glass" role="img" aria-label={days === 1 ? say("streak.one") : say("streak.other", { count: days })}>
       <Icon name="flame" />
       <b>{days}</b>
     </span>

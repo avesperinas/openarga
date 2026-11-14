@@ -3,6 +3,7 @@ import * as React from "react";
 import { Sparkline } from "./charts";
 import { InfoButton, RingArc } from "./health";
 import { Icon, type IconName } from "./icons";
+import { say } from "./words";
 
 export type VitalTone = "good" | "fair" | "poor" | "neutral";
 
@@ -93,7 +94,7 @@ export function TrendTile({ label, value, foot, weeks, changedAt, direction, inf
       </span>
       {foot && <span className="trend-tile-foot">{foot}</span>}
       <span className="trend-tile-line">
-        <Sparkline series={weeks} label={`${label}, las últimas ${weeks.length} semanas`} marks={changedAt === undefined ? [] : [changedAt]} />
+        <Sparkline series={weeks} label={say("trend.last_weeks", { label, count: weeks.length })} marks={changedAt === undefined ? [] : [changedAt]} />
       </span>
     </>
   );

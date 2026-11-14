@@ -6,6 +6,7 @@ import { Button, Stepper } from "./controls";
 import { Card, Hint } from "./screen";
 import { TrendChart } from "./trend";
 import { locale, timeZone } from "./regional";
+import { say } from "./words";
 
 export interface BodyWeightDay {
   day: string;
@@ -75,7 +76,7 @@ export function BodyWeightCard({ history, onLog, today, note, window: span = 180
   };
 
   return (
-    <Card title="Peso">
+    <Card title={say("weight.title")}>
       <div className="body-weight">
         {latest ? (
           <p className="body-weight-figure">
@@ -83,30 +84,30 @@ export function BodyWeightCard({ history, onLog, today, note, window: span = 180
             <span className="body-weight-unit">kg</span>
             <span className="body-weight-when">
               {weighedOn(latest.day, now)}
-              {change != null && change !== 0 && ` · ${change > 0 ? "+" : "−"}${kilos(Math.abs(change))} kg en 30 días`}
+              {change != null && change !== 0 && ` · ${say("weight.change", { change: `${change > 0 ? "+" : "−"}${kilos(Math.abs(change))}` })}`}
             </span>
           </p>
         ) : (
-          <Hint>{history ? "Aún no hay ningún peso apuntado." : "Cargando…"}</Hint>
+          <Hint>{history ? say("weight.none") : say("loading")}</Hint>
         )}
         {shown.length > 1 && (
           <TrendChart
-            label="Peso"
-            valueName="Peso"
+            label={say("weight.title")}
+            valueName={say("weight.title")}
             points={shown.map((one) => ({ day: one.day, value: one.kg }))}
             format={(kg) => `${kilos(kg)} kg`}
           />
         )}
         <div className="body-weight-log">
-          <Stepper label="Peso de hoy" value={value} step={0.1} min={20} max={400} unit="kg" inputMode="decimal" onChange={setDraft} />
+          <Stepper label={say("weight.today")} value={value} step={0.1} min={20} max={400} unit="kg" inputMode="decimal" onChange={setDraft} />
           <Button variant="tinted" onClick={log} disabled={value == null || busy || !history}>
-            {busy ? "Apuntando…" : "Apuntar"}
+            {busy ? say("weight.logging") : say("weight.log")}
           </Button>
         </div>
         <Hint>
           {history?.pending
-            ? "Apuntado aquí. Llegará a Salud en cuanto conteste."
-            : (note ?? "El mismo peso en Salud, Macros y Training.")}
+            ? say("weight.pending")
+            : (note ?? say("weight.shared"))}
         </Hint>
       </div>
     </Card>
