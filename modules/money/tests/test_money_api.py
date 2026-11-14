@@ -745,3 +745,19 @@ async def test_the_panel_of_dinero_says_how_you_go_with_the_same_numbers_as_the_
 
 async def test_without_accounts_there_is_no_panel(api) -> None:
     assert (await api.get("/panel")).status_code == 404
+
+
+async def test_the_widgets_speak_the_person_currency(book) -> None:
+    dollars = (await book.get("/widgets/networth", headers={"x-arga-currency": "USD"})).json()
+    euros = (await book.get("/widgets/networth", headers={"x-arga-currency": "EUR"})).json()
+
+    assert dollars["body"]["unit"] == "$"
+    assert euros["body"]["unit"] == "€"
+
+
+async def test_the_server_texts_speak_the_person_language(book) -> None:
+    english = (await book.get("/panel", headers={"x-arga-locale": "en"})).json()
+    spanish = (await book.get("/panel", headers={"x-arga-locale": "es"})).json()
+
+    assert english["tabs"][0]["label"] == "Summary"
+    assert spanish["tabs"][0]["label"] == "Resumen"

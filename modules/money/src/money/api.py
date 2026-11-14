@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_tenancy import current_spaces, current_user
 from arga_widgets import envelope
-from money import analysis, catalog, common, configure, history, importer, kpis, products
+from money import analysis, catalog, common, configure, history, importer, kpis, products, texts
 from money import book as books
 from money.db import engine
 from money.interpret import merchant_key
@@ -50,7 +50,7 @@ async def state() -> dict:
     async with as_app() as connection:
         lo = await loaded(connection)
     b = lo.book
-    today = date.today()
+    today = texts.today()
     checks = [
         balance_check(b, a, today - timedelta(days=60), today)
         for a in b.accounts.values()
@@ -398,7 +398,7 @@ async def merchant_rule(
 
 @router.get("/shared")
 async def shared(year: Annotated[int | None, Query(ge=2000, le=2100)] = None) -> dict:
-    today = date.today()
+    today = texts.today()
     year = year or today.year
     async with as_app() as connection:
         lo = await loaded(connection)
@@ -633,7 +633,7 @@ async def settle_year(year: int, request: YearIn) -> dict:
             {"y": year, "s": request.settled},
         )
         await books.bump(connection)
-        await common.publish(connection, await loaded(connection), date.today())
+        await common.publish(connection, await loaded(connection), texts.today())
     return {"year": year, "settled": request.settled}
 
 
@@ -732,7 +732,7 @@ async def summary() -> dict:
     async with as_app() as connection:
         lo = await loaded(connection)
     return {
-        "kpis": [kpi_out(k) for k in kpis.compute(lo, date.today())],
+        "kpis": [kpi_out(k) for k in kpis.compute(lo, texts.today())],
         "emergency_months": lo.settings.emergency_months,
     }
 
@@ -840,7 +840,7 @@ async def add_account(request: NewAccountIn) -> dict:
         except configure.Refused as error:
             raise refused(error) from error
         lo = await loaded(connection)
-        return plain(products.detail(lo, lo.book.accounts[key], date.today()))
+        return plain(products.detail(lo, lo.book.accounts[key], texts.today()))
 
 
 class AccountPatch(BaseModel):
@@ -877,7 +877,7 @@ async def patch_account(key: str, request: AccountPatch) -> dict:
         except configure.Refused as error:
             raise refused(error) from error
         lo = await loaded(connection)
-        return plain(products.detail(lo, lo.book.accounts[key], date.today()))
+        return plain(products.detail(lo, lo.book.accounts[key], texts.today()))
 
 
 @router.get("/products/{key}")
@@ -887,7 +887,7 @@ async def product(key: str) -> dict:
     account = lo.book.accounts.get(key)
     if account is None:
         raise HTTPException(status_code=404, detail="no such product")
-    return plain(products.detail(lo, account, date.today()))
+    return plain(products.detail(lo, account, texts.today()))
 
 
 class TypedFundIn(BaseModel):
@@ -919,7 +919,7 @@ async def set_composition(key: str, request: CompositionIn) -> dict:
         except configure.Refused as error:
             raise refused(error) from error
         lo = await loaded(connection)
-        return plain(products.detail(lo, lo.book.accounts[key], date.today()))
+        return plain(products.detail(lo, lo.book.accounts[key], texts.today()))
 
 
 @router.delete("/accounts/{key}/composition")
@@ -930,7 +930,7 @@ async def remove_composition(key: str, on: Annotated[date, Query()]) -> dict:
     account = lo.book.accounts.get(key)
     if account is None:
         raise HTTPException(status_code=404, detail="no such product")
-    return plain(products.detail(lo, account, date.today()))
+    return plain(products.detail(lo, account, texts.today()))
 
 
 class ValueIn(BaseModel):
@@ -947,7 +947,7 @@ async def set_value(key: str, request: ValueIn) -> dict:
         except configure.Refused as error:
             raise refused(error) from error
         lo = await loaded(connection)
-        return plain(products.detail(lo, lo.book.accounts[key], date.today()))
+        return plain(products.detail(lo, lo.book.accounts[key], texts.today()))
 
 
 @router.get("/funds")
@@ -1138,11 +1138,11 @@ def widget_of(k: kpis.Kpi) -> dict:
         body = {
             "value": money(k.value),
             "target": money(k.target) if k.target else None,
-            "unit": "€",
+            "unit": texts.symbol(),
             "label": t("widget.of_target"),
         }
     else:
-        body = {"value": money(k.value), "unit": "€"}
+        body = {"value": money(k.value), "unit": texts.symbol()}
         if kind == "kpi-delta":
             body |= {
                 "previous": money(k.previous) if k.previous is not None else 0,
@@ -1174,7 +1174,7 @@ async def pending_shared(
 
 @router.get("/panel")
 async def home_panel() -> dict:
-    today = date.today()
+    today = texts.today()
     async with as_app() as connection:
         lo = await loaded(connection)
         if not lo.book.accounts and common.role_of(lo) != common.MEMBER:
@@ -1195,9 +1195,11 @@ async def shared_widget() -> dict:
         lo = await loaded(connection)
         if not lo.book.accounts and common.role_of(lo) != common.MEMBER:
             return envelope("kpi", "empty", {"detail": t("widget.no_accounts")})
-        owed, years, other = await pending_shared(connection, lo, date.today())
+        owed, years, other = await pending_shared(connection, lo, texts.today())
     if not years:
-        return envelope("kpi", "ready", {"value": 0, "unit": "€", "detail": t("widget.settled")})
+        return envelope(
+            "kpi", "ready", {"value": 0, "unit": texts.symbol(), "detail": t("widget.settled")}
+        )
     when = ", ".join(str(y) for y in years)
     if abs(owed) < Decimal("0.005"):
         detail = t("widget.even", years=when)
@@ -1205,7 +1207,9 @@ async def shared_widget() -> dict:
         detail = t("widget.owes_you", other=other, years=when)
     else:
         detail = t("widget.you_owe", other=other, years=when)
-    return envelope("kpi", "ready", {"value": money(owed), "unit": "€", "detail": detail})
+    return envelope(
+        "kpi", "ready", {"value": money(owed), "unit": texts.symbol(), "detail": detail}
+    )
 
 
 @router.get("/widgets/{key}")
@@ -1219,7 +1223,7 @@ async def kpi_widget(key: str) -> dict:
     if not lo.book.accounts:
         kind = KPI_WIDGETS[key][0]
         return envelope(kind, "empty", {"detail": t("widget.no_accounts")})
-    found = next(k for k in kpis.compute(lo, date.today()) if k.key == key)
+    found = next(k for k in kpis.compute(lo, texts.today()) if k.key == key)
     return widget_of(found)
 
 
@@ -1239,15 +1243,17 @@ async def account_widget(option: Annotated[str | None, Query(max_length=40)] = N
     account = lo.book.accounts.get(option or "")
     if account is None:
         return envelope("kpi", "empty", {"detail": t("widget.pick_account")})
-    v = value_at(lo.book, account, date.today(), lo.valuations)
+    v = value_at(lo.book, account, texts.today(), lo.valuations)
     if not v.known:
         return envelope("kpi", "empty", {"detail": t("widget.no_balance", account=account.name)})
     detail = account.name
     if v.estimated:
         detail += " · " + t("widget.estimated", day=f"{v.estimated.day}/{v.estimated.month}")
-    elif v.since and (date.today() - v.since).days > 7:
+    elif v.since and (texts.today() - v.since).days > 7:
         detail += " · " + t("widget.as_of", day=f"{v.since.day}/{v.since.month}")
-    return envelope("kpi", "ready", {"value": money(v.amount), "unit": "€", "detail": detail})
+    return envelope(
+        "kpi", "ready", {"value": money(v.amount), "unit": texts.symbol(), "detail": detail}
+    )
 
 
 FINE = {"share", "simple", "period_return", "rate", "ownership", "change"}
@@ -1291,7 +1297,7 @@ async def analysis_worth(
     async with as_app() as connection:
         lo = await loaded(connection)
     return plain(
-        analysis.worth(lo, start, end, home, whole, date.today(), set(groups), set(accounts))
+        analysis.worth(lo, start, end, home, whole, texts.today(), set(groups), set(accounts))
     )
 
 
@@ -1308,7 +1314,7 @@ async def analysis_investments(
     async with as_app() as connection:
         lo = await loaded(connection)
     return plain(
-        analysis.investments(lo, start, end, home, whole, date.today(), set(groups), set(accounts))
+        analysis.investments(lo, start, end, home, whole, texts.today(), set(groups), set(accounts))
     )
 
 
@@ -1325,7 +1331,7 @@ async def analysis_composition(
     async with as_app() as connection:
         lo = await loaded(connection)
     return plain(
-        products.composition(lo, start, end, home, whole, date.today(), set(groups), set(accounts))
+        products.composition(lo, start, end, home, whole, texts.today(), set(groups), set(accounts))
     )
 
 
@@ -1340,7 +1346,7 @@ async def analysis_spending(
     checked(start, end)
     async with as_app() as connection:
         lo = await loaded(connection)
-    return plain(analysis.spending(lo, start, end, scope, whole, kind, date.today()))
+    return plain(analysis.spending(lo, start, end, scope, whole, kind, texts.today()))
 
 
 @router.get("/analysis/spending/category")
@@ -1364,7 +1370,7 @@ async def analysis_flow(
     checked(start, end)
     async with as_app() as connection:
         lo = await loaded(connection)
-    return plain(analysis.flow(lo, start, end, cycle, whole, date.today(), rent_invested=rent))
+    return plain(analysis.flow(lo, start, end, cycle, whole, texts.today(), rent_invested=rent))
 
 
 @router.get("/analysis/circuit")
@@ -1372,4 +1378,4 @@ async def analysis_circuit(start: Start, end: End) -> dict:
     checked(start, end)
     async with as_app() as connection:
         lo = await loaded(connection)
-    return plain(analysis.circuit(lo, start, end, date.today()))
+    return plain(analysis.circuit(lo, start, end, texts.today()))
