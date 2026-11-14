@@ -12,6 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from insights import hub, tastes
+from insights.words import say
 
 Kind = Literal[
     "book", "podcast", "episode", "film", "series", "documentary", "video", "article", "course"
@@ -46,33 +47,35 @@ class Conflict(Exception):
 class PickIn(BaseModel):
     kind: Kind = Field(
         description=(
-            "`book`, `podcast` (un programa), `episode` (un episodio), `film`, `series`, "
-            "`documentary`, `video`, `article` o `course`."
+            "`book`, `podcast` (a show), `episode` (one episode), `film`, `series`, "
+            "`documentary`, `video`, `article` or `course`."
         )
     )
     title: str = Field(
         min_length=1,
         max_length=200,
-        description="El título exacto, el de su edición en español si la tiene.",
+        description="The exact title, that of the edition in their language if there is one.",
     )
     creators: list[str] = Field(
         default_factory=list,
         max_length=5,
-        description="Autoría: autor, directora, el programa de un episodio, el medio.",
+        description="Authorship: author, director, the show of an episode, the outlet.",
     )
     year: int | None = Field(default=None, ge=1000, le=2200)
     why: str = Field(
         min_length=10,
         max_length=400,
         description=(
-            "Por qué a esta persona, con lo suyo: un rasgo, algo que leyó, un viaje. «Es un "
-            "clásico» no vale."
+            "Why for this person, with their own things: a trait, something they read, a trip. "
+            "`It is a classic` does not count."
         ),
     )
     because: list[str] = Field(
         default_factory=list,
         max_length=4,
-        description="Los rasgos suyos en los que te apoyas, por su texto (los de insights_get_tastes).",
+        description=(
+            "The traits of theirs you lean on, by their text (those of insights_get_tastes)."
+        ),
     )
     language: str | None = Field(default=None, pattern=r"^[a-z]{2}$")
 
@@ -198,7 +201,7 @@ async def _book(wanted: PickIn) -> Checked | None:
             title=candidate.get("title") or wanted.title,
             creators=authors or wanted.creators,
             year=candidate.get("year") or wanted.year,
-            length=f"{pages} páginas" if pages else None,
+            length=say("pick.pages", pages=pages) if pages else None,
             language=candidate.get("language") or wanted.language,
             ref={
                 "source": candidate.get("source"),
@@ -264,7 +267,7 @@ async def _film(wanted: PickIn) -> Checked | None:
             )
         links.append(
             {
-                "label": "Dónde verla",
+                "label": say("pick.where_to_watch"),
                 "url": f"https://www.justwatch.com/es/buscar?q={quote_plus(name)}",
             }
         )
@@ -337,18 +340,18 @@ async def publish(
             {"kind": one.kind, "key": key},
         )
         if repeated:
-            notes.append(f"«{one.title}»: ya se lo recomendaste")
+            notes.append(f"'{one.title}': already recommended")
             continue
         if one.kind == "book" and key in read:
-            notes.append(f"«{one.title}»: ya está en sus lecturas")
+            notes.append(f"'{one.title}': already in their reading")
             continue
         try:
             checked = await check(one)
         except hub.Unavailable as error:
-            notes.append(f"«{one.title}»: no se pudo comprobar ({error})")
+            notes.append(f"'{one.title}': could not be checked ({error})")
             continue
         if checked is None:
-            notes.append(f"«{one.title}»: no aparece en el catálogo, así que no se publica")
+            notes.append(f"'{one.title}': not in the catalogue, so it is not published")
             continue
         row = (
             await connection.execute(
@@ -382,7 +385,7 @@ async def publish(
             )
         ).first()
         if row is None:
-            notes.append(f"«{one.title}»: ya se lo recomendaste")
+            notes.append(f"'{one.title}': already recommended")
             continue
         if checked.cover:
             found = await hub.cover(*checked.cover)
@@ -471,7 +474,7 @@ async def _learn(connection: AsyncConnection, found: Pick) -> None:
             creator,
             2 if (found.rating or 0) >= 4.5 else 1,
             "rated",
-            evidence=f"«{found.title}»: {found.rating or '–'} de 5",
+            evidence=f"'{found.title}': {found.rating or '–'} of 5",
             confirmed=True,
         )
     elif disliked:
@@ -481,7 +484,7 @@ async def _learn(connection: AsyncConnection, found: Pick) -> None:
             creator,
             -1,
             "rated",
-            evidence=f"«{found.title}»: {found.rating or '–'} de 5",
+            evidence=f"'{found.title}': {found.rating or '–'} of 5",
             confirmed=True,
         )
 
@@ -503,7 +506,7 @@ async def cover(connection: AsyncConnection, pick_id: str) -> tuple[bytes, str]:
 async def want_body(connection: AsyncConnection, pick_id: str) -> dict[str, Any]:
     found = await one_pick(connection, pick_id)
     if found.kind != "book":
-        raise Conflict("solo los libros se guardan en tus lecturas")
+        raise Conflict("only books are saved in your reading")
     ref = (
         await connection.scalar(
             text("select ref from insights.insights_pick where id = cast(:id as uuid)"),
@@ -513,7 +516,7 @@ async def want_body(connection: AsyncConnection, pick_id: str) -> dict[str, Any]
     body: dict[str, Any] = {"title": found.title, "authors": found.creators[:5]}
     if ref.get("isbn13"):
         body["isbn13"] = ref["isbn13"]
-    body["note"] = f"Te lo recomendó Insights: {found.why}"[:300]
+    body["note"] = say("pick.want_note", why=found.why)[:300]
     return body
 
 
@@ -535,13 +538,13 @@ def described(found: list[Pick]) -> list[str]:
     lines = []
     for one in found[:80]:
         mark = {
-            "new": "sin abrir",
-            "saved": "guardado",
-            "doing": "empezado",
-            "done": "terminado",
-            "dismissed": "descartado",
+            "new": "not opened",
+            "saved": "saved",
+            "doing": "started",
+            "done": "finished",
+            "dismissed": "dismissed",
         }[one.state]
         extra = f", {one.rating:g}/5" if one.rating is not None else ""
-        extra += ", quiere más así" if one.more_like else ""
-        lines.append(f"- {one.kind} «{one.title}» ({', '.join(one.creators[:2])}): {mark}{extra}")
-    return lines or ["(Todavía no le has recomendado nada.)"]
+        extra += ", wants more like it" if one.more_like else ""
+        lines.append(f'- {one.kind} "{one.title}" ({", ".join(one.creators[:2])}): {mark}{extra}')
+    return lines or ["(You have not recommended anything yet.)"]

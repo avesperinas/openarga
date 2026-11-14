@@ -116,7 +116,7 @@ GOALS = text(f"""
     select distinct on (payload->'{RECORD}'->>'id', module)
         payload->'{RECORD}' as item
     from insights.events
-    where payload ? '{RECORD}' and payload->'{RECORD}'->>'kind' = 'Meta'
+    where payload ? '{RECORD}' and payload->'{RECORD}'->>'kind' = 'Goal'
     order by payload->'{RECORD}'->>'id', module, ts desc, ingested_at desc
 """)
 
@@ -155,21 +155,21 @@ async def goals(connection: AsyncConnection) -> list[Goal]:
     for row in await connection.execute(GOALS):
         item = row.item or {}
         props = item.get("properties") or {}
-        if item.get("removed") or props.get("estado") != "activa":
+        if item.get("removed") or props.get("status") != "active":
             continue
-        if props.get("ritmo") != "por detrás":
+        if props.get("pace") != "behind":
             continue
         found.append(
             Goal(
                 id=str(item.get("id")),
-                title=str(item.get("title") or "Una meta"),
-                unit=props.get("unidad"),
-                current=_number(props.get("actual")),
-                target=_number(props.get("objetivo")),
-                expected=_number(props.get("esperado")),
-                progress=_number(props.get("progreso")),
-                due_on=_day(props.get("hasta")),
-                metric=props.get("cifra"),
+                title=str(item.get("title") or "A goal"),
+                unit=props.get("unit"),
+                current=_number(props.get("current")),
+                target=_number(props.get("target")),
+                expected=_number(props.get("expected")),
+                progress=_number(props.get("progress")),
+                due_on=_day(props.get("due")),
+                metric=props.get("metric"),
             )
         )
     return found
@@ -178,7 +178,7 @@ async def goals(connection: AsyncConnection) -> list[Goal]:
 UNITS = {
     "EUR": "€",
     "percent": "%",
-    "steps": "pasos",
+    "steps": "steps",
     "count": "",
     "points": "",
 }
@@ -190,9 +190,9 @@ def unit_of(unit: str | None) -> str:
 
 def said(value: float, unit: str | None = None) -> str:
     digits = 0 if abs(value) >= 100 else (1 if abs(value) >= 10 else 2)
-    shown = f"{value:,.{digits}f}".replace(",", "·").replace(".", ",").replace("·", ".")
-    if "," in shown:
-        shown = shown.rstrip("0").rstrip(",")
+    shown = f"{value:,.{digits}f}"
+    if "." in shown:
+        shown = shown.rstrip("0").rstrip(".")
     shown_unit = unit_of(unit)
     return f"{shown} {shown_unit}".strip()
 
@@ -266,14 +266,14 @@ def deviation(one: Series, today: date) -> Signal | None:
         kind="deviation",
         domain=one.domain,
         text=(
-            f"{one.label}: {said(last, one.unit)} el {last_day:%d/%m}, frente a tu media de 90 "
-            f"días de {said(mean, one.unit)} ({z:+.1f} desviaciones)"
+            f"{one.label}: {said(last, one.unit)} on {last_day:%d/%m}, against your 90-day "
+            f"average of {said(mean, one.unit)} ({z:+.1f} deviations)"
         ),
         label=one.label,
         unit=one.unit,
         value=last,
         baseline=round(mean, 2),
-        baseline_label="tu media de 90 días",
+        baseline_label="your 90-day average",
         day=last_day,
         strength=round(abs(z), 2),
         keys=[one.key],
@@ -308,15 +308,15 @@ def _weekly_deviation(one: Series, today: date) -> Signal | None:
         kind="deviation",
         domain=one.domain,
         text=(
-            f"{one.label}: {said(week, one.unit)} la semana del {start:%d/%m}, frente a "
-            f"{said(mean, one.unit)} de media en tus {len(before)} semanas anteriores "
-            f"({z:+.1f} desviaciones)"
+            f"{one.label}: {said(week, one.unit)} in the week of {start:%d/%m}, against an "
+            f"average of {said(mean, one.unit)} in your {len(before)} previous weeks "
+            f"({z:+.1f} deviations)"
         ),
-        label=f"{one.label} en la semana",
+        label=f"{one.label} in the week",
         unit=one.unit,
         value=round(week, 2),
         baseline=round(mean, 2),
-        baseline_label=f"tu media semanal de las {len(before)} anteriores",
+        baseline_label=f"your weekly average of the {len(before)} before",
         day=end,
         since=start,
         strength=round(abs(z), 2),
@@ -346,15 +346,15 @@ def jump(one: Series, today: date) -> Signal | None:
         kind="jump",
         domain=one.domain,
         text=(
-            f"{one.label}: {said(last, one.unit)} el {last_day:%d/%m/%Y}, frente a "
-            f"{said(previous, one.unit)} en la medida anterior ({previous_day:%d/%m/%Y}), "
+            f"{one.label}: {said(last, one.unit)} on {last_day:%d/%m/%Y}, against "
+            f"{said(previous, one.unit)} in the previous measure ({previous_day:%d/%m/%Y}), "
             f"{change:+.0%}"
         ),
         label=one.label,
         unit=one.unit,
         value=last,
         baseline=previous,
-        baseline_label=f"tu medida del {previous_day:%d/%m/%Y}",
+        baseline_label=f"your measure of {previous_day:%d/%m/%Y}",
         day=last_day,
         since=previous_day,
         strength=round(abs(change), 3),
@@ -386,21 +386,21 @@ def trend(one: Series, today: date) -> Signal | None:
     doubled = moved * moved_before > 0 and abs(s28) >= 2 * abs(s90)
     if not (turned or doubled):
         return None
-    way = "sube" if moved > 0 else "baja"
-    how = "cuando antes iba al revés" if turned else "el doble de rápido que en 90 días"
+    way = "rises" if moved > 0 else "falls"
+    how = "when before it went the other way" if turned else "twice as fast as in 90 days"
     return Signal(
         id=f"trend:{one.key}",
         kind="trend",
         domain=one.domain,
         text=(
-            f"{one.label} {way}: {said(moved, one.unit)} en 28 días, {how} "
-            f"({said(moved_before, one.unit)} cada 28 días a su ritmo de 90)"
+            f"{one.label} {way}: {said(moved, one.unit)} in 28 days, {how} "
+            f"({said(moved_before, one.unit)} every 28 days at its 90-day pace)"
         ),
-        label=f"{one.label}, cambio en 28 días",
+        label=f"{one.label}, change in 28 days",
         unit=one.unit,
         value=round(moved, 2),
         baseline=round(moved_before, 2),
-        baseline_label="lo que cambiaba en 28 días a tu ritmo de 90",
+        baseline_label="what it changed in 28 days at your 90-day pace",
         day=last,
         since=recent[0][0],
         strength=round(abs(moved) / max(abs(moved_before), enough), 2),
@@ -426,12 +426,12 @@ def streak(one: Series, today: date) -> Signal | None:
         id=f"streak:{one.key}",
         kind="streak",
         domain=one.domain,
-        text=f"{one.label}: llevabas {run} días seguidos y ayer se cortó",
-        label=f"{one.label}, días seguidos",
+        text=f"{one.label}: you had {run} days in a row and it broke yesterday",
+        label=f"{one.label}, days in a row",
         unit="count",
         value=0,
         baseline=run,
-        baseline_label="la racha que llevabas",
+        baseline_label="the streak you had",
         day=yesterday,
         since=day + timedelta(days=1),
         strength=float(run),
@@ -459,14 +459,14 @@ def stall(one: Series, today: date) -> Signal | None:
         kind="stall",
         domain=one.domain,
         text=(
-            f"{one.label}: nada desde el {last:%d/%m}, hace {quiet} días, cuando solía haber "
-            f"{said(per_week)} días con algo a la semana"
+            f"{one.label}: nothing since {last:%d/%m}, {quiet} days ago, when there used to be "
+            f"{said(per_week)} days with something a week"
         ),
-        label=f"días sin {one.label.lower()}",
+        label=f"days without {one.label.lower()}",
         unit="count",
         value=quiet,
         baseline=round(usual, 1),
-        baseline_label="lo que solía pasar entre un día y el siguiente",
+        baseline_label="what used to pass between one day and the next",
         day=today,
         since=last,
         strength=round(quiet / max(usual, 1), 2),
@@ -500,20 +500,20 @@ def month_pace(one: Series, today: date) -> Signal | None:
     change = (now - usual) / usual
     if abs(change) < MONTH_PACE:
         return None
-    way = "por encima" if change > 0 else "por debajo"
+    way = "above" if change > 0 else "below"
     return Signal(
         id=f"month_pace:{one.key}",
         kind="month_pace",
         domain=one.domain,
         text=(
-            f"{one.label}: {said(now, one.unit)} a día {day_now.day}, un {abs(change):.0%} {way} "
-            f"de los {said(usual, one.unit)} que solías llevar ese día ({len(before)} meses)"
+            f"{one.label}: {said(now, one.unit)} by day {day_now.day}, {abs(change):.0%} {way} "
+            f"the {said(usual, one.unit)} you used to have by that day ({len(before)} months)"
         ),
-        label=f"{one.label} a día {day_now.day}",
+        label=f"{one.label} by day {day_now.day}",
         unit=one.unit,
         value=now,
         baseline=round(usual, 2),
-        baseline_label=f"lo que llevabas a día {day_now.day} en tus {len(before)} meses anteriores",
+        baseline_label=f"what you had by day {day_now.day} in your {len(before)} months before",
         day=day_now,
         since=day_now.replace(day=1),
         strength=round(abs(change), 3),
@@ -525,19 +525,17 @@ def goal(one: Goal, today: date) -> Signal:
     has_numbers = one.current is not None and (one.expected is not None or one.target is not None)
     if has_numbers:
         baseline = one.expected if one.expected is not None else one.target
-        label = (
-            "lo que pedía la meta a estas alturas" if one.expected is not None else "el objetivo"
-        )
+        label = "what the goal asked for by now" if one.expected is not None else "the target"
         value = one.current
     else:
-        baseline, label, value = 100.0, "la meta entera", one.progress or 0.0
-    due = f", hasta el {one.due_on:%d/%m/%Y}" if one.due_on else ""
+        baseline, label, value = 100.0, "the whole goal", one.progress or 0.0
+    due = f", until {one.due_on:%d/%m/%Y}" if one.due_on else ""
     return Signal(
         id=f"goal:{one.id}",
         kind="goal",
         domain="time",
         text=(
-            f"Meta «{one.title}»{due}: va por detrás, {said(value or 0, one.unit)} frente a "
+            f'Goal "{one.title}"{due}: behind, {said(value or 0, one.unit)} against '
             f"{said(baseline or 0, one.unit)} ({label})"
         ),
         label=one.title,
@@ -574,21 +572,21 @@ def crosses(found: list[Series], today: date) -> list[Signal]:
                 continue
             if abs(r90) < CROSS_R or abs(r90 - r365) < CROSS_DELTA:
                 continue
-            together = "van juntas" if r90 > 0 else "van al revés"
+            together = "move together" if r90 > 0 else "move opposite"
             out.append(
                 Signal(
                     id=f"cross:{a.key}|{b.key}",
                     kind="cross",
                     domain="cross",
                     text=(
-                        f"{a.label} y {b.label} {together} estos 90 días (r = {r90:.2f}), "
-                        f"cuando en el año la relación era {r365:.2f}"
+                        f"{a.label} and {b.label} {together} these 90 days (r = {r90:.2f}), "
+                        f"when over the year the relation was {r365:.2f}"
                     ),
-                    label=f"relación entre {a.label.lower()} y {b.label.lower()}",
+                    label=f"relation between {a.label.lower()} and {b.label.lower()}",
                     unit=None,
                     value=round(r90, 2),
                     baseline=round(r365, 2),
-                    baseline_label="la misma relación en el último año",
+                    baseline_label="the same relation over the last year",
                     day=recent[-1],
                     since=recent[0],
                     strength=round(abs(r90 - r365), 2),

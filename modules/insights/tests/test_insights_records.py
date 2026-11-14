@@ -50,12 +50,12 @@ async def test_the_weekly_summary_is_published_as_a_record_and_an_alert_is_not(a
 
     monday = records.week_of(datetime.now(UTC))
     key = records.week_key(monday)
-    assert found["id"] == f"semana-{key}"
-    assert found["kind"] == "Resumen de la semana"
-    assert found["folder"] == "Semanas"
-    assert found["href"] == f"/insights/consejo/{summary}"
+    assert found["id"] == f"week-{key}"
+    assert found["kind"] == "Week summary"
+    assert found["folder"] == "Weeks"
+    assert found["href"] == f"/insights/insight/{summary}"
     assert found["properties"] == {"week": key, "proposals": 3}
-    assert "## Propuestas para la semana que viene" in found["body"]
+    assert "## Proposals for next week" in found["body"]
     assert "\n3. " in found["body"]
 
 
@@ -68,5 +68,5 @@ async def test_a_second_summary_of_the_same_week_replaces_the_first(api, schema)
 
     assert len(published) == 2
     assert published[0]["id"] == published[1]["id"]
-    assert published[1]["href"] == f"/insights/consejo/{second}"
+    assert published[1]["href"] == f"/insights/insight/{second}"
     assert published[1]["properties"]["proposals"] == 4

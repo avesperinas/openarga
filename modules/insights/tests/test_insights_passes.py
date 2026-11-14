@@ -74,7 +74,7 @@ async def weights(engine, until: datetime, last: float | None = None) -> None:
         value = last if back == 0 and last is not None else 80 + noise.uniform(-0.4, 0.4)
         point = {
             "key": f"{METER}.weight",
-            "label": "Peso",
+            "label": "Weight",
             "unit": "kg",
             "kind": "level",
             "day": day.isoformat(),
@@ -87,18 +87,18 @@ async def weights(engine, until: datetime, last: float | None = None) -> None:
 async def goal_behind(engine) -> None:
     record = {
         "id": "goal:1",
-        "title": "Colesterol por debajo de 200",
-        "kind": "Meta",
-        "href": "/kpis/meta/1",
-        "folder": "Metas",
+        "title": "Cholesterol under 200",
+        "kind": "Goal",
+        "href": "/goals/goal/1",
+        "folder": "Goals",
         "properties": {
-            "estado": "activa",
-            "ritmo": "por detrás",
-            "actual": 255,
-            "objetivo": 200,
-            "esperado": 221,
-            "unidad": "mg/dL",
-            "hasta": "2026-12-31",
+            "status": "active",
+            "pace": "behind",
+            "current": 255,
+            "target": 200,
+            "expected": 221,
+            "unit": "mg/dL",
+            "due": "2026-12-31",
         },
         "body": "",
     }
@@ -140,7 +140,7 @@ async def test_a_weight_jump_is_a_signal_and_the_series_is_there(meter, api) -> 
     listed = (await api.post("/tools/get_series", json={}, headers=READ)).json()["content"]
     series = (
         await api.post(
-            "/tools/get_series", json={"keys": [f"{METER}.weight", "nada.x"]}, headers=READ
+            "/tools/get_series", json={"keys": [f"{METER}.weight", "nothing.x"]}, headers=READ
         )
     ).json()["content"]
 
@@ -149,7 +149,7 @@ async def test_a_weight_jump_is_a_signal_and_the_series_is_there(meter, api) -> 
     assert kinds["goal:goal:1"]["baseline"] == 221
     assert [one["key"] for one in listed["metrics"]] == [f"{METER}.weight"]
     assert len(series["series"][0]["points"]) == 81
-    assert series["note"] == "no hay cifras con esas claves: nada.x"
+    assert series["note"] == "no figures with those keys: nothing.x"
 
 
 async def test_the_app_shows_the_signals_of_the_week(meter, api) -> None:
@@ -158,7 +158,7 @@ async def test_the_app_shows_the_signals_of_the_week(meter, api) -> None:
     shown = (await api.get("/signals")).json()
 
     assert [one["kind"] for one in shown] == ["deviation"]
-    assert "Peso" in shown[0]["text"]
+    assert "Weight" in shown[0]["text"]
 
 
 def test_what_is_due_depends_on_the_hour_and_the_day() -> None:
@@ -176,7 +176,7 @@ def test_what_is_due_depends_on_the_hour_and_the_day() -> None:
 
 
 async def test_a_morning_with_something_new_asks_your_claude_once(meter, api, hub) -> None:
-    await api.put("/profile", json={"name": "Txuri", "about": "Quiero llegar a 78 kg."})
+    await api.put("/profile", json={"name": "Txuri", "about": "I want to get to 78 kg."})
     await weights(meter, MORNING, last=82.0)
 
     first = await run("morning", "morning:2026-10-13", MORNING)
@@ -188,10 +188,10 @@ async def test_a_morning_with_something_new_asks_your_claude_once(meter, api, hu
     assert asked["wait_for_room"] is True
     assert "tools" not in asked
     prompt = asked["prompt"]
-    assert "Eres Txuri" in prompt and "Quiero llegar a 78 kg." in prompt
-    assert f"[deviation:{METER}.weight] Peso: 82 kg" in prompt
-    assert "como mucho dos consejos" in prompt
-    assert "No uses insights_reply" in prompt
+    assert "You are Txuri" in prompt and "I want to get to 78 kg." in prompt
+    assert f"[deviation:{METER}.weight] Weight: 82 kg" in prompt
+    assert "at most two pieces of advice" in prompt
+    assert "Do not use insights_reply" in prompt
 
 
 async def ended(engine, key: str, outcome: str, code: str | None = None, **extra) -> None:
@@ -259,7 +259,7 @@ async def test_a_pass_that_ended_badly_is_asked_again_up_to_three_times(
     assert [one["key"] for one in hub.asked] == [key, f"{key}#2", f"{key}#3"]
     [last] = (await api.get("/runs")).json()
     assert (last["state"], last["attempt"]) == ("error", 3)
-    assert last["fix"] == "Ya se intentó tres veces: la siguiente toca mañana."
+    assert last["fix"] == "It was tried three times: the next one is tomorrow."
 
 
 async def test_a_pass_that_went_well_is_not_asked_again(meter, api, hub, hub_runs) -> None:
@@ -280,7 +280,7 @@ async def test_the_runs_say_why_insights_is_quiet_to_claude(meter, api, hub, hub
     answer = (await api.post("/tools/get_runs", json={}, headers=READ)).json()["content"]
     [one] = answer["runs"]
     assert (one["key"], one["state"]) == ("morning:2026-10-13", "skipped")
-    assert one["fix"] == "Tus cuentas de Claude van sin hueco: se vuelve a pedir sola."
+    assert one["fix"] == "Your AI has no room right now: it will be asked again on its own."
 
 
 async def test_a_morning_with_nothing_stays_quiet(meter, api, hub) -> None:
@@ -303,7 +303,7 @@ async def test_without_permission_it_says_how_and_tries_again(meter, api, monkey
     assert (first, again) == ("refused", "refused")
     [last] = (await api.get("/runs")).json()
     assert last["state"] == "refused"
-    assert "«Tu Claude en arga» → Insights" in last["detail"]
+    assert "allow it in Hub" in last["detail"]
 
 
 async def test_the_run_tells_how_it_ended_in_hub(meter, api, hub, schema) -> None:
@@ -345,7 +345,7 @@ async def test_the_summary_asked_again_on_monday_is_the_week_before(
     assert await run("weekly", "weekly:2026-W42", monday) == "queued"
     asked = hub.asked[-1]
     assert asked["key"] == "weekly:2026-W42#2"
-    assert "del lunes 12/10 al domingo 18/10" in asked["prompt"]
+    assert "from Monday 12/10 to Sunday 18/10" in asked["prompt"]
 
 
 async def test_sunday_always_asks_for_the_week(meter, api, hub) -> None:
@@ -356,10 +356,10 @@ async def test_sunday_always_asks_for_the_week(meter, api, hub) -> None:
     (asked,) = hub.asked
     assert asked["key"] == "weekly:2026-W42"
     prompt = asked["prompt"]
-    assert "del lunes 12/10 al domingo 18/10" in prompt
-    assert "topic «semana:2026-w42»" in prompt
-    assert "kind «weekly»" in prompt
-    assert "(Ninguna.)" in prompt
+    assert "from Monday 12/10 to Sunday 18/10" in prompt
+    assert 'topic "week:2026-w42"' in prompt
+    assert 'kind "weekly"' in prompt
+    assert "(None.)" in prompt
 
 
 async def test_an_unread_insight_is_a_notification_until_it_is_read(api) -> None:
@@ -379,7 +379,7 @@ async def test_an_unread_insight_is_a_notification_until_it_is_read(api) -> None
     assert one["kind"] == "insight"
     assert one["key"] == f"insight:{published['insight_id']}"
     assert one["href"] == f"/insights/consejo/{published['insight_id']}"
-    assert one["title"].startswith("Insights: Restaurantes")
+    assert one["title"].startswith("Insights: Restaurants")
     assert after == []
 
 

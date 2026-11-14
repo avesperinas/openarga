@@ -19,7 +19,7 @@ def wobbly(n: int, around: float, spread: float, seed: int = 7, end: date = TODA
 
 
 def weight(points: dict) -> Series:
-    return Series("vitals.weight", "Peso", "kg", "level", points)
+    return Series("vitals.weight", "Weight", "kg", "level", points)
 
 
 def kinds(found: list[signals.Signal]) -> list[tuple[str, str]]:
@@ -36,13 +36,13 @@ def test_a_jump_of_two_deviations_fires_and_a_normal_week_does_not() -> None:
     assert found.kind == "deviation"
     assert found.value == 82.0
     assert 79.6 < found.baseline < 80.4
-    assert found.baseline_label == "tu media de 90 días"
+    assert found.baseline_label == "your 90-day average"
     assert found.strength >= 2
     assert "82 kg" in found.text
 
 
 def test_a_week_that_sums_far_from_the_usual_ones_fires() -> None:
-    steps = Series("vitals.steps", "Pasos", "steps", "amount", wobbly(120, 8000, 800, end=TODAY))
+    steps = Series("vitals.steps", "Steps", "steps", "amount", wobbly(120, 8000, 800, end=TODAY))
     assert [s for s in signals.detect([steps], [], TODAY) if s.kind == "deviation"] == []
 
     sunday = TODAY - timedelta(days=TODAY.weekday() + 1)
@@ -52,7 +52,7 @@ def test_a_week_that_sums_far_from_the_usual_ones_fires() -> None:
 
     assert found.value == 17500
     assert found.since == sunday - timedelta(days=6)
-    assert found.baseline_label.startswith("tu media semanal")
+    assert found.baseline_label.startswith("your weekly average")
 
 
 def test_a_lab_that_moves_more_than_ten_percent_from_the_last_one_fires() -> None:
@@ -63,16 +63,16 @@ def test_a_lab_that_moves_more_than_ten_percent_from_the_last_one_fires() -> Non
     [found] = signals.detect([ldl], [], TODAY)
 
     assert (found.kind, found.value, found.baseline) == ("jump", 151, 133)
-    assert found.baseline_label == "tu medida del 20/05/2026"
+    assert found.baseline_label == "your measure of 20/05/2026"
     assert "+14%" in found.text
 
 
 def test_a_daily_streak_cut_yesterday_fires_only_when_yesterday_is_known() -> None:
     done = {d: 3.0 for d in days(10, TODAY - timedelta(days=2))}
-    unsure = Series("goals.tasks_done", "Tareas hechas", "count", "amount", dict(done))
+    unsure = Series("goals.tasks_done", "Tasks done", "count", "amount", dict(done))
     assert [s for s in signals.detect([unsure], [], TODAY) if s.kind == "streak"] == []
 
-    known = Series("goals.tasks_done", "Tareas hechas", "count", "amount", {**done, TODAY: 1.0})
+    known = Series("goals.tasks_done", "Tasks done", "count", "amount", {**done, TODAY: 1.0})
     [found] = [s for s in signals.detect([known], [], TODAY) if s.kind == "streak"]
 
     assert (found.value, found.baseline) == (0, 10)
@@ -80,8 +80,8 @@ def test_a_daily_streak_cut_yesterday_fires_only_when_yesterday_is_known() -> No
 
 def test_an_app_that_stops_says_so_once() -> None:
     before = TODAY - timedelta(days=10)
-    protein = Series("macros.protein", "Proteína", "g", "amount", wobbly(60, 120, 20, end=before))
-    fat = Series("macros.fat", "Grasa", "g", "amount", wobbly(40, 70, 10, end=before))
+    protein = Series("macros.protein", "Protein", "g", "amount", wobbly(60, 120, 20, end=before))
+    fat = Series("macros.fat", "Fat", "g", "amount", wobbly(40, 70, 10, end=before))
 
     stalls = [s for s in signals.detect([protein, fat], [], TODAY) if s.kind == "stall"]
 
@@ -108,7 +108,7 @@ def month_to_date(per_day: float, months: int, now_per_day: float) -> dict:
 
 
 def test_a_month_that_runs_ahead_of_the_usual_pace_fires_and_nothing_else_does() -> None:
-    spent = Series("money.month_expense", "Gasto del mes", "EUR", "level", {})
+    spent = Series("money.month_expense", "Month spending", "EUR", "level", {})
 
     spent.points = month_to_date(40, 3, 41)
     assert signals.monthly(spent)
@@ -121,7 +121,7 @@ def test_a_month_that_runs_ahead_of_the_usual_pace_fires_and_nothing_else_does()
     assert found.value == 60 * 13
     assert found.baseline == 40 * 13
     assert found.domain == "money"
-    assert "un 50% por encima" in found.text
+    assert "50% above" in found.text
 
 
 def test_a_trend_that_turns_fires() -> None:
@@ -133,7 +133,7 @@ def test_a_trend_that_turns_fires() -> None:
 
     assert len(found) == 1
     assert found[0].value > 0 > found[0].baseline
-    assert "sube" in found[0].text
+    assert "rises" in found[0].text
 
 
 def test_two_apps_that_start_going_together_fire() -> None:
@@ -142,8 +142,8 @@ def test_two_apps_that_start_going_together_fire() -> None:
     for i, d in enumerate(days(365)):
         a[d] = noise.uniform(0, 10)
         b[d] = a[d] * 2 + noise.uniform(-1, 1) if i >= 275 else noise.uniform(0, 20)
-    sleep = Series("vitals.sleep_hours", "Sueño", "count", "level", a)
-    spent = Series("money.day_expense", "Gasto del día", "EUR", "level", b)
+    sleep = Series("vitals.sleep_hours", "Sleep", "count", "level", a)
+    spent = Series("money.day_expense", "Day spending", "EUR", "level", b)
 
     found = signals.crosses([sleep, spent], TODAY)
 
@@ -154,7 +154,7 @@ def test_two_apps_that_start_going_together_fire() -> None:
 def test_a_goal_behind_carries_what_it_asked_for() -> None:
     behind = Goal(
         id="goal:1",
-        title="Colesterol por debajo de 200",
+        title="Cholesterol under 200",
         unit="mg/dL",
         current=255,
         target=200,
@@ -167,7 +167,7 @@ def test_a_goal_behind_carries_what_it_asked_for() -> None:
     [found] = signals.detect([], [behind], TODAY)
 
     assert (found.kind, found.value, found.baseline) == ("goal", 255, 221)
-    assert found.baseline_label == "lo que pedía la meta a estas alturas"
+    assert found.baseline_label == "what the goal asked for by now"
     assert "31/12/2026" in found.text
 
 
@@ -181,7 +181,7 @@ def test_a_period_keeps_each_signal_once_with_its_latest_reading() -> None:
 
 
 def test_numbers_are_said_the_spanish_way() -> None:
-    assert signals.said(1234.5, "EUR") == "1.234 €" or signals.said(1234.5, "EUR") == "1.235 €"
-    assert signals.said(82.4, "kg") == "82,4 kg"
-    assert signals.said(7986, "steps") == "7.986 pasos"
-    assert signals.said(0.5) == "0,5"
+    assert signals.said(1234.5, "EUR") in ("1,234 €", "1,235 €")
+    assert signals.said(82.4, "kg") == "82.4 kg"
+    assert signals.said(7986, "steps") == "7,986 steps"
+    assert signals.said(0.5) == "0.5"

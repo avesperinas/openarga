@@ -1,7 +1,7 @@
 [project]
 name = "insights"
 version = "0.1.0"
-description = "Módulo Insights de OpenArga: quien mira todos tus datos y te dice lo que ve"
+description = "OpenArga Insights module: it looks at all your data and tells you what it sees"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "arga-tenancy",

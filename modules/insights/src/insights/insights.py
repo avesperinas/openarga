@@ -30,16 +30,16 @@ class Figure(BaseModel):
     label: str = Field(
         min_length=1,
         max_length=80,
-        description="Qué se mide: `gasto en restaurantes en septiembre`.",
+        description="What is measured: `restaurant spending in September`.",
     )
-    value: float = Field(description="La cifra de la persona.")
-    unit: str | None = Field(default=None, max_length=20, description="`€`, `kg`, `pasos`, `h`.")
-    baseline: float = Field(description="Lo normal en ella, con lo que se compara `value`.")
+    value: float = Field(description="The person's figure.")
+    unit: str | None = Field(default=None, max_length=20, description="`€`, `kg`, `steps`, `h`.")
+    baseline: float = Field(description="What is normal for them, what `value` is compared with.")
     baseline_label: str = Field(
         min_length=3,
         max_length=80,
         description=(
-            "Qué es esa línea base: `tu media de 90 días`, `tu objetivo`, `el ritmo de la meta`."
+            "What that baseline is: `your 90-day average`, `your target`, `the goal's pace`."
         ),
     )
 
@@ -49,16 +49,16 @@ class Proposal(BaseModel):
         min_length=10,
         max_length=200,
         description=(
-            "Qué hacer la semana que viene, concreto: `tres cenas en casa de lunes a jueves`."
+            "What to do next week, concretely: `three dinners at home from Monday to Thursday`."
         ),
     )
-    figure: Figure = Field(description="La cifra que mueve, con su línea base.")
+    figure: Figure = Field(description="The figure it moves, with its baseline.")
     how: str = Field(
         min_length=5,
         max_length=200,
         description=(
-            "Cómo se aplica diciéndoselo a Claude: la app y lo que hace. `Shopping: añadir a la "
-            "lista lo de tres cenas`, `Planner: bloque de 45 min el martes a las 19:00`."
+            "How it is applied by asking an assistant: the app and what it does. `Shopping: add "
+            "three dinners to the list`, `Planner: a 45 min block on Tuesday at 19:00`."
         ),
     )
 
@@ -69,53 +69,54 @@ PROPOSALS = (3, 7)
 class InsightIn(BaseModel):
     kind: Kind = Field(
         default="alert",
-        description="`alert` para un consejo suelto; `weekly` para el resumen del domingo.",
+        description="`alert` for a single piece of advice; `weekly` for the Sunday summary.",
     )
     domain: Domain = Field(
         description=(
-            "De dónde sale: dinero, cuerpo, tiempo y metas, ocio y viajes, o `cross` si cruza "
-            "varios."
+            "Where it comes from: money, body, time and goals, leisure and travel, or `cross` if "
+            "it crosses several."
         )
     )
     topic: str = Field(
         pattern=r"^[a-z0-9][a-z0-9._:-]{1,79}$",
-        description="De qué trata, para no repetirlo: `money.gasto:restaurantes`, `vitals.peso`.",
+        description=(
+            "What it is about, to avoid repeating it: `money.spend:restaurants`, `vitals.weight`."
+        ),
     )
-    title: str = Field(min_length=1, max_length=120, description="Lo que se ve en la bandeja.")
+    title: str = Field(min_length=1, max_length=120, description="What shows in the inbox.")
     body: str = Field(
         min_length=1,
         max_length=6000,
         description=(
-            "El consejo entero, en segunda persona y en párrafos separados por una línea en "
-            "blanco. Breve: lo que ves, por qué importa y qué harías."
+            "The whole advice, in the second person and in paragraphs separated by a blank line. "
+            "Brief: what you see, why it matters and what you would do."
         ),
     )
     figures: list[Figure] = Field(
         min_length=1,
         max_length=12,
-        description=(
-            "Las cifras en las que se apoya, la principal primero, cada una con su línea base."
-        ),
+        description=("The figures it rests on, the main one first, each with its baseline."),
     )
     affects: str = Field(
         min_length=3,
         max_length=300,
         description=(
-            "Qué meta o qué cosa de la persona afecta: `la meta de bajar a 78 kg en diciembre`."
+            "Which goal or thing of the person it affects: "
+            "`the goal of getting to 78 kg in December`."
         ),
     )
     action: str = Field(
         min_length=20,
         max_length=600,
-        description="Qué hacer, concreto y comprobable: qué, cuánto y cuándo.",
+        description="What to do, concrete and checkable: what, how much and when.",
     )
     proposals: list[Proposal] = Field(
         default_factory=list,
         max_length=PROPOSALS[1],
         description=(
-            "Solo en el resumen del domingo, y ahí siempre: de 3 a 7 propuestas para la semana "
-            "que viene, la más importante primero. Se aplican cuando la persona se lo pide a "
-            "Claude, nunca solas."
+            "Only in the Sunday summary, and always there: 3 to 7 proposals for next week, the "
+            "most important first. They are applied when the person asks an assistant, never on "
+            "their own."
         ),
     )
 
@@ -215,8 +216,8 @@ async def _not_repeated(connection: AsyncConnection, insight: InsightIn) -> None
     moved = abs(now - before) > CHANGED * max(abs(before), 1e-9)
     if not moved:
         raise Repeated(
-            f"ya diste un consejo sobre «{insight.topic}» el {last.created_at:%Y-%m-%d} con la "
-            f"misma cifra ({before:g}); solo vuelve si la cifra cambia más de un "
+            f"you already gave advice on '{insight.topic}' on {last.created_at:%Y-%m-%d} with the "
+            f"same figure ({before:g}); only come back if the figure changes more than "
             f"{CHANGED:.0%}"
         )
 

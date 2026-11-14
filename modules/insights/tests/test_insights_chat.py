@@ -32,9 +32,9 @@ def hub(monkeypatch) -> FakeHub:
 
 
 async def test_saying_something_asks_your_claude_with_the_whole_thread(api, hub) -> None:
-    await api.put("/profile", json={"name": "Txuri", "about": "Quiero bajar el colesterol."})
+    await api.put("/profile", json={"name": "Txuri", "about": "I want to lower my cholesterol."})
 
-    started = (await api.post("/threads", json={"text": "¿Cómo voy de gasto este mes?"})).json()
+    started = (await api.post("/threads", json={"text": "How is my spending this month?"})).json()
 
     assert started["waiting_since"] is not None
     assert [m["author"] for m in started["messages"]] == ["person"]
@@ -42,10 +42,10 @@ async def test_saying_something_asks_your_claude_with_the_whole_thread(api, hub)
     assert asked["key"] == f"thread:{started['messages'][0]['id']}"
     assert "tools" not in asked or asked["tools"] == []
     prompt = asked["prompt"]
-    assert "Eres Txuri" in prompt
-    assert f"thread_id «{started['id']}»" in prompt
-    assert "Quiero bajar el colesterol." in prompt
-    assert prompt.rstrip().endswith("[Persona] ¿Cómo voy de gasto este mes?")
+    assert "You are Txuri" in prompt
+    assert f'thread_id "{started["id"]}"' in prompt
+    assert "I want to lower my cholesterol." in prompt
+    assert prompt.rstrip().endswith("[Person] How is my spending this month?")
 
 
 async def test_the_reply_arrives_through_the_tool_and_ends_the_wait(api, hub) -> None:
@@ -67,15 +67,15 @@ async def test_the_reply_arrives_through_the_tool_and_ends_the_wait(api, hub) ->
 
 
 async def test_following_up_sends_what_was_said_before(api, hub) -> None:
-    started = (await api.post("/threads", json={"text": "Primera"})).json()
+    started = (await api.post("/threads", json={"text": "First"})).json()
     await api.post(
-        "/tools/reply", json={"thread_id": started["id"], "text": "Respuesta"}, headers=WRITE
+        "/tools/reply", json={"thread_id": started["id"], "text": "Answer"}, headers=WRITE
     )
 
-    await api.post(f"/threads/{started['id']}/messages", json={"text": "Segunda"})
+    await api.post(f"/threads/{started['id']}/messages", json={"text": "Second"})
 
     prompt = hub.asked[-1]["prompt"]
-    assert "[Persona] Primera\n[Insights] Respuesta\n[Persona] Segunda" in prompt
+    assert "[Person] First\n[Insights] Answer\n[Person] Second" in prompt
 
 
 async def test_answering_an_insight_carries_it(api, hub) -> None:
@@ -83,11 +83,11 @@ async def test_answering_an_insight_carries_it(api, hub) -> None:
     insight_id = published.json()["content"]["published"]["insight_id"]
 
     started = (
-        await api.post("/threads", json={"text": "¿Y qué hago?", "insight_id": insight_id})
+        await api.post("/threads", json={"text": "And what do I do?", "insight_id": insight_id})
     ).json()
 
-    assert started["title"] == "Restaurantes, un 60 % por encima de lo tuyo"
-    assert "412 € frente a 258 (tu media de 12 meses)" in hub.asked[-1]["prompt"]
+    assert started["title"] == "Restaurants, 60 % above your usual"
+    assert "412 € against 258 (your 12-month average)" in hub.asked[-1]["prompt"]
 
 
 async def test_without_permission_the_thread_says_where_to_give_it(api, monkeypatch) -> None:
@@ -97,7 +97,7 @@ async def test_without_permission_the_thread_says_where_to_give_it(api, monkeypa
     started = (await api.post("/threads", json={"text": "Hola"})).json()
 
     assert started["waiting_since"] is None
-    assert "Tu Claude en arga" in started["problem"]
+    assert "Allow it in Hub" in started["problem"]
 
 
 async def test_asking_again_uses_a_new_key(api, monkeypatch) -> None:
@@ -120,10 +120,10 @@ async def test_a_reply_to_a_thread_that_is_not_yours_is_not_written(api, hub) ->
     assert answer.json()["content"]["replied"] is None
 
 
-def test_the_day_is_written_in_spanish() -> None:
+def test_the_day_is_written_out() -> None:
     from datetime import datetime
 
-    assert talk.spanish_day(datetime(2026, 10, 8)) == "jueves 8 de octubre de 2026"
+    assert talk.said_day(datetime(2026, 10, 8)) == "Thursday 8 October 2026"
 
 
 async def ran(schema, key: str, outcome: str, code: str | None = None, detail: str | None = None):
@@ -143,18 +143,18 @@ async def ran(schema, key: str, outcome: str, code: str | None = None, detail: s
 
 
 async def asked(api, hub) -> tuple[str, str]:
-    started = (await api.post("/threads", json={"text": "¿Cómo voy?"})).json()
+    started = (await api.post("/threads", json={"text": "How am I doing?"})).json()
     return started["id"], hub.asked[-1]["key"]
 
 
 async def test_a_pass_that_failed_stops_the_wait_and_says_why(api, hub, schema) -> None:
     thread_id, key = await asked(api, hub)
-    await ran(schema, f"insights:{key}", "error", detail="el MCP no contestó")
+    await ran(schema, f"insights:{key}", "error", detail="the MCP did not answer")
 
     thread = (await api.get(f"/threads/{thread_id}")).json()
 
     assert thread["waiting_since"] is None
-    assert thread["problem"] == "No ha podido contestar: el MCP no contestó"
+    assert thread["problem"] == "It could not answer: the MCP did not answer"
 
 
 async def test_the_usage_limit_is_said_as_such(api, hub, schema) -> None:
@@ -163,7 +163,7 @@ async def test_the_usage_limit_is_said_as_such(api, hub, schema) -> None:
 
     listed = (await api.get("/threads")).json()
 
-    assert listed[0]["problem"].startswith("Has llegado al límite de uso de tu Claude")
+    assert listed[0]["problem"].startswith("You reached your AI usage limit")
 
 
 async def test_a_pass_that_ended_without_replying_says_so(api, hub, schema) -> None:
@@ -172,7 +172,7 @@ async def test_a_pass_that_ended_without_replying_says_so(api, hub, schema) -> N
 
     thread = (await api.get(f"/threads/{thread_id}")).json()
 
-    assert thread["problem"] == "Terminó sin contestar. Vuelve a preguntar."
+    assert thread["problem"] == "It finished without answering. Ask again."
 
 
 async def test_a_pass_that_replied_leaves_nothing_to_say(api, hub, schema) -> None:
@@ -188,7 +188,7 @@ async def test_a_pass_that_replied_leaves_nothing_to_say(api, hub, schema) -> No
 async def test_another_questions_pass_does_not_count(api, hub, schema) -> None:
     thread_id, _ = await asked(api, hub)
     await ran(
-        schema, "insights:thread:00000000-0000-4000-8000-000000000000", "error", detail="otra"
+        schema, "insights:thread:00000000-0000-4000-8000-000000000000", "error", detail="another"
     )
 
     thread = (await api.get(f"/threads/{thread_id}")).json()

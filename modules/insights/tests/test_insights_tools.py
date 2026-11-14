@@ -48,7 +48,7 @@ async def test_the_same_topic_with_the_same_figure_is_not_repeated(api) -> None:
     again = await content(api, "publish_insight", insight(title="Otra vez restaurantes"))
 
     assert again["published"] is None
-    assert "money.gasto:restaurantes" in again["note"]
+    assert "money.spend:restaurants" in again["note"]
     assert len((await api.get("/insights")).json()) == 1
 
 
@@ -72,7 +72,7 @@ async def test_the_weekly_summary_brings_its_proposals_numbered(api) -> None:
 
     (found,) = (await content(api, "get_insights", {}, READ))["insights"]
     assert [one["number"] for one in found["proposals"]] == [1, 2, 3, 4, 5]
-    assert found["proposals"][1]["what"].endswith("(propuesta 2)")
+    assert found["proposals"][1]["what"].endswith("(proposal 2)")
     assert found["proposals"][1]["figure"]["baseline"] == 2
     assert found["proposals"][1]["how"].startswith("Shopping:")
     (inbox,) = (await api.get("/insights")).json()
@@ -105,16 +105,16 @@ async def test_publishing_with_only_the_read_scope_is_refused_by_postgres(api) -
 
 
 async def test_the_profile_and_past_insights_are_read_with_the_read_scope(api) -> None:
-    await api.put("/profile", json={"name": "Txuri", "about": "Ahorro para un piso en 2027."})
+    await api.put("/profile", json={"name": "Txuri", "about": "Saving for a flat in 2027."})
     published = (await content(api, "publish_insight", insight()))["published"]
     await api.put(f"/insights/{published['insight_id']}/rating", json={"rating": "known"})
 
     profile = await content(api, "get_profile", {}, READ)
     past = (await content(api, "get_insights", {}, READ))["insights"]
 
-    assert profile == {"name": "Txuri", "about": "Ahorro para un piso en 2027."}
+    assert profile == {"name": "Txuri", "about": "Saving for a flat in 2027."}
     assert [(one["topic"], one["rating"], one["read"]) for one in past] == [
-        ("money.gasto:restaurantes", "known", True)
+        ("money.spend:restaurants", "known", True)
     ]
 
 

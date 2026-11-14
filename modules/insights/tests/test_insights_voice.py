@@ -23,7 +23,7 @@ def fake(language: str = "es", fail: bool = False) -> voice.Speaker:
 
     def say(sentence: str) -> bytes:
         if fail:
-            raise RuntimeError("sin voz")
+            raise RuntimeError("no voice")
         return b"\x10\x00" * (RATE // 2)
 
     return voice.Speaker(name=f"prueba-{language}", rate=RATE, say=say)
@@ -31,24 +31,25 @@ def fake(language: str = "es", fail: bool = False) -> voice.Speaker:
 
 def test_it_says_what_the_app_highlights_in_the_same_order() -> None:
     found = SimpleNamespace(
-        headline="Titular",
-        lead="Entradilla",
-        sections=[{"title": "Ladillo", "text": "Uno.\n\nDos.\nTres."}],
-        to_tell="Dato.",
-        to_think="¿Y?",
+        headline="Headline",
+        lead="Lead",
+        sections=[{"title": "Subheading", "text": "One.\n\nTwo.\nThree."}],
+        to_tell="Fact.",
+        to_think="And?",
+        language="en",
     )
 
     parts, headings = voice.spoken_parts(found)
 
     assert parts == [
-        "Titular",
-        "Entradilla",
-        "Ladillo",
-        "Uno.",
-        "Dos.",
-        "Tres.",
-        "Para contar. Dato.",
-        "Para pensar: ¿Y?",
+        "Headline",
+        "Lead",
+        "Subheading",
+        "One.",
+        "Two.",
+        "Three.",
+        "To tell. Fact.",
+        "To think: And?",
     ]
     assert headings == {0, 2}
 
@@ -62,7 +63,12 @@ def test_the_timeline_says_when_each_part_starts_with_a_longer_pause_after_a_hea
 
 def test_the_audio_is_a_small_mono_mp3() -> None:
     found = SimpleNamespace(
-        headline="Titular", lead="Entradilla", sections=[], to_tell="Dato.", to_think=None
+        headline="Headline",
+        lead="Lead",
+        sections=[],
+        to_tell="Fact.",
+        to_think=None,
+        language="en",
     )
 
     spoken = voice.speak(found, fake())
@@ -120,7 +126,7 @@ async def test_a_new_pill_gets_its_voice_and_the_app_learns_its_timeline(api, hu
 async def test_one_that_cannot_be_said_does_not_stop_the_rest(api, hub) -> None:
     voice.FAILED.clear()
     german = await publish(api, "pill:2026-11-09", language="de")
-    spanish = await publish(api, "pill:2026-11-08", topic="La batalla de Mantinea")
+    spanish = await publish(api, "pill:2026-11-08", topic="The battle of Mantinea")
 
     done = await voice.generate(
         lambda: as_role("mod_insights"),
@@ -140,7 +146,7 @@ async def test_an_old_pill_or_one_without_voice_in_its_language_waits(api, hub) 
     later = datetime(2026, 12, 1, tzinfo=UTC)
 
     assert await voice.generate(lambda: as_role("mod_insights"), voice_for=lambda _: fake()) == 0
-    await publish(api, "pill:2026-11-11", topic="La batalla de Mantinea")
+    await publish(api, "pill:2026-11-11", topic="The battle of Mantinea")
     assert await voice.generate(lambda: as_role("mod_insights"), later, lambda _: fake()) == 0
 
 

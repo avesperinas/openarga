@@ -14,6 +14,9 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from arga_module.i18n import t
+from insights.words import CATALOGS
+
 VOICES = {
     "es": "es_ES-davefx-medium",
     "de": "de_DE-thorsten-medium",
@@ -51,6 +54,13 @@ def paragraphs(body: str) -> list[str]:
     return [one.strip() for one in re.split(r"\n\s*\n|\n", body) if one.strip()]
 
 
+GERMAN = {"voice.to_tell": "Zum Erzählen.", "voice.to_think": "Zum Nachdenken:"}
+
+
+def _said(key: str, language: str) -> str:
+    return GERMAN[key] if language == "de" else t(CATALOGS, key, language)
+
+
 def spoken_parts(pill: Any) -> tuple[list[str], set[int]]:
     parts: list[str] = [pill.headline, pill.lead]
     headings = {0}
@@ -58,9 +68,9 @@ def spoken_parts(pill: Any) -> tuple[list[str], set[int]]:
         headings.add(len(parts))
         parts.append(str(section.get("title", "")))
         parts.extend(paragraphs(str(section.get("text", ""))))
-    parts.append(f"Para contar. {pill.to_tell}")
+    parts.append(f"{_said('voice.to_tell', pill.language)} {pill.to_tell}")
     if pill.to_think:
-        parts.append(f"Para pensar: {pill.to_think}")
+        parts.append(f"{_said('voice.to_think', pill.language)} {pill.to_think}")
     return parts, headings
 
 
@@ -82,7 +92,7 @@ def render(parts: list[str], headings: set[int], speaker: Speaker) -> tuple[byte
 
 
 def mp3(pcm: bytes, rate: int) -> bytes:
-    import lameenc  # noqa: PLC0415 - solo el worker la carga
+    import lameenc  # noqa: PLC0415 - only the worker loads it
 
     encoder = lameenc.Encoder()
     encoder.set_bit_rate(BITRATE)
@@ -110,7 +120,7 @@ def speaker(language: str) -> Speaker | None:
     model = VOICES_DIR / f"{name}.onnx"
     if not model.exists() or not model.with_suffix(".onnx.json").exists():
         return None
-    from piper import PiperVoice  # noqa: PLC0415 - solo el worker la carga
+    from piper import PiperVoice  # noqa: PLC0415 - only the worker loads it
 
     loaded = PiperVoice.load(str(model))
 
@@ -121,7 +131,7 @@ def speaker(language: str) -> Speaker | None:
 
 
 async def waiting(connection: AsyncConnection, now: datetime, limit: int = 3) -> list[Any]:
-    from insights import pills  # noqa: PLC0415 - pills importa este módulo
+    from insights import pills  # noqa: PLC0415 - pills imports this module
 
     rows = await connection.execute(
         text(f"""
@@ -196,9 +206,9 @@ async def generate(
             continue
         try:
             spoken = await asyncio.to_thread(speak, pill, voice)
-        except Exception as error:  # noqa: BLE001 - una píldora que no suena no para las demás
+        except Exception as error:  # noqa: BLE001 - a pill that does not sound does not stop the others
             FAILED.add(pill.id)
-            print(f"worker · voz · {pill.id}: {type(error).__name__}: {error}", file=sys.stderr)
+            print(f"worker · voice · {pill.id}: {type(error).__name__}: {error}", file=sys.stderr)
             continue
         async with connection_for() as connection:
             await store(connection, pill.id, spoken, voice.name)
@@ -207,9 +217,9 @@ async def generate(
 
 
 SMOKE = {
-    "es": "En Leuctra, un ejército tebano cambió la guerra.",
     "de": "Bei Leuktra veränderte ein thebanisches Heer den Krieg.",
     "en": "At Leuctra, a Theban army changed the art of war.",
+    "es": t(CATALOGS, "voice.smoke", "es"),
 }
 
 
@@ -217,15 +227,15 @@ def smoke() -> int:
     for language in VOICES:
         found = speaker(language)
         if found is None:
-            print(f"voz · {language}: no está en {VOICES_DIR}", file=sys.stderr)
+            print(f"voice · {language}: not in {VOICES_DIR}", file=sys.stderr)
             return 1
         pcm, _ = render([SMOKE[language]], set(), found)
         seconds = len(pcm) / 2 / found.rate
         encoded = mp3(pcm, found.rate)
         if seconds < 1 or len(encoded) < 4000:
-            print(f"voz · {language}: {seconds:.1f} s, {len(encoded)} bytes", file=sys.stderr)
+            print(f"voice · {language}: {seconds:.1f} s, {len(encoded)} bytes", file=sys.stderr)
             return 1
-        print(f"voz · {found.name}: {seconds:.1f} s, {len(encoded)} bytes", flush=True)
+        print(f"voice · {found.name}: {seconds:.1f} s, {len(encoded)} bytes", flush=True)
     return 0
 
 

@@ -323,7 +323,7 @@ describe("hoy", () => {
     await open("/insights/");
     act(() => button("Empezar")!.click());
     await settle();
-    expect(window.location.pathname).toBe("/insights/conocerte");
+    expect(window.location.pathname).toBe("/insights/start");
   });
 
   it("si falla, reintentar", async () => {
@@ -341,7 +341,7 @@ describe("hoy", () => {
 describe("la biblioteca", () => {
   it("lo de esta semana en tarjetas, y guardar lo pasa a la lista", async () => {
     replies["POST /api/insights/picks/p1/save"] = () => pick({ state: "saved", sent_to: "library" });
-    await open("/insights/biblioteca");
+    await open("/insights/library");
     expect(host.textContent).toContain("Para ti esta semana");
     expect(host.textContent).toContain("Porque te gustó la anterior");
     expect(host.textContent).toContain("Guardado");
@@ -354,7 +354,7 @@ describe("la biblioteca", () => {
 
   it("sin nada, dice cómo llega", async () => {
     replies["GET /api/insights/picks"] = () => [];
-    await open("/insights/biblioteca");
+    await open("/insights/library");
     expect(host.textContent).toContain("Nada guardado aquí todavía");
   });
 });
@@ -362,7 +362,7 @@ describe("la biblioteca", () => {
 describe("tú", () => {
   it("lo propuesto se confirma, y lo que sabe sale con de dónde", async () => {
     replies["PUT /api/insights/traits/t1"] = () => ({ ...TASTES.traits[0], status: "confirmed" });
-    await open("/insights/tu");
+    await open("/insights/you");
     expect(host.textContent).toContain("¿Es así?");
     expect(host.textContent).toContain("6 novelas, media 4,2");
     expect(host.textContent).toContain("Fútbol");
@@ -376,7 +376,7 @@ describe("tú", () => {
 
   it("«Que te conozca», una pregunta cada vez", async () => {
     replies["POST /api/insights/onboarding/start.families"] = () => ({ ...START, answered: 1, questions: START.questions.slice(1) });
-    await open("/insights/conocerte");
+    await open("/insights/start");
     expect(host.textContent).toContain("¿De qué te gusta aprender?");
     expect(host.textContent).toContain("1 de 2");
 

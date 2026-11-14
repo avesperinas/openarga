@@ -61,5 +61,5 @@ async def test_the_card_says_what_it_said_last(api) -> None:
 
     assert body["state"] == "ready"
     validate("list", body["body"], "ready")
-    assert body["body"]["rows"][0]["label"] == "Restaurantes, un 60 % por encima de lo tuyo"
-    assert body["body"]["detail"] == "1 sin leer"
+    assert body["body"]["rows"][0]["label"] == "Restaurants, 60 % above your usual"
+    assert body["body"]["detail"] == "1 unread"

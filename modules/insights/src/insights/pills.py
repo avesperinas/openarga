@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from insights import tastes
 from insights.voice import PillAudio
+from insights.words import say
 
 MADRID = ZoneInfo("Europe/Madrid")
 Origin = Literal["daily", "surprise", "branch"]
@@ -34,31 +35,33 @@ class Invalid(Exception):
 
 
 class Section(BaseModel):
-    title: str = Field(min_length=2, max_length=100, description="El ladillo de la sección.")
+    title: str = Field(min_length=2, max_length=100, description="The section's subheading.")
     text: str = Field(
         min_length=80,
         max_length=3000,
-        description="El texto, en párrafos separados por una línea en blanco. Sin Markdown.",
+        description="The text, in paragraphs separated by a blank line. No Markdown.",
     )
 
 
 class Branch(BaseModel):
     title: str = Field(
-        min_length=3, max_length=120, description="Un subtema concreto que da ganas de saber más."
+        min_length=3,
+        max_length=120,
+        description="A concrete subtopic that makes you want to know more.",
     )
-    why: str = Field(min_length=5, max_length=200, description="Por qué engancha, en una línea.")
+    why: str = Field(min_length=5, max_length=200, description="Why it hooks, in one line.")
 
 
 class SourceRef(BaseModel):
-    title: str = Field(min_length=2, max_length=200, description="El nombre de lo leído.")
-    url: HttpUrl = Field(description="La dirección que has leído de verdad, con https.")
+    title: str = Field(min_length=2, max_length=200, description="The name of what was read.")
+    url: HttpUrl = Field(description="The address you really read, with https.")
     language: str = Field(default="es", pattern=r"^[a-z]{2}$")
 
     @field_validator("url")
     @classmethod
     def _https(cls, value: HttpUrl) -> HttpUrl:
         if value.scheme != "https":
-            raise ValueError("la fuente va con https")
+            raise ValueError("the source needs https")
         return value
 
 
@@ -70,52 +73,52 @@ class Word(BaseModel):
 class PillIn(BaseModel):
     run_key: str = Field(
         pattern=r"^(pill|more):[0-9A-Za-z:-]{3,60}$",
-        description="La clave del encargo (`pill:2026-11-11`, `more:<id>`). Viene en el encargo.",
+        description="The task key (`pill:2026-11-11`, `more:<id>`). It comes in the task.",
     )
     family_key: str = Field(
-        pattern=r"^[a-z][a-z0-9_]{1,30}$", description="El tema (`historia`), el del encargo."
+        pattern=r"^[a-z][a-z0-9_]{1,30}$", description="The topic (`history`), the task's."
     )
     topic: str = Field(
         min_length=2,
         max_length=120,
-        description="El subtema concreto, solo su nombre: «La batalla de Leuctra».",
+        description="The concrete subtopic, only its name: `The battle of Leuctra`.",
     )
     hook: str | None = Field(
         default=None,
         max_length=200,
         description=(
-            "Solo si el tema sale de su vida, por qué hoy: «Vas a Lisboa en tres semanas». "
-            "Nunca una cifra suya."
+            "Only if the topic comes from their life, why today: `You are going to Lisbon in three "
+            "weeks`. Never one of their figures."
         ),
     )
     language: str = Field(default="es", pattern=r"^[a-z]{2}$")
-    headline: str = Field(min_length=5, max_length=160, description="El titular, con gancho.")
+    headline: str = Field(min_length=5, max_length=160, description="The headline, with a hook.")
     lead: str = Field(
-        min_length=20, max_length=800, description="La entradilla: el gancho en dos o tres frases."
+        min_length=20, max_length=800, description="The lead: the hook in two or three sentences."
     )
     sections: list[Section] = Field(
-        min_length=3, max_length=5, description="De 3 a 5 secciones con su ladillo."
+        min_length=3, max_length=5, description="3 to 5 sections with their subheading."
     )
     to_tell: str = Field(
         min_length=20,
         max_length=600,
-        description="Para contar: un dato cierto y sorprendente que pueda contar a alguien.",
+        description="To tell: a true and surprising fact they could tell someone.",
     )
     to_think: str | None = Field(
-        default=None, max_length=400, description="Para pensar: una pregunta abierta."
+        default=None, max_length=400, description="To think: an open question."
     )
     branches: list[Branch] = Field(
-        min_length=3, max_length=3, description="Tres ramas para saber más."
+        min_length=3, max_length=3, description="Three branches to know more."
     )
     sources: list[SourceRef] = Field(
         min_length=1,
         max_length=6,
-        description="Lo que has leído para escribirla, lo principal primero.",
+        description="What you read to write it, the main source first.",
     )
     glossary: list[Word] = Field(
         default_factory=list,
         max_length=20,
-        description="Solo si va en otro idioma: las palabras difíciles y qué significan.",
+        description="Only if it is in another language: the hard words and what they mean.",
     )
 
 
@@ -124,16 +127,16 @@ class FactIn(BaseModel):
     text: str = Field(
         min_length=30,
         max_length=400,
-        description="El dato, cierto y sorprendente, en una o dos frases con nombres y fechas.",
+        description="The fact, true and surprising, in one or two sentences with names and dates.",
     )
     detail: str | None = Field(
-        default=None, max_length=1200, description="Un poco más: por qué es así, el contexto."
+        default=None, max_length=1200, description="A bit more: why it is so, the context."
     )
     source: SourceRef
 
 
 class FactsIn(BaseModel):
-    day: date = Field(description="El día de los datos: el del encargo.")
+    day: date = Field(description="The day of the facts: the task's.")
     facts: list[FactIn] = Field(min_length=3, max_length=7, description="De 3 a 7 datos.")
 
 
@@ -271,7 +274,7 @@ async def ask_state(connection: AsyncConnection, row: Any) -> Ask:
         return found
     if done.outcome == "ok":
         found.state = "ready" if row.kind not in ("pill", "more") else "failed"
-        found.detail = None if found.state == "ready" else "Tu Claude terminó sin publicarla."
+        found.detail = None if found.state == "ready" else say("pill.not_published")
         return found
     found.state, found.detail = "failed", done.detail or done.outcome
     return found
@@ -323,23 +326,23 @@ async def publish(connection: AsyncConnection, wanted: PillIn, now: datetime) ->
         )
     ).first()
     if run is None:
-        raise Invalid(f"no hay ningún encargo con la clave «{wanted.run_key}»")
+        raise Invalid(f"no task with key '{wanted.run_key}'")
     already = await connection.scalar(
         text("select id::text from insights.insights_pill where run_key = :key"),
         {"key": wanted.run_key},
     )
     if already:
-        raise Invalid("ese encargo ya tiene su píldora publicada")
+        raise Invalid("that task already has its pill published")
     if wanted.family_key not in {one.key for one in await tastes.families(connection)}:
-        raise Invalid(f"«{wanted.family_key}» no es uno de sus temas")
+        raise Invalid(f"'{wanted.family_key}' is not one of their topics")
     settings = await tastes.settings(connection)
     minutes = settings.pill_minutes
     least, most = (minutes * WORDS_PER_MINUTE[0], minutes * WORDS_PER_MINUTE[1])
     counted = words(wanted)
     if counted < least or counted > most:
         raise Invalid(
-            f"la lectura tiene {counted} palabras y para {minutes} minutos van de {least} a "
-            f"{most} (entradilla y secciones)"
+            f"the reading has {counted} words and {minutes} minutes take {least} to {most} "
+            "(lead and sections)"
         )
     repeated = await connection.scalar(
         text("""
@@ -349,7 +352,9 @@ async def publish(connection: AsyncConnection, wanted: PillIn, now: datetime) ->
         {"topic": wanted.topic.strip(), "since": now - timedelta(days=365)},
     )
     if repeated:
-        raise Invalid(f"ya le contaste «{repeated}» este año: elige otro subtema")
+        raise Invalid(
+            f"you already told them about '{repeated}' this year: choose another subtopic"
+        )
     parent_id, depth = None, 0
     origin = run.origin or "daily"
     if run.parent_id:
@@ -411,7 +416,7 @@ async def publish_facts(connection: AsyncConnection, wanted: FactsIn) -> list[Fa
     out = []
     for one in wanted.facts:
         if one.family_key not in known:
-            raise Invalid(f"«{one.family_key}» no es uno de sus temas")
+            raise Invalid(f"'{one.family_key}' is not one of their topics")
         plain = re.sub(r"\W+", " ", one.text.lower()).strip()
         if plain in seen:
             continue
