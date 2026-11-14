@@ -476,7 +476,6 @@ packages/app/tests/offline.test.ts
 packages/app/tests/resource.test.tsx
 packages/app/tests/route.test.tsx
 packages/app/tests/worker.test.ts
-packages/contracts/src/arga_contracts/records.py
 packages/contracts/tests/test_contracts.py
 packages/contracts/tests/test_records.py
 packages/contracts/tests/test_sources.py

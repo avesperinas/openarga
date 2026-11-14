@@ -181,44 +181,44 @@ async def refresh(
 
 
 MONTHS = (
-    "enero",
-    "febrero",
-    "marzo",
-    "abril",
-    "mayo",
-    "junio",
-    "julio",
-    "agosto",
-    "septiembre",
-    "octubre",
-    "noviembre",
-    "diciembre",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
 )
-WEEKDAYS = ("lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo")
+WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 
 
 def number(value: float | int, decimals: int = 0) -> str:
-    shown = f"{value:,.{decimals}f}"
-    return shown.replace(",", "\x00").replace(".", ",").replace("\x00", ".")
+    return f"{value:,.{decimals}f}"
 
 
 def trimmed(value: float | int, decimals: int = 2) -> str:
     shown = number(value, decimals)
-    if "," in shown:
-        shown = shown.rstrip("0").rstrip(",")
+    if "." in shown:
+        shown = shown.rstrip("0").rstrip(".")
     return shown
 
 
 def euros(value: float | int) -> str:
-    return f"{number(value, 2)} €"
+    sign = "-" if value < 0 else ""
+    return f"{sign}€{number(abs(value), 2)}"
 
 
 def long_date(day: date) -> str:
-    return f"{day.day} de {MONTHS[day.month - 1]} de {day.year}"
+    return f"{day.day} {MONTHS[day.month - 1]} {day.year}"
 
 
 def month_name(year: int, month: int) -> str:
-    return f"{MONTHS[month - 1]} de {year}"
+    return f"{MONTHS[month - 1]} {year}"
 
 
 def weekday(day: date) -> str:

@@ -70,11 +70,13 @@ def test_a_record_that_does_not_fit_fails_where_it_is_written(changes, where) ->
 
 
 def test_how_things_are_written_is_the_same_in_every_app() -> None:
-    assert records.number(11200) == "11.200"
-    assert records.euros(-45.2) == "-45,20 €"
-    assert records.trimmed(78.20) == "78,2"
+    assert records.number(11200) == "11,200"
+    assert records.euros(-45.2) == "-€45.20"
+    assert records.trimmed(78.20) == "78.2"
     assert records.trimmed(80.0) == "80"
-    assert records.long_date(date(2026, 1, 2)) == "2 de enero de 2026"
+    assert records.long_date(date(2026, 1, 2)) == "2 January 2026"
+    assert records.month_name(2026, 1) == "January 2026"
+    assert records.weekday(date(2026, 1, 5)) == "Monday"
     assert records.link("training", "variant:1", "Press [banca] | plano") == (
         "[[training:variant:1|Press (banca) - plano]]"
     )
