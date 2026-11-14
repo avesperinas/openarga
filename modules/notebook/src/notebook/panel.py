@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets.panel import blocks_of, gather, panel
 from notebook import widgets
+from notebook.words import say, words
 
 
 def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
@@ -14,7 +15,7 @@ def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def nothing() -> HTTPException:
-    return HTTPException(status_code=404, detail="Notebook aún no tiene nada que contar")
+    return HTTPException(status_code=404, detail="Notebook has nothing to tell yet")
 
 
 async def build(connection: AsyncConnection) -> dict:
@@ -24,12 +25,12 @@ async def build(connection: AsyncConnection) -> dict:
             "id": tab,
             "label": label,
             "blocks": blocks_of("list", found.get(key) or {}, label=label),
-            "actions": [{"label": "Abrir Notebook", "href": "/notebook/"}],
+            "actions": [{"label": say("panel.open"), "href": "/notebook/"}],
         }
         for tab, key, label in (
-            ("hoy", "today", "Nota de hoy"),
-            ("recientes", "recent", "Recientes"),
-            ("repasar", "review", "Para repasar"),
+            ("today", "today", say("panel.today")),
+            ("recent", "recent", say("panel.recent")),
+            ("review", "review", say("panel.review")),
         )
     ]
     tabs = [tab for tab in tabs if tab["blocks"]]
@@ -40,14 +41,14 @@ async def build(connection: AsyncConnection) -> dict:
         q
         for q in (
             {
-                "text": "¿Qué escribí hoy?",
-                "words": ["nota", "notas", "diario", "hoy"],
-                "tab": "hoy",
+                "text": say("panel.ask_today"),
+                "words": words("panel.ask_today_words"),
+                "tab": "today",
             },
             {
-                "text": "¿Qué tengo que repasar?",
-                "words": ["repasar", "repaso", "estudiar"],
-                "tab": "repasar",
+                "text": say("panel.ask_review"),
+                "words": words("panel.ask_review_words"),
+                "tab": "review",
             },
         )
         if q["tab"] in ids

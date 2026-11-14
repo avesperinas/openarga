@@ -28,21 +28,24 @@ async def test_a_link_to_another_app_is_announced_updated_and_withdrawn(api, sch
     note = (
         await api.post(
             "/notes",
-            json={"title": "Técnica", "content": "Bajar la carga: [[training:v-1|Press banca]]\n"},
+            json={
+                "title": "Technique",
+                "content": "Lower the load: [[training:v-1|Bench press]]\n",
+            },
         )
     ).json()
-    await api.post(f"/notes/{note['id']}/move", json={"title": "Técnica de banca"})
-    await api.put(f"/notes/{note['id']}", json={"content": "Ya no.\n"})
+    await api.post(f"/notes/{note['id']}/move", json={"title": "Bench technique"})
+    await api.put(f"/notes/{note['id']}", json={"content": "Not any more.\n"})
 
     announced = await outbox(schema)
 
     assert [(m["app"], m["id"], m["note_title"], m["removed"]) for m in announced] == [
-        ("training", "v-1", "Técnica", False),
-        ("training", "v-1", "Técnica de banca", False),
-        ("training", "v-1", "Técnica de banca", True),
+        ("training", "v-1", "Technique", False),
+        ("training", "v-1", "Bench technique", False),
+        ("training", "v-1", "Bench technique", True),
     ]
-    assert announced[0]["line"] == "Bajar la carga: [[training:v-1|Press banca]]"
-    assert announced[0]["note_href"] == f"/notebook/nota/{note['id']}"
+    assert announced[0]["line"] == "Lower the load: [[training:v-1|Bench press]]"
+    assert announced[0]["note_href"] == f"/notebook/note/{note['id']}"
 
 
 async def test_the_trash_withdraws_and_restoring_announces_again(api, schema) -> None:
@@ -54,7 +57,7 @@ async def test_the_trash_withdraws_and_restoring_announces_again(api, schema) ->
 
 
 async def test_a_link_between_notes_is_not_a_mention(api, schema) -> None:
-    await api.post("/notes", json={"title": "A", "content": "[[B]] y [[training:|nada]]"})
+    await api.post("/notes", json={"title": "A", "content": "[[B]] and [[training:|nothing]]"})
 
     assert await outbox(schema) == []
 
@@ -71,7 +74,7 @@ async def test_what_other_apps_publish_as_linkable_is_offered(api, schema) -> No
             (
                 {
                     "id": "v-1",
-                    "title": "Press banca",
+                    "title": "Bench press",
                     "kind": "Ejercicio",
                     "href": "/training/stats?variante=v-1",
                 },
@@ -80,7 +83,7 @@ async def test_what_other_apps_publish_as_linkable_is_offered(api, schema) -> No
             (
                 {
                     "id": "v-1",
-                    "title": "Press de banca",
+                    "title": "Bench press",
                     "kind": "Ejercicio",
                     "href": "/training/stats?variante=v-1",
                 },
@@ -124,7 +127,7 @@ async def test_what_other_apps_publish_as_linkable_is_offered(api, schema) -> No
             "app": "training",
             "id": "v-1",
             "target": "training:v-1",
-            "title": "Press de banca",
+            "title": "Bench press",
             "kind": "Ejercicio",
             "href": "/training/stats?variante=v-1",
             "note_id": None,

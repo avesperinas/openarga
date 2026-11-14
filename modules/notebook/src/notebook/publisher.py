@@ -7,8 +7,7 @@ from uuid import UUID
 import httpx
 from sqlalchemy import text
 
-from arga_contracts import notify
-from arga_contracts import records as fichas
+from arga_contracts import notify, records
 from arga_contracts.records import Every
 from arga_module.publisher import Publisher
 from arga_tenancy import as_user
@@ -34,9 +33,9 @@ async def _mirror(full: bool) -> None:
         async with as_module() as connection:
             done = await mirror.derive(connection, full)
         if any(done.values()):
-            print(f"fichas · {done}", flush=True)
-    except Exception as error:  # noqa: BLE001 - una persona no tumba las fichas de otra
-        _said("fichas", error)
+            print(f"records · {done}", flush=True)
+    except Exception as error:  # noqa: BLE001 - one person does not bring down the records of another
+        _said("records", error)
 
 
 async def _digest() -> None:
@@ -45,7 +44,7 @@ async def _digest() -> None:
             done = await digest.refresh(connection)
         if done.get("written") or done.get("failed"):
             print(f"digest · {done}", flush=True)
-    except Exception as error:  # noqa: BLE001 - una persona no tumba el digest de otra
+    except Exception as error:  # noqa: BLE001 - one person does not bring down the digest of another
         _said("digest", error)
 
 
@@ -54,15 +53,15 @@ async def _export(client: httpx.AsyncClient) -> None:
         outcome = (await export.push(as_module, client))["outcome"]
         if outcome in ("ok", "error"):
             print(f"export · {outcome}", flush=True)
-    except Exception as error:  # noqa: BLE001 - una persona no tumba la copia de las demás
+    except Exception as error:  # noqa: BLE001 - one person does not bring down the copy of the others
         _said("export", error)
 
 
 async def _prune() -> None:
     try:
         async with as_module() as connection:
-            await fichas.prune(connection, MODULE)
-    except Exception as error:  # noqa: BLE001 - podar no para lo que se publica
+            await records.prune(connection, MODULE)
+    except Exception as error:  # noqa: BLE001 - pruning does not stop what is published
         _said("poda", error)
 
 

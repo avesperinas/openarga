@@ -12,8 +12,8 @@ from arga_tenancy import current_user
 from notebook import digest, mirror
 from notebook import markdown as md
 
-APP = "medidor"
-NAMES = {APP: "Medidor"}
+APP = "meter"
+NAMES = {APP: "Meter"}
 READ = {"x-arga-scopes": "notebook:read"}
 MONDAY = datetime(2026, 10, 12, 5, 0, tzinfo=UTC)
 _clock = count()
@@ -76,7 +76,7 @@ async def emit(schema, kind: str, payload: dict, at: datetime) -> None:
 async def steps(schema, day: date, value: float) -> None:
     point = {
         "key": f"{APP}.steps",
-        "label": "Pasos",
+        "label": "Steps",
         "unit": "steps",
         "kind": "amount",
         "day": day.isoformat(),
@@ -97,12 +97,12 @@ async def two_weeks(schema) -> None:
         schema,
         {
             "id": "book:1",
-            "title": "Un libro inventado",
-            "kind": "Libro",
-            "href": "/medidor/libro/1",
-            "folder": "Libros",
+            "title": "An invented book",
+            "kind": "Book",
+            "href": "/meter/book/1",
+            "folder": "Books",
             "properties": {},
-            "body": "Terminado.",
+            "body": "Finished.",
         },
         datetime(2026, 10, 8, 18, tzinfo=UTC),
     )
@@ -110,16 +110,16 @@ async def two_weeks(schema) -> None:
         schema,
         {
             "id": "goal:1",
-            "title": "Andar más",
-            "kind": "Meta",
-            "href": "/medidor/meta/1",
-            "folder": "Metas",
+            "title": "Walk more",
+            "kind": "Goal",
+            "href": "/meter/goal/1",
+            "folder": "Goals",
             "properties": {
-                "estado": "activa",
-                "ritmo": "por detrás",
-                "actual": 9000,
-                "objetivo": 10000,
-                "unidad": "pasos",
+                "status": "active",
+                "pace": "behind",
+                "current": 9000,
+                "target": 10000,
+                "unit": "steps",
             },
             "body": "",
         },
@@ -138,7 +138,7 @@ async def refresh(schema, now: datetime = MONDAY) -> dict[str, int]:
 
 async def note(api, path: str) -> dict:
     found = (await api.get("/notes/resolve", params={"target": path})).json()["note"]
-    assert found is not None, f"no está «{path}»"
+    assert found is not None, f"no note at {path}"
     return (await api.get(f"/notes/{found['id']}")).json()
 
 
@@ -147,14 +147,14 @@ def test_periods_and_their_names() -> None:
     assert digest.of("month", date(2026, 2, 10)).end == date(2026, 2, 28)
     quarter = digest.of("quarter", date(2026, 11, 3))
     assert (quarter.title, quarter.start, quarter.end) == (
-        "2026-T4",
+        "2026-Q4",
         date(2026, 10, 1),
         date(2026, 12, 31),
     )
     assert digest.parse("2026-w41") == digest.of("week", date(2026, 10, 5))
-    assert digest.parse("2026-09").path == "Diario/Meses/2026-09"
+    assert digest.parse("2026-09").path == "Journal/Months/2026-09"
     with pytest.raises(ValueError):
-        digest.parse("2026-T5")
+        digest.parse("2026-Q5")
 
 
 def test_monday_before_six_still_belongs_to_the_week_before() -> None:
@@ -163,76 +163,74 @@ def test_monday_before_six_still_belongs_to_the_week_before() -> None:
 
     assert "2026-W41" not in early
     assert later[:2] == ["2026-W40", "2026-W41"]
-    assert "2026-09" in later and "2026-T4" in later
+    assert "2026-09" in later and "2026-Q4" in later
 
 
 async def test_the_week_is_written_with_its_figures_what_happened_and_the_goals(meter, api) -> None:
     await two_weeks(meter)
 
     await refresh(meter)
-    week = await note(api, "Diario/Semanas/2026-W41")
+    week = await note(api, "Journal/Weeks/2026-W41")
     inner = md.block(week["content"]).inner
 
-    assert "### Medidor" in inner
+    assert "### Meter" in inner
     n = contracts.records.number
-    assert f"| Pasos | {n(63000)} pasos | {n(56000)} pasos | +{n(7000)} pasos (+12%) |" in inner
-    assert "[[medidor:book:1|Un libro inventado]]" in inner
-    assert "- **En riesgo**: [[medidor:goal:1|Andar más]]" in inner
+    assert f"| Steps | {n(63000)} steps | {n(56000)} steps | +{n(7000)} steps (+12%) |" in inner
+    assert "[[meter:book:1|An invented book]]" in inner
+    assert "- **At risk**: [[meter:goal:1|Walk more]]" in inner
     assert "[[2026-10-05]] · [[2026-10-06]]" in inner
 
 
 async def test_a_late_figure_rewrites_the_block_and_your_text_stays(meter, api) -> None:
     await two_weeks(meter)
     await refresh(meter)
-    week = await note(api, "Diario/Semanas/2026-W41")
-    mine = week["content"] + "\nLo que escribo yo de esta semana.\n"
+    week = await note(api, "Journal/Weeks/2026-W41")
+    mine = week["content"] + "\nWhat I write about this week.\n"
     await api.put(f"/notes/{week['id']}", json={"content": mine, "version": week["version"]})
 
     await steps(meter, date(2026, 10, 11), 16000)
     again = await refresh(meter, MONDAY + timedelta(hours=1))
-    rewritten = await note(api, "Diario/Semanas/2026-W41")
+    rewritten = await note(api, "Journal/Weeks/2026-W41")
 
     assert again.get("written", 0) >= 1
     assert (
-        f"| Pasos | {contracts.records.number(70000)} pasos |"
+        f"| Steps | {contracts.records.number(70000)} steps |"
         in md.block(rewritten["content"]).inner
     )
-    assert "Lo que escribo yo de esta semana." in rewritten["content"]
+    assert "What I write about this week." in rewritten["content"]
 
 
 def told(week: str, body: str) -> dict:
     return {
-        "id": f"semana-{week}",
-        "title": f"Semana {week}",
-        "kind": "Resumen de la semana",
-        "href": "/medidor/semana/1",
-        "folder": "Semanas",
-        "properties": {"semana": week},
+        "id": f"week-{week}",
+        "title": f"Week {week}",
+        "kind": "Week summary",
+        "href": "/meter/week/1",
+        "folder": "Weeks",
+        "properties": {"week": week},
         "body": body,
     }
 
 
 async def test_the_week_starts_with_what_an_app_tells_of_it(meter, api) -> None:
     await two_weeks(meter)
-    body = "**Una semana tranquila**\n\nDormiste más.\n\n## Propuestas\n\n1. Andar."
+    body = "**A quiet week**\n\nYou slept more.\n\n## Proposals\n\n1. Walk."
     await record(meter, told("2026-W41", body), datetime(2026, 10, 12, 6, tzinfo=UTC))
-    await record(meter, told("2026-W40", "Otra."), datetime(2026, 10, 4, 18, tzinfo=UTC))
+    await record(meter, told("2026-W40", "Another."), datetime(2026, 10, 4, 18, tzinfo=UTC))
     async with meter.begin() as connection:
         await connection.execute(text('set local role "mod_notebook"'))
         await mirror.derive(connection, True, names)
 
     await refresh(meter, MONDAY + timedelta(hours=8))
-    inner = md.block((await note(api, "Diario/Semanas/2026-W41"))["content"]).inner
+    inner = md.block((await note(api, "Journal/Weeks/2026-W41"))["content"]).inner
 
-    assert inner.startswith("## La semana contada\n\n**Una semana tranquila**\n\nDormiste más.")
-    assert "\n### Propuestas\n" in inner
-    assert "Lo cuenta [[medidor:semana-2026-W41|Medidor]]." in inner
-    assert "Otra." not in inner
-    assert "[[medidor:semana-2026-W41|Semana 2026-W41]]" not in inner
-    assert inner.index("La semana contada") < inner.index("Cómo fue")
-    assert (await note(api, "Medidor/Semanas/Semana 2026-W41"))["properties"]["semana"] == (
-        "2026-W41"
-    )
+    assert inner.startswith("## The week, told\n\n**A quiet week**\n\nYou slept more.")
+    assert "\n### Proposals\n" in inner
+    assert "Told by [[meter:week-2026-W41|Meter]]." in inner
+    assert "Another." not in inner
+    assert "[[meter:week-2026-W41|Week 2026-W41]]" not in inner
+    assert inner.index("The week, told") < inner.index("How the week")
+    assert (await note(api, "Meter/Weeks/Week 2026-W41"))["properties"]["week"] == ("2026-W41")
 
 
 async def test_nothing_changed_writes_nothing(meter, api) -> None:
@@ -248,48 +246,48 @@ async def test_the_month_links_its_weeks_and_the_quarter_asks_its_questions(mete
     await two_weeks(meter)
     await refresh(meter, datetime(2026, 10, 1, 5, 0, tzinfo=UTC))
 
-    month = await note(api, "Diario/Meses/2026-09")
-    quarter = await note(api, "Diario/Trimestres/2026-T4")
+    month = await note(api, "Journal/Months/2026-09")
+    quarter = await note(api, "Journal/Quarters/2026-Q4")
 
     assert "[[2026-W40]]" in md.block(month["content"]).inner
     assert "[[2026-W36]]" in md.block(month["content"]).inner
     assert (
-        f"[[medidor:goal:1|Andar más]]: ahora {contracts.records.number(9000)} pasos de "
-        f"{contracts.records.number(10000)} pasos" in md.block(quarter["content"]).inner
+        f"[[meter:goal:1|Walk more]]: now {contracts.records.number(9000)} steps of "
+        f"{contracts.records.number(10000)} steps" in md.block(quarter["content"]).inner
     )
     outside = md.outside_block(quarter["content"])
-    assert "## Andar más" in outside
-    assert "- ¿Sigue importando?" in outside and "- ¿Qué cambias?" in outside
+    assert "## Walk more" in outside
+    assert "- Does it still matter?" in outside and "- What do you change?" in outside
 
 
 async def test_the_quarter_is_written_once(meter, api) -> None:
     await two_weeks(meter)
     first_day = datetime(2026, 10, 1, 5, 0, tzinfo=UTC)
     await refresh(meter, first_day)
-    before = await note(api, "Diario/Trimestres/2026-T4")
+    before = await note(api, "Journal/Quarters/2026-Q4")
 
     await refresh(meter, first_day + timedelta(days=5))
 
-    assert (await note(api, "Diario/Trimestres/2026-T4"))["version"] == before["version"]
+    assert (await note(api, "Journal/Quarters/2026-Q4"))["version"] == before["version"]
 
 
 async def test_the_tool_says_the_same_as_the_note(meter, api) -> None:
     await two_weeks(meter)
     await refresh(meter)
-    week = await note(api, "Diario/Semanas/2026-W41")
+    week = await note(api, "Journal/Weeks/2026-W41")
 
     found = (await api.post("/tools/get_digest", json={"period": "2026-W41"}, headers=READ)).json()[
         "content"
     ]
 
-    assert found["note"] == "Diario/Semanas/2026-W41"
+    assert found["note"] == "Journal/Weeks/2026-W41"
     assert found["content"] == md.block(week["content"]).inner
 
 
 async def test_monday_says_your_week_is_ready(meter, api) -> None:
     await two_weeks(meter)
     await refresh(meter)
-    week = await note(api, "Diario/Semanas/2026-W41")
+    week = await note(api, "Journal/Weeks/2026-W41")
 
     async with meter.begin() as connection:
         await connection.execute(text('set local role "mod_notebook"'))
@@ -297,6 +295,6 @@ async def test_monday_says_your_week_is_ready(meter, api) -> None:
         thursday = await digest.notifications(connection, MONDAY + timedelta(days=3))
 
     [one] = now
-    assert (one["kind"], one["key"], one["title"]) == ("week", "week:2026-W41", "Tu semana")
-    assert one["href"] == f"/notebook/nota/{week['id']}"
+    assert (one["kind"], one["key"], one["title"]) == ("week", "week:2026-W41", "Your week")
+    assert one["href"] == f"/notebook/note/{week['id']}"
     assert thursday == []

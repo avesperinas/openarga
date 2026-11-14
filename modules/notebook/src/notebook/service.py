@@ -120,14 +120,15 @@ async def create(connection: AsyncConnection, asked: contracts.NotesCreate) -> d
             return _full(await notes.create(connection, asked.folder, title, content, AUTHOR))
         except notes.Conflict:
             title = f"{asked.title} ({attempt})"
-    raise notes.Conflict(f"no hay un título libre para «{asked.title}»")
+    raise notes.Conflict(f"there is no free title for '{asked.title}'")
 
 
 async def write(connection: AsyncConnection, asked: contracts.NotesWrite) -> dict[str, Any]:
     current = await notes.get(connection, asked.id)
     if asked.version is not None and asked.version != current.version:
         raise notes.Conflict(
-            f"la nota cambió mientras la editabas (versión {current.version}, no {asked.version})"
+            "the note changed while you were editing it "
+            f"(version {current.version}, not {asked.version})"
         )
     if asked.body is not None:
         head = current.content[: len(current.content) - len(md.split(current.content).body)]

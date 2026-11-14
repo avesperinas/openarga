@@ -37,10 +37,10 @@ def type_of(name: str) -> str | None:
 def clean_name(name: str) -> str:
     clean = md.nfc(name).strip().rsplit("/", 1)[-1]
     if not clean or len(clean) > 200:
-        raise Invalid("el nombre del fichero está vacío o pasa de 200 caracteres")
+        raise Invalid("the file name is empty or longer than 200 characters")
     bad = md.FORBIDDEN.search(clean)
     if bad:
-        raise Invalid(f"un nombre de fichero no lleva «{bad.group()}»")
+        raise Invalid(f"a file name cannot contain '{bad.group()}'")
     return clean
 
 
@@ -48,11 +48,11 @@ async def save(connection: AsyncConnection, name: str, data: bytes) -> FileOut:
     clean = clean_name(name)
     kind = type_of(clean)
     if kind is None:
-        raise Invalid(f"«{clean}» no es una imagen que Notebook sepa enseñar")
+        raise Invalid(f"'{clean}' is not an image Notebook can show")
     if not data:
-        raise Invalid(f"«{clean}» está vacío")
+        raise Invalid(f"'{clean}' is empty")
     if len(data) > MAX_SIZE:
-        raise Invalid(f"«{clean}» pasa de 20 MB")
+        raise Invalid(f"'{clean}' is larger than 20 MB")
     digest = hashlib.sha256(data).hexdigest()
     found = (
         await connection.execute(
@@ -64,7 +64,7 @@ async def save(connection: AsyncConnection, name: str, data: bytes) -> FileOut:
     ).first()
     if found is not None:
         if found.sha256 != digest:
-            raise Conflict(f"ya hay un fichero «{clean}» distinto")
+            raise Conflict(f"there is already a different file '{clean}'")
         return FileOut(name=clean, content_type=found.content_type, size=found.size, existed=True)
     await connection.execute(
         text(
@@ -93,5 +93,5 @@ async def read(connection: AsyncConnection, name: str) -> tuple[bytes, str, str]
         )
     ).first()
     if found is None:
-        raise NotFound(f"el fichero «{name}»")
+        raise NotFound(f"file '{name}' not found")
     return bytes(found.content), found.content_type, found.sha256

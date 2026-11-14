@@ -24,25 +24,12 @@ METRIC = contracts.METRIC
 
 Kind = Literal["week", "month", "quarter"]
 FOLDERS: dict[Kind, str] = {
-    "week": "Diario/Semanas",
-    "month": "Diario/Meses",
-    "quarter": "Diario/Trimestres",
+    "week": "Journal/Weeks",
+    "month": "Journal/Months",
+    "quarter": "Journal/Quarters",
 }
-MONTHS = [
-    "enero",
-    "febrero",
-    "marzo",
-    "abril",
-    "mayo",
-    "junio",
-    "julio",
-    "agosto",
-    "septiembre",
-    "octubre",
-    "noviembre",
-    "diciembre",
-]
-QUESTIONS = ("¿Sigue importando?", "¿Qué la frenó?", "¿Qué cambias?")
+PACES = {"ahead": "ahead", "on_track": "on track", "behind": "behind"}
+QUESTIONS = ("Does it still matter?", "What held it back?", "What do you change?")
 
 
 @dataclass(frozen=True)
@@ -58,7 +45,7 @@ class Period:
             return f"{year}-W{week:02d}"
         if self.kind == "month":
             return f"{self.start.year}-{self.start.month:02d}"
-        return f"{self.start.year}-T{(self.start.month - 1) // 3 + 1}"
+        return f"{self.start.year}-Q{(self.start.month - 1) // 3 + 1}"
 
     @property
     def folder(self) -> str:
@@ -95,8 +82,8 @@ def parse(ref: str) -> Period:
     if "-W" in clean:
         year, week = clean.split("-W")
         return of("week", date.fromisocalendar(int(year), int(week), 1))
-    if "-T" in clean:
-        year, quarter = clean.split("-T")
+    if "-Q" in clean:
+        year, quarter = clean.split("-Q")
         if not 1 <= int(quarter) <= 4:
             raise ValueError(ref)
         return of("quarter", date(int(year), (int(quarter) - 1) * 3 + 1, 1))
@@ -138,7 +125,7 @@ POINTS = text(f"""
 CHANGED = text("""
     select app, app_name, record_id, title, kind
     from notebook.notebook_record
-    where day is null and not removed and kind <> 'Meta' and not properties ? 'semana'
+    where day is null and not removed and kind <> 'Goal' and not properties ? 'week'
       and seen_at >= :since and seen_at < :until
     order by app_name, kind, title
 """)
@@ -146,14 +133,14 @@ CHANGED = text("""
 TOLD = text("""
     select app, app_name, record_id, body
     from notebook.notebook_record
-    where day is null and not removed and properties ->> 'semana' = :week
+    where day is null and not removed and properties ->> 'week' = :week
     order by app_name, app
 """)
 
 GOALS = text("""
     select app, record_id, title, properties
     from notebook.notebook_record
-    where kind = 'Meta' and not removed
+    where kind = 'Goal' and not removed
     order by title
 """)
 
@@ -196,7 +183,7 @@ async def figures(connection: AsyncConnection, since: date, until: date) -> list
     return list(found.values())
 
 
-UNITS = {"EUR": "€", "percent": "%", "steps": "pasos", "count": "", "points": ""}
+UNITS = {"EUR": "€", "percent": "%", "steps": "steps", "count": "", "points": ""}
 
 
 def said(value: float, unit: str) -> str:
@@ -218,10 +205,10 @@ def change(now: float | None, before: float | None, unit: str) -> str:
 
 def long_period(period: Period) -> str:
     if period.kind == "week":
-        return f"del {write.long_date(period.start)} al {write.long_date(period.end)}"
+        return f"the week from {write.long_date(period.start)} to {write.long_date(period.end)}"
     if period.kind == "month":
-        return f"{MONTHS[period.start.month - 1]} de {period.start.year}"
-    return f"el {period.title[-2:]} de {period.start.year}"
+        return write.month_name(period.start.year, period.start.month)
+    return f"{period.title[-2:]} {period.start.year}"
 
 
 def link(app: str, record_id: str, title: str) -> str:
@@ -247,11 +234,13 @@ def figures_section(found: list[Figure], period: Period, names: dict[str, str]) 
             ]
         )
     if not by_app:
-        return "## Cifras\n\nNinguna app publicó cifras en este periodo."
-    word = {"week": "La anterior", "month": "El anterior", "quarter": "El anterior"}[period.kind]
-    parts = ["## Cifras"]
+        return "## Figures\n\nNo app published figures in this period."
+    word = {"week": "Week before", "month": "Month before", "quarter": "Quarter before"}[
+        period.kind
+    ]
+    parts = ["## Figures"]
     for app, rows in by_app.items():
-        parts.append(f"### {app}\n\n" + write.table(["Cifra", "Ahora", word, "Cambio"], rows))
+        parts.append(f"### {app}\n\n" + write.table(["Figure", "Now", word, "Change"], rows))
     return "\n\n".join(parts)
 
 
@@ -261,8 +250,8 @@ def told_section(rows: list[Any]) -> str:
         text_ = "\n".join(
             f"#{line}" if line.startswith("#") else line for line in row.body.strip().split("\n")
         )
-        parts.append(f"{text_}\n\nLo cuenta {link(row.app, row.record_id, row.app_name)}.")
-    return "## La semana contada\n\n" + "\n\n".join(parts) if parts else ""
+        parts.append(f"{text_}\n\nTold by {link(row.app, row.record_id, row.app_name)}.")
+    return "## The week, told\n\n" + "\n\n".join(parts) if parts else ""
 
 
 def happened_section(rows: list[Any]) -> str:
@@ -272,7 +261,7 @@ def happened_section(rows: list[Any]) -> str:
     for row in rows:
         by_app.setdefault(row.app_name, []).append(link(row.app, row.record_id, row.title))
     lines = [f"- **{app}**: " + ", ".join(items) for app, items in by_app.items()]
-    return "## Lo que pasó\n\n" + "\n".join(lines)
+    return "## What happened\n\n" + "\n".join(lines)
 
 
 def _when(raw: Any) -> date | None:
@@ -286,30 +275,31 @@ def goals_section(rows: list[Any], period: Period) -> str:
     achieved, missed, behind = [], [], []
     for row in rows:
         props = row.properties or {}
-        closed = _when(props.get("cerrada"))
+        closed = _when(props.get("closed"))
         name = link(row.app, row.record_id, row.title)
-        if props.get("estado") == "lograda" and closed and period.start <= closed <= period.end:
+        in_period = closed is not None and period.start <= closed <= period.end
+        if props.get("status") == "achieved" and in_period:
             achieved.append(name)
-        elif props.get("estado") == "fallida" and closed and period.start <= closed <= period.end:
+        elif props.get("status") == "missed" and in_period:
             missed.append(name)
-        elif props.get("estado") == "activa" and props.get("ritmo") == "por detrás":
+        elif props.get("status") == "active" and props.get("pace") == "behind":
             behind.append(name)
     lines = []
-    for label, items in (("Cumplidas", achieved), ("En riesgo", behind), ("Fallidas", missed)):
+    for label, items in (("Achieved", achieved), ("At risk", behind), ("Missed", missed)):
         if items:
             lines.append(f"- **{label}**: " + ", ".join(items))
-    return "## Metas\n\n" + "\n".join(lines) if lines else ""
+    return "## Goals\n\n" + "\n".join(lines) if lines else ""
 
 
 def days_section(period: Period) -> str:
     if period.kind == "week":
-        return "## Días\n\n" + " · ".join(f"[[{d.isoformat()}]]" for d in period.days())
+        return "## Days\n\n" + " · ".join(f"[[{d.isoformat()}]]" for d in period.days())
     weeks: list[str] = []
     for d in period.days():
         title = of("week", d).title
         if title not in weeks:
             weeks.append(title)
-    return "## Semanas\n\n" + " · ".join(f"[[{w}]]" for w in weeks)
+    return "## Weeks\n\n" + " · ".join(f"[[{w}]]" for w in weeks)
 
 
 def block(
@@ -320,7 +310,7 @@ def block(
     names: dict[str, str],
     told: list[Any] | None = None,
 ) -> str:
-    head = f"Cómo fue {long_period(period)}, con las cifras de cada app y lo que pasó."
+    head = f"How {long_period(period)} went, with each app's figures and what happened."
     sections = [
         told_section(told or []),
         head,
@@ -333,31 +323,31 @@ def block(
 
 
 def _goal_line(props: dict[str, Any]) -> str:
-    unit = props.get("unidad")
+    unit = props.get("unit")
     parts = []
-    if props.get("actual") is not None:
-        current = f"{write.trimmed(props['actual'])} {unit or ''}".strip()
-        target = props.get("objetivo")
+    if props.get("current") is not None:
+        current = f"{write.trimmed(props['current'])} {unit or ''}".strip()
+        target = props.get("target")
         parts.append(
-            f"ahora {current}"
-            + (f" de {write.trimmed(target)} {unit or ''}".rstrip() if target is not None else "")
+            f"now {current}"
+            + (f" of {write.trimmed(target)} {unit or ''}".rstrip() if target is not None else "")
         )
-    if props.get("progreso") is not None:
-        parts.append(f"{props['progreso']} % hecho")
-    if props.get("ritmo"):
-        parts.append(str(props["ritmo"]))
-    if props.get("esperado") is not None:
-        parts.append(f"a estas alturas pedía {write.trimmed(props['esperado'])}")
-    if props.get("hasta"):
-        parts.append(f"hasta el {props['hasta']}")
-    return " · ".join(parts) if parts else "sin cifra"
+    if props.get("progress") is not None:
+        parts.append(f"{props['progress']} % done")
+    if props.get("pace"):
+        parts.append(PACES.get(str(props["pace"]), str(props["pace"])))
+    if props.get("expected") is not None:
+        parts.append(f"by now it asked for {write.trimmed(props['expected'])}")
+    if props.get("due"):
+        parts.append(f"until {props['due']}")
+    return " · ".join(parts) if parts else "no figure"
 
 
 def quarter_block(period: Period, goals: list[Any]) -> str:
-    active = [row for row in goals if (row.properties or {}).get("estado") == "activa"]
-    head = f"La revisión de metas al empezar {long_period(period)}."
+    active = [row for row in goals if (row.properties or {}).get("status") == "active"]
+    head = f"The goals review at the start of {long_period(period)}."
     if not active:
-        return head + "\n\nNo hay metas abiertas."
+        return head + "\n\nNo open goals."
     lines = [head, ""]
     for row in active:
         lines.append(
@@ -367,7 +357,7 @@ def quarter_block(period: Period, goals: list[Any]) -> str:
 
 
 def quarter_questions(goals: list[Any]) -> str:
-    active = [row for row in goals if (row.properties or {}).get("estado") == "activa"]
+    active = [row for row in goals if (row.properties or {}).get("status") == "active"]
     parts = []
     for row in active:
         questions = "\n".join(f"- {one} " for one in QUESTIONS)
@@ -455,7 +445,7 @@ async def refresh(
         try:
             async with connection.begin_nested():
                 outcome = await write_period(connection, period, known)
-        except Exception as error:  # noqa: BLE001 - un periodo que falla no para los demás
+        except Exception as error:  # noqa: BLE001 - one failing period does not stop the others
             print(f"digest · {period.path}: {type(error).__name__}: {error}", file=sys.stderr)
             outcome = "failed"
         done[outcome] = done.get(outcome, 0) + 1
@@ -480,9 +470,9 @@ async def notifications(
         notify.notification(
             "week",
             f"week:{week.title}",
-            "Tu semana",
-            f"/notebook/nota/{found.id}",
+            "Your week",
+            f"/notebook/note/{found.id}",
             when,
-            f"Cómo fue {long_period(week)}",
+            f"How {long_period(week)} went",
         )
     ]

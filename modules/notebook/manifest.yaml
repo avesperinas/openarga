@@ -26,7 +26,7 @@ publishes:
 
 notifications:
   - kind: week
-    label: Tu semana
+    label: Your week
     default: false
 
 api:
@@ -36,109 +36,107 @@ tools:
   - name: search_notes
     scope: notebook:read
     description: >
-      Busca en las notas por palabras, sin importar acentos, diéresis ni mayúsculas, y con filtros
-      de carpeta, de tag y de propiedades del frontmatter (`naechste_wiederholung` lte `today`,
-      `status` eq `offen`). Devuelve la ruta de cada nota, un fragmento y sus tags. Sin palabras,
-      lo que casa con los filtros, de lo más reciente a lo más viejo; con `since`, `until` y `by`,
-      lo que cambió en un periodo y quién (tú, Claude o la importación), con cuántos cambios. Cada
-      una trae su `href`, dónde se abre en la app. Cada app de arga tiene aquí
-      una nota por cada cosa suya (su ficha, con `tipo` y `arga`: un libro, un viaje, una receta,
-      una cuenta) y lo de cada día en la nota del día, con sus cifras como propiedades (`pasos`,
-      `kcal`): filtrar por `tipo` (`Libro`, `Viaje`) es preguntar por lo de las apps.
+      Searches the notes by words, ignoring accents, umlauts and case, with filters on folder, tag
+      and frontmatter properties (`next_review` lte `today`, `status` eq `open`). Returns each
+      note's path, a fragment and its tags. Without words, what matches the filters, newest first;
+      with `since`, `until` and `by`, what changed in a period and who changed it (you, Claude or
+      the import), with how many changes. Each one has its `href`, where it opens in the app. Every
+      arga app keeps a note here for each of its things (its card, with `type` and `arga`: a book,
+      a trip, a recipe, an account) and each day's things in the daily note, with their figures as
+      properties (`steps`, `kcal`): filtering by `type` (`Book`, `Trip`) asks about the apps.
   - name: read_note
     scope: notebook:read
     description: >
-      Lee una nota entera, o solo la sección bajo un encabezado. Una nota se nombra por su título
-      o, si hay dos con el mismo, por su ruta (`carpeta/título`); la de un día, con `day`
-      (`2026-09-28`), y sin nada, la de hoy. Devuelve el texto en Markdown con su frontmatter, sus
-      propiedades, sus tags, su índice de encabezados, cuántas notas la enlazan y su versión; con
-      `links`, además lo que enlaza (y a qué nota llega cada enlace) y las notas que la enlazan,
-      con la línea donde lo hacen. Léela antes de cambiarla. Si parte de la nota la escribe una app
-      (el bloque entre `%% arga %%` y `%% /arga %%` y sus propiedades), dice cuál.
+      Reads a whole note, or only the section under a heading. A note is named by its title or,
+      when two share it, by its path (`folder/title`); a day's note by `day` (`2026-09-28`), and
+      with nothing, today's. Returns the Markdown text with its frontmatter, its properties, its
+      tags, its outline of headings, how many notes link to it and its version; with `links`, also
+      what it links to (and which note each link reaches) and the notes that link to it, with the
+      line where they do. Read it before changing it. If part of the note is written by an app (the
+      block between `%% arga %%` and `%% /arga %%` and its properties), it says which.
   - name: explore_graph
     scope: notebook:read
     description: >
-      Las notas conectadas con una, a uno o dos saltos, en los dos sentidos, con los enlaces entre
-      ellas. Sirve para entender un tema y encontrar notas relacionadas sin leerlas todas.
+      The notes connected to one, one or two hops away, in both directions, with the links between
+      them. Useful to understand a topic and find related notes without reading them all.
   - name: list_folder
     scope: notebook:read
     description: >
-      Las subcarpetas de una carpeta, con cuántas notas tiene cada una contando las de dentro, y
-      los títulos de sus notas. Sin carpeta, la raíz y todos los tags con cuántas notas lleva
-      cada uno (`a/b` es un tag hijo de `a`).
+      The subfolders of a folder, with how many notes each holds counting those inside, and the
+      titles of its notes. Without a folder, the root and every tag with how many notes carry it
+      (`a/b` is a child tag of `a`).
   - name: get_digest
     scope: notebook:read
     description: >
-      Cómo fue una semana (`2026-W41`), un mes (`2026-09`) o un trimestre (`2026-T4`): las cifras
-      de cada app frente al periodo anterior, lo que pasó con nombre propio y las metas, lo mismo
-      que escribe el Digest en su nota. Sin periodo, la última semana cerrada. Para contestar
-      "¿cómo fue septiembre?".
+      How a week (`2026-W41`), a month (`2026-09`) or a quarter (`2026-Q4`) went: each app's
+      figures against the period before, what happened by name, and the goals, the same the Digest
+      writes in its note. Without a period, the last closed week. To answer "how did September
+      go?".
   - name: create_note
     scope: notebook:write
     description: >
-      Crea una nota con su título, en una carpeta (que se crea si no existe) y con su texto en
-      Markdown y sus propiedades. Enlaza otras notas con `[[título]]`; si el título es de dos
-      notas, con `[[carpeta/título]]`. No se puede crear si ya hay una con ese título en esa carpeta.
+      Creates a note with its title, in a folder (created if missing), with its Markdown text and
+      its properties. Link other notes with `[[title]]`; if the title belongs to two notes, with
+      `[[folder/title]]`. It cannot be created if that folder already has a note with that title.
   - name: append_to_note
     scope: notebook:write
     description: >
-      Añade texto al final de una nota, o al final de la sección de un encabezado, antes del
-      siguiente encabezado del mismo nivel. No toca nada de lo que ya hay.
+      Adds text at the end of a note, or at the end of a heading's section, before the next heading
+      of the same level. It touches nothing already there.
   - name: edit_note
     scope: notebook:write
     description: >
-      Cambia un fragmento exacto de una nota por otro. El fragmento tiene que aparecer una sola
-      vez: si no aparece o aparece varias, no cambia nada y lo dice, y hay que leer la nota otra vez
-      o dar más texto alrededor. Para cambiar una sección entera, `replace_section`; para las
-      propiedades, `set_properties`. Lo que escribe una app en una nota (el bloque entre
-      `%% arga %%` y `%% /arga %%` y sus propiedades) no se cambia aquí sino con las tools de esa
-      app, y se rehace solo; lo de fuera del bloque sí.
+      Replaces an exact fragment of a note with another. The fragment must appear only once: if it
+      does not appear or appears several times, nothing changes and it says so, and the note must
+      be read again or more surrounding text given. To change a whole section, `replace_section`;
+      for properties, `set_properties`. What an app writes in a note (the block between
+      `%% arga %%` and `%% /arga %%` and its properties) is not changed here but with that app's
+      tools, and it is rebuilt on its own; what is outside the block can be.
   - name: replace_section
     scope: notebook:write
     description: >
-      Sustituye lo que hay bajo un encabezado, con sus subsecciones, por un texto nuevo. El
-      encabezado se queda, y lo que viene después del siguiente encabezado del mismo nivel no se
-      toca.
+      Replaces what is under a heading, with its subsections, with new text. The heading stays, and
+      what comes after the next heading of the same level is not touched.
   - name: set_properties
     scope: notebook:write
     description: >
-      Pone, cambia o quita propiedades del frontmatter de una nota sin tocar su texto ni el orden
-      de las demás. Una fecha va como texto ISO (`2026-10-15`) y se guarda como fecha. Las que pone
-      una app (`arga`, `tipo` y las de su ficha) se cambian en esa app.
+      Sets, changes or removes frontmatter properties of a note without touching its text or the
+      order of the others. A date goes as ISO text (`2026-10-15`) and is stored as a date. Those an
+      app sets (`arga`, `type` and those of its card) are changed in that app.
   - name: add_to_daily_note
     scope: notebook:write
     description: >
-      Añade texto a la nota de un día, hoy si no se dice, creándola si no existe; al final, o bajo
-      un encabezado.
+      Adds text to a day's note, today unless said otherwise, creating it if missing; at the end,
+      or under a heading.
   - name: move_note
     scope: notebook:write
     description: >
-      Mueve una nota a otra carpeta o le cambia el título, y reescribe los enlaces de otras notas
-      que dejarían de encontrarla. Dice cuántas notas cambiaron por eso.
+      Moves a note to another folder or renames it, and rewrites the links in other notes that
+      would stop finding it. Says how many notes changed because of that.
 
 ui:
   widgets:
     - id: recent
-      title: Notas recientes
+      title: Recent notes
       kind: list
       sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/notebook/widgets/recent
       refresh: 300
       link: /notebook
     - id: today
-      title: Nota de hoy
+      title: Today's note
       kind: list
       sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/notebook/widgets/today
       refresh: 300
-      link: /notebook/hoy
+      link: /notebook/today
     - id: review
-      title: Para repasar
+      title: To review
       kind: list
       sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/notebook/widgets/review
       refresh: 900
-      link: /notebook/repasar
+      link: /notebook/review
   view: /notebook
   search: /api/notebook/search/arga
   hue: 3

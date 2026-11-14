@@ -21,7 +21,7 @@ LINKABLES = text(f"""
 """)
 
 
-FICHAS = text("""
+CARDS = text("""
     select app, record_id, title, kind, href, note_id
     from notebook.notebook_record
     where day is null and not removed and note_id is not null
@@ -43,7 +43,7 @@ async def linkables(connection: AsyncConnection) -> list[dict[str, Any]]:
             "href": row.item["href"],
             "note_id": None,
         }
-    for row in (await connection.execute(FICHAS)).all():
+    for row in (await connection.execute(CARDS)).all():
         target = f"{row.app}:{row.record_id}"
         found[target] = {
             "app": row.app,
@@ -77,7 +77,7 @@ async def _announce(
             id=ref[:100],
             note_id=note_id,
             note_title=title[:200],
-            note_href=f"/notebook/nota/{note_id}",
+            note_href=f"/notebook/note/{note_id}",
             line=line[:500],
             removed=removed,
         )

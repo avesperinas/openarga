@@ -30,14 +30,14 @@ def title(value: str) -> str:
     if clean.lower().endswith(".md"):
         clean = clean[:-3].rstrip()
     if not clean:
-        raise InvalidName("el título está vacío")
+        raise InvalidName("the title is empty")
     if len(clean) > 200:
-        raise InvalidName("el título pasa de 200 caracteres")
+        raise InvalidName("the title is longer than 200 characters")
     if clean.startswith("."):
-        raise InvalidName("un título no empieza por un punto")
+        raise InvalidName("a title does not start with a dot")
     bad = FORBIDDEN.search(clean)
     if bad:
-        raise InvalidName(f"un título no lleva «{bad.group()}»")
+        raise InvalidName(f"a title cannot contain '{bad.group()}'")
     return clean
 
 
@@ -48,13 +48,13 @@ def folder(value: str | None) -> str:
     parts = [part for part in parts if part]
     for part in parts:
         if part in (".", "..") or part.startswith("."):
-            raise InvalidName(f"una carpeta no se llama «{part}»")
+            raise InvalidName(f"a folder cannot be called '{part}'")
         bad = FORBIDDEN.search(part)
         if bad:
-            raise InvalidName(f"una carpeta no lleva «{bad.group()}»")
+            raise InvalidName(f"a folder cannot contain '{bad.group()}'")
     path = "/".join(parts)
     if len(path) > 1000:
-        raise InvalidName("la ruta de la carpeta pasa de 1000 caracteres")
+        raise InvalidName("the folder path is longer than 1000 characters")
     return path
 
 
@@ -106,11 +106,11 @@ def load_properties(frontmatter: str | None) -> dict[str, Any]:
     try:
         loaded = yaml.safe_load(frontmatter)
     except yaml.YAMLError as error:
-        raise InvalidProperties(f"el frontmatter no es YAML válido: {error}") from error
+        raise InvalidProperties(f"the frontmatter is not valid YAML: {error}") from error
     if loaded is None:
         return {}
     if not isinstance(loaded, dict):
-        raise InvalidProperties("el frontmatter no es una lista de propiedades")
+        raise InvalidProperties("the frontmatter is not a list of properties")
     return _plain(loaded)
 
 
@@ -235,7 +235,7 @@ def safe_title(value: str) -> str:
     clean = re.sub(r"\s+", " ", clean).strip().lstrip(".").strip()
     if clean.lower().endswith(".md"):
         clean = clean[:-3].strip()
-    return clean[:200].strip() or "Sin título"
+    return clean[:200].strip() or "Untitled"
 
 
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
@@ -444,11 +444,11 @@ def section(content: str, heading: str) -> Heading:
     wanted = key(heading.lstrip("#"))
     matches = [h for h in headings(content) if key(h.text) == wanted]
     if not matches:
-        available = ", ".join(f"«{h.text}»" for h in headings(content)[:20]) or "ninguno"
-        raise NotFoundInNote(f"no hay un encabezado «{heading}». Los que hay: {available}")
+        available = ", ".join(f"'{h.text}'" for h in headings(content)[:20]) or "none"
+        raise NotFoundInNote(f"there is no heading '{heading}'. The ones there are: {available}")
     if len(matches) > 1:
         lines = ", ".join(str(h.line + 1) for h in matches)
-        raise Ambiguous(f"hay {len(matches)} encabezados «{heading}» (líneas {lines})")
+        raise Ambiguous(f"there are {len(matches)} headings '{heading}' (lines {lines})")
     return matches[0]
 
 
@@ -482,16 +482,18 @@ def append(content: str, text: str, heading: str | None = None) -> str:
 
 def replace_fragment(content: str, old: str, new: str) -> str:
     if not old:
-        raise NotFoundInNote("el fragmento a cambiar está vacío")
+        raise NotFoundInNote("the fragment to change is empty")
     count = content.count(old)
     if count == 0:
         normalized = nfc(old)
         if normalized != old and content.count(normalized) == 1:
             return content.replace(normalized, nfc(new), 1)
-        raise NotFoundInNote("el fragmento no aparece en la nota; léela otra vez y cópialo exacto")
+        raise NotFoundInNote(
+            "the fragment does not appear in the note; read it again and copy it exactly"
+        )
     if count > 1:
         raise Ambiguous(
-            f"el fragmento aparece {count} veces; da más texto alrededor para que sea único"
+            f"the fragment appears {count} times; give more text around it so it is unique"
         )
     return content.replace(old, new, 1)
 
