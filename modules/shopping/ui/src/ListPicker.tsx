@@ -1,28 +1,28 @@
-import { Button, Hint, Inline, List, ListRow, Sheet } from "@openarga/ui";
+import { Button, Hint, Inline, List, ListRow, Sheet, type Translate, useT } from "@openarga/ui";
 import { useState } from "react";
 
 import type { ShoppingList, Space } from "./api";
 
-export function withWhom(space: Space): string {
+export function withWhom(t: Translate, space: Space): string {
   const others = space.members.filter((member) => member.user_id !== space.me);
-  if (others.length === 0) return "Solo tú, de momento";
-  const names = ["Tú", ...others.map((member) => member.name ?? "Sin nombre")];
-  return `${names.slice(0, -1).join(", ")} y ${names[names.length - 1]}`;
+  if (others.length === 0) return t("picker.whom_alone");
+  const names = [t("picker.whom_you"), ...others.map((member) => member.name ?? t("picker.whom_nameless"))];
+  return t("picker.whom_and", { first: names.slice(0, -1).join(", "), last: names[names.length - 1]! });
 }
 
-export function listTitle(list: Pick<ShoppingList, "space_id">, spaces: Space[]): string {
-  if (list.space_id === null) return "Tu lista";
-  return spaces.find((space) => space.id === list.space_id)?.name ?? "Lista compartida";
+export function listTitle(t: Translate, list: Pick<ShoppingList, "space_id">, spaces: Space[]): string {
+  if (list.space_id === null) return t("picker.yours");
+  return spaces.find((space) => space.id === list.space_id)?.name ?? t("picker.shared");
 }
 
-export function listSubtitle(list: Pick<ShoppingList, "space_id">, spaces: Space[]): string {
+export function listSubtitle(t: Translate, list: Pick<ShoppingList, "space_id">, spaces: Space[]): string {
   const space = spaces.find((one) => one.id === list.space_id);
-  return space ? `La ven y la marcan: ${withWhom(space)}` : "Solo la ves tú";
+  return space ? t("picker.whom_see", { whom: withWhom(t, space) }) : t("picker.only_you");
 }
 
-export function listLine(list: Pick<ShoppingList, "space_id">, spaces: Space[]): string {
+export function listLine(t: Translate, list: Pick<ShoppingList, "space_id">, spaces: Space[]): string {
   const space = spaces.find((one) => one.id === list.space_id);
-  return space ? `${space.name} · ${withWhom(space)}` : listTitle(list, spaces);
+  return space ? `${space.name} · ${withWhom(t, space)}` : listTitle(t, list, spaces);
 }
 
 export function ListPicker({
@@ -35,6 +35,7 @@ export function ListPicker({
   onChoose: (spaceId: string | null) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
+  const t = useT();
   const [busy, setBusy] = useState(false);
 
   async function choose(spaceId: string | null) {
@@ -53,19 +54,19 @@ export function ListPicker({
         <Button
           size="small"
           icon={list.space_id ? "people" : "basket"}
-          aria-label={`${listTitle(list, spaces)}. ${listSubtitle(list, spaces)}. Cambiar de lista`}
+          aria-label={t("picker.change", { title: listTitle(t, list, spaces), subtitle: listSubtitle(t, list, spaces) })}
           onClick={() => setOpen(true)}
         >
-          {listLine(list, spaces)}
+          {listLine(t, list, spaces)}
         </Button>
       </Inline>
       {open && (
-        <Sheet title="Qué lista usas" onClose={() => setOpen(false)}>
+        <Sheet title={t("picker.title")} onClose={() => setOpen(false)}>
           <List>
             <ListRow
               icon="basket"
-              title="Tu lista"
-              subtitle="Solo la ves tú"
+              title={t("picker.yours")}
+              subtitle={t("picker.only_you")}
               accessory={list.space_id === null ? "done" : undefined}
               disabled={busy}
               onClick={() => void choose(null)}
@@ -75,25 +76,25 @@ export function ListPicker({
                 key={space.id}
                 icon="people"
                 title={space.name}
-                subtitle={withWhom(space)}
+                subtitle={withWhom(t, space)}
                 accessory={list.space_id === space.id ? "done" : undefined}
                 disabled={busy}
                 onClick={() => void choose(space.id)}
               />
             ))}
           </List>
-          <Hint>
-            La app, los widgets y Claude usan la que elijas. Cambiar no mueve nada: tu lista sigue
-            aquí para cuando vuelvas.
-          </Hint>
+          <Hint>{t("picker.hint")}</Hint>
           {spaces.length === 0 ? (
             <Hint>
-              Para compartirla, crea un espacio en los <a href="/">Ajustes de arga</a> e invita a
-              quien haga la compra contigo.
+              {t("picker.share_before")}
+              <a href="/">{t("picker.settings")}</a>
+              {t("picker.share_after")}
             </Hint>
           ) : (
             <Hint>
-              Los espacios y quién está en ellos se cambian en los <a href="/">Ajustes de arga</a>.
+              {t("picker.spaces_before")}
+              <a href="/">{t("picker.settings")}</a>
+              {t("picker.spaces_after")}
             </Hint>
           )}
         </Sheet>

@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets import envelope
 from shopping import lists, shopping
+from shopping.catalog import t
 
 KINDS = {"list": "tasks", "due": "list"}
 
@@ -14,7 +15,7 @@ async def shopping_list(connection: AsyncConnection) -> dict:
     found = await shopping.read(connection, space=await lists.chosen(connection))
     pending = [one for group in found.groups for one in group.items]
     if not pending and not found.cart:
-        return envelope(KINDS["list"], "empty", {"detail": "no hay nada apuntado"})
+        return envelope(KINDS["list"], "empty", {"detail": t("list.empty")})
     items = [_item(one, done=False) for one in pending] + [
         _item(one, done=True) for one in found.cart
     ]
@@ -49,7 +50,7 @@ async def due(connection: AsyncConnection) -> dict:
         known = any(
             one.every_days is not None for one in await shopping.products(connection, space=space)
         )
-        detail = "nada se está acabando" if known else "hacen falta tres compras de algo"
+        detail = t("due.empty") if known else t("due.unknown")
         return envelope(KINDS["due"], "empty", {"detail": detail})
     return envelope(
         KINDS["due"],

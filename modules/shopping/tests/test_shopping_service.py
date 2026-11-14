@@ -74,12 +74,12 @@ async def test_a_finished_purchase_reaches_the_log_with_its_owner(api, schema, m
 
 
 async def publish_and_check(api, schema, person, kernel_app) -> None:
-    await buy(api, schema, "Pan", "Leche")
+    await buy(api, schema, "Bread", "Milk")
 
     def down(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/internal/users":
             return httpx.Response(200, json=[{"id": str(person)}])
-        raise httpx.ConnectError("el kernel no contesta", request=request)
+        raise httpx.ConnectError("the kernel does not answer", request=request)
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(down)) as client:
         failed = await publisher.run_once(client)

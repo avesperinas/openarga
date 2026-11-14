@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from datetime import date
 from statistics import median
 
+from shopping.catalog import t
+
 ENOUGH = 3
 
 
@@ -41,19 +43,19 @@ def every_label(every_days: float | None) -> str | None:
         return None
     days = round(every_days)
     if days <= 1:
-        return "cada día"
+        return t("every.day")
     if days % 7 == 0 and days >= 14:
-        return f"cada {days // 7} semanas"
+        return t("every.weeks", weeks=days // 7)
     if days == 7:
-        return "cada semana"
-    return f"cada {days} días"
+        return t("every.week")
+    return t("every.days", days=days)
 
 
 def since_label(since: int | None) -> str | None:
     if since is None:
         return None
     if since <= 0:
-        return "hoy"
+        return t("since.today")
     if since == 1:
-        return "ayer"
-    return f"hace {since} días"
+        return t("since.yesterday")
+    return t("since.days", days=since)

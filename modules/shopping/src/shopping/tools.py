@@ -7,6 +7,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from arga_module import preferences
 from shopping import lists, names, shopping
 
 MODULE = "shopping"
@@ -87,12 +88,12 @@ class GetPurchaseHistory(BaseModel):
     query: str | None = Field(
         default=None,
         max_length=60,
-        description="Solo los productos con una palabra que empiece así: `cafe`, `leche`.",
+        description="Only the products with a word that starts like this: `coffee`, `milk`.",
     )
     trips: int = Field(
-        default=10, ge=0, le=50, description="Cuántas compras recientes traer, con lo que llevaban."
+        default=10, ge=0, le=50, description="How many recent trips to bring, with what they had."
     )
-    limit: int = Field(default=50, ge=1, le=300, description="Cuántos productos, como mucho.")
+    limit: int = Field(default=50, ge=1, le=300, description="How many products, at most.")
 
 
 async def get_purchase_history(
@@ -108,7 +109,7 @@ async def get_purchase_history(
         "products": [_habit(one) for one in everything[: arguments.limit]],
         "recent_trips": [
             {
-                "date": trip.finished_at.astimezone(shopping.MADRID).date().isoformat(),
+                "date": trip.finished_at.astimezone(preferences.current().zone).date().isoformat(),
                 "items": trip.items,
                 "products": [one.name for one in trip.products],
             }
@@ -122,21 +123,23 @@ class Entry(BaseModel):
         min_length=1,
         max_length=80,
         description=(
-            "Cómo se dice en casa y en español, sin cantidad: `leche`, `pechuga de pollo`. Si ya "
-            "lo has comprado alguna vez, el mismo nombre lo reconoce."
+            "How it is called at home, in the person's language, without quantity: `milk`, "
+            "`chicken breast`. If it was bought before, the same name finds it."
         ),
     )
     quantity: str | None = Field(
-        default=None, max_length=30, description="Corta y como se diría: `2`, `1 kg`, `pack de 6`."
+        default=None,
+        max_length=30,
+        description="Short, as it would be said: `2`, `1 kg`, `pack of 6`.",
     )
     note: str | None = Field(
-        default=None, max_length=120, description="Lo que ayuda a elegirlo: `la sin lactosa`."
+        default=None, max_length=120, description="What helps to pick it: `the lactose-free one`."
     )
     section: Section | None = Field(
         default=None,
         description=(
-            "La sección del súper, solo si es un producto nuevo y la sabes: sin ella la pone un "
-            "diccionario, y lo que no conoce va a `other`."
+            "The supermarket section, only for a new product when you know it: without it a "
+            "dictionary sets it, and what it does not know goes to `other`."
         ),
     )
 
@@ -155,7 +158,7 @@ async def add_to_list(connection: AsyncConnection, arguments: AddToList) -> dict
         async with connection.begin_nested():
             added = await shopping.add(connection, entries, source="tool", space=space)
     except (shopping.NotFound, shopping.Conflict) as error:
-        return {"added": [], "note": f"no he apuntado nada: {error}"}
+        return {"added": [], "note": f"nothing was added: {error}"}
     return {
         "added": [
             {
@@ -175,7 +178,7 @@ class RemoveFromList(BaseModel):
     name: str = Field(
         min_length=1,
         max_length=80,
-        description="El producto tal como está en la lista, o el principio de una de sus palabras.",
+        description="The product as it is on the list, or the start of one of its words.",
     )
 
 
@@ -191,9 +194,9 @@ async def remove_from_list(
         return {
             "removed": None,
             "note": (
-                f"«{arguments.name}» no está en la lista"
+                f"'{arguments.name}' is not on the list"
                 if not matches
-                else f"«{arguments.name}» puede ser varios; di cuál"
+                else f"'{arguments.name}' could be several; say which"
             ),
             "candidates": [one.name for one in (matches or open_items)][:20],
         }

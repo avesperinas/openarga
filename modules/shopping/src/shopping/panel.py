@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets.panel import blocks_of, gather, panel
 from shopping import widgets
+from shopping.catalog import t
 
 
 def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
@@ -14,7 +15,7 @@ def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def nothing() -> HTTPException:
-    return HTTPException(status_code=404, detail="Shopping aún no tiene nada que contar")
+    return HTTPException(status_code=404, detail=t("panel.nothing"))
 
 
 async def build(connection: AsyncConnection) -> dict:
@@ -24,40 +25,44 @@ async def build(connection: AsyncConnection) -> dict:
     blocks = blocks_of(
         "tasks",
         found.get("list") or {"state": "ready", "body": {"tasks": []}},
-        label="La compra",
+        label=t("panel.list"),
         widget="list",
     )
     if not blocks:
-        blocks = [{"type": "tasks", "label": "La compra", "widget": "list", "items": []}]
-    blocks[0]["add"] = "Apuntar algo…"
-    blocks += blocks_of("list", found.get("due") or {}, label="Se está acabando")
+        blocks = [{"type": "tasks", "label": t("panel.list"), "widget": "list", "items": []}]
+    blocks[0]["add"] = t("panel.add")
+    blocks += blocks_of("list", found.get("due") or {}, label=t("panel.due"))
     headlines = []
     if pending:
         headlines.append(
             {
                 "text": (
-                    "Falta 1 cosa por comprar"
+                    t("panel.missing_one")
                     if len(pending) == 1
-                    else f"Faltan {len(pending)} cosas por comprar"
+                    else t("panel.missing_other", count=len(pending))
                 ),
                 "emphasis": str(len(pending)),
-                "status": "1 cosa" if len(pending) == 1 else f"{len(pending)} cosas",
+                "status": (
+                    t("panel.status_one")
+                    if len(pending) == 1
+                    else t("panel.status_other", count=len(pending))
+                ),
                 "priority": 40,
             }
         )
     tabs = [
         {
-            "id": "compra",
-            "label": "La compra",
+            "id": "list",
+            "label": t("panel.list"),
             "blocks": blocks,
-            "actions": [{"label": "Abrir Shopping", "href": "/shopping/"}],
+            "actions": [{"label": t("panel.open"), "href": "/shopping/"}],
         }
     ]
     questions = [
         {
-            "text": "¿Qué falta en casa?",
-            "words": ["compra", "lista", "super", "comprar", "falta"],
-            "tab": "compra",
+            "text": t("panel.question"),
+            "words": t("panel.words").split(","),
+            "tab": "list",
         }
     ]
     return panel("home", order=10, headlines=headlines, tabs=tabs, questions=questions)

@@ -1,4 +1,4 @@
-import { longDay } from "@openarga/ui";
+import { longDay, type Translate } from "@openarga/ui";
 
 import type { Category, Item, Product, ShoppingList } from "./api";
 
@@ -6,7 +6,7 @@ export function fold(text: string): string {
   return text
     .normalize("NFKD")
     .replace(/\p{M}/gu, "")
-    .toLocaleLowerCase("es")
+    .toLowerCase()
     .split(/\s+/)
     .filter(Boolean)
     .join(" ");
@@ -35,9 +35,9 @@ export function itemDetail(item: Pick<Item, "quantity" | "note">): string | unde
   return parts.length ? parts.join(" · ") : undefined;
 }
 
-export function habitDetail(product: Pick<Product, "every" | "since" | "times">): string {
+export function habitDetail(t: Translate, product: Pick<Product, "every" | "since" | "times">): string {
   if (product.every) return [product.every, product.since].filter(Boolean).join(" · ");
-  const times = product.times === 1 ? "1 vez" : `${product.times} veces`;
+  const times = product.times === 1 ? t("habit.once") : t("habit.times", { count: product.times });
   return [times, product.since].filter(Boolean).join(" · ");
 }
 
@@ -85,6 +85,26 @@ export function without(list: ShoppingList, id: string): ShoppingList {
   };
 }
 
+export function sectionName(t: Translate, id: string, name?: string): string {
+  return BUILT_IN.has(id) ? t(`section.${id}`) : (name ?? t("section.other"));
+}
+
+const BUILT_IN = new Set([
+  "produce",
+  "bakery",
+  "meat",
+  "fish",
+  "deli",
+  "dairy",
+  "pantry",
+  "breakfast",
+  "frozen",
+  "drinks",
+  "cleaning",
+  "hygiene",
+  "other",
+]);
+
 export function withAdded(
   list: ShoppingList,
   entry: { id: string; name: string; quantity: string | null },
@@ -110,7 +130,7 @@ export function withAdded(
     ? list.groups.map((group) => (group.category_id === categoryId ? { ...group, items: [...group.items, item] } : group))
     : [
         ...list.groups,
-        { category_id: categoryId, name: section?.name ?? "Otros", emoji: section?.emoji ?? "", items: [item] },
+        { category_id: categoryId, name: section?.name ?? categoryId, emoji: section?.emoji ?? "", items: [item] },
       ].sort(
         (a, b) =>
           (categories.find((one) => one.id === a.category_id)?.position ?? 99) -
@@ -140,7 +160,7 @@ export function withSection(list: ShoppingList, id: string, categoryId: string, 
   const section = categories.find((one) => one.id === categoryId);
   const groups = rest.groups.some((group) => group.category_id === categoryId)
     ? rest.groups.map((group) => (group.category_id === categoryId ? { ...group, items: [...group.items, moved] } : group))
-    : [...rest.groups, { category_id: categoryId, name: section?.name ?? "Otros", emoji: section?.emoji ?? "", items: [moved] }].sort(
+    : [...rest.groups, { category_id: categoryId, name: section?.name ?? categoryId, emoji: section?.emoji ?? "", items: [moved] }].sort(
         (a, b) =>
           (categories.find((one) => one.id === a.category_id)?.position ?? 99) -
           (categories.find((one) => one.id === b.category_id)?.position ?? 99),
@@ -154,10 +174,11 @@ export function daysSince(last: string | null, today: string): number | null {
   return Math.max(0, Math.round((day(today) - day(last)) / 86_400_000));
 }
 
-export function cartLine(names: string[]): string {
+export function cartLine(t: Translate, names: string[]): string {
   if (names.length === 0) return "";
-  if (names.length <= 2) return names.join(" y ");
+  if (names.length === 1) return names[0]!;
+  if (names.length === 2) return t("cart.two", { first: names[0]!, second: names[1]! });
   const first = names.slice(0, 2).map((name, index) => (index === 0 ? name : name.toLowerCase()));
-  return `${first.join(", ")} y ${names.length - 2} más`;
+  return t("cart.more", { first: first.join(", "), count: names.length - 2 });
 }
 

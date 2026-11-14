@@ -6,18 +6,19 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 
 import type { ShoppingList } from "./api";
 import { App } from "./App";
+import { english, inLocale } from "./i18n/testing";
 
 const LIST: ShoppingList = {
   groups: [
     {
       category_id: "dairy",
-      name: "Lácteos",
+      name: "Dairy and eggs",
       emoji: "🥛",
       items: [
         {
-          id: "leche",
-          product_id: "p-leche",
-          name: "Leche",
+          id: "milk",
+          product_id: "p-milk",
+          name: "Milk",
           category_id: "dairy",
           quantity: null,
           note: null,
@@ -71,7 +72,7 @@ beforeEach(() => {
       const key = `${init?.method ?? "GET"} ${url}`;
       asked.push(key);
       const reply = replies[key];
-      if (!reply) return json({ detail: "no existe" }, 404);
+      if (!reply) return json({ detail: "not found" }, 404);
       const body = await reply();
       return body instanceof Response ? body : json(body);
     }),
@@ -96,16 +97,16 @@ const tab = (name: string) =>
   Array.from(host.querySelectorAll<HTMLButtonElement>(".tab-bar button")).find((one) => one.textContent?.includes(name))!;
 const times = (key: string) => asked.filter((one) => one === key).length;
 
-describe("Shopping con el kit de app", () => {
-  it("de la lista al historial y vuelta: la lista, lo que compras y las secciones se piden una vez", async () => {
-    act(() => root.render(<App />));
+describe("Shopping with the app kit", () => {
+  it("from the list to the history and back: list, products and sections are asked once", async () => {
+    act(() => root.render(inLocale(<App />)));
     await settle();
-    expect(host.textContent).toContain("Leche");
+    expect(host.textContent).toContain("Milk");
 
-    act(() => tab("Historial").click());
+    act(() => tab(english("tabs.history")).click());
     await settle();
-    act(() => tab("Lista").click());
-    expect(host.textContent).toContain("Leche");
+    act(() => tab(english("tabs.list")).click());
+    expect(host.textContent).toContain("Milk");
     await settle();
 
     expect(times("GET /api/shopping/list")).toBe(1);
@@ -113,48 +114,48 @@ describe("Shopping con el kit de app", () => {
     expect(times("GET /api/shopping/categories")).toBe(1);
   });
 
-  it("tachar algo lo baja al carro al tocar, y lo devuelve si el servidor no lo acepta", async () => {
+  it("ticking something moves it to the trolley at once, and back if the server refuses it", async () => {
     let answer!: (response: Response) => void;
-    replies["PUT /api/shopping/list/items/leche/cart"] = () => new Promise<Response>((resolve) => (answer = resolve));
-    act(() => root.render(<App />));
+    replies["PUT /api/shopping/list/items/milk/cart"] = () => new Promise<Response>((resolve) => (answer = resolve));
+    act(() => root.render(inLocale(<App />)));
     await settle();
 
     act(() => host.querySelector<HTMLElement>("[role=checkbox]")!.click());
     await settle();
-    expect(host.textContent).toContain("1 en el carro");
+    expect(host.textContent).toContain(english("cart.one"));
     expect(host.querySelector("[role=checkbox][aria-checked=true]")).not.toBeNull();
 
-    answer(json({ detail: "esa lista ya no es la tuya" }, 409));
+    answer(json({ detail: "that list is no longer yours" }, 409));
     await settle();
-    expect(host.textContent).not.toContain("En el carro");
-    expect(host.textContent).toContain("esa lista ya no es la tuya");
+    expect(host.textContent).not.toContain(english("cart.title"));
+    expect(host.textContent).toContain("that list is no longer yours");
   });
 
-  it("quitar desde la fila es al momento, y Deshacer lo vuelve a apuntar", async () => {
+  it("removing from the row is immediate, and Undo adds it again", async () => {
     let dropped = false;
-    replies["POST /api/shopping/list/items/leche/drop"] = () => {
+    replies["POST /api/shopping/list/items/milk/drop"] = () => {
       dropped = true;
       return { ...LIST, groups: [], pending: 0 };
     };
     replies["POST /api/shopping/list/items"] = () => ({ added: [], list: LIST });
-    act(() => root.render(<App />));
+    act(() => root.render(inLocale(<App />)));
     await settle();
 
-    const quitar = Array.from(host.querySelectorAll<HTMLButtonElement>(".swipe-row-action")).find((one) =>
-      one.textContent?.includes("Quitar"),
+    const remove = Array.from(host.querySelectorAll<HTMLButtonElement>(".swipe-row-action")).find((one) =>
+      one.textContent?.includes(english("item.remove")),
     )!;
-    act(() => quitar.click());
+    act(() => remove.click());
     expect(host.querySelector("[role=checkbox]")).toBeNull();
     await settle();
     expect(dropped).toBe(true);
 
     const undo = Array.from(document.querySelectorAll<HTMLButtonElement>(".toast-action")).find((one) =>
-      one.textContent?.includes("Deshacer"),
+      one.textContent?.includes(english("removed.undo")),
     )!;
     act(() => undo.click());
     await settle();
     expect(times("POST /api/shopping/list/items")).toBe(1);
-    expect(host.textContent).toContain("Leche");
+    expect(host.textContent).toContain("Milk");
   });
 });
 

@@ -1,7 +1,7 @@
 [project]
 name = "shopping"
 version = "0.1.0"
-description = "Módulo Shopping de OpenArga"
+description = "OpenArga Shopping module"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "arga-tenancy",

@@ -1,34 +1,35 @@
-# Diccionario de Shopping
+# Shopping glossary
 
-Los términos del dominio y cómo se calculan. Se inyecta en el contexto del agente: es lo que
-separa que acierte de que invente.
+The domain terms and how they are computed. It is injected into the agent's context: it is what
+separates getting it right from making it up.
 
-**Lista.** Lo que hay que comprar. Es una: lo pendiente, por secciones, y lo que ya está en el
-carro.
+**List.** What has to be bought. There is one: what is pending, by section, and what is already in
+the trolley.
 
-**Producto.** Algo que se compra, con su nombre de casa ("Leche", "Pechuga de pollo"). Nace la
-primera vez que se apunta y ya no se vuelve a crear: el nombre se compara sin mayúsculas, sin tildes
-y sin espacios de más. Guarda su sección y la cantidad de la última vez.
+**Product.** Something that is bought, with its household name ("Milk", "Chicken breast"). It is born
+the first time it is added and never created again: names are compared ignoring case, accents and
+extra spaces. It keeps its section and the quantity of the last time.
 
-**Sección.** Dónde está en el súper: fruta y verdura, panadería, carne, pescado, charcutería y
-quesos, lácteos y huevos, despensa, desayuno y dulces, congelados, bebidas, limpieza, higiene y
-otros, en ese orden, que es el de una tienda. Un producto nuevo la recibe de un diccionario; lo que
-no conoce va a "otros". Decir la sección de un producto la cambia para siempre.
+**Section.** Where it is in the supermarket: fruit and vegetables, bakery, meat, fish, deli and
+cheese, dairy and eggs, pantry, breakfast and sweets, frozen, drinks, cleaning, personal care and
+other, in that order, which is a shop's. A new product gets one from a dictionary; what it does not
+know goes to "other". Saying a product's section changes it for good.
 
-**Apuntado, en el carro, comprado, quitado.** Los cuatro estados de un producto en la lista.
-Apuntar dos veces lo mismo no crea otra entrada. Quitar no borra: el producto y su historial se
-quedan.
+**Added, in the trolley, bought, removed.** The four states of a product on the list. Adding the
+same thing twice does not create another entry. Removing deletes nothing: the product and its
+history stay.
 
-**Compra.** Lo que había en el carro cuando se terminó, con su fecha. Lo apuntado y no cogido se
-queda en la lista para la próxima.
+**Trip.** What was in the trolley when shopping was finished, with its date. What was added and not
+picked up stays on the list for next time.
 
-**Cada cuánto.** La mediana de días entre dos compras de un producto, por días distintos. Hace falta
-haberlo comprado tres veces; con menos, no se sabe y se dice. La mediana y no la media, para que una
-semana fuera no cambie la costumbre.
+**How often.** The median of days between two purchases of a product, counting distinct days. It
+needs three purchases; with fewer it is unknown, and that is said. The median and not the mean, so
+that a week away does not change the habit.
 
-**Te toca.** Un producto que lleva al menos su "cada cuánto" sin comprarse y no está apuntado. Es
-una propuesta: se apunta solo si se pide.
+**Due.** A product that has gone at least its "how often" without being bought and is not on the
+list. It is a proposal: it is added only if asked.
 
-**Habituales.** Lo que más veces se ha comprado y no está apuntado.
+**Usual.** What has been bought most often and is not on the list.
 
-**Cantidad.** Texto corto como se diría: "2", "1 kg", "pack de 6". No se suma ni se convierte.
+**Quantity.** Short text as it would be said: "2", "1 kg", "pack of 6". It is neither added up nor
+converted.

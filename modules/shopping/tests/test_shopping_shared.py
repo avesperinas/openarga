@@ -44,47 +44,47 @@ async def use(api, headers: dict, space: UUID | None) -> dict:
 
 
 async def test_your_list_is_yours_until_you_choose_a_home(api) -> None:
-    await add(api, who(ANA, CASA), "Pan")
+    await add(api, who(ANA, CASA), "Bread")
 
     shopping = (await api.get("/list", headers=who(ANA, CASA))).json()
 
     assert shopping["space_id"] is None
-    assert names(shopping) == ["Pan"]
+    assert names(shopping) == ["Bread"]
 
 
 async def test_both_members_see_and_mark_the_same_home_list(api) -> None:
     await use(api, who(ANA, CASA), CASA)
     await use(api, who(LUIS, CASA), CASA)
-    added = await add(api, who(ANA, CASA), "Leche", "Huevos")
-    leche = next(one for g in added["groups"] for one in g["items"] if one["name"] == "Leche")
+    added = await add(api, who(ANA, CASA), "Milk", "Eggs")
+    milk = next(one for g in added["groups"] for one in g["items"] if one["name"] == "Milk")
 
     marked = await api.put(
-        f"/list/items/{leche['id']}/cart", json={"in_cart": True}, headers=who(LUIS, CASA)
+        f"/list/items/{milk['id']}/cart", json={"in_cart": True}, headers=who(LUIS, CASA)
     )
     ana = (await api.get("/list", headers=who(ANA, CASA))).json()
 
     assert marked.status_code == 200
-    assert names(marked.json()) == ["Huevos", "Leche"]
+    assert names(marked.json()) == ["Eggs", "Milk"]
     assert marked.json()["space_id"] == str(CASA)
-    assert [one["name"] for one in ana["cart"]] == ["Leche"]
+    assert [one["name"] for one in ana["cart"]] == ["Milk"]
 
 
 async def test_choosing_a_home_moves_nothing_and_going_back_finds_your_list(api) -> None:
-    await add(api, who(ANA, CASA), "Pan")
+    await add(api, who(ANA, CASA), "Bread")
 
     home = await use(api, who(ANA, CASA), CASA)
-    await add(api, who(ANA, CASA), "Pan")
+    await add(api, who(ANA, CASA), "Bread")
     back = await use(api, who(ANA, CASA), None)
 
     assert names(home) == []
-    assert names(back) == ["Pan"]
+    assert names(back) == ["Bread"]
     products = (await api.get("/products", headers=who(ANA, CASA))).json()
-    assert [one["name"] for one in products] == ["Pan"]
+    assert [one["name"] for one in products] == ["Bread"]
 
 
 async def test_the_home_list_is_not_yours_if_you_do_not_choose_it(api) -> None:
     await use(api, who(ANA, CASA), CASA)
-    await add(api, who(ANA, CASA), "Leche")
+    await add(api, who(ANA, CASA), "Milk")
 
     luis = (await api.get("/list", headers=who(LUIS, CASA))).json()
 
@@ -99,20 +99,20 @@ async def test_a_space_you_are_not_in_is_not_a_list_you_can_use(api) -> None:
 
 
 async def test_whoever_left_the_space_is_back_on_their_own_list(api) -> None:
-    await add(api, who(LUIS), "Kéfir")
+    await add(api, who(LUIS), "Kefir")
     await use(api, who(LUIS, CASA), CASA)
-    await add(api, who(LUIS, CASA), "Leche")
+    await add(api, who(LUIS, CASA), "Milk")
 
     after = (await api.get("/list", headers=who(LUIS))).json()
 
     assert after["space_id"] is None
-    assert names(after) == ["Kéfir"]
+    assert names(after) == ["Kefir"]
 
 
 async def test_a_finished_trip_is_in_the_home_history_and_not_in_yours(api) -> None:
     await use(api, who(ANA, CASA), CASA)
     await use(api, who(LUIS, CASA), CASA)
-    added = await add(api, who(ANA, CASA), "Leche")
+    added = await add(api, who(ANA, CASA), "Milk")
     item = added["groups"][0]["items"][0]["id"]
     await api.put(f"/list/items/{item}/cart", json={"in_cart": True}, headers=who(ANA, CASA))
 
@@ -122,7 +122,7 @@ async def test_a_finished_trip_is_in_the_home_history_and_not_in_yours(api) -> N
     ana_own = (await api.get("/trips", headers=who(ANA, CASA))).json()
 
     assert finished.status_code == 201
-    assert [[p["name"] for p in trip["products"]] for trip in luis] == [["Leche"]]
+    assert [[p["name"] for p in trip["products"]] for trip in luis] == [["Milk"]]
     assert ana_own == []
 
 
@@ -132,7 +132,7 @@ async def test_claude_and_the_widgets_use_the_list_you_chose(api) -> None:
 
     told = await api.post(
         "/tools/add_to_list",
-        json={"items": [{"name": "Café"}]},
+        json={"items": [{"name": "Coffee"}]},
         headers=who(ANA, CASA) | WRITE_SCOPES,
     )
     card = (await api.get("/widgets/list", headers=who(LUIS, CASA))).json()
@@ -142,7 +142,7 @@ async def test_claude_and_the_widgets_use_the_list_you_chose(api) -> None:
 
     assert told.status_code == 200
     assert told.json()["content"]["shared"] is True
-    assert [task["title"] for task in card["body"]["tasks"]] == ["Café"]
+    assert [task["title"] for task in card["body"]["tasks"]] == ["Coffee"]
     assert read.json()["content"]["shared"] is True
     assert read.json()["content"]["pending"] == 1
 

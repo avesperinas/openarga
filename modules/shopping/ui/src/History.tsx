@@ -13,6 +13,8 @@ import {
   Sheet,
   Skeleton,
   todayIso,
+  type Translate,
+  useT,
 } from "@openarga/ui";
 import { mutate, useResource } from "@openarga/app";
 import { useState } from "react";
@@ -31,9 +33,10 @@ import {
   signIn,
 } from "./api";
 import { ScreenHeader } from "./Header";
-import { dayLabel, daysSince, habitDetail } from "./words";
+import { dayLabel, daysSince, habitDetail, sectionName } from "./words";
 
 export function HistoryScreen({ onList }: { onList: () => void }) {
+  const t = useT();
   const done = useResource("trips", readTrips);
   const trips = done.data ?? null;
   const products = useResource("products", () => readProducts(), { persist: true }).data ?? [];
@@ -47,33 +50,32 @@ export function HistoryScreen({ onList }: { onList: () => void }) {
 
   return (
     <Screen>
-      <ScreenHeader title="Historial" />
+      <ScreenHeader title={t("history.title")} />
       <OfflineNotice />
 
       {done.error && trips === null && (
-        <ErrorState title="No se ha podido leer el historial" detail={done.error.message} onRetry={done.refresh} />
+        <ErrorState title={t("history.read_failed")} detail={done.error.message} onRetry={done.refresh} />
       )}
-      {done.loading && <Skeleton label="Cargando el historial" />}
+      {done.loading && <Skeleton label={t("history.loading")} />}
 
       {trips !== null && trips.length === 0 && (
         <EmptyState
           icon="calendar"
-          title="Todavía no hay compras"
-          action={{ label: "Ir a la lista", icon: "basket", onClick: onList }}
+          title={t("history.empty")}
+          action={{ label: t("history.go_list"), icon: "basket", onClick: onList }}
         >
-          Cuando termines una, se guarda aquí con su fecha. Con tres compras de algo, Shopping sabe cada cuánto lo
-          compras y te avisa cuando te toca.
+          {t("history.empty_body")}
         </EmptyState>
       )}
 
       {trips && trips.length > 0 && (
-        <Section title="Compras" count={trips.length}>
+        <Section title={t("history.trips")} count={trips.length}>
           <List>
             {trips.map((one) => (
               <ListRow
                 key={one.id}
                 title={dayLabel(one.finished_at)}
-                detail={one.items === 1 ? "1 producto" : `${one.items} productos`}
+                detail={one.items === 1 ? t("history.products_one") : t("history.products_other", { count: one.items })}
                 accessory="chevron-right"
                 onClick={() => setTrip(one)}
               />
@@ -83,8 +85,8 @@ export function HistoryScreen({ onList }: { onList: () => void }) {
       )}
 
       {bought.length > 0 && (
-        <Section title="Lo que compras">
-          <FrequencyRows label="Lo que compras">
+        <Section title={t("history.bought")}>
+          <FrequencyRows label={t("history.bought")}>
             {byOverdue.map((one) => {
               const since = daysSince(one.last, today);
               return (
@@ -93,7 +95,7 @@ export function HistoryScreen({ onList }: { onList: () => void }) {
                   title={one.name}
                   since={since}
                   every={one.every_days}
-                  label={`${one.name}: ${habitDetail(one)}`}
+                  label={`${one.name}: ${habitDetail(t, one)}`}
                   value={since === null ? undefined : one.every_days ? `${since} / ${Math.round(one.every_days)} d` : `${since} d`}
                   onClick={() => setProduct(one)}
                 />
@@ -145,6 +147,7 @@ function ProductSheet({
   const [category, setCategoryId] = useState(product.category_id);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState("");
+  const t = useT();
 
   async function save() {
     setBusy(true);
@@ -153,7 +156,7 @@ function ProductSheet({
       onSaved(category, await setCategory(product.id, category, product.name));
     } catch (error) {
       if (error instanceof Unauthorised) return signIn();
-      setProblem(error instanceof Error ? error.message : "No se pudo guardar.");
+      setProblem(error instanceof Error ? error.message : t("common.save_failed"));
       setBusy(false);
     }
   }
@@ -163,17 +166,17 @@ function ProductSheet({
       title={product.name}
       onClose={onClose}
       action={{
-        label: busy ? "Guardando…" : "Guardar",
+        label: busy ? t("common.saving") : t("common.save"),
         onClick: () => void save(),
         disabled: busy || category === product.category_id,
       }}
     >
-      <Hint>{summary(product)}</Hint>
+      <Hint>{summary(t, product)}</Hint>
       <ChoiceChips
-        label="Sección"
+        label={t("item.section")}
         value={category}
         onChange={setCategoryId}
-        options={categories.map((one) => ({ value: one.id, label: `${one.emoji} ${one.name}` }))}
+        options={categories.map((one) => ({ value: one.id, label: `${one.emoji} ${sectionName(t, one.id, one.name)}` }))}
       />
       {problem && (
         <Hint tone="warning">
@@ -184,13 +187,11 @@ function ProductSheet({
   );
 }
 
-export function summary(product: Pick<Product, "times" | "since" | "every">): string {
-  const times = product.times === 1 ? "una vez" : `${product.times} veces`;
-  const last = product.since ? `, la última ${product.since}` : "";
-  const every = product.every
-    ? ` Lo compras ${product.every}.`
-    : " Con tres compras se sabrá cada cuánto lo compras.";
-  return `Comprado ${times}${last}.${every}`;
+export function summary(t: Translate, product: Pick<Product, "times" | "since" | "every">): string {
+  const bought = product.times === 1 ? t("product.bought_one") : t("product.bought_other", { count: product.times });
+  const said = product.since ? t("product.last", { bought, since: product.since }) : t("product.plain", { bought });
+  const every = product.every ? t("product.every", { every: product.every }) : t("product.unknown");
+  return `${said} ${every}`;
 }
 
 function overdue(product: Pick<Product, "last" | "every_days">, today: string): number {

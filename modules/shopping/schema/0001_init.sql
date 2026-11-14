@@ -8,19 +8,19 @@ create table shopping.shopping_category (
 comment on table shopping.shopping_category is 'arga:catalog';
 
 insert into shopping.shopping_category (id, name, emoji, position, user_id) values
-    ('produce',   'Fruta y verdura',       '🥬',  1, null),
-    ('bakery',    'Panadería',             '🥖',  2, null),
-    ('meat',      'Carne',                 '🥩',  3, null),
-    ('fish',      'Pescado',               '🐟',  4, null),
-    ('deli',      'Charcutería y quesos',  '🧀',  5, null),
-    ('dairy',     'Lácteos y huevos',      '🥛',  6, null),
-    ('pantry',    'Despensa',              '🥫',  7, null),
-    ('breakfast', 'Desayuno y dulces',     '🍪',  8, null),
-    ('frozen',    'Congelados',            '🧊',  9, null),
-    ('drinks',    'Bebidas',               '🍷', 10, null),
-    ('cleaning',  'Limpieza',              '🧽', 11, null),
-    ('hygiene',   'Higiene',               '🧴', 12, null),
-    ('other',     'Otros',                 '🛒', 13, null);
+    ('produce',   'Fruit and vegetables',  '🥬',  1, null),
+    ('bakery',    'Bakery',                '🥖',  2, null),
+    ('meat',      'Meat',                  '🥩',  3, null),
+    ('fish',      'Fish',                  '🐟',  4, null),
+    ('deli',      'Deli and cheese',       '🧀',  5, null),
+    ('dairy',     'Dairy and eggs',        '🥛',  6, null),
+    ('pantry',    'Pantry',                '🥫',  7, null),
+    ('breakfast', 'Breakfast and sweets',  '🍪',  8, null),
+    ('frozen',    'Frozen',                '🧊',  9, null),
+    ('drinks',    'Drinks',                '🍷', 10, null),
+    ('cleaning',  'Cleaning',              '🧽', 11, null),
+    ('hygiene',   'Personal care',         '🧴', 12, null),
+    ('other',     'Other',                 '🛒', 13, null);
 
 create table shopping.shopping_product (
     id           uuid        primary key default gen_random_uuid(),

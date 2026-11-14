@@ -15,68 +15,104 @@ def days(*offsets: int) -> list[date]:
 
 
 def test_the_same_product_written_three_ways_is_one() -> None:
-    assert names.key("Plátanos") == names.key("platanos ") == names.key("PLÁTANOS")
-    assert names.key("  Leche   semidesnatada ") == "leche semidesnatada"
+    assert names.key("Bananas") == names.key("bananas ") == names.key("BAN\u00c1NAS")
+    assert names.key("  Milk   semi-skimmed ") == "milk semi-skimmed"
 
 
 def test_a_product_is_shown_as_it_was_written_with_a_capital() -> None:
-    assert names.clean("  leche   sin lactosa ") == "Leche sin lactosa"
+    assert names.clean("  milk   lactose-free ") == "Milk lactose-free"
 
 
 def test_typing_finds_the_start_of_any_word() -> None:
-    assert names.starts_a_word("plat", "Plátanos")
-    assert names.starts_a_word("plat", "Papel de plata")
-    assert not names.starts_a_word("plat", "Espátula")
-    assert not names.starts_a_word("", "Plátanos")
+    assert names.starts_a_word("pot", "Potatoes")
+    assert names.starts_a_word("pot", "Sweet potatoes")
+    assert not names.starts_a_word("pot", "Hotpot")
+    assert not names.starts_a_word("", "Potatoes")
 
 
 @pytest.mark.parametrize(
     ("name", "category"),
     [
+        ("Semi-skimmed milk", "dairy"),
+        ("Tomatoes", "produce"),
+        ("Mushrooms", "produce"),
+        ("Hake", "fish"),
+        ("Chicken breast", "meat"),
+        ("Cheese", "deli"),
+        ("Sliced bread", "bakery"),
+        ("Ground coffee", "breakfast"),
+        ("Chocolate ice cream", "frozen"),
+        ("Beer", "drinks"),
+        ("Bleach", "cleaning"),
+        ("Shampoo", "hygiene"),
+        ("Rice", "pantry"),
         ("Leche semidesnatada", "dairy"),
-        ("Tomates", "produce"),
-        ("Champiñones", "produce"),
+        ("Champi\u00f1ones", "produce"),
         ("Merluza", "fish"),
         ("Pechuga de pollo", "meat"),
         ("Queso curado", "deli"),
         ("Pan de molde", "bakery"),
-        ("Café molido", "breakfast"),
+        ("Caf\u00e9 molido", "breakfast"),
         ("Helado de chocolate", "frozen"),
         ("Cerveza", "drinks"),
-        ("Lejía", "cleaning"),
-        ("Champú", "hygiene"),
+        ("Lej\u00eda", "cleaning"),
+        ("Champ\u00fa", "hygiene"),
         ("Arroz", "pantry"),
     ],
 )
-def test_a_new_product_falls_in_its_section(name: str, category: str) -> None:
+def test_a_new_product_falls_in_its_section_in_english_and_spanish(
+    name: str, category: str
+) -> None:
     assert guess.category(name) == category
 
 
 def test_a_phrase_wins_over_its_words() -> None:
+    assert guess.category("Tomato sauce") == "pantry"
+    assert guess.category("Toilet paper") == "hygiene"
     assert guess.category("Tomate frito") == "pantry"
-    assert guess.category("Papel higiénico") == "hygiene"
+    assert guess.category("Papel higi\u00e9nico") == "hygiene"
     assert guess.category("Arroz con leche") == "dairy"
 
 
 def test_the_first_word_that_matches_decides() -> None:
+    assert guess.category("Yogurt with strawberries") == "dairy"
     assert guess.category("Yogur de fresa") == "dairy"
 
 
 def test_what_the_dictionary_does_not_know_goes_to_other() -> None:
-    assert guess.category("Cosa rara") == guess.OTHER
+    assert guess.category("Odd thing") == guess.OTHER
 
 
 def test_every_section_in_the_dictionary_exists() -> None:
     from shopping.shopping import CATEGORY_IDS
 
-    used = set(guess.WORDS) | set(guess.PHRASES.values())
+    used = (
+        set(guess.WORDS)
+        | set(guess.PHRASES.values())
+        | set(guess.ENGLISH_WORDS)
+        | set(guess.ENGLISH_PHRASES.values())
+    )
     assert used <= set(CATEGORY_IDS)
 
 
-def test_a_word_belongs_to_one_section_only() -> None:
-    counted = Counter(names.fold(word) for words in guess.WORDS.values() for word in words)
+@pytest.mark.parametrize("vocabulary", [guess.WORDS, guess.ENGLISH_WORDS])
+def test_a_word_belongs_to_one_section_only(vocabulary: dict[str, tuple[str, ...]]) -> None:
+    counted = Counter(names.fold(word) for words in vocabulary.values() for word in words)
     assert [word for word, times in counted.items() if times > 1] == []
-    assert all(" " not in word for words in guess.WORDS.values() for word in words)
+    assert all(" " not in word for words in vocabulary.values() for word in words)
+
+
+def test_a_word_in_both_languages_means_the_same_section() -> None:
+    spanish = {
+        names.fold(word): section for section, words in guess.WORDS.items() for word in words
+    }
+    clashes = [
+        word
+        for section, words in guess.ENGLISH_WORDS.items()
+        for word in words
+        if spanish.get(names.fold(word), section) != section
+    ]
+    assert clashes == []
 
 
 def test_with_less_than_three_purchases_it_is_not_known_yet() -> None:
@@ -108,10 +144,10 @@ def test_it_is_due_once_its_interval_has_gone_by() -> None:
 
 
 def test_the_habit_is_said_as_it_would_be_said() -> None:
-    assert habits.every_label(7) == "cada semana"
-    assert habits.every_label(14) == "cada 2 semanas"
-    assert habits.every_label(3.5) == "cada 4 días"
-    assert habits.every_label(1) == "cada día"
-    assert habits.since_label(0) == "hoy"
-    assert habits.since_label(1) == "ayer"
-    assert habits.since_label(9) == "hace 9 días"
+    assert habits.every_label(7) == "every week"
+    assert habits.every_label(14) == "every 2 weeks"
+    assert habits.every_label(3.5) == "every 4 days"
+    assert habits.every_label(1) == "every day"
+    assert habits.since_label(0) == "today"
+    assert habits.since_label(1) == "yesterday"
+    assert habits.since_label(9) == "9 days ago"
