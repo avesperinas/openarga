@@ -87,10 +87,10 @@ def normalise(key: str, raw: str) -> str:
     value = raw.strip()
     if key == CLIENT_ID and not value.endswith(".apps.googleusercontent.com"):
         raise ValueError(
-            "eso no parece un Client ID de Google: acaba en .apps.googleusercontent.com"
+            "that does not look like a Google Client ID: it ends in .apps.googleusercontent.com"
         )
     if key == CLIENT_SECRET and (len(value) < 10 or " " in value):
-        raise ValueError("eso no parece un Client secret de Google: empieza por GOCSPX-")
+        raise ValueError("that does not look like a Google client secret: it starts with GOCSPX-")
     return value
 
 
@@ -117,11 +117,12 @@ def _oauth_error(response: httpx.Response, doing: str) -> SourceError:
     error = str(body.get("error") or response.status_code)
     if error == "invalid_grant":
         return SourceError(
-            "Google ya no acepta la autorización: reconecta Google Health.", code="consent_over"
+            "Google no longer accepts the authorisation: reconnect Google Health.",
+            code="consent_over",
         )
     if error in ("invalid_client", "unauthorized_client"):
         return SourceError(
-            "Google no reconoce el cliente: comprueba el Client ID y el secret en Google Cloud."
+            "Google does not recognise the client: check the Client ID and secret in Google Cloud."
         )
     detail = body.get("error_description") or ""
     return SourceError(
@@ -154,7 +155,7 @@ async def exchange(client: httpx.AsyncClient, app: App, code: str, redirect: str
         )
     refresh = body.get("refresh_token")
     if not refresh:
-        raise SourceError("Google no ha dado un refresh token: vuelve a conectar.")
+        raise SourceError("Google gave no refresh token: connect again.")
     return str(refresh)
 
 
@@ -202,16 +203,17 @@ class Health:
         scopes = "insufficient authentication scopes" in str(error.get("message", "")).lower()
         if "MISSING_OAUTH_SCOPE" in reasons or "MISSING_OAUTH_SCOPE" in str(error) or scopes:
             raise SourceError(
-                f"Falta un permiso para {where}: reconecta Google Health y marca todas las "
+                f"A permission is missing to {where}: reconnect Google Health and tick all the "
                 "casillas."
             )
         if "ACCOUNT_NOT_LINKED" in reasons:
             raise SourceError(
-                "Tu cuenta no tiene perfil en Google Health: ábrela en la app Google Health."
+                "Your account has no Google Health profile: open it in the Google Health app."
             )
         if response.status_code == 401:
             raise SourceError(
-                "Google Health no acepta el acceso: reconecta Google Health.", code="consent_over"
+                "Google Health does not accept the access: reconnect Google Health.",
+                code="consent_over",
             )
         if response.status_code == 429:
             raise SourceError("Google Health pide esperar.", rate_limited=True)
@@ -966,7 +968,9 @@ async def sync(
 ) -> Fetched:
     refresh = secrets.get(REFRESH)
     if not refresh:
-        raise SourceError("Falta autorizar en Google: pulsa Reconectar.", code="consent_over")
+        raise SourceError(
+            "Authorisation in Google is missing: press Reconnect.", code="consent_over"
+        )
     app = App(secrets[CLIENT_ID], secrets[CLIENT_SECRET])
     health = Health(client, await access(client, app, refresh))
     today = (now or current()).astimezone(MADRID).date()

@@ -50,10 +50,10 @@ CANCELLED = ("STATUS_POSTPONED", "STATUS_CANCELED", "STATUS_ABANDONED")
 def clean_settings(raw: dict[str, Any]) -> dict[str, Any]:
     team = str(raw.get(TEAM) or "").strip()
     if not re.fullmatch(r"[0-9]{1,8}", team):
-        raise ValueError("elige el equipo en el buscador")
+        raise ValueError("choose the team in the search")
     league = str(raw.get(LEAGUE) or "esp.1").strip()
     if league not in LEAGUES:
-        raise ValueError(f"la liga tiene que ser una de {', '.join(LEAGUES)}")
+        raise ValueError(f"the league must be one of {', '.join(LEAGUES)}")
     name = " ".join(str(raw.get(TEAM_NAME) or "").split())[:80] or None
     return {TEAM: team, LEAGUE: league, TEAM_NAME: name}
 
@@ -154,7 +154,7 @@ async def fetch(client: httpx.AsyncClient, team: str, league: str) -> list[Item]
             for item in items_of(found.get("events") or [], name):
                 items[item.uid] = item
     if not items:
-        raise SourceError("ESPN no da ningún partido de ese equipo")
+        raise SourceError("ESPN gives no match for that team")
     return list(items.values())
 
 
@@ -190,7 +190,7 @@ async def search_teams(
     client: httpx.AsyncClient, query: str | None, _parent: str | None
 ) -> list[dict[str, str]]:
     if not query or len(query.strip()) < 2:
-        raise ValueError("escribe el nombre del equipo")
+        raise ValueError("type the team's name")
     return await teams(client, query.strip())
 
 

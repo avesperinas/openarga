@@ -109,7 +109,7 @@ async def test_nominatim_down_is_said_and_seen(api, nominatim) -> None:
 
     assert answer["candidates"] == []
     assert answer["failed"][0]["source"] == "nominatim"
-    assert "no contestó" in answer["failed"][0]["reason"]
+    assert "did not answer" in answer["failed"][0]["reason"]
     listed = (await api.get("/connections")).json()
     [connection] = [c for c in listed if c["provider"] == "nominatim"]
     ficha = (await api.get(f"/connections/{connection['id']}")).json()

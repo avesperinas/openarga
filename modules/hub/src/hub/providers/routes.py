@@ -46,13 +46,11 @@ async def directions(
         )
         payload = response.json()
     except httpx.HTTPError as error:
-        raise SourceFailed(f"OSRM no contestó: {type(error).__name__}") from error
+        raise SourceFailed(f"OSRM did not answer: {type(error).__name__}") from error
     except ValueError as error:
-        raise SourceFailed("OSRM contestó algo que no es JSON") from error
+        raise SourceFailed("OSRM answered something that is not JSON") from error
     if payload.get("code") != "Ok" or not payload.get("routes"):
-        raise SourceFailed(
-            f"OSRM no encontró camino: {payload.get('code') or response.status_code}"
-        )
+        raise SourceFailed(f"OSRM found no route: {payload.get('code') or response.status_code}")
     route = payload["routes"][0]
     answer = {
         "distance_m": round(float(route["distance"])),

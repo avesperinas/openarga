@@ -88,9 +88,9 @@ async def _json(client: httpx.AsyncClient, url: str, params: dict | None = None)
         response.raise_for_status()
         payload = response.json()
     except httpx.HTTPError as error:
-        raise SourceFailed(f"Wikimedia no contestó: {type(error).__name__}") from error
+        raise SourceFailed(f"Wikimedia did not answer: {type(error).__name__}") from error
     except ValueError as error:
-        raise SourceFailed("Wikimedia contestó algo que no es JSON") from error
+        raise SourceFailed("Wikimedia answered something that is not JSON") from error
     return payload if isinstance(payload, dict) else {}
 
 
@@ -277,7 +277,7 @@ async def fetch(client: httpx.AsyncClient, file: str) -> Photo | None:
             return None
         response.raise_for_status()
     except httpx.HTTPError as error:
-        raise SourceFailed(f"la foto no llegó: {type(error).__name__}") from error
+        raise SourceFailed(f"the photo did not arrive: {type(error).__name__}") from error
     body = response.content
     kind = image_type(body)
     if kind is None or len(body) > MAX_BYTES:

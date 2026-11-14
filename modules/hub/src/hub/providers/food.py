@@ -140,7 +140,7 @@ def implausible(candidate: Candidate) -> str | None:
         if value is not None and not 0 <= value <= 100:
             return f"{value:g} g de {name} por 100 g"
     if candidate.protein_100g + candidate.fat_100g + candidate.carbs_100g > MAX_MACROS_100G:
-        return "sus macros suman más de 100 g por 100 g"
+        return "its macros add up to more than 100 g per 100 g"
     return None
 
 
@@ -227,7 +227,7 @@ async def search_usda(
     client: httpx.AsyncClient, key: str, query: str, limit: int = 10
 ) -> list[Candidate]:
     if not key:
-        raise SourceFailed("sin clave de USDA: ponla en Hub")
+        raise SourceFailed("no USDA key: add it in Hub")
     try:
         response = await send(
             client,
@@ -243,9 +243,9 @@ async def search_usda(
         response.raise_for_status()
         payload = response.json()
     except httpx.HTTPError as error:
-        raise SourceFailed(f"USDA no contestó: {type(error).__name__}") from error
+        raise SourceFailed(f"USDA did not answer: {type(error).__name__}") from error
     except ValueError as error:
-        raise SourceFailed("USDA contestó algo que no es JSON") from error
+        raise SourceFailed("USDA answered something that is not JSON") from error
 
     candidates = []
     for food in payload.get("foods") or []:
@@ -310,7 +310,7 @@ def _usda_detail(food: dict) -> Candidate | None:
 
 async def get_usda(client: httpx.AsyncClient, key: str, refs: list[str]) -> list[Candidate]:
     if not key:
-        raise SourceFailed("sin clave de USDA: ponla en Hub")
+        raise SourceFailed("no USDA key: add it in Hub")
     ids = [int(ref) for ref in refs if ref.isdigit()]
     if not ids:
         return []
@@ -325,9 +325,9 @@ async def get_usda(client: httpx.AsyncClient, key: str, refs: list[str]) -> list
         response.raise_for_status()
         payload = response.json()
     except httpx.HTTPError as error:
-        raise SourceFailed(f"USDA no contestó: {type(error).__name__}") from error
+        raise SourceFailed(f"USDA did not answer: {type(error).__name__}") from error
     except ValueError as error:
-        raise SourceFailed("USDA contestó algo que no es JSON") from error
+        raise SourceFailed("USDA answered something that is not JSON") from error
     found = [_usda_detail(food) for food in payload if isinstance(food, dict)]
     return [candidate for candidate in found if candidate is not None]
 
@@ -444,9 +444,9 @@ async def search_off(client: httpx.AsyncClient, query: str, limit: int = 10) -> 
             response.raise_for_status()
             found = response.json().get("hits") or []
     except httpx.HTTPError as error:
-        raise SourceFailed(f"OpenFoodFacts no contestó: {type(error).__name__}") from error
+        raise SourceFailed(f"OpenFoodFacts did not answer: {type(error).__name__}") from error
     except ValueError as error:
-        raise SourceFailed("OpenFoodFacts contestó algo que no es JSON") from error
+        raise SourceFailed("OpenFoodFacts answered something that is not JSON") from error
 
     candidates = [_off_found(product) for product in found]
     return [candidate for candidate in candidates if candidate is not None]
@@ -463,7 +463,7 @@ async def get_off(client: httpx.AsyncClient, codes: list[str]) -> list[Candidate
 def normalise(key: str, raw: str) -> str:
     value = raw.strip()
     if not value or any(character.isspace() for character in value):
-        raise ValueError("no parece una clave: pégala tal cual, sin espacios")
+        raise ValueError("that does not look like a key: paste it as it is, without spaces")
     return value
 
 

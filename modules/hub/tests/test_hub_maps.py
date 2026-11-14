@@ -157,7 +157,7 @@ async def test_a_map_version_that_disappears_is_said_and_the_next_is_chosen(api,
     gone = (await ask(api, "maps.tile", {"z": 9, "x": 252, "y": 188})).json()
     back = (await ask(api, "maps.tile", {"z": 9, "x": 252, "y": 188})).json()
 
-    assert gone["tile"] is None and "ya no está" in gone["failed"]
+    assert gone["tile"] is None and "is gone" in gone["failed"]
     assert (back["failed"], back["build"]) == (None, "20261002.pmtiles")
     assert back["tile"] is not None
     assert await runs(api, "protomaps") == ["ok", "error", "ok"]
@@ -175,7 +175,7 @@ async def test_without_the_list_of_maps_it_says_why_and_does_not_ask_again(api, 
     second = (await ask(api, "maps.tile", {"z": 9, "x": 252, "y": 188})).json()
 
     assert first["tile"] is None
-    assert first["failed"] == "Protomaps no dijo cuál es su mapa más reciente: contestó 403"
+    assert first["failed"] == "Protomaps did not say which map is the latest: answered 403"
     assert second["failed"] == first["failed"]
     assert builds_asked(protomaps) == 1
     assert await runs(api, "protomaps") == ["error", "error"]
@@ -272,7 +272,7 @@ async def test_a_red_map_that_still_fails_says_why(
     [connection] = [c for c in listed if c["provider"] == "protomaps"]
     ficha = (await api.get(f"/connections/{connection['id']}")).json()
     assert [run["detail"] for run in ficha["runs"]][0] == (
-        "Protomaps no dijo cuál es su mapa más reciente: contestó 403"
+        "Protomaps did not say which map is the latest: answered 403"
     )
 
 

@@ -127,5 +127,5 @@ async def test_open_meteo_down_is_said_and_seen(api, open_meteo) -> None:
 
     answer = (await ask(api, "weather.forecast", KYOTO)).json()
 
-    assert answer["weather"] is None and "no contestó" in answer["failed"]
+    assert answer["weather"] is None and "did not answer" in answer["failed"]
     assert await runs(api) == ["error"]

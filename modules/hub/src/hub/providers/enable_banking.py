@@ -85,7 +85,7 @@ def _b64(raw: bytes) -> str:
 def token(app_id: str, private_key_pem: str, now: float | None = None) -> str:
     key = serialization.load_pem_private_key(private_key_pem.encode(), password=None)
     if not isinstance(key, rsa.RSAPrivateKey):
-        raise ValueError("la clave de Enable Banking tiene que ser RSA")
+        raise ValueError("the Enable Banking key must be RSA")
     issued = int(now if now is not None else time.time())
     header = {"typ": "JWT", "alg": "RS256", "kid": app_id}
     claims = {
@@ -105,7 +105,7 @@ PEM = re.compile(r"-----BEGIN ([A-Z ]+)-----(.*?)-----END \1-----", re.S)
 def normalise_private_key(raw: str) -> str:
     found = PEM.search(raw.strip())
     if found is None:
-        raise ValueError("no es una clave PEM: empieza por -----BEGIN PRIVATE KEY-----")
+        raise ValueError("not a PEM key: it starts with -----BEGIN PRIVATE KEY-----")
     label, body = found.group(1), re.sub(r"\s+", "", found.group(2))
     lines = [body[i : i + 64] for i in range(0, len(body), 64)]
     pem = f"-----BEGIN {label}-----\n" + "\n".join(lines) + f"\n-----END {label}-----\n"
@@ -113,10 +113,10 @@ def normalise_private_key(raw: str) -> str:
         key = serialization.load_pem_private_key(pem.encode(), password=None)
     except (ValueError, TypeError) as error:
         raise ValueError(
-            "la clave no se puede leer; pégala entera, con su cabecera y su pie"
+            "the key cannot be read; paste all of it, with its header and footer"
         ) from error
     if not isinstance(key, rsa.RSAPrivateKey):
-        raise ValueError("la clave de Enable Banking tiene que ser RSA")
+        raise ValueError("the Enable Banking key must be RSA")
     return pem
 
 
@@ -124,7 +124,7 @@ def normalise_app_id(raw: str) -> str:
     try:
         return str(UUID(raw.strip()))
     except ValueError as error:
-        raise ValueError("el id de la aplicación es un UUID, como aparece en su panel") from error
+        raise ValueError("the application id is a UUID, as it appears on its dashboard") from error
 
 
 def normalise(key: str, raw: str) -> str:
@@ -422,7 +422,7 @@ async def sync(
                     events.append(detail)
     except BankError as error:
         raise error.as_source_error() from error
-    note = f"{without_reference} apuntes sin identidad del banco" if without_reference else None
+    note = f"{without_reference} entries without a bank identity" if without_reference else None
     remembered = {"accounts": accounts} if accounts != before else {}
     if whole:
         remembered["details_from"] = since.isoformat()

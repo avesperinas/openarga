@@ -90,7 +90,7 @@ async def test_a_symbol_that_fails_does_not_stop_the_rest() -> None:
 
 
 async def test_when_every_symbol_fails_the_pass_fails() -> None:
-    with pytest.raises(SourceError, match="ningún precio"):
+    with pytest.raises(SourceError, match="gave no price"):
         await run({"EURUSD=X": httpx.Response(200, json=chart([(D1, 1.1)]))})
 
 

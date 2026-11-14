@@ -21,38 +21,11 @@ SESSIONS: dict[str, tuple[str, str, timedelta]] = {
     "practice": ("", "Practice", timedelta(hours=1)),
 }
 PRACTICE = (
-    ("FirstPractice", "Libres 1"),
-    ("SecondPractice", "Libres 2"),
-    ("ThirdPractice", "Libres 3"),
+    ("FirstPractice", "Practice 1"),
+    ("SecondPractice", "Practice 2"),
+    ("ThirdPractice", "Practice 3"),
 )
 DEFAULT = ("race", "qualifying", "sprint")
-
-COUNTRIES = {
-    "Australia": "Australia",
-    "China": "China",
-    "Japan": "Japón",
-    "Bahrain": "Baréin",
-    "Saudi Arabia": "Arabia Saudí",
-    "USA": "Estados Unidos",
-    "United States": "Estados Unidos",
-    "Italy": "Italia",
-    "Monaco": "Mónaco",
-    "Spain": "España",
-    "Canada": "Canadá",
-    "Austria": "Austria",
-    "UK": "Gran Bretaña",
-    "Belgium": "Bélgica",
-    "Hungary": "Hungría",
-    "Netherlands": "Países Bajos",
-    "Azerbaijan": "Azerbaiyán",
-    "Singapore": "Singapur",
-    "Mexico": "México",
-    "Brazil": "Brasil",
-    "Qatar": "Catar",
-    "UAE": "Abu Dabi",
-    "Malaysia": "Malasia",
-    "Portugal": "Portugal",
-}
 
 
 def clean_settings(raw: dict[str, Any]) -> dict[str, Any]:
@@ -63,9 +36,9 @@ def clean_settings(raw: dict[str, Any]) -> dict[str, Any]:
         chosen = [part.strip() for part in chosen.split(",") if part.strip()]
     unknown = sorted(set(chosen) - set(SESSIONS))
     if unknown:
-        raise ValueError(f"sesiones que no existen: {', '.join(unknown)}")
+        raise ValueError(f"sessions that do not exist: {', '.join(unknown)}")
     if not chosen:
-        raise ValueError("elige al menos una sesión")
+        raise ValueError("choose at least one session")
     return {SESSIONS_KEY: [key for key in SESSIONS if key in chosen]}
 
 
@@ -76,23 +49,8 @@ def _moment(block: dict[str, Any]) -> datetime | None:
     return datetime.fromisoformat(f"{block['date']}T{clock.replace('Z', '+00:00')}")
 
 
-RACES = {
-    "Emilia Romagna Grand Prix": "GP de Emilia-Romaña",
-    "Miami Grand Prix": "GP de Miami",
-    "Las Vegas Grand Prix": "GP de Las Vegas",
-    "Mexico City Grand Prix": "GP de Ciudad de México",
-    "São Paulo Grand Prix": "GP de São Paulo",
-    "Barcelona Grand Prix": "GP de Barcelona",
-    "Barcelona-Catalunya Grand Prix": "GP de Barcelona",
-}
-
-
 def _name(race: dict[str, Any]) -> str:
-    raw = race.get("raceName") or "Gran Premio"
-    if raw in RACES:
-        return RACES[raw]
-    country = (race.get("Circuit") or {}).get("Location", {}).get("country", "")
-    return f"GP de {COUNTRIES[country]}" if country in COUNTRIES else raw
+    return race.get("raceName") or "Grand Prix"
 
 
 def items_of(races: list[dict[str, Any]], sessions: list[str]) -> list[Item]:
@@ -164,7 +122,7 @@ async def fetch(client: httpx.AsyncClient, sessions: list[str], today: date) -> 
     for year in range(first.year, last.year + 1):
         races = await season(client, year)
         if not races and year == today.year:
-            raise SourceError(f"Jolpica no da la temporada {year}")
+            raise SourceError(f"Jolpica does not give the season {year}")
         items.extend(items_of(races, sessions))
     return items
 

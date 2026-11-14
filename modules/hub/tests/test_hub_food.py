@@ -162,10 +162,12 @@ async def test_a_source_that_is_down_is_seen_in_hub(api, sources) -> None:
 
     answers = [(await ask(api, "food.search", {"query": "leek"})).json() for _ in range(2)]
 
-    assert answers[0]["failed"] == [{"source": "usda", "reason": "USDA no contestó: ConnectError"}]
+    assert answers[0]["failed"] == [
+        {"source": "usda", "reason": "USDA did not answer: ConnectError"}
+    ]
     usda = (await by_provider(api))["usda"]
     assert usda["state"] == "failing"
-    assert "USDA no contestó" in usda["reason"]
+    assert "USDA did not answer" in usda["reason"]
 
 
 async def test_the_usda_key_from_an_app_passes_once_and_overwrites_nothing(api, sources) -> None:
@@ -334,7 +336,7 @@ def test_pure_oil_is_a_food_and_impossible_figures_are_not() -> None:
     assert [(one["name"], one["reason"]) for one in dropped] == [
         ("Sal mal puesta", "3210 g de sal por 100 g"),
         ("Negativo", "-1 g de proteína por 100 g"),
-        ("Pesado", "sus macros suman más de 100 g por 100 g"),
+        ("Pesado", "its macros add up to more than 100 g per 100 g"),
     ]
 
 

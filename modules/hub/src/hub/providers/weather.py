@@ -82,13 +82,11 @@ async def _get(client: httpx.AsyncClient, url: str, params: dict) -> dict:
         )
         payload = response.json()
     except httpx.HTTPError as error:
-        raise SourceFailed(f"Open-Meteo no contestó: {type(error).__name__}") from error
+        raise SourceFailed(f"Open-Meteo did not answer: {type(error).__name__}") from error
     except ValueError as error:
-        raise SourceFailed("Open-Meteo contestó algo que no es JSON") from error
+        raise SourceFailed("Open-Meteo answered something that is not JSON") from error
     if response.status_code != 200 or payload.get("error"):
-        raise SourceFailed(
-            f"Open-Meteo dijo que no: {payload.get('reason') or response.status_code}"
-        )
+        raise SourceFailed(f"Open-Meteo refused: {payload.get('reason') or response.status_code}")
     return payload
 
 
@@ -167,7 +165,7 @@ async def climate(client: httpx.AsyncClient, lat: float, lon: float, today: date
             rain[month] += wet
             rainy[month] += 1 if wet >= 1 else 0
     if not highs:
-        raise SourceFailed("Open-Meteo no tiene clima de ese sitio")
+        raise SourceFailed("Open-Meteo has no climate for that place")
     months = [
         {
             "month": month,

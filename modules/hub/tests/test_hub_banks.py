@@ -209,7 +209,7 @@ async def test_a_new_bank_syncs_in_the_minute_and_then_waits_for_its_hour(
     [balance] = await events(schema, "finance.balance")
     assert balance.dedup_hash == f"bank:{ACCOUNT}:2026-09-20"
     ficha = (await api.get(f"/connections/{connection}")).json()
-    assert ficha["runs"][0]["detail"] == "1 apuntes sin identidad del banco"
+    assert ficha["runs"][0]["detail"] == "1 entries without a bank identity"
     assert ficha["budget"]["remaining"] == 3
 
 
