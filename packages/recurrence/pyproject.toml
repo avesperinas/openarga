@@ -1,7 +1,7 @@
 [project]
 name = "arga-recurrence"
 version = "0.1.0"
-description = "La repetición de arga: el subconjunto de RRULE, su expansión y su frase (ADR-0076)"
+description = "OpenArga recurrence: the RRULE subset, its expansion and its phrase"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "pydantic>=2.9",

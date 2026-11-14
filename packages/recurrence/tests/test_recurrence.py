@@ -31,8 +31,11 @@ def starts(occurrences):
 
 
 @pytest.mark.parametrize("case", PHRASES, ids=[c["rrule"] for c in PHRASES])
-def test_la_frase_de_cada_caso(case):
-    assert describe(parse(case["rrule"])) == case["phrase"]
+def test_each_case_reads_in_both_languages(case):
+    rule = parse(case["rrule"])
+    assert describe(rule, "en") == case["en"]
+    assert describe(rule, "es") == case["es"]
+    assert describe(rule, "de") == case["en"]
 
 
 @pytest.mark.parametrize("case", PHRASES, ids=[c["rrule"] for c in PHRASES])
