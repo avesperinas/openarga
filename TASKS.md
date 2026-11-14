@@ -66,7 +66,7 @@ Suggested order: per module, A1.1 then A1.2 then A1.3; A1.4 when `money` is reac
 | A2.2 | **UI in en and es**, per module, as A1.2 | Module files gone from the baseline | `doing` |
 | A2.3 | **Preferences**, as A1.3 | Tests in two time zones | `doing` |
 | A2.4 | **Outings area profile**: `modules/outings/areas/*.yaml` (Pamplona and Munich) with core towns, region, sources, search templates, seasonal hints, geocoding suffix, prompt language. Zone becomes `near` and `region`. Map built from the profile's bounding box (move `scripts/make-area-map.mjs` into the module) | The same tests pass with both profiles | `done` |
-| A2.5 | **Calendar settings** (`planner`): holidays by country and region plus local ones; subscription catalogue UI | Tests with two countries | `todo` |
+| A2.5 | **Calendar settings** (`planner`): holidays by country and region plus local ones; subscription catalogue UI | Tests with two countries | `done` |
 | A2.6 | **Insights and Outings on `ai.run`** instead of `claude.run` | End to end with the fake provider | `doing` |
 | A2.7 | **Demo seeds**, as A1.6 | Seeds run twice without duplicates | `doing` |
 | A2.8 | **App docs**, as A1.7 | Links resolve | `doing` |
