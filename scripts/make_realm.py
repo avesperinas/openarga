@@ -185,7 +185,10 @@ def realm() -> dict:
     return {
         "realm": "arga",
         "enabled": True,
-        "displayName": "arga",
+        "displayName": "OpenArga",
+        "internationalizationEnabled": True,
+        "supportedLocales": ["en", "es"],
+        "defaultLocale": "en",
         "registrationAllowed": False,
         "resetPasswordAllowed": False,
         "loginWithEmailAllowed": False,
@@ -205,6 +208,9 @@ def realm() -> dict:
                     "config": {"kc.user.profile.config": [json.dumps(USER_PROFILE)]},
                 }
             ]
+        },
+        "roles": {
+            "realm": [{"name": "admin", "description": "Administers this OpenArga instance"}]
         },
         "clientScopes": [BASIC, EMAIL, *(client_scope(scope) for scope in scopes)],
         "clients": [
@@ -265,7 +271,7 @@ def main(argv: list[str]) -> int:
         ]
         if stale:
             regenerate = "uv run python scripts/make_realm.py"
-            print(f"{', '.join(stale)} desfasado: {regenerate}", file=sys.stderr)
+            print(f"{', '.join(stale)} out of date: {regenerate}", file=sys.stderr)
             return 1
         print(f"realm ok · {len(declared_scopes())} scope(s)")
         return 0

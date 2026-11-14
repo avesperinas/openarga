@@ -24,16 +24,16 @@ for attempt in 1 2 3 4 5 6 7 8 9 10; do
     login=""
     break
   fi
-  echo "sync  Keycloak todavía no acepta el login de administrador (intento ${attempt})" >&2
+  echo "sync  Keycloak does not accept the admin login yet (attempt ${attempt})" >&2
   sleep 3
 done
 if [ -n "$login" ]; then
-  echo "sync: no se pudo entrar en Keycloak como administrador: ${login##*$'\n'}" >&2
+  echo "sync: could not log in to Keycloak as admin: ${login##*$'\n'}" >&2
   exit 1
 fi
 
 client_id=$("$KCADM" get clients -r "$REALM" -q clientId="$CLIENT" --fields id --format csv --noquotes)
-[ -n "$client_id" ] || { echo "sync: el cliente $CLIENT no existe en el realm $REALM" >&2; exit 1; }
+[ -n "$client_id" ] || { echo "sync: client $CLIENT does not exist in realm $REALM" >&2; exit 1; }
 
 scopes=""
 load_scopes() {
@@ -59,20 +59,20 @@ while IFS= read -r line; do
   if [ -z "$(scope_id "$name")" ]; then
     "$KCADM" create client-scopes -r "$REALM" -f - <<<"$line" >/dev/null 2>&1
     load_scopes
-    echo "sync  creado    $name"
+    echo "sync  created   $name"
     changes=$((changes + 1))
   fi
 
   if [[ "$name" == *:* ]] && ! grep -qxF "$name" <<<"$defaults"; then
     "$KCADM" update "clients/$client_id/default-client-scopes/$(scope_id "$name")" -r "$REALM"
-    echo "sync  asignado  $name a $CLIENT"
+    echo "sync  assigned  $name to $CLIENT"
     changes=$((changes + 1))
   fi
 done <"$SCOPES"
 
 if [ "$("$KCADM" get "clients/$client_id" -r "$REALM" --fields publicClient --format csv --noquotes)" != true ]; then
   "$KCADM" update "clients/$client_id" -r "$REALM" -s publicClient=true -s 'attributes."pkce.code.challenge.method"=S256'
-  echo "sync  público   $CLIENT, con PKCE y sin secreto"
+  echo "sync  public    $CLIENT, with PKCE and no secret"
   changes=$((changes + 1))
 fi
 
@@ -80,20 +80,20 @@ optional=$("$KCADM" get "clients/$client_id/optional-client-scopes" -r "$REALM" 
 offline=$(scope_id offline_access)
 if [ -n "$offline" ] && ! grep -qxF offline_access <<<"$optional"; then
   "$KCADM" update "clients/$client_id/optional-client-scopes/$offline" -r "$REALM"
-  echo "sync  asignado  offline_access a $CLIENT, opcional"
+  echo "sync  assigned  offline_access to $CLIENT, optional"
   changes=$((changes + 1))
 fi
 
 WEB_CLIENT=arga-web
 WEB_CLIENT_FILE=$(render "${WEB_CLIENT_FILE:-/opt/arga/client-arga-web.json}")
-FLOW=arga-primer-login
-: "${ARGA_WEB_CLIENT_SECRET:?falta ARGA_WEB_CLIENT_SECRET: sin él el gateway no puede cambiar códigos por tokens}"
+FLOW=arga-first-login
+: "${ARGA_WEB_CLIENT_SECRET:?ARGA_WEB_CLIENT_SECRET is required: without it the gateway cannot exchange codes for tokens}"
 
 web_id=$("$KCADM" get clients -r "$REALM" -q clientId="$WEB_CLIENT" --fields id --format csv --noquotes)
 if [ -z "$web_id" ]; then
   "$KCADM" create clients -r "$REALM" -f "$WEB_CLIENT_FILE" >/dev/null 2>&1
   web_id=$("$KCADM" get clients -r "$REALM" -q clientId="$WEB_CLIENT" --fields id --format csv --noquotes)
-  echo "sync  creado    cliente $WEB_CLIENT"
+  echo "sync  created   client $WEB_CLIENT"
   changes=$((changes + 1))
 fi
 "$KCADM" update "clients/$web_id" -r "$REALM" -s "secret=$ARGA_WEB_CLIENT_SECRET"
@@ -101,7 +101,7 @@ web_defaults=$("$KCADM" get "clients/$web_id/default-client-scopes" -r "$REALM" 
 for name in basic email; do
   if ! grep -qxF "$name" <<<"$web_defaults"; then
     "$KCADM" update "clients/$web_id/default-client-scopes/$(scope_id "$name")" -r "$REALM"
-    echo "sync  asignado  $name a $WEB_CLIENT"
+    echo "sync  assigned  $name to $WEB_CLIENT"
     changes=$((changes + 1))
   fi
 done
@@ -113,7 +113,7 @@ if [ -n "${CLAUDE_RUN_CLIENT_SECRET:-}" ]; then
   if [ -z "$run_id" ]; then
     "$KCADM" create clients -r "$REALM" -f "$RUN_CLIENT_FILE" >/dev/null 2>&1
     run_id=$("$KCADM" get clients -r "$REALM" -q clientId="$RUN_CLIENT" --fields id --format csv --noquotes)
-    echo "sync  creado    cliente $RUN_CLIENT"
+    echo "sync  created   client $RUN_CLIENT"
     changes=$((changes + 1))
   fi
   "$KCADM" update "clients/$run_id" -r "$REALM" -s "secret=$CLAUDE_RUN_CLIENT_SECRET"
@@ -122,13 +122,13 @@ if [ -n "${CLAUDE_RUN_CLIENT_SECRET:-}" ]; then
     name=$(sed -E 's/^\{"name": "([^"]+)".*/\1/' <<<"$line")
     if [[ "$name" == *:* ]] && ! grep -qxF "$name" <<<"$run_optional"; then
       "$KCADM" update "clients/$run_id/optional-client-scopes/$(scope_id "$name")" -r "$REALM"
-      echo "sync  asignado  $name a $RUN_CLIENT, opcional"
+      echo "sync  assigned  $name to $RUN_CLIENT, optional"
       changes=$((changes + 1))
     fi
   done <"$SCOPES"
   if [ -n "$offline" ] && ! grep -qxF offline_access <<<"$run_optional"; then
     "$KCADM" update "clients/$run_id/optional-client-scopes/$offline" -r "$REALM"
-    echo "sync  asignado  offline_access a $RUN_CLIENT, opcional"
+    echo "sync  assigned  offline_access to $RUN_CLIENT, optional"
     changes=$((changes + 1))
   fi
 fi
@@ -136,8 +136,8 @@ fi
 if ! "$KCADM" get authentication/flows -r "$REALM" --fields alias --format csv --noquotes | grep -xF "$FLOW" >/dev/null; then
   "$KCADM" create authentication/flows -r "$REALM" -s alias="$FLOW" -s providerId=basic-flow \
     -s topLevel=true -s builtIn=false \
-    -s "description=Primer login desde un IdP: enlaza con una persona que ya existe, nunca crea" >/dev/null 2>&1
-  echo "sync  creado    flujo $FLOW"
+    -s "description=First login from an identity provider: links to an existing person, never creates one" >/dev/null 2>&1
+  echo "sync  created   flow $FLOW"
   changes=$((changes + 1))
 fi
 executions() {
@@ -152,7 +152,7 @@ while IFS=, read -r id provider requirement; do
   if [ "$requirement" != REQUIRED ]; then
     "$KCADM" update "authentication/flows/$FLOW/executions" -r "$REALM" \
       -b "{\"id\":\"$id\",\"requirement\":\"REQUIRED\"}"
-    echo "sync  exigido   $provider en $FLOW"
+    echo "sync  required  $provider in $FLOW"
     changes=$((changes + 1))
   fi
 done < <(executions)
@@ -165,11 +165,40 @@ if [ -n "${GOOGLE_CLIENT_ID:-}" ] && [ -n "${GOOGLE_CLIENT_SECRET:-}" ]; then
     "$KCADM" update identity-provider/instances/google -r "$REALM" "${google[@]}"
   else
     "$KCADM" create identity-provider/instances -r "$REALM" -s alias=google -s providerId=google "${google[@]}" >/dev/null 2>&1
-    echo "sync  creado    IdP google"
+    echo "sync  created   identity provider google"
     changes=$((changes + 1))
   fi
 else
-  echo "sync  sin GOOGLE_CLIENT_ID ni GOOGLE_CLIENT_SECRET: no hay login con Google" >&2
+  echo "sync  no GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET: no Google login" >&2
+fi
+
+if [ -n "${OPENARGA_OIDC_ISSUER:-}" ] && [ -n "${OPENARGA_OIDC_CLIENT_ID:-}" ] && [ -n "${OPENARGA_OIDC_CLIENT_SECRET:-}" ]; then
+  discovered=$("$KCADM" create identity-provider/import-config -r "$REALM" -s providerId=oidc \
+    -s "fromUrl=${OPENARGA_OIDC_ISSUER%/}/.well-known/openid-configuration" -o)
+  config="{\"clientId\": \"$OPENARGA_OIDC_CLIENT_ID\", \"clientSecret\": \"$OPENARGA_OIDC_CLIENT_SECRET\", \"clientAuthMethod\": \"client_secret_post\", \"syncMode\": \"IMPORT\", \"defaultScope\": \"openid email\", ${discovered#*\{}"
+  body="{\"alias\": \"oidc\", \"providerId\": \"oidc\", \"enabled\": true, \"trustEmail\": true, \"displayName\": \"${OPENARGA_OIDC_NAME:-Single sign-on}\", \"firstBrokerLoginFlowAlias\": \"$FLOW\", \"config\": $config}"
+  if "$KCADM" get identity-provider/instances -r "$REALM" --fields alias --format csv --noquotes | grep -xF oidc >/dev/null; then
+    "$KCADM" update identity-provider/instances/oidc -r "$REALM" -f - <<<"$body"
+  else
+    "$KCADM" create identity-provider/instances -r "$REALM" -f - <<<"$body" >/dev/null 2>&1
+    echo "sync  created   identity provider oidc (${OPENARGA_OIDC_ISSUER})"
+    changes=$((changes + 1))
+  fi
+fi
+
+if [ -n "${OPENARGA_ADMIN_USERNAME:-}" ]; then
+  if [ -z "$("$KCADM" get users -r "$REALM" -q "username=$OPENARGA_ADMIN_USERNAME" -q exact=true --fields id --format csv --noquotes)" ]; then
+    : "${OPENARGA_ADMIN_PASSWORD:?OPENARGA_ADMIN_PASSWORD is required to create the first admin}"
+    "$KCADM" create users -r "$REALM" -s "username=$OPENARGA_ADMIN_USERNAME" -s enabled=true >/dev/null 2>&1
+    "$KCADM" set-password -r "$REALM" --username "$OPENARGA_ADMIN_USERNAME" --new-password "$OPENARGA_ADMIN_PASSWORD"
+    echo "sync  created   admin $OPENARGA_ADMIN_USERNAME"
+    changes=$((changes + 1))
+  fi
+  if ! "$KCADM" get-roles -r "$REALM" --uusername "$OPENARGA_ADMIN_USERNAME" --effective --fields name --format csv --noquotes | grep -xF admin >/dev/null; then
+    "$KCADM" add-roles -r "$REALM" --uusername "$OPENARGA_ADMIN_USERNAME" --rolename admin
+    echo "sync  granted   admin to $OPENARGA_ADMIN_USERNAME"
+    changes=$((changes + 1))
+  fi
 fi
 
 if [ -n "${ARGA_ALLOWED_EMAILS+x}" ]; then
@@ -180,7 +209,7 @@ if [ -n "${ARGA_ALLOWED_EMAILS+x}" ]; then
     allowed+=("$(tr '[:upper:]' '[:lower:]' <<<"${entry%%=*}")=$username")
   done
   if [ ${#allowed[@]} -eq 0 ]; then
-    echo "sync: ARGA_ALLOWED_EMAILS está vacía; no se deshabilita a todo el mundo por un secreto vacío" >&2
+    echo "sync: ARGA_ALLOWED_EMAILS is empty; nobody is disabled because of an empty secret" >&2
     exit 1
   fi
 
@@ -211,7 +240,7 @@ if [ -n "${ARGA_ALLOWED_EMAILS+x}" ]; then
       id=$(without_email "$username")
       if [ -n "$id" ]; then
         "$KCADM" update "users/$id" -r "$REALM" -s "email=$email" -s emailVerified=true -s enabled=true
-        echo "sync  enlazado  persona $id con su correo"
+        echo "sync  linked    person $id with their email"
         load_people
         linked=$((linked + 1))
         continue
@@ -234,16 +263,17 @@ if [ -n "${ARGA_ALLOWED_EMAILS+x}" ]; then
   emails=" ${allowed[*]%%=*} "
   while IFS=, read -r id name mail on verified; do
     mail=$(lower "$mail")
+    [ -n "${OPENARGA_ADMIN_USERNAME:-}" ] && [ "$name" = "$OPENARGA_ADMIN_USERNAME" ] && continue
     if [ "$on" = true ] && { [ -z "$mail" ] || [[ "$emails" != *" $mail "* ]]; }; then
       "$KCADM" update "users/$id" -r "$REALM" -s enabled=false
-      echo "sync  fuera     persona $id, no está en la lista blanca"
+      echo "sync  disabled  person $id, not in the allowlist"
       disabled=$((disabled + 1))
     fi
   done < <(users)
-  echo "sync  lista blanca · ${#allowed[@]} correo(s) · $created creada(s) · $linked enlazada(s) · $enabled habilitada(s) · $disabled deshabilitada(s)"
+  echo "sync  allowlist · ${#allowed[@]} email(s) · $created created · $linked linked · $enabled enabled · $disabled disabled"
   changes=$((changes + created + linked + enabled + disabled))
 else
-  echo "sync  sin ARGA_ALLOWED_EMAILS: no se toca a nadie del realm" >&2
+  echo "sync  no ARGA_ALLOWED_EMAILS: nobody in the realm is touched" >&2
 fi
 
-echo "sync  realm $REALM al día · $changes cambio(s)"
+echo "sync  realm $REALM up to date · $changes change(s)"

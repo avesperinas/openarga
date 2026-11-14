@@ -1,6 +1,5 @@
 auth/client-scopes.ndjson
 auth/realm.json
-auth/sync.sh
 backup/arga-backup
 backup/e2e.sh
 gateway/src/gateway/main.py
