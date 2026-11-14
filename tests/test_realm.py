@@ -103,8 +103,8 @@ def test_the_sync_waits_for_keycloak_instead_of_failing_the_deploy() -> None:
     login = sync.split("config credentials")[0]
 
     assert "for attempt in" in login
-    assert 'echo "sync: no se pudo entrar en Keycloak como administrador' in sync
-    assert "exit 1" in sync.split("no se pudo entrar en Keycloak")[1]
+    assert 'echo "sync: could not log in to Keycloak as admin' in sync
+    assert "exit 1" in sync.split("could not log in to Keycloak")[1]
 
 
 def test_the_sync_grants_the_same_scopes_the_realm_declares() -> None:
@@ -141,3 +141,29 @@ def test_the_sync_file_of_claude_run_is_the_realm_one() -> None:
     synced = json.loads((ROOT / "auth" / "client-claude-run.json").read_text())
 
     assert synced == run_client()
+
+
+def test_the_login_speaks_english_and_spanish_and_nobody_signs_up_alone() -> None:
+    assert REALM["displayName"] == "OpenArga"
+    assert REALM["internationalizationEnabled"] is True
+    assert REALM["supportedLocales"] == ["en", "es"]
+    assert REALM["defaultLocale"] == "en"
+    assert REALM["registrationAllowed"] is False
+
+
+def test_the_first_admin_has_a_realm_role_to_hold() -> None:
+    assert [role["name"] for role in REALM["roles"]["realm"]] == ["admin"]
+
+
+def test_sync_creates_the_first_admin_and_an_optional_oidc_provider() -> None:
+    sync = (ROOT / "auth" / "sync.sh").read_text()
+    for variable in (
+        "OPENARGA_ADMIN_USERNAME",
+        "OPENARGA_ADMIN_PASSWORD",
+        "OPENARGA_OIDC_ISSUER",
+        "OPENARGA_OIDC_CLIENT_ID",
+        "OPENARGA_OIDC_CLIENT_SECRET",
+    ):
+        assert variable in sync
+    result = subprocess.run(["bash", "-n", str(ROOT / "auth" / "sync.sh")], capture_output=True)
+    assert result.returncode == 0, result.stderr

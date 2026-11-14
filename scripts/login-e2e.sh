@@ -109,7 +109,14 @@ docker run --rm --network "$NET" --entrypoint /bin/bash \
   -e KC_ADMIN_PASSWORD=$ADMIN_PASSWORD -e ARGA_WEB_CLIENT_SECRET=$WEB_SECRET \
   -e GOOGLE_CLIENT_ID=id-de-google-de-prueba -e GOOGLE_CLIENT_SECRET=secreto-de-google-de-prueba \
   -e ARGA_ALLOWED_EMAILS="Dueno@Ejemplo.com=dueno" -e CLAUDE_RUN_CLIENT_SECRET=secreto-de-claude-run \
+  -e OPENARGA_ADMIN_USERNAME=first-admin -e OPENARGA_ADMIN_PASSWORD=first-admin-password-1 \
   "arga-auth:$TAG" /opt/arga/sync.sh
+
+say "the first admin is created on boot, keeps the admin role and survives the allowlist"
+admin_id=$(kc get users -r arga -q username=first-admin -q exact=true --fields id,enabled --format csv --noquotes)
+[[ "$admin_id" == *,true ]] || { echo "FAIL: no enabled first admin ($admin_id)" >&2; exit 1; }
+kc get-roles -r arga --uusername first-admin --effective --fields name --format csv --noquotes | grep -qxF admin \
+  || { echo "FAIL: the first admin has no admin role" >&2; exit 1; }
 
 say "claude-run: confidencial, con su secreto, sus scopes opcionales y offline_access (ADR-0136)"
 run_id=$(kc get clients -r arga -q clientId=claude-run --fields id --format csv --noquotes)
