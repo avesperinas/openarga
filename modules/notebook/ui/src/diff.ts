@@ -1,4 +1,4 @@
-export type DiffLine = { op: "same" | "add" | "del"; text: string };
+export type DiffLine = { op: "same" | "add" | "remove"; text: string };
 
 export function diff(before: string, after: string): DiffLine[] {
   const a = before.split("\n");
@@ -24,14 +24,14 @@ export function diff(before: string, after: string): DiffLine[] {
       i += 1;
       j += 1;
     } else if (table[i + 1]![j]! >= table[i]![j + 1]!) {
-      middle.push({ op: "del", text: x[i]! });
+      middle.push({ op: "remove", text: x[i]! });
       i += 1;
     } else {
       middle.push({ op: "add", text: y[j]! });
       j += 1;
     }
   }
-  while (i < x.length) middle.push({ op: "del", text: x[i++]! });
+  while (i < x.length) middle.push({ op: "remove", text: x[i++]! });
   while (j < y.length) middle.push({ op: "add", text: y[j++]! });
   return [
     ...a.slice(0, head).map((text) => ({ op: "same" as const, text })),

@@ -6,6 +6,7 @@ import { type Settings, pushExport, readExport, readPropertyNames, readSettings,
 import { APP } from "./identity";
 import { Pending, useLoad } from "./Loads";
 import { ago } from "./when";
+import { t } from "./lang";
 
 export function SettingsScreen() {
   return (
@@ -35,38 +36,38 @@ function OwnSettings() {
         try {
           await mutate<Settings>("settings", settings, { request: () => writeSettings(settings) });
           setDraft(null);
-          toast({ message: "Guardado" });
+          toast({ message: t("editor.saved") });
         } catch (error) {
           toast({ message: (error as Error).message, tone: "error" });
         }
       }}
     >
-      <Section title="Nota del día">
+      <Section title={t("settings.daily")}>
         <TextField
-          label="Carpeta"
+          label={t("move.folder")}
           value={settings.daily_folder}
           onChange={(daily_folder) => setDraft({ ...settings, daily_folder })}
-          hint="Cada día tiene su nota, que se llama como el día: 2026-09-28."
+          hint={t("settings.daily_hint")}
         />
       </Section>
-      <Section title="Repaso">
+      <Section title={t("settings.review")}>
         <SelectField
-          label="Propiedad con la fecha del próximo repaso"
+          label={t("settings.review_property")}
           value={settings.review_property ?? ""}
           onChange={(value) => setDraft({ ...settings, review_property: value || null })}
           options={[
-            { value: "", label: "Ninguna" },
-            ...dates.map((n) => ({ value: n.name, label: `${n.name} · ${n.notes} ${n.notes === 1 ? "nota" : "notas"}` })),
+            { value: "", label: t("settings.none") },
+            ...dates.map((n) => ({ value: n.name, label: `${n.name} · ${t(n.notes === 1 ? "count.notes.one" : "count.notes.other", { count: n.notes })}` })),
           ]}
         />
         <Hint>
           {dates.length === 0
-            ? "Ninguna propiedad de tus notas es una fecha todavía."
-            : "Las notas con esa fecha hoy o antes salen en «Repasar» y en su widget."}
+            ? t("settings.no_dates")
+            : t("settings.review_hint")}
         </Hint>
       </Section>
       <Button type="submit" variant="primary" disabled={draft === null}>
-        Guardar
+        {t("action.save")}
       </Button>
     </form>
   );
@@ -77,32 +78,32 @@ function CopySection() {
   const { data: state, found } = useLoad("export", readExport);
   const [busy, setBusy] = React.useState(false);
   return (
-    <Section title="Copia en GitHub">
+    <Section title={t("copy.title")}>
       {!state ? (
         <Pending found={found} rows={2} />
       ) : state.outcome === "unconnected" || state.outcome === null ? (
         <Hint>
-          Tus notas se copian solas en un repo privado tuyo, como ficheros .md que se abren en Obsidian. Conéctalo en{" "}
+          {t("copy.how_before")}{" "}
           <a href="/hub" className="mn-inline-link">
             Hub
           </a>
-          , en Notas → GitHub, con un token de ese repo que pueda escribir su contenido.
+          {t("copy.how_after")}
         </Hint>
       ) : state.outcome === "ok" ? (
-        <Notice tone="positive" title={`Copiado ${state.pushed_at ? ago(state.pushed_at) : ""}`}>
+        <Notice tone="positive" title={t("copy.done", { when: state.pushed_at ? ago(state.pushed_at) : "" }).trim()}>
           {state.pending > 0
-            ? `${state.pending} ${state.pending === 1 ? "cambio espera" : "cambios esperan"} a la siguiente copia, como mucho en diez minutos. `
-            : "Todo está en el repo. "}
+            ? `${t(state.pending === 1 ? "copy.pending.one" : "copy.pending.other", { count: state.pending })} `
+            : `${t("copy.all_there")} `}
           {state.commit_url && (
             <a href={state.commit_url} target="_blank" rel="noopener noreferrer" className="mn-inline-link">
-              Ver el último commit
+              {t("copy.last_commit")}
             </a>
           )}
         </Notice>
       ) : (
-        <Notice tone="warning" title="La última copia no se ha podido hacer">
+        <Notice tone="warning" title={t("copy.failed")}>
           {state.detail}
-          {state.pushed_at && ` La última buena fue ${ago(state.pushed_at)}.`}
+          {state.pushed_at && ` ${t("copy.last_good", { when: ago(state.pushed_at) })}`}
         </Notice>
       )}
       {state && (
@@ -121,7 +122,7 @@ function CopySection() {
             }
           }}
         >
-          Copiar ahora
+          {t("copy.now")}
         </Button>
       )}
     </Section>

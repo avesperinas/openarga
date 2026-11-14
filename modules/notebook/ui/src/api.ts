@@ -97,7 +97,7 @@ const BASE = client.base;
 
 export { Unauthorised, signIn };
 
-export const gone = (error: unknown) => error instanceof Error && error.message.startsWith("no existe");
+export const gone = (error: unknown) => error instanceof Error && /^(no existe|not found)/.test(error.message);
 
 export class Changed extends Error {}
 
@@ -116,7 +116,7 @@ export async function writeNote(id: string, content: string, version?: number): 
     headers: { "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({ content, version }),
   });
-  if (response.status === 401) throw new Unauthorised("sin sesión");
+  if (response.status === 401) throw new Unauthorised("no session");
   if (!response.ok) {
     const problem = problemOf(await response.json().catch(() => null)) ?? `${response.status}`;
     throw response.status === 409 ? new Changed(problem) : new Error(problem);
@@ -165,7 +165,7 @@ export const importNotes = (notes: { folder: string; title: string; content: str
 
 export async function uploadFile(name: string, data: Uint8Array | Blob): Promise<{ name: string; existed: boolean }> {
   const response = await fetch(`${BASE}/files?name=${q(name)}`, { method: "POST", body: data as BodyInit });
-  if (response.status === 401) throw new Unauthorised("sin sesión");
+  if (response.status === 401) throw new Unauthorised("no session");
   if (!response.ok) throw new Error(problemOf(await response.json().catch(() => null)) ?? `${response.status}`);
   return (await response.json()) as { name: string; existed: boolean };
 }

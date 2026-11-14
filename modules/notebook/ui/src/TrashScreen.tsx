@@ -1,9 +1,10 @@
-import { Button, CANNOT_UNDO, ConfirmDelete, EmptyState, IconButton, OfflineNotice, useToast } from "@openarga/ui";
+import { Button, ConfirmDelete, EmptyState, IconButton, OfflineNotice, useToast } from "@openarga/ui";
 import * as React from "react";
 
 import { type Trashed, deleteForever, emptyTrash, readTrash, restoreNote } from "./api";
 import { Pending, changed, useLoad } from "./Loads";
 import { ago } from "./when";
+import { t } from "./lang";
 
 interface Props {
   onBack: () => void;
@@ -18,7 +19,7 @@ export function TrashScreen({ onBack }: Props) {
   const restore = async (note: Trashed) => {
     try {
       await restoreNote(note.id);
-      toast({ message: `Recuperada · ${note.title}` });
+      toast({ message: t("trash.restored", { title: note.title }) });
       load();
     } catch (error) {
       toast({ message: (error as Error).message, tone: "error" });
@@ -28,8 +29,8 @@ export function TrashScreen({ onBack }: Props) {
   if (notes === null) return <Pending found={found} />;
   if (notes.length === 0) {
     return (
-      <EmptyState icon="trash" title="La papelera está vacía" action={{ label: "Volver a las notas", onClick: onBack }}>
-        Lo que borres en Notebook viene aquí, y de aquí se recupera.
+      <EmptyState icon="trash" title={t("trash.empty")} action={{ label: t("trash.back"), onClick: onBack }}>
+        {t("trash.empty_detail")}
       </EmptyState>
     );
   }
@@ -43,25 +44,26 @@ export function TrashScreen({ onBack }: Props) {
             <div className="mn-trash-text">
               <span className="mn-hit-title">{note.title}</span>
               <span className="mn-hit-path">
-                {note.folder ? `${note.folder} · ` : ""}borrada {ago(note.deleted_at)}
+                {note.folder ? `${note.folder} · ` : ""}
+                {t("trash.deleted", { when: ago(note.deleted_at) })}
               </span>
             </div>
             <Button size="small" variant="tinted" icon="undo" onClick={() => void restore(note)}>
-              Recuperar
+              {t("trash.restore")}
             </Button>
-            <IconButton icon="trash" label={`Borrar para siempre «${note.title}»`} variant="plain" size="small" onClick={() => setConfirm(note)} />
+            <IconButton icon="trash" label={t("trash.delete_named", { title: note.title })} variant="plain" size="small" onClick={() => setConfirm(note)} />
           </li>
         ))}
       </ul>
       <Button variant="destructive" block onClick={() => setConfirm("all")}>
-        Vaciar la papelera
+        {t("trash.empty_all")}
       </Button>
       {confirm && (
         <ConfirmDelete
-          title={confirm === "all" ? "¿Vaciar la papelera?" : "¿Borrar esta nota para siempre?"}
-          subject={confirm === "all" ? `${notes.length} ${notes.length === 1 ? "nota" : "notas"}` : confirm.title}
-          consequence={`Se pierden con su historial. ${CANNOT_UNDO}`}
-          action={confirm === "all" ? "Vaciar la papelera" : "Borrar para siempre"}
+          title={confirm === "all" ? t("trash.confirm_all") : t("trash.confirm_one")}
+          subject={confirm === "all" ? t(notes.length === 1 ? "count.notes.one" : "count.notes.other", { count: notes.length }) : confirm.title}
+          consequence={t("trash.consequence")}
+          action={confirm === "all" ? t("trash.empty_all") : t("trash.delete_forever")}
           onCancel={() => setConfirm(null)}
           onConfirm={async () => {
             if (confirm === "all") await emptyTrash();

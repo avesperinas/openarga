@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 
 import type { NoteSummary } from "./api";
 import { filter, fold } from "./tree";
+import { t } from "./lang";
 
 export interface Command {
   id: string;
@@ -49,7 +50,7 @@ export function Palette({ mode, notes, commands, onOpen, onSearch, onClose }: Pr
       .filter((command) => !words || fold(command.label).includes(words))
       .map((command) => ({ key: `c-${command.id}`, label: command.label, icon: command.icon, shortcut: command.shortcut, run: command.run }));
     const searchItem: Item[] = query.trim()
-      ? [{ key: "search", label: `Buscar «${query.trim()}» en el texto`, icon: "search", run: () => onSearch(query.trim()) }]
+      ? [{ key: "search", label: t("palette.search_text", { query: query.trim() }), icon: "search", run: () => onSearch(query.trim()) }]
       : [];
     return [...commandItems, ...noteItems, ...searchItem];
   }, [mode, notes, commands, query, onOpen, onSearch]);
@@ -70,7 +71,7 @@ export function Palette({ mode, notes, commands, onOpen, onSearch, onClose }: Pr
       <div
         className="glass mn-palette"
         role="dialog"
-        aria-label={mode === "notes" ? "Saltar a una nota" : "Comandos"}
+        aria-label={mode === "notes" ? t("palette.jump") : t("palette.commands")}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="mn-palette-input">
@@ -78,7 +79,7 @@ export function Palette({ mode, notes, commands, onOpen, onSearch, onClose }: Pr
           <input
             ref={input}
             value={query}
-            placeholder={mode === "notes" ? "Título de la nota" : "Qué quieres hacer, o una nota"}
+            placeholder={mode === "notes" ? t("palette.note_placeholder") : t("palette.command_placeholder")}
             aria-label="Buscar"
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
@@ -99,7 +100,7 @@ export function Palette({ mode, notes, commands, onOpen, onSearch, onClose }: Pr
           />
         </div>
         <ul className="mn-palette-list" ref={list} role="listbox">
-          {items.length === 0 && <li className="mn-palette-empty">Nada con eso.</li>}
+          {items.length === 0 && <li className="mn-palette-empty">{t("palette.empty")}</li>}
           {items.map((item, index) => (
             <li key={item.key} role="option" aria-selected={index === active}>
               <button

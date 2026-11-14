@@ -59,6 +59,7 @@ import { FolderSheet, MoveSheet, NewFolderSheet } from "./Sheets";
 import { Sidebar } from "./Sidebar";
 import { type FolderNode, filter } from "./tree";
 import { TrashScreen } from "./TrashScreen";
+import { t } from "./lang";
 
 const WIDE = 900;
 const WIDEST = 1440;
@@ -84,7 +85,7 @@ function rememberedPanel(): boolean {
   }
 }
 
-export function freeTitle(tree: Tree | null, folder: string, base = "Sin título"): string {
+export function freeTitle(tree: Tree | null, folder: string, base = t("note.untitled")): string {
   const taken = new Set(
     (tree?.notes ?? []).filter((n) => n.folder.toLowerCase() === folder.toLowerCase()).map((n) => n.title.toLowerCase()),
   );
@@ -215,16 +216,16 @@ export function App() {
 
   const commands = React.useMemo<PaletteItem[]>(
     () => [
-      { key: "new", label: "Nota nueva", icon: "plus", shortcut: "⌥N", run: () => void newNote() },
-      { key: "today", label: "Nota de hoy", icon: "today", shortcut: "⌥D", run: () => go({ screen: "today" }) },
-      { key: "switch", label: "Saltar a una nota", icon: "note", shortcut: "⌘O", run: () => setDialog({ kind: "palette", mode: "notes" }) },
-      { key: "search", label: "Buscar en el texto", icon: "search", shortcut: "⌘⇧F", run: () => go({ screen: "search", q: "", tag: "" }) },
-      { key: "folder", label: "Carpeta nueva", icon: "folder", run: () => setDialog({ kind: "new-folder", base: current?.folder ?? "" }) },
-      { key: "graph", label: "Ver el grafo", icon: "graph", shortcut: "⌥G", run: () => go({ screen: "graph" }) },
-      { key: "review", label: "Para repasar", icon: "calendar", run: () => go({ screen: "review" }) },
-      { key: "settings", label: "Ajustes de Notebook", icon: "settings", run: () => go({ screen: "settings" }) },
-      { key: "import", label: "Importar el vault", icon: "folder", run: () => go({ screen: "import" }) },
-      { key: "trash-open", label: "Abrir la papelera", icon: "trash", run: () => go({ screen: "trash" }) },
+      { key: "new", label: t("action.new_note"), icon: "plus", shortcut: "⌥N", run: () => void newNote() },
+      { key: "today", label: t("panel.today"), icon: "today", shortcut: "⌥D", run: () => go({ screen: "today" }) },
+      { key: "switch", label: t("palette.jump"), icon: "note", shortcut: "⌘O", run: () => setDialog({ kind: "palette", mode: "notes" }) },
+      { key: "search", label: t("command.search_text"), icon: "search", shortcut: "⌘⇧F", run: () => go({ screen: "search", q: "", tag: "" }) },
+      { key: "folder", label: t("folder.new"), icon: "folder", run: () => setDialog({ kind: "new-folder", base: current?.folder ?? "" }) },
+      { key: "graph", label: t("command.graph"), icon: "graph", shortcut: "⌥G", run: () => go({ screen: "graph" }) },
+      { key: "review", label: t("panel.review"), icon: "calendar", run: () => go({ screen: "review" }) },
+      { key: "settings", label: t("command.settings"), icon: "settings", run: () => go({ screen: "settings" }) },
+      { key: "import", label: t("sidebar.import"), icon: "folder", run: () => go({ screen: "import" }) },
+      { key: "trash-open", label: t("command.trash"), icon: "trash", run: () => go({ screen: "trash" }) },
     ],
     [newNote, go, current],
   );
@@ -272,15 +273,15 @@ export function App() {
       icon: "note",
       run: () => open(note),
     }));
-    if (dialog.mode === "notes") return [{ label: "Notas", items: noteItems }];
+    if (dialog.mode === "notes") return [{ label: t("app.title"), items: noteItems }];
     const words = query.trim();
     return [
-      { label: "Comandos", items: matching(commands, query) },
-      { label: "Notas", items: noteItems },
+      { label: t("palette.commands"), items: matching(commands, query) },
+      { label: t("app.title"), items: noteItems },
       {
-        label: "En el texto",
+        label: t("palette.in_text"),
         items: words
-          ? [{ key: "search", label: `Buscar «${words}» en el texto`, icon: "search", run: () => go({ screen: "search", q: words, tag: "" }) }]
+          ? [{ key: "search", label: t("palette.search_text", { query: words }), icon: "search", run: () => go({ screen: "search", q: words, tag: "" }) }]
           : [],
       },
     ];
@@ -307,13 +308,13 @@ export function App() {
     />
   );
 
-  const backToNotes = { label: "Notas", onClick: () => go({ screen: "home" }) };
+  const backToNotes = { label: t("app.title"), onClick: () => go({ screen: "home" }) };
   let main: React.ReactNode;
   switch (place.screen) {
     case "search":
       main = (
         <Screen>
-          <AppHeader app={APP} title="Buscar" />
+          <AppHeader app={APP} title={t("nav.search")} />
           <SearchScreen
             query={place.q}
             tag={place.tag}
@@ -326,7 +327,7 @@ export function App() {
     case "review":
       main = (
         <Screen>
-          <AppHeader app={APP} title="Para repasar" />
+          <AppHeader app={APP} title={t("panel.review")} />
           <ReviewScreen onOpen={(note) => open(note)} onSettings={() => go({ screen: "settings" })} />
         </Screen>
       );
@@ -337,7 +338,7 @@ export function App() {
     case "trash":
       main = (
         <Screen>
-          <AppHeader app={APP} title="Papelera" back={backToNotes} />
+          <AppHeader app={APP} title={t("sidebar.trash")} back={backToNotes} />
           <TrashScreen onBack={backToNotes.onClick} />
         </Screen>
       );
@@ -345,7 +346,7 @@ export function App() {
     case "import":
       main = (
         <Screen>
-          <AppHeader app={APP} title="Importar el vault" back={backToNotes} />
+          <AppHeader app={APP} title={t("sidebar.import")} back={backToNotes} />
           <ImportScreen onDone={changed} />
         </Screen>
       );
@@ -353,15 +354,15 @@ export function App() {
     case "graph":
       main = (
         <Screen wide>
-          <AppHeader app={APP} title="Notebook" />
+          <AppHeader app={APP} title={t("app.title")} />
           <GraphScreen onOpen={(id) => go({ screen: "note", id })} onNewNote={() => void newNote("")} />
         </Screen>
       );
       break;
     case "today":
       main = (
-        <Screen label="Nota de hoy">
-          <AppHeader app={APP} title="Hoy" />
+        <Screen label={t("panel.today")}>
+          <AppHeader app={APP} title={t("nav.today")} />
           <Skeleton rows={8} />
         </Screen>
       );
@@ -394,15 +395,15 @@ export function App() {
   } else if (wide && place.screen === "home" && tree.data) {
     const empty = tree.data.notes.length === 0;
     detail = (
-      <Screen label="Ninguna nota abierta">
+      <Screen label={t("home.none_open")}>
         <EmptyState
           icon="note"
-          title={empty ? "Aún no hay notas" : "Elige una nota"}
-          action={{ label: "Nota nueva", icon: "plus", onClick: () => void newNote("") }}
+          title={empty ? t("sidebar.empty") : t("home.choose")}
+          action={{ label: t("action.new_note"), icon: "plus", onClick: () => void newNote("") }}
         >
           {empty
-            ? "Escribe la primera, pídesela a Claude o importa tu vault de Obsidian."
-            : `${tree.data.notes.length} notas en ${tree.data.folders.length} carpetas. ⌘O para saltar a una, ⌘K para todo lo demás.`}
+            ? t("sidebar.empty_detail")
+            : t("home.summary", { notes: tree.data.notes.length, folders: tree.data.folders.length })}
         </EmptyState>
       </Screen>
     );
@@ -411,7 +412,7 @@ export function App() {
   return (
     <div className="mn">
       <AppShell
-        label="Secciones"
+        label={t("nav.sections")}
         active={tabOf(place, todayId)}
         onSelect={(tab) =>
           go(
@@ -423,11 +424,11 @@ export function App() {
           )
         }
         tabs={[
-          { id: "graph", label: "Grafo", icon: "graph" },
-          { id: "notes", label: "Notas", icon: "note" },
-          { id: "today", label: "Hoy", icon: "today" },
-          { id: "search", label: "Buscar", icon: "search" },
-          { id: "review", label: "Repasar", icon: "calendar" },
+          { id: "graph", label: t("sidebar.graph"), icon: "graph" },
+          { id: "notes", label: t("app.title"), icon: "note" },
+          { id: "today", label: t("nav.today"), icon: "today" },
+          { id: "search", label: t("nav.search"), icon: "search" },
+          { id: "review", label: t("nav.review"), icon: "calendar" },
           SETTINGS_TAB,
         ]}
         detail={detail}
@@ -437,8 +438,8 @@ export function App() {
 
       {dialog?.kind === "palette" && (
         <CommandPalette
-          label={dialog.mode === "notes" ? "Saltar a una nota" : "Comandos y notas"}
-          placeholder={dialog.mode === "notes" ? "Título de la nota" : "Qué quieres hacer, o una nota"}
+          label={dialog.mode === "notes" ? t("palette.jump") : t("palette.commands_notes")}
+          placeholder={dialog.mode === "notes" ? t("palette.note_placeholder") : t("palette.command_placeholder")}
           query={query}
           onQuery={setQuery}
           groups={palette}
@@ -464,7 +465,7 @@ export function App() {
           onDelete={async () => {
             const { trashed } = await deleteFolder(dialog.folder.path);
             changed();
-            toast({ message: trashed ? `${trashed} ${trashed === 1 ? "nota" : "notas"} a la papelera` : "Carpeta borrada" });
+            toast({ message: trashed ? t(trashed === 1 ? "folder.trashed.one" : "folder.trashed.other", { count: trashed }) : t("folder.deleted") });
           }}
           onClose={() => setDialog(null)}
         />
@@ -544,7 +545,7 @@ function NoteScreen({
     (target: string) => {
       const name = target.split("/").pop() ?? target;
       const folder = target.includes("/") ? target.slice(0, target.lastIndexOf("/")) : (note?.folder ?? "");
-      toast({ message: `«${name}» aún no existe`, action: { label: "Crearla", run: () => void newNote(folder, name) } });
+      toast({ message: t("link.missing", { name }), action: { label: t("link.create"), run: () => void newNote(folder, name) } });
     },
     [note, toast, newNote],
   );
@@ -561,7 +562,7 @@ function NoteScreen({
         else if (/^[a-z][a-z0-9_]*:/.test(target)) {
           const app = linkables.find((one) => one.target === target);
           if (app) window.location.assign(app.href);
-          else toast({ message: "Eso ya no está en su app" });
+          else toast({ message: t("link.gone_in_app") });
         } else missingLink(target);
       } catch (error) {
         fail(error);
@@ -575,7 +576,7 @@ function NoteScreen({
       try {
         await mutate(`note:${id}`, undefined, { request: () => restoreRevision(id, revision.id) });
         changed();
-        toast({ message: "Vuelta a la versión de antes" });
+        toast({ message: t("history.restored") });
       } catch (error) {
         fail(error);
       }
@@ -587,7 +588,7 @@ function NoteScreen({
     try {
       const [latest] = await readRevisions(id);
       if (!latest || latest.replaced_by !== "tool") {
-        toast({ message: "No hay un cambio de Claude que deshacer" });
+        toast({ message: t("history.nothing_from_claude") });
         return;
       }
       await restore(latest);
@@ -604,9 +605,9 @@ function NoteScreen({
       changed();
       go({ screen: "home" }, true);
       toast({
-        message: `A la papelera · ${note.title}`,
+        message: t("note.trashed", { title: note.title }),
         action: {
-          label: "Deshacer",
+          label: t("action.undo"),
           run: () =>
             void restoreNote(note.id).then(() => {
               changed();
@@ -627,7 +628,7 @@ function NoteScreen({
         prime(`note:${id}`, moved);
         changed();
         toast({
-          message: relinked ? `Movida · ${relinked} ${relinked === 1 ? "nota" : "notas"} con enlaces arreglados` : "Movida",
+          message: relinked ? t(relinked === 1 ? "note.moved_relinked.one" : "note.moved_relinked.other", { count: relinked }) : t("note.moved"),
         });
       } catch (error) {
         fail(error);
@@ -640,7 +641,7 @@ function NoteScreen({
     (next: Note, relinked: number) => {
       saved(next);
       invalidate("tree");
-      if (relinked) toast({ message: `Renombrada · ${relinked} ${relinked === 1 ? "nota" : "notas"} con enlaces arreglados` });
+      if (relinked) toast({ message: t(relinked === 1 ? "note.renamed_relinked.one" : "note.renamed_relinked.other", { count: relinked }) });
     },
     [saved, toast],
   );
@@ -712,28 +713,28 @@ function NoteScreen({
       <div className="mn-note-main">
         <div className="mn-toolbar">
           <Button size="small" variant="plain" icon="chevron-left" onClick={() => go({ screen: "home" })}>
-            Notas
+            {t("app.title")}
           </Button>
           <span className="mn-toolbar-space" />
           {note && (
             <>
               <Button size="small" variant={editing ? "primary" : "secondary"} icon={editing ? "done" : "edit"} onClick={() => setEditing((e) => !e)}>
-                {editing ? "Hecho" : "Editar"}
+                {editing ? t("action.done") : t("action.edit")}
               </Button>
-              <IconButton icon="settings" label="Más de esta nota" variant="plain" onClick={() => setDialog({ kind: "menu" })} />
+              <IconButton icon="settings" label={t("note.more")} variant="plain" onClick={() => setDialog({ kind: "menu" })} />
               <IconButton
                 icon="sidebar"
-                label={side ? (panelOpen ? "Plegar el panel" : "Desplegar el panel") : "Índice, enlaces e historial"}
+                label={side ? (panelOpen ? t("panel.collapse") : t("panel.expand")) : t("panel.all")}
                 variant="plain"
                 onClick={side ? togglePanel : () => setSheet(true)}
               />
             </>
           )}
         </div>
-        <Screen label={note?.title ?? "Nota"}>
+        <Screen label={note?.title ?? t("note.note")}>
           <OfflineNotice />
           {!note ? (
-            <Pending found={found} missing="Esta nota ya no está" />
+            <Pending found={found} missing={t("note.gone")} />
           ) : editing ? (
             <NoteEditor
               key={note.id}
@@ -762,7 +763,7 @@ function NoteScreen({
         </Screen>
       </div>
       {panelOpen && (
-        <aside className="mn-panel" aria-label="De esta nota">
+        <aside className="mn-panel" aria-label={t("note.about")}>
           {panel}
         </aside>
       )}
@@ -784,13 +785,13 @@ function NoteScreen({
         <Sheet title={note.title} onClose={() => setDialog(null)}>
           <div className="mn-sheet-body">
             <Button block icon="folder" onClick={() => setDialog({ kind: "move" })}>
-              Mover a otra carpeta
+              {t("note.move")}
             </Button>
             <Button block icon="clock" onClick={showHistory}>
-              Historial
+              {t("panel.history")}
             </Button>
             <Button block variant="destructive" icon="trash" onClick={() => void trash()}>
-              Enviar a la papelera
+              {t("note.trash")}
             </Button>
           </div>
         </Sheet>

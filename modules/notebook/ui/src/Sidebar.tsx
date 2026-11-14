@@ -5,6 +5,7 @@ import type { NoteSummary, Tree } from "./api";
 import { APP } from "./identity";
 import { Pending } from "./Loads";
 import { type FolderNode, ancestors, build, filter } from "./tree";
+import { t } from "./lang";
 
 const OPEN_KEY = "notebook.open-folders";
 
@@ -85,14 +86,14 @@ export function Sidebar({
 
   return (
     <Screen>
-      <AppHeader app={APP} title="Notas" />
+      <AppHeader app={APP} title={t("app.title")} />
       <OfflineNotice />
       <div className="mn-create">
         <Button variant="primary" icon="plus" size="small" onClick={onNewNote}>
-          Nota nueva
+          {t("action.new_note")}
         </Button>
-        <IconButton icon="folder" label="Carpeta nueva" size="small" onClick={onNewFolder} />
-        <IconButton icon="search" label="Comandos (⌘K)" size="small" onClick={onCommands} />
+        <IconButton icon="folder" label={t("folder.new")} size="small" onClick={onNewFolder} />
+        <IconButton icon="search" label={t("sidebar.commands")} size="small" onClick={onCommands} />
       </div>
       <form
         className="mn-filter"
@@ -102,25 +103,25 @@ export function Sidebar({
           if (query.trim()) onSearch(query.trim());
         }}
       >
-        <SearchField value={query} onChange={setQuery} placeholder="Buscar notas" label="Buscar notas" />
+        <SearchField value={query} onChange={setQuery} placeholder={t("sidebar.filter")} label={t("sidebar.filter")} />
       </form>
-      <nav className="mn-shortcuts" aria-label="Atajos">
+      <nav className="mn-shortcuts" aria-label={t("sidebar.shortcuts")}>
         <button type="button" className="mn-shortcut" onClick={onGraph}>
           <Icon name="graph" />
-          Grafo
+          {t("sidebar.graph")}
         </button>
         <button type="button" className="mn-shortcut" onClick={onTrash}>
           <Icon name="trash" />
-          Papelera
+          {t("sidebar.trash")}
         </button>
         <button type="button" className="mn-shortcut" onClick={onImport}>
           <Icon name="folder" />
-          Importar el vault
+          {t("sidebar.import")}
         </button>
       </nav>
       {query.trim() ? (
         <div className="mn-matches">
-          <ul className="mn-tree" aria-label="Notas que coinciden">
+          <ul className="mn-tree" aria-label={t("sidebar.matches")}>
             {matches.map((note) => (
               <li key={note.id}>
                 <NoteRow note={note} active={note.id === active} onOpen={onOpen} depth={0} path />
@@ -129,16 +130,16 @@ export function Sidebar({
           </ul>
           <button type="button" className="mn-search-all" onClick={() => onSearch(query.trim())}>
             <Icon name="search" />
-            Buscar «{query.trim()}» en el texto
+            {t("palette.search_text", { query: query.trim() })}
           </button>
         </div>
       ) : root ? (
         root.count === 0 ? (
-          <EmptyState icon="note" title="Aún no hay notas" action={{ label: "Nota nueva", icon: "plus", onClick: onNewNote }}>
-            Escribe la primera, pídesela a Claude o importa tu vault de Obsidian.
+          <EmptyState icon="note" title={t("sidebar.empty")} action={{ label: t("action.new_note"), icon: "plus", onClick: onNewNote }}>
+            {t("sidebar.empty_detail")}
           </EmptyState>
         ) : (
-          <ul className="mn-tree" aria-label="Notas">
+          <ul className="mn-tree" aria-label={t("app.title")}>
             <Folder node={root} depth={-1} open={open} toggle={toggle} active={active} onOpen={onOpen} onMenu={onFolderMenu} />
           </ul>
         )
@@ -199,7 +200,7 @@ function Folder({
           <span className="mn-row-count">{node.count}</span>
         </button>
         <span className="mn-folder-menu">
-          <IconButton icon="settings" label={`Carpeta ${node.name}`} variant="plain" size="small" onClick={() => onMenu(node)} />
+          <IconButton icon="settings" label={t("sidebar.folder", { name: node.name })} variant="plain" size="small" onClick={() => onMenu(node)} />
         </span>
       </div>
       {expanded && <ul className="mn-tree">{children}</ul>}
@@ -223,7 +224,7 @@ function NoteRow({
   return (
     <a
       className="mn-row mn-note"
-      href={`/notebook/nota/${note.id}`}
+      href={`/notebook/note/${note.id}`}
       style={{ "--depth": depth } as React.CSSProperties}
       aria-current={active ? "page" : undefined}
       onClick={(event) => {
@@ -234,7 +235,7 @@ function NoteRow({
     >
       <span className="mn-row-name">{note.title}</span>
       {path && note.folder && <span className="mn-row-path">{note.folder}</span>}
-      {note.updated_by === "tool" && <span className="mn-by-claude" title="Lo último lo cambió Claude" />}
+      {note.updated_by === "tool" && <span className="mn-by-claude" title={t("note.by_claude")} />}
     </a>
   );
 }

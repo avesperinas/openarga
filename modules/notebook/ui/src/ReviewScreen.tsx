@@ -2,10 +2,11 @@ import { Button, EmptyState, OfflineNotice } from "@openarga/ui";
 
 import { type NoteSummary, readReview } from "./api";
 import { Pending, useLoad } from "./Loads";
+import { t } from "./lang";
 
 function late(due: string, now = new Date()): string {
   const days = Math.round((Date.parse(now.toISOString().slice(0, 10)) - Date.parse(due)) / 86_400_000);
-  return days <= 0 ? "hoy" : days === 1 ? "ayer" : `hace ${days} días`;
+  return days <= 0 ? t("review.today") : days === 1 ? t("review.yesterday") : t("review.days_ago", { days });
 }
 
 export function ReviewScreen({ onOpen, onSettings }: { onOpen: (note: NoteSummary) => void; onSettings: () => void }) {
@@ -14,16 +15,15 @@ export function ReviewScreen({ onOpen, onSettings }: { onOpen: (note: NoteSummar
   if (!review) return <Pending found={found} />;
   if (!review.chosen) {
     return (
-      <EmptyState icon="calendar" title="¿Qué propiedad dice cuándo repasar?" action={{ label: "Elegirla", onClick: onSettings }}>
-        Si tus notas llevan una fecha de repaso en sus propiedades, como naechste_wiederholung, elígela y aquí saldrá lo
-        que toca cada día.
+      <EmptyState icon="calendar" title={t("review.unset")} action={{ label: t("review.choose"), onClick: onSettings }}>
+        {t("review.unset_detail")}
       </EmptyState>
     );
   }
   if (review.notes.length === 0) {
     return (
-      <EmptyState icon="done" title="Nada que repasar hoy" action={{ label: "Cambiar la propiedad", onClick: onSettings }}>
-        Las notas con la fecha de repaso de hoy o de antes salen aquí.
+      <EmptyState icon="done" title={t("review.empty")} action={{ label: t("review.change"), onClick: onSettings }}>
+        {t("review.empty_detail")}
       </EmptyState>
     );
   }
@@ -44,7 +44,7 @@ export function ReviewScreen({ onOpen, onSettings }: { onOpen: (note: NoteSummar
         ))}
       </ul>
       <Button variant="plain" onClick={onSettings}>
-        Cambiar la propiedad del repaso
+        {t("review.change_long")}
       </Button>
     </div>
   );

@@ -2,22 +2,22 @@ import { describe, expect, it } from "vitest";
 
 import { diff, hunks } from "./diff";
 
-describe("qué cambió", () => {
-  it("marca lo añadido y lo quitado entre líneas iguales", () => {
+describe("what changed", () => {
+  it("marks what was added and removed between equal lines", () => {
     expect(diff("a\nb\nc", "a\nB\nc\nd")).toEqual([
       { op: "same", text: "a" },
-      { op: "del", text: "b" },
+      { op: "remove", text: "b" },
       { op: "add", text: "B" },
       { op: "same", text: "c" },
       { op: "add", text: "d" },
     ]);
   });
 
-  it("dos versiones iguales no tienen cambios", () => {
+  it("two equal versions have no changes", () => {
     expect(diff("x\ny", "x\ny").every((line) => line.op === "same")).toBe(true);
   });
 
-  it("recorta lo igual lejos de los cambios", () => {
+  it("trims what is equal far from the changes", () => {
     const before = Array.from({ length: 20 }, (_, i) => `l${i}`).join("\n");
     const after = before.replace("l10", "cambio");
 
