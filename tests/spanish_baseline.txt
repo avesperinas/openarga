@@ -84,13 +84,8 @@ modules/goals/ui/src/goalWords.ts
 modules/goals/ui/src/states.test.tsx
 modules/goals/ui/src/words.ts
 modules/hub/manifest.yaml
-modules/hub/src/hub/banks.py
-modules/hub/src/hub/catalogue.py
 modules/hub/src/hub/claude_run.py
-modules/hub/src/hub/credentials.py
-modules/hub/src/hub/google_auth.py
 modules/hub/src/hub/instruments.py
-modules/hub/src/hub/notices.py
 modules/hub/src/hub/providers/agendas.py
 modules/hub/src/hub/providers/bitvavo.py
 modules/hub/src/hub/providers/claude.py
@@ -99,12 +94,8 @@ modules/hub/src/hub/providers/holidays.py
 modules/hub/src/hub/providers/imap.py
 modules/hub/src/hub/providers/ine.py
 modules/hub/src/hub/providers/wikimedia.py
-modules/hub/src/hub/push.py
 modules/hub/src/hub/rules.py
 modules/hub/src/hub/statements.py
-modules/hub/src/hub/sync.py
-modules/hub/src/hub/tools.py
-modules/hub/src/hub/worker.py
 modules/hub/tests/bank_fake.py
 modules/hub/tests/google_fake.py
 modules/hub/tests/test_hub_agendas.py

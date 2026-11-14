@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_contracts import notify
+from hub.words import say
 
 FAILING = "failing"
 REAUTH = "reauth"
@@ -54,10 +55,10 @@ async def blocked(connection: AsyncConnection) -> list[dict[str, Any]]:
             notify.notification(
                 BLOCKED,
                 f"claude_blocked:{row.id}",
-                f"{row.app.capitalize()} no ha podido usar tu Claude",
+                f"{row.app.capitalize()} could not use your Claude",
                 HREF,
                 row.finished_at,
-                body=(row.detail or "Ninguna de tus cuentas de Claude podía hacerlo.")[:400],
+                body=(row.detail or "None of your Claude accounts could do it.")[:400],
             )
         )
     return out
@@ -73,24 +74,24 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
                 notify.notification(
                     FAILING,
                     f"failing:{row.id}:{first.id}",
-                    f"{row.label} no trae datos",
+                    say("notice.failing.title", label=row.label),
                     HREF,
                     runs[0].finished_at,
-                    body=(runs[0].detail or "Tres pasadas seguidas con error.")[:400],
+                    body=(runs[0].detail or say("notice.failing.body"))[:400],
                 )
             )
         if row.consent_expires_at is not None:
             ends = row.consent_expires_at.date()
             for before in (7, 0):
-                when = "caduca hoy" if before == 0 else f"caduca en {before} días"
+                key = "notice.reauth.today" if before == 0 else "notice.reauth.days"
                 out.append(
                     notify.notification(
                         REAUTH,
                         f"reauth:{row.id}:{ends.isoformat()}:{before}",
-                        f"El permiso de {row.label} {when}",
+                        say(key, label=row.label, days=before),
                         HREF,
                         notify.at(ends - timedelta(days=before), HOUR),
-                        body="Renuévalo en Hub para que sigan entrando los movimientos.",
+                        body=say("notice.reauth.body"),
                     )
                 )
     return out

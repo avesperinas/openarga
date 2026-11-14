@@ -100,7 +100,7 @@ async def test_a_source_publishes_only_what_its_sheet_says_it_produces() -> None
     kernel = Kernel()
     result = sync.Outcome(UUID(int=0), "ok")
 
-    with pytest.raises(sources.BadSource, match="no declara"):
+    with pytest.raises(sources.BadSource, match="does not declare"):
         await sync.publish_all(kernel, "ine", [MOVEMENT], result)  # type: ignore[arg-type]
 
     assert kernel.posted == []

@@ -95,7 +95,7 @@ class PortfolioIn(BaseModel):
     funds: list[FundIn] = Field(min_length=1, max_length=60)
 
 
-KINDS = {"fund": "fondo", "listed": "cotizado"}
+KINDS = {"fund": "fund", "listed": "listed"}
 
 
 def catalogued(fund: FundIn) -> str | None:
@@ -164,8 +164,7 @@ async def record_portfolio(connection: AsyncConnection, request: PortfolioIn) ->
     unpriced = list(found.skipped)
     if priced and not await instruments.remember(connection, priced):
         unpriced += [
-            f"«{line.name}»: conecta «Precios de fondos» en Hub para valorarlo cada día"
-            for line in priced
+            f"'{line.name}': connect 'Fund prices' in Hub to value it every day" for line in priced
         ]
     return {
         "recorded": True,
@@ -175,8 +174,8 @@ async def record_portfolio(connection: AsyncConnection, request: PortfolioIn) ->
         "new": outcome.emitted,
         "repeated": outcome.duplicated,
         "priced_by_isin": [
-            f"«{request.funds[index].name}»: {line.isin} ({KINDS[line.kind]}, {line.where}), "
-            f"con precio desde el {request.on:%d/%m/%Y}"
+            f"'{request.funds[index].name}': {line.isin} ({KINDS[line.kind]}, {line.where}), "
+            f"priced from {request.on.isoformat()}"
             for index, line in lines.items()
         ],
         "without_price": unpriced,

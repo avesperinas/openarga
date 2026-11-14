@@ -210,8 +210,8 @@ def by_mail(category: str) -> list[dict]:
         {
             "id": f"imap.{extractor.id}",
             "name": extractor.entity,
-            "description": f"Por correo: reenvía sus avisos a tu buzón y {extractor.entity} "
-            "entra sola.",
+            "description": f"By email: forward its notices to your mailbox and {extractor.entity} "
+            "comes in by itself.",
             "capabilities": ["sync"],
             "available": False,
             "single": False,

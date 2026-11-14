@@ -31,7 +31,7 @@ def _subkey(master: bytes, provider: str) -> bytes:
 def masters() -> tuple[bytes, tuple[bytes, ...]]:
     raw = os.environ.get(VARIABLE, "").strip()
     if not raw:
-        raise NotConfigured(f"falta {VARIABLE}: sin ella no se puede guardar ni usar ninguna")
+        raise NotConfigured(f"falta {VARIABLE}: without it no credential can be stored or used")
     previous_raw = os.environ.get(f"{VARIABLE}_PREVIOUS", "").strip()
     previous = (decode_key(previous_raw, f"{VARIABLE}_PREVIOUS"),) if previous_raw else ()
     return decode_key(raw, VARIABLE), previous
@@ -61,7 +61,7 @@ class Status(BaseModel):
 def person() -> UUID:
     user = current_user.get()
     if user is None:
-        raise LookupError("sin persona no hay credencial de nadie")
+        raise LookupError("without a person there is nobody's credential")
     return user
 
 

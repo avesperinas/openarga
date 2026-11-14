@@ -33,8 +33,8 @@ class UnknownAuthorisation(Exception):
 def failure(error: eb.BankError) -> Refused:
     if error.code == eb.REDIRECT_NOT_ALLOWED:
         return Refused(
-            f"Tu aplicación de Enable Banking no deja volver a {redirect_url()}. Añádela en su "
-            "panel como dirección de vuelta (Redirect URLs) y prueba otra vez.",
+            f"Your Enable Banking application does not allow returning to {redirect_url()}. Add it "
+            "on its dashboard as a return address (Redirect URLs) and try again.",
             409,
         )
     return Refused(
@@ -63,12 +63,12 @@ async def app_secrets(database: AsyncConnection, given: dict[str, str]) -> dict[
         return connections.clean_secrets(provider, given)
     existing = await database.scalar(WITH_APP)
     if existing is None:
-        raise Refused("Pega antes el id y la clave privada de tu aplicación de Enable Banking")
+        raise Refused("First paste the id and private key of your Enable Banking application")
     found = {
         key: await credentials.use(database, PROVIDER, existing, key) for key in provider.shared
     }
     if not all(found.values()):
-        raise Refused("No se puede abrir tu aplicación de Enable Banking: vuelve a pegarla")
+        raise Refused("Your Enable Banking application cannot be opened: paste it again")
     return {key: value for key, value in found.items() if value}
 
 
@@ -144,7 +144,7 @@ async def reauthorize(
 ) -> str:
     row = (await database.execute(BANK_OF, {"id": connection_id})).one_or_none()
     if row is None:
-        raise Refused("esa conexión no es un banco", 404)
+        raise Refused("that connection is not a bank", 404)
     app = await app_secrets(database, {})
     config = row.config or {}
     try:

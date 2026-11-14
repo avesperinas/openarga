@@ -26,7 +26,7 @@ async def test_three_errors_in_a_row_say_a_source_fails(schema) -> None:
         schema, broken, "error", timedelta(hours=1), detail="Bitvavo 403 305: No active API key."
     )
     [notice] = await built()
-    assert notice["kind"] == "failing" and notice["title"] == "Bitvavo no trae datos"
+    assert notice["kind"] == "failing" and notice["title"] == "Bitvavo brings no data"
     assert "No active API key" in notice["body"] and notice["href"] == "/hub"
 
 
@@ -65,7 +65,7 @@ async def test_a_run_no_account_could_do_says_so_until_one_goes_well(schema) -> 
     )
     [notice] = await built()
     assert notice["kind"] == "claude_blocked"
-    assert notice["title"] == "Insights no ha podido usar tu Claude"
+    assert notice["title"] == "Insights could not use your Claude"
     assert "99 %" in notice["body"]
 
     await lost(schema, account, "insights:morning:2026-10-20#2", "ok", None, timedelta(hours=1))

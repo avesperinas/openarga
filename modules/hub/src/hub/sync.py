@@ -228,7 +228,7 @@ def missing_credential(
     if missing:
         result.outcome = "skipped"
         result.code = MISSING_CREDENTIAL
-        result.detail = f"Falta la credencial ({', '.join(missing)}): pégala en la ficha."
+        result.detail = f"The credential is missing ({', '.join(missing)}): paste it in its page."
     return bool(missing)
 
 
@@ -269,7 +269,7 @@ async def publish_all(
     source = (known.source if known else None) or provider
     for event in events:
         if known is not None and event["type"] not in known.emits:
-            raise sources.BadSource(f"{provider} no declara que produzca {event['type']}")
+            raise sources.BadSource(f"{provider} does not declare that it emits {event['type']}")
         sources.check(event["type"], event["payload"])
         sources.check_ts(event["type"], event["payload"], event["ts"])
     new_movements = 0
@@ -298,7 +298,7 @@ async def resolve_merchants(kernel: httpx.AsyncClient) -> None:
         response = await kernel.post("/resolution/run", headers=user_headers())
         response.raise_for_status()
     except httpx.HTTPError as error:
-        print(f"la pasada de resolución no ha podido correr: {error}", file=sys.stderr)
+        print(f"the resolution pass could not run: {error}", file=sys.stderr)
 
 
 CONSENT_OVER = text("""
@@ -393,14 +393,14 @@ async def run(
                         "provider": provider.id,
                         "label": connection.label,
                         "state": "expired",
-                        "reason": f"{connection.label} cerró el acceso; hay que reconectarlo.",
+                        "reason": f"{connection.label} closed the access; it needs reconnecting.",
                         "consent_expires_at": datetime.now(UTC),
                     },
                 )
         except httpx.HTTPError as error:
             result.outcome = "error"
-            result.detail = f"El kernel no aceptó lo traído: {type(error).__name__} {error}"
-        except Exception as error:  # noqa: BLE001 - un cliente roto no tumba el worker
+            result.detail = f"The kernel refused what was fetched: {type(error).__name__} {error}"
+        except Exception as error:  # noqa: BLE001 - a broken client does not bring the worker down
             result.outcome = "error"
             result.detail = f"{type(error).__name__}: {error}"
 

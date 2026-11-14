@@ -123,7 +123,7 @@ async def test_without_the_app_it_is_asked_for(api, kernel) -> None:
     listed = await api.post("/providers/enable_banking/banks", json={})
 
     assert listed.status_code == 422
-    assert "aplicación de Enable Banking" in listed.json()["detail"]
+    assert "Enable Banking application" in listed.json()["detail"]
 
 
 async def test_an_app_without_this_return_address_says_which_one_to_add(api, kernel, fake) -> None:
