@@ -5,6 +5,7 @@ import * as React from "react";
 import { dayLabel, isoDay } from "./calendar";
 import { useWidgetLayout } from "./Widget";
 import { dates } from "./regional";
+import { say } from "./words";
 
 const DAY_MS = 86_400_000;
 
@@ -59,13 +60,13 @@ const clock = (date: Date) =>
   dates({ hour: "2-digit", minute: "2-digit" }).format(date);
 
 export function untilLabel(from: Date, to: Date, now: Date = new Date()): string {
-  if (from.getTime() <= now.getTime()) return to.getTime() > now.getTime() ? "Ahora" : "Terminado";
+  if (from.getTime() <= now.getTime()) return to.getTime() > now.getTime() ? say("agenda.now") : say("agenda.over");
   const minutes = Math.round((from.getTime() - now.getTime()) / 60_000);
-  if (minutes < 60) return `En ${minutes} min`;
+  if (minutes < 60) return say("agenda.in_minutes", { minutes });
   const hours = Math.floor(minutes / 60);
   if (hours < 12 && midnight(from).getTime() === midnight(now).getTime()) {
     const rest = minutes % 60;
-    return rest >= 10 ? `En ${hours} h ${rest} min` : `En ${hours} h`;
+    return rest >= 10 ? say("agenda.in_hours_minutes", { hours, minutes: rest }) : say("agenda.in_hours", { hours });
   }
   return midnight(from).getTime() === midnight(now).getTime() ? clock(from) : dayLabel(from, now);
 }
@@ -83,7 +84,7 @@ function Row({ entry, now }: { entry: Parsed; now: Date }) {
     >
       <span className="entry-time">
         {entry.allDay ? (
-          "Todo el día"
+          say("calendar.all_day")
         ) : (
           <>
             <span>{clock(entry.from)}</span>
@@ -200,7 +201,7 @@ export function WidgetAgenda({ entries, now: given }: { entries: AgendaEntry[]; 
   const next = ahead.find((entry) => !entry.allDay) ?? ahead[0];
 
   if (layout === "tiny" || layout === "strip") {
-    if (!next) return <p className="widget-empty">Nada a la vista</p>;
+    if (!next) return <p className="widget-empty">{say("calendar.nothing_ahead")}</p>;
     const pending = today.filter((entry) => entry.to > now && entry !== next).length;
     return (
       <div className="agenda-next" data-tone={next.tone} data-layout={layout}>
@@ -256,7 +257,7 @@ export function WidgetAgenda({ entries, now: given }: { entries: AgendaEntry[]; 
   if (layout === "tall") {
     return (
       <div className="agenda" data-layout={layout}>
-        <Day day={now} entries={today} now={now} empty="Nada más hoy" />
+        <Day day={now} entries={today} now={now} empty={say("agenda.nothing_more_today")} />
         {following(1, 6).map(({ day, entries: dayEntries }) => (
           <Day key={isoDay(day)} day={day} entries={dayEntries} now={now} />
         ))}
@@ -271,7 +272,7 @@ export function WidgetAgenda({ entries, now: given }: { entries: AgendaEntry[]; 
       {showTomorrow ? (
         <Day day={addDays(now, 1)} entries={tomorrow} now={now} />
       ) : (
-        <Day day={now} entries={left} now={now} empty="Nada más hoy" />
+        <Day day={now} entries={left} now={now} empty={say("agenda.nothing_more_today")} />
       )}
     </div>
   );
@@ -293,7 +294,7 @@ export function WidgetWeek({ entries, now: given }: { entries: AgendaEntry[]; no
     return (
       <div className="list-count">
         <p className="widget-value kpi-figure">{count}</p>
-        <p className="list-count-first">en 7 días</p>
+        <p className="list-count-first">{say("agenda.in_7_days")}</p>
       </div>
     );
   }
@@ -412,7 +413,7 @@ export function MonthWithEntries({
       {showTomorrow ? (
         <Day day={addDays(now, 1)} entries={tomorrow} now={now} />
       ) : (
-        <Day day={now} entries={today} now={now} empty="Nada más hoy" />
+        <Day day={now} entries={today} now={now} empty={say("agenda.nothing_more_today")} />
       )}
     </div>
   );

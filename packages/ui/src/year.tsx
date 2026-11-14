@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { locale } from "./regional";
+import { say } from "./words";
 
 export interface YearDay {
   day: string;
@@ -88,7 +89,7 @@ export function YearCalendar({
     if (box) box.scrollLeft = box.scrollWidth;
   }, [last]);
 
-  if (!last) return <p className="widget-note">Sin datos en este año</p>;
+  if (!last) return <p className="widget-note">{say("year.no_data")}</p>;
 
   const cells = yearCells(days, last);
   const against = Boolean(goal && goal > 0);
@@ -110,7 +111,7 @@ export function YearCalendar({
           <div
             className="year-calendar-days"
             role="img"
-            aria-label={`${label}: ${withData} de ${cells.length} días con dato`}
+            aria-label={say("year.coverage", { label, count: withData, total: cells.length })}
             onClick={(event) => {
               const day = (event.target as HTMLElement).dataset.day;
               setPicked(day ? (byDay.get(day) ?? null) : null);
@@ -133,19 +134,19 @@ export function YearCalendar({
       <div className="year-calendar-foot">
         <p className="year-calendar-picked" role="status">
           {picked
-            ? `${formatDay(picked.day)} · ${picked.value === undefined ? "sin dato" : format(picked.value)}`
-            : "Toca un día para ver su cifra"}
+            ? `${formatDay(picked.day)} · ${picked.value === undefined ? say("year.no_value") : format(picked.value)}`
+            : say("year.pick")}
         </p>
         <ul className="year-calendar-legend" aria-hidden="true">
           <li>
-            <span className="year-calendar-day" data-level="none" /> sin dato
+            <span className="year-calendar-day" data-level="none" /> {say("year.no_value")}
           </li>
           <li>
             <span className="year-calendar-day" data-level="0" />
             <span className="year-calendar-day" data-level="1" />
             <span className="year-calendar-day" data-level="2" />
             <span className="year-calendar-day" data-level="3" />
-            <span className="year-calendar-day" data-level="4" /> {against ? "objetivo" : "más"}
+            <span className="year-calendar-day" data-level="4" /> {against ? say("year.target") : say("year.more")}
           </li>
         </ul>
       </div>
