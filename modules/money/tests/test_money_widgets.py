@@ -25,7 +25,7 @@ def test_the_widgets_are_the_summary_and_a_balance() -> None:
     assert all(w["link"].startswith("/money") for w in WIDGETS)
     account = next(w for w in WIDGETS if w["id"] == "account")
     assert account["option"] == {
-        "label": "Cuenta",
+        "label": "Account",
         "endpoint": "/api/money/widgets/account/options",
     }
 

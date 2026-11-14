@@ -15,7 +15,7 @@ database:
 
 inlets:
   - id: accounts
-    title: Cuentas
+    title: Accounts
     contracts:
       - finance.account
       - finance.movement
@@ -28,8 +28,6 @@ publishes:
   - type: money.metric
     contract: metric
 
-receives: [metric]
-
 api:
   prefix: /api/money
 
@@ -37,124 +35,124 @@ tools:
   - name: get_summary
     scope: money:read
     description: >
-      Las cifras de la persona hoy: patrimonio (todo menos inmuebles, cada cuenta por su parte) y
-      líquido (sin plan de pensiones), con lo que valían hace un año; cash (corrientes y ahorro sin
-      el fondo de contingencia, las comunes enteras); el fondo de contingencia contra su objetivo; y
-      el gasto mensual y el básico, de media en hasta 12 meses. `carried` dice qué cuentas valen lo
-      de su última valoración y no lo de hoy: dilo si lo hay. Úsala para "¿cuánto tengo?", "¿cuánto
-      gasto al mes?" o "¿cómo va mi colchón?".
+      The person's figures today: net worth (everything but real estate, each account by its share)
+      and liquid (without pension plans), with what they were worth a year ago; cash (current and
+      savings accounts without the emergency fund, shared ones whole); the emergency fund against
+      its target; and monthly and basic spending, averaged over up to 12 months. `carried` says
+      which accounts are worth their last valuation and not today's: say so if there are any. Use it
+      for "how much do I have?", "how much do I spend a month?" or "how is my safety net?".
   - name: get_movements
     scope: money:read
     description: >
-      Los movimientos de un mes (`month`) o un rango (`from`, `to`), del más reciente al más antiguo,
-      con lo que es cada uno: sus partes (categoría, si es gasto o ingreso, individual o compartido)
-      o su estado (`transfer` entre tus cuentas, `return` rentabilidad, `settlement` pago entre
-      vosotros, `ask` efectivo por etiquetar, `pending` sin interpretar). Filtra por texto, categoría
-      o solo lo pendiente. Importe con signo: negativo sale.
+      The movements of a month (`month`) or a range (`from`, `to`), newest first, with what each one
+      is: its parts (category, expense or income, individual or shared) or its status (`transfer`
+      between your accounts, `return` investment return, `settlement` payment between you two, `ask`
+      cash still to label, `pending` not interpreted). Filters by text, category or only what is
+      pending. Signed amount: negative goes out.
   - name: get_shared_balance
     scope: money:read
     description: >
-      Lo común de un año natural (el actual si no se dice): quién debe a quién y cuánto, si el año
-      está liquidado, el gasto común total y por categoría, y tu parte de lo proporcional. Lo que va
-      a medias cuenta la mitad; el resto, según los ingresos del año de cada uno, que salen de sus
-      tramos tecleados o de su Carrera (`incomes`: cuánto cuenta, de dónde, y si se eligió Carrera
-      y aún no hay cifra). Si la cuenta común la lleva la otra persona del espacio, sale lo mismo
-      que ve ella desde tu lado, con `kept_by` y de cuándo son sus cifras (`as_of`).
+      The shared money of a calendar year (the current one if not said): who owes whom and how
+      much, whether the year is settled, total shared spending and by category, and your part of
+      the proportional. What is split in half counts half; the rest follows each person's income of
+      the year, from the date ranges typed for them (`incomes`). If the other person of the space
+      keeps the shared account, it shows what they see from your side, with `kept_by` and how
+      recent their figures are (`as_of`).
   - name: categorise_movement
     scope: money:write
     description: >
-      Dice qué es un movimiento: su categoría, por el nombre. Si el nombre existe en varias
-      naturalezas o propiedades, hay que decir cuál (`nature`, `ownership`). En una categoría
-      compartida, `payer` dice quién pagó. Queda fijado: ninguna regla lo cambia. Hazlo solo con lo
-      que te pidan; el id sale de get_movements.
+      Says what a movement is: its category, by name. If the name exists in several natures or
+      ownerships, say which (`nature`, `ownership`). In a shared category, `payer` says who paid.
+      It stays fixed: no rule changes it. Do it only when asked; the id comes from get_movements.
   - name: mark_transfer
     scope: money:write
     description: >
-      Dice que un movimiento es un traspaso con otra cuenta o producto tuyo, por su nombre o su
-      clave: ni gasto ni ingreso. Si el otro lado ya está en esa cuenta, se emparejan; si no, se da
-      por hecho, y lo que entra en un producto de inversión cuenta como aportado (lo que vuelve, se
-      descuenta). Queda fijado: ninguna regla lo cambia. Hazlo solo con lo que te pidan; el id sale
-      de get_movements.
+      Says that a movement is a transfer with another account or product of yours, by its name or
+      key: neither expense nor income. If the other side is already in that account they are
+      paired; if not, it is assumed, and what goes into an investment product counts as
+      contributed (what comes back is subtracted). It stays fixed: no rule changes it. Do it only
+      when asked; the id comes from get_movements.
   - name: record_shared_expense
     scope: money:write
     description: >
-      Apunta un gasto común que no pasa por tus bancos: lo que la otra persona paga de su bolsillo
-      (`payer: other`, lo normal) o lo que pagas tú en efectivo sin una retirada que lo explique. Con
-      su importe en positivo, qué fue, una categoría compartida y el día (hoy si no se dice). Lo que
-      ya ha pasado por un banco no se apunta. Con un espacio elegido para lo común, va al espacio y
-      lo ven los dos, sea quien sea quien lo apunta.
+      Records a shared expense that does not go through your banks: what the other person pays out
+      of pocket (`payer: other`, the usual case) or what you pay in cash with no withdrawal that
+      explains it. With its amount as a positive number, what it was, a shared category and the day
+      (today if not said). What already went through a bank is not recorded. With a space chosen
+      for shared money, it goes to the space and both see it, whoever records it.
   - name: get_products
     scope: money:read
     description: >
-      Tus productos (cuentas, fondos, planes, cripto, inmuebles, fianzas) con su valor de hoy, y las
-      cuentas de tus fuentes que aún no son ningún producto. Con `product` (su nombre o su clave),
-      la ficha entera de uno: qué es, de dónde llegan sus datos, cómo se valora, lo aportado, sus
-      IBAN, las reglas que lo nombran y sus fondos con su valor, su clase de activo y sus regiones.
+      Your products (accounts, funds, plans, crypto, real estate, deposits) with today's value, and
+      the accounts of your sources that are not a product yet. With `product` (its name or key), the
+      whole card of one: what it is, where its data comes from, how it is valued, what was
+      contributed, its IBANs, the rules that name it and its funds with their value, asset class and
+      regions.
   - name: get_composition
     scope: money:read
     description: >
-      En qué está invertida tu cartera hoy, por tu parte: por clase de activo (renta variable,
-      renta fija, inmobiliario, liquidez, cripto), por fondo, por región y por producto, y los fondos
-      de cada producto. `products` la limita a esos. Lo que no se sabe repartir sale como «Sin
-      desglose» y se dice cuánto es.
+      What your portfolio is invested in today, by your share: by asset class (equity, bonds, real
+      estate, cash, crypto), by fund, by region and by product, and the funds of each product.
+      `products` limits it to those. What cannot be split shows as "No breakdown" with how much it
+      is.
   - name: get_rules
     scope: money:read
     description: >
-      Tus reglas: qué miran (comercio, texto, contraparte, IBAN), qué deciden y cuántos movimientos
-      explican hoy, con su id para quitarlas.
+      Your rules: what they look at (merchant, text, counterparty, IBAN), what they decide and how
+      many movements they explain today, with their id to remove them.
   - name: create_product
     scope: money:write
     description: >
-      Da de alta un producto: nombre, `type` (uno de los de get_products: `current`, `savings`,
-      `fund`, `etf`, `pension`, `crypto`, `real_estate`, `deposit`), entidad, tu parte en % y si es
-      la cuenta común. Un ETF o una acción en un bróker es `etf`, no `fund`. Con `source` (la clave
-      de una cuenta de tus fuentes sin asignar) sus datos llegan de ella; sin él, salen de los
-      traspasos desde tus otras cuentas, y sus IBAN los reconocen. Úsala solo cuando te lo pidan.
+      Creates a product: name, `type` (one of get_products: `current`, `savings`, `fund`, `etf`,
+      `pension`, `crypto`, `real_estate`, `deposit`), institution, your share in % and whether it is
+      the shared account. An ETF or a share at a broker is `etf`, not `fund`. With `source` (the key
+      of an unassigned account of your sources) its data comes from it; without it, from the
+      transfers from your other accounts, and its IBANs recognise them. Use it only when asked.
   - name: update_product
     scope: money:write
     description: >
-      Cambia de un producto solo lo que digas: nombre, tipo, entidad, tu parte en %, si es la
-      común, sus IBAN (la lista entera), cómo se valora (`value_mode`; vacío vuelve al de su tipo) o
-      de qué cuenta de tus fuentes llegan sus datos. Úsala solo cuando te lo pidan.
+      Changes only what you say of a product: name, type, institution, your share in %, whether it
+      is the shared one, its IBANs (the whole list), how it is valued (`value_mode`; empty goes back
+      to its type's) or which account of your sources its data comes from. Use it only when asked.
   - name: record_composition
     scope: money:write
     description: >
-      Apunta en qué fondos está un producto un día (hoy si no se dice): cada fondo con su nombre
-      tal cual lo enseña su entidad y lo que vale en euros o su peso en %. Con pesos, di también lo
-      que vale el producto (`value`). Sustituye a la foto de ese día y deja apuntado su valor; desde
-      ahí, cada fondo se mueve con su precio. Dice qué fondos no sabe clasificar: clasifícalos con
-      classify_fund si la persona te dice qué son. Para una captura de Finizens, mejor
-      record_portfolio de Hub, que la publica como lo haría su página.
+      Records which funds a product holds on a day (today if not said): each fund with its name as
+      its institution shows it and its value in the base currency or its weight in %. With weights,
+      also give what the product is worth (`value`). It replaces that day's snapshot and records its
+      value; from then on each fund moves with its price. It says which funds it cannot classify:
+      classify them with classify_fund if the person tells you what they are. For a screenshot of a
+      portfolio, prefer Hub's record_portfolio, which publishes it as the institution's page would.
   - name: record_value
     scope: money:write
     description: >
-      Apunta lo que vale un producto un día (hoy si no se dice): un inmueble, una fianza o un
-      producto sin fuente. Úsala solo cuando te lo pidan.
+      Records what a product is worth on a day (today if not said): a property, a deposit or a
+      product without a source. Use it only when asked.
   - name: classify_fund
     scope: money:write
     description: >
-      Dice qué es un fondo para la persona: su clase de activo (`equity`, `bond`, `real_estate`,
-      `cash`, `crypto`, `other`) y su reparto por regiones en % que sume 100 (`us`, `europe`,
-      `japan`, `pacific`, `other_developed`, `emerging`). Manda sobre el catálogo. El fondo, por su
-      nombre o su símbolo.
+      Says what a fund is for the person: its asset class (`equity`, `bond`, `real_estate`, `cash`,
+      `crypto`, `other`) and its split by region in % adding up to 100 (`us`, `europe`, `japan`,
+      `pacific`, `other_developed`, `emerging`). It overrides the catalogue. The fund, by its name or
+      symbol.
   - name: delete_rule
     scope: money:write
     description: >
-      Quita una regla por su id (de get_rules). Con `keep` (lo normal), lo que ya explicaba se queda
-      como está, etiquetado a mano, y deja de aplicarse a lo que llegue. Úsala solo cuando te lo
-      pidan.
+      Removes a rule by its id (from get_rules). With `keep` (the usual), what it already explained
+      stays as it is, labelled by hand, and it stops applying to what arrives. Use it only when
+      asked.
 
 ui:
   widgets:
     - id: networth
-      title: Patrimonio
+      title: Net worth
       kind: kpi-delta
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/money/widgets/networth
       refresh: 3600
       link: /money
     - id: liquid
-      title: Líquido
+      title: Liquid
       kind: kpi-delta
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/money/widgets/liquid
@@ -168,42 +166,42 @@ ui:
       refresh: 3600
       link: /money
     - id: emergency
-      title: Fondo de contingencia
+      title: Emergency fund
       kind: progress
       sizes: ["2x2", "1x1", "2x1", "4x1"]
       endpoint: /api/money/widgets/emergency
       refresh: 3600
       link: /money
     - id: expense
-      title: Gasto mensual
+      title: Monthly spending
       kind: kpi-delta
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/money/widgets/expense
       refresh: 3600
       link: /money
     - id: basic
-      title: Gasto básico
+      title: Basic spending
       kind: kpi-delta
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/money/widgets/basic
       refresh: 3600
       link: /money
     - id: shared
-      title: Lo común
+      title: Shared
       kind: kpi
       sizes: ["2x2", "1x1", "2x1", "4x1"]
       endpoint: /api/money/widgets/shared
       refresh: 3600
       link: /money/compartido
     - id: account
-      title: Saldo
+      title: Balance
       kind: kpi
       sizes: ["2x2", "1x1", "2x1", "4x1"]
       endpoint: /api/money/widgets/account/value
       refresh: 3600
       link: /money
       option:
-        label: Cuenta
+        label: Account
         endpoint: /api/money/widgets/account/options
   view: /money
   hue: 2

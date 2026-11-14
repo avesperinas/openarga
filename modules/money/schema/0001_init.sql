@@ -188,27 +188,7 @@ drop table if exists money.money_transfer cascade;
 drop table if exists money.money_transfer_rejected cascade;
 drop table if exists money.money_valuation cascade;
 
-create table if not exists money.money_v1_income_source (
-    user_id  uuid     not null default nullif(current_setting('arga.user_id', true), '')::uuid,
-    year     smallint not null check (year between 2000 and 2100),
-    person   text     not null check (person in ('me', 'other')),
-    source   text     not null check (source in ('typed', 'carrera')),
-    primary key (user_id, year, person)
-);
-comment on table money.money_v1_income_source is 'arga:person';
-
 alter table money.money_v1_setting add column if not exists space_id uuid;
-
-create table if not exists money.money_v1_space_income (
-    user_id     uuid          not null
-                              default nullif(current_setting('arga.user_id', true), '')::uuid,
-    space_id    uuid          not null,
-    year        smallint      not null check (year between 2000 and 2100),
-    amount      numeric(12,2) not null check (amount >= 0),
-    updated_at  timestamptz   not null default now(),
-    primary key (space_id, user_id, year)
-);
-comment on table money.money_v1_space_income is 'arga:shared';
 
 create table money.money_outbox (
     id            bigint generated always as identity primary key,
@@ -312,7 +292,6 @@ create index if not exists money_v1_common_year_user_id_idx on money.money_v1_co
 create index if not exists money_v1_entry_category_id_idx on money.money_v1_entry (category_id);
 create index if not exists money_v1_entry_user_id_idx on money.money_v1_entry (user_id);
 create index if not exists money_v1_income_user_id_idx on money.money_v1_income (user_id);
-create index if not exists money_v1_space_income_user_id_idx on money.money_v1_space_income (user_id);
 
 alter table money.money_outbox
     add column if not exists key text generated always as (

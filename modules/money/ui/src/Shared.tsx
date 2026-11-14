@@ -211,8 +211,8 @@ export function SharedScreen({ state, onChanged }: { state: State; onChanged: ()
 
             <Section title="Lo común" action={{ label: "Tu ingreso", onClick: () => setEditingIncomes(true) }}>
               <Hint>
-                Las categorías y liquidar cada año los lleva {data.other} en su Money. Tu ingreso, de tu Carrera o a mano, y el espacio con el que ves
-                lo común se eligen en «Tu ingreso».
+                Las categorías y liquidar cada año los lleva {data.other} en su Money. Tu ingreso y el espacio con el que ves lo común se
+                eligen en «Tu ingreso».
               </Hint>
             </Section>
           
@@ -223,13 +223,7 @@ export function SharedScreen({ state, onChanged }: { state: State; onChanged: ()
                 <ListRow
                   key={p}
                   title={p === "me" ? data.me : data.other}
-                  subtitle={
-                    data.income_missing.includes(p)
-                      ? "De Carrera, aún sin cifra: cuentan sus tramos"
-                      : data.income_sources[p] === "carrera"
-                        ? "De Carrera"
-                        : "A mano, por tramos"
-                  }
+                  subtitle="Por tramos"
                   value={`${money(data.income_totals[p], false)} / año`}
                 />
               ))}
@@ -248,8 +242,7 @@ export function SharedScreen({ state, onChanged }: { state: State; onChanged: ()
               </List>
             )}
             <Hint>
-              Deciden qué parte de lo proporcional es de cada uno. Cada año, cada uno a mano (neto anual por tramos de fechas) o de su Carrera (el neto del
-              año entero).
+              Deciden qué parte de lo proporcional es de cada uno: el neto anual de cada uno, por tramos de fechas.
             </Hint>
           </Section>
           )}

@@ -263,7 +263,6 @@ export interface Income {
 }
 
 export type Person = "me" | "other";
-export type IncomeSource = "typed" | "carrera";
 
 export interface Space {
   id: string;
@@ -289,10 +288,7 @@ export interface Shared {
   months: SharedMonth[];
   entries: SharedEntry[];
   incomes: Income[];
-  income_sources: Record<Person, IncomeSource>;
   income_totals: Record<Person, number>;
-  carrera: Record<Person, number | null>;
-  income_missing: Person[];
   space_id: string | null;
 }
 
@@ -474,8 +470,6 @@ export const api = {
   removeEntry: (id: string) => call<void>("DELETE", `/shared/entries/${id}`),
   settle: (year: number, settled: boolean) => call<unknown>("PUT", `/shared/years/${year}`, { settled }),
   incomes: (year: number, incomes: Income[]) => call<unknown>("PUT", `/shared/incomes/${year}`, { incomes }),
-  incomeSources: (year: number, sources: Record<Person, IncomeSource>) =>
-    call<unknown>("PUT", `/shared/incomes/${year}/sources`, sources),
   sharedSpace: (spaceId: string | null) => call<unknown>("PUT", "/shared/space", { space_id: spaceId }),
   spaces: async (): Promise<Space[]> => {
     const response = await fetch("/api/kernel/spaces", { headers: { accept: "application/json" } });

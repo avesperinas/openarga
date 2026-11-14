@@ -210,7 +210,6 @@ modules/insights/ui/src/states.test.tsx
 modules/insights/ui/src/taste-words.ts
 modules/insights/ui/src/today.test.tsx
 modules/insights/ui/src/words.ts
-modules/money/manifest.yaml
 modules/money/pyproject.toml
 modules/money/src/money/analysis.py
 modules/money/src/money/api.py
@@ -259,7 +258,6 @@ modules/money/ui/src/api.ts
 modules/money/ui/src/filters.test.ts
 modules/money/ui/src/filters.ts
 modules/money/ui/src/format.ts
-modules/money/ui/src/incomesSheet.test.ts
 modules/money/ui/src/shared.test.ts
 modules/money/ui/src/summaryParts.ts
 modules/notebook/manifest.yaml

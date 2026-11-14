@@ -559,54 +559,21 @@ async def test_what_the_hub_reads_from_the_text_wins_over_the_old_catalogue(book
     assert rows["joint:j9"]["parts"][0]["category_name"] == "Supermercado"
 
 
-WORK = "probe_work"
-CASA = UUID("00000000-0000-4000-8000-0000000ca5a0")
+HOME = UUID("00000000-0000-4000-8000-0000000ca5a0")
 
 
-@pytest.fixture
-async def work(schema):
-    manifest = {"id": WORK, "publishes": [{"type": f"{WORK}.metric", "contract": "metric"}]}
-    async with schema.begin() as connection:
-        await connection.execute(
-            text(
-                "insert into kernel.modules (id, version, enabled, manifest) "
-                "values (:m, '0.1.0', true, cast(:manifest as jsonb)) "
-                "on conflict (id) do update set manifest = excluded.manifest"
-            ),
-            {"m": WORK, "manifest": json.dumps(manifest)},
-        )
-    yield
-    async with schema.begin() as connection:
-        await connection.execute(text("delete from kernel.events where module = :m"), {"m": WORK})
-        await connection.execute(text("delete from kernel.modules where id = :m"), {"m": WORK})
+async def test_a_year_counts_the_incomes_typed_for_it(book) -> None:
+    out = (await book.get("/shared", params={"year": 2026})).json()
+    assert out["income_totals"] == {"me": 30000.0, "other": 20000.0}
+    assert out["ratio_me"] == pytest.approx(0.6)
+    assert "carrera" not in out
 
 
-async def net_year(schema, person: UUID, day: str, value: float, n: int = 0) -> None:
-    point = {
-        "key": "carrera.net_year",
-        "label": "Neto del año",
-        "unit": "EUR",
-        "kind": "level",
-        "day": day,
-        "value": value,
-    }
-    async with schema.begin() as connection:
-        await connection.execute(
-            text(
-                "insert into kernel.events "
-                "(ts, ingested_at, module, source, type, payload, dedup_hash, user_id) "
-                "values (now(), now() + make_interval(secs => :n), :m, 'app', :t, "
-                "cast(:p as jsonb), :d, :u)"
-            ),
-            {
-                "n": n,
-                "m": WORK,
-                "t": f"{WORK}.metric",
-                "p": json.dumps({"metric": point}),
-                "d": f"net_year:{person}:{day}:{value}",
-                "u": person,
-            },
-        )
+async def test_the_tool_says_what_each_income_counts(book, schema) -> None:
+    async with schema.connect() as connection:
+        await connection.execute(text('set role "mod_money_read"'))
+        found = await tools.get_shared_balance(connection, tools.GetSharedBalance(year=2026))
+    assert [one["amount"] for one in found["incomes"].values()] == [30000.0, 20000.0]
 
 
 def who(person: UUID, *spaces: UUID) -> dict[str, str]:
@@ -616,86 +583,8 @@ def who(person: UUID, *spaces: UUID) -> dict[str, str]:
     return headers
 
 
-async def test_a_year_with_no_choice_keeps_its_typed_incomes(book, work, schema) -> None:
-    await net_year(schema, PERSON, "2026-10-02", 36000)
-    out = (await book.get("/shared", params={"year": 2026})).json()
-    assert out["income_sources"] == {"me": "typed", "other": "typed"}
-    assert out["income_totals"] == {"me": 30000.0, "other": 20000.0}
-    assert out["carrera"] == {"me": 36000.0, "other": None}
-    assert out["ratio_me"] == pytest.approx(0.6)
-
-
-async def test_choosing_carrera_counts_the_last_net_of_the_year(book, work, schema) -> None:
-    await net_year(schema, PERSON, "2026-06-01", 31000, n=0)
-    await net_year(schema, PERSON, "2026-10-02", 36000, n=1)
-    await net_year(schema, PERSON, "2025-12-31", 99000, n=2)
-    chosen = await book.put(
-        "/shared/incomes/2026/sources", json={"me": "carrera", "other": "typed"}
-    )
-    assert chosen.status_code == 200, chosen.text
-
-    out = (await book.get("/shared", params={"year": 2026})).json()
-    assert out["income_sources"] == {"me": "carrera", "other": "typed"}
-    assert out["income_totals"] == {"me": 36000.0, "other": 20000.0}
-    assert out["income_missing"] == []
-    assert out["ratio_me"] == pytest.approx(36000 / 56000, abs=1e-4)
-    assert (await book.get("/shared", params={"year": 2025})).json()["income_sources"]["me"] == (
-        "typed"
-    )
-
-
-async def test_carrera_without_a_figure_falls_back_to_the_typed_and_says_so(book, work) -> None:
-    await book.put("/shared/incomes/2026/sources", json={"me": "carrera", "other": "carrera"})
-    out = (await book.get("/shared", params={"year": 2026})).json()
-    assert out["income_missing"] == ["me", "other"]
-    assert out["income_totals"] == {"me": 30000.0, "other": 20000.0}
-    assert out["ratio_me"] == pytest.approx(0.6)
-
-
-async def test_the_tool_says_where_each_income_comes_from(book, work, schema) -> None:
-    await net_year(schema, PERSON, "2026-10-02", 36000)
-    await book.put("/shared/incomes/2026/sources", json={"me": "carrera", "other": "typed"})
-    async with schema.connect() as connection:
-        await connection.execute(text('set role "mod_money_read"'))
-        found = await tools.get_shared_balance(connection, tools.GetSharedBalance(year=2026))
-    incomes = list(found["incomes"].values())
-    assert incomes[0] == {"amount": 36000.0, "source": "carrera", "missing": False}
-    assert incomes[1] == {"amount": 20000.0, "source": "typed", "missing": False}
-
-
-async def test_the_other_person_brings_hers_from_her_carrera_through_the_space(
-    book, work, schema
-) -> None:
-    await net_year(schema, PERSON, "2026-10-02", 36000)
-    me, her = who(PERSON, CASA), who(OTHER, CASA)
-    linked = await book.put("/shared/space", json={"space_id": str(CASA)}, headers=me)
-    assert linked.status_code == 200, linked.text
-    await book.put(
-        "/shared/incomes/2026/sources", json={"me": "carrera", "other": "typed"}, headers=me
-    )
-
-    await book.put("/shared/space", json={"space_id": str(CASA)}, headers=her)
-    await book.put(
-        "/shared/incomes/2026/sources", json={"me": "typed", "other": "carrera"}, headers=her
-    )
-    seen = (await book.get("/shared", params={"year": 2026}, headers=her)).json()
-    assert seen["carrera"]["other"] == 36000.0
-    assert seen["income_totals"]["other"] == 36000.0
-    assert seen["income_missing"] == []
-
-    alone = (await book.get("/shared", params={"year": 2026}, headers=who(OTHER))).json()
-    assert alone["carrera"]["other"] is None
-
-    await book.put(
-        "/shared/incomes/2026/sources", json={"me": "typed", "other": "typed"}, headers=me
-    )
-    after = (await book.get("/shared", params={"year": 2026}, headers=her)).json()
-    assert after["carrera"]["other"] is None
-    assert after["income_missing"] == ["other"]
-
-
 async def test_a_space_you_are_not_in_cannot_be_chosen(book) -> None:
-    refused = await book.put("/shared/space", json={"space_id": str(CASA)}, headers=who(PERSON))
+    refused = await book.put("/shared/space", json={"space_id": str(HOME)}, headers=who(PERSON))
     assert refused.status_code == 404
 
 
