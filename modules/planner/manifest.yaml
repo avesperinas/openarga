@@ -19,15 +19,15 @@ consumes: [hub.run, hub.connection]
 
 inlets:
   - id: calendar
-    title: Calendario
+    title: Calendar
     contracts: [calendar.event, calendar.feed]
     settings:
       - key: name
         kind: text
-        label: Nombre
+        label: Name
       - key: tone
         kind: tone
-        label: Color
+        label: Tone
 
 uses:
   - sources.catalogue
