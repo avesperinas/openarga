@@ -1,5 +1,7 @@
+import { dates } from "@openarga/ui";
+
 import type { Movement, Status } from "./api";
-import { capital, isoDay, monthName } from "./format";
+import { isoDay, monthTitle, parseDay } from "./format";
 
 export type Period =
   | { kind: "month"; year: number; month: number }
@@ -28,9 +30,9 @@ export function step(p: Period, by: -1 | 1): Period {
 }
 
 export function periodTitle(p: Period): string {
-  if (p.kind === "month") return `${capital(monthName(p.month))} ${p.year}`;
+  if (p.kind === "month") return monthTitle(p.year, p.month);
   if (p.kind === "year") return String(p.year);
-  return `${p.from.split("-").reverse().join("/")} – ${p.to.split("-").reverse().join("/")}`;
+  return `${dates().format(parseDay(p.from))} – ${dates().format(parseDay(p.to))}`;
 }
 
 export type What = "income" | "expense" | "transfer" | "other";
@@ -151,11 +153,11 @@ export function fromLink(search: string): { period: Period; filters: Filters } |
   if (p.get("status") === "pending") {
     return { period: { kind: "year", year: new Date().getFullYear() }, filters: { ...NO_FILTERS, statuses: ["ask", "pending"] } };
   }
-  const from = p.get("desde") ?? "";
-  const to = p.get("hasta") ?? "";
+  const from = p.get("from") ?? "";
+  const to = p.get("to") ?? "";
   const day = /^\d{4}-\d{2}-\d{2}$/;
   if (!day.test(from) || !day.test(to) || from > to) return null;
-  const category = p.get("categoria");
+  const category = p.get("category");
   const filters = category ? { ...NO_FILTERS, categories: [category] } : NO_FILTERS;
   const [fy, fm, fd] = from.split("-").map(Number);
   const [ty, tm, td] = to.split("-").map(Number);

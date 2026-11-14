@@ -18,6 +18,9 @@ import {
   Skeleton,
   SplitBar,
   type TableColumn,
+  type Translate,
+  dates,
+  useT,
 } from "@openarga/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -38,7 +41,7 @@ import {
   thisMonth,
   totals,
 } from "./filters";
-import { dayTitle, money, moneyWhole, monthName, rowIcon, shortDay, subtitle, title } from "./format";
+import { capital, dayTitle, money, moneyWhole, monthName, ownershipName, rowIcon, shortDay, statusName, subtitle, title, typeName } from "./format";
 import { MovementSheet } from "./MovementSheet";
 import { lastYear } from "./summaryParts";
 import { useWide } from "./useWide";
@@ -78,6 +81,7 @@ function useMonthly(): { key: string; year: number; month: number; total: number
 }
 
 export function MovementsScreen({ state, onChanged }: { state: State; onChanged: () => void }) {
+  const t = useT();
   const [link] = useState(() => fromLink(window.location.search));
   const [period, setPeriod] = useState<Period>(() => link?.period ?? thisMonth());
   const [rows, setRows] = useState<Movement[] | null>(null);
@@ -123,12 +127,12 @@ export function MovementsScreen({ state, onChanged }: { state: State; onChanged:
   };
 
   return (
-    <Screen wide label="Movimientos">
-      <ScreenHeader title="Movimientos" />
+    <Screen wide label={t("movements.title")}>
+      <ScreenHeader title={t("movements.title")} />
 
       <div className="money-period">
         <SegmentedControl
-          label="Periodo"
+          label={t("movements.period")}
           value={period.kind === "year" ? "year" : "month"}
           onChange={(kind) =>
             setPeriod(
@@ -138,20 +142,20 @@ export function MovementsScreen({ state, onChanged }: { state: State; onChanged:
             )
           }
           options={[
-            { value: "month", label: "Mes" },
-            { value: "year", label: "Año" },
+            { value: "month", label: t("movements.month") },
+            { value: "year", label: t("movements.year") },
           ]}
         />
         <div className="money-period-step">
-          <IconButton icon="chevron-left" label="Anterior" onClick={() => setPeriod(step(period, -1))} />
+          <IconButton icon="chevron-left" label={t("movements.previous")} onClick={() => setPeriod(step(period, -1))} />
           <span className="money-period-title">{periodTitle(period)}</span>
-          <IconButton icon="chevron-right" label="Siguiente" onClick={() => setPeriod(step(period, 1))} />
+          <IconButton icon="chevron-right" label={t("movements.next")} onClick={() => setPeriod(step(period, 1))} />
         </div>
       </div>
 
       {period.kind === "month" && monthly.length > 0 && (
         <MonthStrip
-          label="Elegir mes"
+          label={t("movements.pick_month")}
           selected={`${period.year}-${period.month}`}
           onSelect={(key) => {
             const [year, month] = key.split("-").map(Number);
@@ -159,9 +163,9 @@ export function MovementsScreen({ state, onChanged }: { state: State; onChanged:
           }}
           items={monthly.map((one) => ({
             key: one.key,
-            label: monthName(one.month).slice(0, 3),
+            label: dates({ month: "short" }).format(new Date(one.year, one.month - 1, 1)).replace(".", ""),
             value: one.total,
-            description: `${monthName(one.month)} de ${one.year}: ${moneyWhole(one.total)} de gasto`,
+            description: t("movements.month_spent", { month: capital(monthName(one.month)), year: one.year, amount: moneyWhole(one.total) }),
           }))}
         />
       )}
@@ -169,31 +173,31 @@ export function MovementsScreen({ state, onChanged }: { state: State; onChanged:
       {waiting > 0 && (
         <Notice
           tone="warning"
-          title={`${waiting} por etiquetar`}
-          action={{ label: "Ver", onClick: () => showStatus(["ask", "pending"]) }}
+          title={t("movements.to_label", { count: waiting })}
+          action={{ label: t("movements.see"), onClick: () => showStatus(["ask", "pending"]) }}
         >
-          Efectivo y lo que ninguna regla explica. Hasta que lo etiquetes no cuenta como gasto.
+          {t("movements.to_label_hint")}
         </Notice>
       )}
 
       <div className="money-search">
-        <SearchField value={filters.text} onChange={(text) => setFilters({ ...filters, text })} placeholder="Buscar comercio, concepto o categoría" label="Buscar en movimientos" />
+        <SearchField value={filters.text} onChange={(text) => setFilters({ ...filters, text })} placeholder={t("movements.search_placeholder")} label={t("movements.search")} />
         <Button icon="filter" variant={activeCount(filters) ? "tinted" : "secondary"} onClick={() => setFiltering(true)}>
-          {activeCount(filters) ? `Filtros · ${activeCount(filters)}` : "Filtros"}
+          {activeCount(filters) ? t("movements.filters_count", { count: activeCount(filters) }) : t("movements.filters")}
         </Button>
       </div>
 
       {activeCount(filters) > 0 && (
         <div className="money-chips">
-          {chips(filters, state).map((chip) => (
+          {chips(t, filters, state).map((chip) => (
             <button key={chip.key} type="button" className="money-chip" onClick={() => setFilters(chip.remove())}>
               {chip.label}
               <span aria-hidden="true">×</span>
-              <span className="money-sr">Quitar filtro</span>
+              <span className="money-sr">{t("movements.remove_filter")}</span>
             </button>
           ))}
           <button type="button" className="money-chip" data-plain="" onClick={() => setFilters({ ...NO_FILTERS, text: filters.text })}>
-            Quitar todos
+            {t("movements.remove_all")}
           </button>
         </div>
       )}
@@ -201,33 +205,33 @@ export function MovementsScreen({ state, onChanged }: { state: State; onChanged:
       {rows !== null && (
         <Card>
           <Figures
-            label="Lo que suman los movimientos que ves"
+            label={t("movements.sum")}
             items={[
-              { label: "Entra", value: moneyWhole(sum.income), lit: sum.income > 0 },
-              { label: "Sale", value: moneyWhole(sum.expense) },
+              { label: t("movements.in"), value: moneyWhole(sum.income), lit: sum.income > 0 },
+              { label: t("movements.out"), value: moneyWhole(sum.expense) },
             ]}
           />
           {sum.income > 0 && sum.expense > 0 && sum.income >= sum.expense && (
             <SplitBar
-              label="Lo que entra: lo que sale y lo que queda"
-              parts={[{ label: "Sale", value: moneyWhole(sum.expense), share: sum.expense, hue: 4 }]}
-              rest={{ label: "Queda", value: moneyWhole(sum.income - sum.expense), share: sum.income - sum.expense }}
+              label={t("movements.in_out")}
+              parts={[{ label: t("movements.out"), value: moneyWhole(sum.expense), share: sum.expense, hue: 4 }]}
+              rest={{ label: t("movements.left"), value: moneyWhole(sum.income - sum.expense), share: sum.income - sum.expense }}
             />
           )}
           <Hint>
-            {sum.count === rows.length ? `${sum.count} movimientos` : `${sum.count} de ${rows.length} movimientos`}
-            {sum.expense > sum.income && sum.income > 0 ? ` · sale ${moneyWhole(sum.expense - sum.income)} más de lo que entra` : ""}
+            {sum.count === rows.length ? t("movements.count", { count: sum.count }) : t("movements.count_of", { count: sum.count, total: rows.length })}
+            {sum.expense > sum.income && sum.income > 0 ? t("movements.over", { amount: moneyWhole(sum.expense - sum.income) }) : ""}
           </Hint>
         </Card>
       )}
       {spentBy.length > 1 && (
         <ChoiceChips
-          label="Por categoría"
+          label={t("movements.by_category")}
           scroll
           value={filters.categories.length === 1 ? filters.categories[0]! : filters.categories.length === 0 ? "all" : null}
           onChange={(id) => setFilters({ ...filters, categories: id === "all" ? [] : [id] })}
           options={[
-            { value: "all", label: "Todo" },
+            { value: "all", label: t("movements.all") },
             ...spentBy.slice(0, 8).map((one) => ({ value: one.id, label: `${one.name} ${moneyWhole(one.total)}` })),
           ]}
         />
@@ -239,24 +243,24 @@ export function MovementsScreen({ state, onChanged }: { state: State; onChanged:
           aria-pressed={hideTransfers}
           onClick={() => setHideTransfers(!hideTransfers)}
         >
-          {hideTransfers ? "Traspasos ocultos" : "Ocultar traspasos"}
+          {hideTransfers ? t("movements.transfers_hidden") : t("movements.hide_transfers")}
         </button>
         {review > 0 && !filters.statuses.includes("default") && (
           <button type="button" className="money-chip" data-review="" onClick={() => showStatus(["default"])}>
-            {review} con la categoría por defecto · Revisar
+            {t("movements.review", { count: review })}
           </button>
         )}
       </div>
 
-      {failed && <Notice tone="negative" title="No se han podido cargar" action={{ label: "Reintentar", onClick: load }} />}
-      {rows === null && !failed && <Skeleton rows={8} label="Cargando movimientos" />}
+      {failed && <Notice tone="negative" title={t("movements.load_failed")} action={{ label: t("common.retry"), onClick: load }} />}
+      {rows === null && !failed && <Skeleton rows={8} label={t("movements.loading")} />}
       {rows !== null && visible.length === 0 && (
         <EmptyState
           icon="list"
-          title={rows.length === 0 ? "Sin movimientos" : "Nada con estos filtros"}
-          action={rows.length ? { label: "Quitar filtros", onClick: () => setFilters(NO_FILTERS) } : undefined}
+          title={rows.length === 0 ? t("movements.none") : t("movements.nothing_filtered")}
+          action={rows.length ? { label: t("movements.remove_filters"), onClick: () => setFilters(NO_FILTERS) } : undefined}
         >
-          {rows.length === 0 ? `No hay nada en ${periodTitle(period).toLowerCase()}.` : "Prueba con menos filtros o con otro periodo."}
+          {rows.length === 0 ? t("movements.nothing_in", { period: periodTitle(period) }) : t("movements.try_less")}
         </EmptyState>
       )}
       {rows !== null && visible.length > 0 &&
@@ -310,23 +314,24 @@ function MovementRow({ m, onOpen }: { m: Movement; onOpen: (id: string) => void 
 }
 
 function MovementTable({ rows, onOpen }: { rows: Movement[]; onOpen: (id: string) => void }) {
+  const t = useT();
   const columns: TableColumn<Movement>[] = [
-    { key: "on", label: "Fecha", cell: (m) => shortDay(m.on), csv: (m) => m.on },
+    { key: "on", label: t("movements.date"), cell: (m) => shortDay(m.on), csv: (m) => m.on },
     {
       key: "merchant",
-      label: "Concepto",
+      label: t("movements.concept"),
       cell: (m) => (
         <span className="money-cell-merchant">
           <span className="money-cell-title">{title(m)}</span>
-          {m.status === "default" && <span className="money-tag">por defecto</span>}
+          {m.status === "default" && <span className="money-tag">{t("movements.default_tag")}</span>}
         </span>
       ),
       csv: (m) => m.merchant,
     },
-    { key: "account", label: "Cuenta", cell: (m) => m.account_name, csv: (m) => m.account_name },
+    { key: "account", label: t("movements.account"), cell: (m) => m.account_name, csv: (m) => m.account_name },
     {
       key: "category",
-      label: "Qué es",
+      label: t("movements.what"),
       cell: (m) => (
         <span className="money-cell-what" data-status={m.status}>
           {subtitle(m)}
@@ -336,7 +341,7 @@ function MovementTable({ rows, onOpen }: { rows: Movement[]; onOpen: (id: string
     },
     {
       key: "amount",
-      label: "Importe",
+      label: t("movements.amount"),
       numeric: true,
       cell: (m) => (
         <span className="money-amount" data-sign={m.kind === "transfer" ? "transfer" : m.amount < 0 ? "out" : "in"}>
@@ -349,7 +354,7 @@ function MovementTable({ rows, onOpen }: { rows: Movement[]; onOpen: (id: string
   return (
     <div className="surface money-table">
       <DataTable
-        label="Movimientos"
+        label={t("movements.title")}
         columns={columns}
         rows={rows}
         rowKey={(m) => m.id}
@@ -366,19 +371,8 @@ interface Chip {
   remove: () => Filters;
 }
 
-const WHAT_LABEL = { income: "Ingresos", expense: "Gastos", transfer: "Traspasos", other: "Otros" } as const;
-const STATUS_LABEL = {
-  ask: "Por etiquetar",
-  pending: "Sin interpretar",
-  default: "Por defecto",
-  manual: "A mano",
-  auto: "Automático",
-  transfer: "Traspaso",
-  return: "Rentabilidad",
-  settlement: "Liquidación",
-} as const;
 
-function chips(f: Filters, state: State): Chip[] {
+function chips(t: Translate, f: Filters, state: State): Chip[] {
   const out: Chip[] = [];
   const without = <K extends keyof Filters>(key: K, value: unknown): Filters => ({
     ...f,
@@ -386,22 +380,22 @@ function chips(f: Filters, state: State): Chip[] {
   });
   for (const id of f.categories) {
     const c = state.categories.find((c) => c.id === id);
-    out.push({ key: `c${id}`, label: c?.name ?? "Categoría", remove: () => without("categories", id) });
+    out.push({ key: `c${id}`, label: c?.name ?? t("filter.category"), remove: () => without("categories", id) });
   }
   for (const key of f.accounts) {
     out.push({ key: `a${key}`, label: state.accounts.find((a) => a.key === key)?.name ?? key, remove: () => without("accounts", key) });
   }
   for (const name of f.institutions) out.push({ key: `i${name}`, label: name, remove: () => without("institutions", name) });
   for (const type of f.accountTypes) {
-    const label = state.accounts.find((a) => a.type === type)?.type_label ?? type;
+    const label = typeName(type, state.accounts.find((a) => a.type === type)?.type_label ?? type);
     out.push({ key: `t${type}`, label, remove: () => without("accountTypes", type) });
   }
-  for (const w of f.what) out.push({ key: `w${w}`, label: WHAT_LABEL[w], remove: () => without("what", w) });
+  for (const w of f.what) out.push({ key: `w${w}`, label: t(w === "income" ? "filter.incomes" : w === "expense" ? "filter.expenses" : w === "transfer" ? "filter.transfers" : "filter.other"), remove: () => without("what", w) });
   for (const o of f.ownership) {
-    out.push({ key: `o${o}`, label: o === "shared" ? "Compartido" : "Individual", remove: () => without("ownership", o) });
+    out.push({ key: `o${o}`, label: ownershipName(o), remove: () => without("ownership", o) });
   }
-  for (const s of f.statuses) out.push({ key: `s${s}`, label: STATUS_LABEL[s], remove: () => without("statuses", s) });
-  if (f.min !== null) out.push({ key: "min", label: `Desde ${money(f.min, false)}`, remove: () => ({ ...f, min: null }) });
-  if (f.max !== null) out.push({ key: "max", label: `Hasta ${money(f.max, false)}`, remove: () => ({ ...f, max: null }) });
+  for (const s of f.statuses) out.push({ key: `s${s}`, label: s === "default" ? t("filter.default") : s === "manual" ? t("filter.manual") : statusName(s), remove: () => without("statuses", s) });
+  if (f.min !== null) out.push({ key: "min", label: t("movements.chip_from", { amount: money(f.min, false) }), remove: () => ({ ...f, min: null }) });
+  if (f.max !== null) out.push({ key: "max", label: t("movements.chip_to", { amount: money(f.max, false) }), remove: () => ({ ...f, max: null }) });
   return out;
 }

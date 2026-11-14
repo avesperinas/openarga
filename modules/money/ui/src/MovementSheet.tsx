@@ -1,8 +1,8 @@
-import { Button, ChoiceChips, Collapsible, ConfirmPanel, Hint, Notice, SegmentedControl, SelectField, Sheet, Skeleton, TextField } from "@openarga/ui";
+import { Button, ChoiceChips, Collapsible, ConfirmPanel, Hint, Notice, SegmentedControl, SelectField, Sheet, Skeleton, TextField, useT } from "@openarga/ui";
 import { useEffect, useMemo, useState } from "react";
 
 import { api, type Category, type Movement, type MovementDetail, type Payer, Refused, type State } from "./api";
-import { NATURE, OWNERSHIP, STATUS, amountText, dayTitle, money, parseAmount, payerLabel, shortDay, subtitle, title } from "./format";
+import { currencySymbol, natureName, ownershipName, statusName, amountText, dayTitle, money, parseAmount, payerLabel, shortDay, subtitle, title } from "./format";
 
 type Mode = "parts" | "settlement" | "return" | "transfer";
 
@@ -11,17 +11,6 @@ interface Draft {
   amount: string;
   payer: Payer | null;
 }
-
-const WHY: Partial<Record<Movement["status"], string>> = {
-  auto: "Lo decidió una regla, o la clasificación de su banco.",
-  default: "Lleva la categoría por defecto de su cuenta. Si no es eso, cámbiala.",
-  manual: "Lo etiquetaste tú. Ninguna regla lo cambia.",
-  ask: "Es efectivo: dime en qué se fue. Puedes repartirlo en varias categorías.",
-  pending: "Ninguna regla lo explica. Dime qué es.",
-  transfer: "Dinero entre tus cuentas: no es gasto ni ingreso.",
-  return: "Rentabilidad de su cuenta: ni gasto ni ingreso.",
-  settlement: "Un pago entre vosotros que salda una parte: ni gasto ni ingreso.",
-};
 
 export function MovementSheet({
   id,
@@ -38,6 +27,7 @@ export function MovementSheet({
   onOpen: (id: string) => void;
   reload: () => void;
 }) {
+  const t = useT();
   const [m, setM] = useState<MovementDetail | null>(null);
   const [failed, setFailed] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -111,7 +101,7 @@ export function MovementSheet({
         onClose();
       }
     } catch (e) {
-      setError(e instanceof Refused ? e.message : "No se ha podido guardar. Inténtalo otra vez.");
+      setError(e instanceof Refused ? e.message : t("sheet.save_failed"));
     } finally {
       setSaving(false);
     }
@@ -125,7 +115,7 @@ export function MovementSheet({
       onChanged(changed);
       onClose();
     } catch {
-      setError("No se ha podido volver a lo automático.");
+      setError(t("sheet.auto_failed"));
     } finally {
       setSaving(false);
     }
@@ -135,47 +125,47 @@ export function MovementSheet({
     if (!m || !offer) return;
     try {
       const result = await api.merchantRule(m.id, offer.category);
-      setDone(`«${offer.name}» para todo lo de ${result.merchant}: ${result.movements} movimientos.`);
+      setDone(t("sheet.rule_done", { name: offer.name, merchant: result.merchant, count: result.movements }));
       setOffer(null);
       reload();
     } catch {
-      setError("No se ha podido crear la regla.");
+      setError(t("sheet.rule_failed"));
     }
   };
 
   const action =
-    editing && m && !confirm ? { label: "Guardar", onClick: () => setConfirm("save"), disabled: !ready || saving } : undefined;
+    editing && m && !confirm ? { label: t("common.save"), onClick: () => setConfirm("save"), disabled: !ready || saving } : undefined;
 
   const described = () => {
     if (mode === "transfer") {
       const name = state.accounts.find((a) => a.key === transferWith)?.name ?? "?";
-      return `Traspaso ${m && m.amount < 0 ? "a" : "desde"} ${name}`;
+      return t(m && m.amount < 0 ? "sheet.transfer_to" : "sheet.transfer_from", { name });
     }
-    if (mode === "settlement") return "Liquidación entre vosotros";
-    if (mode === "return") return "Rentabilidad";
+    if (mode === "settlement") return t("movement.settlement");
+    if (mode === "return") return statusName("return");
     return drafts
       .map((d) => {
         const cat = byId.get(d.category);
-        const payer = cat?.ownership === "shared" && m ? ` · pagó ${payerLabel(d.payer ?? defaultPayer(m, state), state.me, state.other)}` : "";
-        return `${cat?.name ?? "?"}${drafts.length > 1 ? ` (${d.amount} €)` : ""}${payer}`;
+        const payer = cat?.ownership === "shared" && m ? t("sheet.paid", { payer: payerLabel(d.payer ?? defaultPayer(m, state), state.me, state.other) }) : "";
+        return `${cat?.name ?? "?"}${drafts.length > 1 ? ` (${d.amount} ${currencySymbol()})` : ""}${payer}`;
       })
       .join(", ");
   };
 
   return (
-    <Sheet title={m ? title(m) : "Movimiento"} onClose={onClose} action={action}>
-      {failed && <Notice tone="negative" title="No se ha podido abrir" />}
-      {!m && !failed && <Skeleton rows={4} label="Cargando el movimiento" />}
+    <Sheet title={m ? title(m) : t("sheet.movement")} onClose={onClose} action={action}>
+      {failed && <Notice tone="negative" title={t("sheet.open_failed")} />}
+      {!m && !failed && <Skeleton rows={4} label={t("sheet.loading")} />}
       {m && confirm === "save" && (
         <ConfirmPanel
-          title="¿Guardar lo que es este movimiento?"
+          title={t("sheet.confirm_save")}
           changes={[
             subtitle(m) === described()
-              ? { label: "Qué es", from: `${described()} · ${STATUS[m.status].toLowerCase()}`, to: `${described()} · fijado a mano` }
-              : { label: "Qué es", from: m.parts.length || m.status !== "pending" ? subtitle(m) : undefined, to: described() },
+              ? { label: t("sheet.what"), from: `${described()} · ${statusName(m.status).toLowerCase()}`, to: t("sheet.fixed", { what: described() }) }
+              : { label: t("sheet.what"), from: m.parts.length || m.status !== "pending" ? subtitle(m) : undefined, to: described() },
           ]}
-          detail="Queda fijado: ninguna regla ni sincronización lo cambia. Puedes volver a lo automático cuando quieras."
-          action="Guardar cambios"
+          detail={t("sheet.fixed_detail")}
+          action={t("sheet.save_changes")}
           onCancel={() => setConfirm(null)}
           onConfirm={async () => {
             setConfirm(null);
@@ -185,10 +175,10 @@ export function MovementSheet({
       )}
       {m && confirm === "auto" && (
         <ConfirmPanel
-          title="¿Volver a lo automático?"
-          changes={[{ label: "Qué es", from: subtitle(m), to: "Lo que digan las reglas" }]}
-          detail="Se quita lo que dijiste de este movimiento y vuelve a decidirlo Money."
-          action="Volver a lo automático"
+          title={t("sheet.confirm_auto")}
+          changes={[{ label: t("sheet.what"), from: subtitle(m), to: t("sheet.rules_say") }]}
+          detail={t("sheet.auto_detail")}
+          action={t("sheet.back_auto")}
           onCancel={() => setConfirm(null)}
           onConfirm={async () => {
             setConfirm(null);
@@ -198,10 +188,10 @@ export function MovementSheet({
       )}
       {m && confirm === "merchant" && offer && (
         <ConfirmPanel
-          title={`¿«${offer.name}» para todo ${m.merchant}?`}
-          changes={[{ label: "Movimientos", to: `${m.same_merchant} más, y los que lleguen` }]}
-          detail="Se crea una regla para este comercio. Lo que hayas etiquetado a mano no cambia."
-          action="Aplicar a todos"
+          title={t("sheet.confirm_merchant", { name: offer.name, merchant: m.merchant })}
+          changes={[{ label: t("sheet.movements"), to: t("sheet.more_coming", { count: m.same_merchant }) }]}
+          detail={t("sheet.merchant_detail")}
+          action={t("sheet.apply_all")}
           onCancel={() => setConfirm(null)}
           onConfirm={async () => {
             setConfirm(null);
@@ -220,24 +210,24 @@ export function MovementSheet({
               {m.institution && m.institution !== "—" ? ` · ${m.institution}` : ""}
             </span>
             <span className="money-status" data-status={m.status}>
-              {STATUS[m.status]}
+              {statusName(m.status)}
             </span>
           </div>
 
-          <Hint>{WHY[m.status]}</Hint>
-          {m.before_cutoff && <Hint>Es de antes del corte: ese mes lo cuenta el histórico, no esto.</Hint>}
+          {WHY_KEYS.has(m.status) && <Hint>{t(`why.${m.status}`)}</Hint>}
+          {m.before_cutoff && <Hint>{t("sheet.before_cutoff")}</Hint>}
 
           {m.transfer && (
             <div className="surface money-transfer">
               <span>
-                {m.amount < 0 ? "A" : "Desde"} <strong>{m.transfer.name}</strong>
+                {m.amount < 0 ? t("sheet.to") : t("sheet.from")} <strong>{m.transfer.name}</strong>
                 {m.transfer.on ? ` · ${shortDay(m.transfer.on)}` : ""}
-                {m.transfer.basis === "inferred" ? " · sin extracto de ese lado" : ""}
-                {m.transfer.basis === "other_member" ? " · su aportación" : ""}
+                {m.transfer.basis === "inferred" ? t("sheet.inferred") : ""}
+                {m.transfer.basis === "other_member" ? t("sheet.their_contribution") : ""}
               </span>
               {m.transfer.fact && (
                 <Button variant="plain" size="small" onClick={() => onOpen(m.transfer!.fact!)}>
-                  Ver el otro lado
+                  {t("sheet.other_side")}
                 </Button>
               )}
             </div>
@@ -250,8 +240,8 @@ export function MovementSheet({
                   <span className="money-part-name">
                     {p.category_name}
                     <span className="money-part-kind">
-                      {NATURE[p.nature]} · {OWNERSHIP[p.ownership].toLowerCase()}
-                      {p.payer ? ` · pagó ${payerLabel(p.payer, state.me, state.other)}` : ""}
+                      {natureName(p.nature)} · {ownershipName(p.ownership).toLowerCase()}
+                      {p.payer ? t("sheet.paid", { payer: payerLabel(p.payer, state.me, state.other) }) : ""}
                     </span>
                   </span>
                   {m.parts.length > 1 && <span className="money-part-amount">{money(p.amount)}</span>}
@@ -261,37 +251,35 @@ export function MovementSheet({
           )}
 
           {offer && (
-            <Notice tone="info" title="¿Lo mismo para todo este comercio?" action={{ label: "Aplicar a todos", onClick: () => setConfirm("merchant") }}>
-              Hay {m.same_merchant} movimientos más de {m.merchant}. Puedo poner «{offer.name}» a todos, también a los que
-              lleguen. Lo que hayas etiquetado a mano no cambia.
+            <Notice tone="info" title={t("sheet.same_merchant")} action={{ label: t("sheet.apply_all"), onClick: () => setConfirm("merchant") }}>
+              {t("sheet.same_merchant_body", { count: m.same_merchant, merchant: m.merchant, name: offer.name })}
             </Notice>
           )}
-          {done && <Notice tone="positive" title="Hecho">{done}</Notice>}
+          {done && <Notice tone="positive" title={t("sheet.done")}>{done}</Notice>}
 
           {editing ? (
             <div className="money-editor">
               <ChoiceChips<Mode>
-                label="Qué es"
+                label={t("sheet.what")}
                 value={mode}
                 onChange={setMode}
                 options={[
-                  { value: "parts", label: "Categoría" },
-                  { value: "transfer", label: "Traspaso" },
-                  { value: "settlement", label: "Liquidación" },
-                  { value: "return", label: "Rentabilidad" },
+                  { value: "parts", label: t("sheet.category") },
+                  { value: "transfer", label: statusName("transfer") },
+                  { value: "settlement", label: statusName("settlement") },
+                  { value: "return", label: statusName("return") },
                 ]}
               />
               {mode === "transfer" && (
                 <>
                   <SelectField<string>
-                    label={m.amount < 0 ? "A qué cuenta tuya" : "Desde qué cuenta tuya"}
+                    label={m.amount < 0 ? t("sheet.to_account") : t("sheet.from_account")}
                     value={transferWith}
                     onChange={setTransferWith}
-                    options={[{ value: "", label: "Elige una cuenta" }, ...others]}
+                    options={[{ value: "", label: t("sheet.pick_account") }, ...others]}
                   />
                   <Hint>
-                    Dinero entre tus cuentas: ni gasto ni ingreso. Si esa cuenta no tiene este movimiento, Money lo apunta en ella;
-                    cuando llegue su extracto, se queda el real.
+                    {t("sheet.transfer_hint")}
                   </Hint>
                 </>
               )}
@@ -302,14 +290,14 @@ export function MovementSheet({
                     return (
                       <div key={i} className="surface money-part-edit">
                         <SelectField<string>
-                          label={drafts.length > 1 ? `Parte ${i + 1}` : "Categoría"}
+                          label={drafts.length > 1 ? t("sheet.part", { n: i + 1 }) : t("sheet.category")}
                           value={d.category}
                           onChange={(category) => setDrafts(update(drafts, i, { category }))}
-                          options={[{ value: "", label: "Elige una categoría" }, ...categories]}
+                          options={[{ value: "", label: t("sheet.pick_category") }, ...categories]}
                         />
                         {drafts.length > 1 && (
                           <TextField
-                            label="Importe"
+                            label={t("sheet.amount")}
                             value={d.amount}
                             inputMode="decimal"
                             onChange={(amount) => setDrafts(update(drafts, i, { amount }))}
@@ -318,11 +306,11 @@ export function MovementSheet({
                         )}
                         {cat?.ownership === "shared" && (
                           <SegmentedControl<Payer>
-                            label="Quién lo pagó"
+                            label={t("sheet.who_paid")}
                             value={d.payer ?? defaultPayer(m, state)}
                             onChange={(payer) => setDrafts(update(drafts, i, { payer }))}
                             options={[
-                              { value: "account", label: "Común" },
+                              { value: "account", label: t("sheet.shared_account") },
                               { value: "me", label: state.me },
                               { value: "other", label: state.other },
                             ]}
@@ -330,7 +318,7 @@ export function MovementSheet({
                         )}
                         {drafts.length > 1 && (
                           <Button variant="plain" size="small" onClick={() => setDrafts(drafts.filter((_, j) => j !== i))}>
-                            Quitar esta parte
+                            {t("sheet.remove_part")}
                           </Button>
                         )}
                       </div>
@@ -347,70 +335,70 @@ export function MovementSheet({
                         ])
                       }
                     >
-                      Repartir en otra parte
+                      {t("sheet.add_part")}
                     </Button>
                     {drafts.length > 1 && (
                       <span className="money-left" data-ok={left === 0 || undefined}>
-                        {left === 0 ? "Repartido entero" : left > 0 ? `Faltan ${money(left, false)}` : `Sobran ${money(-left, false)}`}
+                        {left === 0 ? t("sheet.all_split") : left > 0 ? t("sheet.missing", { amount: money(left, false) }) : t("sheet.extra", { amount: money(-left, false) })}
                       </span>
                     )}
                   </div>
                 </>
               )}
               {mode === "settlement" && (
-                <Hint>Un pago entre vosotros para saldar una parte (devolverle su mitad de algo). No cuenta como gasto.</Hint>
+                <Hint>{t("sheet.settlement_hint")}</Hint>
               )}
-              {mode === "return" && <Hint>Intereses o rendimiento de la cuenta. No cuenta como ingreso.</Hint>}
+              {mode === "return" && <Hint>{t("sheet.return_hint")}</Hint>}
               {error && <Hint tone="warning">{error}</Hint>}
               {m.labelled && (
                 <Button variant="plain" onClick={() => setConfirm("auto")} disabled={saving}>
-                  Volver a lo automático
+                  {t("sheet.back_auto")}
                 </Button>
               )}
             </div>
           ) : (
             <div className="money-actions">
               <Button icon="edit" variant="tinted" onClick={() => setEditing(true)}>
-                {m.parts.length ? "Cambiar lo que es" : "Decir qué es"}
+                {m.parts.length ? t("sheet.change") : t("sheet.say")}
               </Button>
               {m.labelled && (
                 <Button variant="plain" onClick={() => setConfirm("auto")} disabled={saving}>
-                  Volver a lo automático
+                  {t("sheet.back_auto")}
                 </Button>
               )}
             </div>
           )}
 
-          <Collapsible title="Lo que dijo el banco">
+          <Collapsible title={t("sheet.bank_said")}>
             <dl className="money-raw">
-              <dt>Texto</dt>
+              <dt>{t("sheet.text")}</dt>
               <dd>{m.text}</dd>
               {m.counterparty && (
                 <>
-                  <dt>Contraparte</dt>
+                  <dt>{t("sheet.counterparty")}</dt>
                   <dd>{m.counterparty}</dd>
                 </>
               )}
               {m.counterparty_iban && (
                 <>
-                  <dt>IBAN de la contraparte</dt>
+                  <dt>{t("sheet.counterparty_iban")}</dt>
                   <dd>{m.counterparty_iban}</dd>
                 </>
               )}
               {m.bank_category && (
                 <>
-                  <dt>Clasificación del banco</dt>
+                  <dt>{t("sheet.bank_category")}</dt>
                   <dd>{m.bank_category}</dd>
                 </>
               )}
               {m.value_on && m.value_on !== m.on && (
                 <>
-                  <dt>Fecha valor</dt>
+                  <dt>{t("sheet.value_date")}</dt>
                   <dd>{dayTitle(m.value_on)}</dd>
                 </>
               )}
-              <dt>Fuente</dt>
-              <dd>{SOURCE[m.source] ?? m.source}</dd>
+              <dt>{t("sheet.source")}</dt>
+              <dd>{SOURCES.has(m.source) ? t(`source.${m.source}`) : m.source}</dd>
             </dl>
           </Collapsible>
         </div>
@@ -419,11 +407,8 @@ export function MovementSheet({
   );
 }
 
-const SOURCE: Record<string, string> = {
-  api: "Conexión con el banco",
-  statement: "Extracto",
-  manual: "Apuntado a mano",
-};
+const SOURCES = new Set(["api", "statement", "manual"]);
+const WHY_KEYS = new Set(["auto", "default", "manual", "ask", "pending", "transfer", "return", "settlement"]);
 
 function defaultPayer(m: Movement, state: State): Payer {
   if (m.account === "@other") return m.entry?.payer === "me" ? "me" : "other";
@@ -438,5 +423,5 @@ function sorted(categories: Category[], amount: number): { value: string; label:
   const first = amount < 0 ? "expense" : "income";
   return [...categories]
     .sort((a, b) => Number(b.nature === first) - Number(a.nature === first) || a.ownership.localeCompare(b.ownership))
-    .map((c) => ({ value: c.id, label: `${c.name} — ${NATURE[c.nature].toLowerCase()} ${OWNERSHIP[c.ownership].toLowerCase()}` }));
+    .map((c) => ({ value: c.id, label: `${c.name} — ${natureName(c.nature).toLowerCase()} ${ownershipName(c.ownership).toLowerCase()}` }));
 }

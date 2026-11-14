@@ -22,6 +22,9 @@ import {
   Skeleton,
   SplitBar,
   useToast,
+  type Translate,
+  dates,
+  useT,
 } from "@openarga/ui";
 import { useCallback, useEffect, useState } from "react";
 
@@ -30,8 +33,10 @@ import { type Shared, type SharedEntry, type SharedMonth, type State, api } from
 import { EntrySheet } from "./EntrySheet";
 import { capital, categoryIcon, money, moneyWhole, monthName, percentText, shortDay } from "./format";
 import { IncomesSheet } from "./IncomesSheet";
+import { axisMonth } from "./analysisState";
 
 export function SharedScreen({ state, onChanged }: { state: State; onChanged: () => void }) {
+  const t = useT();
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [data, setData] = useState<Shared | null>(null);
   const [failed, setFailed] = useState(false);
@@ -59,7 +64,7 @@ export function SharedScreen({ state, onChanged }: { state: State; onChanged: ()
 
   const settle = async (settled: boolean) => {
     await api.settle(year, settled);
-    toast({ message: settled ? `${year} liquidado` : `${year} vuelve a estar abierto` });
+    toast({ message: settled ? t("shared.settled_toast", { year }) : t("shared.reopened_toast", { year }) });
     changed();
   };
 
@@ -68,81 +73,82 @@ export function SharedScreen({ state, onChanged }: { state: State; onChanged: ()
   const last = years[years.length - 1] ?? year;
 
   return (
-    <Screen label="Compartido">
-      <ScreenHeader title="Compartido" />
+    <Screen label={t("shared.title")}>
+      <ScreenHeader title={t("shared.title")} />
 
       <div className="money-period-step" data-center="">
-        <IconButton icon="chevron-left" label="Año anterior" onClick={() => setYear(year - 1)} disabled={year <= first} />
+        <IconButton icon="chevron-left" label={t("shared.previous_year")} onClick={() => setYear(year - 1)} disabled={year <= first} />
         <span className="money-period-title">{year}</span>
-        <IconButton icon="chevron-right" label="Año siguiente" onClick={() => setYear(year + 1)} disabled={year >= last} />
+        <IconButton icon="chevron-right" label={t("shared.next_year")} onClick={() => setYear(year + 1)} disabled={year >= last} />
       </div>
 
-      {failed && <Notice tone="negative" title="No se ha podido cargar" action={{ label: "Reintentar", onClick: load }} />}
-      {!data && !failed && <Skeleton rows={5} label="Cargando lo común" />}
+      {failed && <Notice tone="negative" title={t("shared.load_failed")} action={{ label: t("common.retry"), onClick: load }} />}
+      {!data && !failed && <Skeleton rows={5} label={t("shared.loading")} />}
       {data && data.role === "alone" && data.total === 0 && data.entries.length === 0 && (
-        <Notice title="¿Lleváis lo común en un espacio de arga?" action={{ label: "Elegir espacio", onClick: () => setEditingIncomes(true) }}>
-          Si la cuenta común la tiene la otra persona en su Money, elige el espacio que compartís y aquí verás lo mismo que ella, desde tu lado.
+        <Notice title={t("shared.space_question")} action={{ label: t("shared.pick_space"), onClick: () => setEditingIncomes(true) }}>
+          {t("shared.space_body")}
         </Notice>
       )}
       {data && data.role === "member" && !data.has_keeper && (
-        <Notice title="Nadie lleva todavía la cuenta común">
-          Lo común sale del Money de quien tiene la cuenta común. Cuando elija este espacio en su Compartido, aquí verás lo mismo que ve, desde tu lado.
+        <Notice title={t("shared.no_keeper")}>
+          {t("shared.no_keeper_body")}
         </Notice>
       )}
       {data && (
         <>
           <Balance data={data} onEdit={data.role === "member" ? undefined : () => setSettling(true)} />
-          {data.role === "member" && data.kept_at && <Hint>{keptLine(data)}</Hint>}
+          {data.role === "member" && data.kept_at && <Hint>{keptLine(t, data)}</Hint>}
 
           <Card>
             <Figures
-              label={`Lo común de ${year}`}
+              label={t("shared.of_year", { year })}
               items={[
-                { label: "Gasto común", value: moneyWhole(data.total) },
-                { label: "Tu parte", value: moneyWhole(data.months.reduce((sum, m) => sum + m.mine, 0)) },
+                { label: t("shared.spending"), value: moneyWhole(data.total) },
+                { label: t("shared.your_part"), value: moneyWhole(data.months.reduce((sum, m) => sum + m.mine, 0)) },
               ]}
             />
             <SplitBar
-              label="Cómo se reparte lo proporcional, por ingresos"
+              label={t("shared.ratio")}
               parts={[
                 { label: data.me, value: percentText(data.ratio_me), share: data.ratio_me, hue: 5 },
                 { label: data.other, value: percentText(1 - data.ratio_me), share: 1 - data.ratio_me, hue: 6 },
               ]}
             />
             <Hint>
-              Lo que va a medias cuenta la mitad para cada uno; el resto, según los ingresos declarados del año. El tuyo es el{" "}
-              {percentText(data.ratio_me)}.
+              {t("shared.ratio_hint", { percent: percentText(data.ratio_me) })}
             </Hint>
           </Card>
 
           {data.months.length > 1 && (
-            <Card title={`${year}, mes a mes`}>
+            <Card title={t("shared.month_by_month", { year })}>
               <SeriesChart
                 kind="stacked"
-                label={`Lo común de cada mes de ${year}, por quién pagó, con lo que te tocaba`}
-                labels={data.months.map((m) => monthName(m.month).slice(0, 3))}
+                label={t("shared.chart", { year })}
+                labels={data.months.map((m) => axisMonth(`${year}-${String(m.month).padStart(2, "0")}`, false))}
                 series={[
-                  { key: "account", name: "La cuenta común", values: data.months.map((m) => m.paid.account) },
-                  { key: "me", name: `Pagaste tú`, values: data.months.map((m) => m.paid.me) },
-                  { key: "other", name: `Pagó ${data.other}`, values: data.months.map((m) => m.paid.other) },
+                  { key: "account", name: t("shared.the_account"), values: data.months.map((m) => m.paid.account) },
+                  { key: "me", name: t("shared.you_paid"), values: data.months.map((m) => m.paid.me) },
+                  { key: "other", name: t("shared.other_paid", { other: data.other }), values: data.months.map((m) => m.paid.other) },
                 ].filter((one) => one.values.some((v) => v > 0))}
                 order={["account", "me", "other"]}
-                overlay={{ key: "mine", name: "Lo tuyo", values: data.months.map((m) => m.mine) }}
+                overlay={{ key: "mine", name: t("shared.yours"), values: data.months.map((m) => m.mine) }}
                 format={(v) => moneyWhole(v)}
               />
             </Card>
           )}
 
           <Collapsible
-            title="Por meses"
+            title={t("shared.by_month")}
             subtitle={
               data.average.total === null
-                ? `${data.months.length} ${data.months.length === 1 ? "mes" : "meses"}`
-                : `${data.months.length} meses · ${money(data.average.total, false)} de media`
+                ? data.months.length === 1
+                  ? t("shared.months_one")
+                  : t("shared.months_other", { count: data.months.length })
+                : t("shared.months_average", { count: data.months.length, amount: money(data.average.total, false) })
             }
           >
             {data.months.length === 0 ? (
-              <Hint>Aún no hay nada este año.</Hint>
+              <Hint>{t("shared.nothing_yet")}</Hint>
             ) : (
               <div className="money-months">
                 {[...data.months].reverse().map((m) => (
@@ -153,23 +159,23 @@ export function SharedScreen({ state, onChanged }: { state: State; onChanged: ()
           </Collapsible>
 
           {data.by_category.length > 0 && (
-            <Section title="Por categoría">
+            <Section title={t("shared.by_category")}>
               <SegmentedControl<"total" | "average">
-                label="Cómo se cuenta"
+                label={t("shared.how")}
                 value={average ? "average" : "total"}
                 onChange={(v) => setAverage(v === "average")}
                 options={[
-                  { value: "total", label: `Total ${year}` },
-                  { value: "average", label: "Media mensual" },
+                  { value: "total", label: t("shared.total_year", { year }) },
+                  { value: "average", label: t("shared.monthly") },
                 ]}
               />
               <PartBars
-                label={average ? "Lo común de cada categoría, de media al mes" : `Lo común de cada categoría en ${year}`}
+                label={average ? t("shared.cat_average") : t("shared.cat_year", { year })}
                 parts={data.by_category.map((c) => {
                   const amount = average ? (data.average.months ? (data.average.by_category[c.name] ?? 0) : 0) : c.amount;
                   const top = Math.max(...data.by_category.map((one) => one.amount)) || 1;
                   return {
-                    label: `${c.name} · ${Math.round((c.amount / (data.total || 1)) * 100)} %`,
+                    label: `${c.name} · ${percentText(c.amount / (data.total || 1))}`,
                     value: average && !data.average.months ? "—" : moneyWhole(amount),
                     share: c.amount / top,
                   };
@@ -178,17 +184,17 @@ export function SharedScreen({ state, onChanged }: { state: State; onChanged: ()
               {average && (
                 <Hint>
                   {data.average.months === 0
-                    ? "Aún no ha acabado ningún mes del año: la media sale cuando cierre el primero."
-                    : `Lo de cada categoría entre los ${data.average.months} meses cerrados del año. El mes en curso no entra.`}
+                    ? t("shared.no_closed")
+                    : t("shared.closed", { count: data.average.months })}
                 </Hint>
               )}
             </Section>
           )}
 
-          <Section title="Fuera de cuenta" count={data.entries.length} action={{ label: "+ Añadir", onClick: () => setAdding(true) }}>
+          <Section title={t("shared.outside")} count={data.entries.length} action={{ label: t("shared.add"), onClick: () => setAdding(true) }}>
             {data.entries.length === 0 ? (
-              <EmptyState icon="people" title="Nada apuntado a mano" action={{ label: "Apuntar un gasto", onClick: () => setAdding(true) }}>
-                Lo que {data.other} paga de su bolsillo, o lo que tú pagas en efectivo sin una retirada que lo explique.
+              <EmptyState icon="people" title={t("shared.none_typed")} action={{ label: t("shared.add_expense"), onClick: () => setAdding(true) }}>
+                {t("shared.none_typed_body", { other: data.other })}
               </EmptyState>
             ) : (
               <List>
@@ -196,11 +202,11 @@ export function SharedScreen({ state, onChanged }: { state: State; onChanged: ()
                   <ListRow
                     key={e.id}
                     title={e.description}
-                    subtitle={`${e.category_name} · pagó ${e.payer === "other" ? data.other : data.me} · ${shortDay(e.on)}`}
+                    subtitle={t("shared.entry_line", { category: e.category_name, payer: e.payer === "other" ? data.other : data.me, day: shortDay(e.on) })}
                     value={money(e.amount, false)}
                     icon={categoryIcon(e.category_name, "expense")}
                     hue={6}
-                    action={{ icon: "trash", label: `Borrar ${e.description}`, onClick: () => setRemoving(e) }}
+                    action={{ icon: "trash", label: t("shared.delete", { name: e.description }), onClick: () => setRemoving(e) }}
                   />
                 ))}
               </List>
@@ -209,22 +215,21 @@ export function SharedScreen({ state, onChanged }: { state: State; onChanged: ()
 
           {data.role === "member" ? (
 
-            <Section title="Lo común" action={{ label: "Tu ingreso", onClick: () => setEditingIncomes(true) }}>
+            <Section title={t("shared.shared")} action={{ label: t("shared.your_income"), onClick: () => setEditingIncomes(true) }}>
               <Hint>
-                Las categorías y liquidar cada año los lleva {data.other} en su Money. Tu ingreso y el espacio con el que ves lo común se
-                eligen en «Tu ingreso».
+                {t("shared.member_hint", { other: data.other })}
               </Hint>
             </Section>
           
           ) : (
-          <Section title="Ingresos del año" action={{ label: "Editar", onClick: () => setEditingIncomes(true) }}>
+          <Section title={t("shared.incomes")} action={{ label: t("shared.edit"), onClick: () => setEditingIncomes(true) }}>
             <List>
               {(["me", "other"] as const).map((p) => (
                 <ListRow
                   key={p}
                   title={p === "me" ? data.me : data.other}
-                  subtitle="Por tramos"
-                  value={`${money(data.income_totals[p], false)} / año`}
+                  subtitle={t("shared.by_ranges")}
+                  value={t("shared.per_year", { amount: money(data.income_totals[p], false) })}
                 />
               ))}
             </List>
@@ -234,20 +239,20 @@ export function SharedScreen({ state, onChanged }: { state: State; onChanged: ()
                   <ListRow
                     key={n}
                     title={i.person === "me" ? data.me : data.other}
-                    subtitle={`Del ${shortDay(i.from)} al ${shortDay(i.to)}`}
-                    value={`${money(i.salary, false)} / año`}
+                    subtitle={t("shared.range", { from: shortDay(i.from), to: shortDay(i.to) })}
+                    value={t("shared.per_year", { amount: money(i.salary, false) })}
                     detail={i.extra ? `+ ${money(i.extra, false)}` : undefined}
                   />
                 ))}
               </List>
             )}
             <Hint>
-              Deciden qué parte de lo proporcional es de cada uno: el neto anual de cada uno, por tramos de fechas.
+              {t("shared.incomes_hint")}
             </Hint>
           </Section>
           )}
 
-          <CreateButton label="Gasto" onClick={() => setAdding(true)} />
+          <CreateButton label={t("shared.expense")} onClick={() => setAdding(true)} />
         </>
       )}
 
@@ -260,7 +265,7 @@ export function SharedScreen({ state, onChanged }: { state: State; onChanged: ()
           onClose={() => setAdding(false)}
           onSaved={() => {
             setAdding(false);
-            toast({ message: "Gasto apuntado" });
+            toast({ message: t("shared.recorded") });
             changed();
           }}
         />
@@ -277,14 +282,14 @@ export function SharedScreen({ state, onChanged }: { state: State; onChanged: ()
       )}
       {settling && data && (
         <ConfirmChange
-          title={data.settled ? `¿Volver a abrir ${year}?` : `¿Marcar ${year} como liquidado?`}
-          changes={[{ label: "Estado", from: data.settled ? "Liquidado" : "Sin liquidar", to: data.settled ? "Sin liquidar" : "Liquidado" }]}
+          title={data.settled ? t("shared.reopen_q", { year }) : t("shared.settle_q", { year })}
+          changes={[{ label: t("shared.status"), from: data.settled ? t("shared.settled") : t("shared.unsettled"), to: data.settled ? t("shared.unsettled") : t("shared.settled") }]}
           detail={
             data.settled
-              ? "El saldo del año vuelve a contar como pendiente."
-              : "Di que ya os habéis puesto a cero por lo de este año. El saldo sigue viéndose, marcado como liquidado."
+              ? t("shared.reopen_detail")
+              : t("shared.settle_detail")
           }
-          action={data.settled ? "Volver a abrir" : "Marcar como liquidado"}
+          action={data.settled ? t("shared.reopen") : t("shared.mark_settled")}
           onCancel={() => setSettling(false)}
           onConfirm={async () => {
             await settle(!data.settled);
@@ -294,10 +299,10 @@ export function SharedScreen({ state, onChanged }: { state: State; onChanged: ()
       )}
       {removing && (
         <ConfirmDelete
-          title="¿Borrar este gasto?"
+          title={t("shared.delete_q")}
           subject={`${removing.description} · ${money(removing.amount, false)}`}
-          consequence={`Deja de contar en lo común de ${year}. ${CANNOT_UNDO}`}
-          action="Borrar gasto"
+          consequence={`${t("shared.delete_consequence", { year })} ${CANNOT_UNDO}`}
+          action={t("shared.delete_action")}
           onCancel={() => setRemoving(null)}
           onConfirm={async () => {
             await api.removeEntry(removing.id);
@@ -310,16 +315,17 @@ export function SharedScreen({ state, onChanged }: { state: State; onChanged: ()
   );
 }
 
-export function keptLine(data: Pick<Shared, "other" | "kept_at">): string {
-  if (!data.kept_at) return `Lo lleva ${data.other} en su Money.`;
+export function keptLine(t: Translate, data: Pick<Shared, "other" | "kept_at">): string {
+  if (!data.kept_at) return t("shared.kept", { other: data.other });
   const at = new Date(data.kept_at);
-  const time = at.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
-  const day = at.toLocaleDateString("es-ES", { day: "numeric", month: "long" });
+  const time = dates({ hour: "2-digit", minute: "2-digit" }).format(at);
+  const day = dates({ day: "numeric", month: "long" }).format(at);
   const today = new Date().toDateString() === at.toDateString();
-  return `Lo lleva ${data.other} en su Money · al día ${today ? `a las ${time}` : `el ${day}`}. Lo que apuntes entra en el saldo en medio minuto.`;
+  return t("shared.kept_at", { other: data.other, when: today ? t("shared.at_time", { time }) : t("shared.on_day", { day }) });
 }
 
 function Balance({ data, onEdit }: { data: Shared; onEdit?: () => void }) {
+  const t = useT();
   const owe = Math.abs(data.balance_me);
   const even = owe < 0.005;
   const me = { name: data.me, hue: 5 as const };
@@ -331,18 +337,22 @@ function Balance({ data, onEdit }: { data: Shared; onEdit?: () => void }) {
         payer={payer}
         payee={payee}
         even={even}
-        amount={even ? "Estáis a cero" : moneyWhole(owe)}
+        amount={even ? t("shared.even") : moneyWhole(owe)}
         detail={
           even
             ? data.settled
-              ? `${data.year} está liquidado`
-              : `${data.year}, sin liquidar`
-            : `${payer.name} debe a ${payee.name} · ${data.settled ? `${data.year} está liquidado` : `${data.year}, sin liquidar · se liquida al cerrar el año`}`
+              ? t("shared.year_settled", { year: data.year })
+              : t("shared.year_unsettled", { year: data.year })
+            : t("shared.owes", {
+                payer: payer.name,
+                payee: payee.name,
+                status: data.settled ? t("shared.year_settled", { year: data.year }) : t("shared.closes", { year: data.year }),
+              })
         }
         action={
           onEdit ? (
             <Button variant="tinted" size="small" icon={data.settled ? "repeat" : "done"} onClick={onEdit}>
-              {data.settled ? `Volver a abrir ${data.year}` : `Liquidar ${data.year}`}
+              {data.settled ? t("shared.reopen_year", { year: data.year }) : t("shared.settle_year", { year: data.year })}
             </Button>
           ) : undefined
         }
@@ -352,32 +362,33 @@ function Balance({ data, onEdit }: { data: Shared; onEdit?: () => void }) {
 }
 
 function MonthBlock({ m, data }: { m: SharedMonth; data: Shared }) {
+  const t = useT();
   const title = capital(monthName(m.month));
   return (
-    <Collapsible title={title} subtitle={`${money(m.total, false)} · tu parte ${money(m.mine, false)}${m.source === "history" ? " · de Caudal" : ""}`}>
+    <Collapsible title={title} subtitle={`${t("shared.month_sub", { total: money(m.total, false), mine: money(m.mine, false) })}${m.source === "history" ? t("shared.from_history") : ""}`}>
       <ul className="money-month-cats">
         {m.by_category.map((c) => (
           <li key={c.name}>
             <span>
               {c.name}
-              <span className="money-part-kind">{c.split === "fifty_fifty" ? "a medias" : "según ingresos"}</span>
+              <span className="money-part-kind">{c.split === "fifty_fifty" ? t("shared.half") : t("shared.by_income")}</span>
             </span>
             <span className="money-part-amount">{money(c.amount, false)}</span>
           </li>
         ))}
       </ul>
       <dl className="money-month-facts">
-        <dt>Pagó la cuenta común</dt>
+        <dt>{t("shared.account_paid")}</dt>
         <dd>{money(m.paid.account, false)}</dd>
-        <dt>Pagó {data.me}</dt>
+        <dt>{t("shared.paid", { name: data.me })}</dt>
         <dd>{money(m.paid.me, false)}</dd>
-        <dt>Pagó {data.other}</dt>
+        <dt>{t("shared.paid", { name: data.other })}</dt>
         <dd>{money(m.paid.other, false)}</dd>
-        <dt>Ingresó {data.me} en la común</dt>
+        <dt>{t("shared.deposited", { name: data.me })}</dt>
         <dd>{money(m.deposits.me, false)}</dd>
-        <dt>Ingresó {data.other} en la común</dt>
+        <dt>{t("shared.deposited", { name: data.other })}</dt>
         <dd>{money(m.deposits.other, false)}</dd>
-        <dt>Saldo del mes</dt>
+        <dt>{t("shared.month_balance")}</dt>
         <dd data-sign={m.balance_me < 0 ? "out" : "in"}>{money(m.balance_me)}</dd>
       </dl>
     </Collapsible>

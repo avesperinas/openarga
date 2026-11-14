@@ -8,6 +8,7 @@ import {
   StatRow,
   StatTile,
   type TableColumn,
+  useT,
 } from "@openarga/ui";
 import { useState } from "react";
 
@@ -18,18 +19,10 @@ import { axisMonth, crossesYears } from "./analysisState";
 import { money, moneyWhole } from "./format";
 import { useWide } from "./useWide";
 
-const INFO = {
-  value: "Lo que valen tus productos de inversión el último día del periodo (o hoy). Un producto compartido, por tu parte, salvo que elijas «Todo».",
-  gain: "Lo que valen menos lo que has aportado (lo puesto menos lo sacado) desde el principio. La rentabilidad simple es esa ganancia sobre lo aportado, sin tener en cuenta cuándo lo pusiste.",
-  xirr:
-    "La TIR: la rentabilidad anual que tendría que haber dado una cuenta para acabar con lo mismo, poniendo cada aportación el día en que la pusiste. Es la que se compara con un depósito o con la inflación. Antes del corte, las aportaciones del histórico van a mitad de su mes.",
-  period:
-    "Lo ganado en el periodo: lo que valen al final menos lo que valían al empezar y menos lo aportado entre medias. El porcentaje pesa cada aportación por los días que estuvo dentro (Dietz modificado), y no se pasa a anual.",
-};
-
 const ALL = "__all__";
 
 export function InvestView({ q, other }: { q: AnalysisQuery; other: string }) {
+  const t = useT();
   const key = JSON.stringify(q);
   const state = useLoad(() => api.investments(q), key);
   const [picked, setPicked] = useState<string>(ALL);
@@ -39,13 +32,13 @@ export function InvestView({ q, other }: { q: AnalysisQuery; other: string }) {
   return (
     <Loading state={state}>
       {(inv) => {
-        const t = inv.total;
+        const sum = inv.total;
         if (inv.rows.length === 0)
           return (
             <Hint>
               {q.group?.length || q.account?.length
-                ? "Ningún producto con este filtro."
-                : "Aún no hay productos de inversión con aportaciones o valor."}
+                ? t("invest.no_product")
+                : t("invest.none")}
             </Hint>
           );
         const product = inv.rows.find((r) => r.key === picked);
@@ -54,51 +47,51 @@ export function InvestView({ q, other }: { q: AnalysisQuery; other: string }) {
         const contribYears = crossesYears(inv.contributions.labels);
         const withOther = inv.rows.filter((r) => r.capital_other);
         const columns: TableColumn<Product>[] = [
-          { key: "name", label: "Producto", cell: (r) => (r.carried || r.estimated ? `${r.name} ·` : r.name), csv: (r) => r.name },
-          { key: "capital", label: "Aportado", numeric: true, cell: (r) => money(r.capital, false), csv: (r) => r.capital },
-          { key: "value", label: "Valor", numeric: true, cell: (r) => money(r.value, false), csv: (r) => r.value },
-          { key: "gain", label: "Ganancia", numeric: true, cell: (r) => money(r.gain), csv: (r) => r.gain },
-          { key: "simple", label: "Simple", numeric: true, cell: (r) => signedPercent(r.simple), csv: (r) => r.simple },
-          { key: "xirr", label: "TIR anual", numeric: true, cell: (r) => signedPercent(r.xirr), csv: (r) => r.xirr },
+          { key: "name", label: t("invest.product"), cell: (r) => (r.carried || r.estimated ? `${r.name} ·` : r.name), csv: (r) => r.name },
+          { key: "capital", label: t("invest.contributed"), numeric: true, cell: (r) => money(r.capital, false), csv: (r) => r.capital },
+          { key: "value", label: t("invest.value"), numeric: true, cell: (r) => money(r.value, false), csv: (r) => r.value },
+          { key: "gain", label: t("invest.gain"), numeric: true, cell: (r) => money(r.gain), csv: (r) => r.gain },
+          { key: "simple", label: t("invest.simple"), numeric: true, cell: (r) => signedPercent(r.simple), csv: (r) => r.simple },
+          { key: "xirr", label: t("invest.xirr"), numeric: true, cell: (r) => signedPercent(r.xirr), csv: (r) => r.xirr },
           {
             key: "period",
-            label: "En el periodo",
+            label: t("invest.in_period"),
             numeric: true,
             cell: (r) => `${money(r.period_gain)} · ${signedPercent(r.period_return)}`,
             csv: (r) => r.period_gain,
           },
           {
             key: "in",
-            label: "Aportado en el periodo",
+            label: t("invest.contributed_in_period"),
             numeric: true,
             cell: (r) => money(r.contributed_in_period, false),
             csv: (r) => r.contributed_in_period,
           },
         ];
         const valueChart = (
-          <Section title="Valor frente a lo aportado">
+          <Section title={t("invest.value_vs")}>
             <SelectField
-              label="Producto"
+              label={t("invest.product")}
               value={product ? picked : ALL}
               onChange={setPicked}
-              options={[{ value: ALL, label: "Todos" }, ...inv.rows.map((r) => ({ value: r.key, label: r.name }))]}
+              options={[{ value: ALL, label: t("invest.all") }, ...inv.rows.map((r) => ({ value: r.key, label: r.name }))]}
             />
             <GainChart
-              label={`Valor y capital aportado de ${product ? product.name : "todos los productos"} a final de cada mes`}
+              label={t("invest.chart", { what: product ? product.name : t("invest.all_products") })}
               labels={series.map((p) => axisMonth(p.label, years))}
               value={series.map((p) => p.value)}
               contributed={series.map((p) => p.capital)}
               format={(v) => money(v, false)}
             />
-            {inv.widened && <Hint>Los 12 meses hasta el final del periodo.</Hint>}
+            {inv.widened && <Hint>{t("invest.widened")}</Hint>}
           </Section>
         );
         const contributions = (
           <>
             {inv.contributions.series.length > 0 && (
-              <Section title="Aportaciones por mes">
+              <Section title={t("invest.by_month")}>
                 <SeriesChart
-                  label="Lo aportado a cada producto, mes a mes"
+                  label={t("invest.by_month_chart")}
                   kind="stacked"
                   labels={inv.contributions.labels.map((l) => axisMonth(l, contribYears))}
                   series={inv.contributions.series}
@@ -113,41 +106,41 @@ export function InvestView({ q, other }: { q: AnalysisQuery; other: string }) {
         const composition = <CompositionSection q={q} picked={product ? picked : null} />;
         return (
           <>
-            <StatRow label="Inversión">
+            <StatRow label={t("invest.title")}>
               <StatTile
-                label="Valor"
-                value={moneyWhole(t.value)}
-                foot={`Aportado ${moneyWhole(t.capital)}`}
-                info={INFO.value}
+                label={t("invest.value")}
+                value={moneyWhole(sum.value)}
+                foot={t("invest.contributed_amount", { amount: moneyWhole(sum.capital) })}
+                info={t("invest.info_value")}
               />
               <StatTile
-                label="Ganancia"
-                value={moneyWhole(t.gain, true)}
-                foot={`${signedPercent(t.simple)} sobre lo aportado`}
-                tone={t.gain >= 0 ? "positive" : "negative"}
-                info={INFO.gain}
+                label={t("invest.gain")}
+                value={moneyWhole(sum.gain, true)}
+                foot={t("invest.over_contributed", { percent: signedPercent(sum.simple) })}
+                tone={sum.gain >= 0 ? "positive" : "negative"}
+                info={t("invest.info_gain")}
               />
               <StatTile
-                label="TIR anual"
-                value={signedPercent(t.xirr)}
-                foot="Con la fecha de cada aportación"
-                tone={t.xirr === null ? "neutral" : t.xirr >= 0 ? "positive" : "negative"}
-                info={INFO.xirr}
+                label={t("invest.xirr")}
+                value={signedPercent(sum.xirr)}
+                foot={t("invest.with_dates")}
+                tone={sum.xirr === null ? "neutral" : sum.xirr >= 0 ? "positive" : "negative"}
+                info={t("invest.info_xirr")}
               />
               <StatTile
-                label="En el periodo"
-                value={moneyWhole(t.period_gain, true)}
-                foot={`${signedPercent(t.period_return)} · aportado ${moneyWhole(t.contributed_in_period)}`}
-                tone={t.period_gain >= 0 ? "positive" : "negative"}
-                info={INFO.period}
+                label={t("invest.in_period")}
+                value={moneyWhole(sum.period_gain, true)}
+                foot={t("invest.period_foot", { percent: signedPercent(sum.period_return), amount: moneyWhole(sum.contributed_in_period) })}
+                tone={sum.period_gain >= 0 ? "positive" : "negative"}
+                info={t("invest.info_period")}
               />
             </StatRow>
 
             {valueChart}
 
-            <Section title="Rentabilidad de cada producto">
+            <Section title={t("invest.returns")}>
               <DataTable
-                label="Rentabilidad de cada producto"
+                label={t("invest.returns")}
                 columns={wide ? columns : narrowColumns(columns, ["name", "value", "xirr"])}
                 rows={inv.rows}
                 rowKey={(r) => r.key}
@@ -158,32 +151,30 @@ export function InvestView({ q, other }: { q: AnalysisQuery; other: string }) {
                 footer={
                   wide
                     ? [
-                        "Total",
-                        money(t.capital, false),
-                        money(t.value, false),
-                        money(t.gain),
-                        signedPercent(t.simple),
-                        signedPercent(t.xirr),
-                        `${money(t.period_gain)} · ${signedPercent(t.period_return)}`,
-                        money(t.contributed_in_period, false),
+                        t("common.total"),
+                        money(sum.capital, false),
+                        money(sum.value, false),
+                        money(sum.gain),
+                        signedPercent(sum.simple),
+                        signedPercent(sum.xirr),
+                        `${money(sum.period_gain)} · ${signedPercent(sum.period_return)}`,
+                        money(sum.contributed_in_period, false),
                       ]
-                    : ["Total", money(t.value, false), signedPercent(t.xirr)]
+                    : [t("common.total"), money(sum.value, false), signedPercent(sum.xirr)]
                 }
               />
-              <CsvButton name={`inversion-${inv.on}`} columns={columns} rows={inv.rows} />
+              <CsvButton name={`${t("invest.csv")}-${inv.on}`} columns={columns} rows={inv.rows} />
               {inv.rows.some((r) => r.estimated) && (
                 <Hint>
-                  · Estimados a{" "}
-                  {dayText(inv.rows.map((r) => r.estimated ?? "").sort().slice(-1)[0] ?? "")} con el precio de sus fondos desde
-                  su última foto; se corrigen al subir otra.
+                  {t("invest.estimated", { day: dayText(inv.rows.map((r) => r.estimated ?? "").sort().slice(-1)[0] ?? "") })}
                 </Hint>
               )}
               {inv.rows.some((r) => r.carried) && (
-                <Hint>· Valen lo de su última valoración más lo aportado después; su ganancia de estos días aún no se sabe.</Hint>
+                <Hint>{t("invest.carried")}</Hint>
               )}
               {withOther.map((r) => (
                 <Hint key={r.key}>
-                  {r.name}: además de lo tuyo, {other} ha aportado {moneyWhole(r.capital_other ?? 0)}. El valor que ves es tu parte.
+                  {t("invest.other", { name: r.name, other, amount: moneyWhole(r.capital_other ?? 0) })}
                 </Hint>
               ))}
             </Section>

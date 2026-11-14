@@ -1,4 +1,6 @@
-import { capital, isoDay, monthName } from "./format";
+import { dates } from "@openarga/ui";
+
+import { capital, isoDay, monthTitle, parseDay, say } from "./format";
 
 export type View = "worth" | "invest" | "spending" | "flow";
 export type PeriodKind = "month" | "quarter" | "year" | "last12" | "range" | "all";
@@ -22,21 +24,12 @@ export interface AnalysisState {
   accounts: string[];
 }
 
-export const VIEWS: { value: View; label: string; slug: string }[] = [
-  { value: "worth", label: "Patrimonio", slug: "patrimonio" },
-  { value: "invest", label: "Inversión", slug: "inversion" },
-  { value: "spending", label: "Gasto", slug: "gasto" },
-  { value: "flow", label: "Flujo", slug: "flujo" },
-];
+export const VIEWS: View[] = ["worth", "invest", "spending", "flow"];
 
-export const PERIODS: { value: PeriodKind; label: string; slug: string }[] = [
-  { value: "month", label: "Mes", slug: "mes" },
-  { value: "quarter", label: "Trimestre", slug: "trimestre" },
-  { value: "year", label: "Año", slug: "ano" },
-  { value: "last12", label: "12 meses", slug: "12-meses" },
-  { value: "range", label: "Rango", slug: "rango" },
-  { value: "all", label: "Todo", slug: "todo" },
-];
+export const PERIODS: PeriodKind[] = ["month", "quarter", "year", "last12", "range", "all"];
+
+export const viewName = (view: View): string => say(`view.${view}`);
+export const periodName = (kind: PeriodKind): string => say(`period.${kind}`);
 
 function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
@@ -104,16 +97,14 @@ export function atEnd(s: AnalysisState, today = new Date()): boolean {
   return next.from > isoDay(today);
 }
 
-const QUARTERS = ["1.er", "2.º", "3.er", "4.º"];
-
 export function periodTitle(s: AnalysisState, first: number, today = new Date()): string {
   const { year, month } = parseMonth(s.at);
-  const short = (y: number, m: number) => `${capital(monthName(m)).slice(0, 3)} ${y}`;
+  const short = (y: number, m: number) => capital(dates({ month: "short", year: "numeric" }).format(new Date(y, m - 1, 1))).replace(".", "");
   switch (s.kind) {
     case "month":
-      return `${capital(monthName(month))} ${year}`;
+      return monthTitle(year, month);
     case "quarter":
-      return `${QUARTERS[Math.floor((month - 1) / 3)]} trimestre ${year}`;
+      return say("period.quarter_title", { quarter: Math.floor((month - 1) / 3) + 1, year });
     case "year":
       return String(year);
     case "last12": {
@@ -122,49 +113,46 @@ export function periodTitle(s: AnalysisState, first: number, today = new Date())
     }
     case "range": {
       const { from, to } = bounds(s, first, today);
-      return `${from.split("-").reverse().join("/")} – ${to.split("-").reverse().join("/")}`;
+      return `${dates().format(parseDay(from))} – ${dates().format(parseDay(to))}`;
     }
     case "all":
-      return `Desde ${first}`;
+      return say("period.since", { year: first });
   }
 }
 
 export function previousLabel(kind: PeriodKind): string {
   switch (kind) {
     case "month":
-      return "el mes anterior";
     case "quarter":
-      return "el trimestre anterior";
     case "year":
-      return "el año anterior";
     case "last12":
-      return "los 12 meses anteriores";
+      return say(`previous.${kind}`);
     default:
-      return "el periodo anterior";
+      return say("previous.other");
   }
 }
 
-const VIEW_SLUG = new Map(VIEWS.map((v) => [v.slug, v.value]));
-const PERIOD_SLUG = new Map(PERIODS.map((p) => [p.slug, p.value]));
+const isView = (value: string | null): value is View => VIEWS.includes(value as View);
+const isPeriod = (value: string | null): value is PeriodKind => PERIODS.includes(value as PeriodKind);
 
 export function toSearch(s: AnalysisState, today = new Date()): string {
   const d = defaults(today);
   const p = new URLSearchParams();
-  if (s.view !== d.view) p.set("vista", VIEWS.find((v) => v.value === s.view)?.slug ?? s.view);
-  if (s.kind !== d.kind) p.set("periodo", PERIODS.find((one) => one.value === s.kind)?.slug ?? s.kind);
+  if (s.view !== d.view) p.set("view", s.view);
+  if (s.kind !== d.kind) p.set("period", s.kind);
   if (s.kind === "range") {
-    p.set("desde", s.from);
-    p.set("hasta", s.to);
-  } else if (s.kind !== "all" && s.at !== d.at) p.set("mes", s.at);
-  if (s.home) p.set("vivienda", "si");
-  if (s.whole) p.set("comun", "todo");
-  if (!s.cycle) p.set("ciclo", "mes");
-  if (s.percent) p.set("en", "porcentaje");
-  if (!s.rent) p.set("alquiler", "gasto");
-  if (s.scope !== "all") p.set("gasto", s.scope === "individual" ? "individual" : "comun");
-  if (s.basic !== "all") p.set("tipo", s.basic === "basic" ? "basico" : "no-basico");
-  for (const g of s.groups) p.append("producto", g);
-  for (const a of s.accounts) p.append("cuenta", a);
+    p.set("from", s.from);
+    p.set("to", s.to);
+  } else if (s.kind !== "all" && s.at !== d.at) p.set("month", s.at);
+  if (s.home) p.set("home", "yes");
+  if (s.whole) p.set("shared", "whole");
+  if (!s.cycle) p.set("cycle", "month");
+  if (s.percent) p.set("as", "percent");
+  if (!s.rent) p.set("rent", "expense");
+  if (s.scope !== "all") p.set("spending", s.scope);
+  if (s.basic !== "all") p.set("kind", s.basic);
+  for (const g of s.groups) p.append("product", g);
+  for (const a of s.accounts) p.append("account", a);
   const text = p.toString();
   return text ? `?${text}` : "";
 }
@@ -175,26 +163,28 @@ const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 export function fromSearch(search: string, today = new Date()): AnalysisState {
   const p = new URLSearchParams(search);
   const d = defaults(today);
-  const from = p.get("desde") ?? "";
-  const to = p.get("hasta") ?? "";
-  const at = p.get("mes") ?? "";
-  const gasto = p.get("gasto");
-  const tipo = p.get("tipo");
+  const from = p.get("from") ?? "";
+  const to = p.get("to") ?? "";
+  const at = p.get("month") ?? "";
+  const spending = p.get("spending");
+  const kind = p.get("kind");
+  const view = p.get("view");
+  const period = p.get("period");
   return {
-    view: VIEW_SLUG.get(p.get("vista") ?? "") ?? d.view,
-    kind: PERIOD_SLUG.get(p.get("periodo") ?? "") ?? d.kind,
+    view: isView(view) ? view : d.view,
+    kind: isPeriod(period) ? period : d.kind,
     at: MONTH.test(at) ? at : d.at,
     from: DAY.test(from) ? from : d.from,
     to: DAY.test(to) ? to : d.to,
-    home: p.get("vivienda") === "si",
-    whole: p.get("comun") === "todo",
-    cycle: p.get("ciclo") !== "mes",
-    percent: p.get("en") === "porcentaje",
-    rent: p.get("alquiler") !== "gasto",
-    scope: gasto === "individual" ? "individual" : gasto === "comun" ? "shared" : "all",
-    basic: tipo === "basico" ? "basic" : tipo === "no-basico" ? "other" : "all",
-    groups: p.getAll("producto").filter(Boolean),
-    accounts: p.getAll("cuenta").filter(Boolean),
+    home: p.get("home") === "yes",
+    whole: p.get("shared") === "whole",
+    cycle: p.get("cycle") !== "month",
+    percent: p.get("as") === "percent",
+    rent: p.get("rent") !== "expense",
+    scope: spending === "individual" || spending === "shared" ? spending : "all",
+    basic: kind === "basic" || kind === "other" ? kind : "all",
+    groups: p.getAll("product").filter(Boolean),
+    accounts: p.getAll("account").filter(Boolean),
   };
 }
 
@@ -217,7 +207,7 @@ export function pickable(
 
 export function axisMonth(label: string, withYear: boolean): string {
   const { year, month } = parseMonth(label);
-  const name = monthName(month).slice(0, 3);
+  const name = dates({ month: "short", timeZone: "UTC" }).format(new Date(Date.UTC(2000, month - 1, 1))).replace(".", "");
   return withYear ? `${name} ${String(year).slice(2)}` : name;
 }
 

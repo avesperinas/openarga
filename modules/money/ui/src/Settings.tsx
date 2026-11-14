@@ -16,6 +16,7 @@ import {
   Switch,
   TextField,
   useToast,
+  useT,
 } from "@openarga/ui";
 import { useEffect, useRef, useState } from "react";
 
@@ -23,11 +24,12 @@ import { APP, ScreenHeader } from "./Header";
 import { NewProductSheet, ProductSheet } from "./Products";
 import { RulesScreen } from "./Rules";
 import { type AccountRef, type Category, Refused, type State, api } from "./api";
-import { money, shortDay } from "./format";
+import { groupName, money, percentText, say, shortDay, typeName } from "./format";
 
 type View = "main" | "accounts" | "categories" | "rules";
 
 export function SettingsScreen({ state, onChanged }: { state: State; onChanged: () => void }) {
+  const t = useT();
   const [view, setView] = useState<View>("main");
   const back = () => {
     setView("main");
@@ -46,27 +48,26 @@ export function SettingsScreen({ state, onChanged }: { state: State; onChanged: 
   return (
     <AppSettings app={APP}>
       {state.unmapped.length > 0 && (
-        <Notice tone="warning" title={`${state.unmapped.length} cuentas de tus bancos sin asignar`}>
-          {state.unmapped.map((u) => `${u.bank} ${u.name}${u.iban_tail ? ` ···${u.iban_tail}` : ""}`).join(" · ")}. Sus
-          movimientos no se ven hasta que sean un producto: créalo, o asígnala a uno, en Cuentas y productos.
+        <Notice tone="warning" title={t("settings.unmapped", { count: state.unmapped.length })}>
+          {t("settings.unmapped_body", { accounts: state.unmapped.map((u) => `${u.bank} ${u.name}${u.iban_tail ? ` ···${u.iban_tail}` : ""}`).join(" · ") })}
         </Notice>
       )}
 
       {state.configured && (
-        <Section title="Tus datos">
+        <Section title={t("settings.your_data")}>
           <List>
             <ListRow
-              title="Cuentas y productos"
+              title={t("settings.accounts")}
               icon="wallet"
               hue={4}
-              detail={off ? `${off} no ${off === 1 ? "cuadra" : "cuadran"}` : undefined}
+              detail={off ? (off === 1 ? t("settings.off_one") : t("settings.off_other", { count: off })) : undefined}
               tone={off ? "warning" : undefined}
               value={String(state.accounts.length)}
               accessory="chevron-right"
               onClick={() => open("accounts")}
             />
             <ListRow
-              title="Categorías"
+              title={t("settings.categories")}
               icon="list"
               hue={6}
               value={String(state.categories.length)}
@@ -74,7 +75,7 @@ export function SettingsScreen({ state, onChanged }: { state: State; onChanged: 
               onClick={() => open("categories")}
             />
             <ListRow
-              title="Reglas"
+              title={t("settings.rules")}
               icon="list"
               hue={2}
               value={String(state.rules)}
@@ -95,22 +96,21 @@ export function SettingsScreen({ state, onChanged }: { state: State; onChanged: 
 type Health = State["health"][number];
 
 function healthText(h: Health): string {
-  if (h.ok || h.gap === null) return "Cuadra con el banco";
+  if (h.ok || h.gap === null) return say("health.ok");
   const amount = money(Math.abs(h.gap), false);
-  return h.gap > 0
-    ? `El saldo del banco tiene ${amount} menos que sus movimientos: falta por llegar un cargo. Si es reciente, se arregla solo cuando el banco lo publique.`
-    : `El saldo del banco tiene ${amount} más que sus movimientos: falta por llegar un ingreso. Si es reciente, se arregla solo cuando el banco lo publique.`;
+  return h.gap > 0 ? say("health.less", { amount }) : say("health.more", { amount });
 }
 
 function accountLine(a: AccountRef): string {
-  const parts = [a.institution, a.type_label];
-  if (a.shared) parts.push("común");
-  if (a.ownership < 1) parts.push(`${Math.round(a.ownership * 100)} % tuyo`);
-  if (a.role === "emergency_fund") parts.push("fondo de contingencia");
+  const parts = [a.institution, typeName(a.type, a.type_label)];
+  if (a.shared) parts.push(say("account.shared"));
+  if (a.ownership < 1) parts.push(say("account.yours", { percent: percentText(Math.round(a.ownership * 100) / 100) }));
+  if (a.role === "emergency_fund") parts.push(say("account.emergency"));
   return parts.join(" · ");
 }
 
 function AccountsScreen({ state, onBack, onChanged }: { state: State; onBack: () => void; onChanged: () => void }) {
+  const t = useT();
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const health = new Map(state.health.map((h) => [h.account, h]));
@@ -118,15 +118,15 @@ function AccountsScreen({ state, onBack, onChanged }: { state: State; onBack: ()
   const warning = editing ? health.get(editing) : undefined;
 
   return (
-    <Screen label="Cuentas y productos">
-      <ScreenHeader title="Cuentas y productos" back={{ label: "Ajustes", onClick: onBack }} />
-      <Section action={{ label: "+ Nuevo producto", onClick: () => setAdding(true) }}>
+    <Screen label={t("settings.accounts")}>
+      <ScreenHeader title={t("settings.accounts")} back={{ label: t("tab.settings"), onClick: onBack }} />
+      <Section action={{ label: t("settings.new_product"), onClick: () => setAdding(true) }}>
         <Hint>
-          Toca uno para ver de dónde salen sus datos, cómo se valora y en qué fondos está, y cambiar lo que quieras.
+          {t("settings.accounts_hint")}
         </Hint>
       </Section>
       {groups.map((group) => (
-        <Section key={group} title={group}>
+        <Section key={group} title={groupName(group)}>
           <List>
             {state.accounts
               .filter((a) => a.group === group)
@@ -137,7 +137,7 @@ function AccountsScreen({ state, onBack, onChanged }: { state: State; onBack: ()
                     key={a.key}
                     title={a.name}
                     subtitle={accountLine(a)}
-                    detail={h && !h.ok ? "No cuadra" : undefined}
+                    detail={h && !h.ok ? t("settings.off") : undefined}
                     tone={h && !h.ok ? "warning" : undefined}
                     accessory="chevron-right"
                     onClick={() => setEditing(a.key)}
@@ -147,9 +147,9 @@ function AccountsScreen({ state, onBack, onChanged }: { state: State; onBack: ()
           </List>
         </Section>
       ))}
-      <Hint>«No cuadra» compara el saldo que da el banco con sus movimientos de los últimos dos meses.</Hint>
+      <Hint>{t("settings.off_hint")}</Hint>
       {warning && !warning.ok && (
-        <Notice tone="warning" title="No cuadra con el banco">
+        <Notice tone="warning" title={t("settings.off_title")}>
           {healthText(warning)}
         </Notice>
       )}
@@ -172,19 +172,19 @@ function AccountsScreen({ state, onBack, onChanged }: { state: State; onBack: ()
 type Group = { nature: Category["nature"]; ownership: Category["ownership"]; title: string };
 
 const GROUPS: Group[] = [
-  { nature: "expense", ownership: "individual", title: "Gasto tuyo" },
-  { nature: "expense", ownership: "shared", title: "Gasto común" },
-  { nature: "income", ownership: "individual", title: "Ingresos" },
+  { nature: "expense", ownership: "individual", title: "group.expense_individual" },
+  { nature: "expense", ownership: "shared", title: "group.expense_shared" },
+  { nature: "income", ownership: "individual", title: "group.income_individual" },
 ];
 
-const SPLIT: Record<string, string> = { fifty_fifty: "A medias", proportional: "Según ingresos" };
+const SPLITS = new Set(["fifty_fifty", "proportional"]);
 
 function categoryLine(c: Category): string | undefined {
   const parts: string[] = [];
-  if (c.split) parts.push(SPLIT[c.split] ?? c.split);
+  if (c.split) parts.push(SPLITS.has(c.split) ? say(`split.${c.split}`) : c.split);
   if (c.nature === "expense") {
-    if (c.not_living) parts.push("no es gasto de vida");
-    else if (c.not_basic) parts.push("no es básico");
+    if (c.not_living) parts.push(say("category.not_living"));
+    else if (c.not_basic) parts.push(say("category.not_basic"));
   }
   return parts.length ? parts.join(" · ") : undefined;
 }
@@ -192,22 +192,23 @@ function categoryLine(c: Category): string | undefined {
 type Draft = { id: string | null; nature: Category["nature"]; ownership: Category["ownership"]; name: string; split: Category["split"]; not_living: boolean; not_basic: boolean };
 
 function CategoriesScreen({ state, onBack, onChanged }: { state: State; onBack: () => void; onChanged: () => void }) {
+  const t = useT();
   const [editing, setEditing] = useState<Draft | null>(null);
   const groups = GROUPS.filter((g) => g.ownership === "individual" || g.nature === "expense");
   const others = state.categories.filter((c) => !GROUPS.some((g) => g.nature === c.nature && g.ownership === c.ownership));
 
   return (
-    <Screen label="Categorías">
-      <ScreenHeader title="Categorías" back={{ label: "Ajustes", onClick: onBack }} />
+    <Screen label={t("settings.categories")}>
+      <ScreenHeader title={t("settings.categories")} back={{ label: t("tab.settings"), onClick: onBack }} />
       {groups.map((g) => {
         const cats = state.categories.filter((c) => c.nature === g.nature && c.ownership === g.ownership);
         return (
           <Section
             key={g.title}
-            title={g.title}
+            title={t(g.title)}
             count={cats.length}
             action={{
-              label: "+ Añadir",
+              label: t("settings.add"),
               onClick: () =>
                 setEditing({
                   id: null,
@@ -229,7 +230,7 @@ function CategoriesScreen({ state, onBack, onChanged }: { state: State; onBack: 
         );
       })}
       {others.length > 0 && (
-        <Section title="Otras">
+        <Section title={t("settings.others")}>
           <List>
             {others.map((c) => (
               <ListRow key={c.id} title={c.name} subtitle={categoryLine(c)} accessory="chevron-right" onClick={() => setEditing({ ...c })} />
@@ -237,7 +238,7 @@ function CategoriesScreen({ state, onBack, onChanged }: { state: State; onBack: 
           </List>
         </Section>
       )}
-      <Hint>Lo que no es básico sale del gasto básico (y del objetivo del fondo); lo que no es de vida, de los dos gastos.</Hint>
+      <Hint>{t("settings.categories_hint")}</Hint>
       {editing && (
         <CategorySheet
           draft={editing}
@@ -253,6 +254,7 @@ function CategoriesScreen({ state, onBack, onChanged }: { state: State; onBack: 
 }
 
 function CategorySheet({ draft: initial, onClose, onSaved }: { draft: Draft; onClose: () => void; onSaved: () => void }) {
+  const t = useT();
   const toast = useToast();
   const [draft, setDraft] = useState(initial);
   const [problem, setProblem] = useState<string | null>(null);
@@ -269,36 +271,36 @@ function CategorySheet({ draft: initial, onClose, onSaved }: { draft: Draft; onC
     try {
       if (draft.id) await api.saveCategory(draft.id, body);
       else await api.addCategory({ ...body, nature: draft.nature, ownership: draft.ownership });
-      toast({ message: isNew ? "Categoría creada" : "Categoría guardada" });
+      toast({ message: isNew ? t("category.created") : t("category.saved") });
       onSaved();
     } catch (e) {
-      setProblem(e instanceof Refused ? capital(e.message) : "No se ha podido guardar.");
+      setProblem(e instanceof Refused ? capital(e.message) : t("common.save_failed"));
       setSaving(false);
     }
   };
 
   return (
     <Sheet
-      title={isNew ? "Nueva categoría" : initial.name}
+      title={isNew ? t("category.new") : initial.name}
       onClose={onClose}
-      action={{ label: isNew ? "Crear" : "Guardar", onClick: save, disabled: !name || !changed || saving }}
+      action={{ label: isNew ? t("category.create") : t("common.save"), onClick: save, disabled: !name || !changed || saving }}
     >
       {problem && <Hint tone="warning">{problem}</Hint>}
       <TextField
-        label="Nombre"
+        label={t("category.name")}
         value={draft.name}
         onChange={(v) => set({ name: v })}
         autoFocus={isNew}
-        hint={!isNew && name !== initial.name ? "También se renombra en el histórico." : undefined}
+        hint={!isNew && name !== initial.name ? t("category.renamed") : undefined}
       />
       {draft.ownership === "shared" && (
         <SegmentedControl<"fifty_fifty" | "proportional">
-          label="Cómo se reparte"
+          label={t("category.split")}
           value={draft.split ?? "proportional"}
           onChange={(v) => set({ split: v })}
           options={[
-            { value: "fifty_fifty", label: "A medias" },
-            { value: "proportional", label: "Según ingresos" },
+            { value: "fifty_fifty", label: t("split.fifty_fifty") },
+            { value: "proportional", label: t("split.proportional") },
           ]}
         />
       )}
@@ -306,17 +308,17 @@ function CategorySheet({ draft: initial, onClose, onSaved }: { draft: Draft; onC
         <>
           <div className="money-switch-row">
             <span className="money-switch-text">
-              <span>Gasto de vida</span>
-              <span className="money-switch-hint">Apágalo para lo que no es vivir (Trabajo): sale del gasto mensual.</span>
+              <span>{t("category.living")}</span>
+              <span className="money-switch-hint">{t("category.living_hint")}</span>
             </span>
-            <Switch label="Gasto de vida" checked={!draft.not_living} onChange={(on) => set({ not_living: !on })} />
+            <Switch label={t("category.living")} checked={!draft.not_living} onChange={(on) => set({ not_living: !on })} />
           </div>
           <div className="money-switch-row">
             <span className="money-switch-text">
-              <span>Gasto básico</span>
-              <span className="money-switch-hint">Apágalo para lo prescindible (Ocio, Viajes): sale del gasto básico.</span>
+              <span>{t("category.basic")}</span>
+              <span className="money-switch-hint">{t("category.basic_hint")}</span>
             </span>
-            <Switch label="Gasto básico" checked={!draft.not_basic} onChange={(on) => set({ not_basic: !on })} />
+            <Switch label={t("category.basic")} checked={!draft.not_basic} onChange={(on) => set({ not_basic: !on })} />
           </div>
         </>
       )}
@@ -329,6 +331,7 @@ function capital(text: string): string {
 }
 
 function EmergencyFund({ state, onChanged }: { state: State; onChanged: () => void }) {
+  const t = useT();
   const toast = useToast();
   const fundNow = state.accounts.find((a) => a.role === "emergency_fund")?.key ?? "";
   const [months, setMonths] = useState<number | null>(null);
@@ -342,38 +345,38 @@ function EmergencyFund({ state, onChanged }: { state: State; onChanged: () => vo
     }, () => undefined);
   }, []);
   const changed = months !== null && (months !== savedMonths || fund !== fundNow);
-  const nameOf = (key: string) => state.accounts.find((a) => a.key === key)?.name ?? "Ninguna";
+  const nameOf = (key: string) => state.accounts.find((a) => a.key === key)?.name ?? t("emergency.none");
 
   return (
-    <Section title="Fondo de contingencia">
+    <Section title={t("emergency.title")}>
       <SelectField<string>
-        label="Cuenta"
+        label={t("emergency.account")}
         value={fund}
         onChange={setFund}
-        options={[{ value: "", label: "Ninguna" }, ...state.accounts.map((a) => ({ value: a.key, label: `${a.name} · ${a.institution}` }))]}
+        options={[{ value: "", label: t("emergency.none") }, ...state.accounts.map((a) => ({ value: a.key, label: `${a.name} · ${a.institution}` }))]}
       />
-      <Stepper label="Meses de gasto básico" value={months} step={1} min={1} max={24} inputMode="numeric" unit="meses" onChange={setMonths} />
-      <Hint>El objetivo del fondo es tu gasto básico mensual por estos meses. Esa cuenta no cuenta como cash.</Hint>
+      <Stepper label={t("emergency.months")} value={months} step={1} min={1} max={24} inputMode="numeric" unit={t("emergency.unit")} onChange={setMonths} />
+      <Hint>{t("emergency.hint")}</Hint>
       {changed && (
         <Button variant="tinted" onClick={() => setConfirm(true)}>
-          Guardar
+          {t("common.save")}
         </Button>
       )}
       {confirm && months !== null && (
         <ConfirmChange
-          title="¿Guardar el fondo de contingencia?"
+          title={t("emergency.confirm")}
           changes={[
-            ...(fund !== fundNow ? [{ label: "Cuenta", from: nameOf(fundNow), to: nameOf(fund) }] : []),
-            ...(months !== savedMonths ? [{ label: "Objetivo", from: `${savedMonths} meses`, to: `${months} meses` }] : []),
+            ...(fund !== fundNow ? [{ label: t("emergency.account"), from: nameOf(fundNow), to: nameOf(fund) }] : []),
+            ...(months !== savedMonths ? [{ label: t("emergency.target"), from: t("emergency.months_value", { count: savedMonths ?? 0 }), to: t("emergency.months_value", { count: months }) }] : []),
           ]}
-          detail="Cambia el objetivo del fondo y qué cuenta cuenta como cash."
-          action="Guardar"
+          detail={t("emergency.detail")}
+          action={t("common.save")}
           onCancel={() => setConfirm(false)}
           onConfirm={async () => {
             await api.settings(months, fund || null);
             setSavedMonths(months);
             setConfirm(false);
-            toast({ message: "Fondo de contingencia guardado" });
+            toast({ message: t("emergency.saved") });
             onChanged();
           }}
         />
@@ -383,6 +386,7 @@ function EmergencyFund({ state, onChanged }: { state: State; onChanged: () => vo
 }
 
 function Backup({ state, onChanged }: { state: State; onChanged: () => void }) {
+  const t = useT();
   const input = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<{ name: string; bundle: unknown } | null>(null);
   const [message, setMessage] = useState<{ tone: "positive" | "negative"; text: string } | null>(null);
@@ -392,7 +396,7 @@ function Backup({ state, onChanged }: { state: State; onChanged: () => void }) {
     try {
       setPending({ name: file.name, bundle: JSON.parse(await file.text()) });
     } catch {
-      setMessage({ tone: "negative", text: "Ese fichero no es una configuración de Money." });
+      setMessage({ tone: "negative", text: t("backup.not_config") });
     }
   };
 
@@ -407,39 +411,39 @@ function Backup({ state, onChanged }: { state: State; onChanged: () => void }) {
   };
 
   return (
-    <Section title="Copia de la configuración">
-      {message && <Notice tone={message.tone} title={message.tone === "positive" ? "Hecho" : "No se ha podido"}>{message.text}</Notice>}
+    <Section title={t("backup.title")}>
+      {message && <Notice tone={message.tone} title={message.tone === "positive" ? t("backup.done") : t("backup.failed")}>{message.text}</Notice>}
       <List>
-        <ListRow title="Reglas" value={String(state.rules)} />
-        <ListRow title="El libro empieza" value={state.cutoff ? shortDay(state.cutoff) : "Sin corte"} detail={state.cutoff ? "antes, el histórico" : undefined} />
+        <ListRow title={t("backup.rules")} value={String(state.rules)} />
+        <ListRow title={t("backup.starts")} value={state.cutoff ? shortDay(state.cutoff) : t("backup.no_cutoff")} detail={state.cutoff ? t("backup.before") : undefined} />
       </List>
       <div className="money-actions">
         <Button icon="external" variant="tinted" onClick={download} disabled={!state.configured}>
-          Descargar copia
+          {t("backup.download")}
         </Button>
         <Button icon="file" variant="plain" onClick={() => input.current?.click()}>
-          Importar configuración
+          {t("backup.import")}
         </Button>
       </div>
       <input ref={input} type="file" accept="application/json,.json" hidden onChange={(e) => pick(e.target.files?.[0])} />
-      <Hint>Cuentas, categorías, reglas, etiquetas, ingresos declarados y el histórico, en un fichero. Importar sustituye lo que haya.</Hint>
+      <Hint>{t("backup.hint")}</Hint>
       {pending && (
         <ConfirmDelete
-          title="¿Sustituir la configuración?"
+          title={t("backup.replace_q")}
           subject={pending.name}
-          consequence="Las cuentas, categorías, reglas, etiquetas, gastos apuntados e ingresos de ahora se cambian por los del fichero. Descarga antes una copia si quieres poder volver."
-          action="Sustituir configuración"
+          consequence={t("backup.replace_consequence")}
+          action={t("backup.replace")}
           onCancel={() => setPending(null)}
           onConfirm={async () => {
             try {
               const counts = await api.importBundle(pending.bundle);
               setMessage({
                 tone: "positive",
-                text: `${counts.accounts} cuentas, ${counts.categories} categorías, ${counts.rules} reglas y ${counts.labels} etiquetas.`,
+                text: t("backup.imported", { accounts: counts.accounts ?? 0, categories: counts.categories ?? 0, rules: counts.rules ?? 0, labels: counts.labels ?? 0 }),
               });
               onChanged();
             } catch (e) {
-              setMessage({ tone: "negative", text: e instanceof Refused ? e.message : "No se ha podido importar." });
+              setMessage({ tone: "negative", text: e instanceof Refused ? e.message : t("backup.import_failed") });
             }
             setPending(null);
           }}

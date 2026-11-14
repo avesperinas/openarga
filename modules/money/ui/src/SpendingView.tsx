@@ -13,13 +13,14 @@ import {
   StatTile,
   type TableColumn,
   Treemap,
+  useT,
 } from "@openarga/ui";
 import { useEffect, useState } from "react";
 
 import { type AnalysisQuery, type CategoryDetail, type SpendingRow, type State, api } from "./api";
 import { CsvButton, Loading, dayText, delta, shortDate, signedPercent, useLoad } from "./analysisParts";
 import { type Basic, type Scope, axisMonth, crossesYears } from "./analysisState";
-import { money, moneyWhole, percentText } from "./format";
+import { money, moneyWhole, percentText, say } from "./format";
 import { useWide } from "./useWide";
 
 export function spendingLead(rows: SpendingRow[]): string | null {
@@ -27,9 +28,9 @@ export function spendingLead(rows: SpendingRow[]): string | null {
     .filter((r) => r.average !== null && r.usual > 0 && r.total > 0)
     .map((r) => ({ r, by: (r.average as number) / r.usual - 1 }))
     .sort((a, b) => b.by - a.by)[0];
-  if (growing && growing.by >= 0.1) return `${growing.r.name} es lo que más se va de su media: ${signedPercent(growing.by)}`;
+  if (growing && growing.by >= 0.1) return say("spending.lead_growing", { name: growing.r.name, percent: signedPercent(growing.by) });
   const top = [...rows].sort((a, b) => b.total - a.total)[0];
-  return top && top.total > 0 ? `En lo que más gastas es en ${top.name.toLowerCase()}` : null;
+  return top && top.total > 0 ? say("spending.lead_top", { name: top.name.toLowerCase() }) : null;
 }
 
 export function treemapItems(rows: SpendingRow[]): { key: string; label: string; value: number; detail: string; hue: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 }[] {
@@ -37,16 +38,8 @@ export function treemapItems(rows: SpendingRow[]): { key: string; label: string;
   const hues = [3, 2, 1, 7, 6, 5, 4] as const;
   const top = sorted.slice(0, 7).map((r, i) => ({ key: r.key, label: r.name, value: r.total, detail: moneyWhole(r.total), hue: hues[i]! }));
   const rest = sorted.slice(7).reduce((sum, r) => sum + r.total, 0);
-  return rest > 0 ? [...top, { key: "", label: "El resto", value: rest, detail: moneyWhole(rest), hue: 8 as const }] : top;
+  return rest > 0 ? [...top, { key: "", label: say("spending.rest"), value: rest, detail: moneyWhole(rest), hue: 8 as const }] : top;
 }
-
-const INFO = {
-  total:
-    "Lo que has gastado en el periodo: lo tuyo y, de lo común, tu parte (la mitad, o tu ratio de ingresos del año), salvo que elijas «Todo». Una devolución resta de su categoría. Debajo, contra el periodo anterior; si el periodo aún no ha acabado, contra los mismos días del anterior.",
-  average: "El gasto de los meses ya cerrados del periodo dividido entre ellos. El mes en curso no entra: lleva solo parte del gasto y bajaría la media.",
-  basic: "Lo que no es ocio ni viajes ni trabajo: lo que necesitas para vivir.",
-  other: "Lo que no es básico (ocio, viajes) y lo que no es gasto de vida (trabajo).",
-};
 
 export interface Movements {
   from: string;
@@ -69,6 +62,7 @@ export function SpendingView({
   againstLabel: string;
   onMovements: (go: Movements) => void;
 }) {
+  const t = useT();
   const query = { ...q, scope, kind: basic };
   const key = JSON.stringify(query);
   const data = useLoad(() => api.spending(query), key);
@@ -85,22 +79,22 @@ export function SpendingView({
           const columns: TableColumn<SpendingRow>[] = [
             {
               key: "name",
-              label: "Categoría",
-              cell: (r) => (r.ownership === "shared" ? `${r.name} (común)` : r.name),
-              csv: (r) => `${r.name}${r.ownership === "shared" ? " (común)" : ""}`,
+              label: t("spending.category"),
+              cell: (r) => (r.ownership === "shared" ? t("spending.shared_name", { name: r.name }) : r.name),
+              csv: (r) => (r.ownership === "shared" ? t("spending.shared_name", { name: r.name }) : r.name),
             },
-            { key: "total", label: "Importe", numeric: true, cell: (r) => money(r.total, false), csv: (r) => r.total },
+            { key: "total", label: t("spending.amount"), numeric: true, cell: (r) => money(r.total, false), csv: (r) => r.total },
             { key: "share", label: "%", numeric: true, cell: (r) => percentText(r.share), csv: (r) => r.share },
             {
               key: "previous",
-              label: "Antes",
+              label: t("spending.before"),
               numeric: true,
               cell: (r) => (r.previous ? signedPercent((r.total - r.previous) / r.previous) : "—"),
               csv: (r) => r.previous,
             },
             {
               key: "usual",
-              label: "Media mensual",
+              label: t("spending.monthly"),
               numeric: true,
               cell: (r) => money(r.usual, false),
               csv: (r) => Math.round(r.usual * 100) / 100,
@@ -112,7 +106,7 @@ export function SpendingView({
               {lead && <Heading>{lead}</Heading>}
               {s.rows.some((r) => r.total > 0) && (
                 <Treemap
-                  label="Lo gastado en el periodo, en bloques del tamaño de cada categoría"
+                  label={t("spending.treemap")}
                   items={treemapItems(s.rows)}
                   onSelect={(key) => {
                     const row = s.rows.find((r) => r.key === key);
@@ -120,67 +114,72 @@ export function SpendingView({
                   }}
                 />
               )}
-              <StatRow label="Gasto">
-                <StatTile label="Gasto" value={moneyWhole(s.total)} foot={change.text} tone={change.tone} info={INFO.total} />
+              <StatRow label={t("spending.title")}>
+                <StatTile label={t("spending.title")} value={moneyWhole(s.total)} foot={change.text} tone={change.tone} info={t("spending.info_total")} />
                 <StatTile
-                  label="Al mes"
+                  label={t("spending.per_month")}
                   value={s.monthly === null ? "—" : moneyWhole(s.monthly)}
                   foot={
                     s.closed_months === 0
-                      ? "Mes en curso"
-                      : `${s.closed_months} ${s.closed_months === 1 ? "mes cerrado" : "meses cerrados"}`
+                      ? t("spending.current_month")
+                      : s.closed_months === 1
+                        ? t("spending.closed_one")
+                        : t("spending.closed_other", { count: s.closed_months })
                   }
-                  info={INFO.average}
+                  info={t("spending.info_average")}
                 />
                 <StatTile
-                  label="Básico"
+                  label={t("spending.basic")}
                   value={moneyWhole(s.groups.basic)}
-                  foot={s.total ? `${percentText(s.groups.basic / s.total)} del gasto` : undefined}
-                  info={INFO.basic}
+                  foot={s.total ? t("spending.of_spending", { percent: percentText(s.groups.basic / s.total) }) : undefined}
+                  info={t("spending.info_basic")}
                 />
                 <StatTile
-                  label="No básico"
+                  label={t("spending.not_basic")}
                   value={moneyWhole(s.groups.not_basic + s.groups.not_living)}
-                  foot={s.groups.not_living ? `Trabajo ${moneyWhole(s.groups.not_living)}` : "Ocio y viajes"}
-                  info={INFO.other}
+                  foot={s.groups.not_living ? t("spending.work", { amount: moneyWhole(s.groups.not_living) }) : t("spending.leisure_travel")}
+                  info={t("spending.info_other")}
                 />
               </StatRow>
               {gaps.previous < gaps.of && scope !== "shared" && (
                 <Hint tone="warning">
-                  En {gaps.of - gaps.previous} de los {gaps.of} meses del periodo anterior no hay gasto individual apuntado: la
-                  comparación sale a tu favor.
+                  {t("spending.gaps_previous", { missing: gaps.of - gaps.previous, months: gaps.of })}
                 </Hint>
               )}
               {gaps.now < gaps.of && scope !== "shared" && (
                 <Hint tone="warning">
-                  En {gaps.of - gaps.now} de los {gaps.of} meses de este periodo no hay gasto individual apuntado.
+                  {t("spending.gaps_now", { missing: gaps.of - gaps.now, months: gaps.of })}
                 </Hint>
               )}
 
-              <Section title="Por categoría">
+              <Section title={t("spending.by_category")}>
                 <CategoryBars rows={s.rows} total={s.total} months={s.closed_months} onOpen={setOpen} />
                 <DataTable
-                  label="Gasto por categoría"
+                  label={t("spending.table")}
                   columns={wide ? columns : columns.filter((c) => c.key === "name" || c.key === "total")}
                   rows={s.rows}
                   rowKey={(r) => r.key}
                   onRowClick={setOpen}
                   footer={
                     wide
-                      ? ["Total", money(s.total, false), "", s.previous ? signedPercent((s.total - s.previous) / s.previous) : "—", ""]
-                      : ["Total", money(s.total, false)]
+                      ? [t("common.total"), money(s.total, false), "", s.previous ? signedPercent((s.total - s.previous) / s.previous) : "—", ""]
+                      : [t("common.total"), money(s.total, false)]
                   }
                 />
-                <CsvButton name={`gasto-${q.from}-${q.to}`} columns={columns} rows={s.rows} />
+                <CsvButton name={`${t("spending.csv")}-${q.from}-${q.to}`} columns={columns} rows={s.rows} />
                 <Hint>
-                  «Antes» es {againstLabel} ({dayText(s.previous_period.from)} – {dayText(s.previous_period.to)}). La media
-                  mensual, de los últimos {s.usual_months} meses cerrados con gasto.
+                  {t("spending.before_hint", {
+                    against: againstLabel,
+                    from: dayText(s.previous_period.from),
+                    to: dayText(s.previous_period.to),
+                    months: s.usual_months,
+                  })}
                 </Hint>
               </Section>
 
-              <Section title="Evolución">
+              <Section title={t("spending.evolution")}>
                 <SeriesChart
-                  label="Gasto de cada mes, por categoría"
+                  label={t("spending.chart")}
                   kind="stacked"
                   labels={s.series.labels.map((l) => axisMonth(l, years))}
                   series={s.series.series}
@@ -188,7 +187,7 @@ export function SpendingView({
                   format={(v) => money(v, false)}
                   axisFormat={(v) => moneyWhole(v)}
                 />
-                {s.series.widened && <Hint>Los 12 meses hasta el final del periodo.</Hint>}
+                {s.series.widened && <Hint>{t("spending.widened")}</Hint>}
               </Section>
             </>
           );
@@ -220,7 +219,7 @@ function CategoryBars({
 }) {
   const top = Math.max(1, ...rows.map((r) => r.total));
   return (
-    <ul className="money-bars" aria-label="Categorías por importe">
+    <ul className="money-bars" aria-label={say("spending.bars")}>
       {rows
         .filter((r) => r.total > 0)
         .map((r) => {
@@ -230,7 +229,7 @@ function CategoryBars({
               <button type="button" className="money-bar" onClick={() => onOpen(r)}>
                 <span className="money-bar-name">
                   {r.name}
-                  {r.ownership === "shared" && <span className="money-bar-tag">común</span>}
+                  {r.ownership === "shared" && <span className="money-bar-tag">{say("spending.shared_tag")}</span>}
                 </span>
                 <span className="money-bar-value">{money(r.total, false)}</span>
                 <span className="money-bar-track" aria-hidden="true">
@@ -245,7 +244,7 @@ function CategoryBars({
                   {vsUsual !== null && Math.abs(vsUsual) >= 0.05 && (
                     <span data-tone={vsUsual > 0 ? "negative" : "positive"}>
                       {" · "}
-                      {signedPercent(vsUsual)} {months > 1 ? "al mes " : ""}sobre su media
+                      {say(months > 1 ? "spending.over_average_month" : "spending.over_average", { percent: signedPercent(vsUsual) })}
                     </span>
                   )}
                 </span>
@@ -270,6 +269,7 @@ function CategorySheet({
   onClose: () => void;
   onMovements: (go: Movements) => void;
 }) {
+  const t = useT();
   const [detail, setDetail] = useState<CategoryDetail | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -278,15 +278,15 @@ function CategorySheet({
       .then(setDetail, () => setFailed(true));
   }, [q.from, q.to, q.whole, row.name, row.ownership]);
   const category = state.categories.find((c) => c.name === row.name && c.ownership === row.ownership && c.nature === "expense");
-  const shared = row.ownership === "shared" && !q.whole ? " (tu parte)" : "";
+  const shared = row.ownership === "shared" && !q.whole ? t("spending.your_part") : "";
 
   return (
     <Sheet
-      title={row.ownership === "shared" ? `${row.name} (común)` : row.name}
+      title={row.ownership === "shared" ? t("spending.shared_name", { name: row.name }) : row.name}
       onClose={onClose}
       action={
         category
-          ? { label: "Ver en Movimientos", onClick: () => onMovements({ from: q.from, to: q.to, category: category.id }) }
+          ? { label: t("spending.see_movements"), onClick: () => onMovements({ from: q.from, to: q.to, category: category.id }) }
           : undefined
       }
     >
@@ -294,25 +294,24 @@ function CategorySheet({
         {money(row.total, false)}
         {shared}
       </p>
-      {failed && <Hint tone="warning">No se ha podido leer el detalle.</Hint>}
-      {!detail && !failed && <Skeleton rows={4} label="Leyendo la categoría" />}
+      {failed && <Hint tone="warning">{t("spending.detail_failed")}</Hint>}
+      {!detail && !failed && <Skeleton rows={4} label={t("spending.reading")} />}
       {detail && (
         <>
           {detail.history > 0 && (
             <Hint>
-              {money(detail.history, false)} son de meses del histórico de Caudal, que guarda la suma del mes y no sus
-              movimientos.
+              {t("spending.history", { amount: money(detail.history, false) })}
             </Hint>
           )}
           {detail.merchants.length > 0 && (
             <>
-              <GroupLabel>Dónde</GroupLabel>
+              <GroupLabel>{t("spending.where")}</GroupLabel>
               <List>
                 {detail.merchants.slice(0, 12).map((m) => (
                   <ListRow
                     key={m.name}
                     title={m.name}
-                    detail={`${m.count} ${m.count === 1 ? "vez" : "veces"}`}
+                    detail={m.count === 1 ? t("spending.times_one") : t("spending.times_other", { count: m.count })}
                     value={money(m.total, false)}
                   />
                 ))}
@@ -321,7 +320,7 @@ function CategorySheet({
           )}
           {detail.movements.length > 0 && (
             <>
-              <GroupLabel>Movimientos</GroupLabel>
+              <GroupLabel>{t("spending.movements")}</GroupLabel>
               <List>
                 {detail.movements.slice(0, 40).map((m) => (
                   <ListRow
@@ -332,7 +331,7 @@ function CategorySheet({
                   />
                 ))}
               </List>
-              {detail.movements.length > 40 && <Hint>Y {detail.movements.length - 40} más: el resto, en Movimientos.</Hint>}
+              {detail.movements.length > 40 && <Hint>{t("spending.more", { count: detail.movements.length - 40 })}</Hint>}
             </>
           )}
         </>
