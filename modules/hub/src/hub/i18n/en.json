@@ -1,4 +1,5 @@
 {
+  "bank.choose": "Choose the bank",
   "connection.brief.active": "Up to date",
   "connection.brief.expired": "Expired",
   "connection.brief.expiring": "Expiring",
@@ -13,6 +14,8 @@
   "connection.reason.missing": "{label} is missing its credential: paste it in its page.",
   "connection.reason.no_accounts": "{label} has not given any account. If your Enable Banking application is in restricted mode, link this bank's accounts in its dashboard and then reconnect it.",
   "connection.reason.pending": "{label} is waiting for you to finish authorising it.",
+  "mailbox.missing_password": "The mailbox's app password is missing",
+  "sync.no_access_left": "No accesses to {label} left today: try again tomorrow.",
   "widget.status.all_good": "all up to date",
   "widget.status.empty": "nothing connected yet"
 }

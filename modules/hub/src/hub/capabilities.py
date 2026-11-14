@@ -79,7 +79,7 @@ def handoff(provider: str) -> Handler:
                 consent_expires_at=request.consent_expires_at,
             )
             found = await connections.detail(database, created)
-        print(f"traspaso de {provider} desde {module}: conexión {created}", flush=True)
+        print(f"handover of {provider} from {module}: connection {created}", flush=True)
         async with httpx.AsyncClient(
             base_url=kernel_url(), transport=kernel_transport(), timeout=30.0
         ) as kernel:
@@ -117,7 +117,7 @@ async def ping(module: str, body: dict[str, Any]) -> dict[str, Any]:
     async with as_module() as database:
         connection = (await database.execute(CONNECTION, {"id": request.connection})).one_or_none()
         if connection is None:
-            raise connections.Refused("esa cuenta de Claude no está en Hub", 404)
+            raise connections.Refused("that Claude account is not in Hub", 404)
         run_id = await sync.start(database, connection.id, "action", "ping", request.key)
         if run_id is None:
             previous = (
@@ -135,7 +135,7 @@ async def ping(module: str, body: dict[str, Any]) -> dict[str, Any]:
     ):
         if connection.paused:
             result.outcome = "skipped"
-            result.detail = "En pausa: no se lanza nada hasta que la reanudes en Hub."
+            result.detail = "Paused: nothing runs until you resume it in Hub."
         elif not sync.missing_credential(provider, secrets, result):
             started_at = datetime.now(UTC)
             said = await claude.message(source, secrets[claude.TOKEN] or "")
@@ -150,7 +150,7 @@ async def ping(module: str, body: dict[str, Any]) -> dict[str, Any]:
             try:
                 await sync.publish_all(kernel, provider.id, [event], result)
             except httpx.HTTPError as error:
-                result.detail = f"Lanzado, pero el kernel no lo apuntó: {type(error).__name__}"
+                result.detail = f"Started, but the kernel did not record it: {type(error).__name__}"
             if not said.success:
                 result.outcome = "rate_limited" if said.rate_limited else "error"
                 result.detail = said.first_line
@@ -200,9 +200,9 @@ async def food_search(module: str, body: dict[str, Any]) -> dict[str, Any]:
     async with httpx.AsyncClient(transport=source_transport()) as client:
         asked: list[tuple[str, Any, Awaitable[list[food.Candidate]]]] = []
         if usda is None:
-            failed.append({"source": "usda", "reason": "sin clave de USDA: ponla en Hub"})
+            failed.append({"source": "usda", "reason": "no USDA key: add it in Hub"})
         elif usda.paused:
-            failed.append({"source": "usda", "reason": "USDA está en pausa en Hub"})
+            failed.append({"source": "usda", "reason": "USDA is paused in Hub"})
         elif (hit := food.cached("usda", request.query, request.limit)) is not None:
             found.extend(hit)
         else:
@@ -210,7 +210,7 @@ async def food_search(module: str, body: dict[str, Any]) -> dict[str, Any]:
                 ("usda", usda, food.search_usda(client, key or "", request.query, request.limit))
             )
         if off.paused:
-            reason = "Open Food Facts está en pausa en Hub"
+            reason = "Open Food Facts is paused in Hub"
             failed.append({"source": "off", "reason": reason})
         elif (hit := food.cached("off", request.query, request.limit)) is not None:
             found.extend(hit)
@@ -222,8 +222,8 @@ async def food_search(module: str, body: dict[str, Any]) -> dict[str, Any]:
             if isinstance(answer, food.SourceFailed):
                 reason = str(answer)
             elif isinstance(answer, BaseException):
-                reason = f"{'USDA' if name == 'usda' else 'OpenFoodFacts'} contestó algo que no se "
-                reason += f"entiende ({type(answer).__name__})"
+                reason = f"{'USDA' if name == 'usda' else 'OpenFoodFacts'} gave an answer that "
+                reason += f"cannot be read ({type(answer).__name__})"
             else:
                 food.remember(name, request.query, request.limit, answer)
                 found.extend(answer)
@@ -281,7 +281,7 @@ async def food_get(module: str, body: dict[str, Any]) -> dict[str, Any]:
             if not wanted[name]:
                 continue
             if row is None or row.paused:
-                failed.append({"source": name, "reason": f"{name} no está conectada o en pausa"})
+                failed.append({"source": name, "reason": f"{name} is not connected or is paused"})
                 continue
             try:
                 answer = await fetch()
@@ -328,14 +328,14 @@ async def book_search(module: str, body: dict[str, Any]) -> dict[str, Any]:
     calls: list[tuple[str, Any, Awaitable[list[books.Candidate]] | None, str | None]] = []
     async with httpx.AsyncClient(transport=source_transport()) as client:
         if library.paused:
-            calls.append(("openlibrary", library, None, "Open Library está en pausa en Hub"))
+            calls.append(("openlibrary", library, None, "Open Library is paused in Hub"))
         else:
             search = books.search_openlibrary(client, request.query, request.limit)
             calls.append(("openlibrary", library, search, None))
         if google is None:
-            calls.append(("google_books", None, None, "sin clave de Google Books: ponla en Hub"))
+            calls.append(("google_books", None, None, "no Google Books key: add it in Hub"))
         elif google.paused:
-            calls.append(("google_books", google, None, "Google Books está en pausa en Hub"))
+            calls.append(("google_books", google, None, "Google Books is paused in Hub"))
         else:
             search = books.search_google(client, key or "", request.query, request.limit)
             calls.append(("google_books", google, search, None))
@@ -403,7 +403,7 @@ async def places_search(module: str, body: dict[str, Any]) -> dict[str, Any]:
     if row.paused:
         return {
             "candidates": [],
-            "failed": [{"source": "nominatim", "reason": "OpenStreetMap está en pausa en Hub"}],
+            "failed": [{"source": "nominatim", "reason": "OpenStreetMap is paused in Hub"}],
         }
 
     candidates: list[dict[str, Any]] = []
@@ -447,7 +447,7 @@ class TileIn(BaseModel):
     @model_validator(mode="after")
     def inside(self) -> TileIn:
         if self.x >= 1 << self.z or self.y >= 1 << self.z:
-            raise ValueError("esa tesela no existe en ese zoom")
+            raise ValueError("that tile does not exist at that zoom")
         return self
 
 
@@ -459,7 +459,7 @@ async def maps_tile(module: str, body: dict[str, Any]) -> dict[str, Any]:
     request = TileIn.model_validate(body)
     row = await _lookup_row(module, "protomaps")
     if row.paused:
-        return {"tile": None, "build": None, "failed": "Protomaps está en pausa en Hub"}
+        return {"tile": None, "build": None, "failed": "Protomaps is paused in Hub"}
     try:
         async with httpx.AsyncClient(transport=source_transport()) as client:
             found = await maps.tile(client, request.z, request.x, request.y)
@@ -513,7 +513,7 @@ class DirectionsIn(BaseModel):
     def on_earth(self) -> DirectionsIn:
         for lon, lat in self.points:
             if not (-180 <= lon <= 180 and -90 <= lat <= 90):
-                raise ValueError("un punto fuera del mundo")
+                raise ValueError("a point outside the world")
         return self
 
 
@@ -521,7 +521,7 @@ async def routes_directions(module: str, body: dict[str, Any]) -> dict[str, Any]
     request = DirectionsIn.model_validate(body)
     row = await _lookup_row(module, "osrm")
     if row.paused:
-        return {"route": None, "failed": "Las rutas están en pausa en Hub"}
+        return {"route": None, "failed": "Routes are paused in Hub"}
     try:
         async with httpx.AsyncClient(transport=source_transport()) as client:
             found = await routes.directions(client, request.profile, request.points)
@@ -544,7 +544,7 @@ async def places_nearby(module: str, body: dict[str, Any]) -> dict[str, Any]:
     request = NearbyIn.model_validate(body)
     row = await _lookup_row(module, "overpass")
     if row.paused:
-        return {"places": [], "failed": "Lo que hay cerca está en pausa en Hub"}
+        return {"places": [], "failed": "Nearby places are paused in Hub"}
     try:
         async with httpx.AsyncClient(transport=source_transport()) as client:
             found = await nearby.around(
@@ -566,7 +566,7 @@ async def _weather(module: str, body: dict[str, Any], climate: bool) -> dict[str
     request = WeatherIn.model_validate(body)
     row = await _lookup_row(module, "open_meteo")
     if row.paused:
-        return {"weather": None, "failed": "El tiempo está en pausa en Hub"}
+        return {"weather": None, "failed": "Weather is paused in Hub"}
     try:
         async with httpx.AsyncClient(transport=source_transport()) as client:
             if climate:
@@ -602,7 +602,7 @@ async def fx_rate(module: str, body: dict[str, Any]) -> dict[str, Any]:
         return {"rate": 1.0, "date": (request.day or today).isoformat(), "failed": None}
     row = await _lookup_row(module, "frankfurter")
     if row.paused:
-        return {"rate": None, "date": None, "failed": "El cambio de moneda está en pausa"}
+        return {"rate": None, "date": None, "failed": "Exchange rates are paused in Hub"}
     try:
         async with httpx.AsyncClient(transport=source_transport()) as client:
             found = await fx.rate(client, request.currency, request.day or today, today)
@@ -629,7 +629,7 @@ async def place_photo(module: str, body: dict[str, Any]) -> dict[str, Any]:
             await connections.create(database, "wikimedia", None, {}, from_app=module)
             row = (await database.execute(LOOKUP, {"provider": "wikimedia"})).one()
     if row.paused:
-        return {"photo": None, "failed": "Wikimedia está en pausa en Hub"}
+        return {"photo": None, "failed": "Wikimedia is paused in Hub"}
     found, failed = None, None
     async with httpx.AsyncClient(transport=source_transport()) as client:
         try:
@@ -678,7 +678,7 @@ async def podcast_search(module: str, body: dict[str, Any]) -> dict[str, Any]:
     request = PodcastSearchIn.model_validate(body)
     row = await _automatic(module, "apple_podcasts")
     if row.paused:
-        return {"candidates": [], "failed": "Apple Podcasts está en pausa en Hub"}
+        return {"candidates": [], "failed": "Apple Podcasts is paused in Hub"}
     found, failed = [], None
     async with httpx.AsyncClient(transport=source_transport()) as client:
         try:
@@ -693,7 +693,7 @@ async def film_search(module: str, body: dict[str, Any]) -> dict[str, Any]:
     request = FilmSearchIn.model_validate(body)
     row = await _automatic(module, "wikidata")
     if row.paused:
-        return {"candidates": [], "failed": "Wikidata está en pausa en Hub"}
+        return {"candidates": [], "failed": "Wikidata is paused in Hub"}
     found, failed = [], None
     async with httpx.AsyncClient(transport=source_transport()) as client:
         try:
@@ -711,7 +711,7 @@ def _offered(provider: str) -> catalogue.Provider:
         found = None
     if found is None or found.offer is None or not found.available:
         known = ", ".join(one.id for one in catalogue.offered())
-        raise connections.Refused(f"'{provider}' no se enchufa desde una app: {known}")
+        raise connections.Refused(f"'{provider}' cannot be plugged in from an app: {known}")
     return found
 
 
@@ -727,7 +727,7 @@ async def _plug(
     found_inlets = await plugs.inlets(kernel_transport())
     mine = plugs.accepting(provider, plugs.of_module(module, found_inlets))
     if inlet_required and not mine:
-        raise connections.Refused(f"{provider.name} no entra en ninguna toma de {module}", 409)
+        raise connections.Refused(f"{provider.name} fits none of {module}'s plugs", 409)
     try:
         params = provider.clean(params) if provider.clean else {}
     except ValueError as error:
@@ -821,7 +821,7 @@ async def search(provider_id: str, ask: str, query: str | None, parent: str | No
     provider = _offered(provider_id)
     found = provider.search_for(ask)
     if found is None:
-        raise connections.Refused(f"{provider.name} no busca nada para '{ask}'")
+        raise connections.Refused(f"{provider.name} does not search anything for '{ask}'")
     async with httpx.AsyncClient(transport=source_transport()) as client:
         try:
             results = await found(client, query, parent)
@@ -855,14 +855,14 @@ async def _unplug(module: str, connection_id: UUID) -> dict[str, Any]:
         mine = plugs.of_module(module, await plugs.inlets(kernel_transport()))
         contracts = {contract for inlet in mine for contract in inlet["contracts"]}
         if provider.offer is None or not contracts & set(provider.emits):
-            raise connections.Refused(f"{provider.name} no se quita desde {module}")
+            raise connections.Refused(f"{provider.name} cannot be removed from {module}")
         found = await connections.detail(database, connection_id)
         await connections.remove(database, connection_id)
     async with httpx.AsyncClient(
         base_url=kernel_url(), transport=kernel_transport(), timeout=30.0
     ) as kernel:
         await sync.announce_connection(kernel, found, True)
-    print(f"enchufe {connection_id} quitado desde {module}", flush=True)
+    print(f"plug {connection_id} removed from {module}", flush=True)
     return {"removed": True}
 
 
@@ -892,14 +892,14 @@ async def sources_refresh(module: str, body: dict[str, Any]) -> dict[str, Any]:
     async with as_module() as database:
         row = (await database.execute(REFRESH_ROW, {"id": request.connection})).one_or_none()
         if row is None:
-            raise connections.Refused("esa conexión no existe", 404)
+            raise connections.Refused("that connection does not exist", 404)
         provider = catalogue.provider(row.provider)
         mine = plugs.of_module(module, await plugs.inlets(kernel_transport()))
         contracts = {contract for inlet in mine for contract in inlet["contracts"]}
         if not contracts & set(provider.emits) or row.provider not in sync.CLIENTS:
-            raise connections.Refused(f"{provider.name} no se actualiza desde {module}", 409)
+            raise connections.Refused(f"{provider.name} cannot be updated from {module}", 409)
         if row.paused or row.status != "active":
-            raise connections.Refused(f"{row.label} no está activa en Hub", 409)
+            raise connections.Refused(f"{row.label} is not active in Hub", 409)
         if request.search:
             await database.execute(FORCE_SEARCH, {"id": request.connection})
             row = (await database.execute(REFRESH_ROW, {"id": request.connection})).one()
@@ -946,7 +946,7 @@ async def notes_push(module: str, body: dict[str, Any]) -> dict[str, Any]:
     async with as_module() as database:
         connection = (await database.execute(GITHUB)).one_or_none()
         if connection is None:
-            raise connections.Refused("no hay ningún repo de GitHub conectado en Hub", 404)
+            raise connections.Refused("no GitHub repository is connected in Hub", 404)
         run_id = await sync.start(database, connection.id, "action", "push", request.key)
         if run_id is None:
             previous = (
@@ -966,7 +966,7 @@ async def notes_push(module: str, body: dict[str, Any]) -> dict[str, Any]:
     ):
         if connection.paused:
             result.outcome = "skipped"
-            result.detail = "En pausa: no se copia nada hasta que la reanudes en Hub."
+            result.detail = "Paused: nothing is copied until you resume it in Hub."
         elif not sync.missing_credential(provider, secrets, result):
             change = github.Change(
                 texts={f.path: f.text for f in request.files if f.text is not None},

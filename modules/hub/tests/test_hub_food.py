@@ -140,7 +140,7 @@ async def test_open_food_facts_is_asked_by_its_search_service(api, sources) -> N
 async def test_without_the_usda_key_it_says_so(api, sources) -> None:
     answer = (await ask(api, "food.search", {"query": "leek"})).json()
 
-    assert answer["failed"] == [{"source": "usda", "reason": "sin clave de USDA: ponla en Hub"}]
+    assert answer["failed"] == [{"source": "usda", "reason": "no USDA key: add it in Hub"}]
     assert sources.keys == []
 
 
@@ -152,7 +152,7 @@ async def test_a_paused_source_is_not_asked(api, sources) -> None:
 
     answer = (await ask(api, "food.search", {"query": "leek"})).json()
 
-    assert answer["failed"] == [{"source": "usda", "reason": "USDA está en pausa en Hub"}]
+    assert answer["failed"] == [{"source": "usda", "reason": "USDA is paused in Hub"}]
     assert sources.keys == []
 
 
@@ -370,7 +370,7 @@ async def test_a_reply_that_cannot_be_read_fails_that_source_only(api, sources) 
     assert [one["source_ref"] for one in answer["candidates"]] == ["8400000000017"]
     [failed] = answer["failed"]
     assert failed["source"] == "usda"
-    assert "no se entiende" in failed["reason"]
+    assert "cannot be read" in failed["reason"]
 
 
 async def test_a_server_error_is_asked_again_and_a_cached_search_is_not_a_run(api, sources) -> None:
