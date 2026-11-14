@@ -133,10 +133,10 @@ def number(key: str, raw: Any) -> float:
     try:
         value = float(raw)
     except (TypeError, ValueError) as error:
-        raise ValueError(f"{key}: no es un número") from error
+        raise ValueError(f"{key}: not a number") from error
     low, high = METRICS[key]
     if not low <= value <= high:
-        raise ValueError(f"{key}: {value} fuera de [{low}, {high}]")
+        raise ValueError(f"{key}: {value} outside [{low}, {high}]")
     return round(value, 2)
 
 
@@ -211,9 +211,9 @@ def moment(key: str, raw: Any) -> datetime:
     try:
         found = datetime.fromisoformat(str(raw).strip())
     except ValueError as error:
-        raise ValueError(f"{key}: {raw!r} no es una fecha ISO 8601") from error
+        raise ValueError(f"{key}: {raw!r} is not an ISO 8601 date") from error
     if found.tzinfo is None:
-        raise ValueError(f"{key}: {raw!r} sin zona horaria")
+        raise ValueError(f"{key}: {raw!r} without a time zone")
     return found
 
 
@@ -221,19 +221,19 @@ def samples_of(item: dict[str, Any]) -> list[Sample]:
     columns = {key: listed(item.get(key)) for key in SAMPLE_KEYS}
     lengths = {len(values) for values in columns.values()}
     if len(lengths) != 1:
-        raise ValueError(f"start, end, steps y source no casan: {sorted(lengths)} valores")
+        raise ValueError(f"start, end, steps and source do not match: {sorted(lengths)} values")
     found = []
     for start, end, steps, source in zip(*columns.values(), strict=True):
         try:
             value = quantity(steps)
         except (TypeError, ValueError) as error:
-            raise ValueError(f"steps: {steps!r} no es un número") from error
+            raise ValueError(f"steps: {steps!r} is not a number") from error
         sample = Sample(moment("start", start), moment("end", end), value, rank_of(str(source)))
         if sample.end < sample.start or not 0 <= value <= 100_000:
-            raise ValueError(f"muestra imposible: {start} – {end}, {steps} pasos")
+            raise ValueError(f"impossible sample: {start} – {end}, {steps} steps")
         found.append(sample)
     if len(found) > MAX_SAMPLES:
-        raise ValueError(f"más de {MAX_SAMPLES} muestras")
+        raise ValueError(f"more than {MAX_SAMPLES} samples")
     return found
 
 
@@ -318,15 +318,15 @@ def hours_of(item: dict[str, Any], source: str) -> dict[datetime, float]:
     starts = [one for one in listed(item.get(f"{source}_start", "")) if str(one).strip()]
     steps = [one for one in listed(item.get(f"{source}_steps", "")) if str(one).strip()]
     if len(starts) != len(steps):
-        raise ValueError(f"{source}: {len(starts)} horas y {len(steps)} valores")
+        raise ValueError(f"{source}: {len(starts)} hours and {len(steps)} values")
     found: dict[datetime, float] = {}
     for start, value in zip(starts, steps, strict=True):
         try:
             amount = quantity(value)
         except (TypeError, ValueError) as error:
-            raise ValueError(f"{source}_steps: {value!r} no es un número") from error
+            raise ValueError(f"{source}_steps: {value!r} is not a number") from error
         if not 0 <= amount <= 100_000:
-            raise ValueError(f"{source}_steps: {value!r} fuera de rango")
+            raise ValueError(f"{source}_steps: {value!r} out of range")
         hour = moment(f"{source}_start", start).replace(minute=0, second=0, microsecond=0)
         found[hour] = found.get(hour, 0) + amount
     return found
@@ -354,20 +354,20 @@ def from_samples(item: dict[str, Any]) -> list[dict[str, Any]]:
             continue
         values = listed(raw)
         if len(values) != 1:
-            raise ValueError(f"{key}: con muestras, un solo valor del día más reciente")
+            raise ValueError(f"{key}: with samples, a single value for the latest day")
         found[-1][key] = values[0]
     return found
 
 
 def one_day(item: Any, today: date) -> list[dict[str, Any]]:
     if not isinstance(item, dict) or "date" not in item:
-        raise ValueError("cada día necesita su `date`")
+        raise ValueError("each day needs its `date`")
     unknown = sorted(set(item) - {"date", "steps"} - set(METRICS))
     if unknown:
-        raise ValueError(f"no se conoce: {', '.join(unknown)}")
+        raise ValueError(f"unknown: {', '.join(unknown)}")
     day = StepsDay.model_validate({"date": item["date"], "steps": 0}).date
     if day > today + timedelta(days=1):
-        raise ValueError(f"días en el futuro: {day.isoformat()}")
+        raise ValueError(f"days in the future: {day.isoformat()}")
     metrics = {key: number(key, raw) for key, raw in item.items() if key in METRICS and raw != ""}
     if "steps" not in item and not metrics:
         raise ValueError(f"{day.isoformat()}: no trae nada")
@@ -398,7 +398,7 @@ def one_day(item: Any, today: date) -> list[dict[str, Any]]:
 def profile(values: Any, today: date) -> dict[str, Any]:
     found = Profile.model_validate(values).model_dump(mode="json", exclude_none=True)
     if not found:
-        raise ValueError("la ficha llega vacía")
+        raise ValueError("the profile is empty")
     return {
         "ts": f"{today.isoformat()}T12:00:00+00:00",
         "type": "health.profile",
@@ -414,7 +414,7 @@ def apple_health(body: Any, today: date) -> Received:
             events.append(profile(body["profile"], today))
         body = body.get("days", [])
         if not isinstance(body, list) or (not body and not events):
-            raise ValueError(f"se espera una lista de 1 a {MAX_ITEMS} días")
+            raise ValueError(f"expected a list of 1 to {MAX_ITEMS} days")
     elif isinstance(body, dict):
         body = [body]
     if isinstance(body, list):
@@ -428,7 +428,7 @@ def apple_health(body: Any, today: date) -> Received:
             )
         ]
     if not isinstance(body, list) or len(body) > MAX_ITEMS or (not body and not events):
-        raise ValueError(f"se espera una lista de 1 a {MAX_ITEMS} días")
+        raise ValueError(f"expected a list of 1 to {MAX_ITEMS} days")
     for item in body:
         events.extend(one_day(item, today))
     return Received("health", events)

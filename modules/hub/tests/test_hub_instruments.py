@@ -323,8 +323,8 @@ async def test_the_myinvestor_etf_is_recorded_with_its_line_priced_and_its_failu
     assert said["recorded"], said
     assert said["without_price"] == []
     assert said["priced_by_isin"] == [
-        f"«WISDOMTREE QUANTUM COMP ETF»: {QUANTUM} (cotizado, Xetra, EUR), con precio desde el "
-        f"{PHOTO:%d/%m/%Y}"
+        f"'WISDOMTREE QUANTUM COMP ETF': {QUANTUM} (listed, Xetra, EUR), priced from "
+        f"{PHOTO.isoformat()}"
     ]
     held = {h["symbol"]: h for h in await events_of(schema, "finance.holding")}
     assert set(held) == {XETRA, "EUR"}
@@ -379,7 +379,7 @@ async def test_without_a_prices_connection_the_tool_says_how_to_value_it(
 
     said = recorded.json()["content"]
     assert said["recorded"]
-    assert any("conecta «Precios de fondos»" in why for why in said["without_price"])
+    assert any("connect 'Fund prices'" in why for why in said["without_price"])
 
 
 async def test_a_catalogue_fund_given_by_its_isin_keeps_its_symbol_whatever_its_name(

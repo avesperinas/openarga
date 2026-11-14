@@ -15,6 +15,11 @@
   "connection.reason.no_accounts": "{label} has not given any account. If your Enable Banking application is in restricted mode, link this bank's accounts in its dashboard and then reconnect it.",
   "connection.reason.pending": "{label} is waiting for you to finish authorising it.",
   "mailbox.missing_password": "The mailbox's app password is missing",
+  "notice.failing.body": "Three passes in a row with an error.",
+  "notice.failing.title": "{label} brings no data",
+  "notice.reauth.body": "Renew it in Hub so the transactions keep coming in.",
+  "notice.reauth.days": "The permission for {label} expires in {days} days",
+  "notice.reauth.today": "The permission for {label} expires today",
   "sync.no_access_left": "No accesses to {label} left today: try again tomorrow.",
   "widget.status.all_good": "all up to date",
   "widget.status.empty": "nothing connected yet"

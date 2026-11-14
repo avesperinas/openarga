@@ -64,7 +64,7 @@ async def app_of(database: AsyncConnection, connection_id: UUID) -> gh.App:
         for key in (gh.CLIENT_ID, gh.CLIENT_SECRET)
     }
     if not all(found.values()):
-        raise Refused("No se puede abrir tu cliente de Google: vuelve a pegar el id y el secret")
+        raise Refused("Your Google client cannot be opened: paste the id and secret again")
     return gh.App(found[gh.CLIENT_ID] or "", found[gh.CLIENT_SECRET] or "")
 
 
@@ -74,7 +74,7 @@ async def reauthorize(database: AsyncConnection, connection_id: UUID) -> str:
         {"id": connection_id},
     )
     if exists is None:
-        raise Refused("esa conexión no es Google Health", 404)
+        raise Refused("that connection is not Google Health", 404)
     app = await app_of(database, connection_id)
     state = tokens.token_urlsafe(32)
     await database.execute(

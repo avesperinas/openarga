@@ -15,6 +15,11 @@
   "connection.reason.no_accounts": "{label} no ha dado ninguna cuenta. Si tu aplicación de Enable Banking está en modo restringido, enlaza en su panel las cuentas de este banco y después reconéctalo.",
   "connection.reason.pending": "{label} espera a que termines de autorizarla.",
   "mailbox.missing_password": "Falta la contraseña de aplicación del buzón",
+  "notice.failing.body": "Tres pasadas seguidas con error.",
+  "notice.failing.title": "{label} no trae datos",
+  "notice.reauth.body": "Renuévalo en Hub para que sigan entrando los movimientos.",
+  "notice.reauth.days": "El permiso de {label} caduca en {days} días",
+  "notice.reauth.today": "El permiso de {label} caduca hoy",
   "sync.no_access_left": "Hoy ya no quedan accesos a {label}: vuelve mañana.",
   "widget.status.all_good": "todo al día",
   "widget.status.empty": "nada conectado todavía"

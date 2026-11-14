@@ -88,7 +88,7 @@ async def tick(
     try:
         everyone = await people()
     except httpx.HTTPError as error:
-        say(f"el kernel no dice quién existe ({type(error).__name__}); sin pasada")
+        say(f"the kernel does not say who exists ({type(error).__name__}); no pass")
         return {}
     results: dict[str, dict[str, str]] = {}
     limit = asyncio.Semaphore(CONCURRENCY)
@@ -100,9 +100,9 @@ async def tick(
             try:
                 outcome = await sync.run(connection, source=source, kernel=kernel, sleep=sleep)
             except SQLAlchemyError as error:
-                say(f"sin base de datos a mitad de pasada ({type(error).__name__})")
+                say(f"no database halfway through the pass ({type(error).__name__})")
                 return
-            except Exception as error:  # noqa: BLE001 - una pasada rota no para a las que corren
+            except Exception as error:  # noqa: BLE001 - a broken pass does not stop the running ones
                 say(f"{connection.label}: {type(error).__name__}: {error}")
                 return
             results.setdefault(str(user), {})[connection.label] = outcome.outcome
@@ -113,13 +113,13 @@ async def tick(
                 try:
                     pending = await runnable(moment, everything)
                 except SQLAlchemyError as error:
-                    say(f"no se pueden leer las conexiones ({type(error).__name__})")
+                    say(f"the connections cannot be read ({type(error).__name__})")
                     return
                 await asyncio.gather(*(one(user, connection) for connection in pending))
                 try:
                     rechecked = await capabilities.maps_recheck(source)
                 except SQLAlchemyError as error:
-                    say(f"no se puede mirar Protomaps ({type(error).__name__})")
+                    say(f"Protomaps cannot be checked ({type(error).__name__})")
                 else:
                     if rechecked:
                         results.setdefault(str(user), {})["Protomaps"] = rechecked
@@ -174,7 +174,7 @@ async def ai_runs(kernel: httpx.AsyncClient) -> None:
 def main() -> int:
     try:
         credentials.masters()
-    except Exception as error:  # noqa: BLE001 - se dice y se sale con código distinto de cero
+    except Exception as error:  # noqa: BLE001 - it is said and exits with a non-zero code
         print(f"worker {MODULE}: {error}", file=sys.stderr)
         return 1
     asyncio.run(serve())
