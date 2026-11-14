@@ -1,3 +1,5 @@
+import { say } from "./format";
+
 const BASE = "/api/money";
 
 export class Unauthorised extends Error {}
@@ -10,10 +12,10 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
     headers: { accept: "application/json", ...(body !== undefined ? { "content-type": "application/json" } : {}) },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
-  if (response.status === 401) throw new Unauthorised("sin sesión");
+  if (response.status === 401) throw new Unauthorised("signed out");
   if (response.status === 422) {
     const detail = await response.json().catch(() => null);
-    throw new Refused(typeof detail?.detail === "string" ? detail.detail : "No se ha podido guardar");
+    throw new Refused(typeof detail?.detail === "string" ? detail.detail : say("api.save_failed"));
   }
   if (!response.ok) throw new Error(`${path}: ${response.status}`);
   if (response.status === 204) return undefined as T;
@@ -473,7 +475,7 @@ export const api = {
   sharedSpace: (spaceId: string | null) => call<unknown>("PUT", "/shared/space", { space_id: spaceId }),
   spaces: async (): Promise<Space[]> => {
     const response = await fetch("/api/kernel/spaces", { headers: { accept: "application/json" } });
-    if (response.status === 401) throw new Unauthorised("sin sesión");
+    if (response.status === 401) throw new Unauthorised("signed out");
     if (!response.ok) throw new Error(`/api/kernel/spaces: ${response.status}`);
     return (await response.json()) as Space[];
   },

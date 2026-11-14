@@ -16,30 +16,16 @@ import {
   SeriesChart,
   Skeleton,
   SplitBar,
+  numbers,
+  useT,
 } from "@openarga/ui";
 import { useCallback, useEffect, useState } from "react";
 
 import { defaults } from "./analysisState";
 import { type Flow, type Kpi, type Spending, type State, type Summary, type Worth, api } from "./api";
-import { moneyWhole, percentText } from "./format";
+import { dayTitle, groupName, moneyWhole, percentText } from "./format";
 import { ScreenHeader } from "./Header";
 import { basicByMonth, change, cushion, groupHue, lastByGroup, lastYear, thisMonthSpan } from "./summaryParts";
-
-const INFO: Record<Kpi["key"] | "month", string> = {
-  networth:
-    "Lo que vale todo lo tuyo menos los inmuebles: cuentas, fondos, plan de pensiones y cripto. Cada cuenta cuenta por tu parte (la común, la mitad). Debajo, cuánto ha cambiado en 12 meses.",
-  liquid:
-    "El patrimonio sin lo que no puedes sacar cuando quieras, como el plan de pensiones. Debajo, cuánto ha cambiado en 12 meses.",
-  cash: "El dinero a mano: cuentas corrientes y de ahorro, sin el fondo de contingencia. Las cuentas comunes cuentan enteras, no por tu parte.",
-  emergency:
-    "El saldo de la cuenta que es tu fondo de contingencia, contra su objetivo: tu gasto básico mensual por los meses que digas en Ajustes.",
-  expense:
-    "Lo que gastas al mes, de media en los últimos 12 meses cerrados: lo tuyo y tu parte de lo común, sin lo que no es gasto de vida (Trabajo). Con menos de 12 meses de datos, la media es de los que hay. Debajo, contra los 12 meses anteriores.",
-  basic:
-    "Lo mismo que el gasto mensual, pero sin lo que no es básico (Viajes, Ocio): lo que necesitas para vivir. Es la base del objetivo del fondo de contingencia.",
-  month:
-    "Lo que ha entrado este mes y en qué se ha ido: tu gasto y tu parte de lo común, lo que has invertido y lo que queda. Es el Flujo de Análisis para el mes en curso.",
-};
 
 interface Loaded {
   summary: Summary;
@@ -49,6 +35,7 @@ interface Loaded {
 }
 
 export function SummaryScreen({ state, onPending }: { state: State; onPending: () => void }) {
+  const t = useT();
   const [data, setData] = useState<Loaded | null>(null);
   const [failed, setFailed] = useState(false);
   const [which, setWhich] = useState<"networth" | "liquid">("networth");
@@ -82,26 +69,26 @@ export function SummaryScreen({ state, onPending }: { state: State; onPending: (
 
   if (failed) {
     return (
-      <Screen label="Resumen">
-        <ScreenHeader title="Resumen" />
-        <Notice tone="negative" title="No se ha podido calcular" action={{ label: "Reintentar", onClick: load }} />
+      <Screen label={t("summary.title")}>
+        <ScreenHeader title={t("summary.title")} />
+        <Notice tone="negative" title={t("summary.failed")} action={{ label: t("common.retry"), onClick: load }} />
       </Screen>
     );
   }
   if (!data) {
     return (
-      <Screen label="Resumen">
-        <ScreenHeader title="Resumen" />
-        <Skeleton rows={6} label="Calculando el resumen" />
+      <Screen label={t("summary.title")}>
+        <ScreenHeader title={t("summary.title")} />
+        <Skeleton rows={6} label={t("summary.computing")} />
       </Screen>
     );
   }
   if (data.summary.kpis.every((k) => k.value === null)) {
     return (
-      <Screen label="Resumen">
-        <ScreenHeader title="Resumen" />
-        <EmptyState icon="wallet" title="Aún no hay datos">
-          Cuando Money tenga cuentas y movimientos, aquí verás tu patrimonio, tu gasto y tu colchón.
+      <Screen label={t("summary.title")}>
+        <ScreenHeader title={t("summary.title")} />
+        <EmptyState icon="wallet" title={t("summary.no_data")}>
+          {t("summary.no_data_body")}
         </EmptyState>
       </Screen>
     );
@@ -116,7 +103,7 @@ export function SummaryScreen({ state, onPending }: { state: State; onPending: (
   const expense = kpi("expense");
   const basic = kpi("basic");
   const bars = data.spending ? basicByMonth(data.spending) : null;
-  const t = data.flow?.totals;
+  const ft = data.flow?.totals;
   const emergency = kpi("emergency");
   const cash = kpi("cash");
 
@@ -125,35 +112,35 @@ export function SummaryScreen({ state, onPending }: { state: State; onPending: (
       {waiting > 0 && (
         <Banner hue={3} glyph={<Icon name="alert" />}>
           <Button variant="plain" onClick={onPending}>
-            {waiting === 1 ? "1 movimiento por etiquetar" : `${waiting} movimientos por etiquetar`}
+            {waiting === 1 ? t("summary.to_label_one") : t("summary.to_label_other", { count: waiting })}
           </Button>
         </Banner>
       )}
 
       <Card>
         <AreaTrend
-          label={head?.label ?? "Patrimonio"}
+          label={head?.label ?? t("summary.networth")}
           value={head?.value === null || head?.value === undefined ? "—" : moneyWhole(head.value)}
           delta={head ? change(head.value, head.previous, true) : undefined}
           points={(series?.points ?? []).map((point) => ({ label: point.label, value: point.total }))}
-          description={`${head?.label ?? "Patrimonio"} a final de cada mes, los últimos 12 meses`}
-          info={INFO[which]}
+          description={t("summary.trend", { label: head?.label ?? t("summary.networth") })}
+          info={t(`summary.info_${which}`)}
           aside={
             <SegmentedControl
-              label="Qué patrimonio"
+              label={t("summary.which")}
               value={which}
               onChange={setWhich}
               options={[
-                { value: "networth", label: "Total" },
-                { value: "liquid", label: "Líquido" },
+                { value: "networth", label: t("summary.total") },
+                { value: "liquid", label: t("summary.liquid") },
               ]}
             />
           }
         >
           {carried.length > 0 && (
             <Collapsible
-              title={carried.length === 1 ? "1 cuenta con su última valoración" : `${carried.length} cuentas con su última valoración`}
-              subtitle="Valen lo de ese día, no lo de hoy"
+              title={carried.length === 1 ? t("summary.carried_one") : t("summary.carried_other", { count: carried.length })}
+              subtitle={t("summary.carried_sub")}
             >
               {carried.map((one) => (
                 <Hint key={one}>{one}</Hint>
@@ -163,55 +150,55 @@ export function SummaryScreen({ state, onPending }: { state: State; onPending: (
         </AreaTrend>
       </Card>
 
-      {t && t.income + t.member > 0 && (
-        <Card title="Este mes, hasta hoy">
+      {ft && ft.income + ft.member > 0 && (
+        <Card title={t("summary.this_month")}>
           <SplitBar
-            label="Lo que entra este mes"
+            label={t("summary.coming_in")}
             parts={[
-              { label: "Gastas", value: moneyWhole(t.spent + t.common), share: t.spent + t.common, hue: 4 },
-              { label: "Inviertes", value: moneyWhole(t.invested), share: t.invested, hue: 5 },
+              { label: t("summary.spend"), value: moneyWhole(ft.spent + ft.common), share: ft.spent + ft.common, hue: 4 },
+              { label: t("summary.invest"), value: moneyWhole(ft.invested), share: ft.invested, hue: 5 },
             ]}
-            rest={{ label: t.left >= 0 ? "Queda" : "Tiras de ahorros", value: moneyWhole(t.left), share: Math.max(0, t.left) }}
+            rest={{ label: ft.left >= 0 ? t("summary.left") : t("summary.from_savings"), value: moneyWhole(ft.left), share: Math.max(0, ft.left) }}
           />
           <KeyFigures
-            label="El mes"
+            label={t("summary.month")}
             items={[
-              { label: "Entra", value: moneyWhole(t.income + t.member), info: INFO.month },
-              ...(t.rate !== null && Math.abs(t.rate) <= 1
-                ? [{ label: "Tasa de ahorro", value: percentText(t.rate), tone: t.rate >= 0 ? ("positive" as const) : ("negative" as const) }]
+              { label: t("summary.in"), value: moneyWhole(ft.income + ft.member), info: t("summary.info_month") },
+              ...(ft.rate !== null && Math.abs(ft.rate) <= 1
+                ? [{ label: t("summary.rate"), value: percentText(ft.rate), tone: ft.rate >= 0 ? ("positive" as const) : ("negative" as const) }]
                 : []),
             ]}
           />
         </Card>
       )}
 
-      <Card title="Gasto al mes">
+      <Card title={t("summary.spending")}>
         <KeyFigures
-          label="Gasto al mes"
+          label={t("summary.spending")}
           items={[expense, basic]
             .filter((k): k is Kpi => Boolean(k))
             .map((k) => {
-              const d = change(k.value, k.previous, false, "frente al año anterior");
+              const d = change(k.value, k.previous, false, t("summary.against_year"));
               return {
                 label: k.label,
                 value: k.value === null ? "—" : moneyWhole(k.value),
                 foot: d?.text ?? k.detail ?? undefined,
                 tone: d?.tone ?? ("neutral" as const),
-                info: INFO[k.key],
+                info: t(`summary.info_${k.key}`),
               };
             })}
         />
         {bars && bars.labels.length > 1 && (
           <SeriesChart
             kind="stacked"
-            label="Gasto de cada mes, lo básico y lo demás, con tu media"
+            label={t("summary.bars")}
             labels={bars.labels}
             series={[
-              { key: "basic", name: "Básico", values: bars.basic },
-              { key: "rest", name: "El resto", values: bars.rest },
+              { key: "basic", name: t("summary.basic"), values: bars.basic },
+              { key: "rest", name: t("summary.rest"), values: bars.rest },
             ]}
             order={["basic", "rest"]}
-            overlay={expense?.value ? { key: "average", name: "Tu media", values: bars.labels.map(() => expense.value!) } : undefined}
+            overlay={expense?.value ? { key: "average", name: t("summary.average"), values: bars.labels.map(() => expense.value!) } : undefined}
             format={(value) => moneyWhole(value)}
           />
         )}
@@ -222,33 +209,37 @@ export function SummaryScreen({ state, onPending }: { state: State; onPending: (
   const aside = (
     <>
       {emergency && (
-        <Card title="Colchón">
+        <Card title={t("summary.cushion")}>
           <RingFigure
             size="medium"
             share={room?.share ?? null}
-            value={room ? room.covered.toLocaleString("es-ES", { maximumFractionDigits: 1 }) : "—"}
-            label={room ? `de ${months} meses` : "Sin objetivo"}
+            value={room ? numbers({ maximumFractionDigits: 1 }).format(room.covered) : "—"}
+            label={room ? t("summary.of_months", { months }) : t("summary.no_target")}
             detail={
-              emergency.value === null ? undefined : `${moneyWhole(emergency.value)}${emergency.target ? ` de ${moneyWhole(emergency.target)}` : ""}`
+              emergency.value === null
+                ? undefined
+                : emergency.target
+                  ? t("summary.of_amount", { amount: moneyWhole(emergency.value), target: moneyWhole(emergency.target) })
+                  : moneyWhole(emergency.value)
             }
             tone={room ? (room.share >= 1 ? "positive" : room.share >= 0.5 ? "info" : "warning") : undefined}
           />
           <KeyFigures
-            label="El colchón"
-            items={[{ label: emergency.label, value: emergency.value === null ? "—" : moneyWhole(emergency.value), info: INFO.emergency }]}
+            label={t("summary.the_cushion")}
+            items={[{ label: emergency.label, value: emergency.value === null ? "—" : moneyWhole(emergency.value), info: t("summary.info_emergency") }]}
           />
         </Card>
       )}
       {(groups.length > 0 || cash) && (
-        <Card title="Dónde está">
+        <Card title={t("summary.where")}>
           {groups.length > 0 && (
             <SplitBar
-              label="Tu patrimonio por tipo"
-              parts={groups.map((one) => ({ label: one.group, value: moneyWhole(one.value), share: one.value, hue: groupHue(one.group) }))}
+              label={t("summary.by_type")}
+              parts={groups.map((one) => ({ label: groupName(one.group), value: moneyWhole(one.value), share: one.value, hue: groupHue(one.group) }))}
             />
           )}
           {cash && (
-            <KeyFigures label="El dinero a mano" items={[{ label: cash.label, value: cash.value === null ? "—" : moneyWhole(cash.value), info: INFO.cash }]} />
+            <KeyFigures label={t("summary.at_hand")} items={[{ label: cash.label, value: cash.value === null ? "—" : moneyWhole(cash.value), info: t("summary.info_cash") }]} />
           )}
         </Card>
       )}
@@ -256,12 +247,12 @@ export function SummaryScreen({ state, onPending }: { state: State; onPending: (
   );
 
   return (
-    <Screen wide label="Resumen">
-      <ScreenHeader title="Resumen" />
-      <Panes main={main} aside={aside} asideLabel="El colchón y dónde está" />
+    <Screen wide label={t("summary.title")}>
+      <ScreenHeader title={t("summary.title")} />
+      <Panes main={main} aside={aside} asideLabel={t("summary.aside")} />
       {state.cutoff && (
         <Hint>
-          Los meses antes del {state.cutoff.split("-").reverse().join("/")} salen del histórico de Caudal; desde entonces, de tus bancos.
+          {t("summary.history_hint", { day: dayTitle(state.cutoff) })}
         </Hint>
       )}
     </Screen>

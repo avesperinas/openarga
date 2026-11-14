@@ -1,5 +1,5 @@
 import type { Kpi, Spending, Worth } from "./api";
-import { isoDay, moneyWhole, percentText } from "./format";
+import { isoDay, moneyWhole, percentText, say } from "./format";
 
 export function lastYear(today = new Date()): { from: string; to: string } {
   return { from: isoDay(new Date(today.getFullYear(), today.getMonth() - 11, 1)), to: isoDay(today) };
@@ -13,11 +13,11 @@ export function change(
   value: number | null,
   previous: number | null,
   goodUp: boolean,
-  against = "en 12 meses",
+  against = say("change.in_12_months"),
 ): { text: string; tone: "positive" | "negative" | "neutral" } | undefined {
   if (value === null || previous === null || previous === 0) return undefined;
   const diff = value - previous;
-  if (diff === 0) return { text: `Igual que hace un año`, tone: "neutral" };
+  if (diff === 0) return { text: say("change.same_year"), tone: "neutral" };
   const share = diff / Math.abs(previous);
   const good = goodUp ? diff > 0 : diff < 0;
   return {
@@ -56,13 +56,13 @@ export function lastByGroup(worth: Worth): { group: string; value: number }[] {
 }
 
 const GROUP_HUES: Record<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8> = {
-  Efectivo: 1,
-  Fondos: 5,
-  Bolsa: 7,
-  Pensión: 6,
-  Cripto: 3,
-  Vivienda: 4,
-  Fianzas: 2,
+  Cash: 1,
+  Funds: 5,
+  Stocks: 7,
+  Pension: 6,
+  Crypto: 3,
+  Property: 4,
+  Deposits: 2,
 };
 
 export const groupHue = (group: string): 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 => GROUP_HUES[group] ?? 8;

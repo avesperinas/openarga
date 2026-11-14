@@ -9,6 +9,7 @@ import {
   SelectField,
   Sheet,
   Switch,
+  useT,
 } from "@openarga/ui";
 import { useEffect, useState } from "react";
 
@@ -28,12 +29,15 @@ import {
   bounds,
   defaults,
   fromSearch,
+  periodName,
   periodTitle,
   pickable,
   previousLabel,
   step,
   toSearch,
+  viewName,
 } from "./analysisState";
+import { groupName } from "./format";
 
 const ICONS: Record<View, IconName> = {
   worth: "wallet",
@@ -66,6 +70,7 @@ function changed(s: AnalysisState, uses: (typeof USES)[View], picked: { groups: 
 }
 
 export function AnalysisScreen({ state, onMovements }: { state: State; onMovements: (go: Movements) => void }) {
+  const t = useT();
   const [s, setS] = useState<AnalysisState>(() => fromSearch(window.location.search));
   const [ranging, setRanging] = useState(false);
   const [filtering, setFiltering] = useState(false);
@@ -86,25 +91,25 @@ export function AnalysisScreen({ state, onMovements }: { state: State; onMovemen
   const q: AnalysisQuery = { from, to, home: s.home, whole: s.whole, ...(uses.pick && { group: groups, account: accounts }) };
   const against = previousLabel(s.kind);
   const count = changed(s, uses, { groups, accounts });
-  const view = VIEWS.find((v) => v.value === s.view);
+  
 
   const period = (
     <SelectField
-      label="Periodo"
+      label={t("analysis.period")}
       hideLabel={wide}
       value={s.kind}
       onChange={(kind) => {
         set({ kind });
         if (kind === "range") setRanging(true);
       }}
-      options={PERIODS}
+      options={PERIODS.map((value) => ({ value, label: periodName(value) }))}
     />
   );
   const stepper = (
     <div className="money-period-step">
       <IconButton
         icon="chevron-left"
-        label="Periodo anterior"
+        label={t("analysis.previous")}
         onClick={() => set(step(s, -1))}
         disabled={s.kind === "range" || s.kind === "all"}
       />
@@ -112,47 +117,47 @@ export function AnalysisScreen({ state, onMovements }: { state: State; onMovemen
         type="button"
         className="money-analysis-title"
         onClick={() => s.kind === "range" && setRanging(true)}
-        aria-label={s.kind === "range" ? "Cambiar el rango" : undefined}
+        aria-label={s.kind === "range" ? t("analysis.change_range") : undefined}
       >
         {periodTitle(s, first)}
       </button>
-      <IconButton icon="chevron-right" label="Periodo siguiente" onClick={() => set(step(s, 1))} disabled={atEnd(s)} />
+      <IconButton icon="chevron-right" label={t("analysis.next")} onClick={() => set(step(s, 1))} disabled={atEnd(s)} />
     </div>
   );
   const whole = uses.whole && (
     <SegmentedControl
-      label="Lo común"
+      label={t("analysis.shared")}
       value={s.whole ? "whole" : "mine"}
       onChange={(v) => set({ whole: v === "whole" })}
       options={[
-        { value: "mine", label: "Tu parte" },
-        { value: "whole", label: "Todo" },
+        { value: "mine", label: t("analysis.your_part") },
+        { value: "whole", label: t("analysis.all") },
       ]}
     />
   );
   const home = uses.home && (
     <span className="money-analysis-switch">
-      <span aria-hidden="true">Vivienda</span>
-      <Switch label="Incluir la vivienda" checked={s.home} onChange={(on) => set({ home: on })} />
+      <span aria-hidden="true">{t("analysis.home")}</span>
+      <Switch label={t("analysis.include_home")} checked={s.home} onChange={(on) => set({ home: on })} />
     </span>
   );
   const pick = uses.pick && (
     <div className="money-analysis-pick">
       <MultiSelectField<string>
-        label="Tipo de producto"
+        label={t("analysis.product_type")}
         hideLabel={wide}
-        all="Todos los tipos"
+        all={t("analysis.all_types")}
         values={groups}
         onChange={(next) => {
           const fit = pickable(state.accounts, s.view, s.home, next).accounts;
           set({ groups: next, accounts: s.accounts.filter((a) => fit.some((o) => o.value === a)) });
         }}
-        options={options.groups.map((g) => ({ value: g, label: g }))}
+        options={options.groups.map((g) => ({ value: g, label: groupName(g) }))}
       />
       <MultiSelectField<string>
-        label="Cuenta"
+        label={t("analysis.account")}
         hideLabel={wide}
-        all="Todas las cuentas"
+        all={t("analysis.all_accounts")}
         values={accounts}
         onChange={(next) => set({ accounts: next })}
         options={options.accounts}
@@ -164,23 +169,23 @@ export function AnalysisScreen({ state, onMovements }: { state: State; onMovemen
       {uses.scope && (
         <>
           <SegmentedControl
-            label="Qué gasto"
+            label={t("analysis.which_spending")}
             value={s.scope}
             onChange={(scope) => set({ scope })}
             options={[
-              { value: "all", label: "Todo" },
-              { value: "individual", label: "Individual" },
-              { value: "shared", label: "Común" },
+              { value: "all", label: t("analysis.all") },
+              { value: "individual", label: t("analysis.individual") },
+              { value: "shared", label: t("analysis.common") },
             ]}
           />
           <SegmentedControl
-            label="Qué tipo"
+            label={t("analysis.which_kind")}
             value={s.basic}
             onChange={(basic) => set({ basic })}
             options={[
-              { value: "all", label: "Todo" },
-              { value: "basic", label: "Básico" },
-              { value: "other", label: "No básico" },
+              { value: "all", label: t("analysis.all") },
+              { value: "basic", label: t("analysis.basic") },
+              { value: "other", label: t("analysis.not_basic") },
             ]}
           />
         </>
@@ -188,30 +193,30 @@ export function AnalysisScreen({ state, onMovements }: { state: State; onMovemen
       {uses.cycle && (
         <>
           <SegmentedControl
-            label="Cómo se parte el tiempo"
+            label={t("analysis.time_split")}
             value={s.cycle ? "cycle" : "month"}
             onChange={(v) => set({ cycle: v === "cycle" })}
             options={[
-              { value: "cycle", label: "Ciclo de nómina" },
-              { value: "month", label: "Mes natural" },
+              { value: "cycle", label: t("analysis.pay_cycle") },
+              { value: "month", label: t("analysis.calendar_month") },
             ]}
           />
           <SegmentedControl
-            label="En qué se cuenta"
+            label={t("analysis.count_in")}
             value={s.percent ? "percent" : "money"}
             onChange={(v) => set({ percent: v === "percent" })}
             options={[
-              { value: "money", label: "Euros" },
-              { value: "percent", label: "% de lo que entra" },
+              { value: "money", label: t("analysis.in_money") },
+              { value: "percent", label: t("analysis.in_percent") },
             ]}
           />
           <SegmentedControl
-            label="El alquiler a la vivienda"
+            label={t("analysis.rent")}
             value={s.rent ? "invest" : "shared"}
             onChange={(v) => set({ rent: v === "invest" })}
             options={[
-              { value: "invest", label: "Alquiler: inversión" },
-              { value: "shared", label: "Alquiler: gasto común" },
+              { value: "invest", label: t("analysis.rent_invest") },
+              { value: "shared", label: t("analysis.rent_shared") },
             ]}
           />
         </>
@@ -220,21 +225,21 @@ export function AnalysisScreen({ state, onMovements }: { state: State; onMovemen
   );
 
   return (
-    <Screen wide label="Análisis">
-      <ScreenHeader title={wide || !view ? "Análisis" : view.label} />
+    <Screen wide label={t("analysis.title")}>
+      <ScreenHeader title={wide ? t("analysis.title") : viewName(s.view)} />
       <div className="money-analysis-views">
         <SegmentedControl
-          label="Qué analizar"
+          label={t("analysis.what")}
           value={s.view}
           onChange={(next) => set({ view: next })}
-          options={VIEWS.map((v) => ({ value: v.value, label: v.label, icon: ICONS[v.value] }))}
+          options={VIEWS.map((value) => ({ value, label: viewName(value), icon: ICONS[value] }))}
           iconsWhenNarrow
         />
       </div>
 
       {wide ? (
         <>
-          <div className="money-analysis-bar" role="group" aria-label="Filtros">
+          <div className="money-analysis-bar" role="group" aria-label={t("analysis.filters")}>
             <div className="money-analysis-period">
               {period}
               {stepper}
@@ -250,10 +255,10 @@ export function AnalysisScreen({ state, onMovements }: { state: State; onMovemen
           {(uses.scope || uses.cycle) && <div className="money-analysis-local">{local}</div>}
         </>
       ) : (
-        <div className="money-analysis-bar" role="group" aria-label="Periodo">
+        <div className="money-analysis-bar" role="group" aria-label={t("analysis.period")}>
           {stepper}
           <Button icon="filter" variant={count ? "tinted" : "secondary"} onClick={() => setFiltering(true)}>
-            {count ? `Filtros · ${count}` : "Filtros"}
+            {count ? t("analysis.filters_count", { count }) : t("analysis.filters")}
           </Button>
         </div>
       )}
@@ -266,7 +271,7 @@ export function AnalysisScreen({ state, onMovements }: { state: State; onMovemen
       {s.view === "flow" && <FlowView q={q} cycle={s.cycle} percent={s.percent} rent={s.rent} againstLabel={against} />}
 
       {filtering && (
-        <Sheet title="Filtros" onClose={() => setFiltering(false)} action={{ label: "Ver", onClick: () => setFiltering(false) }}>
+        <Sheet title={t("analysis.filters")} onClose={() => setFiltering(false)} action={{ label: t("analysis.see"), onClick: () => setFiltering(false) }}>
           <div className="money-analysis-sheet">
             {period}
             {whole}
@@ -305,20 +310,21 @@ function RangeSheet({
   onClose: () => void;
   onDone: (range: { from: string; to: string }) => void;
 }) {
+  const t = useT();
   const [a, setA] = useState(from);
   const [b, setB] = useState(to);
   const valid = Boolean(a && b && a <= b);
   return (
-    <Sheet title="Rango" onClose={onClose} action={{ label: "Ver este rango", onClick: () => onDone({ from: a, to: b }), disabled: !valid }}>
-      <DateField label="Desde" value={a} onChange={setA} />
-      <DateField label="Hasta" value={b} onChange={setB} invalid={Boolean(a && b && a > b)} hint={a > b ? "Tiene que ir después de «Desde»" : undefined} />
+    <Sheet title={t("analysis.range")} onClose={onClose} action={{ label: t("analysis.see_range"), onClick: () => onDone({ from: a, to: b }), disabled: !valid }}>
+      <DateField label={t("analysis.from")} value={a} onChange={setA} />
+      <DateField label={t("analysis.to")} value={b} onChange={setB} invalid={Boolean(a && b && a > b)} hint={a > b ? t("analysis.after_from") : undefined} />
       <div className="money-analysis-presets">
         <Button variant="secondary" onClick={() => setA(`${new Date().getFullYear()}-01-01`)}>
-          Desde enero
+          {t("analysis.since_january")}
         </Button>
         {cutoff && (
           <Button variant="secondary" onClick={() => setA(cutoff)}>
-            Desde el corte
+            {t("analysis.since_cutoff")}
           </Button>
         )}
       </div>

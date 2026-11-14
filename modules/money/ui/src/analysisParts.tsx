@@ -13,7 +13,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 
 import { Unauthorised } from "./api";
-import { moneyWhole, percentText } from "./format";
+import { moneyWhole, percentText, say } from "./format";
 
 export function useLoad<T>(load: () => Promise<T>, key: string): {
   data: T | null;
@@ -62,15 +62,15 @@ export function Loading<T>({
     return (
       <Notice
         tone="negative"
-        title="Tienes que volver a entrar"
-        action={{ label: "Entrar", onClick: () => window.location.assign("/login") }}
+        title={say("analysis.sign_in_again")}
+        action={{ label: say("app.sign_in"), onClick: () => window.location.assign("/login") }}
       />
     );
   }
   if (state.failed) {
-    return <Notice tone="negative" title="No se ha podido calcular" action={{ label: "Reintentar", onClick: state.retry }} />;
+    return <Notice tone="negative" title={say("analysis.failed")} action={{ label: say("common.retry"), onClick: state.retry }} />;
   }
-  if (!state.data) return <Skeleton rows={rows} label="Calculando" />;
+  if (!state.data) return <Skeleton rows={rows} label={say("analysis.computing")} />;
   return <>{children(state.data)}</>;
 }
 
@@ -81,13 +81,13 @@ export function delta(
   goodUp = true,
 ): { text: string; tone: StatTone } {
   if (before === null || before === undefined || (before === 0 && now !== 0)) {
-    return { text: contract(`Sin dato de ${against}`), tone: "neutral" };
+    return { text: contract(say("delta.no_data", { against })), tone: "neutral" };
   }
   const diff = now - before;
-  if (Math.abs(diff) < 0.5) return { text: `Igual que ${against}`, tone: "neutral" };
+  if (Math.abs(diff) < 0.5) return { text: say("delta.same", { against }), tone: "neutral" };
   const pct = before !== 0 ? ` (${diff > 0 ? "+" : "−"}${percentText(Math.abs(diff / before))})` : "";
   const good = goodUp ? diff > 0 : diff < 0;
-  return { text: contract(`${moneyWhole(diff, true)}${pct} frente a ${against}`), tone: good ? "positive" : "negative" };
+  return { text: contract(say("delta.against", { amount: `${moneyWhole(diff, true)}${pct}`, against })), tone: good ? "positive" : "negative" };
 }
 
 export function contract(text: string): string {
@@ -96,7 +96,7 @@ export function contract(text: string): string {
 
 export function signedPercent(ratio: number | null | undefined): string {
   if (ratio === null || ratio === undefined) return "—";
-  if (Math.abs(ratio) < 0.0005) return "0 %";
+  if (Math.abs(ratio) < 0.0005) return percentText(0);
   return `${ratio > 0 ? "+" : "−"}${percentText(Math.abs(ratio))}`;
 }
 
@@ -104,7 +104,7 @@ export function CsvButton<Row>({ name, columns, rows }: { name: string; columns:
   if (rows.length === 0) return null;
   return (
     <Button variant="plain" onClick={() => downloadCsv(`${name}.csv`, tableCsv(columns, rows))}>
-      Exportar CSV
+      {say("analysis.export_csv")}
     </Button>
   );
 }

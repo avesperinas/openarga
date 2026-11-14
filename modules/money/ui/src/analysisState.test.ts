@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { configureRegional } from "@openarga/ui";
 
 import { contract, delta, signedPercent } from "./analysisParts";
 import { atEnd, bounds, defaults, fromSearch, periodTitle, pickable, previousLabel, step, toSearch } from "./analysisState";
@@ -7,8 +9,11 @@ import { fromLink } from "./filters";
 const today = new Date(2026, 9, 1);
 const base = defaults(today);
 
-describe("el periodo de Análisis", () => {
-  it("cada clase de periodo abarca sus días", () => {
+beforeAll(() => configureRegional({ locale: "en-GB", timeZone: "Europe/Madrid", currency: "EUR" }));
+afterAll(() => configureRegional({ locale: "es-ES", timeZone: "Europe/Madrid", currency: "EUR" }));
+
+describe("the Analysis period", () => {
+  it("each kind of period spans its days", () => {
     expect(bounds({ ...base, kind: "month", at: "2026-02" }, 2021, today)).toEqual({ from: "2026-02-01", to: "2026-02-28" });
     expect(bounds({ ...base, kind: "quarter", at: "2026-08" }, 2021, today)).toEqual({ from: "2026-07-01", to: "2026-09-30" });
     expect(bounds({ ...base, kind: "year", at: "2025-05" }, 2021, today)).toEqual({ from: "2025-01-01", to: "2025-12-31" });
@@ -20,7 +25,7 @@ describe("el periodo de Análisis", () => {
     expect(bounds({ ...base, kind: "all" }, 2021, today)).toEqual({ from: "2021-01-01", to: "2026-10-01" });
   });
 
-  it("las flechas van de mes, de trimestre o de año, y no pasan de hoy", () => {
+  it("the arrows move by month, quarter or year, and stop at today", () => {
     expect(step({ ...base, kind: "quarter", at: "2026-08" }, -1).at).toBe("2026-05");
     expect(step({ ...base, kind: "year", at: "2026-01" }, 1).at).toBe("2027-01");
     expect(step({ ...base, kind: "month", at: "2026-01" }, -1).at).toBe("2025-12");
@@ -28,16 +33,17 @@ describe("el periodo de Análisis", () => {
     expect(atEnd({ ...base, kind: "month", at: "2026-09" }, today)).toBe(false);
   });
 
-  it("su título se lee", () => {
-    expect(periodTitle({ ...base, kind: "month", at: "2026-09" }, 2021, today)).toBe("Septiembre 2026");
-    expect(periodTitle({ ...base, kind: "quarter", at: "2026-08" }, 2021, today)).toBe("3.er trimestre 2026");
-    expect(periodTitle({ ...base, kind: "last12", at: "2026-09" }, 2021, today)).toBe("Oct 2025 – Sep 2026");
-    expect(previousLabel("year")).toBe("el año anterior");
+  it("its title reads well", () => {
+    expect(periodTitle({ ...base, kind: "month", at: "2026-09" }, 2021, today)).toBe("September 2026");
+    expect(periodTitle({ ...base, kind: "quarter", at: "2026-08" }, 2021, today)).toBe("Q3 2026");
+    expect(periodTitle({ ...base, kind: "last12", at: "2026-09" }, 2021, today)).toBe("Oct 2025 – Sept 2026");
+    expect(periodTitle({ ...base, kind: "all" }, 2021, today)).toBe("Since 2021");
+    expect(previousLabel("year")).toBe("the previous year");
   });
 });
 
-describe("la dirección", () => {
-  it("lo elegido va y vuelve, y lo de por defecto no se escribe", () => {
+describe("the address", () => {
+  it("what is chosen goes and comes back, and the defaults are not written", () => {
     expect(toSearch(base, today)).toBe("");
     const chosen = {
       ...base,
@@ -51,63 +57,72 @@ describe("la dirección", () => {
       rent: false,
     };
     const search = toSearch(chosen, today);
-    expect(search).toContain("vista=flujo");
-    expect(search).toContain("vivienda=si");
-    expect(search).toContain("en=porcentaje");
-    expect(search).toContain("alquiler=gasto");
+    expect(search).toContain("view=flow");
+    expect(search).toContain("home=yes");
+    expect(search).toContain("as=percent");
+    expect(search).toContain("rent=expense");
     expect(fromSearch(search, today)).toEqual(chosen);
   });
 
-  it("los tipos de producto y las cuentas elegidas van y vuelven", () => {
-    const chosen = { ...base, view: "invest" as const, groups: ["Fondos", "Pensión"], accounts: ["fondo-a"] };
+  it("the chosen product types and accounts go and come back", () => {
+    const chosen = { ...base, view: "invest" as const, groups: ["Funds", "Pension"], accounts: ["fund-a"] };
     const search = toSearch(chosen, today);
-    expect(search).toContain("producto=Fondos&producto=Pensi%C3%B3n");
-    expect(search).toContain("cuenta=fondo-a");
+    expect(search).toContain("product=Funds&product=Pension");
+    expect(search).toContain("account=fund-a");
     expect(fromSearch(search, today)).toEqual(chosen);
   });
 
-  it("lo que no se entiende vuelve al valor por defecto", () => {
-    expect(fromSearch("?vista=nada&mes=2026-13&periodo=x", today)).toEqual(base);
+  it("what is not understood goes back to the default", () => {
+    expect(fromSearch("?view=nothing&month=2026-13&period=x", today)).toEqual(base);
   });
 
-  it("desde Análisis, Movimientos abre el mes y la categoría", () => {
-    const link = fromLink("?desde=2026-09-01&hasta=2026-09-30&categoria=abc");
+  it("from Analysis, Movements opens the month and the category", () => {
+    const link = fromLink("?from=2026-09-01&to=2026-09-30&category=abc");
     expect(link?.period).toEqual({ kind: "month", year: 2026, month: 9 });
     expect(link?.filters.categories).toEqual(["abc"]);
-    const long = fromLink("?desde=2021-01-01&hasta=2026-09-30");
+    const long = fromLink("?from=2021-01-01&to=2026-09-30");
     expect(long?.period).toEqual({ kind: "range", from: "2025-10-01", to: "2026-09-30" });
     expect(fromLink("")).toBeNull();
   });
 });
 
-describe("las comparaciones", () => {
-  it("con signo, con tono según lo que es bueno, y en buen castellano", () => {
-    const up = delta(1100, 1000, "el mes anterior");
-    expect(up.text.replace(/\s/g, " ")).toBe("+100 € (+10 %) frente al mes anterior");
+describe("the comparisons", () => {
+  it("signed, with a tone by what is good, in the person's language", () => {
+    const up = delta(1100, 1000, "the previous month");
+    expect(up.text.replace(/\s/g, " ")).toBe("+€100 (+10%) against the previous month");
     expect(up.tone).toBe("positive");
-    expect(delta(1100, 1000, "el mes anterior", false).tone).toBe("negative");
-    expect(delta(500, 0, "el mes anterior").text).toBe("Sin dato del mes anterior");
-    expect(contract("frente a el 30/09/2025")).toBe("frente al 30/09/2025");
-    expect(signedPercent(-0.0831)).toBe("−8,3 %");
+    expect(delta(1100, 1000, "the previous month", false).tone).toBe("negative");
+    expect(delta(500, 0, "the previous month").text).toBe("No data for the previous month");
+    expect(signedPercent(-0.0831)).toBe("−8.3%");
     expect(signedPercent(null)).toBe("—");
+  });
+
+  it("in Spanish, “a el” and “de el” contract", () => {
+    configureRegional({ locale: "es-ES" });
+    try {
+      expect(delta(500, 0, "el mes anterior").text).toBe("Sin dato del mes anterior");
+      expect(contract("frente a el 30/09/2025")).toBe("frente al 30/09/2025");
+    } finally {
+      configureRegional({ locale: "en-GB" });
+    }
   });
 });
 
-describe("los tipos y las cuentas que se pueden elegir", () => {
+describe("the types and accounts that can be picked", () => {
   const accounts = [
-    { key: "nomina", name: "Nómina", group: "Efectivo", asset_class: "cash" },
-    { key: "fondo", name: "Fondo", group: "Fondos", asset_class: "investment" },
-    { key: "plan", name: "Plan", group: "Pensión", asset_class: "investment" },
-    { key: "piso", name: "Piso", group: "Vivienda", asset_class: "real_estate" },
+    { key: "payroll", name: "Payroll", group: "Cash", asset_class: "cash" },
+    { key: "fund", name: "Fund", group: "Funds", asset_class: "investment" },
+    { key: "plan", name: "Plan", group: "Pension", asset_class: "investment" },
+    { key: "flat", name: "Flat", group: "Property", asset_class: "real_estate" },
   ];
 
-  it("en Patrimonio, todas; en Inversión, solo los productos; la vivienda, solo si entra", () => {
-    expect(pickable(accounts, "worth", false, []).groups).toEqual(["Efectivo", "Fondos", "Pensión"]);
-    expect(pickable(accounts, "invest", false, []).groups).toEqual(["Fondos", "Pensión"]);
-    expect(pickable(accounts, "invest", true, []).groups).toEqual(["Fondos", "Pensión", "Vivienda"]);
+  it("in Net worth, all; in Investment, only products; the home, only if included", () => {
+    expect(pickable(accounts, "worth", false, []).groups).toEqual(["Cash", "Funds", "Pension"]);
+    expect(pickable(accounts, "invest", false, []).groups).toEqual(["Funds", "Pension"]);
+    expect(pickable(accounts, "invest", true, []).groups).toEqual(["Funds", "Pension", "Property"]);
   });
 
-  it("con tipos elegidos, solo las cuentas de esos tipos", () => {
-    expect(pickable(accounts, "worth", false, ["Fondos"]).accounts).toEqual([{ value: "fondo", label: "Fondo" }]);
+  it("with types chosen, only the accounts of those types", () => {
+    expect(pickable(accounts, "worth", false, ["Funds"]).accounts).toEqual([{ value: "fund", label: "Fund" }]);
   });
 });

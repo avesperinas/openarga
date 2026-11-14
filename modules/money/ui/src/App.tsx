@@ -1,6 +1,6 @@
 import "./money.css";
 
-import { EmptyState, Notice, SETTINGS_TAB, Screen, Skeleton, TabBar, ToastHost } from "@openarga/ui";
+import { EmptyState, Notice, SETTINGS_TAB, Screen, Skeleton, TabBar, ToastHost, useT } from "@openarga/ui";
 import { useCallback, useEffect, useState } from "react";
 
 import { ScreenHeader } from "./Header";
@@ -32,15 +32,9 @@ export function tabOf(pathname: string): Tab {
   return "summary";
 }
 
-const TITLES: Record<Tab, string> = {
-  summary: "Resumen",
-  movements: "Movimientos",
-  shared: "Compartido",
-  analysis: "Análisis",
-  settings: "Ajustes",
-};
 
 export function App() {
+  const t = useT();
   const [tab, setTab] = useState<Tab>(() => tabOf(window.location.pathname));
   const [state, setState] = useState<State | null>(null);
   const [problem, setProblem] = useState<"session" | "failed" | null>(null);
@@ -77,25 +71,24 @@ export function App() {
         <ScreenHeader title="Money" />
         <Notice
           tone="negative"
-          title={problem === "session" ? "Tienes que volver a entrar" : "No se ha podido cargar Money"}
-          action={problem === "session" ? { label: "Entrar", onClick: () => window.location.assign("/login") } : { label: "Reintentar", onClick: refresh }}
+          title={problem === "session" ? t("app.sign_in_again") : t("app.load_failed")}
+          action={problem === "session" ? { label: t("app.sign_in"), onClick: () => window.location.assign("/login") } : { label: t("common.retry"), onClick: refresh }}
         />
       </Screen>
     );
   } else if (!state) {
     body = (
       <Screen>
-        <ScreenHeader title={TITLES[tab]} />
-        <Skeleton rows={8} label="Cargando Money" />
+        <ScreenHeader title={t(`tab.${tab}`)} />
+        <Skeleton rows={8} label={t("app.loading")} />
       </Screen>
     );
   } else if (!state.configured && tab !== "settings") {
     body = (
       <Screen>
-        <ScreenHeader title={TITLES[tab]} />
-        <EmptyState icon="wallet" title="Aún no hay cuentas" action={{ label: "Ir a Ajustes", onClick: () => go("settings") }}>
-          Importa tu configuración (cuentas, categorías y reglas) y Money interpretará los movimientos que traen tus
-          bancos.
+        <ScreenHeader title={t(`tab.${tab}`)} />
+        <EmptyState icon="wallet" title={t("app.no_accounts")} action={{ label: t("app.go_settings"), onClick: () => go("settings") }}>
+          {t("app.no_accounts_body")}
         </EmptyState>
       </Screen>
     );
@@ -109,7 +102,7 @@ export function App() {
     body = (
       <AnalysisScreen
         state={state}
-        onMovements={({ from, to, category }) => go("movements", `?desde=${from}&hasta=${to}&categoria=${category}`)}
+        onMovements={({ from, to, category }) => go("movements", `?from=${from}&to=${to}&category=${category}`)}
       />
     );
   } else {
@@ -120,14 +113,14 @@ export function App() {
     <ToastHost>
       {body}
       <TabBar
-        label="Secciones"
+        label={t("tab.label")}
         active={tab}
         onSelect={(next) => go(next)}
         items={[
-          { id: "summary", label: "Resumen", icon: "today" },
-          { id: "movements", label: "Movimientos", icon: "list" },
-          { id: "shared", label: "Compartido", icon: "people" },
-          { id: "analysis", label: "Análisis", icon: "chart" },
+          { id: "summary", label: t("tab.summary"), icon: "today" },
+          { id: "movements", label: t("tab.movements"), icon: "list" },
+          { id: "shared", label: t("tab.shared"), icon: "people" },
+          { id: "analysis", label: t("tab.analysis"), icon: "chart" },
           SETTINGS_TAB,
         ]}
       />

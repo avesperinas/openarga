@@ -1,8 +1,8 @@
-import { DateField, Hint, SegmentedControl, SelectField, Sheet, TextField } from "@openarga/ui";
+import { DateField, Hint, SegmentedControl, SelectField, Sheet, TextField, useT } from "@openarga/ui";
 import { useState } from "react";
 
 import { Refused, type State, api } from "./api";
-import { isoDay, parseAmount } from "./format";
+import { amountText, isoDay, parseAmount } from "./format";
 
 export function EntrySheet({
   state,
@@ -25,6 +25,7 @@ export function EntrySheet({
   const me = names?.me ?? state.me;
   const other = names?.other ?? state.other;
   const today = new Date();
+  const t = useT();
   const [payer, setPayer] = useState<"me" | "other">("other");
   const [on, setOn] = useState(isoDay(today.getFullYear() === year ? today : new Date(year, 11, 31)));
   const [amount, setAmount] = useState("");
@@ -43,16 +44,16 @@ export function EntrySheet({
       await api.addEntry({ payer, on, amount: String(value), description: description.trim(), category });
       onSaved();
     } catch (e) {
-      setError(e instanceof Refused ? e.message : "No se ha podido guardar.");
+      setError(e instanceof Refused ? e.message : t("common.save_failed"));
       setSaving(false);
     }
   };
 
   return (
-    <Sheet title="Gasto fuera de cuenta" onClose={onClose} action={{ label: saving ? "Guardando…" : "Apuntar", onClick: save, disabled: !ready || saving }}>
+    <Sheet title={t("entry.title")} onClose={onClose} action={{ label: saving ? t("common.saving") : t("entry.add"), onClick: save, disabled: !ready || saving }}>
       <div className="money-form">
         <SegmentedControl<"me" | "other">
-          label="Quién lo pagó"
+          label={t("entry.who_paid")}
           value={payer}
           onChange={setPayer}
           options={[
@@ -60,21 +61,21 @@ export function EntrySheet({
             { value: "me", label: me },
           ]}
         />
-        <TextField label="Qué fue" value={description} onChange={setDescription} placeholder="Luz de septiembre" autoFocus />
+        <TextField label={t("entry.what")} value={description} onChange={setDescription} placeholder={t("entry.what_placeholder")} autoFocus />
         <div className="money-pair">
-          <TextField label="Importe" value={amount} onChange={setAmount} inputMode="decimal" placeholder="0,00" invalid={!!amount && !value} />
-          <DateField label="Fecha" value={on} onChange={setOn} />
+          <TextField label={t("common.amount")} value={amount} onChange={setAmount} inputMode="decimal" placeholder={amountText(0)} invalid={!!amount && !value} />
+          <DateField label={t("common.date")} value={on} onChange={setOn} />
         </div>
         <SelectField<string>
-          label="Categoría"
+          label={t("common.category")}
           value={category}
           onChange={setCategory}
           options={shared.map((c) => ({ value: c.id, label: c.name }))}
         />
         <Hint>
           {payer === "other"
-            ? `Cuenta como pagado por ${other}: su parte sube y la tuya también, según la categoría.`
-            : "Lo tuyo en efectivo sin retirada que lo explique. Si salió de un cajero, mejor etiqueta la retirada."}
+            ? t("entry.by_other", { other })
+            : t("entry.by_me")}
         </Hint>
         {error && <Hint tone="warning">{error}</Hint>}
       </div>
