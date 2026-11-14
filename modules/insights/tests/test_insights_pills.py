@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import random
 from datetime import UTC, date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
@@ -11,7 +12,9 @@ from sqlalchemy import text
 
 from arga_widgets import validate
 from insights import craft, passes, pills, records, tastes, worker
-from insights.main import MADRID, as_role
+from insights.main import as_role
+
+MADRID = ZoneInfo("Europe/Madrid")
 
 READ = {"x-arga-scopes": "insights:read"}
 WRITE = {"x-arga-scopes": "insights:read insights:write"}
@@ -265,7 +268,7 @@ async def test_the_pill_notifies_at_your_time_and_the_widget_shows_it(api, hub) 
     widget = (await api.get("/widgets/today")).json()
 
     assert [one["kind"] for one in found] == ["pill"]
-    assert found[0]["href"].startswith("/insights/pildora/")
+    assert found[0]["href"].startswith("/insights/pill/")
     assert widget["state"] == "ready"
     validate("list", widget["body"], "ready")
     assert widget["body"]["rows"][0]["label"] == "The column that broke Sparta"

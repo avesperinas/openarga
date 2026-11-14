@@ -4,15 +4,13 @@ import random
 from datetime import date, datetime, time, timedelta
 from typing import Any, Literal
 from uuid import uuid4
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_module import preferences
-from insights import insights, passes, picks, pills, talk, tastes
+from insights import clock, insights, passes, picks, pills, talk, tastes
 
-MADRID = ZoneInfo("Europe/Madrid")
 Kind = Literal["pill", "more", "picks", "profile"]
 
 AHEAD = timedelta(minutes=25)
@@ -49,21 +47,21 @@ def _week(day: date) -> str:
 
 
 def due(now: datetime, settings: tastes.Settings, profiled: bool) -> list[tuple[Kind, str]]:
-    local = now.astimezone(MADRID)
-    clock = local.time()
+    local = now.astimezone(clock.zone())
+    moment = local.time()
     out: list[tuple[Kind, str]] = []
     if settings.pill_on:
         hours, minutes = (int(part) for part in settings.pill_time.split(":"))
         start = (datetime.combine(local.date(), time(hours, minutes)) - AHEAD).time()
-        if start <= clock <= PILL_UNTIL or (start > PILL_UNTIL and clock >= start):
+        if start <= moment <= PILL_UNTIL or (start > PILL_UNTIL and moment >= start):
             out.append(("pill", f"pill:{local.date().isoformat()}"))
     weekday = local.weekday()
-    if (weekday == 4 and clock >= PICKS_FROM) or weekday in (5, 6):
+    if (weekday == 4 and moment >= PICKS_FROM) or weekday in (5, 6):
         out.append(("picks", f"picks:{_week(local.date())}"))
-    awake = AWAKE[0] <= clock <= AWAKE[1]
+    awake = AWAKE[0] <= moment <= AWAKE[1]
     if not profiled and awake:
         out.append(("profile", "profile:first"))
-    elif weekday == 5 and clock >= PROFILE_FROM and awake:
+    elif weekday == 5 and moment >= PROFILE_FROM and awake:
         out.append(("profile", f"profile:{_week(local.date())}"))
     return out
 
@@ -160,7 +158,7 @@ SUBSTANCE = [
 
 async def _pill_context(connection: AsyncConnection) -> dict[str, Any]:
     recent = await pills.recent(connection, limit=pills.SEEN_PILLS)
-    since = datetime.now(MADRID).date() - timedelta(days=45)
+    since = clock.now().date() - timedelta(days=45)
     return {
         "traits": await tastes.traits(connection),
         "families": await tastes.families(connection),
@@ -456,7 +454,7 @@ async def run(
     attempt = await next_attempt(connection, key)
     if attempt is None:
         return None
-    local = now.astimezone(MADRID)
+    local = now.astimezone(clock.zone())
     today = talk.said_day(local)
     profile = await insights.profile(connection)
     await tastes.ensure_defaults(connection)
@@ -496,14 +494,14 @@ async def more(
     branch: str | None = None,
     rng: random.Random | None = None,
 ) -> pills.Ask:
-    local = now.astimezone(MADRID)
+    local = now.astimezone(clock.zone())
     asked_today = await connection.scalar(
         text("""
             select count(*) from insights.insights_craft_run
             where kind = 'more' and outcome = 'queued'
-              and (asked_at at time zone 'Europe/Madrid')::date = :day
+              and (asked_at at time zone :zone)::date = :day
         """),
-        {"day": local.date()},
+        {"day": local.date(), "zone": clock.zone().key},
     )
     if asked_today >= MORE_PER_DAY:
         raise TooMany(f"You already asked for {MORE_PER_DAY} today: there are more tomorrow.")

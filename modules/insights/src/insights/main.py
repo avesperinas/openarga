@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Literal
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
@@ -12,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_module.service import Service
 from insights import (
+    clock,
     craft,
     hub,
     insights,
@@ -29,7 +29,6 @@ from insights import (
 from insights import panel as home_panel
 
 MODULE_ID = "insights"
-MADRID = ZoneInfo("Europe/Madrid")
 
 service = Service(
     MODULE_ID,
@@ -60,7 +59,7 @@ _app = service.edit
 @app.get("/badge")
 async def badge() -> dict:
     async with service.as_reader() as connection:
-        pill = await pills.daily(connection, datetime.now(MADRID).date())
+        pill = await pills.daily(connection, clock.now().date())
         waiting = await tastes.current_question(connection)
         count = await insights.unread(connection)
         count += int(pill is not None and pill.read_at is None) + int(waiting is not None)
@@ -103,7 +102,7 @@ async def rate_insight(insight_id: UUID, request: insights.RatingIn) -> insights
 
 @app.get("/signals")
 async def list_signals(days: int = Query(default=7, ge=1, le=31)) -> list[signals.Signal]:
-    today = datetime.now(MADRID).date()
+    today = clock.now().date()
 
     async def found(connection: AsyncConnection) -> list[signals.Signal]:
         return await signals.read(connection, today - timedelta(days=days - 1), today)
@@ -123,7 +122,7 @@ async def _brief(connection: AsyncConnection, thread_id: str) -> str:
     about = (
         await insights.one(connection, conversation.insight_id) if conversation.insight_id else None
     )
-    today = talk.said_day(datetime.now(MADRID))
+    today = talk.said_day(clock.now())
     found = tastes.described(await tastes.traits(connection))
     return talk.brief(await insights.profile(connection), conversation, about, today, found)
 
@@ -194,7 +193,7 @@ async def retry(thread_id: UUID) -> talk.ThreadOut:
         return last.id
 
     message_id = await _app(again)
-    stamp = datetime.now(MADRID).strftime("%Y%m%d%H%M%S")
+    stamp = clock.now().strftime("%Y%m%d%H%M%S")
     return await _ask(str(thread_id), f"thread:{message_id}:again:{stamp}")
 
 
@@ -214,7 +213,7 @@ class Today(BaseModel):
 
 
 async def _today(connection: AsyncConnection) -> Today:
-    now = datetime.now(MADRID)
+    now = clock.now()
     day = now.date()
     await tastes.ensure_defaults(connection)
     pill = await pills.daily(connection, day)
@@ -337,7 +336,7 @@ async def ask_more(request: MoreIn) -> pills.Ask:
     async def asked(connection: AsyncConnection) -> pills.Ask:
         return await craft.more(
             connection,
-            datetime.now(MADRID),
+            clock.now(),
             origin=request.origin,
             parent_id=str(request.parent_id) if request.parent_id else None,
             branch=request.branch,
@@ -353,7 +352,7 @@ async def read_ask(ask_id: UUID) -> pills.Ask:
 
 @app.get("/facts")
 async def list_facts(days: int = Query(default=14, ge=1, le=120)) -> list[pills.Fact]:
-    since = datetime.now(MADRID).date() - timedelta(days=days - 1)
+    since = clock.now().date() - timedelta(days=days - 1)
 
     async def found(connection: AsyncConnection) -> list[pills.Fact]:
         return await pills.facts(connection, since)

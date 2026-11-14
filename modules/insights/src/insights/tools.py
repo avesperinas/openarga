@@ -4,19 +4,17 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from insights import insights, passes, picks, pills, signals, talk, tastes
+from insights import clock, insights, passes, picks, pills, signals, talk, tastes
 from insights.picks import Origin as PickOrigin
 from insights.picks import PickIn
 
 MODULE = "insights"
 WRITE_ROLE = f"mod_{MODULE}"
 READ_ROLE = f"mod_{MODULE}_read"
-MADRID = ZoneInfo("Europe/Madrid")
 MAX_SIGNAL_DAYS = 62
 
 
@@ -31,7 +29,7 @@ def role_for_scopes(scopes: set[str]) -> str | None:
 def _insight(one: insights.Insight) -> dict[str, Any]:
     return {
         "insight_id": one.id,
-        "date": one.created_at.astimezone(MADRID).date().isoformat(),
+        "date": one.created_at.astimezone(clock.zone()).date().isoformat(),
         "kind": one.kind,
         "domain": one.domain,
         "topic": one.topic,
@@ -74,7 +72,11 @@ class GetInsights(BaseModel):
 
 
 async def get_insights(connection: AsyncConnection, arguments: GetInsights) -> dict[str, Any]:
-    since = datetime.combine(arguments.since, time.min, tzinfo=MADRID) if arguments.since else None
+    since = (
+        datetime.combine(arguments.since, time.min, tzinfo=clock.zone())
+        if arguments.since
+        else None
+    )
     found = await insights.recent(connection, limit=arguments.limit, since=since)
     return {"insights": [_insight(one) for one in found]}
 
@@ -87,7 +89,7 @@ class GetSignals(BaseModel):
 
 
 async def get_signals(connection: AsyncConnection, arguments: GetSignals) -> dict[str, Any]:
-    until = arguments.until or datetime.now(MADRID).date()
+    until = arguments.until or clock.now().date()
     since = arguments.since or until - timedelta(days=6)
     if since > until:
         return {"signals": [], "note": "`since` is after `until`"}
@@ -116,7 +118,7 @@ class GetSeries(BaseModel):
 
 
 async def get_series(connection: AsyncConnection, arguments: GetSeries) -> dict[str, Any]:
-    until = arguments.until or datetime.now(MADRID).date()
+    until = arguments.until or clock.now().date()
     since = arguments.since or until - timedelta(days=89)
     found = await signals.series(connection, until)
     if not arguments.keys:
@@ -174,7 +176,7 @@ async def get_runs(connection: AsyncConnection, arguments: GetRuns) -> dict[str,
             {
                 "kind": one.kind,
                 "key": one.key,
-                "asked_at": one.asked_at.astimezone(MADRID).isoformat(timespec="minutes"),
+                "asked_at": one.asked_at.astimezone(clock.zone()).isoformat(timespec="minutes"),
                 "state": one.state,
                 "detail": one.detail,
                 "attempt": one.attempt,
@@ -302,7 +304,7 @@ class GetFacts(BaseModel):
 
 
 async def get_facts(connection: AsyncConnection, arguments: GetFacts) -> dict[str, Any]:
-    since = datetime.now(MADRID).date() - timedelta(days=arguments.days - 1)
+    since = clock.now().date() - timedelta(days=arguments.days - 1)
     found = await pills.facts(connection, since)
     return {
         "facts": [
@@ -351,7 +353,7 @@ class PublishPill(pills.PillIn):
 
 async def publish_pill(connection: AsyncConnection, arguments: PublishPill) -> dict[str, Any]:
     try:
-        published = await pills.publish(connection, arguments, datetime.now(MADRID))
+        published = await pills.publish(connection, arguments, clock.now())
     except pills.Invalid as error:
         return {"published": None, "note": f"not published: {error}"}
     return {
@@ -411,7 +413,7 @@ class AskQuestion(tastes.QuestionIn):
 
 async def ask_question(connection: AsyncConnection, arguments: AskQuestion) -> dict[str, Any]:
     try:
-        asked = await tastes.ask(connection, arguments, datetime.now(MADRID))
+        asked = await tastes.ask(connection, arguments, clock.now())
     except (tastes.Refused, tastes.NotFound) as error:
         return {"asked": None, "note": f"not left: {error}"}
     return {"asked": {"question_id": asked.id, "text": asked.text}}

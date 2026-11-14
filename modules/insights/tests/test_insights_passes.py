@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import random
 from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
@@ -10,7 +11,9 @@ from insights_world import insight
 from sqlalchemy import text
 
 from insights import passes, worker
-from insights.main import MADRID
+
+MADRID = ZoneInfo("Europe/Madrid")
+
 
 METER = "probe_meter"
 READ = {"x-arga-scopes": "insights:read"}
@@ -378,7 +381,7 @@ async def test_an_unread_insight_is_a_notification_until_it_is_read(api) -> None
     [one] = before
     assert one["kind"] == "insight"
     assert one["key"] == f"insight:{published['insight_id']}"
-    assert one["href"] == f"/insights/consejo/{published['insight_id']}"
+    assert one["href"] == f"/insights/insight/{published['insight_id']}"
     assert one["title"].startswith("Insights: Restaurants")
     assert after == []
 

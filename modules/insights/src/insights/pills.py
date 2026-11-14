@@ -5,17 +5,15 @@ import random
 import re
 from datetime import date, datetime, timedelta
 from typing import Any, Literal
-from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from insights import tastes
+from insights import clock, tastes
 from insights.voice import PillAudio
 from insights.words import say
 
-MADRID = ZoneInfo("Europe/Madrid")
 Origin = Literal["daily", "surprise", "branch"]
 Reaction = Literal["interested", "known", "other"]
 
@@ -378,7 +376,7 @@ async def publish(connection: AsyncConnection, wanted: PillIn, now: datetime) ->
                 returning {PILL_COLUMNS}
             """),
             {
-                "day": now.astimezone(MADRID).date(),
+                "day": now.astimezone(clock.zone()).date(),
                 "origin": origin,
                 "run_key": wanted.run_key,
                 "parent": parent_id,
@@ -556,9 +554,10 @@ def streak(days: set[date], today: date) -> int:
 async def read_days(connection: AsyncConnection) -> set[date]:
     rows = await connection.scalars(
         text("""
-            select distinct (read_at at time zone 'Europe/Madrid')::date from insights.insights_pill
+            select distinct (read_at at time zone :zone)::date from insights.insights_pill
             where read_at is not null and read_at > now() - interval '400 days'
-        """)
+        """),
+        {"zone": clock.zone().key},
     )
     return set(rows)
 

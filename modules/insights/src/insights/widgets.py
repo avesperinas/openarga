@@ -1,15 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime
-from zoneinfo import ZoneInfo
-
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets import envelope
-from insights import insights, pills
+from insights import clock, insights, pills
 from insights.words import say
-
-MADRID = ZoneInfo("Europe/Madrid")
 
 KINDS = {"latest": "list", "today": "list"}
 
@@ -30,7 +25,7 @@ async def latest(connection: AsyncConnection) -> dict:
 
 
 async def today(connection: AsyncConnection) -> dict:
-    day = datetime.now(MADRID).date()
+    day = clock.now().date()
     pill = await pills.daily(connection, day)
     found = await pills.facts(connection, day)
     rows = []

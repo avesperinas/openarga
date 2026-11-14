@@ -2,17 +2,15 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_contracts as contracts
 from arga_contracts import records as write
-from insights import pills, tastes
+from insights import clock, pills, tastes
 from insights.insights import COLUMNS, Insight
 
-MADRID = ZoneInfo("Europe/Madrid")
 KIND = "Week summary"
 FOLDER = "Weeks"
 
@@ -22,7 +20,7 @@ WEEKLY = text(
 
 
 def week_of(created_at: datetime) -> date:
-    day = created_at.astimezone(MADRID).date()
+    day = created_at.astimezone(clock.zone()).date()
     if day.weekday() == 0:
         day -= timedelta(days=1)
     return day - timedelta(days=day.weekday())

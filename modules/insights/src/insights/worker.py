@@ -15,9 +15,11 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_contracts import notify
 from arga_contracts.records import Every
+from arga_module import preferences
 from arga_tenancy import as_user, kernel_url, users
-from insights import craft, insights, passes, picks, pills, tastes, voice
+from insights import clock, craft, insights, passes, picks, pills, tastes, voice
 from insights.db import engine
+from insights.words import say
 
 MODULE = "insights"
 ROLE = f"mod_{MODULE}"
@@ -46,13 +48,13 @@ async def notifications(connection: AsyncConnection) -> list[dict[str, Any]]:
     for one in await insights.recent(connection, limit=20, since=since):
         if one.read_at is not None:
             continue
-        title = "Tu semana" if one.kind == "weekly" else one.title
+        title = say("notice.your_week") if one.kind == "weekly" else one.title
         out.append(
             notify.notification(
                 "insight",
                 f"insight:{one.id}",
                 f"{profile.name}: {title}",
-                f"/insights/consejo/{one.id}",
+                f"/insights/insight/{one.id}",
                 one.created_at,
                 one.title if one.kind == "weekly" else one.action,
             )
@@ -61,7 +63,7 @@ async def notifications(connection: AsyncConnection) -> list[dict[str, Any]]:
 
 
 async def _pill_notices(connection: AsyncConnection, name: str) -> list[dict[str, Any]]:
-    now = datetime.now(craft.MADRID)
+    now = clock.now()
     settings = await tastes.settings(connection)
     out = []
     pill = await pills.daily(connection, now.date())
@@ -72,7 +74,7 @@ async def _pill_notices(connection: AsyncConnection, name: str) -> list[dict[str
                 "pill",
                 f"pill:{pill.id}",
                 f"{name}: {pill.headline}",
-                f"/insights/pildora/{pill.id}",
+                f"/insights/pill/{pill.id}",
                 pill.created_at,
                 pill.lead,
             )
@@ -83,7 +85,7 @@ async def _pill_notices(connection: AsyncConnection, name: str) -> list[dict[str
             notify.notification(
                 "question",
                 f"question:{question.id}",
-                f"{name} te pregunta",
+                say("notice.asks", name=name),
                 "/insights/",
                 question.asked_at,
                 question.text,
@@ -99,8 +101,8 @@ async def _pill_notices(connection: AsyncConnection, name: str) -> list[dict[str
             notify.notification(
                 "picks",
                 f"picks:{fresh[-1].id}",
-                f"{name}: para ti esta semana",
-                "/insights/biblioteca",
+                say("notice.picks", name=name),
+                "/insights/library",
                 fresh[-1].created_at,
                 " · ".join(one.title for one in fresh[:4]),
             )
@@ -135,7 +137,7 @@ async def _voices(user: object, counts: dict[str, int]) -> None:
     done = await voice.generate(_as_module)
     if done:
         counts["voiced"] = counts.get("voiced", 0) + done
-        print(f"worker · voz · {done} ({user})", flush=True)
+        print(f"worker · voiced · {done} ({user})", flush=True)
 
 
 async def run_once(client: httpx.AsyncClient, now: datetime | None = None) -> dict[str, int]:
@@ -143,19 +145,29 @@ async def run_once(client: httpx.AsyncClient, now: datetime | None = None) -> di
     counts = {"queued": 0, "quiet": 0, "refused": 0}
     for user in await users(client):
         with as_user(user):
-            for kind, key in passes.due(now):
-                if not looking(user, key):
-                    continue
-                async with engine().begin() as connection:
-                    await connection.execute(text(f'set local role "{ROLE}"'))
-                    outcome = await passes.run(connection, kind, key, now)
-                if outcome:
-                    counts[outcome] += 1
-                    print(f"worker · {key} · {outcome} ({user})", flush=True)
-            await _crafts(user, now, counts)
-            await _voices(user, counts)
-        await notify.refresh(client, engine, MODULE, notifications, NOTIFY, user)
+            token = preferences.use(await clock.of_person(client))
+            try:
+                await _person(client, user, now, counts)
+            finally:
+                preferences.reset(token)
     return counts
+
+
+async def _person(
+    client: httpx.AsyncClient, user: object, now: datetime, counts: dict[str, int]
+) -> None:
+    for kind, key in passes.due(now):
+        if not looking(user, key):
+            continue
+        async with engine().begin() as connection:
+            await connection.execute(text(f'set local role "{ROLE}"'))
+            outcome = await passes.run(connection, kind, key, now)
+        if outcome:
+            counts[outcome] += 1
+            print(f"worker · {key} · {outcome} ({user})", flush=True)
+    await _crafts(user, now, counts)
+    await _voices(user, counts)
+    await notify.refresh(client, engine, MODULE, notifications, NOTIFY, user)
 
 
 async def loop() -> None:
@@ -164,13 +176,13 @@ async def loop() -> None:
             HEARTBEAT.touch()  # noqa: ASYNC240
             try:
                 await run_once(client)
-            except Exception as error:  # noqa: BLE001 - un fallo de base no tumba el proceso
+            except Exception as error:  # noqa: BLE001 - a database failure does not bring the process down
                 print(f"worker · {type(error).__name__}: {error}", file=sys.stderr, flush=True)
             await asyncio.sleep(INTERVAL_SECONDS)
 
 
 def main() -> int:
-    print(f"worker · insights → {kernel_url()} cada {INTERVAL_SECONDS:g} s", flush=True)
+    print(f"worker · insights → {kernel_url()} every {INTERVAL_SECONDS:g} s", flush=True)
     with contextlib.suppress(KeyboardInterrupt):
         asyncio.run(loop())
     return 0

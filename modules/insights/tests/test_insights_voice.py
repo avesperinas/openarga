@@ -5,6 +5,7 @@ import random
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
@@ -12,7 +13,9 @@ from insights_taste_world import pill
 
 from arga_tenancy import as_user
 from insights import craft, passes, voice
-from insights.main import MADRID, as_role
+from insights.main import as_role
+
+MADRID = ZoneInfo("Europe/Madrid")
 
 WRITE = {"x-arga-scopes": "insights:read insights:write"}
 STRANGER = UUID("00000000-0000-4000-8000-00000000c0c0")

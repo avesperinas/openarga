@@ -65,3 +65,8 @@ def person(request: pytest.FixtureRequest):
     token = current_user.set(PERSON)
     yield PERSON
     current_user.reset(token)
+
+
+@pytest.fixture(autouse=True)
+def madrid(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENARGA_TIMEZONE", "Europe/Madrid")
