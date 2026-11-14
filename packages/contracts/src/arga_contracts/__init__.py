@@ -413,7 +413,7 @@ def linkable(**fields: Any) -> dict[str, Any]:
 
 
 PROPERTY_NAME = r"^[a-z][a-z0-9_]{0,39}$"
-RESERVED_PROPERTIES = frozenset({"arga", "tipo"})
+RESERVED_PROPERTIES = frozenset({"arga", "type", "tipo"})
 Property = str | int | float | bool | None | list[str | int | float]
 
 

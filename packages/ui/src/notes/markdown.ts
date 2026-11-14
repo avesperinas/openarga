@@ -85,7 +85,7 @@ export interface RenderEnv {
 }
 
 const NOTEBOOK = "/notebook";
-const noteHrefOf = (env: RenderEnv) => env.noteHref ?? ((id: string) => `${NOTEBOOK}/nota/${id}`);
+const noteHrefOf = (env: RenderEnv) => env.noteHref ?? ((id: string) => `${NOTEBOOK}/note/${id}`);
 const tagHrefOf = (env: RenderEnv) =>
   env.tagHref ?? ((tag: string) => `${NOTEBOOK}/buscar?tag=${encodeURIComponent(tag)}`);
 

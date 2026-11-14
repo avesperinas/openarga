@@ -148,7 +148,7 @@ apps, found = until('la compra en Planner', in_planner)
 print('  shopping → log → planner: capa', [(l['name'], l['app']) for l in apps],
       '·', [(o['title'], o['href']) for o in found])
 assert apps[0]['app'] == 'shopping' and apps[0]['name'] == 'Shopping', apps
-assert found[0]['href'] == '/shopping/historial', found
+assert found[0]['href'] == '/shopping/history', found
 
 course = call('POST', 'http://study:8000/courses', json={'name': 'Alemán', 'tone': 3, 'subjects': []})
 course_id = course['course']['id']
@@ -172,7 +172,7 @@ note = call('POST', 'http://notebook:8000/notes', json={
 shown = until('la nota en Training', lambda: call(
     'GET', f'http://training:8000/stats/variants/{variant}?period=all')['notes'])
 print('  training → log → notebook → log → training:', offered[0]['title'], '·', shown)
-assert shown[0]['href'] == f\"/notebook/nota/{note['id']}\", shown
+assert shown[0]['href'] == f\"/notebook/note/{note['id']}\", shown
 
 " || fail "las apps no comparten lo que deben"
 

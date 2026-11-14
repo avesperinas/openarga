@@ -22,7 +22,7 @@ describe("el Markdown de Obsidian", () => {
   it("pinta un enlace resuelto como enlace a su nota y uno que falta como que falta", () => {
     const html = render("Ver [[Uno]] y [[Dos|el dos]].", { resolve: (t) => (t === "Uno" ? "id-1" : null) });
 
-    expect(html).toContain('<a class="mn-link" data-target="Uno" href="/notebook/nota/id-1">Uno</a>');
+    expect(html).toContain('<a class="mn-link" data-target="Uno" href="/notebook/note/id-1">Uno</a>');
     expect(html).toContain('data-target="Dos" href="#" data-missing="">el dos</a>');
   });
 
@@ -123,7 +123,7 @@ describe("el Markdown de Obsidian", () => {
       resolve: (target) => (target === "library:1" ? "nota-1" : null),
       appLink: (target) => (target === "training:2" ? { href: "/training/2", title: "Press" } : null),
     });
-    expect(html).toContain('<a class="mn-link" data-target="library:1" href="/notebook/nota/nota-1">El libro</a>');
+    expect(html).toContain('<a class="mn-link" data-target="library:1" href="/notebook/note/nota-1">El libro</a>');
     expect(html).toContain('<a class="mn-app-link" href="/training/2" data-app="training:2">Press</a>');
   });
 });

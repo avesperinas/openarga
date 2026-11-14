@@ -236,7 +236,7 @@ def property_name(label: str) -> str:
     name = re.sub(r"[^a-z0-9]+", "_", plain).strip("_")[:40].rstrip("_") or "campo"
     if not name[0].isalpha():
         name = f"c_{name}"[:40]
-    return f"{name}_" if name in ("arga", "tipo") else name
+    return f"{name}_" if name in ("arga", "type", "tipo") else name
 
 
 def cell(value: Any) -> str:
