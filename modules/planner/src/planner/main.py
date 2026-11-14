@@ -10,6 +10,7 @@ from fastapi import HTTPException, Query, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
+from arga_module import preferences
 from arga_module.service import Service
 from planner import apps, calendar, feeds, hub, publisher, tools, widgets
 from planner import panel as home_panel
@@ -120,6 +121,18 @@ async def subscribe(request: SubscribeIn, response: Response) -> calendar.Calend
         return await calendar.calendar(connection, layer)
 
 
+def _ask_where_the_person_lives(asks: list[dict[str, Any]]) -> None:
+    person = preferences.current()
+    if not person.country:
+        return
+    lives = {"country": person.country}
+    if person.region and person.region.startswith(f"{person.country}-"):
+        lives["region"] = person.region
+    for ask in asks:
+        if ask.get("kind") == "pick" and ask.get("key") in lives:
+            ask["default"] = lives[ask["key"]]
+
+
 @app.get("/subscriptions/catalogue")
 async def subscription_catalogue() -> dict:
     try:
@@ -135,6 +148,7 @@ async def subscription_catalogue() -> dict:
         ]
     known = {one["provider"] for one in sources}
     for source in sources:
+        _ask_where_the_person_lives(source.get("asks") or [])
         source["subscribed"] = [
             one.model_dump(mode="json")
             for one in layers
