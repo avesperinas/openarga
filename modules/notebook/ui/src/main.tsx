@@ -9,14 +9,17 @@ import { mountApp } from "@openarga/app";
 import { AppBackdrop, ToastHost, applyRemembered } from "@openarga/ui";
 
 import { App } from "./App";
+import { Localised } from "./Localised";
 
 applyRemembered();
 
 void mountApp(
   "notebook",
   <AppBackdrop app="notebook" className="notebook-desktop">
-    <ToastHost>
-      <App />
-    </ToastHost>
+    <Localised>
+      <ToastHost>
+        <App />
+      </ToastHost>
+    </Localised>
   </AppBackdrop>,
 );

@@ -5,6 +5,7 @@ import { Changed, type Note, moveNote, readNote, uploadFile, writeNote, writePro
 import { Editor, type Suggestions, split } from "@openarga/ui/notes";
 import { owners } from "./NoteView";
 import { Properties } from "./Properties";
+import { t } from "./lang";
 
 const SAVE_AFTER = 700;
 
@@ -136,11 +137,11 @@ export function NoteEditor({ note, suggestions, onSaved, onRenamed, onOpenLink, 
   };
 
   const status: Record<Saving, string> = {
-    saved: "Guardado",
-    pending: "Sin guardar",
-    saving: "Guardando…",
-    conflict: "Sin guardar",
-    failed: "No se ha podido guardar",
+    saved: t("editor.saved"),
+    pending: t("editor.unsaved"),
+    saving: t("editor.saving"),
+    conflict: t("editor.unsaved"),
+    failed: t("editor.failed"),
   };
 
   return (
@@ -151,7 +152,7 @@ export function NoteEditor({ note, suggestions, onSaved, onRenamed, onOpenLink, 
           ref={titleInput}
           className="mn-note-title mn-title-input"
           value={title}
-          aria-label="Título"
+          aria-label={t("editor.title")}
           onChange={(event) => setTitle(event.target.value)}
           onBlur={() => void rename()}
           onKeyDown={(event) => {
@@ -171,23 +172,22 @@ export function NoteEditor({ note, suggestions, onSaved, onRenamed, onOpenLink, 
       </header>
 
       {saving === "conflict" && (
-        <Notice tone="warning" title="La nota cambió mientras escribías" action={{ label: "Guardar la mía", onClick: () => void save(true) }}>
-          Probablemente la cambió Claude. Si guardas la tuya, lo suyo queda en el historial.{" "}
+        <Notice tone="warning" title={t("editor.conflict")} action={{ label: t("editor.keep_mine"), onClick: () => void save(true) }}>
+          {t("editor.conflict_detail")}{" "}
           <button type="button" className="mn-inline-action" onClick={() => void keepTheirs()}>
-            Quedarme con la suya
+            {t("editor.keep_theirs")}
           </button>
         </Notice>
       )}
       {saving === "failed" && (
-        <Notice tone="negative" title="No se ha podido guardar" action={{ label: "Reintentar", onClick: () => void save() }}>
-          Lo escrito sigue aquí.
+        <Notice tone="negative" title={t("editor.failed")} action={{ label: t("action.retry"), onClick: () => void save() }}>
+          {t("editor.failed_detail")}
         </Notice>
       )}
 
       {note.arga && (
         <p className="mn-arga-hint">
-          Lo enmarcado y las propiedades de {owners(note)} se escriben allí y aquí se rehacen solos. Lo que escribas fuera es
-          tuyo.
+          {t("editor.arga_hint", { apps: owners(note) })}
         </p>
       )}
 

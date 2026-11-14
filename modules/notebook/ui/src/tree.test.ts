@@ -12,30 +12,30 @@ const note = (folder: string, title: string): NoteSummary => ({
   updated_by: "app",
 });
 
-describe("el árbol", () => {
-  it("anida carpetas, cuenta lo de dentro y ordena como el Finder", () => {
+describe("the tree", () => {
+  it("nests folders, counts what is inside and sorts like the Finder", () => {
     const root = build({
-      folders: ["Study", "Study/Alemán"],
-      notes: [note("Study/Alemán", "DE 2.10"), note("Study/Alemán", "DE 2.9"), note("", "Suelta")],
+      folders: ["Study", "Study/German"],
+      notes: [note("Study/German", "DE 2.10"), note("Study/German", "DE 2.9"), note("", "Loose")],
     });
 
     expect(root.count).toBe(3);
     expect(root.folders[0]!.count).toBe(2);
     expect(root.folders[0]!.folders[0]!.notes.map((n) => n.title)).toEqual(["DE 2.9", "DE 2.10"]);
-    expect(root.notes.map((n) => n.title)).toEqual(["Suelta"]);
+    expect(root.notes.map((n) => n.title)).toEqual(["Loose"]);
   });
 
-  it("una nota en una carpeta sin fila crea la carpeta", () => {
+  it("a note in a folder without a row creates the folder", () => {
     expect(build({ folders: [], notes: [note("A/B", "x")] }).folders[0]!.folders[0]!.path).toBe("A/B");
   });
 
-  it("las carpetas de encima", () => {
+  it("the folders above", () => {
     expect(ancestors("a/b/c")).toEqual(["a", "a/b", "a/b/c"]);
     expect(ancestors("")).toEqual([]);
   });
 
-  it("filtra por título sin diéresis, primero lo que empieza así", () => {
-    const notes = [note("", "Über Präpositionen"), note("", "Präfixe"), note("", "Otra")];
+  it("filters by title without umlauts, what starts that way first", () => {
+    const notes = [note("", "Über Präpositionen"), note("", "Präfixe"), note("", "Other")];
 
     expect(filter(notes, "pra").map((n) => n.title)).toEqual(["Präfixe", "Über Präpositionen"]);
     expect(filter(notes, "  ")).toEqual([]);

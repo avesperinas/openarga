@@ -5,6 +5,7 @@ import { type Linkable, type Links, type Note, type NoteSummary, fileUrl } from 
 import { argaBlock, render, slug } from "@openarga/ui/notes/markdown";
 import { APP } from "./identity";
 import { ago, who } from "./when";
+import { t } from "./lang";
 
 interface Props {
   note: Note;
@@ -21,8 +22,8 @@ interface Props {
 
 function show(value: unknown): string {
   if (Array.isArray(value)) return value.map(show).join(", ");
-  if (value === true) return "Sí";
-  if (value === false) return "No";
+  if (value === true) return t("value.yes");
+  if (value === false) return t("value.no");
   if (value === null || value === undefined) return "—";
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
@@ -84,7 +85,7 @@ export function NoteView({ note, links, linkables = [], onOpen, onMissing, onTag
       <div className="mn-note-head">
         <AppHeader app={APP} title={note.title} />
         {crumbs.length > 0 && (
-          <nav className="mn-crumbs" aria-label="Carpeta">
+          <nav className="mn-crumbs" aria-label={t("move.folder")}>
             {crumbs.map((part, i) => (
               <React.Fragment key={i}>
                 {i > 0 && <span className="mn-crumb-sep">/</span>}
@@ -101,8 +102,8 @@ export function NoteView({ note, links, linkables = [], onOpen, onMissing, onTag
       </div>
 
       {note.updated_by === "tool" && note.version > 1 && (
-        <Notice tone="info" title="Lo último lo cambió Claude" action={{ label: "Deshacer", onClick: onUndoClaude }}>
-          {ago(note.updated_at)}. Deshacerlo devuelve la nota a como estaba antes.
+        <Notice tone="info" title={t("note.by_claude")} action={{ label: t("action.undo"), onClick: onUndoClaude }}>
+          {t("note.by_claude_detail", { when: ago(note.updated_at) })}
         </Notice>
       )}
 
@@ -112,7 +113,7 @@ export function NoteView({ note, links, linkables = [], onOpen, onMissing, onTag
             const locked = note.arga?.properties.includes(key) ?? false;
             return (
               <div className="mn-property" key={key} data-app={locked || undefined}>
-                <dt title={locked ? `La pone ${owners(note)}: se cambia allí` : undefined}>{key}</dt>
+                <dt title={locked ? t("props.locked", { app: owners(note) }) : undefined}>{key}</dt>
                 <dd>{show(value)}</dd>
               </div>
             );
@@ -144,7 +145,7 @@ export function NoteView({ note, links, linkables = [], onOpen, onMissing, onTag
       </div>
       {!note.content.trim() && onEdit && (
         <button type="button" className="mn-empty-note" onClick={onEdit}>
-          Esta nota está vacía. Toca para escribir.
+          {t("note.empty")}
         </button>
       )}
 
@@ -156,14 +157,14 @@ export function NoteView({ note, links, linkables = [], onOpen, onMissing, onTag
 export function owners(note: Note): string {
   const names = note.arga?.apps.map((app) => app.name) ?? [];
   if (names.length < 2) return names[0] ?? "";
-  return `${names.slice(0, -1).join(", ")} y ${names[names.length - 1]}`;
+  return t("list.and", { items: names.slice(0, -1).join(", "), last: names[names.length - 1]! });
 }
 
 function ArgaHead({ owner }: { owner: NonNullable<Note["arga"]> }) {
   if (owner.day) {
     return (
       <header className="mn-arga-head">
-        <span className="mn-arga-from">Lo de este día en tus apps</span>
+        <span className="mn-arga-from">{t("note.day_from_apps")}</span>
       </header>
     );
   }
@@ -174,7 +175,7 @@ function ArgaHead({ owner }: { owner: NonNullable<Note["arga"]> }) {
         {app.kind} · {app.name}
       </span>
       <a className="mn-arga-open" href={app.href}>
-        Abrir en {app.name}
+        {t("note.open_in", { app: app.name })}
         <Icon name="external" />
       </a>
     </header>
@@ -184,13 +185,11 @@ function ArgaHead({ owner }: { owner: NonNullable<Note["arga"]> }) {
 function Backlinks({ links, onOpen }: { links: Links | null; onOpen: (note: NoteSummary) => void }) {
   if (!links) return null;
   return (
-    <section className="mn-backlinks" aria-label="Enlazan aquí">
+    <section className="mn-backlinks" aria-label={t("backlinks.label")}>
       <GroupLabel>
         {links.backlinks.length === 0
-          ? "Ninguna nota enlaza aquí"
-          : links.backlinks.length === 1
-            ? "1 nota enlaza aquí"
-            : `${links.backlinks.length} notas enlazan aquí`}
+          ? t("backlinks.none")
+          : t(links.backlinks.length === 1 ? "backlinks.one" : "backlinks.other", { count: links.backlinks.length })}
       </GroupLabel>
       <ul className="mn-backlink-list">
         {links.backlinks.map((backlink) => (

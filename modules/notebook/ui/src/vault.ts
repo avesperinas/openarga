@@ -1,6 +1,7 @@
 import { unzipSync } from "fflate";
 
 import { wikilink } from "@openarga/ui/notes/markdown";
+import { currentLocale, t } from "./lang";
 
 export interface VaultNote {
   folder: string;
@@ -83,13 +84,13 @@ export function readVault(entries: Record<string, Uint8Array>): Vault {
   for (const { raw, path } of paths) {
     const parts = path.split("/");
     if (parts.some(hidden)) {
-      left.push({ path, reason: "configuración u oculto" });
+      left.push({ path, reason: t("vault.hidden") });
       continue;
     }
     const name = parts.pop()!;
     const folder = parts.join("/");
     if (/\.md$/i.test(name) && entries[raw]!.length > 0 && entries[raw]!.every((byte) => byte === 0)) {
-      left.push({ path, reason: "vacía en el origen: el fichero no tiene su texto (¿sin descargar de iCloud?)" });
+      left.push({ path, reason: t("vault.empty") });
     } else if (/\.md$/i.test(name)) {
       const content = decoder
         .decode(entries[raw])
@@ -100,12 +101,12 @@ export function readVault(entries: Record<string, Uint8Array>): Vault {
     } else if (IMAGE.test(name)) {
       files.push({ name, data: entries[raw]! });
     } else {
-      left.push({ path, reason: "no es una nota ni una imagen" });
+      left.push({ path, reason: t("vault.not_note") });
     }
   }
 
   const tops = [...new Set(notes.map((n) => n.folder.split("/")[0]!).filter(Boolean))].sort((a, b) =>
-    a.localeCompare(b, "es", { numeric: true }),
+    a.localeCompare(b, currentLocale(), { numeric: true }),
   );
   return { notes, files, left, tops, unresolved: unresolvedLinks(notes, files) };
 }
@@ -125,7 +126,7 @@ function unresolvedLinks(notes: VaultNote[], files: VaultFile[]): string[] {
       if (!titles.has(clean) && !names.has(key(name))) missing.add(link.target);
     }
   }
-  return [...missing].sort((a, b) => a.localeCompare(b, "es"));
+  return [...missing].sort((a, b) => a.localeCompare(b, currentLocale()));
 }
 
 export function moved(folder: string, destinations: Record<string, string>): string {

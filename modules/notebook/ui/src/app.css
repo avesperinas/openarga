@@ -883,7 +883,7 @@
   background: color-mix(in srgb, var(--positive) 18%, transparent);
 }
 
-.mn-diff-line[data-op="del"] {
+.mn-diff-line[data-op="remove"] {
   background: color-mix(in srgb, var(--negative) 16%, transparent);
   text-decoration: line-through;
   text-decoration-color: color-mix(in srgb, var(--negative) 50%, transparent);

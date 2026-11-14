@@ -1,7 +1,8 @@
-import { Button, CANNOT_UNDO, ConfirmDelete, Icon, Sheet, TextField } from "@openarga/ui";
+import { Button, ConfirmDelete, Icon, Sheet, TextField } from "@openarga/ui";
 import * as React from "react";
 
 import { byName, fold } from "./tree";
+import { t } from "./lang";
 
 export function MoveSheet({
   title,
@@ -21,15 +22,15 @@ export function MoveSheet({
   const shown = ["", ...[...folders].sort(byName)].filter((folder) => !words || fold(folder).includes(words));
   const exact = folders.some((folder) => folder.toLowerCase() === query.trim().toLowerCase());
   return (
-    <Sheet title={`Mover «${title}»`} onClose={onClose}>
+    <Sheet title={t("move.title", { title })} onClose={onClose}>
       <div className="mn-sheet-body">
-        <TextField label="Carpeta" value={query} onChange={setQuery} placeholder="Busca o escribe una nueva" autoFocus />
+        <TextField label={t("move.folder")} value={query} onChange={setQuery} placeholder={t("move.folder_placeholder")} autoFocus />
         <ul className="mn-folder-pick">
           {query.trim() && !exact && (
             <li>
               <button type="button" className="mn-link-row" onClick={() => onMove(query.trim())}>
                 <Icon name="plus" />
-                <span className="mn-link-row-title">Crear «{query.trim()}» y moverla ahí</span>
+                <span className="mn-link-row-title">{t("move.create", { folder: query.trim() })}</span>
               </button>
             </li>
           )}
@@ -42,8 +43,8 @@ export function MoveSheet({
                 onClick={() => onMove(folder)}
               >
                 <Icon name="folder" />
-                <span className="mn-link-row-title">{folder || "La raíz"}</span>
-                {folder === current && <span className="mn-link-row-path">aquí está</span>}
+                <span className="mn-link-row-title">{folder || t("folder.root")}</span>
+                {folder === current && <span className="mn-link-row-path">{t("move.here")}</span>}
               </button>
             </li>
           ))}
@@ -73,14 +74,14 @@ export function FolderSheet({
   if (confirm) {
     return (
       <ConfirmDelete
-        title="¿Borrar esta carpeta?"
+        title={t("folder.confirm_delete")}
         subject={path}
         consequence={
           count > 0
-            ? `${count} ${count === 1 ? "nota va" : "notas van"} a la papelera, de donde se recuperan. La carpeta y sus subcarpetas desaparecen.`
-            : `Está vacía. ${CANNOT_UNDO}`
+            ? t(count === 1 ? "folder.delete_consequence.one" : "folder.delete_consequence.other", { count })
+            : t("folder.delete_empty")
         }
-        action="Borrar carpeta"
+        action={t("folder.delete")}
         onCancel={() => setConfirm(false)}
         onConfirm={async () => {
           await onDelete();
@@ -93,9 +94,9 @@ export function FolderSheet({
     <Sheet title={path} onClose={onClose}>
       <div className="mn-sheet-body">
         <Button variant="tinted" icon="plus" block onClick={onNewNote}>
-          Nota nueva aquí
+          {t("folder.new_note_here")}
         </Button>
-        <TextField label="Ruta" value={to} onChange={setTo} hint="Cámbiala para renombrarla o moverla, con todo lo de dentro." />
+        <TextField label={t("folder.path")} value={to} onChange={setTo} hint={t("folder.path_hint")} />
         <Button
           variant="secondary"
           block
@@ -105,10 +106,10 @@ export function FolderSheet({
             onClose();
           }}
         >
-          Cambiar la ruta
+          {t("folder.change_path")}
         </Button>
         <Button variant="destructive" block onClick={() => setConfirm(true)}>
-          Borrar carpeta
+          {t("folder.delete")}
         </Button>
       </div>
     </Sheet>
@@ -119,16 +120,16 @@ export function NewFolderSheet({ base, onCreate, onClose }: { base: string; onCr
   const [path, setPath] = React.useState(base ? `${base}/` : "");
   return (
     <Sheet
-      title="Carpeta nueva"
+      title={t("folder.new")}
       onClose={onClose}
       action={{
-        label: "Crear carpeta",
+        label: t("folder.create"),
         disabled: !path.trim().replace(/\/+$/, ""),
         onClick: () => void onCreate(path.trim().replace(/\/+$/, "")).then(onClose),
       }}
     >
       <div className="mn-sheet-body">
-        <TextField label="Ruta" value={path} onChange={setPath} autoFocus hint="Con / para meterla dentro de otra: Study/Alemán" />
+        <TextField label={t("folder.path")} value={path} onChange={setPath} autoFocus hint={t("folder.new_hint")} />
       </div>
     </Sheet>
   );

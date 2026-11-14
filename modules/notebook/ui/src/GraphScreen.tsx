@@ -5,6 +5,7 @@ import { readGraph } from "./api";
 import { GraphView } from "./Lazy";
 import { Pending, useLoad } from "./Loads";
 import { fold } from "./tree";
+import { t } from "./lang";
 
 export function GraphScreen({ onOpen, onNewNote }: { onOpen: (id: string) => void; onNewNote: () => void }) {
   const { data: graph, found } = useLoad("graph", () => readGraph());
@@ -25,8 +26,8 @@ export function GraphScreen({ onOpen, onNewNote }: { onOpen: (id: string) => voi
   if (!graph) return <Pending found={found} />;
   if (graph.nodes.length === 0) {
     return (
-      <EmptyState icon="graph" title="Aún no hay nada que enlazar" action={{ label: "Nota nueva", icon: "plus", onClick: onNewNote }}>
-        El grafo aparece cuando las notas se enlazan entre sí con [[…]].
+      <EmptyState icon="graph" title={t("graph.empty")} action={{ label: t("action.new_note"), icon: "plus", onClick: onNewNote }}>
+        {t("graph.empty_detail")}
       </EmptyState>
     );
   }
@@ -35,15 +36,15 @@ export function GraphScreen({ onOpen, onNewNote }: { onOpen: (id: string) => voi
     <div className="mn-graph-screen">
       <OfflineNotice />
       <div className="mn-graph-tools">
-        <SearchField value={query} onChange={setQuery} placeholder="Resaltar por título o carpeta" label="Resaltar" />
+        <SearchField value={query} onChange={setQuery} placeholder={t("graph.highlight_placeholder")} label={t("graph.highlight")} />
         <div className="mn-switch-row">
-          <span>Notas sin enlaces</span>
-          <Switch label="Enseñar las notas sin enlaces" checked={orphans} onChange={setOrphans} />
+          <span>{t("graph.orphans")}</span>
+          <Switch label={t("graph.show_orphans")} checked={orphans} onChange={setOrphans} />
         </div>
       </div>
       <GraphView graph={shown!} onOpen={onOpen} highlight={highlight} />
       <p className="mn-graph-legend">
-        {shown!.nodes.length} notas · {graph.edges.length} enlaces. Arrastra para moverte, rueda o dos dedos para acercarte.
+        {t("graph.hint", { notes: shown!.nodes.length, links: graph.edges.length })}
       </p>
     </div>
   );

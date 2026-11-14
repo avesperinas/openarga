@@ -16,14 +16,15 @@ import { GraphView } from "./Lazy";
 import { diff, hunks } from "./diff";
 import { render } from "@openarga/ui/notes/markdown";
 import { ago } from "./when";
+import { t } from "./lang";
 
 export type PanelTab = "outline" | "links" | "graph" | "history";
 
-const TABS = [
-  { value: "outline" as const, label: "Índice" },
-  { value: "links" as const, label: "Enlaces" },
-  { value: "graph" as const, label: "Grafo" },
-  { value: "history" as const, label: "Historial" },
+const TABS = () => [
+  { value: "outline" as const, label: t("panel.outline") },
+  { value: "links" as const, label: t("panel.links") },
+  { value: "graph" as const, label: t("sidebar.graph") },
+  { value: "history" as const, label: t("panel.history") },
 ];
 
 interface Props {
@@ -39,7 +40,7 @@ interface Props {
 export function Panel({ note, links, tab, onTab, onOpen, onHeading, onRestore }: Props) {
   return (
     <div className="mn-panel-inner">
-      <SegmentedControl label="Qué enseñar" options={TABS} value={tab} onChange={onTab} />
+      <SegmentedControl label={t("panel.show")} options={TABS()} value={tab} onChange={onTab} />
       {tab === "outline" && <Outline note={note} onHeading={onHeading} />}
       {tab === "links" && <Outgoing links={links} onOpen={onOpen} />}
       {tab === "graph" && <LocalGraph note={note} links={links} onOpen={(id) => onOpen({ ...note, id })} />}
@@ -49,7 +50,7 @@ export function Panel({ note, links, tab, onTab, onOpen, onHeading, onRestore }:
 }
 
 function Outline({ note, onHeading }: { note: Note; onHeading: (text: string) => void }) {
-  if (note.outline.length === 0) return <p className="mn-panel-empty">Esta nota no tiene encabezados.</p>;
+  if (note.outline.length === 0) return <p className="mn-panel-empty">{t("panel.no_headings")}</p>;
   const top = Math.min(...note.outline.map((h) => h.level));
   return (
     <ul className="mn-outline">
@@ -81,7 +82,7 @@ function Outgoing({ links, onOpen }: { links: Links | null; onOpen: (note: NoteS
   });
   const existing = unique.filter((link) => link.note);
   const missing = unique.filter((link) => !link.note);
-  if (unique.length === 0) return <p className="mn-panel-empty">Esta nota no enlaza ninguna otra.</p>;
+  if (unique.length === 0) return <p className="mn-panel-empty">{t("panel.no_links")}</p>;
   return (
     <div className="mn-outgoing">
       {existing.length > 0 && (
@@ -99,7 +100,7 @@ function Outgoing({ links, onOpen }: { links: Links | null; onOpen: (note: NoteS
       )}
       {missing.length > 0 && (
         <>
-          <p className="mn-panel-label">Aún no existen</p>
+          <p className="mn-panel-label">{t("panel.missing")}</p>
           <ul className="mn-link-list">
             {missing.map((link) => (
               <li key={link.target} className="mn-link-row" data-missing="">
@@ -133,26 +134,26 @@ function History({ note, onRestore }: { note: Note; onRestore: (revision: Revisi
   }, [note.id, note.version]);
 
   if (revisions === null) return <Skeleton rows={3} />;
-  if (revisions.length === 0) return <p className="mn-panel-empty">Esta nota no ha cambiado desde que se creó.</p>;
+  if (revisions.length === 0) return <p className="mn-panel-empty">{t("panel.no_history")}</p>;
 
   if (open) {
     return (
       <div className="mn-revision">
         <button type="button" className="mn-revision-back" onClick={() => setOpen(null)}>
           <Icon name="chevron-left" />
-          Historial
+          {t("panel.history")}
         </button>
         <p className="mn-revision-when">
-          Así estaba antes{" "}
-          {open.replaced_by === "tool"
-            ? "de que Claude la cambiara"
-            : open.replaced_by === "import"
-              ? open.replaced_app
-                ? `de que la rehiciera ${open.replaced_app}`
-                : "de importar encima"
-              : "de que la cambiaras"}
-          ,{" "}
-          {ago(open.replaced_at)}.
+          {t(
+            open.replaced_by === "tool"
+              ? "history.before_claude"
+              : open.replaced_by === "import"
+                ? open.replaced_app
+                  ? "history.before_app"
+                  : "history.before_import"
+                : "history.before_you",
+            { app: open.replaced_app ?? "", when: ago(open.replaced_at) },
+          )}
         </p>
         <Button
           variant="tinted"
@@ -169,13 +170,13 @@ function History({ note, onRestore }: { note: Note; onRestore: (revision: Revisi
             }
           }}
         >
-          Volver a esta versión
+          {t("history.restore")}
         </Button>
         <SegmentedControl
-          label="Qué ver"
+          label={t("history.view")}
           options={[
-            { value: "changes" as const, label: "Cambios" },
-            { value: "before" as const, label: "Antes" },
+            { value: "changes" as const, label: t("history.changes") },
+            { value: "before" as const, label: t("history.before") },
           ]}
           value={view}
           onChange={setView}
@@ -201,12 +202,12 @@ function History({ note, onRestore }: { note: Note; onRestore: (revision: Revisi
           >
             <span className="mn-history-who">
               {revision.replaced_by === "tool"
-                ? "Claude la cambió"
+                ? t("history.by_claude")
                 : revision.replaced_by === "import"
                   ? revision.replaced_app
-                    ? `La rehízo ${revision.replaced_app}`
-                    : "Se importó encima"
-                  : "La cambiaste"}
+                    ? t("history.by_app", { app: revision.replaced_app })
+                    : t("history.by_import")
+                  : t("history.by_you")}
             </span>
             <span className="mn-history-when">{ago(revision.replaced_at)}</span>
           </button>
@@ -219,10 +220,10 @@ function History({ note, onRestore }: { note: Note; onRestore: (revision: Revisi
 function Changes({ before, after }: { before: string; after: string }) {
   const lines = hunks(diff(before, after));
   if (lines.every((line) => line === null || line.op === "same")) {
-    return <p className="mn-panel-empty">Está igual que ahora.</p>;
+    return <p className="mn-panel-empty">{t("history.same")}</p>;
   }
   return (
-    <pre className="mn-diff" aria-label="Cambios: en rojo lo que había, en verde lo que hay">
+    <pre className="mn-diff" aria-label={t("history.diff")}>
       {lines.map((line, index) =>
         line === null ? (
           <span key={index} className="mn-diff-gap">
@@ -230,7 +231,7 @@ function Changes({ before, after }: { before: string; after: string }) {
           </span>
         ) : (
           <span key={index} className="mn-diff-line" data-op={line.op}>
-            {line.op === "add" ? "+ " : line.op === "del" ? "− " : "  "}
+            {line.op === "add" ? "+ " : line.op === "remove" ? "− " : "  "}
             {line.text || " "}
           </span>
         ),
@@ -255,10 +256,10 @@ function LocalGraph({ note, links, onOpen }: { note: Note; links: Links | null; 
   return (
     <div className="mn-local-graph">
       <SegmentedControl
-        label="Saltos"
+        label={t("panel.hops")}
         options={[
-          { value: "1" as const, label: "Vecinas" },
-          { value: "2" as const, label: "Y las suyas" },
+          { value: "1" as const, label: t("panel.neighbours") },
+          { value: "2" as const, label: t("panel.theirs") },
         ]}
         value={depth}
         onChange={setDepth}
@@ -268,7 +269,7 @@ function LocalGraph({ note, links, onOpen }: { note: Note; links: Links | null; 
       ) : graph && graph.nodes.length > 1 ? (
         <GraphView graph={graph} focus={note.id} onOpen={(id) => id !== note.id && onOpen(id)} compact />
       ) : (
-        <p className="mn-panel-empty">Esta nota no enlaza ni la enlaza ninguna.</p>
+        <p className="mn-panel-empty">{t("panel.alone")}</p>
       )}
     </div>
   );

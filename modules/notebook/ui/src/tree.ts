@@ -1,3 +1,4 @@
+import { currentLocale } from "./lang";
 import type { NoteSummary, Tree } from "./api";
 
 export interface FolderNode {
@@ -8,8 +9,8 @@ export interface FolderNode {
   count: number;
 }
 
-const collator = new Intl.Collator("es", { numeric: true, sensitivity: "base" });
-export const byName = (a: string, b: string) => collator.compare(a, b);
+const collator = () => new Intl.Collator(currentLocale(), { numeric: true, sensitivity: "base" });
+export const byName = (a: string, b: string) => collator().compare(a, b);
 
 export function build(tree: Tree): FolderNode {
   const root: FolderNode = { path: "", name: "", folders: [], notes: [], count: 0 };

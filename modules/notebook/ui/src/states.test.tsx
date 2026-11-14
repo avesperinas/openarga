@@ -10,13 +10,13 @@ import { App } from "./App";
 
 const NOTE = "0a0a0a0a-0000-4000-8000-00000000a0a0";
 const NOW = "2026-10-29T10:00:00Z";
-const SUMMARY = { id: NOTE, folder: "Proyectos", title: "Huerto", path: "Proyectos/Huerto", updated_at: NOW, updated_by: "app" };
+const SUMMARY = { id: NOTE, folder: "Projects", title: "Orchard", path: "Projects/Orchard", updated_at: NOW, updated_by: "app" };
 const FULL = {
   ...SUMMARY,
-  content: "# Huerto\n\nTomates y albahaca.\n",
+  content: "# Orchard\n\nTomatoes and basil.\n",
   properties: {},
   tags: [],
-  outline: [{ level: 1, text: "Huerto", line: 0 }],
+  outline: [{ level: 1, text: "Orchard", line: 0 }],
   version: 1,
   created_at: NOW,
   arga: null,
@@ -54,7 +54,7 @@ beforeEach(() => {
     "GET /api/notebook/review": () => ({ chosen: false, notes: [] }),
     "GET /api/notebook/trash": () => [],
     "GET /api/notebook/graph": () => ({ nodes: [], edges: [] }),
-    "GET /api/notebook/settings": () => ({ daily_folder: "Diario", review_property: null }),
+    "GET /api/notebook/settings": () => ({ daily_folder: "Journal", review_property: null }),
     "GET /api/notebook/properties": () => [],
     "GET /api/notebook/export": () => ({ pushed_at: null, tried_at: null, outcome: "unconnected", detail: null, commit_url: null, pending: 0 }),
     "GET /api/notebook/search": () => [],
@@ -65,7 +65,7 @@ beforeEach(() => {
     vi.fn(async (url: string, init?: RequestInit) => {
       const method = init?.method ?? "GET";
       const reply = replies[`${method} ${url}`] ?? replies[`${method} ${url.split("?")[0]}`];
-      if (!reply) return json({ detail: "no existe: eso" }, 404);
+      if (!reply) return json({ detail: "not found: that" }, 404);
       const body = await reply();
       return body instanceof Response ? body : json(body);
     }),
@@ -90,6 +90,8 @@ const settle = () =>
 const button = (name: string) =>
   Array.from(host.querySelectorAll<HTMLButtonElement>("button")).find((one) => one.textContent?.includes(name));
 
+const retry = () => host.querySelector<HTMLButtonElement>(".empty-state[role=alert] button") ?? undefined;
+
 async function open(path = "/notebook/") {
   window.history.replaceState(null, "", path);
   act(() =>
@@ -109,103 +111,103 @@ async function serious(): Promise<string[]> {
     .map((one) => `${one.id}: ${one.nodes.map((node) => node.target.join(" ")).join(", ")}`);
 }
 
-describe("las notas", () => {
-  it("mientras llega el árbol, el esqueleto, y nada de «Cargando…»", async () => {
+describe("the notes", () => {
+  it("while the tree arrives, the skeleton, and no loading text", async () => {
     replies["GET /api/notebook/tree"] = () => new Promise(() => undefined);
     await open("/notebook/notes");
     expect(host.querySelector(".skeleton")).not.toBeNull();
-    expect(host.textContent).not.toContain("Cargando");
+    expect(host.textContent).not.toMatch(/Loading|Cargando/);
   });
 
-  it("sin notas, el botón crea la primera", async () => {
+  it("without notes, the button creates the first one", async () => {
     await open("/notebook/notes");
-    expect(host.textContent).toContain("Aún no hay notas");
-    expect(button("Nota nueva")).toBeDefined();
+    expect(host.textContent).toContain("No notes yet");
+    expect(button("New note")).toBeDefined();
   });
 
-  it("si falla, lo dice y reintentar lo trae", async () => {
-    replies["GET /api/notebook/tree"] = () => json({ detail: "la base no contesta" }, 503);
+  it("when it fails, it says so and retrying brings it", async () => {
+    replies["GET /api/notebook/tree"] = () => json({ detail: "the database does not answer" }, 503);
     await open("/notebook/notes");
-    expect(host.textContent).toContain("Notebook no contesta");
-    expect(host.textContent).toContain("la base no contesta");
+    expect(host.textContent).toContain("Notes does not answer");
+    expect(host.textContent).toContain("the database does not answer");
 
-    replies["GET /api/notebook/tree"] = () => ({ folders: ["Proyectos"], notes: [SUMMARY] });
-    act(() => button("Reintentar")!.click());
+    replies["GET /api/notebook/tree"] = () => ({ folders: ["Projects"], notes: [SUMMARY] });
+    act(() => retry()!.click());
     await settle();
-    expect(host.textContent).toContain("Proyectos");
+    expect(host.textContent).toContain("Projects");
   });
 
-  it("sin red, lo dice arriba", async () => {
+  it("offline, it says so on top", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     await open("/notebook/notes");
-    expect(host.textContent).toContain("Sin conexión");
+    expect(host.querySelector('.notice[data-tone="warning"]')).not.toBeNull();
   });
 });
 
-describe("una nota", () => {
-  it("se lee sin esperar al editor", async () => {
-    replies["GET /api/notebook/tree"] = () => ({ folders: ["Proyectos"], notes: [SUMMARY] });
+describe("a note", () => {
+  it("is read without waiting for the editor", async () => {
+    replies["GET /api/notebook/tree"] = () => ({ folders: ["Projects"], notes: [SUMMARY] });
     replies[`GET /api/notebook/notes/${NOTE}`] = () => FULL;
     replies[`GET /api/notebook/notes/${NOTE}/links`] = () => ({ links: [], backlinks: [] });
     await open(`/notebook/note/${NOTE}`);
-    expect(host.textContent).toContain("Tomates y albahaca.");
-    expect(button("Editar")).toBeDefined();
+    expect(host.textContent).toContain("Tomatoes and basil.");
+    expect(button("Edit")).toBeDefined();
   });
 
-  it("si no existe lo dice; otro fallo se reintenta", async () => {
+  it("a missing note says so; another failure can be retried", async () => {
     await open(`/notebook/note/${NOTE}`);
-    expect(host.textContent).toContain("Esta nota ya no está");
-    expect(button("Reintentar")).toBeUndefined();
+    expect(host.textContent).toContain("This note is no longer here");
+    expect(retry()).toBeUndefined();
 
     act(() => root.unmount());
     root = createRoot(host);
     void reset();
-    replies[`GET /api/notebook/notes/${NOTE}`] = () => json({ detail: "la base no contesta" }, 503);
+    replies[`GET /api/notebook/notes/${NOTE}`] = () => json({ detail: "the database does not answer" }, 503);
     await open(`/notebook/note/${NOTE}`);
-    expect(host.textContent).toContain("la base no contesta");
-    expect(button("Reintentar")).toBeDefined();
+    expect(host.textContent).toContain("the database does not answer");
+    expect(retry()).toBeDefined();
   });
 });
 
-describe("las demás pantallas", () => {
-  it("repasar, sin propiedad elegida, lleva a elegirla", async () => {
+describe("the other screens", () => {
+  it("review, without a chosen property, leads to choosing it", async () => {
     await open("/notebook/review");
-    expect(button("Elegirla")).toBeDefined();
+    expect(button("Choose it")).toBeDefined();
   });
 
-  it("la papelera vacía vuelve a las notas", async () => {
+  it("the empty trash goes back to the notes", async () => {
     await open("/notebook/trash");
-    expect(host.textContent).toContain("La papelera está vacía");
-    expect(button("Volver a las notas")).toBeDefined();
+    expect(host.textContent).toContain("The trash is empty");
+    expect(button("Back to the notes")).toBeDefined();
   });
 
-  it("al abrir Notebook sale el grafo, en su pestaña", async () => {
+  it("opening Notes shows the graph, in its tab", async () => {
     await open("/notebook/");
-    expect(host.textContent).toContain("Aún no hay nada que enlazar");
-    expect(host.querySelector('[aria-current="page"]')?.textContent).toContain("Grafo");
+    expect(host.textContent).toContain("Nothing to link yet");
+    expect(host.querySelector('[aria-current="page"]')?.textContent).toContain("Graph");
   });
 
-  it("el grafo sin enlaces ofrece una nota nueva", async () => {
+  it("the graph without links offers a new note", async () => {
     await open("/notebook/graph");
-    expect(host.textContent).toContain("Aún no hay nada que enlazar");
-    expect(button("Nota nueva")).toBeDefined();
+    expect(host.textContent).toContain("Nothing to link yet");
+    expect(button("New note")).toBeDefined();
   });
 
-  it("buscar sin nada que lo case ofrece borrar la búsqueda", async () => {
-    await open("/notebook/buscar?q=nada");
-    expect(host.textContent).toContain("Nada con eso");
-    expect(button("Borrar la búsqueda")).toBeDefined();
+  it("a search that matches nothing offers to clear it", async () => {
+    await open("/notebook/search?q=nothing");
+    expect(host.textContent).toContain("Nothing with that");
+    expect(button("Clear the search")).toBeDefined();
   });
 
-  it("los ajustes son los comunes, con los de Notebook arriba", async () => {
-    await open("/notebook/ajustes");
-    expect(host.textContent).toContain("Nota del día");
-    expect(host.textContent).toContain("Copia en GitHub");
+  it("the settings are the common ones, with those of Notes on top", async () => {
+    await open("/notebook/settings");
+    expect(host.textContent).toContain("Daily note");
+    expect(host.textContent).toContain("Copy on GitHub");
   });
 });
 
-describe("axe-core sin errores graves", () => {
-  it.each(["/notebook/", "/notebook/notes", "/notebook/buscar?q=nada", "/notebook/review", "/notebook/trash", "/notebook/graph", "/notebook/ajustes"])(
+describe("axe-core without serious errors", () => {
+  it.each(["/notebook/", "/notebook/notes", "/notebook/search?q=nothing", "/notebook/review", "/notebook/trash", "/notebook/graph", "/notebook/settings"])(
     "%s",
     async (path) => {
       await open(path);
@@ -213,8 +215,8 @@ describe("axe-core sin errores graves", () => {
     },
   );
 
-  it("una nota", async () => {
-    replies["GET /api/notebook/tree"] = () => ({ folders: ["Proyectos"], notes: [SUMMARY] });
+  it("a note", async () => {
+    replies["GET /api/notebook/tree"] = () => ({ folders: ["Projects"], notes: [SUMMARY] });
     replies[`GET /api/notebook/notes/${NOTE}`] = () => FULL;
     replies[`GET /api/notebook/notes/${NOTE}/links`] = () => ({ links: [], backlinks: [] });
     await open(`/notebook/note/${NOTE}`);

@@ -3,6 +3,7 @@ import * as React from "react";
 
 import { type NoteSummary, readTags, search } from "./api";
 import { Pending, useLoad } from "./Loads";
+import { t } from "./lang";
 
 interface Props {
   query: string;
@@ -31,12 +32,12 @@ export function SearchScreen({ query, tag, onQuery, onOpen }: Props) {
   return (
     <div className="mn-search">
       <OfflineNotice />
-      <SearchField value={draft} onChange={setDraft} placeholder="Palabras, sin acentos si quieres" label="Buscar en las notas" />
+      <SearchField value={draft} onChange={setDraft} placeholder={t("search.placeholder")} label={t("search.label")} />
       {tag && (
         <div className="mn-search-filter">
           <span className="mn-tag">#{tag}</span>
           <button type="button" className="mn-search-clear" onClick={() => onQuery(draft, "")}>
-            Quitar
+            {t("action.remove")}
           </button>
         </div>
       )}
@@ -56,8 +57,8 @@ export function SearchScreen({ query, tag, onQuery, onOpen }: Props) {
           </div>
         ) : null
       ) : hits.length === 0 ? (
-        <EmptyState icon="search" title="Nada con eso" action={{ label: "Borrar la búsqueda", onClick: () => onQuery("", "") }}>
-          Prueba con menos palabras o con el principio de una.
+        <EmptyState icon="search" title={t("search.empty")} action={{ label: t("search.clear"), onClick: () => onQuery("", "") }}>
+          {t("search.empty_detail")}
         </EmptyState>
       ) : (
         <ul className="mn-hits">

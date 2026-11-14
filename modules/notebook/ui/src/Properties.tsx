@@ -1,5 +1,6 @@
 import { IconButton } from "@openarga/ui";
 import * as React from "react";
+import { t } from "./lang";
 
 export function toText(value: unknown): string {
   if (Array.isArray(value)) return value.map(toText).join(", ");
@@ -14,7 +15,7 @@ export function fromText(text: string, before: unknown): unknown {
   if (typeof before === "number" && clean !== "" && Number.isFinite(Number(clean.replace(",", ".")))) {
     return Number(clean.replace(",", "."));
   }
-  if (typeof before === "boolean") return /^(s[ií]|true|1)$/i.test(clean);
+  if (typeof before === "boolean") return /^(yes|s\u00ed|si|true|1)$/i.test(clean);
   return clean;
 }
 
@@ -34,7 +35,7 @@ export function Properties({ values, onSet, onRemove, locked = [], lockedBy = ""
     <div className="mn-props-form">
       {entries.map(([name, value]) =>
         locked.includes(name) ? (
-          <div className="mn-prop-row" data-app="" key={name} title={`La pone ${lockedBy}: se cambia allí`}>
+          <div className="mn-prop-row" data-app="" key={name} title={t("props.locked", { app: lockedBy })}>
             <span className="mn-prop-name">{name}</span>
             <span className="mn-prop-value mn-prop-locked">{toText(value)}</span>
             <span className="mn-prop-owner">{lockedBy}</span>
@@ -56,19 +57,19 @@ export function Properties({ values, onSet, onRemove, locked = [], lockedBy = ""
         <input
           className="mn-prop-name"
           value={adding.name}
-          placeholder="Propiedad nueva"
-          aria-label="Nombre de la propiedad nueva"
+          placeholder={t("props.new")}
+          aria-label={t("props.new_name")}
           onChange={(event) => setAdding({ ...adding, name: event.target.value })}
         />
         <input
           className="mn-prop-value"
           value={adding.value}
           placeholder="Valor"
-          aria-label="Valor de la propiedad nueva"
+          aria-label={t("props.new_value")}
           onChange={(event) => setAdding({ ...adding, value: event.target.value })}
         />
         <button type="submit" className="mn-prop-add" disabled={!adding.name.trim()}>
-          Añadir
+          {t("action.add")}
         </button>
       </form>
     </div>

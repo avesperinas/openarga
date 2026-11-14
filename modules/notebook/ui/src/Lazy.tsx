@@ -13,8 +13,9 @@ import {
 import type { GraphView as Graph } from "./GraphView";
 import type { ImportScreen as Import } from "./ImportScreen";
 import type { NoteEditor as Editor } from "./NoteEditor";
+import { t } from "./lang";
 
-class Caught extends Component<{ what: string; onRetry: () => void; children: ReactNode }, { failed: boolean }> {
+class Caught extends Component<{ what: () => string; onRetry: () => void; children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
 
   static getDerivedStateFromError() {
@@ -25,8 +26,8 @@ class Caught extends Component<{ what: string; onRetry: () => void; children: Re
     if (!this.state.failed) return this.props.children;
     return (
       <ErrorState
-        title={`${this.props.what} no ha llegado`}
-        detail="Sin conexión, o hay una versión nueva de Notebook."
+        title={t("lazy.failed", { what: this.props.what() })}
+        detail={t("lazy.failed_detail")}
         onRetry={() => {
           this.setState({ failed: false });
           this.props.onRetry();
@@ -36,7 +37,7 @@ class Caught extends Component<{ what: string; onRetry: () => void; children: Re
   }
 }
 
-function deferred<P extends object>(what: string, load: () => Promise<ComponentType<P>>, rows = 6) {
+function deferred<P extends object>(what: () => string, load: () => Promise<ComponentType<P>>, rows = 6) {
   const make = () => lazy(() => load().then((found) => ({ default: found })));
   return function Deferred(props: P) {
     const [Loaded, setLoaded] = useState<LazyExoticComponent<ComponentType<P>>>(make);
@@ -50,16 +51,16 @@ function deferred<P extends object>(what: string, load: () => Promise<ComponentT
   };
 }
 
-export const NoteEditor = deferred<ComponentProps<typeof Editor>>("El editor", () =>
+export const NoteEditor = deferred<ComponentProps<typeof Editor>>(() => t("lazy.editor"), () =>
   import("./NoteEditor").then((found) => found.NoteEditor),
 );
 
 export const GraphView = deferred<ComponentProps<typeof Graph>>(
-  "El grafo",
+  () => t("lazy.graph"),
   () => import("./GraphView").then((found) => found.GraphView),
   4,
 );
 
-export const ImportScreen = deferred<ComponentProps<typeof Import>>("La importación", () =>
+export const ImportScreen = deferred<ComponentProps<typeof Import>>(() => t("lazy.import"), () =>
   import("./ImportScreen").then((found) => found.ImportScreen),
 );
