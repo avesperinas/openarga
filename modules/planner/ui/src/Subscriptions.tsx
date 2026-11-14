@@ -207,7 +207,7 @@ function SourceForm({ source, onBack, onSubscribed }: { source: Source; onBack: 
   const [error, setError] = React.useState<string | null>(null);
 
   const inlet = source.inlets?.[0];
-  const settings = inlet?.settings?.length ? inlet.settings : fallback();
+  const settings = (inlet?.settings?.length ? inlet.settings : fallback()).map(localised);
   const values = inletValues(settings, chosen, proposedSourceName(source, answers), source.tone);
   const search = React.useCallback(
     (ask: string, query?: string, parent?: string) => searchSource(source.provider, ask, query, parent),
@@ -245,7 +245,14 @@ function SourceForm({ source, onBack, onSubscribed }: { source: Source; onBack: 
   );
 }
 
+const LABELS: Record<string, string> = { name: "subs.layer_name", tone: "field.tone" };
+
 const fallback = () => [
-  { key: "name", kind: "text", label: t("subs.layer_name") },
-  { key: "tone", kind: "tone", label: t("field.tone") },
+  { key: "name", kind: "text", label: "" },
+  { key: "tone", kind: "tone", label: "" },
 ];
+
+const localised = <T extends { key: string; label: string }>(setting: T): T => {
+  const key = LABELS[setting.key];
+  return key ? { ...setting, label: t(key) } : setting;
+};
