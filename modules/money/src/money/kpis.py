@@ -9,6 +9,7 @@ from money import history
 from money.book import Loaded, ratio_of
 from money.model import Account
 from money.shared import from_book, from_history
+from money.texts import t
 from money.value import value_at
 
 ZERO = Decimal(0)
@@ -24,7 +25,7 @@ class Kpi:
     target: Decimal | None = None
     detail: str | None = None
     carried: list[str] = field(default_factory=list)
-    """Las cuentas cuyo valor viene de antes de hoy (la última valoración), con su fecha."""
+    """The accounts whose value comes from before today (the last valuation), with its date."""
 
 
 def month_end(year: int, month: int) -> date:
@@ -50,9 +51,14 @@ def _sum(lo: Loaded, on: date, keep) -> tuple[Decimal, list[str]]:
         v = value_at(lo.book, account, on, lo.valuations)
         total += v.amount * (Decimal(1) if keep(account) == "whole" else account.ownership)
         if v.estimated:
-            carried.append(f"{account.name} estimado a {v.estimated.day}/{v.estimated.month}")
+            carried.append(
+                f"{account.name} "
+                + t("widget.estimated", day=f"{v.estimated.day}/{v.estimated.month}")
+            )
         elif v.since and (on - v.since).days > 7 and account.asset_class != "real_estate":
-            carried.append(f"{account.name} a {v.since.day}/{v.since.month}")
+            carried.append(
+                f"{account.name} " + t("widget.as_of", day=f"{v.since.day}/{v.since.month}")
+            )
     return total, carried
 
 
@@ -142,9 +148,9 @@ def compute(lo: Loaded, today: date) -> list[Kpi]:
     fund, carried_fund, has_fund = emergency(lo, today)
 
     out = [
-        Kpi("networth", "Patrimonio", now_worth, then_worth, carried=carried),
-        Kpi("liquid", "Líquido", now_liquid, then_liquid, carried=carried_liquid),
-        Kpi("cash", "Cash", now_cash, carried=carried_cash),
+        Kpi("networth", t("kpi.networth"), now_worth, then_worth, carried=carried),
+        Kpi("liquid", t("kpi.liquid"), now_liquid, then_liquid, carried=carried_liquid),
+        Kpi("cash", t("kpi.cash"), now_cash, carried=carried_cash),
     ]
 
     expense, months = average_expense(lo, today, basic=False)
@@ -157,24 +163,24 @@ def compute(lo: Loaded, today: date) -> list[Kpi]:
     out.append(
         Kpi(
             "emergency",
-            "Fondo de contingencia",
+            t("kpi.emergency"),
             fund if has_fund else None,
             target=target,
-            detail=(None if has_fund else "Ninguna cuenta tiene el papel de fondo de contingencia"),
+            detail=(None if has_fund else t("kpi.no_emergency")),
             carried=carried_fund,
         )
     )
-    detail = f"Media de {months} meses" if months and months < 12 else None
+    detail = t("kpi.average_of", months=months) if months and months < 12 else None
     out.append(
         Kpi(
             "expense",
-            "Gasto mensual",
+            t("kpi.expense"),
             expense,
             expense_before if comparable else None,
             detail=detail,
         )
     )
     out.append(
-        Kpi("basic", "Gasto básico", basic, basic_before if comparable else None, detail=detail)
+        Kpi("basic", t("kpi.basic"), basic, basic_before if comparable else None, detail=detail)
     )
     return out

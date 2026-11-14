@@ -19,8 +19,8 @@ class Refused(Exception):
 
 class SettingsIn(BaseModel):
     cutoff: date | None = None
-    me_name: str = Field(default="Yo", min_length=1, max_length=40)
-    other_name: str = Field(default="La otra persona", min_length=1, max_length=40)
+    me_name: str = Field(default="Me", min_length=1, max_length=40)
+    other_name: str = Field(default="The other person", min_length=1, max_length=40)
     holders: list[str] = Field(default_factory=list, max_length=10)
     window_days: int = Field(default=4, ge=1, le=15)
     emergency_months: int = Field(default=3, ge=1, le=24)
@@ -148,21 +148,21 @@ TABLES = (
 
 def _category(keys: dict[str, str], name: str | None, where: str) -> str:
     if name not in keys:
-        raise Refused(f"{where}: no hay la categoría «{name}»")
+        raise Refused(f"{where}: there is no category '{name}'")
     return keys[name]
 
 
 def _translate_rule(spec: dict, keys: dict[str, str], accounts: set[str]) -> dict:
     out = dict(spec)
     if out.get("category"):
-        out["category"] = _category(keys, out["category"], "una regla")
+        out["category"] = _category(keys, out["category"], "a rule")
     if out.get("parts"):
         out["parts"] = [
-            {**p, "category": _category(keys, p.get("category"), "una regla")} for p in out["parts"]
+            {**p, "category": _category(keys, p.get("category"), "a rule")} for p in out["parts"]
         ]
     for field in ("account", "transfer_to", "equity_in"):
         if out.get(field) and out[field] not in accounts and out[field] != "@other":
-            raise Refused(f"una regla nombra la cuenta «{out[field]}», que no está")
+            raise Refused(f"a rule names the account '{out[field]}', which is not there")
     return out
 
 
@@ -170,25 +170,25 @@ async def apply(connection: AsyncConnection, bundle: Bundle) -> dict[str, int]:
     types = catalog.account_types()
     for a in bundle.accounts:
         if a.type not in types:
-            raise Refused(f"la cuenta «{a.key}» es de un tipo que no existe: {a.type}")
+            raise Refused(f"account '{a.key}' has a type that does not exist: {a.type}")
     accounts = {a.key for a in bundle.accounts}
     for f in bundle.history_flow:
         if f.kind == "contribution" and f.account not in accounts:
             raise Refused(
-                f"una aportación de {f.year}-{f.month:02d} es a «{f.account}», que no está"
+                f"a contribution of {f.year}-{f.month:02d} goes to '{f.account}', which is missing"
             )
         if f.kind != "contribution" and f.account:
-            raise Refused(f"un {f.kind} de {f.year}-{f.month:02d} no va a ninguna cuenta")
+            raise Refused(f"an {f.kind} of {f.year}-{f.month:02d} goes to no account")
     for v in bundle.valuations:
         if v.account not in accounts:
-            raise Refused(f"una valoración del {v.on} es de «{v.account}», que no está")
+            raise Refused(f"a valuation of {v.on} is of '{v.account}', which is not there")
     for h in bundle.holdings:
         if h.account not in accounts:
-            raise Refused(f"una foto del {h.on} es de «{h.account}», que no está")
+            raise Refused(f"a snapshot of {h.on} is of '{h.account}', which is not there")
     for c in bundle.categories:
         if (c.ownership == "shared") != (c.split is not None):
             raise Refused(
-                f"la categoría «{c.key}»: solo las compartidas, y todas, dicen cómo se reparten"
+                f"category '{c.key}': only the shared ones, and all of them, say how they are split"
             )
 
     for table in TABLES:
@@ -277,7 +277,7 @@ async def apply(connection: AsyncConnection, bundle: Bundle) -> dict[str, int]:
         out = dict(spec)
         if out.get("parts"):
             out["parts"] = [
-                {**p, "category": _category(keys, p.get("category"), f"la etiqueta de {fact_id}")}
+                {**p, "category": _category(keys, p.get("category"), f"the label of {fact_id}")}
                 for p in out["parts"]
             ]
         await connection.execute(
@@ -296,7 +296,7 @@ async def apply(connection: AsyncConnection, bundle: Bundle) -> dict[str, int]:
                 "d": e.on,
                 "a": e.amount,
                 "t": e.description,
-                "c": _category(keys, e.category, "un gasto a mano"),
+                "c": _category(keys, e.category, "a typed expense"),
             },
         )
 
@@ -435,8 +435,8 @@ async def export(connection: AsyncConnection) -> dict:
     return {
         "settings": {
             "cutoff": s["cutoff"] if s else None,
-            "me_name": s["me_name"] if s else "Yo",
-            "other_name": s["other_name"] if s else "La otra persona",
+            "me_name": s["me_name"] if s else "Me",
+            "other_name": s["other_name"] if s else "The other person",
             "holders": list(s["holders"]) if s else [],
             "window_days": s["window_days"] if s else 4,
             "emergency_months": s["emergency_months"] if s else 3,

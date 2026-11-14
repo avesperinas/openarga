@@ -13,7 +13,7 @@ from money.value import value_at
 
 
 def acc(id, cls, value, **kw) -> Account:
-    return Account(id, id.title(), "Banco", cls, cls, "api", value, **kw)
+    return Account(id, id.title(), "Bank", cls, cls, "api", value, **kw)
 
 
 ACCOUNTS = {
@@ -31,11 +31,11 @@ ACCOUNTS = {
 CATS = {
     c.id: c
     for c in [
-        Category("ocio", "Ocio", "expense", "individual", not_basic=True),
-        Category("trabajo", "Trabajo", "expense", "individual", not_living=True),
-        Category("salud", "Salud", "expense", "individual"),
-        Category("super", "Supermercado", "expense", "shared", "proportional"),
-        Category("viajes", "Viajes", "expense", "shared", "proportional", not_basic=True),
+        Category("ocio", "Leisure", "expense", "individual", not_basic=True),
+        Category("trabajo", "Work", "expense", "individual", not_living=True),
+        Category("salud", "Health", "expense", "individual"),
+        Category("super", "Groceries", "expense", "shared", "proportional"),
+        Category("viajes", "Travel", "expense", "shared", "proportional", not_basic=True),
     ]
 }
 
@@ -58,7 +58,7 @@ def loaded(
     from money.ledger import statuses
 
     return Loaded(
-        settings=Settings(date(2030, 9, 1), "Yo", "Otra", (), 4, 0, 3),
+        settings=Settings(date(2030, 9, 1), "Me", "Another", (), 4, 0, 3),
         book=book,
         statuses=statuses(book),
         merchant_of={},
@@ -112,11 +112,11 @@ def test_networth_liquid_cash_and_fund_by_what_each_account_is():
 
 
 def test_monthly_expense_counts_my_share_and_leaves_out_what_is_not_living():
-    history = [HistoryRow(2030, 3, "expense", D("300"), "Supermercado", "proportional", "account")]
+    history = [HistoryRow(2030, 3, "expense", D("300"), "Groceries", "proportional", "account")]
     flows = [
-        Flow(2030, 3, "expense", D("100"), "Ocio"),
-        Flow(2030, 3, "expense", D("400"), "Trabajo"),
-        Flow(2030, 3, "expense", D("50"), "Salud"),
+        Flow(2030, 3, "expense", D("100"), "Leisure"),
+        Flow(2030, 3, "expense", D("400"), "Work"),
+        Flow(2030, 3, "expense", D("50"), "Health"),
     ]
     lo = loaded(flows=flows, history=history)
     assert month_expense(lo, 2030, 3, basic=False) == D("150") + D("225")
@@ -147,9 +147,9 @@ def test_after_the_cutoff_the_book_counts_and_a_refund_subtracts():
 
 
 def test_the_average_is_of_the_months_there_are_and_compares_only_with_a_base():
-    flows = [Flow(2030, m, "expense", D("100"), "Salud") for m in (6, 7, 8)]
+    flows = [Flow(2030, m, "expense", D("100"), "Health") for m in (6, 7, 8)]
     k = {x.key: x for x in compute(loaded(flows=flows), TODAY)}
-    assert k["expense"].value == D("75") and k["expense"].detail == "Media de 4 meses"
+    assert k["expense"].value == D("75") and k["expense"].detail == "Average of 4 months"
     assert k["expense"].previous is None
     assert k["emergency"].target == D("225")
     assert months_back(TODAY, 2) == [(2030, 9), (2030, 8)]
@@ -199,4 +199,4 @@ def test_a_later_value_without_photo_moves_with_the_last_photo_weights():
 
 def test_the_summary_says_which_values_are_estimated():
     k = {x.key: x for x in compute(portfolio(), date(2030, 9, 30))}
-    assert "Pension estimado a 29/9" in k["networth"].carried
+    assert "Pension estimated at 29/9" in k["networth"].carried

@@ -1,58 +1,58 @@
 [current]
-group = "Efectivo"
-label = "Cuenta corriente"
+group = "Cash"
+label = "Current account"
 asset_class = "cash"
 spending = true
 value = "balance"
 cash = true
 
 [savings]
-group = "Efectivo"
-label = "Cuenta de ahorro"
+group = "Cash"
+label = "Savings account"
 asset_class = "cash"
 spending = false
 value = "computed"
 cash = true
 
 [fund]
-group = "Fondos"
-label = "Fondo o roboadvisor"
+group = "Funds"
+label = "Fund or robo-advisor"
 asset_class = "investment"
 value = "snapshot"
 counts_for_savings = true
 
 [etf]
-group = "Bolsa"
-label = "ETF o acciones"
+group = "Stocks"
+label = "ETF or shares"
 asset_class = "investment"
 value = "snapshot"
 counts_for_savings = true
 
 [pension]
-group = "Pensión"
-label = "Plan de pensiones"
+group = "Pension"
+label = "Pension plan"
 asset_class = "investment"
 value = "snapshot"
 counts_for_savings = true
 liquid = false
 
 [crypto]
-group = "Cripto"
-label = "Cripto"
+group = "Crypto"
+label = "Crypto"
 asset_class = "investment"
 value = "snapshot"
 counts_for_savings = true
 
 [real_estate]
-group = "Vivienda"
-label = "Inmueble"
+group = "Property"
+label = "Property"
 asset_class = "real_estate"
 value = "manual"
 counts_for_savings = true
 liquid = false
 
 [deposit]
-group = "Fianzas"
-label = "Fianza o depósito a devolver"
+group = "Deposits"
+label = "Deposit to be returned"
 asset_class = "receivable"
 value = "computed"

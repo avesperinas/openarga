@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from arga_tenancy import CURRENT_USER_SQL as ME
 from money.interpret import fold
 from money.shared import HALF, ZERO, Month, year_months
+from money.texts import t
 
 if TYPE_CHECKING:
     from money.book import Loaded
@@ -145,12 +146,12 @@ async def add_entry(
     else:
         keeper = await keeper_of(connection, space)
         if keeper is None:
-            raise Refused("nadie del espacio lleva todavía la cuenta común en su Money")
+            raise Refused("nobody in the space keeps the shared account in their Money yet")
         paid_by = user if payer == "me" else keeper
         names = {fold(c["name"]): c["name"] for c in await categories(connection, space, keeper)}
     name = names.get(fold(category))
     if name is None:
-        raise Refused(f"no hay ninguna categoría común «{category}»")
+        raise Refused(f"there is no shared category '{category}'")
     return str(
         await connection.scalar(
             text("""
@@ -366,8 +367,8 @@ async def mirror(connection: AsyncConnection, space: UUID, year: int) -> Mirror 
         keeper=keeper,
         ratio_me=(Decimal(1) - head.ratio_keeper) if head else HALF,
         settled=head.settled if head else False,
-        me_name=head.other_name if head else "Yo",
-        other_name=head.keeper_name if head else "La otra persona",
+        me_name=head.other_name if head else t("person.me"),
+        other_name=head.keeper_name if head else t("person.other"),
         months=months,
         kept_at=max(stamps) if stamps else None,
         categories=await categories(connection, space, keeper),

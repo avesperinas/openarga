@@ -16,11 +16,11 @@ CENT = Decimal("0.01")
 class Value:
     amount: Decimal
     since: date | None
-    """El día del valor del que se parte. Si es anterior al pedido, el valor es arrastrado."""
+    """The day of the starting value. Before the asked day, the value is carried."""
     known: bool = True
-    """Sin ningún valor anterior al día, no se sabe: cuenta 0 y se dice."""
+    """With no value before the day it is unknown: it counts 0 and says so."""
     estimated: date | None = None
-    """El día del último precio con que se ha movido la cartera desde `since`, si se ha movido."""
+    """The day of the last price that moved the portfolio since `since`, if it moved."""
 
 
 def value_at(book: Book, account: Account, on: date, valuations: list[Valuation]) -> Value:

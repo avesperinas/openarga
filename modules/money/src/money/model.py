@@ -15,7 +15,7 @@ Split = Literal["fifty_fifty", "proportional"]
 FactSource = Literal["api", "statement", "manual", "inferred"]
 
 OTHER = "@other"
-"""La cuenta de lo que otro miembro paga con su dinero: no es tuya, pero el gasto es común."""
+"""The account of what another member pays with their money: not yours, but shared spending."""
 
 
 @dataclass(frozen=True)
@@ -32,18 +32,18 @@ class Account:
     counts_for_savings: bool = False
     shared_space: bool = False
     aliases: tuple[str, ...] = ()
-    """Cómo aparece la entidad en el texto de otros bancos, además de su nombre."""
+    """How the institution appears in other banks' texts, besides its name."""
     internal: str | None = None
-    """Patrón del texto que la entidad usa para un traspaso entre sus propias cuentas."""
+    """Text pattern the institution uses for a transfer between its own accounts."""
     ibans: tuple[str, ...] = ()
-    """El suyo y los de ingreso: un apunte cuya contraparte tiene uno de estos IBAN es un traspaso
-    a esta cuenta, sin más."""
+    """Its own and the paying-in ones: an entry whose counterparty has one of these IBANs is a
+    transfer to this account, nothing more."""
     cash: bool = False
-    """Cuenta como dinero a mano (lo dice su tipo)."""
+    """Counts as money at hand (its type says so)."""
     liquid: bool = True
-    """Se puede sacar cuando se quiera (un plan de pensiones, no)."""
+    """Can be taken out at will (a pension plan cannot)."""
     role: str | None = None
-    """Su papel: `emergency_fund`, el fondo de contingencia."""
+    """Its role: `emergency_fund`."""
 
 
 @dataclass(frozen=True)
@@ -58,11 +58,11 @@ class Fact:
     counterparty: str | None = None
     counterparty_iban: str | None = None
     bank_category: str | None = None
-    """La clasificación que pone el propio banco ("GASOLINERAS"), si la pone."""
+    """The bank's own classification ("FUEL STATIONS"), if it gives one."""
     value_on: date | None = None
-    """El día en que mueve el saldo; puede ir antes o después de `on` (el apunte)."""
+    """The day it moves the balance; it can be before or after `on` (the entry)."""
     own_transfer: bool = False
-    """La fuente dice que es un traspaso entre cuentas suyas de la misma entidad (ADR-0100 §7)."""
+    """The source says it is a transfer between its own accounts at the same institution."""
 
 
 @dataclass(frozen=True)
@@ -74,9 +74,9 @@ class Category:
     split: Split | None = None
     extended_savings: bool = False
     not_living: bool = False
-    """No es gasto de vida (Trabajo): fuera de los gastos de los KPIs."""
+    """Not living expense (Work): left out of the KPI spending."""
     not_basic: bool = False
-    """No es gasto básico (Viajes, Ocio): fuera del gasto básico."""
+    """Not basic spending (Travel, Leisure): left out of basic spending."""
 
 
 @dataclass(frozen=True)
@@ -89,8 +89,8 @@ class Imputation:
     payer: Payer | None = None
     equity_in: str | None = None
     basis: str = "rule"
-    """`manual` (etiqueta), `rule`, `bank` (clasificación de la entidad) o `default` (el defecto
-    de la cuenta: etiqueta, pero queda marcado para la revisión periódica)."""
+    """`manual` (a label), `rule`, `bank` (the institution's classification) or `default` (the
+    account's default: it labels, but stays marked for the periodic review)."""
 
 
 @dataclass(frozen=True)
@@ -116,7 +116,7 @@ class Holding:
     value: Decimal
     price: Decimal | None = None
     name: str = ""
-    """Como lo enseña su entidad, o como lo apuntó la persona."""
+    """As its institution shows it, or as the person wrote it."""
 
 
 @dataclass
@@ -128,16 +128,16 @@ class Book:
     transfers: list[Transfer] = field(default_factory=list)
     imputations: list[Imputation] = field(default_factory=list)
     settlements: set[str] = field(default_factory=set)
-    """Pagos entre miembros que saldan una parte: ni gasto ni ingreso."""
+    """Payments between members that settle a part: neither expense nor income."""
     returns: set[str] = field(default_factory=set)
-    """Rentabilidad de su producto (intereses): ni flujo ni traspaso."""
+    """Return of its product (interest): neither flow nor transfer."""
     asking: set[str] = field(default_factory=set)
-    """Lo que espera a que la persona lo etiquete (el efectivo)."""
+    """What waits for the person to label it (cash)."""
     ruled: dict[str, int] = field(default_factory=dict)
-    """La regla que decidió cada hecho, por su posición en las de la persona."""
+    """The rule that decided each fact, by its position among the person's rules."""
     holdings: list[Holding] = field(default_factory=list)
     prices: dict[str, list[tuple[date, Decimal]]] = field(default_factory=dict)
-    """El precio de cada día de cada símbolo, en euros y por fecha (ADR-0113)."""
+    """The price of each symbol on each day, in the base currency, by date."""
     _facts: dict[str, Fact] = field(default_factory=dict, repr=False)
 
     def fact(self, fact_id: str) -> Fact:

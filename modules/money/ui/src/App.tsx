@@ -17,10 +17,10 @@ export type Tab = "summary" | "movements" | "shared" | "analysis" | "settings";
 
 export const PATHS: Record<Tab, string> = {
   summary: `${ROOT}`,
-  movements: `${ROOT}/movimientos`,
-  shared: `${ROOT}/compartido`,
-  analysis: `${ROOT}/analisis`,
-  settings: `${ROOT}/ajustes`,
+  movements: `${ROOT}/movements`,
+  shared: `${ROOT}/shared`,
+  analysis: `${ROOT}/analysis`,
+  settings: `${ROOT}/settings`,
 };
 
 export function tabOf(pathname: string): Tab {
@@ -100,7 +100,7 @@ export function App() {
       </Screen>
     );
   } else if (tab === "summary") {
-    body = <SummaryScreen state={state} onPending={() => go("movements", "?estado=pendiente")} />;
+    body = <SummaryScreen state={state} onPending={() => go("movements", "?status=pending")} />;
   } else if (tab === "movements") {
     body = <MovementsScreen state={state} onChanged={refresh} />;
   } else if (tab === "shared") {

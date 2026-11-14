@@ -50,7 +50,7 @@ class Loaded:
     sources: list[SourceAccount] = field(default_factory=list)
     unmapped: list[SourceAccount] = field(default_factory=list)
     matched: dict[str, str] = field(default_factory=dict)
-    """De cada cuenta de una fuente, la cuenta de Money que es."""
+    """For each account of a source, the Money account it is."""
     holdings: list[Holding] = field(default_factory=list)
     prices: dict[str, list[tuple[date, Decimal]]] = field(default_factory=dict)
 

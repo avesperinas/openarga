@@ -16,6 +16,7 @@ from money.history import Flow, Valuation
 from money.interpret import Interpreter, Label, Rule, fold
 from money.model import OTHER, Account, Book, Category, Fact, Holding, Imputation
 from money.shared import HistoryRow, Income, ratio
+from money.texts import t
 
 
 @dataclass(frozen=True)
@@ -61,7 +62,7 @@ async def settings(connection: AsyncConnection) -> Settings:
         )
     ).first()
     if row is None:
-        return Settings(None, "Yo", "La otra persona", (), 4, 0)
+        return Settings(None, t("person.me"), t("person.other"), (), 4, 0)
     return Settings(
         row.cutoff,
         row.me_name,
@@ -77,10 +78,11 @@ async def settings(connection: AsyncConnection) -> Settings:
 async def bump(connection: AsyncConnection) -> None:
     await connection.execute(
         text("""
-        insert into money.money_v1_setting (revision) values (1)
+        insert into money.money_v1_setting (revision, me_name, other_name) values (1, :me, :other)
         on conflict (user_id) do update
         set revision = money.money_v1_setting.revision + 1, updated_at = now()
-    """)
+    """),
+        {"me": t("person.me"), "other": t("person.other")},
     )
 
 

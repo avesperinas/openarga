@@ -10,43 +10,33 @@ from typing import Any
 from money import analysis, catalog
 from money.book import Loaded, rule_of
 from money.model import Account, Holding
+from money.texts import t
 from money.value import price_on, start_price
 
 ZERO = Decimal(0)
 HUNDRED = Decimal(100)
 
-ASSETS = {
-    "equity": "Renta variable",
-    "bond": "Renta fija",
-    "real_estate": "Inmobiliario",
-    "cash": "Liquidez",
-    "crypto": "Cripto",
-    "other": "Otros",
-}
-REGIONS = {
-    "us": "EE. UU.",
-    "europe": "Europa",
-    "japan": "Japón",
-    "pacific": "Asia-Pacífico desarrollada",
-    "other_developed": "Otros desarrollados",
-    "emerging": "Emergentes",
-}
+ASSETS = ("equity", "bond", "real_estate", "cash", "crypto", "other")
+REGIONS = ("us", "europe", "japan", "pacific", "other_developed", "emerging")
 UNKNOWN = "unknown"
-UNKNOWN_LABEL = "Sin desglose"
 CASH_REGION = "cash"
+VALUE_HOW = ("balance", "computed", "snapshot", "manual")
 
-VALUE_HOW = {
-    "balance": "El saldo que da su fuente, más sus movimientos desde entonces",
-    "computed": "La suma de sus movimientos desde el último valor conocido",
-    "snapshot": "La última foto de su fuente, movida cada día con el precio de sus fondos",
-    "manual": "El último valor que apuntaste",
-}
-MOVEMENTS_HOW = {
-    "api": "Conexión con el banco",
-    "statement": "Extractos",
-    "matched": "Por sus traspasos desde tus otras cuentas",
-    "manual": "A mano",
-}
+
+def asset_name(key: str) -> str:
+    return t(f"asset.{key}") if key in ASSETS or key == UNKNOWN else key
+
+
+def region_name(key: str) -> str:
+    return t(f"region.{key}") if key in REGIONS or key in (UNKNOWN, CASH_REGION) else key
+
+
+def assets() -> dict[str, str]:
+    return {key: asset_name(key) for key in ASSETS}
+
+
+def regions() -> dict[str, str]:
+    return {key: region_name(key) for key in REGIONS}
 
 
 @dataclass(frozen=True)
@@ -79,7 +69,7 @@ class Fund:
     value: Decimal
     shot_value: Decimal
     change: Decimal | None
-    """Lo que se ha movido su precio desde la foto, en tanto por uno; sin precio, nada."""
+    """How much its price moved since the snapshot, as a fraction; without a price, nothing."""
     kind: Kind
 
 
@@ -87,7 +77,7 @@ class Fund:
 class Photo:
     on: date
     source: str
-    """`yours` (apuntada a mano) o `source` (la trajo su fuente)."""
+    """`yours` (typed by hand) or `source` (brought by its source)."""
     funds: list[Fund] = field(default_factory=list)
 
 
@@ -149,9 +139,9 @@ def fund_out(f: Fund) -> dict[str, Any]:
         "value": f.value,
         "change": f.change,
         "asset": f.kind.asset,
-        "asset_name": ASSETS.get(f.kind.asset, f.kind.asset),
+        "asset_name": asset_name(f.kind.asset),
         "regions": [
-            {"key": k, "name": REGIONS.get(k, k), "weight": w}
+            {"key": k, "name": region_name(k), "weight": w}
             for k, w in sorted(f.kind.regions.items(), key=lambda kv: -kv[1])
         ],
         "classified": f.kind.source,
@@ -230,8 +220,12 @@ def composition(
             }
         )
     total = sum(by_product.values(), ZERO)
-    asset_names = {**ASSETS, UNKNOWN: UNKNOWN_LABEL}
-    region_names = {**REGIONS, CASH_REGION: "Liquidez", UNKNOWN: UNKNOWN_LABEL}
+    asset_names = {**assets(), UNKNOWN: asset_name(UNKNOWN)}
+    region_names = {
+        **regions(),
+        CASH_REGION: region_name(CASH_REGION),
+        UNKNOWN: region_name(UNKNOWN),
+    }
     return {
         "on": last,
         "total": total,
@@ -247,7 +241,7 @@ def composition(
 
 def detail(lo: Loaded, account: Account, today: date) -> dict[str, Any]:
     types = catalog.account_types()
-    t = types.get(account.type, {})
+    typed = types.get(account.type, {})
     now = analysis.valued(lo, account, today)
     photo = photo_of(lo, account, today) if account.asset_class != "cash" else None
     source = next(
@@ -268,7 +262,7 @@ def detail(lo: Loaded, account: Account, today: date) -> dict[str, Any]:
         "name": account.name,
         "institution": account.institution,
         "type": account.type,
-        "type_label": t.get("label", account.type),
+        "type_label": typed.get("label", account.type),
         "group": analysis.group_of(account),
         "asset_class": account.asset_class,
         "traits": traits(account),
@@ -276,10 +270,12 @@ def detail(lo: Loaded, account: Account, today: date) -> dict[str, Any]:
         "shared": account.shared_space,
         "role": account.role,
         "movements": account.movements,
-        "movements_how": MOVEMENTS_HOW.get(account.movements, account.movements),
+        "movements_how": t(f"movements_how.{account.movements}"),
         "source": source,
         "value_mode": account.value,
-        "value_how": VALUE_HOW.get(account.value, account.value),
+        "value_how": t(f"value_how.{account.value}")
+        if account.value in VALUE_HOW
+        else account.value,
         "value": now.amount if now.known else None,
         "value_since": now.since,
         "estimated": now.estimated,
@@ -302,17 +298,17 @@ def detail(lo: Loaded, account: Account, today: date) -> dict[str, Any]:
 def traits(account: Account) -> list[str]:
     out = []
     if account.cash:
-        out.append("Cuenta como dinero a mano (cash)")
+        out.append(t("trait.cash"))
     if not account.liquid:
-        out.append("No se puede sacar cuando quieras: fuera de Líquido")
+        out.append(t("trait.not_liquid"))
     if account.counts_for_savings:
-        out.append("Lo que entra cuenta como ahorro aportado")
+        out.append(t("trait.savings"))
     if account.asset_class == "receivable":
-        out.append("Es dinero tuyo fuera que vuelve: ni ahorro ni gasto")
+        out.append(t("trait.receivable"))
     if account.asset_class == "real_estate":
-        out.append("Fuera del patrimonio salvo que se incluya la vivienda")
+        out.append(t("trait.real_estate"))
     if account.spending:
-        out.append("Puede tener gastos propios")
+        out.append(t("trait.spending"))
     return out
 
 
@@ -323,26 +319,26 @@ def describe_rules(lo: Loaded) -> list[dict[str, Any]]:
         spec = r["spec"]
         when = []
         if spec.get("merchant"):
-            when.append(f"comercio «{spec['merchant']}»")
+            when.append(t("rule.merchant", value=spec["merchant"]))
         if spec.get("text"):
-            when.append(f"texto «{spec['text']}»")
+            when.append(t("rule.text", value=spec["text"]))
         if spec.get("counterparty"):
-            when.append(f"contraparte «{spec['counterparty']}»")
+            when.append(t("rule.counterparty", value=spec["counterparty"]))
         if spec.get("counterparty_iban"):
-            when.append(f"IBAN {spec['counterparty_iban']}")
+            when.append(t("rule.iban", value=spec["counterparty_iban"]))
         if spec.get("bank_category"):
-            when.append(f"categoría del banco «{spec['bank_category']}»")
+            when.append(t("rule.bank_category", value=spec["bank_category"]))
         if spec.get("account"):
-            when.append(f"en {_name(lo, spec['account'])}")
+            when.append(t("rule.in", value=_name(lo, spec["account"])))
         if spec.get("sign"):
-            when.append("si entra" if spec["sign"] > 0 else "si sale")
+            when.append(t("rule.in_sign") if spec["sign"] > 0 else t("rule.out_sign"))
         rule = rule_of(spec)
         accounts = [k for k in (rule.transfer_to, rule.account, rule.equity_in) if k]
         out.append(
             {
                 "id": str(r["id"]),
                 "origin": r.get("origin"),
-                "when": ", ".join(when) or "todo",
+                "when": ", ".join(when) or t("rule.everything"),
                 "then": _then(lo, rule),
                 "accounts": accounts,
                 "movements": explained.get(str(r["id"]), 0),
@@ -358,19 +354,19 @@ def _name(lo: Loaded, key: str) -> str:
 
 def _then(lo: Loaded, rule) -> str:
     if rule.transfer_to:
-        return f"Traspaso con {_name(lo, rule.transfer_to)}"
+        return t("rule.transfer", value=_name(lo, rule.transfer_to))
     if rule.is_return:
-        return "Rentabilidad"
+        return t("rule.return")
     if rule.ask:
-        return "Preguntar"
+        return t("rule.ask")
     if rule.from_other_member:
-        return "Aportación de la otra persona"
+        return t("rule.other_member")
     if rule.parts:
-        return "Reparto en varias categorías"
+        return t("rule.parts")
     if rule.category:
         cat = lo.book.categories.get(rule.category)
-        return cat.name if cat else "Categoría que ya no existe"
-    return "Nada"
+        return cat.name if cat else t("rule.gone")
+    return t("rule.nothing")
 
 
 def rule_hits(lo: Loaded) -> dict[str, int]:

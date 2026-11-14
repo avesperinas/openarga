@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
+from money.texts import t
+
 ZERO = Decimal(0)
 
 
@@ -34,9 +36,9 @@ class Month:
     income: dict[str, Decimal] = field(default_factory=dict)
     expense: dict[str, Decimal] = field(default_factory=dict)
     contributions: dict[str, Decimal] = field(default_factory=dict)
-    """Las tuyas, por cuenta."""
+    """Yours, by account."""
     others: dict[str, Decimal] = field(default_factory=dict)
-    """Las de otro miembro, por cuenta."""
+    """Another member's, by account."""
 
 
 def month(flows: list[Flow], year: int, m: int) -> Month:
@@ -49,7 +51,7 @@ def month(flows: list[Flow], year: int, m: int) -> Month:
             bucket[f.account or "?"] = bucket.get(f.account or "?", ZERO) + f.amount
         else:
             bucket = out.income if f.kind == "income" else out.expense
-            name = f.category or "Sin categoría"
+            name = f.category or t("category.none")
             bucket[name] = bucket.get(name, ZERO) + f.amount
     return out
 
