@@ -7,6 +7,7 @@ import { Icon } from "./icons";
 import { useAnimatedNumber } from "./motion";
 import { fitsUncertaintyLine, isCompact, layoutOf } from "./sizes";
 import { useWidgetSize } from "./Widget";
+import { say } from "./words";
 
 export interface WidgetProgressProps {
   value: number;
@@ -65,9 +66,9 @@ export function WidgetProgress({
       <p className="progress-scale">
         <span className="progress-percent">
           {done
-            ? "Objetivo cumplido"
+            ? say("goal.met")
             : standing === "over"
-              ? `${plain(value - target)}${unit ? ` ${unit}` : ""} de más`
+              ? say("goal.over", { amount: `${plain(value - target)}${unit ? ` ${unit}` : ""}` })
               : `${Math.round(ratio(value, target) * 100)} %`}
         </span>
         <span>{`${plain(target)}${unit ? ` ${unit}` : ""}`}</span>
@@ -143,7 +144,7 @@ export function WidgetRing({ value, target, unit, label, show = "value", expecte
       {(!isCompact(size) || layoutOf(size) === "strip") &&
         (done ? (
           <p className="widget-detail ring-label ring-done">
-            {fitsUncertaintyLine(size) ? `Objetivo cumplido · ${tally}` : `Cumplido · ${tally}`}
+            {fitsUncertaintyLine(size) ? `${say("goal.met")} · ${tally}` : `${say("goal.met_short")} · ${tally}`}
           </p>
         ) : (
           label && <p className="widget-detail ring-label">{label}</p>
@@ -167,7 +168,7 @@ export function WidgetStreak({ current, best, days, label }: WidgetStreakProps) 
     <div className="streak">
       <p className="widget-value streak-figure">
         {rounded}
-        <span className="kpi-unit">{rounded === 1 ? "día" : "días"}</span>
+        <span className="kpi-unit">{rounded === 1 ? say("unit.day") : say("unit.days")}</span>
       </p>
       {days && days.length > 0 && (
         <ul className="streak-days" aria-hidden="true">
@@ -182,8 +183,8 @@ export function WidgetStreak({ current, best, days, label }: WidgetStreakProps) 
         </ul>
       )}
       <p className="widget-detail">
-        {label ?? "seguidos"}
-        {best !== undefined && best > 0 && ` · récord ${plain(best)}`}
+        {label ?? say("streak.in_a_row")}
+        {best !== undefined && best > 0 && ` · ${say("streak.best", { best: plain(best) })}`}
       </p>
     </div>
   );

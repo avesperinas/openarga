@@ -6,6 +6,7 @@ import { dayLabel } from "./calendar";
 import { Icon } from "./icons";
 import { type Hue, useWidgetLayout, useWidgetSize } from "./Widget";
 import { dates } from "./regional";
+import { say } from "./words";
 
 const DAY_MS = 86_400_000;
 
@@ -38,11 +39,11 @@ export function dueLabel(due: string, now: Date = new Date()): string {
     : new Date(due);
   if (Number.isNaN(at.getTime())) return "";
   const days = Math.round((midnight(at).getTime() - midnight(now).getTime()) / DAY_MS);
-  if (days < -1) return `Hace ${-days} días`;
-  if (days === -1) return "Ayer";
+  if (days < -1) return say("tasks.days_ago", { count: -days });
+  if (days === -1) return say("day.yesterday");
   if (days === 0) {
     return dateOnly
-      ? "Hoy"
+      ? say("day.today")
       : dates({ hour: "2-digit", minute: "2-digit" }).format(at);
   }
   return dayLabel(at, now);
@@ -57,7 +58,7 @@ function Check({
   done: boolean;
   onToggle?: () => void;
 }) {
-  const label = done ? `Desmarcar ${task.title}` : `Marcar hecha ${task.title}`;
+  const label = done ? say("tasks.undo", { title: task.title }) : say("tasks.done", { title: task.title });
   return onToggle ? (
     <button
       type="button"
@@ -142,7 +143,7 @@ export function WidgetTasks({ tasks, count, onToggle, now: given }: WidgetTasksP
   const total = count ?? tasks.length;
   const overdue = tasks.filter((task) => task.overdue).length;
 
-  if (tasks.length === 0) return <p className="widget-empty">Nada pendiente</p>;
+  if (tasks.length === 0) return <p className="widget-empty">{say("tasks.nothing")}</p>;
 
   if (layout === "tiny") {
     return (
@@ -170,24 +171,24 @@ export function WidgetTasks({ tasks, count, onToggle, now: given }: WidgetTasksP
   const more = total - shown.length;
 
   if (layout === "large") {
-    const groups: { label: string; items: TaskData[] }[] = [];
+    const groups: { key: string; label: string; items: TaskData[] }[] = [];
     const today = midnight(now).getTime();
     for (const task of shown) {
-      const label = task.overdue
-        ? "Vencidas"
+      const key = task.overdue
+        ? "overdue"
         : !task.due
-          ? "Sin fecha"
+          ? "undated"
           : midnight(new Date(task.due.length === 10 ? `${task.due}T00:00` : task.due)).getTime() === today
-            ? "Hoy"
-            : "Más adelante";
+            ? "today"
+            : "later";
       const last = groups[groups.length - 1];
-      if (last?.label === label) last.items.push(task);
-      else groups.push({ label, items: [task] });
+      if (last?.key === key) last.items.push(task);
+      else groups.push({ key, label: say(`tasks.group.${key}`), items: [task] });
     }
     return (
       <div className="tasks-groups">
         {groups.map((group) => (
-          <section key={group.label} className="tasks-group" data-overdue={group.label === "Vencidas" || undefined}>
+          <section key={group.key} className="tasks-group" data-overdue={group.key === "overdue" || undefined}>
             <h3 className="upnext-day-label">{group.label}</h3>
             <ul className="tasks">
               {group.items.map((task) => (
@@ -196,7 +197,7 @@ export function WidgetTasks({ tasks, count, onToggle, now: given }: WidgetTasksP
             </ul>
           </section>
         ))}
-        {more > 0 && <p className="widget-footnote">y {more} más</p>}
+        {more > 0 && <p className="widget-footnote">{say("tasks.more", { count: more })}</p>}
       </div>
     );
   }
@@ -208,7 +209,7 @@ export function WidgetTasks({ tasks, count, onToggle, now: given }: WidgetTasksP
           <Row key={task.id} task={task} done={isDone(task)} onToggle={toggle(task)} now={now} />
         ))}
       </ul>
-      {more > 0 && layout !== "square" && <p className="widget-footnote">y {more} más</p>}
+      {more > 0 && layout !== "square" && <p className="widget-footnote">{say("tasks.more", { count: more })}</p>}
     </>
   );
 }

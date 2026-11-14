@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { InfoButton } from "./health";
 import { locale } from "./regional";
+import { say } from "./words";
 
 export type Hue = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type MoneyTone = "positive" | "negative" | "neutral";
@@ -169,7 +170,7 @@ export function BalanceHero({
 }) {
   const initial = (party: Party) => party.name.trim().charAt(0).toUpperCase() || "?";
   return (
-    <section className="balance-hero" aria-label={even ? "Estáis en paz" : `${payer.name} paga a ${payee.name}`}>
+    <section className="balance-hero" aria-label={even ? say("balance.even") : say("balance.pays", { payer: payer.name, payee: payee.name })}>
       <div className="balance-hero-parties" aria-hidden="true">
         <span className="balance-hero-person" data-hue={payer.hue}>
           <span className="balance-hero-avatar">{initial(payer)}</span>
@@ -210,7 +211,7 @@ export function GainChart({
   format?: (amount: number) => string;
 }) {
   const known = [...value.filter((one): one is number => one !== null), ...contributed];
-  if (labels.length === 0 || known.length === 0) return <p className="widget-note">Sin datos en este rango</p>;
+  if (labels.length === 0 || known.length === 0) return <p className="widget-note">{say("range.no_data")}</p>;
   const high = Math.max(...known);
   const low = Math.min(...known);
   const room = high - low || Math.abs(high) || 1;
@@ -240,27 +241,27 @@ export function GainChart({
       </svg>
       <figcaption className="gain-chart-legend">
         <span className="gain-chart-key" data-key="value">
-          Lo que vale
+          {say("gain.value")}
         </span>
         <span className="gain-chart-key" data-key="put">
-          Lo aportado
+          {say("gain.put")}
         </span>
         <span className="gain-chart-key" data-key="gain" data-ahead={ahead || undefined}>
-          {ahead ? "Ganancia" : "Pérdida"}
+          {ahead ? say("gain.gain") : say("gain.loss")}
         </span>
         <span className="gain-chart-range">
           {labels[0]} – {labels[labels.length - 1]}
         </span>
       </figcaption>
       <details className="series-chart-table">
-        <summary>Ver como tabla</summary>
+        <summary>{say("chart.as_table")}</summary>
         <div className="series-chart-scroll">
           <table>
             <thead>
               <tr>
-                <th scope="col">Mes</th>
-                <th scope="col">Vale</th>
-                <th scope="col">Aportado</th>
+                <th scope="col">{say("gain.month")}</th>
+                <th scope="col">{say("gain.worth")}</th>
+                <th scope="col">{say("gain.contributed")}</th>
               </tr>
             </thead>
             <tbody>
@@ -353,7 +354,7 @@ export function Treemap({
   height?: number;
 }) {
   const tiles = treemapLayout(items, 100, 100);
-  if (tiles.length === 0) return <p className="widget-note">Sin datos en este rango</p>;
+  if (tiles.length === 0) return <p className="widget-note">{say("range.no_data")}</p>;
   return (
     <div className="treemap" role="group" aria-label={label} style={{ height }}>
       {tiles.map((tile) => {

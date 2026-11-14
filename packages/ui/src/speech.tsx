@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { Icon } from "./icons";
 import { locale, numbers } from "./regional";
+import { say } from "./words";
 
 const CHUNK = 220;
 const RATES = [1, 1.15, 1.3, 1.5, 0.9];
@@ -360,7 +361,7 @@ export function useAudioPlayer(
       session.metadata = new MediaMetadata({
         title: meta.title,
         artist: meta.artist,
-        album: "Tu píldora",
+        album: say("speech.album"),
         artwork: meta.artwork ? [{ src: meta.artwork, sizes: "512x512", type: "image/png" }] : [],
       });
     } catch {
@@ -457,35 +458,35 @@ export function ReadAloud({
         onClick={speech.state === "playing" ? speech.pause : speech.play}
       >
         <Icon name={speech.state === "playing" ? "pause" : "headphones"} />
-        {speech.state === "playing" ? "Pausar" : speech.state === "paused" ? "Seguir escuchando" : "Escuchar"}
+        {speech.state === "playing" ? say("speech.pause") : speech.state === "paused" ? say("speech.resume") : say("speech.listen")}
         <span className="read-aloud-time">{speech.minutes} min</span>
       </button>
       {active && (
-        <div className="read-aloud-dock glass" role="region" aria-label="Reproductor">
+        <div className="read-aloud-dock glass" role="region" aria-label={say("speech.player")}>
           <span className="read-aloud-progress" aria-hidden="true">
             <span style={{ "--done": `${speech.progress}%` } as React.CSSProperties} />
           </span>
           <span className="read-aloud-title">{title}</span>
           <span className="read-aloud-controls">
-            <button type="button" className="read-aloud-button" aria-label="Atrás" onClick={() => speech.skip(-1)}>
+            <button type="button" className="read-aloud-button" aria-label={say("speech.back")} onClick={() => speech.skip(-1)}>
               <Icon name="undo" />
             </button>
             <button
               type="button"
               className="read-aloud-button"
               data-main=""
-              aria-label={speech.state === "playing" ? "Pausar" : "Seguir"}
+              aria-label={speech.state === "playing" ? say("speech.pause") : say("speech.continue")}
               onClick={speech.state === "playing" ? speech.pause : speech.play}
             >
               <Icon name={speech.state === "playing" ? "pause" : "play"} />
             </button>
-            <button type="button" className="read-aloud-button" aria-label="Adelante" onClick={() => speech.skip(1)}>
+            <button type="button" className="read-aloud-button" aria-label={say("speech.forward")} onClick={() => speech.skip(1)}>
               <Icon name="skip" />
             </button>
-            <button type="button" className="read-aloud-speed" aria-label={`Velocidad ${speedLabel(speech.rate)}`} onClick={speech.faster}>
+            <button type="button" className="read-aloud-speed" aria-label={say("speech.speed", { speed: speedLabel(speech.rate) })} onClick={speech.faster}>
               {speedLabel(speech.rate)}
             </button>
-            <button type="button" className="read-aloud-button" aria-label="Parar" onClick={speech.stop}>
+            <button type="button" className="read-aloud-button" aria-label={say("speech.stop")} onClick={speech.stop}>
               <Icon name="close" />
             </button>
           </span>

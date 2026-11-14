@@ -19,9 +19,12 @@ import {
 import { IconButton } from "./controls";
 import { describe } from "./time-grid";
 import { dates } from "./regional";
+import { say } from "./words";
 
-const WEEKDAYS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"];
-const INITIALS = ["L", "M", "X", "J", "V", "S", "D"];
+const weekdays = (weekday: "short" | "narrow") =>
+  Array.from({ length: 7 }, (_, index) =>
+    dates({ weekday, timeZone: "UTC" }).format(new Date(Date.UTC(2024, 0, 1 + index))).replace(".", ""),
+  );
 const monthTitle = () => dates({ month: "long", year: "numeric" });
 const dayLong = () => dates({ weekday: "long", day: "numeric", month: "long" });
 
@@ -326,8 +329,8 @@ export function MonthGrid({
       {...swipe}
     >
       <div className="mg-weekdays" role="row">
-        {(compact ? INITIALS : WEEKDAYS).map((name) => (
-          <span key={name} className="mg-weekday" role="columnheader">
+        {weekdays(compact ? "narrow" : "short").map((name, index) => (
+          <span key={index} className="mg-weekday" role="columnheader">
             {name}
           </span>
         ))}
@@ -384,13 +387,13 @@ export function MonthGrid({
                         onDayClick?.(day);
                       }}
                     >
-                      {compact ? `+${hidden}` : `${hidden} más`}
+                      {compact ? `+${hidden}` : say("month.more", { count: hidden })}
                     </button>
                   )}
                 </div>
               );
             })}
-            <div className="mg-items" role="gridcell" aria-label="Lo de esta semana">
+            <div className="mg-items" role="gridcell" aria-label={say("month.this_week")}>
             {bars.map((bar) => {
               const fits = Array.from({ length: bar.span }, (_, k) => bar.row < shownPerDay[bar.column + k]!).every(Boolean);
               if (!fits) return null;
@@ -421,7 +424,7 @@ export function MonthGrid({
                     <>
                       {!isBar && <span className="mg-dot" aria-hidden="true" />}
                       {!isBar && <span className="mg-time">{formatClock(start)}</span>}
-                      <span className="mg-title">{bar.event.title || "Sin título"}</span>
+                      <span className="mg-title">{bar.event.title || say("untitled")}</span>
                     </>
                   )}
                 </button>
@@ -454,14 +457,14 @@ export function MiniMonth({ month, range = [], marked, weekNumbers = false, onSe
     <div className="mini" data-weeks={weekNumbers || undefined}>
       <header className="mini-head">
         <h3 className="mini-title">{formatMonth(month)}</h3>
-        <IconButton icon="chevron-left" label="Mes anterior" size="small" variant="plain" onClick={() => onMonthChange(-1)} />
-        <IconButton icon="chevron-right" label="Mes siguiente" size="small" variant="plain" onClick={() => onMonthChange(1)} />
+        <IconButton icon="chevron-left" label={say("calendar.previous_month")} size="small" variant="plain" onClick={() => onMonthChange(-1)} />
+        <IconButton icon="chevron-right" label={say("calendar.next_month")} size="small" variant="plain" onClick={() => onMonthChange(1)} />
       </header>
       <div className="mini-grid" role="grid" aria-label={formatMonth(month)}>
         <div className="mini-row" role="row">
           {weekNumbers && <span className="mini-weekday" aria-hidden="true" />}
-          {INITIALS.map((name) => (
-            <span key={name} className="mini-weekday" role="columnheader">
+          {weekdays("narrow").map((name, index) => (
+            <span key={index} className="mini-weekday" role="columnheader">
               {name}
             </span>
           ))}

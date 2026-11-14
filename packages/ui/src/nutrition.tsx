@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { Sparkline } from "./charts";
 import { Icon } from "./icons";
+import { say } from "./words";
 
 export type RangeState = "low" | "ok" | "high" | "none";
 
@@ -18,12 +19,7 @@ export interface RangeBarProps {
   onOpen?: () => void;
 }
 
-const STATE_WORDS: Record<RangeState, string> = {
-  low: "Por debajo",
-  ok: "En rango",
-  high: "Por encima",
-  none: "",
-};
+const stateWord = (state: RangeState): string => (state === "none" ? "" : say(`range.${state}`));
 
 export function rangeScale(value: number | null, low?: number | null, high?: number | null) {
   const reach = high ?? (low ?? 0) * 1.5;
@@ -36,7 +32,7 @@ export function rangeScale(value: number | null, low?: number | null, high?: num
 export function RangeBar({ label, value, unit, low, high, state = "none", detail, figure, partial, onOpen }: RangeBarProps) {
   const scale = rangeScale(value, low, high);
   const shown = figure ?? (value === null ? "—" : `${Math.round(value * 10) / 10} ${unit}`);
-  const words = STATE_WORDS[state];
+  const words = stateWord(state);
   const body = (
     <>
       <span className="range-bar-head">
@@ -175,13 +171,7 @@ export function coverageTrend(trend: (number | null)[] | undefined): "up" | "dow
   return null;
 }
 
-const COVERAGE_WORDS: Record<CoverageState, string> = {
-  low: "te falta",
-  near: "casi",
-  ok: "bien",
-  caution: "cerca del máximo",
-  over: "por encima del máximo",
-};
+const coverageWord = (state: CoverageState): string => say(`coverage.${state}`);
 
 export function CoverageList({ items, label }: { items: CoverageItem[]; label: string }) {
   return (
@@ -190,9 +180,12 @@ export function CoverageList({ items, label }: { items: CoverageItem[]; label: s
         const state = coverageState(item);
         const pct = item.share === null ? null : Math.round(item.share * 100);
         const way = coverageTrend(item.trend);
-        const said = `${item.label}: ${pct === null ? "sin dato" : `${pct} % de lo recomendado`}, ${item.value}${
-          item.partial ? ", dato incompleto" : `, ${COVERAGE_WORDS[state]}`
-        }${way ? `, ${way === "up" ? "sube" : "baja"} frente a las semanas de antes` : ""}`;
+        const said = [
+          `${item.label}: ${pct === null ? say("coverage.no_data") : say("coverage.of_recommended", { pct })}`,
+          item.value,
+          item.partial ? say("coverage.partial") : coverageWord(state),
+          ...(way ? [say(way === "up" ? "coverage.rising" : "coverage.falling")] : []),
+        ].join(", ");
         const body = (
           <>
             <span className="coverage-head">
@@ -211,7 +204,7 @@ export function CoverageList({ items, label }: { items: CoverageItem[]; label: s
                 <Sparkline series={item.trend} />
               </span>
             )}
-            {item.partial && <span className="coverage-note">dato incompleto</span>}
+            {item.partial && <span className="coverage-note">{say("coverage.partial")}</span>}
           </>
         );
         return (
