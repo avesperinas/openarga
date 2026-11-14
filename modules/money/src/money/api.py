@@ -16,7 +16,6 @@ from arga_tenancy import current_spaces, current_user
 from arga_widgets import envelope
 from money import analysis, catalog, common, configure, history, importer, kpis, products
 from money import book as books
-from money import incomes as income_sources
 from money.db import engine
 from money.interpret import merchant_key
 from money.ledger import balance_check
@@ -402,7 +401,6 @@ async def shared(year: Annotated[int | None, Query(ge=2000, le=2100)] = None) ->
     year = year or today.year
     async with as_app() as connection:
         lo = await loaded(connection)
-        await income_sources.share(connection, lo.sources)
         await common.publish(connection, lo, today)
         view = await common.year_view(connection, lo, year, today)
         if view.role == common.MEMBER:
@@ -500,17 +498,11 @@ def keeper_entries(lo: books.Loaded, year: int) -> list[dict]:
 
 
 def incomes_out(lo: books.Loaded, year: int) -> dict:
-    found = lo.sources
-    counted = totals(lo.incomes, year, income_sources.fixed(found, year))
+    counted = totals(lo.incomes, year)
+    space = lo.settings.space_id
     return {
-        "income_sources": {p: income_sources.source_of(found, year, p) for p in ("me", "other")},
         "income_totals": {p: money(counted[p]) for p in ("me", "other")},
-        "carrera": {
-            "me": money(found.mine[year]) if year in found.mine else None,
-            "other": money(found.theirs[year]) if year in found.theirs else None,
-        },
-        "income_missing": income_sources.missing(found, year),
-        "space_id": str(found.space_id) if found.space_id else None,
+        "space_id": str(space) if space else None,
     }
 
 
@@ -683,31 +675,6 @@ async def set_incomes(year: int, request: IncomesIn) -> dict:
     return {"year": year, "incomes": len(request.incomes)}
 
 
-class SourcesIn(BaseModel):
-    me: Literal["typed", "carrera"]
-    other: Literal["typed", "carrera"]
-
-
-@router.put("/shared/incomes/{year}/sources")
-async def set_income_sources(year: int, request: SourcesIn) -> dict:
-    if not 2000 <= year <= 2100:
-        raise HTTPException(status_code=422, detail="año fuera de rango")
-    async with as_app() as connection:
-        for person, chosen in (("me", request.me), ("other", request.other)):
-            await connection.execute(
-                text("""
-                insert into money.money_v1_income_source (year, person, source)
-                values (:y, :p, :s)
-                on conflict (user_id, year, person) do update set source = excluded.source
-            """),
-                {"y": year, "p": person, "s": chosen},
-            )
-        await books.bump(connection)
-        lo = await loaded(connection)
-        await income_sources.share(connection, lo.sources)
-    return {"year": year, **incomes_out(lo, year)}
-
-
 class SpaceIn(BaseModel):
     space_id: UUID | None
 
@@ -725,8 +692,6 @@ async def set_space(request: SpaceIn) -> dict:
             {"s": request.space_id},
         )
         await books.bump(connection)
-        lo = await loaded(connection)
-        await income_sources.share(connection, lo.sources)
     return {"space_id": str(request.space_id) if request.space_id else None}
 
 

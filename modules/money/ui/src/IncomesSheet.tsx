@@ -1,24 +1,10 @@
 import { Button, ConfirmPanel, DateField, Hint, SegmentedControl, SelectField, Sheet, TextField } from "@openarga/ui";
 import { useEffect, useState } from "react";
 
-import { type Income, type IncomeSource, type Person, Refused, type Shared, type Space, api } from "./api";
+import { type Income, type Person, Refused, type Shared, type Space, api } from "./api";
 import { amountText, money, parseAmount, shortDay } from "./format";
 
 const PEOPLE: Person[] = ["me", "other"];
-
-export function carreraNote(data: Pick<Shared, "year" | "carrera" | "space_id">, person: Person, spaceChosen: boolean): string {
-  const value = data.carrera[person];
-  if (value !== null) {
-    return person === "me"
-      ? `${money(value, false)} netos en ${data.year}, cobrado y lo que queda hasta diciembre.`
-      : `${money(value, false)} netos en ${data.year}, lo que comparte desde su Carrera.`;
-  }
-  if (person === "me") return `Carrera aún no tiene tu neto de ${data.year}: cuentan tus tramos.`;
-  if (!spaceChosen) return "Elige abajo el espacio que compartís. Hasta entonces, cuentan sus tramos.";
-  return `Aún no lo comparte: tiene que elegir este espacio y «De Carrera» para ${data.year} en su Money. Hasta entonces, cuentan sus tramos.`;
-}
-
-export const sourceLabel = (source: IncomeSource) => (source === "carrera" ? "De Carrera" : "A mano");
 
 interface Row {
   person: "me" | "other";
@@ -34,7 +20,6 @@ export function IncomesSheet({ data, onClose, onSaved }: { data: Shared; onClose
       ? data.incomes.map((i) => ({ ...i, salary: amountText(i.salary), extra: i.extra ? amountText(i.extra) : "" }))
       : (["me", "other"] as const).map((person) => ({ person, from: `${data.year}-01-01`, to: `${data.year}-12-31`, salary: "", extra: "" })),
   );
-  const [sources, setSources] = useState(data.income_sources);
   const [space, setSpace] = useState<string>(data.space_id ?? "");
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +40,6 @@ export function IncomesSheet({ data, onClose, onSaved }: { data: Shared; onClose
     }));
     try {
       if ((data.space_id ?? "") !== space) await api.sharedSpace(space || null);
-      if (PEOPLE.some((p) => sources[p] !== data.income_sources[p])) await api.incomeSources(data.year, sources);
       await api.incomes(data.year, incomes);
       onSaved();
     } catch (e) {
@@ -78,11 +62,6 @@ export function IncomesSheet({ data, onClose, onSaved }: { data: Shared; onClose
         <ConfirmPanel
           title="¿Guardar los ingresos declarados?"
           changes={[
-            ...PEOPLE.filter((p) => sources[p] !== data.income_sources[p]).map((p) => ({
-              label: `De dónde sale lo de ${who(p)}`,
-              from: sourceLabel(data.income_sources[p]),
-              to: sourceLabel(sources[p]),
-            })),
             ...((data.space_id ?? "") !== space
               ? [{ label: "Espacio compartido", from: spaceName(data.space_id ?? ""), to: spaceName(space) }]
               : []),
@@ -100,22 +79,6 @@ export function IncomesSheet({ data, onClose, onSaved }: { data: Shared; onClose
   return (
     <Sheet title={`Ingresos de ${data.year}`} onClose={onClose} action={{ label: "Guardar", onClick: () => setConfirming(true), disabled: !valid }}>
       <div className="money-form">
-        {PEOPLE.map((p) => (
-          <div key={p} className="surface money-part-edit">
-            <SegmentedControl<IncomeSource>
-              label={`Ingresos de ${who(p)} en ${data.year}`}
-              value={sources[p]}
-              onChange={(source) => setSources({ ...sources, [p]: source })}
-              options={[
-                { value: "typed", label: "A mano" },
-                { value: "carrera", label: p === "me" ? "De Carrera" : "De su Carrera" },
-              ]}
-            />
-            {sources[p] === "carrera" && (
-              <Hint tone={data.carrera[p] === null ? "warning" : undefined}>{carreraNote(data, p, !!space)}</Hint>
-            )}
-          </div>
-        ))}
         {spaces.length > 0 && (
           <>
             <SelectField<string>
@@ -124,10 +87,7 @@ export function IncomesSheet({ data, onClose, onSaved }: { data: Shared; onClose
               onChange={setSpace}
               options={[{ value: "", label: "Ninguno" }, ...spaces.map((s) => ({ value: s.id, label: s.name }))]}
             />
-            <Hint>
-              Con un espacio elegido, tu neto de Carrera de cada año en el que elijas «De Carrera» queda en él, y la otra persona puede usarlo. Nada más
-              sale de tu Money.
-            </Hint>
+            <Hint>El espacio con el que veis lo común los dos.</Hint>
           </>
         )}
         {rows.map((r, i) => (
@@ -158,8 +118,7 @@ export function IncomesSheet({ data, onClose, onSaved }: { data: Shared; onClose
           Añadir un tramo
         </Button>
         <Hint>
-          Los tramos cuentan para quien va «A mano», o si Carrera aún no tiene su cifra. El salario anual se prorratea por los días del tramo, y el
-          extra se reparte entre ellos, como en Caudal.
+          El salario anual se prorratea por los días del tramo, y el extra se reparte entre ellos.
         </Hint>
         {error && <Hint tone="warning">{error}</Hint>}
       </div>

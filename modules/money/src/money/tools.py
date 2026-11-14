@@ -13,7 +13,6 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from arga_tenancy import current_user
 from money import book as books
 from money import common, configure, kpis, products
-from money import incomes as income_sources
 from money.interpret import fold
 from money.shared import totals, year_balance
 
@@ -180,18 +179,9 @@ async def get_shared_balance(
 
 
 def incomes_of(lo: books.Loaded, year: int) -> dict[str, dict[str, Any]]:
-    found = lo.sources
-    counted = totals(lo.incomes, year, income_sources.fixed(found, year))
-    lacking = income_sources.missing(found, year)
+    counted = totals(lo.incomes, year)
     names = {"me": lo.settings.me_name, "other": lo.settings.other_name}
-    return {
-        names[p]: {
-            "amount": money(counted[p]),
-            "source": income_sources.source_of(found, year, p),
-            "missing": p in lacking,
-        }
-        for p in ("me", "other")
-    }
+    return {names[p]: {"amount": money(counted[p])} for p in ("me", "other")}
 
 
 class Ambiguous(Exception):

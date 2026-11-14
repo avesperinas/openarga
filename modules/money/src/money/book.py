@@ -10,8 +10,8 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from arga_tenancy import current_spaces
 from money import catalog, common, source
-from money import incomes as income_sources
 from money.history import Flow, Valuation
 from money.interpret import Interpreter, Label, Rule, fold
 from money.model import OTHER, Account, Book, Category, Fact, Holding, Imputation
@@ -45,7 +45,6 @@ class Loaded:
     rules: list[dict]
     flows: list[Flow]
     valuations: list[Valuation]
-    sources: income_sources.Incomes = field(default_factory=income_sources.Incomes.empty)
     source_accounts: list[source.SourceAccount] = field(default_factory=list)
     source_of: dict[str, str] = field(default_factory=dict)
     funds: dict[str, dict] = field(default_factory=dict)
@@ -71,7 +70,7 @@ async def settings(connection: AsyncConnection) -> Settings:
         row.window_days,
         row.revision,
         row.emergency_months,
-        income_sources.linked(row.space_id),
+        row.space_id if row.space_id in current_spaces.get() else None,
     )
 
 
@@ -214,7 +213,6 @@ async def load(connection: AsyncConnection, user: UUID | None) -> Loaded:
         user,
         conf.revision,
         await fingerprint(connection),
-        await income_sources.fingerprint(connection, conf.space_id),
         await common.entries_fingerprint(connection, conf.space_id),
     )
     if key in _CACHE:
@@ -389,7 +387,6 @@ async def load(connection: AsyncConnection, user: UUID | None) -> Loaded:
         unmapped=loaded.unmapped,
         entries=entries,
         incomes=incomes,
-        sources=await income_sources.load(connection, conf.space_id),
         history=history,
         settled=settled,
         labels=label_rows,
@@ -408,7 +405,7 @@ async def load(connection: AsyncConnection, user: UUID | None) -> Loaded:
 
 
 def ratio_of(lo: Loaded, year: int) -> Decimal:
-    return ratio(lo.incomes, year, income_sources.fixed(lo.sources, year))
+    return ratio(lo.incomes, year)
 
 
 def dumps(value) -> str:
