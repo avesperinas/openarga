@@ -369,8 +369,6 @@ packages/module/src/arga_module/service.py
 packages/module/tests/test_service.py
 packages/nutrients/src/arga_nutrients/__init__.py
 packages/recurrence/phrases.json
-packages/recurrence/pyproject.toml
-packages/recurrence/src/arga_recurrence/__init__.py
 packages/tenancy/pyproject.toml
 packages/testing/pyproject.toml
 packages/testing/src/arga_testing/contract.py

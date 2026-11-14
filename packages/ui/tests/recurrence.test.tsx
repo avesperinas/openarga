@@ -14,13 +14,13 @@ import {
   weekdayOf,
 } from "../src/index";
 
-const PHRASES: { rrule: string; phrase: string }[] = JSON.parse(
+const PHRASES: { rrule: string; en: string; es: string }[] = JSON.parse(
   readFileSync(new URL("../../recurrence/phrases.json", import.meta.url), "utf8"),
 );
 
 describe("la frase dice lo mismo que en Python", () => {
-  it.each(PHRASES)("$rrule", ({ rrule, phrase }) => {
-    expect(describeRecurrence(fromRRule(rrule))).toBe(phrase);
+  it.each(PHRASES)("$rrule", ({ rrule, es }) => {
+    expect(describeRecurrence(fromRRule(rrule))).toBe(es);
   });
 });
 

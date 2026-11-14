@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
+from functools import cache
+from pathlib import Path
 from typing import Literal
 from zoneinfo import ZoneInfo
 
@@ -12,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 __all__ = [
     "Day",
     "Freq",
+    "Locale",
     "Occurrence",
     "Rule",
     "Weekday",
@@ -47,7 +51,7 @@ class Day(BaseModel):
     @model_validator(mode="after")
     def _position(self) -> Day:
         if self.pos is not None and self.pos not in _POSITIONS:
-            raise ValueError("la posición va de 1 a 5, o -1 a -3 contando desde el final")
+            raise ValueError("the position goes from 1 to 5, or -1 to -3 counting from the end")
         return self
 
 
@@ -80,31 +84,31 @@ class Rule(BaseModel):
     @model_validator(mode="after")
     def _subset(self) -> Rule:
         if self.count is not None and self.until is not None:
-            raise ValueError("una regla acaba por número de veces o por fecha, no por las dos")
+            raise ValueError("a rule ends by a count or by a date, not both")
         if isinstance(self.until, datetime) and self.until.tzinfo is not None:
-            raise ValueError("UNTIL es hora de pared, sin zona: la zona va aparte")
+            raise ValueError("UNTIL is wall time, without a zone: the zone goes apart")
         if any(day not in _MONTH_DAYS for day in self.by_month_day):
-            raise ValueError("el día del mes va de 1 a 31, o -1 a -3 contando desde el final")
+            raise ValueError("the day of the month goes from 1 to 31, or -1 to -3 from the end")
         if any(month < 1 or month > 12 for month in self.by_month):
-            raise ValueError("el mes va de 1 a 12")
+            raise ValueError("the month goes from 1 to 12")
         if len(set(self.by_day)) != len(self.by_day):
-            raise ValueError("un día repetido")
+            raise ValueError("a repeated day")
         if self.by_day and self.by_month_day:
-            raise ValueError("o días de la semana o días del mes, no los dos")
+            raise ValueError("either weekdays or days of the month, not both")
         positioned = [day.pos is not None for day in self.by_day]
         if self.freq == "daily" and (self.by_day or self.by_month_day or self.by_month):
-            raise ValueError("una regla diaria no lleva días ni meses")
+            raise ValueError("a daily rule has no days or months")
         if self.freq == "weekly":
             if self.by_month_day or self.by_month:
-                raise ValueError("una regla semanal solo lleva días de la semana")
+                raise ValueError("a weekly rule only has weekdays")
             if any(positioned):
-                raise ValueError("en una regla semanal los días no llevan posición")
+                raise ValueError("in a weekly rule the days have no position")
         if self.freq == "monthly" and self.by_month:
-            raise ValueError("una regla mensual no lleva meses")
+            raise ValueError("a monthly rule has no months")
         if self.freq == "monthly" and any(positioned) and not all(positioned):
-            raise ValueError("o todos los días con posición o ninguno")
+            raise ValueError("either every day has a position or none does")
         if self.freq == "yearly" and self.by_day and not (self.by_month and all(positioned)):
-            raise ValueError("un día de la semana en una regla anual va con su mes y su posición")
+            raise ValueError("a weekday in a yearly rule goes with its month and position")
         return self
 
 
@@ -147,7 +151,7 @@ def parse(text: str) -> Rule:
     if unknown:
         raise ValueError(f"fuera del subconjunto: {', '.join(sorted(unknown))}")
     if fields.get("WKST", "MO") != "MO":
-        raise ValueError("la semana empieza el lunes")
+        raise ValueError("the week starts on Monday")
     freq = fields.get("FREQ", "").lower()
     if freq not in _FREQS:
         raise ValueError(f"frecuencia desconocida: {fields.get('FREQ')!r}")
@@ -169,7 +173,7 @@ def _items(value: str | None) -> list[str]:
 def _parse_day(text: str) -> Day:
     weekday = text[-2:].upper()
     if weekday not in WEEKDAYS:
-        raise ValueError(f"día desconocido: {text!r}")
+        raise ValueError(f"unknown day: {text!r}")
     pos = text[:-2]
     return Day(weekday=weekday, pos=int(pos) if pos else None)  # type: ignore[arg-type]
 
@@ -186,7 +190,7 @@ def _until_text(until: date | datetime) -> str:
 
 def _parse_until(text: str) -> date | datetime:
     if text.endswith("Z"):
-        raise ValueError("UNTIL es hora de pared, sin zona: la zona va aparte")
+        raise ValueError("UNTIL is wall time, without a zone: the zone goes apart")
     if "T" in text:
         return datetime.strptime(text, "%Y%m%dT%H%M%S")
     return datetime.strptime(text, "%Y%m%d").date()
@@ -234,7 +238,7 @@ def _weekday(day: Day) -> du.weekday:
 def _wall(start: date | datetime) -> datetime:
     if isinstance(start, datetime):
         if start.tzinfo is not None:
-            raise ValueError("el inicio es hora de pared, sin zona: la zona va aparte")
+            raise ValueError("the start is wall time, without a zone: the zone goes apart")
         return start
     return datetime.combine(start, time())
 
@@ -265,7 +269,7 @@ def expand(
 
     if all_day:
         if isinstance(window_start, datetime) or isinstance(window_end, datetime):
-            raise TypeError("la ventana de algo de todo el día son fechas")
+            raise TypeError("the window of an all-day item is dates")
         low, high = _wall(window_start), _wall(window_end)
         inside = [
             Occurrence(start=wall.date(), original=wall.date())
@@ -278,9 +282,9 @@ def expand(
         return sorted(inside, key=lambda o: o.start)
 
     if not isinstance(window_start, datetime) or not isinstance(window_end, datetime):
-        raise TypeError("la ventana de algo con hora son instantes con zona")
+        raise TypeError("the window of a timed item is instants with a zone")
     if window_start.tzinfo is None or window_end.tzinfo is None:
-        raise ValueError("la ventana va con zona")
+        raise ValueError("the window goes with a zone")
     low = window_start.astimezone(zone).replace(tzinfo=None) - timedelta(days=1)
     high = window_end.astimezone(zone).replace(tzinfo=None) + timedelta(days=1)
     inside = []
@@ -311,7 +315,7 @@ def split[S: (date, datetime)](rule: Rule, start: S, at: S) -> tuple[Rule | None
     series = _rrule(rule, start)
     wall = _wall(at)
     if wall not in series:
-        raise ValueError(f"{at} no es una ocurrencia de la serie")
+        raise ValueError(f"{at} is not an occurrence of the series")
     before = 0
     last: datetime | None = None
     for item in series:
@@ -337,103 +341,105 @@ def split_exceptions[K: (date, datetime), V](
     return before, after
 
 
-_DAY_NAMES: dict[Weekday, tuple[str, str]] = {
-    "MO": ("lunes", "lunes"),
-    "TU": ("martes", "martes"),
-    "WE": ("miércoles", "miércoles"),
-    "TH": ("jueves", "jueves"),
-    "FR": ("viernes", "viernes"),
-    "SA": ("sábado", "sábados"),
-    "SU": ("domingo", "domingos"),
-}
-_MONTHS = (
-    "enero",
-    "febrero",
-    "marzo",
-    "abril",
-    "mayo",
-    "junio",
-    "julio",
-    "agosto",
-    "septiembre",
-    "octubre",
-    "noviembre",
-    "diciembre",
-)
-_ORDINALS = {
-    1: "primer",
-    2: "segundo",
-    3: "tercer",
-    4: "cuarto",
-    5: "quinto",
-    -1: "último",
-    -2: "penúltimo",
-    -3: "antepenúltimo",
-}
-_UNITS: dict[Freq, tuple[str, str]] = {
-    "daily": ("cada día", "días"),
-    "weekly": ("cada semana", "semanas"),
-    "monthly": ("cada mes", "meses"),
-    "yearly": ("cada año", "años"),
-}
+Locale = Literal["en", "es"]
+_WORDS = Path(__file__).resolve().parent / "i18n"
 _WORKWEEK = ("MO", "TU", "WE", "TH", "FR")
 
 
-def _join(items: list[str]) -> str:
-    if len(items) <= 1:
-        return "".join(items)
-    return ", ".join(items[:-1]) + " y " + items[-1]
+@cache
+def _catalog(locale: str) -> dict[str, str]:
+    path = _WORDS / f"{locale}.json"
+    if not path.exists():
+        path = _WORDS / "en.json"
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _month_day_phrases(days: tuple[int, ...]) -> str:
-    ordered = _month_days(days)
-    if all(day > 0 for day in ordered):
-        if len(ordered) == 1:
-            return f"el día {ordered[0]}"
-        return "los días " + _join([str(day) for day in ordered])
-    return _join([f"el día {day}" if day > 0 else f"el {_ORDINALS[day]} día" for day in ordered])
+class _Say:
+    def __init__(self, locale: str) -> None:
+        self.words = _catalog(locale)
+
+    def __call__(self, key: str, **values: object) -> str:
+        return self.words[key].format(**values)
+
+    def join(self, items: list[str]) -> str:
+        if len(items) <= 1:
+            return "".join(items)
+        return ", ".join(items[:-1]) + self("and") + items[-1]
+
+    def day(self, weekday: Weekday, many: bool = False) -> str:
+        return self(f"day.{weekday}.{'many' if many else 'one'}")
+
+    def month(self, month: int) -> str:
+        return self(f"month.{month}")
+
+    def ordinal(self, pos: int) -> str:
+        return self(f"ordinal.{pos}")
+
+    def month_days(self, days: tuple[int, ...]) -> str:
+        ordered = _month_days(days)
+        if all(day > 0 for day in ordered):
+            if len(ordered) == 1:
+                return self("month_day.one", day=ordered[0])
+            return self("month_day.many", days=self.join([str(day) for day in ordered]))
+        return self.join(
+            [
+                self("month_day.one", day=day)
+                if day > 0
+                else self("month_day.from_end", ordinal=self.ordinal(day))
+                for day in ordered
+            ]
+        )
+
+    def positioned(self, days: tuple[Day, ...]) -> str:
+        return self.join(
+            [
+                self("positioned", ordinal=self.ordinal(d.pos), day=self.day(d.weekday))  # type: ignore[arg-type]
+                for d in _days(days)
+            ]
+        )
 
 
-def _positioned(days: tuple[Day, ...]) -> str:
-    return _join([f"el {_ORDINALS[d.pos]} {_DAY_NAMES[d.weekday][0]}" for d in _days(days)])  # type: ignore[index]
-
-
-def describe(rule: Rule) -> str:
-    one, many = _UNITS[rule.freq]
-    base = one if rule.interval == 1 else f"cada {rule.interval} {many}"
-    parts = [base]
+def describe(rule: Rule, locale: Locale | str = "es") -> str:
+    say = _Say(locale)
+    key = rule.freq
+    parts = [say(f"every.{key}") if rule.interval == 1 else say(f"every_n.{key}", n=rule.interval)]
     weekdays = [day.weekday for day in _days(rule.by_day)]
 
     if rule.freq == "weekly" and weekdays:
         if rule.interval == 1 and tuple(weekdays) == _WORKWEEK:
-            parts = ["de lunes a viernes"]
+            parts = [say("workweek")]
         elif len(weekdays) == 1:
-            parts.append(f"el {_DAY_NAMES[weekdays[0]][0]}")
+            parts.append(say("weekly.one", day=say.day(weekdays[0])))
         else:
-            parts.append(_join([_DAY_NAMES[day][0] for day in weekdays]))
+            parts.append(say.join([say.day(day) for day in weekdays]))
     elif rule.freq == "monthly":
         if rule.by_month_day:
-            parts.append(_month_day_phrases(rule.by_month_day))
+            parts.append(say.month_days(rule.by_month_day))
         elif rule.by_day and rule.by_day[0].pos is not None:
-            parts.append(_positioned(rule.by_day))
+            parts.append(say.positioned(rule.by_day))
         elif rule.by_day:
-            parts.append("los " + _join([_DAY_NAMES[day][1] for day in weekdays]))
+            parts.append(
+                say("monthly.weekdays", days=say.join([say.day(d, True) for d in weekdays]))
+            )
     elif rule.freq == "yearly" and rule.by_month:
-        months = _join([_MONTHS[month - 1] for month in sorted(rule.by_month)])
+        months = say.join([say.month(month) for month in sorted(rule.by_month)])
         if rule.by_month_day:
             ordered = _month_days(rule.by_month_day)
             if len(ordered) == 1 and ordered[0] > 0:
-                parts.append(f"el {ordered[0]} de {months}")
+                parts.append(say("yearly.date", day=ordered[0], month=months))
             else:
-                parts.append(f"{_month_day_phrases(rule.by_month_day)} de {months}")
+                parts.append(
+                    say("yearly.of", what=say.month_days(rule.by_month_day), months=months)
+                )
         elif rule.by_day:
-            parts.append(f"{_positioned(rule.by_day)} de {months}")
+            parts.append(say("yearly.of", what=say.positioned(rule.by_day), months=months))
         else:
-            parts.append(f"en {months}")
+            parts.append(say("yearly.in", months=months))
 
     if rule.count is not None:
-        parts.append("una vez" if rule.count == 1 else f"{rule.count} veces")
+        parts.append(say("count.one") if rule.count == 1 else say("count.many", count=rule.count))
     if rule.until is not None:
         day = rule.until.date() if isinstance(rule.until, datetime) else rule.until
-        parts.append(f"hasta el {day.day} de {_MONTHS[day.month - 1]} de {day.year}")
+        date_text = say("date", day=day.day, month=say.month(day.month), year=day.year)
+        parts.append(say("until", date=date_text))
     return ", ".join(parts)
