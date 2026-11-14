@@ -55,6 +55,7 @@ def test_a_record_is_a_note_of_an_app_or_a_day() -> None:
         ({"properties": {"Valoración": 4}}, "properties"),
         ({"properties": {"arga": "otro:1"}}, "whoever writes"),
         ({"properties": {"tipo": "Otro"}}, "whoever writes"),
+        ({"properties": {"type": "Other"}}, "whoever writes"),
         ({"properties": {"nota": float("nan")}}, "finite number"),
         ({"properties": {"nota": {"a": 1}}}, "properties"),
         ({"folder": "Libros/../Otros"}, "folder"),
@@ -84,6 +85,7 @@ def test_how_things_are_written_is_the_same_in_every_app() -> None:
     assert records.property_name("Kilómetros a fecha de") == "kilometros_a_fecha_de"
     assert records.property_name("2º titular") == "c_2o_titular"
     assert records.property_name("Tipo") == "tipo_"
+    assert records.property_name("Type") == "type_"
 
 
 @pytest.fixture
