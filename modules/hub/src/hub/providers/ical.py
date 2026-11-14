@@ -26,9 +26,9 @@ def clean_url(raw: str) -> str:
         value = "https://" + value[len("webcal://") :]
     parts = urlsplit(value)
     if parts.scheme not in ("http", "https") or not parts.netloc or " " in value:
-        raise ValueError("pega la dirección entera, empezando por https:// o webcal://")
+        raise ValueError("paste the whole address, starting with https:// or webcal://")
     if len(value) > 2000:
-        raise ValueError("la dirección es demasiado larga")
+        raise ValueError("the address is too long")
     return value
 
 
@@ -91,7 +91,7 @@ def parse(body: bytes, today: date) -> list[Item]:
     try:
         calendar = icalendar.Calendar.from_ical(body)
     except ValueError as error:
-        raise SourceError(f"no es un calendario iCalendar: {error}") from error
+        raise SourceError(f"not an iCalendar calendar: {error}") from error
     fallback = str(calendar.get("X-WR-TIMEZONE") or "UTC")
     try:
         ZoneInfo(fallback)
@@ -101,10 +101,8 @@ def parse(body: bytes, today: date) -> list[Item]:
     repeating = _repeating(calendar)
     try:
         found = recurring_ical_events.of(calendar).between(first, last + timedelta(days=1))
-    except Exception as error:  # noqa: BLE001 - un calendario mal formado se dice, no tumba nada
-        raise SourceError(
-            f"el calendario no se puede leer: {type(error).__name__} {error}"
-        ) from error
+    except Exception as error:  # noqa: BLE001 - a malformed calendar is reported, it breaks nothing
+        raise SourceError(f"the calendar cannot be read: {type(error).__name__} {error}") from error
     items: list[Item] = []
     for index, component in enumerate(found):
         if "DTSTART" not in component:
@@ -124,7 +122,7 @@ def parse(body: bytes, today: date) -> list[Item]:
         items.append(
             Item(
                 uid=_uid(component, index, repeating),
-                title=clip(str(component.get("SUMMARY") or ""), 200) or "(sin título)",
+                title=clip(str(component.get("SUMMARY") or ""), 200) or "(untitled)",
                 all_day=all_day,
                 start=start,
                 end=end,
@@ -148,21 +146,19 @@ async def download(client: httpx.AsyncClient, url: str) -> bytes:
         )
     except httpx.HTTPError as error:
         raise SourceError(
-            f"el calendario no contesta ({type(error).__name__})", transient=True
+            f"the calendar does not answer ({type(error).__name__})", transient=True
         ) from error
     if response.status_code == 429:
-        raise SourceError("el servidor del calendario pide esperar", rate_limited=True)
+        raise SourceError("the calendar server asks to wait", rate_limited=True)
     if response.status_code >= 500:
-        raise SourceError(
-            f"el servidor del calendario falla ({response.status_code})", transient=True
-        )
+        raise SourceError(f"the calendar server fails ({response.status_code})", transient=True)
     if response.status_code in (401, 403, 404, 410):
         raise SourceError(
-            f"la dirección ya no da el calendario ({response.status_code}): "
-            "comprueba que sigue publicado"
+            f"the address no longer gives the calendar ({response.status_code}): "
+            "check that it is still published"
         )
     if response.status_code >= 400:
-        raise SourceError(f"el servidor del calendario contesta {response.status_code}")
+        raise SourceError(f"the calendar server answers {response.status_code}")
     if len(response.content) > MAX_BYTES:
         raise SourceError("el calendario pesa demasiado para suscribirse")
     return response.content
@@ -171,7 +167,7 @@ async def download(client: httpx.AsyncClient, url: str) -> bytes:
 async def sync(client: httpx.AsyncClient, secrets: dict[str, str], connection: Any) -> list[dict]:
     url = secrets.get(URL) or (connection.config or {}).get(URL)
     if not url:
-        raise SourceError("la suscripción no tiene dirección")
+        raise SourceError("the subscription has no address")
     now = datetime.now(UTC)
     body = await download(client, url)
     return events(connection, connection.provider, parse(body, now.date()), now)

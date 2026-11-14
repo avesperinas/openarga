@@ -143,7 +143,7 @@ async def chart(
     try:
         body = response.json()
     except ValueError as error:
-        raise SourceError("Yahoo no contesta con datos") from error
+        raise SourceError("Yahoo answers without data") from error
     return quoted_in(body), closes(body)
 
 
@@ -173,7 +173,7 @@ async def onvista(
         except (httpx.HTTPError, ValueError) as error:
             raise SourceError(f"onvista no contesta ({type(error).__name__})") from error
         if not isinstance(body, dict):
-            raise SourceError(f"onvista no da los cierres de {line.isin}")
+            raise SourceError(f"onvista gives no closes for {line.isin}")
         currency = body.get("isoCurrency") or currency
         for stamp, value in zip(
             body.get("datetimeLast") or [], body.get("last") or [], strict=False
@@ -282,7 +282,7 @@ async def fetch(
         try:
             priced = await to_euros(got, currency) if got else {}
         except SourceError as error:
-            problems.append(f"sin cambio de {currency}: {error}")
+            problems.append(f"no exchange rate for {currency}: {error}")
             priced = {}
         if not priced:
             failed.append(
@@ -297,10 +297,10 @@ async def fetch(
         filled[line.symbol] = line.since.isoformat()
 
     if not found:
-        raise SourceError(f"no ha dado ningún precio ({'; '.join(failed[:3])}…)")
+        raise SourceError(f"gave no price ({'; '.join(failed[:3])}…)")
     return Fetched(
         events(found),
-        problem=f"Sin precio de {'; '.join(failed)}" if failed else None,
+        problem=f"No price for {'; '.join(failed)}" if failed else None,
         state={"filled": filled} if lines else None,
     )
 

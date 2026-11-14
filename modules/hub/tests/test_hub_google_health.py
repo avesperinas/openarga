@@ -114,7 +114,7 @@ async def test_one_per_person_and_reconnecting_is_the_same(api, kernel, fake) ->
     state = parse_qs(urlparse(url).query)["state"][0]
 
     assert again.status_code == 409
-    assert "Reconectar" in again.json()["detail"]
+    assert "Reconnect" in again.json()["detail"]
     assert await connect_after(api, state) == connection
 
 
@@ -290,7 +290,7 @@ async def test_a_connection_from_before_the_new_permissions_says_to_reconnect(
 
     ficha = (await api.get(f"/connections/{connection}")).json()
     assert (ficha["state"], ficha["runs"][0]["outcome"]) == ("active", "ok")
-    assert ficha["runs"][0]["detail"].count("reconecta Google Health") == 4
+    assert ficha["runs"][0]["detail"].count("reconnect Google Health") == 4
     assert "insufficient" not in ficha["runs"][0]["detail"]
     assert await events(schema, "health.ecg") == []
     assert await events(schema, "health.device") == []
@@ -340,7 +340,7 @@ async def test_a_withdrawn_authorisation_leaves_it_expired(
 
     ficha = (await api.get(f"/connections/{connection}")).json()
     assert ficha["state"] == "expired"
-    assert "reconecta" in ficha["runs"][0]["detail"].lower()
+    assert "reconnect" in ficha["runs"][0]["detail"].lower()
 
 
 async def test_an_account_without_a_google_health_profile_says_so(
@@ -354,4 +354,4 @@ async def test_an_account_without_a_google_health_profile_says_so(
 
     ficha = (await api.get(f"/connections/{connection}")).json()
     assert ficha["runs"][0]["outcome"] == "error"
-    assert "perfil en Google Health" in ficha["runs"][0]["detail"]
+    assert "Google Health profile" in ficha["runs"][0]["detail"]

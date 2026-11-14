@@ -162,7 +162,7 @@ async def test_a_source_down_does_not_sink_the_search(api, sources) -> None:
 
     assert [c["source"] for c in answer["candidates"]] == ["google_books"]
     assert answer["failed"] == [
-        {"source": "openlibrary", "reason": "Open Library no contestó: ConnectError"}
+        {"source": "openlibrary", "reason": "Open Library did not answer: ConnectError"}
     ]
 
 

@@ -43,8 +43,8 @@ async def start(
     provider = catalogue.provider(PROVIDER)
     if await database.scalar(EXISTING) is not None:
         raise Refused(
-            "Ya tienes Google Health conectado: para volver a autorizarlo, pulsa Reconectar en su "
-            "ficha.",
+            "Google Health is already connected: to authorise it again, press Reconnect in its "
+            "page.",
             409,
         )
     cleaned = connections.clean_secrets(provider, given)

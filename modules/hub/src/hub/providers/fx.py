@@ -47,14 +47,14 @@ async def rate(client: httpx.AsyncClient, currency: str, day: date, today: date)
         )
         payload = response.json()
     except httpx.HTTPError as error:
-        raise SourceFailed(f"Frankfurter no contestó: {type(error).__name__}") from error
+        raise SourceFailed(f"Frankfurter did not answer: {type(error).__name__}") from error
     except ValueError as error:
-        raise SourceFailed("Frankfurter contestó algo que no es JSON") from error
+        raise SourceFailed("Frankfurter answered something that is not JSON") from error
     if response.status_code == 404 or (response.status_code == 422):
-        raise SourceFailed(f"el BCE no publica el cambio de {currency}")
+        raise SourceFailed(f"the ECB does not publish the rate of {currency}")
     value = (payload.get("rates") or {}).get("EUR") if isinstance(payload, dict) else None
     if response.status_code != 200 or value is None:
-        raise SourceFailed(f"Frankfurter no dio el cambio de {currency}")
+        raise SourceFailed(f"Frankfurter gave no rate for {currency}")
     answer = {"currency": currency, "rate": float(value), "date": payload.get("date")}
     if len(CACHE) >= CACHE_SIZE:
         del CACHE[min(CACHE, key=lambda one: CACHE[one][0])]

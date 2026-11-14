@@ -44,10 +44,10 @@ REGIONS: dict[str, dict[str, str]] = {
 def clean_settings(raw: dict[str, Any]) -> dict[str, Any]:
     country = str(raw.get(COUNTRY) or "").strip().upper()
     if not re.fullmatch(r"[A-Z]{2}", country):
-        raise ValueError("el país va con su código de dos letras, como ES")
+        raise ValueError("the country goes with its two-letter code, like ES")
     region = str(raw.get(REGION) or "").strip().upper() or None
     if region is not None and not re.fullmatch(rf"{country}-[A-Z0-9]{{1,3}}", region):
-        raise ValueError(f"la región va con su código, como {country}-NC")
+        raise ValueError(f"the region goes with its code, like {country}-NC")
     return {COUNTRY: country, REGION: region}
 
 
@@ -109,7 +109,7 @@ async def fetch(
         found = await _get(client, f"/PublicHolidays/{year}/{country}")
         if found is None:
             if year == today.year:
-                raise SourceError(f"Nager.Date no tiene los festivos de {country}")
+                raise SourceError(f"Nager.Date does not have the holidays of {country}")
             continue
         items.extend(items_of(found, country, region))
     return items
@@ -167,7 +167,7 @@ async def search_regions(
     client: httpx.AsyncClient, _query: str | None, parent: str | None
 ) -> list[dict[str, str]]:
     if not parent or len(parent) != 2:
-        raise ValueError("falta el país")
+        raise ValueError("the country is missing")
     return await regions(client, parent.upper(), datetime.now(UTC).date())
 
 

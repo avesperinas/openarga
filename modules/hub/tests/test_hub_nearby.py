@@ -132,7 +132,7 @@ async def test_overpass_still_busy_is_said_and_seen(api, overpass, monkeypatch) 
 
     answer = (await ask(api, {**HOTEL, "kind": "nature"})).json()
 
-    assert answer["places"] == [] and "saturada" in answer["failed"]
+    assert answer["places"] == [] and "overloaded" in answer["failed"]
     assert len(overpass.asked) == 2
     assert await runs(api) == ["error"]
 

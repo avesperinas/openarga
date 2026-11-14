@@ -126,7 +126,7 @@ def _nearby(found: dict, group: str, lat: float, lon: float) -> Nearby | None:
 
 
 async def _ask(client: httpx.AsyncClient, sent: str) -> dict:
-    problem = "Overpass no contestó"
+    problem = "Overpass did not answer"
     for attempt in range(2):
         if attempt:
             await asyncio.sleep(RETRY_SECONDS)
@@ -138,17 +138,17 @@ async def _ask(client: httpx.AsyncClient, sent: str) -> dict:
                 timeout=timeout(),
             )
         except httpx.HTTPError as error:
-            problem = f"Overpass no contestó: {type(error).__name__}"
+            problem = f"Overpass did not answer: {type(error).__name__}"
             continue
         if response.status_code in (429, 502, 503, 504):
-            problem = "Overpass está saturada: hay demasiadas consultas ahora"
+            problem = "Overpass is overloaded: too many queries right now"
             continue
         if response.status_code != 200:
-            raise SourceFailed(f"Overpass contestó {response.status_code}")
+            raise SourceFailed(f"Overpass answered {response.status_code}")
         try:
             return response.json()
         except ValueError as error:
-            raise SourceFailed("Overpass contestó algo que no es JSON") from error
+            raise SourceFailed("Overpass answered something that is not JSON") from error
     raise SourceFailed(problem)
 
 
@@ -167,7 +167,7 @@ async def around(
         payload = await _ask(client, query(kind, lat, lon, radius, limit))
     elements = payload.get("elements") if isinstance(payload, dict) else None
     if not isinstance(elements, list):
-        raise SourceFailed("Overpass contestó algo que no es una lista de sitios")
+        raise SourceFailed("Overpass answered something that is not a list of places")
     seen: set[str] = set()
     places: list[Nearby] = []
     for one in sorted(

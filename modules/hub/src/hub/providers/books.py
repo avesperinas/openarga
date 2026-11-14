@@ -180,9 +180,9 @@ async def search_openlibrary(
         response.raise_for_status()
         payload = response.json()
     except httpx.HTTPError as error:
-        raise SourceFailed(f"Open Library no contestó: {type(error).__name__}") from error
+        raise SourceFailed(f"Open Library did not answer: {type(error).__name__}") from error
     except ValueError as error:
-        raise SourceFailed("Open Library contestó algo que no es JSON") from error
+        raise SourceFailed("Open Library answered something that is not JSON") from error
     candidates = [_openlibrary_candidate(work, wanted) for work in payload.get("docs") or []]
     return [candidate for candidate in candidates if candidate is not None]
 
@@ -216,7 +216,7 @@ async def search_google(
     client: httpx.AsyncClient, key: str, query: str, limit: int = 10
 ) -> list[Candidate]:
     if not key:
-        raise SourceFailed("sin clave de Google Books: ponla en Hub")
+        raise SourceFailed("no Google Books key: add it in Hub")
     wanted = looks_like_isbn(query)
     try:
         response = await client.get(
@@ -234,12 +234,12 @@ async def search_google(
         payload = response.json()
     except httpx.HTTPStatusError as error:
         if error.response.status_code in (400, 403):
-            raise SourceFailed("Google Books no acepta la clave: revísala en Hub") from error
-        raise SourceFailed(f"Google Books contestó {error.response.status_code}") from error
+            raise SourceFailed("Google Books does not accept the key: check it in Hub") from error
+        raise SourceFailed(f"Google Books answered {error.response.status_code}") from error
     except httpx.HTTPError as error:
-        raise SourceFailed(f"Google Books no contestó: {type(error).__name__}") from error
+        raise SourceFailed(f"Google Books did not answer: {type(error).__name__}") from error
     except ValueError as error:
-        raise SourceFailed("Google Books contestó algo que no es JSON") from error
+        raise SourceFailed("Google Books answered something that is not JSON") from error
     candidates = [_google_candidate(volume) for volume in payload.get("items") or []]
     return [candidate for candidate in candidates if candidate is not None]
 
@@ -262,13 +262,13 @@ def image_type(body: bytes) -> str | None:
 def cover_request(source: str, ref: str) -> tuple[str, dict[str, str]]:
     if source == "openlibrary":
         if not ref.isdigit():
-            raise SourceFailed("esa no es una portada de Open Library")
+            raise SourceFailed("that is not an Open Library cover")
         return OPENLIBRARY_COVER.format(ref=ref), {"default": "false"}
     if source == "google_books":
         if not re.fullmatch(r"[A-Za-z0-9_\-]{4,40}", ref):
-            raise SourceFailed("esa no es una portada de Google Books")
+            raise SourceFailed("that is not a Google Books cover")
         return GOOGLE_COVER, {"id": ref, "printsec": "frontcover", "img": "1", "zoom": "1"}
-    raise SourceFailed(f"no hay portadas de '{source}'")
+    raise SourceFailed(f"there are no covers from '{source}'")
 
 
 async def fetch_cover(client: httpx.AsyncClient, source: str, ref: str) -> tuple[bytes, str] | None:
@@ -285,7 +285,7 @@ async def fetch_cover(client: httpx.AsyncClient, source: str, ref: str) -> tuple
             return None
         response.raise_for_status()
     except httpx.HTTPError as error:
-        raise SourceFailed(f"la portada no llegó: {type(error).__name__}") from error
+        raise SourceFailed(f"the cover did not arrive: {type(error).__name__}") from error
     body = response.content
     if len(body) > COVER_MAX_BYTES:
         raise SourceFailed("la portada pesa demasiado")
@@ -298,7 +298,7 @@ async def fetch_cover(client: httpx.AsyncClient, source: str, ref: str) -> tuple
 def normalise(key: str, raw: str) -> str:
     value = raw.strip()
     if not value or any(character.isspace() for character in value):
-        raise ValueError("no parece una clave: pégala tal cual, sin espacios")
+        raise ValueError("that does not look like a key: paste it as it is, without spaces")
     return value
 
 

@@ -133,11 +133,11 @@ async def search(
             response.raise_for_status()
             payload = response.json()
         except httpx.HTTPError as error:
-            raise SourceFailed(f"Nominatim no contestó: {type(error).__name__}") from error
+            raise SourceFailed(f"Nominatim did not answer: {type(error).__name__}") from error
         except ValueError as error:
-            raise SourceFailed("Nominatim contestó algo que no es JSON") from error
+            raise SourceFailed("Nominatim answered something that is not JSON") from error
     if not isinstance(payload, list):
-        raise SourceFailed("Nominatim contestó algo que no es una lista de lugares")
+        raise SourceFailed("Nominatim answered something that is not a list of places")
     candidates = [one for one in (_candidate(found) for found in payload) if one is not None]
     PACE.remember(key, candidates)
     return candidates

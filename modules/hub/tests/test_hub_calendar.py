@@ -219,8 +219,8 @@ def test_formula1_brings_the_chosen_sessions_in_utc() -> None:
     items = formula1.items_of([RACE], ["race", "qualifying"])
 
     assert [item.title for item in items] == [
-        "GP de España · Race",
-        "GP de España · Qualifying",
+        "Spanish Grand Prix · Race",
+        "Spanish Grand Prix · Qualifying",
     ]
     race = items[0]
     assert (race.uid, race.start, race.end) == (
@@ -500,7 +500,7 @@ async def test_a_failing_pass_never_empties_a_calendar(api, schema, kernel, sour
     outcome = await pass_of(connection, source, kernel)
 
     assert outcome.outcome == "error"
-    assert "ya no da el calendario" in (outcome.detail or "")
+    assert "no longer gives the calendar" in (outcome.detail or "")
     assert len(await published(schema, calendars.FEED)) == 1
 
 

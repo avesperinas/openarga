@@ -188,7 +188,7 @@ async def test_a_source_down_is_said_and_shows_in_its_ficha(api, sources) -> Non
 
     answer = (await ask(api, GETAWAY)).json()
 
-    assert answer == {"photo": None, "failed": "Wikimedia no contestó: ConnectError"}
+    assert answer == {"photo": None, "failed": "Wikimedia did not answer: ConnectError"}
     [connection] = [c for c in (await api.get("/connections")).json()]
     assert connection["provider"] == "wikimedia"
     ficha = (await api.get(f"/connections/{connection['id']}")).json()

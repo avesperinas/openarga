@@ -21,7 +21,7 @@ REPO_PATTERN = re.compile(r"^[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}$")
 def normalise(_key: str, raw: str) -> str:
     token = raw.strip()
     if not re.fullmatch(r"(github_pat_|ghp_|gho_|ghs_)[A-Za-z0-9_]{20,255}", token):
-        raise ValueError("eso no parece un token de GitHub: empieza por github_pat_")
+        raise ValueError("that does not look like a GitHub token: it starts with github_pat_")
     return token
 
 
@@ -29,10 +29,10 @@ def clean_settings(raw: dict[str, Any]) -> dict[str, Any]:
     repo = str(raw.get(REPO) or "").strip().removeprefix("https://github.com/").strip("/")
     repo = repo.removesuffix(".git")
     if not REPO_PATTERN.match(repo):
-        raise ValueError("el repo va como usuario/nombre, por ejemplo ana/notas")
+        raise ValueError("the repository goes as user/name, for example ana/notes")
     branch = str(raw.get(BRANCH) or "main").strip() or "main"
     if not re.fullmatch(r"[A-Za-z0-9._/-]{1,100}", branch) or ".." in branch:
-        raise ValueError("ese nombre de rama no vale")
+        raise ValueError("that branch name is not valid")
     return {REPO: repo, BRANCH: branch}
 
 
@@ -60,11 +60,11 @@ def _headers(token: str) -> dict[str, str]:
 
 def _fail(response: httpx.Response, doing: str) -> SourceError:
     if response.status_code == 401:
-        return SourceError("GitHub no acepta el token: puede que haya caducado")
+        return SourceError("GitHub does not accept the token: it may have expired")
     if response.status_code in (403, 404):
         return SourceError(
-            f"GitHub no deja {doing}: comprueba que el token es de ese repo y puede escribir su "
-            "contenido"
+            f"GitHub does not let it {doing}: check that the token is for that repository and "
+            "can write its contents"
         )
     detail = ""
     with contextlib.suppress(ValueError):
@@ -95,9 +95,7 @@ async def _head(client: httpx.AsyncClient, token: str, repo: str, branch: str) -
 
 
 async def _first_commit(client: httpx.AsyncClient, token: str, repo: str, branch: str) -> str:
-    readme = (
-        "# Notas\n\nCopia de Notebook. Se escribe sola: lo que cambies aquí no vuelve a Notebook.\n"
-    )
+    readme = "# Notes\n\nA copy of Notebook. It writes itself: what you change here does not go back to Notebook.\n"
     made = await _call(
         client,
         "PUT",
@@ -122,10 +120,10 @@ async def push(
     if head is None:
         head = await _first_commit(client, token, repo, branch)
     commit = await _call(
-        client, "GET", f"{API}/repos/{repo}/git/commits/{head}", token, "leer el último commit"
+        client, "GET", f"{API}/repos/{repo}/git/commits/{head}", token, "read the latest commit"
     )
     if commit.status_code != 200:
-        raise _fail(commit, "leer el último commit")
+        raise _fail(commit, "read the latest commit")
     base_tree = commit.json()["tree"]["sha"]
 
     entries: list[dict[str, Any]] = [
@@ -153,11 +151,11 @@ async def push(
         "POST",
         f"{API}/repos/{repo}/git/trees",
         token,
-        "preparar el árbol",
+        "prepare the tree",
         json={"base_tree": base_tree, "tree": entries},
     )
     if tree.status_code != 201:
-        raise _fail(tree, "preparar el árbol")
+        raise _fail(tree, "prepare the tree")
     made = await _call(
         client,
         "POST",

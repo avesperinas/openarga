@@ -82,7 +82,7 @@ def _varint(data: bytes, at: int) -> tuple[int, int]:
 
 def header(data: bytes) -> Header:
     if data[:7] != b"PMTiles" or data[7] != 3:
-        raise SourceFailed("no es un PMTiles v3")
+        raise SourceFailed("not a PMTiles v3 file")
     fields = struct.unpack_from("<11Q", data, 8)
     return Header(
         root_offset=fields[0],
@@ -100,7 +100,7 @@ def _inflate(data: bytes, compression: int) -> bytes:
         return data
     if compression == 2:
         return gzip.decompress(data)
-    raise SourceFailed(f"compresión {compression} no soportada")
+    raise SourceFailed(f"compression {compression} not supported")
 
 
 def directory(data: bytes) -> list[Entry]:
@@ -173,12 +173,12 @@ async def _range(client: httpx.AsyncClient, url: str, offset: int, length: int) 
             timeout=timeout(),
         )
     except httpx.HTTPError as error:
-        raise SourceFailed(f"Protomaps no contestó: {type(error).__name__}") from error
+        raise SourceFailed(f"Protomaps did not answer: {type(error).__name__}") from error
     if response.status_code == 404:
         ARCHIVE.forget()
-        raise SourceFailed("esa versión del mapa ya no está; se elegirá otra")
+        raise SourceFailed("that map version is gone; another will be chosen")
     if response.status_code not in (200, 206):
-        raise SourceFailed(f"Protomaps contestó {response.status_code}")
+        raise SourceFailed(f"Protomaps answered {response.status_code}")
     return response.content[:length] if response.status_code == 200 else response.content
 
 
@@ -190,17 +190,17 @@ async def _latest(client: httpx.AsyncClient) -> str:
         response.raise_for_status()
         key = response.json()[-1]["key"]
     except httpx.HTTPStatusError as error:
-        why = f"contestó {error.response.status_code}"
+        why = f"answered {error.response.status_code}"
     except httpx.HTTPError as error:
-        why = f"no contestó ({type(error).__name__})"
+        why = f"did not answer ({type(error).__name__})"
     except ValueError:
-        why = "lo que contestó no es JSON"
+        why = "its answer is not JSON"
     except (KeyError, IndexError, TypeError):
-        why = "su lista de mapas no tiene la forma de siempre"
+        why = "its map list does not have the usual shape"
     else:
         ARCHIVE.refused = None
         return key
-    reason = f"Protomaps no dijo cuál es su mapa más reciente: {why}"
+    reason = f"Protomaps did not say which map is the latest: {why}"
     ARCHIVE.refused = (time.monotonic(), reason)
     raise SourceFailed(reason)
 
