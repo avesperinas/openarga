@@ -31,11 +31,11 @@ const START: Onboarding = {
       origin: "start",
       bank_key: "start.families",
       kind: "many",
-      text: "¿De qué te gusta aprender?",
-      why: "Para saber qué temas traerte.",
+      text: "What do you like to learn about?",
+      why: "So I know which topics to bring you.",
       options: [
-        { value: "historia", label: "Historia" },
-        { value: "ciencia", label: "Ciencia y universo" },
+        { value: "history", label: "History" },
+        { value: "science", label: "Science and the universe" },
       ],
     },
     {
@@ -43,8 +43,8 @@ const START: Onboarding = {
       origin: "start",
       bank_key: "start.time",
       kind: "one",
-      text: "¿A qué hora te viene bien?",
-      why: "Te aviso a esa hora.",
+      text: "What time suits you?",
+      why: "I let you know at that time.",
       options: [{ value: "09:00", label: "9:00" }],
     },
   ],
@@ -56,25 +56,25 @@ const PILL: Pill = {
   run_key: "pill:2026-11-10",
   parent_id: null,
   depth: 0,
-  family_key: "historia",
-  topic: "La batalla de Leuctra",
+  family_key: "history",
+  topic: "The battle of Leuctra",
   hook: null,
-  language: "es",
+  language: "en",
   minutes: 15,
-  headline: "La columna que rompió Esparta",
-  lead: "Un ejército que nunca perdía y una idea sencilla.",
+  headline: "The column that broke Sparta",
+  lead: "An army that never lost and a simple idea.",
   sections: [
-    { title: "El orden oblicuo", text: "Primero.\n\nSegundo." },
-    { title: "Lo que vino después", text: "Tercero." },
+    { title: "The oblique order", text: "First.\n\nSecond." },
+    { title: "What came after", text: "Third." },
   ],
-  to_tell: "Esparta no perdía una batalla campal desde hacía generaciones.",
-  to_think: "¿Por qué tardó tanto?",
+  to_tell: "Sparta had not lost a pitched battle in generations.",
+  to_think: "Why did it take so long?",
   branches: [
-    { title: "Epaminondas", why: "El general" },
-    { title: "El Batallón Sagrado", why: "150 parejas" },
-    { title: "La caída de Esparta", why: "De Leuctra a la nada" },
+    { title: "Epaminondas", why: "The general" },
+    { title: "The Sacred Band", why: "150 couples" },
+    { title: "The fall of Sparta", why: "From Leuctra to nothing" },
   ],
-  sources: [{ title: "Batalla de Leuctra", url: "https://es.wikipedia.org/wiki/Batalla_de_Leuctra" }],
+  sources: [{ title: "Battle of Leuctra", url: "https://en.wikipedia.org/wiki/Battle_of_Leuctra" }],
   glossary: [],
   reaction: null,
   read_at: "2026-11-10T09:00:00Z",
@@ -83,10 +83,10 @@ const PILL: Pill = {
 const FACT: Fact = {
   id: "f1",
   day: "2026-11-10",
-  family_key: "ciencia",
-  text: "Un dato cierto y sorprendente sobre el universo.",
+  family_key: "science",
+  text: "A true and surprising fact about the universe.",
   detail: null,
-  source: { title: "Fuente", url: "https://example.org" },
+  source: { title: "Source", url: "https://example.org" },
   reaction: null,
   created_at: "2026-11-10T08:40:00Z",
 };
@@ -94,12 +94,12 @@ const pick = (extra: Partial<Recommendation> = {}): Recommendation => ({
   id: "p1",
   kind: "book",
   list: "read",
-  title: "Una novela histórica",
-  creators: ["Una autora"],
+  title: "A historical novel",
+  creators: ["An author"],
   year: 2008,
-  length: "720 páginas",
-  language: "es",
-  why: "Porque te gustó la anterior",
+  length: "720 pages",
+  language: "en",
+  why: "Because you liked the previous one",
   because: [],
   origin: "weekly",
   pill_id: null,
@@ -121,18 +121,18 @@ const TASTES: Tastes = {
     {
       id: "t1",
       facet: "genre",
-      label: "Novela histórica",
+      label: "Historical novels",
       stance: 2,
       source: "seen",
-      evidence: "6 novelas, media 4,2",
+      evidence: "6 novels, average 4.2",
       status: "proposed",
       updated_at: "2026-11-09T17:00:00Z",
     },
-    { id: "t2", facet: "avoid", label: "Fútbol", stance: -2, source: "said", evidence: null, status: "confirmed", updated_at: "2026-11-09T17:00:00Z" },
+    { id: "t2", facet: "avoid", label: "Football", stance: -2, source: "said", evidence: null, status: "confirmed", updated_at: "2026-11-09T17:00:00Z" },
   ],
   families: [
-    { key: "historia", name: "Historia", hue: 3, glyph: "landmark", themes: "", weight: 2, outside: false },
-    { key: "ciencia", name: "Ciencia y universo", hue: 5, glyph: "atom", themes: "", weight: 1, outside: false },
+    { key: "history", name: "History", hue: 3, glyph: "landmark", themes: "", weight: 2, outside: false },
+    { key: "science", name: "Science and the universe", hue: 5, glyph: "atom", themes: "", weight: 1, outside: false },
   ],
   sources: [],
   settings: SETTINGS,
@@ -177,7 +177,7 @@ beforeEach(() => {
     "GET /api/insights/profile": () => ({ name: "Txuri", about: "", named: true }),
     "GET /api/insights/today": () => day(),
     "GET /api/insights/tastes": () => TASTES,
-    "GET /api/insights/picks": () => [pick(), pick({ id: "p2", title: "Guardado", state: "saved" })],
+    "GET /api/insights/picks": () => [pick(), pick({ id: "p2", title: "Already saved", state: "saved" })],
     "GET /api/insights/pills": () => [],
     "GET /api/insights/onboarding": () => START,
     "GET /api/insights/version": () => ({ version: "1.1.0" }),
@@ -189,7 +189,7 @@ beforeEach(() => {
       const key = `${init?.method ?? "GET"} ${url}`;
       asked.push(key);
       const reply = replies[key];
-      if (!reply) return json({ detail: "no existe" }, 404);
+      if (!reply) return json({ detail: "not found" }, 404);
       const body = await reply();
       return body instanceof Response ? body : json(body);
     }),
@@ -211,6 +211,8 @@ const settle = () =>
     for (let i = 0; i < 6; i += 1) await new Promise((resolve) => setTimeout(resolve, 0));
   });
 
+const retry = () => host.querySelector<HTMLButtonElement>(".empty-state[role=alert] button") ?? undefined;
+
 const button = (name: string) =>
   Array.from(host.querySelectorAll<HTMLButtonElement>("button")).find((one) => one.textContent?.includes(name));
 
@@ -227,8 +229,8 @@ async function serious(): Promise<string[]> {
     .map((one) => `${one.id}: ${one.nodes.map((node) => node.target.join(" ")).join(", ")}`);
 }
 
-describe("lo que se decide sin pintar", () => {
-  it("qué decir de la píldora que aún no está", () => {
+describe("what is decided without drawing", () => {
+  it("what to say of the pill that is not there yet", () => {
     expect(pillState(day())).toBe("ready");
     expect(pillState(day({ pill: null }))).toBe("later");
     expect(pillState(day({ pill: null, settings: { ...SETTINGS, pill_on: false } }))).toBe("off");
@@ -237,7 +239,7 @@ describe("lo que se decide sin pintar", () => {
     expect(pillState(day({ pill: null, asked: { ...waiting, state: "failed" } }))).toBe("failed");
   });
 
-  it("la biblioteca: lo sin abrir arriba y lo de cada lista, lo hecho al final", () => {
+  it("the library: what is unopened on top and each list, what is done at the end", () => {
     const all = [
       pick({ id: "a", state: "done", updated_at: "2026-11-10" }),
       pick({ id: "b", state: "doing" }),
@@ -249,27 +251,27 @@ describe("lo que se decide sin pintar", () => {
     expect(forYou(all).map((one) => one.id)).toEqual(["c"]);
   });
 
-  it("lo confirmado por faceta, sin lo propuesto ni lo descartado", () => {
+  it("what is confirmed by facet, without what is proposed or dismissed", () => {
     expect(grouped(TASTES.traits).map((group) => [group.facet, group.traits.length])).toEqual([["avoid", 1]]);
   });
 });
 
-describe("hoy", () => {
-  it("la píldora entera, con su barra, sus datos, sus ramas y lo de seguir", async () => {
+describe("today", () => {
+  it("the whole pill, with its bar, its facts, its branches and what to follow", async () => {
     await open("/insights/");
 
-    expect(host.textContent).toContain("Tu píldora");
-    expect(host.textContent).toContain("La columna que rompió Esparta");
-    expect(host.textContent).toContain("Para contar");
-    expect(host.textContent).toContain("Datos de hoy");
-    expect(host.textContent).toContain("Quiero saber más sobre…");
-    expect(host.textContent).toContain("Para seguir");
-    expect(host.querySelector('[aria-label="Partes de la píldora"]')).not.toBeNull();
-    expect(host.textContent).toContain("Hablar con Txuri");
+    expect(host.textContent).toContain("Your pill");
+    expect(host.textContent).toContain("The column that broke Sparta");
+    expect(host.textContent).toContain("To tell");
+    expect(host.textContent).toContain("Today's facts");
+    expect(host.textContent).toContain("I want to know more about…");
+    expect(host.textContent).toContain("To follow");
+    expect(host.querySelector('[aria-label="Parts of the pill"]')).not.toBeNull();
+    expect(host.textContent).toContain("Talk to Txuri");
     expect(await serious()).toEqual([]);
   });
 
-  it("antes de su hora dice cuándo llega y se puede pedir ya", async () => {
+  it("before its time it says when it arrives and it can be asked for now", async () => {
     replies["GET /api/insights/today"] = () => day({ pill: null, facts: [], picks: [] });
     replies["POST /api/insights/pills/more"] = () => ({
       id: "a1",
@@ -278,22 +280,22 @@ describe("hoy", () => {
       origin: "surprise",
       parent_id: null,
       branch: null,
-      family_key: "ciencia",
+      family_key: "science",
       asked_at: "2026-11-10T08:00:00Z",
       state: "waiting",
       detail: null,
       pill_id: null,
     });
     await open("/insights/");
-    expect(host.textContent).toContain("Tu píldora llega a las 09:00");
+    expect(host.textContent).toContain("Your pill arrives at 09:00");
 
-    act(() => button("Pídela ahora")!.click());
+    act(() => button("Ask for it now")!.click());
     await settle();
     expect(asked).toContain("POST /api/insights/pills/more");
-    expect(host.textContent).toContain("está escribiendo otra píldora");
+    expect(host.textContent).toContain("is writing another pill");
   });
 
-  it("la pregunta de Insights se contesta con un toque", async () => {
+  it("the Insights question is answered with one tap", async () => {
     replies["GET /api/insights/today"] = () =>
       day({
         question: {
@@ -301,90 +303,90 @@ describe("hoy", () => {
           origin: "pass",
           bank_key: null,
           kind: "either",
-          text: "¿Sagas o novelas que se cierran?",
-          why: "Has terminado varias sagas",
+          text: "Sagas or self-contained novels?",
+          why: "You finished several sagas",
           options: [
             { value: "saga", label: "Sagas" },
-            { value: "one", label: "Que se cierren" },
+            { value: "one", label: "Self-contained" },
           ],
         },
       });
     replies["POST /api/insights/questions/q1/answer"] = () => ({});
     await open("/insights/");
-    expect(host.textContent).toContain("Txuri te pregunta");
+    expect(host.textContent).toContain("Txuri asks you");
 
     act(() => button("Sagas")!.click());
     await settle();
     expect(asked).toContain("POST /api/insights/questions/q1/answer");
   });
 
-  it("la primera vez invita a «Que te conozca»", async () => {
+  it("the first time it invites to let it get to know you", async () => {
     replies["GET /api/insights/today"] = () => day({ onboarding: START, pill: null });
     await open("/insights/");
-    act(() => button("Empezar")!.click());
+    act(() => button("Start")!.click());
     await settle();
     expect(window.location.pathname).toBe("/insights/start");
   });
 
-  it("si falla, reintentar", async () => {
+  it("if it fails, retry", async () => {
     replies["GET /api/insights/today"] = () => json({ detail: "no" }, 500);
     await open("/insights/");
-    expect(host.textContent).toContain("No se pudo abrir tu día");
+    expect(host.textContent).toContain("Your day could not be opened");
 
     replies["GET /api/insights/today"] = () => day();
-    act(() => button("Reintentar")!.click());
+    act(() => retry()!.click());
     await settle();
-    expect(host.textContent).toContain("La columna que rompió Esparta");
+    expect(host.textContent).toContain("The column that broke Sparta");
   });
 });
 
-describe("la biblioteca", () => {
-  it("lo de esta semana en tarjetas, y guardar lo pasa a la lista", async () => {
+describe("the library", () => {
+  it("this week's in cards, and saving moves it to the list", async () => {
     replies["POST /api/insights/picks/p1/save"] = () => pick({ state: "saved", sent_to: "library" });
     await open("/insights/library");
-    expect(host.textContent).toContain("Para ti esta semana");
-    expect(host.textContent).toContain("Porque te gustó la anterior");
-    expect(host.textContent).toContain("Guardado");
+    expect(host.textContent).toContain("For you this week");
+    expect(host.textContent).toContain("Because you liked the previous one");
+    expect(host.textContent).toContain("Already saved");
 
-    act(() => button("Guardar")!.click());
+    act(() => button("Save")!.click());
     await settle();
     expect(asked).toContain("POST /api/insights/picks/p1/save");
     expect(await serious()).toEqual([]);
   });
 
-  it("sin nada, dice cómo llega", async () => {
+  it("with nothing, it says how things arrive", async () => {
     replies["GET /api/insights/picks"] = () => [];
     await open("/insights/library");
-    expect(host.textContent).toContain("Nada guardado aquí todavía");
+    expect(host.textContent).toContain("Nothing saved here yet");
   });
 });
 
-describe("tú", () => {
-  it("lo propuesto se confirma, y lo que sabe sale con de dónde", async () => {
+describe("you", () => {
+  it("what is proposed is confirmed, and what it knows shows where it comes from", async () => {
     replies["PUT /api/insights/traits/t1"] = () => ({ ...TASTES.traits[0], status: "confirmed" });
     await open("/insights/you");
-    expect(host.textContent).toContain("¿Es así?");
-    expect(host.textContent).toContain("6 novelas, media 4,2");
-    expect(host.textContent).toContain("Fútbol");
-    expect(host.textContent).toContain("Tus temas");
+    expect(host.textContent).toContain("Is it so?");
+    expect(host.textContent).toContain("6 novels, average 4.2");
+    expect(host.textContent).toContain("Football");
+    expect(host.textContent).toContain("Your topics");
 
-    act(() => (host.querySelector('[aria-label="Sí: Novela histórica"]') as HTMLButtonElement).click());
+    act(() => (host.querySelector('[aria-label$=": Historical novels"]') as HTMLButtonElement).click());
     await settle();
     expect(asked).toContain("PUT /api/insights/traits/t1");
     expect(await serious()).toEqual([]);
   });
 
-  it("«Que te conozca», una pregunta cada vez", async () => {
+  it("getting to know you, one question at a time", async () => {
     replies["POST /api/insights/onboarding/start.families"] = () => ({ ...START, answered: 1, questions: START.questions.slice(1) });
     await open("/insights/start");
-    expect(host.textContent).toContain("¿De qué te gusta aprender?");
+    expect(host.textContent).toContain("What do you like to learn about?");
     expect(host.textContent).toContain("1 de 2");
 
-    act(() => button("Historia")!.click());
+    act(() => button("History")!.click());
     act(() => button("Seguir")!.click());
     await settle();
     expect(asked).toContain("POST /api/insights/onboarding/start.families");
-    expect(host.textContent).toContain("¿A qué hora te viene bien?");
+    expect(host.textContent).toContain("What time suits you?");
     expect(await serious()).toEqual([]);
   });
 });

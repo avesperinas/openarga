@@ -10,26 +10,26 @@ import { App } from "./App";
 
 const ID = "0a0a0a0a-0000-4000-8000-00000000a0a0";
 
-const figure = { label: "cenas fuera esta semana", value: 4, unit: null, baseline: 2, baseline_label: "tu media" };
+const figure = { label: "dinners out this week", value: 4, unit: null, baseline: 2, baseline_label: "your average" };
 
 const WEEK: Insight = {
   id: ID,
   kind: "weekly",
   domain: "cross",
-  topic: "semana:2026-w42",
-  title: "Una semana de mucho fuera",
+  topic: "week:2026-w42",
+  title: "A week of eating out a lot",
   body: "Cenaste fuera cuatro veces.",
   figures: [figure],
-  affects: "el colchón de diciembre",
-  action: "Tres cenas en casa de lunes a jueves.",
+  affects: "the December cushion",
+  action: "Three dinners at home from Monday to Thursday.",
   created_at: "2026-10-18T17:00:00Z",
   read_at: null,
   rating: null,
   rated_at: null,
   proposals: [
-    { what: "Tres cenas en casa de lunes a jueves", figure, how: "Shopping: añadir a la lista lo de tres cenas" },
-    { what: "Dos sesiones de fuerza martes y jueves", figure, how: "Planner: bloque de 45 min a las 19:00" },
-    { what: "Acostarte antes de las 23:30 entre semana", figure, how: "Planner: aviso a las 23:00" },
+    { what: "Three dinners at home from Monday to Thursday", figure, how: "Shopping: add three dinners to the list" },
+    { what: "Two strength sessions on Tuesday and Thursday", figure, how: "Planner: a 45 min block at 19:00" },
+    { what: "Go to bed before 23:30 on weekdays", figure, how: "Planner: a reminder at 23:00" },
   ],
 };
 
@@ -77,7 +77,7 @@ beforeEach(() => {
       const key = `${init?.method ?? "GET"} ${url}`;
       asked.push(key);
       const reply = replies[key];
-      if (!reply) return json({ detail: "no existe" }, 404);
+      if (!reply) return json({ detail: "not found" }, 404);
       const body = await reply();
       return body instanceof Response ? body : json(body);
     }),
@@ -99,6 +99,8 @@ const settle = () =>
     for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setTimeout(resolve, 0));
   });
 
+const retry = () => host.querySelector<HTMLButtonElement>(".empty-state[role=alert] button") ?? undefined;
+
 const button = (name: string) =>
   Array.from(host.querySelectorAll<HTMLButtonElement>("button")).find((one) => one.textContent?.includes(name));
 
@@ -115,105 +117,105 @@ async function serious(): Promise<string[]> {
     .map((one) => `${one.id}: ${one.nodes.map((node) => node.target.join(" ")).join(", ")}`);
 }
 
-describe("la bandeja", () => {
-  it("mientras llegan los consejos, el esqueleto", async () => {
+describe("the inbox", () => {
+  it("while the advice arrives, the skeleton", async () => {
     replies["GET /api/insights/insights"] = () => new Promise(() => undefined);
     await open();
     expect(host.querySelector(".skeleton")).not.toBeNull();
   });
 
-  it("sin consejos, dice qué hacer y el botón lleva a contarle qué te importa", async () => {
+  it("without advice, it says what to do and the button leads to telling it what matters", async () => {
     replies["GET /api/insights/insights"] = () => [];
     await open();
-    expect(host.textContent).toContain("Txuri todavía no te ha dicho nada");
+    expect(host.textContent).toContain("Txuri has not told you anything yet");
 
-    act(() => button("Contarle qué te importa")!.click());
+    act(() => button("Tell it what matters to you")!.click());
     await settle();
     expect(window.location.pathname).toBe("/insights/you");
   });
 
-  it("si fallan los consejos, lo dice y reintentar los trae", async () => {
-    replies["GET /api/insights/insights"] = () => json({ detail: "la base no contesta" }, 503);
+  it("when the advice fails, it says so and retrying brings it", async () => {
+    replies["GET /api/insights/insights"] = () => json({ detail: "the database does not answer" }, 503);
     await open();
-    expect(host.textContent).toContain("No se pudieron leer los consejos");
-    expect(host.textContent).toContain("la base no contesta");
+    expect(host.textContent).toContain("The advice could not be read");
+    expect(host.textContent).toContain("the database does not answer");
 
     replies["GET /api/insights/insights"] = () => [WEEK];
-    act(() => button("Reintentar")!.click());
+    act(() => retry()!.click());
     await settle();
-    expect(host.textContent).toContain("Una semana de mucho fuera");
+    expect(host.textContent).toContain("A week of eating out a lot");
   });
 
-  it("sin red, lo dice arriba", async () => {
+  it("offline, it says so on top", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     await open();
-    expect(host.textContent).toContain("Sin conexión");
+    expect(host.querySelector('.notice[data-tone="warning"]')).not.toBeNull();
   });
 
-  it("axe-core sin errores graves", async () => {
+  it("axe-core without serious errors", async () => {
     await open();
     expect(await serious()).toEqual([]);
   });
 });
 
-describe("el resumen del domingo", () => {
-  it("trae sus propuestas numeradas, con su cifra y cómo pedírsela a Claude", async () => {
+describe("the Sunday summary", () => {
+  it("brings its numbered proposals, with their figure and how to ask for them", async () => {
     await open(`/insights/insight/${ID}`);
 
     expect(asked).toContain(`POST /api/insights/insights/${ID}/read`);
-    expect(host.textContent).toContain("La semana que viene");
-    expect(host.textContent).toContain("1. Tres cenas en casa de lunes a jueves");
-    expect(host.textContent).toContain("3. Acostarte antes de las 23:30 entre semana");
-    expect(host.textContent).toContain("Planner: bloque de 45 min a las 19:00");
-    expect(host.textContent).toContain("díselo a Claude");
+    expect(host.textContent).toContain("Next week");
+    expect(host.textContent).toContain("1. Three dinners at home from Monday to Thursday");
+    expect(host.textContent).toContain("3. Go to bed before 23:30 on weekdays");
+    expect(host.textContent).toContain("Planner: a 45 min block at 19:00");
+    expect(host.textContent).toContain("ask your assistant");
     expect(await serious()).toEqual([]);
   });
 
-  it("un aviso suelto sigue diciendo qué haría", async () => {
+  it("a single alert still says what it would do", async () => {
     const alert = { ...WEEK, kind: "alert" as const, proposals: [] };
     replies[`POST /api/insights/insights/${ID}/read`] = () => alert;
     replies["GET /api/insights/insights"] = () => [alert];
     await open(`/insights/insight/${ID}`);
 
-    expect(host.textContent).toContain("Qué haría");
-    expect(host.textContent).not.toContain("La semana que viene");
+    expect(host.textContent).toContain("What it would do");
+    expect(host.textContent).not.toContain("Next week");
   });
 
-  it("si no se puede abrir, reintentar", async () => {
+  it("if it cannot be opened, retry", async () => {
     replies["GET /api/insights/insights"] = () => [];
     replies[`POST /api/insights/insights/${ID}/read`] = () => json({ detail: "no" }, 500);
     await open(`/insights/insight/${ID}`);
-    expect(host.textContent).toContain("No se pudo abrir el consejo");
+    expect(host.textContent).toContain("The advice could not be opened");
 
     replies[`POST /api/insights/insights/${ID}/read`] = () => WEEK;
-    act(() => button("Reintentar")!.click());
+    act(() => retry()!.click());
     await settle();
-    expect(host.textContent).toContain("La semana que viene");
+    expect(host.textContent).toContain("Next week");
   });
 });
 
 describe("hablar", () => {
-  it("sin conversaciones, el botón empieza una", async () => {
+  it("without conversations, the button starts one", async () => {
     await open("/insights/chat");
-    expect(host.textContent).toContain("Pregúntale lo que quieras a Txuri");
+    expect(host.textContent).toContain("Ask Txuri anything");
 
-    act(() => button("Empezar a hablar")!.click());
+    act(() => button("Start talking")!.click());
     await settle();
     expect(window.location.pathname).toBe("/insights/chat/new");
   });
 
-  it("si fallan las conversaciones, reintentar", async () => {
+  it("when the conversations fail, retry", async () => {
     replies["GET /api/insights/threads"] = () => json({ detail: "no" }, 500);
     await open("/insights/chat");
-    expect(host.textContent).toContain("No se pudieron leer las conversaciones");
+    expect(host.textContent).toContain("The conversations could not be read");
 
     replies["GET /api/insights/threads"] = () => [];
-    act(() => button("Reintentar")!.click());
+    act(() => retry()!.click());
     await settle();
-    expect(host.textContent).toContain("Pregúntale lo que quieras");
+    expect(host.textContent).toContain("Ask Txuri anything");
   });
 
-  it("axe-core sin errores graves, también en los ajustes", async () => {
+  it("axe-core without serious errors, also in the settings", async () => {
     await open("/insights/chat");
     expect(await serious()).toEqual([]);
     act(() => root.unmount());
@@ -223,17 +225,17 @@ describe("hablar", () => {
   });
 });
 
-describe("los ajustes", () => {
-  it("los campos se llenan con lo del servidor, no con lo guardado en el dispositivo", async () => {
-    prime<Profile>("profile", { name: "Otro", about: "lo de otra persona", named: true });
+describe("the settings", () => {
+  it("the fields fill with what the server has, not what the device kept", async () => {
+    prime<Profile>("profile", { name: "Other", about: "someone else's", named: true });
     invalidate("profile");
     const waiting: ((profile: Profile) => void)[] = [];
     replies["GET /api/insights/profile"] = () => new Promise<Profile>((resolve) => waiting.push(resolve));
     await open("/insights/settings");
     expect(host.querySelector("textarea")).toBeNull();
 
-    await act(async () => waiting.forEach((answer) => answer({ ...PROFILE, about: "lo mío" })));
+    await act(async () => waiting.forEach((answer) => answer({ ...PROFILE, about: "mine" })));
     await settle();
-    expect((host.querySelector("textarea") as HTMLTextAreaElement).value).toBe("lo mío");
+    expect((host.querySelector("textarea") as HTMLTextAreaElement).value).toBe("mine");
   });
 });

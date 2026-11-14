@@ -36,6 +36,7 @@ import {
 } from "./api";
 import { ScreenHeader, useApp } from "./Header";
 import { when } from "./words";
+import { t } from "./lang";
 
 const POLL_MS = 2500;
 export const PATIENCE_MS = 10 * 60 * 1000;
@@ -45,8 +46,8 @@ export function stale(thread: Pick<Thread, "waiting_since">, now = Date.now()): 
 }
 
 export function threadLine(thread: Thread, name: string): string {
-  if (thread.problem) return "No ha podido contestar";
-  if (thread.waiting_since) return `${name} está pensando…`;
+  if (thread.problem) return t("chat.could_not");
+  if (thread.waiting_since) return t("chat.thinking", { name });
   return when(thread.updated_at);
 }
 
@@ -72,26 +73,25 @@ export function ChatList({ onOpen, onNew }: { onOpen: (id: string) => void; onNe
 
   return (
     <Screen>
-      <ScreenHeader title="Hablar" />
+      <ScreenHeader title={t("chat.title")} />
       <Button variant="primary" icon="plus" onClick={onNew}>
-        Nueva conversación
+        {t("chat.new")}
       </Button>
       <OfflineNotice />
-      {found.loading && <Skeleton label="Cargando las conversaciones" />}
+      {found.loading && <Skeleton label={t("chat.loading")} />}
       {threads === null && found.error && (
         <ErrorState
-          title="No se pudieron leer las conversaciones"
+          title={t("chat.failed")}
           detail={found.error.message}
           onRetry={found.refresh}
         />
       )}
       {threads !== null && threads.length === 0 && (
         <EmptyState
-          title={`Pregúntale lo que quieras a ${app.name}`}
-          action={{ label: "Empezar a hablar", icon: "plus", onClick: onNew }}
+          title={t("chat.empty", { name: app.name })}
+          action={{ label: t("chat.start"), icon: "plus", onClick: onNew }}
         >
-          Contesta con tus datos: tu dinero, tu cuerpo, tus metas, tu agenda. También puedes contestar a un consejo
-          desde la bandeja.
+          {t("chat.empty_detail")}
         </EmptyState>
       )}
       {threads !== null && threads.length > 0 && (
@@ -148,7 +148,7 @@ function Thinking({ name, since }: { name: string; since: string }) {
   return (
     <ChatBubble mine={false}>
       <Working>
-        {name} está mirando tus datos · {thinkingFor(since, now)}
+        {t("chat.looking", { name, time: thinkingFor(since, now) })}
       </Working>
     </ChatBubble>
   );
@@ -234,7 +234,7 @@ export function ThreadScreen({
       })
       .catch((error: unknown) => {
         setDraft(text);
-        failed(error, "No se pudo enviar. Lo tienes otra vez en el cuadro.");
+        failed(error, t("chat.send_failed"));
       })
       .finally(() => setPending(null));
   };
@@ -247,19 +247,19 @@ export function ThreadScreen({
         setThread(updated);
         invalidate(THREADS);
       })
-      .catch((error: unknown) => failed(error, "No se pudo volver a preguntar."));
+      .catch((error: unknown) => failed(error, t("chat.again_failed")));
   };
 
   const late = thread !== null && stale(thread);
   return (
     <Screen>
-      <ScreenHeader title={thread?.title ?? "Nueva conversación"} back={{ label: "Hablar", onClick: onBack }} />
+      <ScreenHeader title={thread?.title ?? t("chat.new")} back={{ label: t("chat.title"), onClick: onBack }} />
 
       <OfflineNotice />
-      {id !== null && thread === null && unopened === null && <Skeleton label="Abriendo la conversación" />}
+      {id !== null && thread === null && unopened === null && <Skeleton label={t("chat.opening")} />}
       {thread === null && unopened !== null && (
         <ErrorState
-          title="No se pudo abrir la conversación"
+          title={t("chat.open_failed")}
           detail={unopened || undefined}
           onRetry={() => setAttempt((n) => n + 1)}
         />
@@ -279,13 +279,13 @@ export function ThreadScreen({
       </ChatThread>
 
       {thread?.problem && (
-        <Notice tone="warning" action={{ label: "Volver a preguntar", onClick: again }}>
+        <Notice tone="warning" action={{ label: t("chat.ask_again"), onClick: again }}>
           {thread.problem}
         </Notice>
       )}
       {late && !thread?.problem && (
-        <Notice tone="warning" action={{ label: "Volver a preguntar", onClick: again }}>
-          Lleva más de diez minutos sin contestar. Puede que se haya cortado.
+        <Notice tone="warning" action={{ label: t("chat.ask_again"), onClick: again }}>
+          {t("chat.late")}
         </Notice>
       )}
       {problem && <Hint tone="warning">{problem}</Hint>}
@@ -293,27 +293,27 @@ export function ThreadScreen({
       <Card>
         <Composer
           inputRef={box}
-          label={thread ? "Responder" : `Pregúntale a ${app.name}`}
+          label={thread ? t("chat.reply") : t("chat.ask", { name: app.name })}
           value={draft}
-          placeholder={insightId && !thread ? "¿Qué quieres saber de este consejo?" : `Pregúntale a ${app.name}…`}
+          placeholder={insightId && !thread ? t("chat.about_insight") : `${t("chat.ask", { name: app.name })}…`}
           onChange={setDraft}
           onSend={send}
           disabled={busy}
         />
-        <Hint>Enter envía · Mayúsculas+Enter, salto de línea</Hint>
+        <Hint>{t("chat.keys")}</Hint>
       </Card>
 
       {thread && (
         <Button variant="plain" icon="trash" onClick={() => setRemoving(true)}>
-          Borrar conversación
+          {t("chat.delete")}
         </Button>
       )}
       {removing && thread && (
         <ConfirmDelete
-          title="¿Borrar esta conversación?"
+          title={t("chat.delete_confirm")}
           subject={thread.title}
-          consequence="Se borran todos sus mensajes. Los consejos y tus datos no se tocan."
-          action="Borrar conversación"
+          consequence={t("chat.delete_consequence")}
+          action={t("chat.delete")}
           onCancel={() => setRemoving(false)}
           onConfirm={() =>
             deleteThread(thread.id)
@@ -323,7 +323,7 @@ export function ThreadScreen({
               })
               .catch((error: unknown) => {
                 setRemoving(false);
-                failed(error, "No se pudo borrar.");
+                failed(error, t("chat.delete_failed"));
               })
           }
         />

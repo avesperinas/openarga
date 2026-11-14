@@ -1,17 +1,18 @@
 import type { IconName } from "@openarga/ui";
 
 import type { Facet, Family, Hue, PickKind, PickState, Recommendation, Trait } from "./api";
+import { intl, t } from "./lang";
 
 export const KINDS: Record<PickKind, { label: string; icon: IconName; hue: Hue }> = {
-  book: { label: "Libro", icon: "book", hue: 3 },
-  podcast: { label: "Podcast", icon: "headphones", hue: 6 },
-  episode: { label: "Episodio", icon: "headphones", hue: 6 },
-  film: { label: "Película", icon: "film", hue: 7 },
-  series: { label: "Serie", icon: "film", hue: 5 },
-  documentary: { label: "Documental", icon: "film", hue: 2 },
-  video: { label: "Vídeo", icon: "play", hue: 4 },
-  article: { label: "Artículo", icon: "note", hue: 1 },
-  course: { label: "Curso", icon: "target", hue: 8 },
+  book: { get label() { return t("kind.book"); }, icon: "book", hue: 3 },
+  podcast: { get label() { return t("kind.podcast"); }, icon: "headphones", hue: 6 },
+  episode: { get label() { return t("kind.episode"); }, icon: "headphones", hue: 6 },
+  film: { get label() { return t("kind.film"); }, icon: "film", hue: 7 },
+  series: { get label() { return t("kind.series"); }, icon: "film", hue: 5 },
+  documentary: { get label() { return t("kind.documentary"); }, icon: "film", hue: 2 },
+  video: { get label() { return t("kind.video"); }, icon: "play", hue: 4 },
+  article: { get label() { return t("kind.article"); }, icon: "note", hue: 1 },
+  course: { get label() { return t("kind.course"); }, icon: "target", hue: 8 },
 };
 
 export const LISTS: { value: Recommendation["list"]; label: string; icon: IconName }[] = [
@@ -21,11 +22,11 @@ export const LISTS: { value: Recommendation["list"]; label: string; icon: IconNa
 ];
 
 export const STATES: Record<PickState, string> = {
-  new: "Sin abrir",
-  saved: "Pendiente",
-  doing: "En curso",
-  done: "Hecho",
-  dismissed: "Descartado",
+  get new() { return t("state.new"); },
+  get saved() { return t("state.saved"); },
+  get doing() { return t("state.doing"); },
+  get done() { return t("state.done"); },
+  get dismissed() { return t("state.dismissed"); },
 };
 
 export function nextState(state: PickState): PickState {
@@ -35,46 +36,46 @@ export function nextState(state: PickState): PickState {
 }
 
 export const FACETS: Record<Facet, { label: string; icon: IconName }> = {
-  topic: { label: "Temas", icon: "spark" },
-  genre: { label: "Géneros", icon: "bookmark" },
-  format: { label: "Formatos", icon: "layers" },
-  creator: { label: "Autores y creadores", icon: "people" },
-  work: { label: "Obras que te marcaron", icon: "heart" },
-  style: { label: "Cómo te gusta que te lo cuenten", icon: "note" },
-  avoid: { label: "De lo que no quieres que te hable", icon: "eye-off" },
-  context: { label: "Lo que vives ahora", icon: "target" },
-  language: { label: "Idiomas", icon: "globe" },
+  topic: { get label() { return t("facet.topic"); }, icon: "spark" },
+  genre: { get label() { return t("facet.genre"); }, icon: "bookmark" },
+  format: { get label() { return t("facet.format"); }, icon: "layers" },
+  creator: { get label() { return t("facet.creator"); }, icon: "people" },
+  work: { get label() { return t("facet.work"); }, icon: "heart" },
+  style: { get label() { return t("facet.style"); }, icon: "note" },
+  avoid: { get label() { return t("facet.avoid"); }, icon: "eye-off" },
+  context: { get label() { return t("facet.context"); }, icon: "target" },
+  language: { get label() { return t("facet.language"); }, icon: "globe" },
 };
 
 export const FACET_ORDER: Facet[] = ["topic", "genre", "format", "creator", "work", "style", "context", "language", "avoid"];
 
 export const SOURCES: Record<Trait["source"], string> = {
-  said: "Lo dijiste",
-  answered: "Lo contestaste",
-  seen: "Lo vio en tus datos",
-  rated: "Por lo que valoraste",
+  get said() { return t("source.said"); },
+  get answered() { return t("source.answered"); },
+  get seen() { return t("source.seen"); },
+  get rated() { return t("source.rated"); },
 };
 
 export const STANCES: { value: string; label: string }[] = [
-  { value: "2", label: "Me encanta" },
-  { value: "1", label: "Me gusta" },
-  { value: "-1", label: "No me va" },
-  { value: "-2", label: "No quiero" },
+  { value: "2", get label() { return t("stance.2"); } },
+  { value: "1", get label() { return t("stance.1"); } },
+  { value: "-1", get label() { return t("stance.-1"); } },
+  { value: "-2", get label() { return t("stance.-2"); } },
 ];
 
 export const WEIGHTS = [
-  { value: "0", label: "Nada" },
-  { value: "1", label: "Algo" },
-  { value: "2", label: "Bastante" },
-  { value: "3", label: "Mucho" },
+  { value: "0", get label() { return t("weight.0"); } },
+  { value: "1", get label() { return t("weight.1"); } },
+  { value: "2", get label() { return t("weight.2"); } },
+  { value: "3", get label() { return t("weight.3"); } },
 ];
 
 export const LANGUAGES: { value: string; label: string }[] = [
-  { value: "none", label: "Ninguno" },
-  { value: "de", label: "Alemán" },
-  { value: "en", label: "Inglés" },
-  { value: "fr", label: "Francés" },
-  { value: "it", label: "Italiano" },
+  { value: "none", get label() { return t("language.none"); } },
+  { value: "de", get label() { return t("language.de"); } },
+  { value: "en", get label() { return t("language.en"); } },
+  { value: "fr", get label() { return t("language.fr"); } },
+  { value: "it", get label() { return t("language.it"); } },
 ];
 
 const GLYPHS = new Set<string>([
@@ -91,10 +92,10 @@ export const familyOf = (families: Family[], key: string): Family =>
   families.find((one) => one.key === key) ?? { ...FALLBACK, key, name: key };
 
 export const longDay = (iso: string) =>
-  new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+  new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString(intl(), { weekday: "long", day: "numeric", month: "long" });
 
 export const shortDay = (iso: string) =>
-  new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+  new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString(intl(), { day: "numeric", month: "short" });
 
 export function detailOf(pick: Recommendation): string {
   return [pick.creators.slice(0, 2).join(", "), pick.year ? String(pick.year) : null, pick.length]
@@ -103,7 +104,7 @@ export function detailOf(pick: Recommendation): string {
 }
 
 export const ORIGINS: Record<"daily" | "surprise" | "branch", string> = {
-  daily: "del día",
-  surprise: "sorpresa",
-  branch: "para saber más",
+  get daily() { return t("origin.daily"); },
+  get surprise() { return t("origin.surprise"); },
+  get branch() { return t("origin.branch"); },
 };

@@ -27,6 +27,7 @@ import { AppVersion } from "./AppVersion";
 import { PICKS, PILLS, type Recommendation, TASTES, changePick, coverOf, readPicks, readPills, readTastes, savePick } from "./api";
 import { ScreenHeader, useApp } from "./Header";
 import { KINDS, LISTS, ORIGINS, STATES, detailOf, familyOf, nextState, shortDay } from "./taste-words";
+import { t } from "./lang";
 
 type ListName = Recommendation["list"];
 
@@ -61,14 +62,14 @@ export function LibraryScreen({ onOpenPill }: { onOpenPill: (id: string) => void
   const change = (pick: Recommendation, update: Parameters<typeof changePick>[1]) =>
     changePick(pick.id, update)
       .then(() => invalidate(PICKS))
-      .catch(() => setProblem("No se pudo guardar el cambio."));
+      .catch(() => setProblem(t("error.change")));
 
   const save = (pick: Recommendation) =>
     savePick(pick.id)
       .then(() => invalidate(PICKS))
       .catch((error: unknown) => {
         invalidate(PICKS);
-        setProblem(error instanceof Error ? error.message : "No se pudo guardar.");
+        setProblem(error instanceof Error ? error.message : t("error.save"));
       });
 
   const advance = (pick: Recommendation) => {
@@ -83,15 +84,15 @@ export function LibraryScreen({ onOpenPill }: { onOpenPill: (id: string) => void
 
   return (
     <Screen>
-      <ScreenHeader title="Biblioteca" />
+      <ScreenHeader title={t("library.title")} />
       <OfflineNotice />
       {problem && <Notice tone="warning">{problem}</Notice>}
-      {found.loading && !picks && <Skeleton label="Abriendo tu biblioteca" />}
-      {!picks && found.error && <ErrorState title="No se pudo abrir tu biblioteca" detail={found.error.message} onRetry={found.refresh} />}
+      {found.loading && !picks && <Skeleton label={t("library.opening")} />}
+      {!picks && found.error && <ErrorState title={t("library.failed")} detail={found.error.message} onRetry={found.refresh} />}
 
       {picks && forYou(picks).length > 0 && (
-        <Section title="Para ti esta semana" count={forYou(picks).length}>
-          <Carousel label="Para ti esta semana">
+        <Section title={t("library.for_you")} count={forYou(picks).length}>
+          <Carousel label={t("library.for_you")}>
             {forYou(picks).map((pick) => (
               <PickCard
                 key={pick.id}
@@ -105,10 +106,10 @@ export function LibraryScreen({ onOpenPill }: { onOpenPill: (id: string) => void
                 actions={
                   <>
                     <Button variant="primary" icon="plus" onClick={() => void save(pick)}>
-                      Guardar
+                      {t("action.save")}
                     </Button>
                     <Button variant="plain" onClick={() => void change(pick, { state: "dismissed" })}>
-                      No es para mí
+                      {t("library.not_for_me")}
                     </Button>
                   </>
                 }
@@ -121,7 +122,7 @@ export function LibraryScreen({ onOpenPill }: { onOpenPill: (id: string) => void
       {picks && (
         <>
           <SegmentedControl
-            label="Qué lista"
+            label={t("library.which_list")}
             value={list}
             onChange={setList}
             options={LISTS.map((one) => ({
@@ -131,12 +132,11 @@ export function LibraryScreen({ onOpenPill }: { onOpenPill: (id: string) => void
             }))}
           />
           <ToggleList>
-            <ToggleRow name="Ocultar lo ya hecho" checked={hideDone} onChange={setHideDone} />
+            <ToggleRow name={t("library.hide_done")} checked={hideDone} onChange={setHideDone} />
           </ToggleList>
           {shelf(picks, list, hideDone).length === 0 ? (
-            <EmptyState icon={LISTS.find((one) => one.value === list)!.icon} hue={5} title="Nada guardado aquí todavía">
-              Lo que guardes con el + de una píldora o de «Para ti esta semana» aparece aquí. Los libros van también a tus
-              lecturas.
+            <EmptyState icon={LISTS.find((one) => one.value === list)!.icon} hue={5} title={t("library.empty")}>
+              {t("library.empty_detail")}
             </EmptyState>
           ) : (
             <Card>
@@ -151,7 +151,7 @@ export function LibraryScreen({ onOpenPill }: { onOpenPill: (id: string) => void
                     detail={[
                       KINDS[pick.kind].label,
                       detailOf(pick),
-                      pick.sent_to ? "en tus lecturas" : null,
+                      pick.sent_to ? t("library.in_reading") : null,
                       pick.rating !== null ? `${pick.rating} ★` : null,
                     ]
                       .filter(Boolean)
@@ -171,7 +171,7 @@ export function LibraryScreen({ onOpenPill }: { onOpenPill: (id: string) => void
       )}
 
       {pills.length > 0 && (
-        <Section title="Tus píldoras" count={pills.length}>
+        <Section title={t("library.pills")} count={pills.length}>
           <List>
             {pills.map((pill) => {
               const family = familyOf(families, pill.family_key);
@@ -213,21 +213,21 @@ function RateSheet({
   const [note, setNote] = useState(pick.note ?? "");
   return (
     <Sheet
-      title={`¿Qué te pareció «${pick.title}»?`}
+      title={t("library.rate_title", { title: pick.title })}
       onClose={onClose}
-      foot={`Con esto, ${name} aprende qué te sirve`}
+      foot={t("library.rate_foot", { name })}
       action={{
-        label: "Guardar",
+        label: t("action.save"),
         onClick: () => {
           void onSave({ rating: stars ? Number(stars) : null, more_like: more, note: note.trim() || null }).then(onClose);
         },
       }}
     >
-      <ChoiceChips label="Tu nota" options={RATINGS} value={stars} onChange={setStars} />
+      <ChoiceChips label={t("library.your_rating")} options={RATINGS} value={stars} onChange={setStars} />
       <ToggleList>
-        <ToggleRow name="Quiero más así" detail="Te recomendará más de esta autoría" checked={more} onChange={setMore} />
+        <ToggleRow name={t("library.more_like")} detail={t("library.more_like_detail")} checked={more} onChange={setMore} />
       </ToggleList>
-      <TextAreaField label="Una nota, si quieres" value={note} onChange={setNote} rows={3} max={600} />
+      <TextAreaField label={t("library.note")} value={note} onChange={setNote} rows={3} max={600} />
     </Sheet>
   );
 }
