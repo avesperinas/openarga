@@ -1,5 +1,5 @@
 import { useRoute } from "@openarga/app";
-import { AppSettings, AppShell, SETTINGS_TAB, ToastHost } from "@openarga/ui";
+import { AppSettings, AppShell, SETTINGS_TAB, ToastHost, useT } from "@openarga/ui";
 
 import { APP } from "./Header";
 import { HistoryScreen } from "./History";
@@ -11,8 +11,8 @@ type Tab = "list" | "history" | "settings";
 
 const PATHS: Record<Tab, string> = {
   list: `${ROOT}/`,
-  history: `${ROOT}/historial`,
-  settings: `${ROOT}/ajustes`,
+  history: `${ROOT}/history`,
+  settings: `${ROOT}/settings`,
 };
 
 const pathOf = (tab: Tab) => PATHS[tab];
@@ -26,16 +26,17 @@ export function route(pathname: string): Tab {
 
 export function App() {
   const [current, navigate] = useRoute(route, pathOf);
+  const t = useT();
 
   return (
     <ToastHost>
       <AppShell
-        label="Secciones"
+        label={t("tabs.label")}
         active={current}
         onSelect={navigate}
         tabs={[
-          { id: "list", label: "Lista", icon: "basket" },
-          { id: "history", label: "Historial", icon: "calendar" },
+          { id: "list", label: t("tabs.list"), icon: "basket" },
+          { id: "history", label: t("tabs.history"), icon: "calendar" },
           SETTINGS_TAB,
         ]}
       >

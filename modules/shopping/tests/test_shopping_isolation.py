@@ -31,9 +31,9 @@ INSERT = (
 
 @pytest.fixture
 async def two_shoppers(schema):
-    await as_role(schema, WRITE, ANA, INSERT, name="Leche", space=None)
-    await as_role(schema, WRITE, LUIS, INSERT, name="Kéfir", space=None)
-    await as_role(schema, WRITE, ANA, INSERT, name="Huevos", space=CASA, spaces=[CASA])
+    await as_role(schema, WRITE, ANA, INSERT, name="Milk", space=None)
+    await as_role(schema, WRITE, LUIS, INSERT, name="Kefir", space=None)
+    await as_role(schema, WRITE, ANA, INSERT, name="Eggs", space=CASA, spaces=[CASA])
     return schema
 
 
@@ -42,8 +42,8 @@ async def test_each_one_reads_only_their_own(two_shoppers, role: str) -> None:
     ana = await as_role(two_shoppers, role, ANA, "select name from shopping.shopping_product")
     luis = await as_role(two_shoppers, role, LUIS, "select name from shopping.shopping_product")
 
-    assert sorted(row.name for row in ana) == ["Huevos", "Leche"]
-    assert [row.name for row in luis] == ["Kéfir"]
+    assert sorted(row.name for row in ana) == ["Eggs", "Milk"]
+    assert [row.name for row in luis] == ["Kefir"]
 
 
 async def test_what_belongs_to_a_home_is_seen_by_its_members(two_shoppers) -> None:
@@ -55,7 +55,7 @@ async def test_what_belongs_to_a_home_is_seen_by_its_members(two_shoppers) -> No
         spaces=[CASA],
     )
 
-    assert [row.name for row in luis] == ["Huevos", "Kéfir"]
+    assert [row.name for row in luis] == ["Eggs", "Kefir"]
 
 
 @pytest.mark.parametrize("role", [WRITE, READ])
@@ -78,7 +78,7 @@ async def test_writing_in_someone_elses_name_is_refused_by_postgres(two_shoppers
             WRITE,
             ANA,
             "insert into shopping.shopping_product (name, key, category_id, user_id) "
-            "values ('Pan', 'pan', 'bakery', :other)",
+            "values ('Bread', 'bread', 'bakery', :other)",
             other=LUIS,
         )
 
@@ -87,7 +87,7 @@ async def test_writing_in_someone_elses_name_is_refused_by_postgres(two_shoppers
 
 async def test_the_reader_role_cannot_write(two_shoppers) -> None:
     with pytest.raises(DBAPIError) as refused:
-        await as_role(two_shoppers, READ, ANA, INSERT, name="Pan", space=None)
+        await as_role(two_shoppers, READ, ANA, INSERT, name="Bread", space=None)
 
     assert "permission denied" in str(refused.value).lower()
 
@@ -108,7 +108,7 @@ async def test_the_module_cannot_write_events_itself(two_shoppers) -> None:
 async def test_a_product_is_on_the_list_once_even_if_two_things_add_it(two_shoppers) -> None:
     add = (
         "insert into shopping.shopping_item (product_id) "
-        "select id from shopping.shopping_product where name = 'Leche'"
+        "select id from shopping.shopping_product where name = 'Milk'"
     )
     await as_role(two_shoppers, WRITE, ANA, add)
 

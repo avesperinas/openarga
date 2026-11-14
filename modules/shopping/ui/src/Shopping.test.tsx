@@ -3,9 +3,10 @@ import { renderToString } from "react-dom/server";
 import { route } from "./App";
 import type { Added, Category } from "./api";
 import { summary } from "./History";
+import { english, inLocale, spanish } from "./i18n/testing";
 import { noticeFor, ShoppingScreen } from "./Shopping";
 
-const CATEGORIES: Category[] = [{ id: "other", name: "Otros", emoji: "🛒", position: 13 }];
+const CATEGORIES: Category[] = [{ id: "other", name: "Other", emoji: "🛒", position: 13 }];
 
 function added(name: string, extra: Partial<Added> = {}): Added {
   return {
@@ -20,34 +21,39 @@ function added(name: string, extra: Partial<Added> = {}): Added {
   };
 }
 
-test("lo que cae en Otros se dice, porque pide que le cambies la sección", () => {
-  const notice = noticeFor([added("Cosa rara", { category_id: "other" }), added("Leche")], CATEGORIES);
+test("what lands in Other is said, because it asks you to change its section", () => {
+  const notice = noticeFor(english, [added("Odd thing", { category_id: "other" }), added("Milk")], CATEGORIES);
 
-  expect(notice).toContain("Cosa rara va en Otros");
-});
-
-test("lo que ya estaba apuntado se dice; lo normal no se anuncia", () => {
-  expect(noticeFor([added("Leche", { already_on_list: true })], CATEGORIES)).toBe("Leche ya estaba apuntado.");
-  expect(noticeFor([added("Leche")], CATEGORIES)).toBe("");
-  expect(noticeFor([added("Regalo", { category_id: "other", guessed: false })], CATEGORIES)).toBe("");
-});
-
-test("un producto sin tres compras dice que aún no se sabe cada cuánto", () => {
-  expect(summary({ times: 2, since: "ayer", every: null })).toBe(
-    "Comprado 2 veces, la última ayer. Con tres compras se sabrá cada cuánto lo compras.",
-  );
-  expect(summary({ times: 5, since: "hace 3 días", every: "cada semana" })).toBe(
-    "Comprado 5 veces, la última hace 3 días. Lo compras cada semana.",
+  expect(notice).toContain("Odd thing goes in Other");
+  expect(noticeFor(spanish, [added("Odd thing", { category_id: "other" })], CATEGORIES)).toContain(
+    spanish("section.other"),
   );
 });
 
-test("cada pestaña tiene su dirección", () => {
+test("what was already on the list is said; the usual is not announced", () => {
+  expect(noticeFor(english, [added("Milk", { already_on_list: true })], CATEGORIES)).toBe(
+    "Milk was already on the list.",
+  );
+  expect(noticeFor(english, [added("Milk")], CATEGORIES)).toBe("");
+  expect(noticeFor(english, [added("Gift", { category_id: "other", guessed: false })], CATEGORIES)).toBe("");
+});
+
+test("a product without three purchases says how often is not known yet", () => {
+  expect(summary(english, { times: 2, since: "yesterday", every: null })).toBe(
+    "Bought 2 times, last yesterday. With three purchases it will be known how often you buy it.",
+  );
+  expect(summary(english, { times: 5, since: "3 days ago", every: "every week" })).toBe(
+    "Bought 5 times, last 3 days ago. You buy it every week.",
+  );
+});
+
+test("each tab has its address", () => {
   expect(route("/shopping/")).toBe("list");
   expect(route("/shopping")).toBe("list");
-  expect(route("/shopping/historial/")).toBe("history");
+  expect(route("/shopping/history/")).toBe("history");
+  expect(route("/shopping/settings")).toBe("settings");
 });
 
-test("la pantalla vacía se pinta sin romperse antes de tener datos", () => {
-
-  expect(renderToString(<ShoppingScreen />)).toContain("Apuntar");
+test("the empty screen paints without breaking before it has data", () => {
+  expect(renderToString(inLocale(<ShoppingScreen />))).toContain(english("add.label"));
 });

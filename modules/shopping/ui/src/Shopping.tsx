@@ -19,6 +19,8 @@ import {
   Skeleton,
   SwipeRow,
   TextField,
+  type Translate,
+  useT,
   useToast,
 } from "@openarga/ui";
 import { invalidate, mutate, peek, useResource } from "@openarga/app";
@@ -54,6 +56,7 @@ import {
   cartLine,
   habitDetail,
   itemDetail,
+  sectionName,
   suggest,
   withAdded,
   withCart,
@@ -66,6 +69,7 @@ import {
 const SHOWN = 8;
 
 export function ShoppingScreen() {
+  const t = useT();
   const listed = useResource(
     "list",
     () => {
@@ -81,7 +85,7 @@ export function ShoppingScreen() {
   const categories = useResource("categories", readCategories, { staleMs: 86_400_000, persist: true }).data ?? [];
   const known = useResource("kernel:spaces", () =>
     readSpaces().catch((error: unknown) => {
-      throw error instanceof Unauthorised ? new Error("sin espacios") : error;
+      throw error instanceof Unauthorised ? new Error("no spaces") : error;
     }),
   );
   const spaces = known.error ? null : (known.data ?? null);
@@ -94,8 +98,8 @@ export function ShoppingScreen() {
 
   const fail = useCallback((error: unknown) => {
     if (error instanceof Unauthorised) return signIn();
-    setProblem(error instanceof Error ? error.message : "No se pudo guardar.");
-  }, []);
+    setProblem(error instanceof Error ? error.message : t("common.save_failed"));
+  }, [t]);
 
   function change(optimistic: (now: ShoppingList) => ShoppingList, action: () => Promise<ShoppingList>) {
     setProblem("");
@@ -111,7 +115,7 @@ export function ShoppingScreen() {
     try {
       const { added, list: fresh } = await addItems([{ id, name, quantity: quantity ?? null }]);
       await mutate("list", fresh);
-      setNotice(noticeFor(added, categories));
+      setNotice(noticeFor(t, added, categories));
       invalidate("products");
     } catch (error) {
       if (!(error instanceof Queued)) return fail(error);
@@ -140,9 +144,9 @@ export function ShoppingScreen() {
     });
     dropped.catch(fail);
     toast({
-      message: `Quitado · ${item.name}`,
+      message: t("removed.toast", { name: item.name }),
       action: {
-        label: "Deshacer",
+        label: t("removed.undo"),
         run: () =>
           void dropped
             .then(() => add(item.name, item.quantity))
@@ -154,24 +158,24 @@ export function ShoppingScreen() {
   return (
     <Screen>
       <PullToRefresh onRefresh={() => Promise.all([listed.refresh(), productsRead.refresh()])}>
-        <ScreenHeader title="La compra" />
+        <ScreenHeader title={t("list.title")} />
         <OfflineNotice pending={offline.pending} />
         {offline.signedOut && (
-          <Notice tone="warning" title="Sin sesión">
-            Inicia sesión para enviar lo apuntado sin conexión.{" "}
+          <Notice tone="warning" title={t("offline.signed_out")}>
+            {t("offline.sign_in_body")}{" "}
             <Button variant="plain" onClick={signIn}>
-              Entrar
+              {t("offline.sign_in")}
             </Button>
           </Notice>
         )}
         {offline.refused.map((one) => (
-          <Notice key={one.key} tone="negative" title={`No se pudo guardar: ${one.what}`}>
+          <Notice key={one.key} tone="negative" title={t("offline.refused", { what: one.what ?? "" })}>
             {one.problem}{" "}
             <Button variant="plain" onClick={() => void offline.retry(one.key!)}>
-              Reintentar
+              {t("offline.retry")}
             </Button>
             <Button variant="plain" onClick={() => void offline.dismiss(one.key!)}>
-              Olvidarlo
+              {t("offline.forget")}
             </Button>
           </Notice>
         ))}
@@ -194,11 +198,11 @@ export function ShoppingScreen() {
         )}
 
         <TextField
-          label="Apuntar"
+          label={t("add.label")}
           type="search"
           value={query}
           onChange={setQuery}
-          placeholder="leche, pan, detergente…"
+          placeholder={t("add.placeholder")}
           onSubmit={() => query.trim() && void add(query.trim())}
         />
 
@@ -211,12 +215,12 @@ export function ShoppingScreen() {
 
         {query.trim() && (
           <List>
-            {typed && <ListRow title={`Apuntar «${typed}»`} accessory="plus" onClick={() => void add(typed)} />}
+            {typed && <ListRow title={t("add.typed", { name: typed })} accessory="plus" onClick={() => void add(typed)} />}
             {offered.known.map((product) => (
               <ListRow
                 key={product.id}
                 title={product.name}
-                detail={product.on_list ? "ya apuntado" : habitDetail(product)}
+                detail={product.on_list ? t("add.already") : habitDetail(t, product)}
                 accessory={product.on_list ? "done" : "plus"}
                 disabled={product.on_list}
                 onClick={() => void add(product.name)}
@@ -226,20 +230,23 @@ export function ShoppingScreen() {
         )}
 
         {listed.error && list === null && (
-          <ErrorState title="No se ha podido leer la lista" detail={listed.error.message} onRetry={listed.refresh} />
+          <ErrorState title={t("list.read_failed")} detail={listed.error.message} onRetry={listed.refresh} />
         )}
-        {listed.loading && <Skeleton label="Cargando la lista" />}
+        {listed.loading && <Skeleton label={t("list.loading")} />}
 
         {list && !query.trim() && suggestions.length > 0 && (
-          <Section title="Te puede faltar">
-            <Inline label="Te puede faltar" scroll="narrow" maxRows={2}>
+          <Section title={t("suggest.title")}>
+            <Inline label={t("suggest.title")} scroll="narrow" maxRows={2}>
               {suggestions.slice(0, SHOWN).map((product) => (
                 <Button
                   key={product.id}
                   size="small"
                   variant="tinted"
                   icon={due.has(product.id) ? "clock" : "plus"}
-                  aria-label={`Apuntar ${product.name}, ${habitDetail(product)}${due.has(product.id) ? ", te toca" : ""}`}
+                  aria-label={t(due.has(product.id) ? "suggest.add_aria_due" : "suggest.add_aria", {
+                    name: product.name,
+                    detail: habitDetail(t, product),
+                  })}
                   onClick={() => void add(product.name)}
                 >
                   {product.name}
@@ -247,17 +254,17 @@ export function ShoppingScreen() {
               ))}
               {suggestions.length > SHOWN && (
                 <Button size="small" variant="plain" onClick={() => setMore(true)}>
-                  {`Más (${suggestions.length})`}
+                  {t("suggest.more", { count: suggestions.length })}
                 </Button>
               )}
             </Inline>
           </Section>
         )}
         {more && list && (
-          <Sheet title="Te puede faltar" onClose={() => setMore(false)}>
+          <Sheet title={t("suggest.title")} onClose={() => setMore(false)}>
             {[
-              { title: "Te toca", items: list.due },
-              { title: "Lo de siempre", items: list.usual.filter((one) => !due.has(one.id)) },
+              { title: t("suggest.due"), items: list.due },
+              { title: t("suggest.usual"), items: list.usual.filter((one) => !due.has(one.id)) },
             ]
               .filter((group) => group.items.length > 0)
               .map((group) => (
@@ -268,8 +275,8 @@ export function ShoppingScreen() {
                       <ListRow
                         key={product.id}
                         title={product.name}
-                        subtitle={habitDetail(product)}
-                        action={{ icon: "plus", label: `Apuntar ${product.name}`, onClick: () => void add(product.name) }}
+                        subtitle={habitDetail(t, product)}
+                        action={{ icon: "plus", label: t("action.add_item", { name: product.name }), onClick: () => void add(product.name) }}
                       />
                     ))}
                   </List>
@@ -281,33 +288,32 @@ export function ShoppingScreen() {
         {empty && (
           <EmptyState
             icon="basket"
-            title="No hay nada apuntado"
+            title={t("empty.title")}
             action={{
-              label: "Apuntar algo",
+              label: t("empty.action"),
               icon: "plus",
               onClick: () => document.querySelector<HTMLInputElement>(".text-field input")?.focus(),
             }}
           >
-            Escribe arriba lo que haga falta. Cada compra que termines se guarda, y de ahí sale lo que te toca
-            comprar antes de que se acabe.
+            {t("empty.body")}
           </EmptyState>
         )}
 
         {list?.groups.map((group) => (
-          <Section key={group.category_id} title={`${group.emoji} ${group.name}`}>
+          <Section key={group.category_id} title={`${group.emoji} ${sectionName(t, group.category_id, group.name)}`}>
             <List>
               {group.items.map((item) => (
                 <SwipeRow
                   key={item.id}
                   label={item.name}
-                  actions={[{ label: "Quitar", icon: "trash", tone: "danger", onAction: () => remove(item) }]}
+                  actions={[{ label: t("item.remove"), icon: "trash", tone: "danger", onAction: () => remove(item) }]}
                 >
                   <CheckRow
                     title={item.name}
                     detail={itemDetail(item)}
                     checked={false}
                     onToggle={() => change((now) => withCart(now, item.id, true), () => setInCart(item, true))}
-                    more={{ label: `Cambiar ${item.name}`, onClick: () => setOpen(item) }}
+                    more={{ label: t("item.change", { name: item.name }), onClick: () => setOpen(item) }}
                   />
                 </SwipeRow>
               ))}
@@ -316,7 +322,7 @@ export function ShoppingScreen() {
         ))}
 
         {list && list.cart.length > 0 && (
-          <Section title="En el carro" count={list.in_cart}>
+          <Section title={t("cart.title")} count={list.in_cart}>
             <List>
               {list.cart.map((item) => (
                 <CheckRow
@@ -333,9 +339,12 @@ export function ShoppingScreen() {
 
         {list && list.in_cart > 0 && !finishing && (
           <DockBar
-            title={list.in_cart === 1 ? "1 en el carro" : `${list.in_cart} en el carro`}
-            detail={cartLine(list.cart.map((item) => item.name))}
-            action={{ label: "Terminar", icon: "done", onClick: () => setFinishing(true) }}
+            title={list.in_cart === 1 ? t("cart.one") : t("cart.other", { count: list.in_cart })}
+            detail={cartLine(
+              t,
+              list.cart.map((item) => item.name),
+            )}
+            action={{ label: t("cart.finish"), icon: "done", onClick: () => setFinishing(true) }}
           />
         )}
 
@@ -357,11 +366,7 @@ export function ShoppingScreen() {
             onFinished={(fresh, queued) => {
               void mutate<ShoppingList>("list", fresh);
               setFinishing(false);
-              setNotice(
-                queued
-                  ? "Compra guardada en el móvil: se envía al volver la red."
-                  : "Compra guardada. Lo que no cogiste sigue en la lista.",
-              );
+              setNotice(queued ? t("finish.queued") : t("finish.saved"));
               invalidate("products");
               invalidate("trips");
             }}
@@ -373,14 +378,14 @@ export function ShoppingScreen() {
   );
 }
 
-export function noticeFor(added: Added[], categories: Category[]): string {
+export function noticeFor(t: Translate, added: Added[], categories: Category[]): string {
   const other = added.filter((one) => one.guessed && one.category_id === "other");
   if (other.length) {
-    const where = categories.find((one) => one.id === "other")?.name ?? "Otros";
-    return `${other.map((one) => one.name).join(", ")} va en ${where}: tócalo en la lista para cambiarle la sección.`;
+    const section = sectionName(t, "other", categories.find((one) => one.id === "other")?.name);
+    return t("notice.other", { names: other.map((one) => one.name).join(", "), section });
   }
   const already = added.filter((one) => one.already_on_list);
-  if (already.length) return `${already.map((one) => one.name).join(", ")} ya estaba apuntado.`;
+  if (already.length) return t("notice.already", { names: already.map((one) => one.name).join(", ") });
   return "";
 }
 
@@ -400,6 +405,7 @@ function ItemSheet({
   const [category, setCategoryId] = useState(item.category_id);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState("");
+  const t = useT();
 
   async function run(action: () => Promise<ShoppingList>, offline: (now: ShoppingList) => ShoppingList) {
     setBusy(true);
@@ -409,7 +415,7 @@ function ItemSheet({
     } catch (error) {
       if (error instanceof Queued) return onSaved((now) => (now ? offline(now) : (now as never)));
       if (error instanceof Unauthorised) return signIn();
-      setProblem(error instanceof Error ? error.message : "No se pudo guardar.");
+      setProblem(error instanceof Error ? error.message : t("common.save_failed"));
     } finally {
       setBusy(false);
     }
@@ -438,7 +444,7 @@ function ItemSheet({
       title={item.name}
       onClose={onClose}
       action={{
-        label: busy ? "Guardando…" : "Guardar",
+        label: busy ? t("common.saving") : t("common.save"),
         onClick: () =>
           void run(save, (now) =>
             withSection(withEdited(now, item.id, quantity.trim() || null, note.trim() || null), item.id, category, categories),
@@ -446,28 +452,33 @@ function ItemSheet({
         disabled: busy,
       }}
     >
-      <TextField label="Cantidad" value={quantity} onChange={setQuantity} placeholder="2, 1 kg, pack de 6" />
-      <TextField label="Nota" value={note} onChange={setNote} placeholder="la sin lactosa" />
+      <TextField
+        label={t("item.quantity")}
+        value={quantity}
+        onChange={setQuantity}
+        placeholder={t("item.quantity_placeholder")}
+      />
+      <TextField label={t("item.note")} value={note} onChange={setNote} placeholder={t("item.note_placeholder")} />
       {provisional ? (
-        <Hint>Apuntado sin conexión: la sección se podrá cambiar cuando se envíe.</Hint>
+        <Hint>{t("item.provisional")}</Hint>
       ) : (
         <ChoiceChips
-          label="Sección"
+          label={t("item.section")}
           value={category}
           onChange={setCategoryId}
-          options={categories.map((one) => ({ value: one.id, label: `${one.emoji} ${one.name}` }))}
+          options={categories.map((one) => ({ value: one.id, label: `${one.emoji} ${sectionName(t, one.id, one.name)}` }))}
         />
       )}
-      {item.source === "tool" && <Hint>Lo apuntó Claude.</Hint>}
+      {item.source === "tool" && <Hint>{t("item.by_claude")}</Hint>}
       {problem && (
         <Hint tone="warning">
           {problem}
         </Hint>
       )}
       <Button block disabled={busy} onClick={() => void run(() => dropItem(item), (now) => without(now, item.id))}>
-        Quitar de la lista
+        {t("item.remove_from_list")}
       </Button>
-      <Hint>Quitarlo no borra nada: sigue en tu historial.</Hint>
+      <Hint>{t("item.remove_hint")}</Hint>
     </Sheet>
   );
 }
@@ -484,6 +495,7 @@ function FinishSheet({
   const count = list.in_cart;
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState("");
+  const t = useT();
 
   async function finish() {
     setBusy(true);
@@ -493,18 +505,18 @@ function FinishSheet({
     } catch (error) {
       if (error instanceof Queued) return onFinished(withFinished(list), true);
       if (error instanceof Unauthorised) return signIn();
-      setProblem(error instanceof Error ? error.message : "No se pudo guardar la compra.");
+      setProblem(error instanceof Error ? error.message : t("finish.failed"));
       setBusy(false);
     }
   }
 
   return (
     <Sheet
-      title="Terminar la compra"
+      title={t("finish.title")}
       onClose={onClose}
-      action={{ label: busy ? "Guardando…" : "Terminar la compra", onClick: () => void finish(), disabled: busy }}
+      action={{ label: busy ? t("common.saving") : t("finish.title"), onClick: () => void finish(), disabled: busy }}
     >
-      <GroupLabel>Te llevas · {count}</GroupLabel>
+      <GroupLabel>{t("finish.taking", { count })}</GroupLabel>
       <List>
         {list.cart.map((item) => (
           <ListRow key={item.id} title={item.name} detail={itemDetail(item)} accessory="done" />
@@ -512,7 +524,7 @@ function FinishSheet({
       </List>
       {list.pending > 0 && (
         <>
-          <GroupLabel>Se quedan para la próxima · {list.pending}</GroupLabel>
+          <GroupLabel>{t("finish.staying", { count: list.pending })}</GroupLabel>
           <List>
             {list.groups.flatMap((group) => group.items).map((item) => (
               <ListRow key={item.id} title={item.name} detail={itemDetail(item)} />
@@ -520,10 +532,7 @@ function FinishSheet({
           </List>
         </>
       )}
-      <Hint>
-        Se guarda{count === 1 ? " lo" : `n los ${count} productos`} que llevas en el carro, con la fecha de hoy.
-        Lo que no has cogido se queda en la lista para la próxima.
-      </Hint>
+      <Hint>{count === 1 ? t("finish.hint_one") : t("finish.hint_other", { count })}</Hint>
       {problem && (
         <Hint tone="warning">
           {problem}

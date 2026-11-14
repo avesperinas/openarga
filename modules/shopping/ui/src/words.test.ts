@@ -1,4 +1,7 @@
+import { configureRegional } from "@openarga/ui";
+
 import type { Item, Product, ShoppingList } from "./api";
+import { english, spanish } from "./i18n/testing";
 import {
   cartLine,
   daysSince,
@@ -6,6 +9,7 @@ import {
   fold,
   habitDetail,
   itemDetail,
+  sectionName,
   startsAWord,
   suggest,
   withAdded,
@@ -33,45 +37,57 @@ function product(name: string, extra: Partial<Product> = {}): Product {
   };
 }
 
-test("compara como el servidor: sin tildes, sin mayúsculas y sin espacios de más", () => {
-  expect(fold("  PLÁTANOS   de Canarias ")).toBe("platanos de canarias");
-  expect(fold("Piña")).toBe("pina");
+test("compares like the server: without accents, case or extra spaces", () => {
+  expect(fold("  CR\u00c8ME   fra\u00eeche ")).toBe("creme fraiche");
+  expect(fold("Pi\u00f1a")).toBe("pina");
 });
 
-test("lo escrito es el principio de alguna palabra", () => {
-  expect(startsAWord("plat", "Plátanos")).toBe(true);
-  expect(startsAWord("plat", "Papel de plata")).toBe(true);
-  expect(startsAWord("plat", "Espátula")).toBe(false);
-  expect(startsAWord("  ", "Plátanos")).toBe(false);
+test("what is typed is the start of some word", () => {
+  expect(startsAWord("pot", "Potatoes")).toBe(true);
+  expect(startsAWord("pot", "Sweet potatoes")).toBe(true);
+  expect(startsAWord("pot", "Hotpot")).toBe(false);
+  expect(startsAWord("  ", "Potatoes")).toBe(false);
 });
 
-test("al escribir se ofrece lo que ya compras y, si no es ninguno, apuntarlo tal cual", () => {
-  const known = [product("Plátanos", { times: 5 }), product("Papel de plata", { times: 1 })];
+test("typing offers what you already buy and, if none is it, adding it as it is", () => {
+  const known = [product("Potatoes", { times: 5 }), product("Sweet potatoes", { times: 1 })];
 
-  expect(suggest(known, "plat").known.map((one) => one.name)).toEqual(["Plátanos", "Papel de plata"]);
-  expect(suggest(known, "plat").typed).toBe("plat");
-  expect(suggest(known, "platanos").typed).toBeNull();
+  expect(suggest(known, "pot").known.map((one) => one.name)).toEqual(["Potatoes", "Sweet potatoes"]);
+  expect(suggest(known, "pot").typed).toBe("pot");
+  expect(suggest(known, "potatoes").typed).toBeNull();
   expect(suggest(known, "   ")).toEqual({ known: [], typed: null });
 });
 
-test("lo que acompaña a lo apuntado es su cantidad y su nota", () => {
-  expect(itemDetail({ quantity: "2", note: "sin lactosa" })).toBe("2 · sin lactosa");
+test("what goes with an item is its quantity and its note", () => {
+  expect(itemDetail({ quantity: "2", note: "lactose-free" })).toBe("2 · lactose-free");
   expect(itemDetail({ quantity: null, note: null })).toBeUndefined();
 });
 
-test("de un producto se dice su costumbre, o cuántas veces si aún no la tiene", () => {
-  expect(habitDetail({ every: "cada semana", since: "hace 9 días", times: 5 })).toBe(
-    "cada semana · hace 9 días",
-  );
-  expect(habitDetail({ every: null, since: "ayer", times: 1 })).toBe("1 vez · ayer");
-  expect(habitDetail({ every: null, since: null, times: 2 })).toBe("2 veces");
+test("a product says its habit, or how many times while it has none", () => {
+  expect(habitDetail(english, { every: "every week", since: "9 days ago", times: 5 })).toBe("every week · 9 days ago");
+  expect(habitDetail(english, { every: null, since: "yesterday", times: 1 })).toBe("once · yesterday");
+  expect(habitDetail(english, { every: null, since: null, times: 2 })).toBe("2 times");
+  expect(habitDetail(spanish, { every: null, since: null, times: 2 })).toBe(spanish("habit.times", { count: 2 }));
 });
 
-test("una compra se nombra por su día, en la hora de Madrid", () => {
-  expect(dayLabel("2026-09-22T21:30:00Z")).toBe("Martes, 22 de septiembre");
+test("built-in sections are named in the person's language, their own sections as written", () => {
+  expect(sectionName(english, "dairy", "Dairy and eggs")).toBe("Dairy and eggs");
+  expect(sectionName(spanish, "dairy", "Dairy and eggs")).toBe(spanish("section.dairy"));
+  expect(sectionName(spanish, "garage", "Garage")).toBe("Garage");
 });
 
-describe("lo que se pinta antes de que conteste", () => {
+test("a trip is named by its day, in the person's time zone and language", () => {
+  configureRegional({ locale: "en-US", timeZone: "Europe/Madrid" });
+  try {
+    expect(dayLabel("2026-09-22T21:30:00Z")).toMatch(/Tuesday.*September.*22|Tuesday, 22 September/);
+    configureRegional({ timeZone: "America/New_York" });
+    expect(dayLabel("2026-09-22T03:30:00Z")).toMatch(/Monday/);
+  } finally {
+    configureRegional({ locale: "es-ES", timeZone: "Europe/Madrid" });
+  }
+});
+
+describe("what is painted before the server answers", () => {
   const item = (id: string, category_id: string, in_cart = false): Item => ({
     id,
     product_id: id,
@@ -84,10 +100,10 @@ describe("lo que se pinta antes de que conteste", () => {
   });
   const list: ShoppingList = {
     groups: [
-      { category_id: "dairy", name: "Lácteos", emoji: "🥛", items: [item("leche", "dairy"), item("yogur", "dairy")] },
-      { category_id: "bakery", name: "Panadería", emoji: "🥖", items: [item("pan", "bakery")] },
+      { category_id: "dairy", name: "Dairy", emoji: "🥛", items: [item("milk", "dairy"), item("yogurt", "dairy")] },
+      { category_id: "bakery", name: "Bakery", emoji: "🥖", items: [item("bread", "bakery")] },
     ],
-    cart: [item("huevos", "dairy", true)],
+    cart: [item("eggs", "dairy", true)],
     due: [],
     usual: [],
     pending: 3,
@@ -95,86 +111,92 @@ describe("lo que se pinta antes de que conteste", () => {
     space_id: null,
   };
 
-  it("al carro: sale de su sección, que desaparece si se queda vacía, y se recuentan", () => {
-    const moved = withCart(list, "pan", true);
+  it("into the trolley: it leaves its section, which goes if empty, and counts are redone", () => {
+    const moved = withCart(list, "bread", true);
     expect(moved.groups.map((group) => group.category_id)).toEqual(["dairy"]);
     expect(moved.cart.map((one) => [one.id, one.in_cart])).toEqual([
-      ["huevos", true],
-      ["pan", true],
+      ["eggs", true],
+      ["bread", true],
     ]);
     expect([moved.pending, moved.in_cart]).toEqual([2, 2]);
   });
 
-  it("fuera del carro: vuelve a su sección; si no está, no se adivina", () => {
-    const back = withCart(list, "huevos", false);
-    expect(back.groups[0]!.items.map((one) => one.id)).toEqual(["leche", "yogur", "huevos"]);
+  it("out of the trolley: back to its section; if it is not there, it is not guessed", () => {
+    const back = withCart(list, "eggs", false);
+    expect(back.groups[0]!.items.map((one) => one.id)).toEqual(["milk", "yogurt", "eggs"]);
     expect([back.pending, back.in_cart]).toEqual([4, 0]);
-    const orphan = { ...list, cart: [item("pescado", "fish", true)] };
-    expect(withCart(orphan, "pescado", false)).toBe(orphan);
+    const orphan = { ...list, cart: [item("fish", "fish", true)] };
+    expect(withCart(orphan, "fish", false)).toBe(orphan);
   });
 
-  it("quitar algo lo saca de donde esté", () => {
-    expect([without(list, "leche").pending, without(list, "huevos").in_cart]).toEqual([2, 0]);
+  it("removing something takes it out wherever it is", () => {
+    expect([without(list, "milk").pending, without(list, "eggs").in_cart]).toEqual([2, 0]);
   });
 });
 
-describe("sin red, la lista como la dejará el servidor", () => {
+describe("offline, the list as the server will leave it", () => {
   const empty: ShoppingList = { groups: [], cart: [], due: [], usual: [], pending: 0, in_cart: 0, space_id: null };
   const sections = [
-    { id: "bakery", name: "Panadería", emoji: "🥖", position: 2 },
-    { id: "dairy", name: "Lácteos", emoji: "🥛", position: 3 },
-    { id: "other", name: "Otros", emoji: "📦", position: 9 },
+    { id: "bakery", name: "Bakery", emoji: "🥖", position: 2 },
+    { id: "dairy", name: "Dairy", emoji: "🥛", position: 3 },
+    { id: "other", name: "Other", emoji: "📦", position: 9 },
   ];
 
-  it("lo apuntado va a la sección que ya tiene, o a Otros, y lo ya apuntado no se repite", () => {
-    let list = withAdded(empty, { id: "1", name: "leche", quantity: null }, [product("Leche", { category_id: "dairy", quantity: "2" })], sections);
-    list = withAdded(list, { id: "2", name: "Cosa rara", quantity: null }, [], sections);
-    list = withAdded(list, { id: "3", name: "Pan", quantity: null }, [product("Pan", { category_id: "bakery" })], sections);
-    list = withAdded(list, { id: "4", name: "LECHE", quantity: null }, [], sections);
+  it("an item goes to the section it already has, or to Other, and what is on the list is not repeated", () => {
+    let list = withAdded(
+      empty,
+      { id: "1", name: "milk", quantity: null },
+      [product("Milk", { category_id: "dairy", quantity: "2" })],
+      sections,
+    );
+    list = withAdded(list, { id: "2", name: "Odd thing", quantity: null }, [], sections);
+    list = withAdded(list, { id: "3", name: "Bread", quantity: null }, [product("Bread", { category_id: "bakery" })], sections);
+    list = withAdded(list, { id: "4", name: "MILK", quantity: null }, [], sections);
 
     expect(list.groups.map((group) => [group.category_id, group.items.map((one) => one.name)])).toEqual([
-      ["bakery", ["Pan"]],
-      ["dairy", ["Leche"]],
-      ["other", ["Cosa rara"]],
+      ["bakery", ["Bread"]],
+      ["dairy", ["Milk"]],
+      ["other", ["Odd thing"]],
     ]);
     expect(list.groups[1]!.items[0]).toMatchObject({ id: "1", quantity: "2" });
     expect(list.pending).toBe(3);
   });
 
-  it("cambiar y terminar", () => {
-    const one = withAdded(empty, { id: "1", name: "Pan", quantity: null }, [], sections);
-    expect(withEdited(one, "1", "2", "integral").groups[0]!.items[0]).toMatchObject({ quantity: "2", note: "integral" });
+  it("editing and finishing", () => {
+    const one = withAdded(empty, { id: "1", name: "Bread", quantity: null }, [], sections);
+    expect(withEdited(one, "1", "2", "wholemeal").groups[0]!.items[0]).toMatchObject({ quantity: "2", note: "wholemeal" });
     const carted = withCart(one, "1", true);
     expect(withFinished(carted)).toMatchObject({ cart: [], in_cart: 0, groups: [] });
   });
 });
 
-describe("cambiar de sección sin red", () => {
-  it("pasa a la otra sección y deja la suya si se queda vacía", () => {
+describe("changing section offline", () => {
+  it("moves to the other section and leaves its own if it is left empty", () => {
     const sections = [
-      { id: "bakery", name: "Panadería", emoji: "🥖", position: 2 },
-      { id: "dairy", name: "Lácteos", emoji: "🥛", position: 3 },
+      { id: "bakery", name: "Bakery", emoji: "🥖", position: 2 },
+      { id: "dairy", name: "Dairy", emoji: "🥛", position: 3 },
     ];
     const empty: ShoppingList = { groups: [], cart: [], due: [], usual: [], pending: 0, in_cart: 0, space_id: null };
-    const one = withAdded(empty, { id: "1", name: "Kéfir", quantity: null }, [product("Kéfir", { category_id: "bakery" })], sections);
+    const one = withAdded(empty, { id: "1", name: "Kefir", quantity: null }, [product("Kefir", { category_id: "bakery" })], sections);
     const moved = withSection(one, "1", "dairy", sections);
-    expect(moved.groups.map((group) => [group.category_id, group.items.map((item) => item.name)])).toEqual([["dairy", ["Kéfir"]]]);
+    expect(moved.groups.map((group) => [group.category_id, group.items.map((item) => item.name)])).toEqual([["dairy", ["Kefir"]]]);
     expect(moved.pending).toBe(1);
   });
 });
 
-describe("el rediseño (T-B13)", () => {
-  it("los días desde la última compra, por el calendario", () => {
+describe("the redesign", () => {
+  it("days since the last purchase, by the calendar", () => {
     expect(daysSince("2026-10-15", "2026-10-30")).toBe(15);
     expect(daysSince("2026-10-30", "2026-10-30")).toBe(0);
     expect(daysSince(null, "2026-10-30")).toBeNull();
     expect(daysSince("2026-10-24", "2026-10-26")).toBe(2);
   });
 
-  it("lo del carro en una línea", () => {
-    expect(cartLine([])).toBe("");
-    expect(cartLine(["Pan"])).toBe("Pan");
-    expect(cartLine(["Pan", "Leche"])).toBe("Pan y Leche");
-    expect(cartLine(["Pan", "Plátanos", "Aceite", "Huevos"])).toBe("Pan, plátanos y 2 más");
+  it("the trolley in one line", () => {
+    expect(cartLine(english, [])).toBe("");
+    expect(cartLine(english, ["Bread"])).toBe("Bread");
+    expect(cartLine(english, ["Bread", "Milk"])).toBe("Bread and Milk");
+    expect(cartLine(english, ["Bread", "Bananas", "Oil", "Eggs"])).toBe("Bread, bananas and 2 more");
+    expect(cartLine(spanish, ["Bread", "Milk"])).toBe(spanish("cart.two", { first: "Bread", second: "Milk" }));
   });
 });

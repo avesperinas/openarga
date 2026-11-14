@@ -51,7 +51,7 @@ async def test_a_new_list_is_empty(api) -> None:
 
 
 async def test_what_is_added_falls_in_its_section_in_the_order_of_the_shop(api) -> None:
-    listing = (await add(api, "Lejía", "Leche", "Tomates", "Cosa rara"))["list"]
+    listing = (await add(api, "Bleach", "Milk", "Tomatoes", "Odd thing"))["list"]
 
     assert [group["category_id"] for group in listing["groups"]] == [
         "produce",
@@ -63,7 +63,7 @@ async def test_what_is_added_falls_in_its_section_in_the_order_of_the_shop(api) 
 
 
 async def test_what_the_dictionary_guessed_is_said(api) -> None:
-    added = (await add(api, "Leche", "Cosa rara", {"name": "Otra", "category_id": "pantry"}))[
+    added = (await add(api, "Milk", "Odd thing", {"name": "Otra", "category_id": "pantry"}))[
         "added"
     ]
 
@@ -75,58 +75,58 @@ async def test_what_the_dictionary_guessed_is_said(api) -> None:
 
 
 async def test_the_same_product_is_on_the_list_once(api) -> None:
-    await add(api, {"name": "Leche", "quantity": "2"})
-    again = await add(api, {"name": "  leche "}, {"name": "LECHE", "quantity": "6"})
+    await add(api, {"name": "Milk", "quantity": "2"})
+    again = await add(api, {"name": "  milk "}, {"name": "MILK", "quantity": "6"})
 
     assert [one["already_on_list"] for one in again["added"]] == [True, True]
-    assert pending(again["list"]) == ["Leche"]
-    assert item(again["list"], "Leche")["quantity"] == "6"
+    assert pending(again["list"]) == ["Milk"]
+    assert item(again["list"], "Milk")["quantity"] == "6"
 
 
 async def test_checking_moves_it_to_the_cart_and_unchecking_brings_it_back(api) -> None:
-    listing = (await add(api, "Pan", "Leche"))["list"]
-    bread = item(listing, "Pan")["id"]
+    listing = (await add(api, "Bread", "Milk"))["list"]
+    bread = item(listing, "Bread")["id"]
 
     checked = (await api.put(f"/list/items/{bread}/cart", json={"in_cart": True})).json()
     unchecked = (await api.put(f"/list/items/{bread}/cart", json={"in_cart": False})).json()
 
-    assert pending(checked) == ["Leche"] and [one["name"] for one in checked["cart"]] == ["Pan"]
+    assert pending(checked) == ["Milk"] and [one["name"] for one in checked["cart"]] == ["Bread"]
     assert (checked["pending"], checked["in_cart"]) == (1, 1)
-    assert sorted(pending(unchecked)) == ["Leche", "Pan"] and unchecked["cart"] == []
+    assert sorted(pending(unchecked)) == ["Bread", "Milk"] and unchecked["cart"] == []
 
 
 async def test_finishing_keeps_what_was_not_picked_for_next_time(api) -> None:
-    listing = (await add(api, "Pan", "Leche"))["list"]
-    await api.put(f"/list/items/{item(listing, 'Pan')['id']}/cart", json={"in_cart": True})
+    listing = (await add(api, "Bread", "Milk"))["list"]
+    await api.put(f"/list/items/{item(listing, 'Bread')['id']}/cart", json={"in_cart": True})
 
     finished = (await api.post("/list/finish")).json()
 
     assert finished["trip"]["items"] == 1
-    assert [one["name"] for one in finished["trip"]["products"]] == ["Pan"]
-    assert pending(finished["list"]) == ["Leche"] and finished["list"]["cart"] == []
+    assert [one["name"] for one in finished["trip"]["products"]] == ["Bread"]
+    assert pending(finished["list"]) == ["Milk"] and finished["list"]["cart"] == []
     trips = (await api.get("/trips")).json()
     assert [trip["items"] for trip in trips] == [1]
 
 
 async def test_finishing_with_an_empty_cart_is_not_a_purchase(api) -> None:
-    await add(api, "Pan")
+    await add(api, "Bread")
 
     refused = await api.post("/list/finish")
 
     assert refused.status_code == 409
-    assert "carro" in refused.json()["detail"]
+    assert "trolley" in refused.json()["detail"]
     assert (await api.get("/trips")).json() == []
 
 
 async def test_removing_does_not_delete_the_product_or_its_history(api, schema) -> None:
-    await buy(api, schema, "Leche")
-    listing = (await add(api, "Leche"))["list"]
+    await buy(api, schema, "Milk")
+    listing = (await add(api, "Milk"))["list"]
 
-    removed = (await api.post(f"/list/items/{item(listing, 'Leche')['id']}/drop")).json()
+    removed = (await api.post(f"/list/items/{item(listing, 'Milk')['id']}/drop")).json()
 
     assert pending(removed) == []
     products = (await api.get("/products")).json()
-    assert [(one["name"], one["times"]) for one in products] == [("Leche", 1)]
+    assert [(one["name"], one["times"]) for one in products] == [("Milk", 1)]
     async with schema.connect() as connection:
         statuses = (
             (
@@ -141,38 +141,38 @@ async def test_removing_does_not_delete_the_product_or_its_history(api, schema) 
 
 
 async def test_the_quantity_of_last_time_comes_back(api, schema) -> None:
-    await buy(api, schema, "Huevos")
-    listing = (await add(api, {"name": "Huevos", "quantity": "docena"}))["list"]
-    await api.post(f"/list/items/{item(listing, 'Huevos')['id']}/drop")
+    await buy(api, schema, "Eggs")
+    listing = (await add(api, {"name": "Eggs", "quantity": "docena"}))["list"]
+    await api.post(f"/list/items/{item(listing, 'Eggs')['id']}/drop")
 
-    again = (await add(api, "Huevos"))["list"]
+    again = (await add(api, "Eggs"))["list"]
 
-    assert item(again, "Huevos")["quantity"] == "docena"
+    assert item(again, "Eggs")["quantity"] == "docena"
 
 
 async def test_changing_the_quantity_and_note_of_what_is_on_the_list(api) -> None:
-    listing = (await add(api, "Leche"))["list"]
-    milk = item(listing, "Leche")["id"]
+    listing = (await add(api, "Milk"))["list"]
+    milk = item(listing, "Milk")["id"]
 
     changed = (
-        await api.put(f"/list/items/{milk}", json={"quantity": "6", "note": "sin lactosa"})
+        await api.put(f"/list/items/{milk}", json={"quantity": "6", "note": "lactose-free"})
     ).json()
     cleared = (await api.put(f"/list/items/{milk}", json={"quantity": " ", "note": None})).json()
 
-    assert (item(changed, "Leche")["quantity"], item(changed, "Leche")["note"]) == (
+    assert (item(changed, "Milk")["quantity"], item(changed, "Milk")["note"]) == (
         "6",
-        "sin lactosa",
+        "lactose-free",
     )
-    assert (item(cleared, "Leche")["quantity"], item(cleared, "Leche")["note"]) == (None, None)
+    assert (item(cleared, "Milk")["quantity"], item(cleared, "Milk")["note"]) == (None, None)
 
 
 async def test_moving_a_product_to_another_section_is_remembered(api) -> None:
-    listing = (await add(api, "Cosa rara"))["list"]
-    product = item(listing, "Cosa rara")["product_id"]
+    listing = (await add(api, "Odd thing"))["list"]
+    product = item(listing, "Odd thing")["product_id"]
 
     moved = (await api.put(f"/products/{product}/category", json={"category_id": "pantry"})).json()
-    await api.post(f"/list/items/{item(moved, 'Cosa rara')['id']}/drop")
-    again = await add(api, "cosa rara")
+    await api.post(f"/list/items/{item(moved, 'Odd thing')['id']}/drop")
+    again = await add(api, "odd thing")
 
     assert moved["groups"][0]["category_id"] == "pantry"
     assert again["added"][0]["category_id"] == "pantry"
@@ -181,7 +181,7 @@ async def test_moving_a_product_to_another_section_is_remembered(api) -> None:
 
 async def test_a_section_that_does_not_exist_is_a_404(api) -> None:
     missing = await api.post(
-        "/list/items", json={"items": [{"name": "Pan", "category_id": "garage"}]}
+        "/list/items", json={"items": [{"name": "Bread", "category_id": "garage"}]}
     )
 
     assert missing.status_code == 404
@@ -192,8 +192,8 @@ TRIP_ID = "00000000-0000-4000-8000-0000000000b1"
 
 
 async def test_what_comes_twice_from_the_offline_queue_is_added_once(api, schema) -> None:
-    first = await add(api, {"id": ITEM_ID, "name": "Leche"})
-    again = await add(api, {"id": ITEM_ID, "name": "Leche"})
+    first = await add(api, {"id": ITEM_ID, "name": "Milk"})
+    again = await add(api, {"id": ITEM_ID, "name": "Milk"})
 
     assert first["added"][0]["item_id"] == ITEM_ID
     assert again["added"][0] == {
@@ -202,29 +202,29 @@ async def test_what_comes_twice_from_the_offline_queue_is_added_once(api, schema
         "already_on_list": True,
         "guessed": False,
     }
-    assert pending(again["list"]) == ["Leche"]
+    assert pending(again["list"]) == ["Milk"]
     async with schema.begin() as connection:
         rows = await connection.execute(text("select count(*) from shopping.shopping_item"))
         assert rows.scalar() == 1
 
 
 async def test_what_was_removed_in_between_is_not_added_back_by_a_repeat(api) -> None:
-    await add(api, {"id": ITEM_ID, "name": "Leche"})
+    await add(api, {"id": ITEM_ID, "name": "Milk"})
     await api.post(f"/list/items/{ITEM_ID}/drop")
 
-    assert pending((await add(api, {"id": ITEM_ID, "name": "Leche"}))["list"]) == []
+    assert pending((await add(api, {"id": ITEM_ID, "name": "Milk"}))["list"]) == []
 
 
 async def test_removing_twice_is_removing_once(api) -> None:
-    await add(api, {"id": ITEM_ID, "name": "Leche"})
+    await add(api, {"id": ITEM_ID, "name": "Milk"})
 
     assert (await api.post(f"/list/items/{ITEM_ID}/drop")).status_code == 200
     assert (await api.post(f"/list/items/{ITEM_ID}/drop")).status_code == 200
 
 
 async def test_finishing_twice_with_its_id_is_one_purchase(api, schema) -> None:
-    listing = (await add(api, "Pan", "Huevos"))["list"]
-    for name in ("Pan", "Huevos"):
+    listing = (await add(api, "Bread", "Eggs"))["list"]
+    for name in ("Bread", "Eggs"):
         await api.put(f"/list/items/{item(listing, name)['id']}/cart", json={"in_cart": True})
 
     first = await api.post("/list/finish", json={"id": TRIP_ID})
@@ -240,13 +240,13 @@ async def test_finishing_twice_with_its_id_is_one_purchase(api, schema) -> None:
 
 async def test_what_you_buy_regularly_is_proposed_when_it_is_due(api, schema) -> None:
     for days_ago in (22, 15, 8):
-        await buy(api, schema, "Leche", days_ago=days_ago)
-    await buy(api, schema, "Pan", days_ago=1)
+        await buy(api, schema, "Milk", days_ago=days_ago)
+    await buy(api, schema, "Bread", days_ago=1)
 
     listing = (await api.get("/list")).json()
 
     assert [(one["name"], one["every"], one["since"]) for one in listing["due"]] == [
-        ("Leche", "cada semana", "hace 8 días")
+        ("Milk", "every week", "8 days ago")
     ]
     assert pending(listing) == []
     assert [one["name"] for one in listing["usual"]] == []
@@ -254,30 +254,30 @@ async def test_what_you_buy_regularly_is_proposed_when_it_is_due(api, schema) ->
 
 async def test_what_is_already_on_the_list_is_not_proposed(api, schema) -> None:
     for days_ago in (22, 15, 8):
-        await buy(api, schema, "Leche", days_ago=days_ago)
-    listing = (await add(api, "Leche"))["list"]
+        await buy(api, schema, "Milk", days_ago=days_ago)
+    listing = (await add(api, "Milk"))["list"]
 
     assert listing["due"] == [] and listing["usual"] == []
 
 
 async def test_the_usual_ones_are_what_you_buy_most(api, schema) -> None:
     for days_ago in (20, 10, 5):
-        await buy(api, schema, "Pan", days_ago=days_ago)
+        await buy(api, schema, "Bread", days_ago=days_ago)
     for days_ago in (20, 10):
-        await buy(api, schema, "Leche", days_ago=days_ago)
-    await buy(api, schema, "Lejía", days_ago=3)
+        await buy(api, schema, "Milk", days_ago=days_ago)
+    await buy(api, schema, "Bleach", days_ago=3)
 
     usual = (await api.get("/list")).json()["usual"]
 
-    assert [(one["name"], one["times"]) for one in usual] == [("Pan", 3), ("Leche", 2)]
+    assert [(one["name"], one["times"]) for one in usual] == [("Bread", 3), ("Milk", 2)]
 
 
 async def test_typing_completes_with_what_you_have_bought(api, schema) -> None:
-    await buy(api, schema, "Plátanos", "Papel de plata", "Espátula")
+    await buy(api, schema, "Potatoes", "Sweet potatoes", "Hotpot")
 
-    found = (await api.get("/products", params={"query": "plat"})).json()
+    found = (await api.get("/products", params={"query": "pot"})).json()
 
-    assert sorted(one["name"] for one in found) == ["Papel de plata", "Plátanos"]
+    assert sorted(one["name"] for one in found) == ["Potatoes", "Sweet potatoes"]
 
 
 @pytest.mark.parametrize(
@@ -300,7 +300,7 @@ async def test_what_is_not_there_is_a_404(api, method: str, path: str, body) -> 
 
 
 async def test_finishing_queues_the_purchase_for_the_log(api, schema) -> None:
-    await buy(api, schema, "Pan", "Leche")
+    await buy(api, schema, "Bread", "Milk")
 
     async with schema.connect() as connection:
         rows = (
@@ -311,16 +311,16 @@ async def test_finishing_queues_the_purchase_for_the_log(api, schema) -> None:
 
     assert [row.type for row in rows] == ["shopping.trip_finished", "shopping.trip"]
     assert rows[0].payload["items"] == 2
-    assert sorted(one["name"] for one in rows[0].payload["products"]) == ["Leche", "Pan"]
+    assert sorted(one["name"] for one in rows[0].payload["products"]) == ["Bread", "Milk"]
     assert rows[0].dedup_hash == f"trip:{rows[0].payload['trip_id']}"
     item = arga_agenda.check_event(rows[1].payload)
     assert item["uid"] == f"shopping:trip:{rows[0].payload['trip_id']}"
-    assert item["title"] == "Compra de 2 productos"
+    assert item["title"] == "Shopping, 2 products"
     assert item["start"] == item["end"]
 
 
 async def test_the_purchases_of_before_reach_the_calendar_once(api, schema) -> None:
-    await buy(api, schema, "Pan")
+    await buy(api, schema, "Bread")
     async with schema.begin() as connection:
         await connection.execute(text('set local role "mod_shopping"'))
         await connection.execute(text("delete from shopping.shopping_outbox"))

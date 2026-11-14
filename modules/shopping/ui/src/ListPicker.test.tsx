@@ -2,44 +2,46 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import type { Space } from "./api";
+import { english, inLocale, spanish } from "./i18n/testing";
 import { ListPicker, listSubtitle, listTitle, withWhom } from "./ListPicker";
 
-const ANA = "0a0a0a0a-0000-4000-8000-00000000a0a0";
-const LUIS = "0b0b0b0b-0000-4000-8000-00000000b0b0";
-const casa: Space = {
+const ALEX = "0a0a0a0a-0000-4000-8000-00000000a0a0";
+const SAM = "0b0b0b0b-0000-4000-8000-00000000b0b0";
+const home: Space = {
   id: "0c0c0c0c-0000-4000-8000-00000000c0c0",
-  name: "Casa",
-  me: ANA,
+  name: "Home",
+  me: ALEX,
   members: [
-    { user_id: ANA, name: "Ana" },
-    { user_id: LUIS, name: "Luis" },
+    { user_id: ALEX, name: "Alex" },
+    { user_id: SAM, name: "Sam" },
   ],
 };
 
-describe("de quién es la lista", () => {
-  it("la tuya se llama así y solo la ves tú", () => {
-    expect(listTitle({ space_id: null }, [casa])).toBe("Tu lista");
-    expect(listSubtitle({ space_id: null }, [casa])).toBe("Solo la ves tú");
+describe("whose list it is", () => {
+  it("yours is called so and only you see it", () => {
+    expect(listTitle(english, { space_id: null }, [home])).toBe("Your list");
+    expect(listSubtitle(english, { space_id: null }, [home])).toBe("Only you see it");
   });
 
-  it("la de un espacio lleva su nombre y dice quién la ve", () => {
-    expect(listTitle({ space_id: casa.id }, [casa])).toBe("Casa");
-    expect(listSubtitle({ space_id: casa.id }, [casa])).toBe("La ven y la marcan: Tú y Luis");
+  it("a space's list carries its name and says who sees it", () => {
+    expect(listTitle(english, { space_id: home.id }, [home])).toBe("Home");
+    expect(listSubtitle(english, { space_id: home.id }, [home])).toBe("They see and tick it: You and Sam");
   });
 
-  it("quien no puso nombre sale sin nombre, y sin nadie más eres solo tú", () => {
-    const eva = { user_id: "0e0e0e0e-0000-4000-8000-00000000e0e0", name: null };
-    expect(withWhom({ ...casa, members: [...casa.members, eva] })).toBe("Tú, Luis y Sin nombre");
-    expect(withWhom({ ...casa, members: casa.members.slice(0, 1) })).toBe("Solo tú, de momento");
+  it("whoever has no name shows as such, and with nobody else it is only you", () => {
+    const eve = { user_id: "0e0e0e0e-0000-4000-8000-00000000e0e0", name: null };
+    expect(withWhom(english, { ...home, members: [...home.members, eve] })).toBe("You, Sam and No name");
+    expect(withWhom(english, { ...home, members: home.members.slice(0, 1) })).toBe("Only you, for now");
+    expect(withWhom(spanish, { ...home, members: home.members.slice(0, 1) })).toBe(spanish("picker.whom_alone"));
   });
 
-  it("se ve en la pantalla con su nombre, cerrada hasta que se toca", () => {
+  it("it shows on screen with its name, closed until it is tapped", () => {
     const html = renderToStaticMarkup(
-      <ListPicker list={{ space_id: casa.id }} spaces={[casa]} onChoose={async () => {}} />,
+      inLocale(<ListPicker list={{ space_id: home.id }} spaces={[home]} onChoose={async () => {}} />),
     );
 
-    expect(html).toContain("Casa");
-    expect(html).toContain("Tú y Luis");
-    expect(html).not.toContain("Qué lista usas");
+    expect(html).toContain("Home");
+    expect(html).toContain("You and Sam");
+    expect(html).not.toContain(english("picker.title"));
   });
 });

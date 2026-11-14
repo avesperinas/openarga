@@ -55,11 +55,11 @@ async def capability(
 ) -> dict:
     expected = os.environ.get("MODULE_REGISTRATION_TOKEN", "")
     if not expected:
-        raise HTTPException(status_code=503, detail="Shopping no tiene MODULE_REGISTRATION_TOKEN")
+        raise HTTPException(status_code=503, detail="Shopping has no MODULE_REGISTRATION_TOKEN")
     if not hmac.compare_digest(x_module_token, expected):
-        raise HTTPException(status_code=401, detail="solo el kernel pide cosas a Shopping")
+        raise HTTPException(status_code=401, detail="only the kernel asks Shopping for things")
     if capability != contracts.SHOPPING_ADD:
-        raise HTTPException(status_code=404, detail=f"Shopping no sabe hacer '{capability}'")
+        raise HTTPException(status_code=404, detail=f"Shopping cannot do '{capability}'")
     require_person()
     try:
         asked = contracts.ShoppingAdd.model_validate(await request.json())

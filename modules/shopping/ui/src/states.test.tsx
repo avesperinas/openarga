@@ -7,21 +7,22 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 
 import { type Category, type ShoppingList, queue } from "./api";
 import { App } from "./App";
+import { english, inLocale } from "./i18n/testing";
 
-const DAIRY: Category = { id: "dairy", name: "Lácteos", emoji: "🥛", position: 3 };
-const BAKERY: Category = { id: "bakery", name: "Panadería", emoji: "🥖", position: 2 };
+const DAIRY: Category = { id: "dairy", name: "Dairy and eggs", emoji: "🥛", position: 3 };
+const BAKERY: Category = { id: "bakery", name: "Bakery", emoji: "🥖", position: 2 };
 
 const LIST: ShoppingList = {
   groups: [
     {
       category_id: "dairy",
-      name: "Lácteos",
+      name: "Dairy and eggs",
       emoji: "🥛",
       items: [
         {
           id: "00000000-0000-4000-8000-0000000000a1",
           product_id: "00000000-0000-4000-8000-0000000000b1",
-          name: "Leche",
+          name: "Milk",
           category_id: "dairy",
           quantity: "2",
           note: null,
@@ -72,21 +73,21 @@ beforeEach(async () => {
     "GET /api/shopping/trips": () => [],
     "GET /api/shopping/version": () => ({ version: "1.0.0" }),
     "GET /api/kernel/spaces": () => [],
-    "GET /api/shopping/me": () => ({ user_id: "persona-prueba" }),
+    "GET /api/shopping/me": () => ({ user_id: "test-person" }),
   };
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string, init?: RequestInit) => {
       const key = `${init?.method ?? "GET"} ${url}`;
-      if (offline) throw new TypeError("sin red");
+      if (offline) throw new TypeError("no network");
       asked.push(key);
       const reply = replies[key];
-      if (!reply) return json({ detail: "no existe" }, 404);
+      if (!reply) return json({ detail: "not found" }, 404);
       const body = await reply();
       return body instanceof Response ? body : json(body);
     }),
   );
-  await queue.bindPerson("persona-prueba");
+  await queue.bindPerson("test-person");
   await queue.flush(true);
   host = document.createElement("div");
   document.body.append(host);
@@ -105,12 +106,14 @@ const settle = () =>
     for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setTimeout(resolve, 0));
   });
 
+const retry = () => host.querySelector<HTMLButtonElement>("[role=alert] button");
+
 const button = (name: string) =>
   Array.from(host.querySelectorAll<HTMLButtonElement>("button")).find((one) => one.textContent?.includes(name));
 
 async function open(path: string) {
   window.history.replaceState(null, "", path);
-  act(() => root.render(<App />));
+  act(() => root.render(inLocale(<App />)));
   await settle();
 }
 
@@ -121,86 +124,86 @@ async function serious(): Promise<string[]> {
     .map((one) => `${one.id}: ${one.nodes.map((node) => node.target.join(" ")).join(", ")}`);
 }
 
-describe("la lista", () => {
-  it("mientras llega, el esqueleto", async () => {
+describe("the list", () => {
+  it("while it comes, the skeleton", async () => {
     replies["GET /api/shopping/list"] = () => new Promise(() => undefined);
     await open("/shopping/");
     expect(host.querySelector(".skeleton")).not.toBeNull();
   });
 
-  it("vacía, dice qué hacer y el botón lleva a apuntar", async () => {
+  it("empty, it says what to do and the button leads to adding", async () => {
     replies["GET /api/shopping/list"] = () => EMPTY;
     await open("/shopping/");
-    expect(host.textContent).toContain("No hay nada apuntado");
+    expect(host.textContent).toContain(english("empty.title"));
 
-    act(() => button("Apuntar algo")!.click());
+    act(() => button(english("empty.action"))!.click());
     expect(document.activeElement).toBe(host.querySelector(".text-field input"));
   });
 
-  it("si falla, lo dice y reintentar la trae", async () => {
-    replies["GET /api/shopping/list"] = () => json({ detail: "la base no contesta" }, 503);
+  it("if it fails, it says so and retrying brings it", async () => {
+    replies["GET /api/shopping/list"] = () => json({ detail: "the database does not answer" }, 503);
     await open("/shopping/");
-    expect(host.textContent).toContain("No se ha podido leer la lista");
+    expect(host.textContent).toContain(english("list.read_failed"));
 
     replies["GET /api/shopping/list"] = () => LIST;
-    act(() => button("Reintentar")!.click());
+    act(() => retry()!.click());
     await settle();
-    expect(host.textContent).toContain("Leche");
+    expect(host.textContent).toContain("Milk");
   });
 
-  it("axe-core sin errores graves", async () => {
+  it("axe-core without serious errors", async () => {
     await open("/shopping/");
     expect(await serious()).toEqual([]);
   });
 });
 
-describe("el historial", () => {
-  it("vacío lleva a la lista", async () => {
-    await open("/shopping/historial");
-    expect(host.textContent).toContain("Todavía no hay compras");
+describe("the history", () => {
+  it("empty, it leads to the list", async () => {
+    await open("/shopping/history");
+    expect(host.textContent).toContain(english("history.empty"));
 
-    act(() => button("Ir a la lista")!.click());
+    act(() => button(english("history.go_list"))!.click());
     await settle();
     expect(window.location.pathname).toBe("/shopping/");
   });
 
-  it("si falla, reintentar", async () => {
+  it("if it fails, retry", async () => {
     replies["GET /api/shopping/trips"] = () => json({ detail: "no" }, 500);
-    await open("/shopping/historial");
-    expect(host.textContent).toContain("No se ha podido leer el historial");
+    await open("/shopping/history");
+    expect(host.textContent).toContain(english("history.read_failed"));
 
     replies["GET /api/shopping/trips"] = () => [];
-    act(() => button("Reintentar")!.click());
+    act(() => retry()!.click());
     await settle();
-    expect(host.textContent).toContain("Todavía no hay compras");
+    expect(host.textContent).toContain(english("history.empty"));
   });
 
-  it("axe-core sin errores graves", async () => {
-    await open("/shopping/historial");
+  it("axe-core without serious errors", async () => {
+    await open("/shopping/history");
     expect(await serious()).toEqual([]);
   });
 });
 
-describe("en el súper, sin cobertura", () => {
-  it("tachar y apuntar se ven, se cuentan por enviar y se mandan en orden al volver", async () => {
+describe("in the supermarket, without coverage", () => {
+  it("ticking and adding show, count as waiting and are sent in order when back", async () => {
     await open("/shopping/");
     offline = true;
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
 
     act(() => host.querySelector<HTMLElement>('[role="checkbox"], .check-row button, input[type="checkbox"]')!.click());
     await settle();
-    expect(host.textContent).toContain("En el carro");
+    expect(host.textContent).toContain(english("cart.title"));
 
     const field = host.querySelector<HTMLInputElement>(".text-field input")!;
     act(() => {
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, "Pan");
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, "Bread");
       field.dispatchEvent(new Event("input", { bubbles: true }));
     });
     act(() => field.form?.requestSubmit() ?? field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
     await settle();
 
-    expect(host.textContent).toContain("Pan");
-    expect(host.textContent).toContain("2 cambios por enviar");
+    expect(host.textContent).toContain("Bread");
+    expect(host.querySelector('.notice[data-tone="warning"]')?.textContent).toContain("2");
 
     offline = false;
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(true);
@@ -216,6 +219,6 @@ describe("en el súper, sin cobertura", () => {
       "PUT /api/shopping/list/items/00000000-0000-4000-8000-0000000000a1/cart",
       "POST /api/shopping/list/items",
     ]);
-    expect(host.textContent).not.toContain("por enviar");
+    expect(host.querySelector('.notice[data-tone="warning"]')).toBeNull();
   });
 });

@@ -28,5 +28,5 @@ async def chosen(connection: AsyncConnection) -> UUID | None:
 
 async def choose(connection: AsyncConnection, request: ListOwner) -> None:
     if request.space_id is not None and request.space_id not in current_spaces.get():
-        raise shopping.NotFound(f"el espacio {request.space_id}")
+        raise shopping.NotFound(f"space {request.space_id}")
     await connection.execute(CHOOSE, {"space": str(request.space_id) if request.space_id else None})

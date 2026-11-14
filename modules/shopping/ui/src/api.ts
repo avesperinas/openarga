@@ -1,5 +1,8 @@
 import { createApi, invalidate } from "@openarga/app";
 import { createOfflineQueue } from "@openarga/app/offline";
+import { createT, regional, resolveLocale, type Vars } from "@openarga/ui";
+
+import { catalogs } from "./i18n";
 
 export { Unauthorised, signIn } from "@openarga/app";
 export { NeedsNetwork, Queued } from "@openarga/app/offline";
@@ -16,6 +19,8 @@ queue.onSent(() => {
 
 const send = <T>(path: string, method: string, body?: unknown, what?: string, repeatable?: boolean) =>
   queue.send<T>(`${api.base}${path}`, method, body, { what, repeatable });
+
+const say = (key: string, vars?: Vars) => createT(catalogs, resolveLocale(regional().locale))(key, vars);
 
 export const newId = (): string => crypto.randomUUID();
 
@@ -120,17 +125,17 @@ export const addItems = (items: Entry[]) =>
     items.map((one) => one.name).join(", "),
   );
 export const setInCart = (item: Pick<Item, "id" | "name">, inCart: boolean) =>
-  send<ShoppingList>(`/list/items/${item.id}/cart`, "PUT", { in_cart: inCart }, `marcar ${item.name}`);
+  send<ShoppingList>(`/list/items/${item.id}/cart`, "PUT", { in_cart: inCart }, say("action.tick", { name: item.name }));
 export const updateItem = (item: Pick<Item, "id" | "name">, quantity: string | null, note: string | null) =>
-  send<ShoppingList>(`/list/items/${item.id}`, "PUT", { quantity, note }, `cambiar ${item.name}`);
+  send<ShoppingList>(`/list/items/${item.id}`, "PUT", { quantity, note }, say("action.update", { name: item.name }));
 export const dropItem = (item: Pick<Item, "id" | "name">) =>
-  send<ShoppingList>(`/list/items/${item.id}/drop`, "POST", undefined, `quitar ${item.name}`, true);
+  send<ShoppingList>(`/list/items/${item.id}/drop`, "POST", undefined, say("action.remove", { name: item.name }), true);
 export const setCategory = (productId: string, categoryId: string, name: string) =>
-  send<ShoppingList>(`/products/${productId}/category`, "PUT", { category_id: categoryId }, `la sección de ${name}`);
+  send<ShoppingList>(`/products/${productId}/category`, "PUT", { category_id: categoryId }, say("action.section", { name }));
 export const chooseList = (spaceId: string | null) =>
-  send<ShoppingList>("/list/owner", "PUT", { space_id: spaceId }, "cambiar de lista", false);
+  send<ShoppingList>("/list/owner", "PUT", { space_id: spaceId }, say("action.change_list"), false);
 export const readSpaces = () => api.raw<Space[]>("/api/kernel/spaces");
 export const finishTrip = (id: string = newId()) =>
-  send<{ trip: Trip; list: ShoppingList }>("/list/finish", "POST", { id }, "terminar la compra");
+  send<{ trip: Trip; list: ShoppingList }>("/list/finish", "POST", { id }, say("action.finish"));
 
 export const readVersion = api.readVersion;

@@ -4,16 +4,16 @@ import json
 from datetime import date, datetime
 from typing import Any
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_agenda import KEY, dated, uid
+from arga_module import preferences
 from shopping import guess, habits, names
+from shopping.catalog import t
 
-MADRID = ZoneInfo("Europe/Madrid")
 USUAL = 12
 
 
@@ -26,7 +26,7 @@ class Conflict(Exception):
 
 
 def today() -> date:
-    return datetime.now(MADRID).date()
+    return datetime.now(preferences.current().zone).date()
 
 
 class Category(BaseModel):
@@ -107,7 +107,7 @@ OPEN_ITEMS = text("""
 PRODUCTS = text("""
     select p.id, p.name, p.category_id, p.quantity,
            coalesce(
-               array_agg((i.closed_at at time zone 'Europe/Madrid')::date)
+               array_agg((i.closed_at at time zone cast(:tz as text))::date)
                  filter (where i.id is not null),
                '{}'
            ) as days,
@@ -152,7 +152,11 @@ async def products(
 ) -> list[Product]:
     day = on or today()
     out = []
-    for row in (await connection.execute(PRODUCTS, {"space": _space(space)})).all():
+    for row in (
+        await connection.execute(
+            PRODUCTS, {"space": _space(space), "tz": preferences.current().timezone}
+        )
+    ).all():
         if query and not names.starts_a_word(query, row.name):
             continue
         found = habits.habit(list(row.days))
@@ -292,7 +296,7 @@ def _text(value: str | None) -> str | None:
 
 async def _check_category(connection: AsyncConnection, category_id: str) -> None:
     if (await connection.execute(CATEGORY_EXISTS, {"id": category_id})).first() is None:
-        raise NotFound(f"la sección '{category_id}'")
+        raise NotFound(f"section '{category_id}'")
 
 
 async def _product(
@@ -300,7 +304,7 @@ async def _product(
 ) -> tuple[Any, bool, bool]:
     key = names.key(entry.name)
     if not key:
-        raise Conflict("un producto necesita un nombre")
+        raise Conflict("a product needs a name")
     if entry.category_id is not None:
         await _check_category(connection, entry.category_id)
 
@@ -420,7 +424,7 @@ class ItemIn(BaseModel):
 async def set_cart(connection: AsyncConnection, item_id: str, request: CartIn) -> None:
     params = {"id": item_id, "in_cart": request.in_cart}
     if (await connection.execute(SET_CART, params)).first() is None:
-        raise NotFound(f"el artículo {item_id} en la lista")
+        raise NotFound(f"item {item_id} on the list")
 
 
 async def update_item(connection: AsyncConnection, item_id: str, request: ItemIn) -> None:
@@ -428,7 +432,7 @@ async def update_item(connection: AsyncConnection, item_id: str, request: ItemIn
     params = {"id": item_id, "quantity": quantity, "note": _text(request.note)}
     row = (await connection.execute(UPDATE_ITEM, params)).first()
     if row is None:
-        raise NotFound(f"el artículo {item_id} en la lista")
+        raise NotFound(f"item {item_id} on the list")
     if quantity:
         await connection.execute(
             REMEMBER_QUANTITY, {"id": str(row.product_id), "quantity": quantity}
@@ -441,7 +445,7 @@ ITEM_EXISTS = text("select 1 from shopping.shopping_item where id = cast(:id as 
 async def drop(connection: AsyncConnection, item_id: str) -> None:
     dropped = (await connection.execute(DROP_ITEM, {"id": item_id})).first()
     if dropped is None and (await connection.execute(ITEM_EXISTS, {"id": item_id})).first() is None:
-        raise NotFound(f"el artículo {item_id} en la lista")
+        raise NotFound(f"item {item_id} on the list")
 
 
 class CategoryIn(BaseModel):
@@ -456,7 +460,7 @@ PRODUCT_BY_ID = text("""
 async def set_category(connection: AsyncConnection, product_id: str, request: CategoryIn) -> None:
     await _check_category(connection, request.category_id)
     if (await connection.execute(PRODUCT_BY_ID, {"id": product_id})).first() is None:
-        raise NotFound(f"el producto {product_id}")
+        raise NotFound(f"product {product_id}")
     await connection.execute(LEARN_CATEGORY, {"id": product_id, "category": request.category_id})
 
 
@@ -517,7 +521,7 @@ async def finish(
             )
     cart = (await connection.execute(IN_CART, {"space": _space(space)})).all()
     if not cart:
-        raise Conflict("no hay nada en el carro: marca lo que hayas cogido")
+        raise Conflict("the trolley is empty: tick what you picked up")
     trip = (
         await connection.execute(
             INSERT_TRIP,
@@ -553,6 +557,7 @@ async def finish(
 async def publish_trip(
     connection: AsyncConnection, trip_id: str, finished_at: datetime, items: int
 ) -> None:
+    zone = preferences.current().zone
     await connection.execute(
         ENQUEUE,
         {
@@ -561,11 +566,15 @@ async def publish_trip(
                 {
                     KEY: dated(
                         uid=uid("shopping", "trip", trip_id),
-                        title=f"Compra de {items} producto{'' if items == 1 else 's'}",
-                        start=finished_at.astimezone(MADRID),
-                        end=finished_at.astimezone(MADRID),
-                        tz="Europe/Madrid",
-                        href="/shopping/historial",
+                        title=(
+                            t("trip.title_one")
+                            if items == 1
+                            else t("trip.title_other", count=items)
+                        ),
+                        start=finished_at.astimezone(zone),
+                        end=finished_at.astimezone(zone),
+                        tz=zone.key,
+                        href="/shopping/history",
                     ),
                     "trip_id": trip_id,
                     "items": items,
