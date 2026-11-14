@@ -174,7 +174,8 @@ async def test_the_week_is_written_with_its_figures_what_happened_and_the_goals(
     inner = md.block(week["content"]).inner
 
     assert "### Medidor" in inner
-    assert "| Pasos | 63.000 pasos | 56.000 pasos | +7.000 pasos (+12%) |" in inner
+    n = contracts.records.number
+    assert f"| Pasos | {n(63000)} pasos | {n(56000)} pasos | +{n(7000)} pasos (+12%) |" in inner
     assert "[[medidor:book:1|Un libro inventado]]" in inner
     assert "- **En riesgo**: [[medidor:goal:1|Andar más]]" in inner
     assert "[[2026-10-05]] · [[2026-10-06]]" in inner
@@ -192,7 +193,10 @@ async def test_a_late_figure_rewrites_the_block_and_your_text_stays(meter, api) 
     rewritten = await note(api, "Diario/Semanas/2026-W41")
 
     assert again.get("written", 0) >= 1
-    assert "| Pasos | 70.000 pasos |" in md.block(rewritten["content"]).inner
+    assert (
+        f"| Pasos | {contracts.records.number(70000)} pasos |"
+        in md.block(rewritten["content"]).inner
+    )
     assert "Lo que escribo yo de esta semana." in rewritten["content"]
 
 
@@ -250,8 +254,8 @@ async def test_the_month_links_its_weeks_and_the_quarter_asks_its_questions(mete
     assert "[[2026-W40]]" in md.block(month["content"]).inner
     assert "[[2026-W36]]" in md.block(month["content"]).inner
     assert (
-        "[[medidor:goal:1|Andar más]]: ahora 9.000 pasos de 10.000 pasos"
-        in md.block(quarter["content"]).inner
+        f"[[medidor:goal:1|Andar más]]: ahora {contracts.records.number(9000)} pasos de "
+        f"{contracts.records.number(10000)} pasos" in md.block(quarter["content"]).inner
     )
     outside = md.outside_block(quarter["content"])
     assert "## Andar más" in outside

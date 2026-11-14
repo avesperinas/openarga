@@ -27,6 +27,10 @@ def _country(code: str, name: str) -> str:
     return write.link(APP, f"country:{code}", name)
 
 
+def _upper_first(text: str) -> str:
+    return text[:1].upper() + text[1:]
+
+
 def _span(first: date, last: date) -> str:
     if first == last:
         return f"el {write.long_date(first)}"
@@ -35,7 +39,7 @@ def _span(first: date, last: date) -> str:
 
 def trip(one: travel.Trip, countries: dict[str, str]) -> dict[str, Any]:
     lead = [
-        _span(one.starts_on, one.ends_on).capitalize(),
+        _upper_first(_span(one.starts_on, one.ends_on)),
         f"{one.days} {'día' if one.days == 1 else 'días'}, "
         f"{one.nights} {'noche' if one.nights == 1 else 'noches'}",
     ]
