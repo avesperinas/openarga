@@ -18,7 +18,7 @@ from notebook import export, files, mentions, notes, publisher, service, tools, 
 from notebook import markdown as md
 from notebook import panel as home_panel
 from notebook.db import as_module
-from notebook.notes import MADRID, ImportNote
+from notebook.notes import ImportNote
 from notebook.words import say
 
 MODULE_ID = "notebook"
@@ -322,7 +322,7 @@ async def read_tags() -> list[notes.TagCount]:
 
 @app.get("/recent")
 async def read_recent(days: int = Query(default=7, ge=1, le=365)) -> list[notes.Change]:
-    since = datetime.combine(notes.today() - timedelta(days=days), time(), MADRID)
+    since = datetime.combine(notes.today() - timedelta(days=days), time(), notes.zone())
     return await _run(notes.recent, since, None, None, 50)
 
 
