@@ -26,9 +26,9 @@ async def as_role(engine, role: str, person: UUID | None, statement: str, **para
 
 INSERT = (
     "insert into insights.insights_insight (kind, domain, topic, title, body, figures, affects, action) "
-    "values ('alert', 'body', 'vitals.peso', :title, 'texto', "
-    '\'[{"label": "peso", "value": 80, "baseline": 78, "baseline_label": "tu media"}]\', '
-    "'la meta de peso', 'Caminar 30 minutos más cada día esta semana')"
+    "values ('alert', 'body', 'vitals.weight', :title, 'text', "
+    '\'[{"label": "weight", "value": 80, "baseline": 78, "baseline_label": "your average"}]\', '
+    "'the weight goal', 'Walk 30 more minutes every day this week')"
 )
 PROFILE = "insert into insights.insights_profile (name, about) values (:name, :about)"
 
@@ -37,8 +37,8 @@ PROFILE = "insert into insights.insights_profile (name, about) values (:name, :a
 async def two_people(schema):
     await as_role(schema, WRITE, ANA, INSERT, title="El de Ana")
     await as_role(schema, WRITE, LUIS, INSERT, title="El de Luis")
-    await as_role(schema, WRITE, ANA, PROFILE, name="Txuri", about="Lo que Ana cuenta de sí")
-    await as_role(schema, WRITE, LUIS, PROFILE, name=None, about="Lo que Luis cuenta de sí")
+    await as_role(schema, WRITE, ANA, PROFILE, name="Txuri", about="What Ana tells about herself")
+    await as_role(schema, WRITE, LUIS, PROFILE, name=None, about="What Luis tells about himself")
     return schema
 
 
@@ -48,7 +48,7 @@ async def test_each_one_reads_only_their_own(two_people, role: str) -> None:
     luis = await as_role(two_people, role, LUIS, "select about from insights.insights_profile")
 
     assert [row.title for row in ana] == ["El de Ana"]
-    assert [row.about for row in luis] == ["Lo que Luis cuenta de sí"]
+    assert [row.about for row in luis] == ["What Luis tells about himself"]
 
 
 @pytest.mark.parametrize("role", [WRITE, READ])
@@ -208,20 +208,20 @@ TASTE_ROWS = {
     ),
     "insights_pill": (
         "insert into insights.insights_pill (day, origin, family_key, topic, minutes, headline, lead, "
-        "sections, to_tell, sources) values ('2026-11-10', 'daily', 'historia', :tag, 15, "
-        "'Un titular de prueba', 'Una entradilla de prueba larga', "
+        "sections, to_tell, sources) values ('2026-11-10', 'daily', 'history', :tag, 15, "
+        "'A test headline', 'A test lead that is long enough', "
         '\'[{"title": "a", "text": "b"}, {"title": "c", "text": "d"}]\', '
-        '\'Un dato para contar de prueba\', \'[{"title": "x", "url": "https://x.org"}]\')',
+        '\'A test fact to tell someone\', \'[{"title": "x", "url": "https://x.org"}]\')',
         "select topic as tag from insights.insights_pill",
     ),
     "insights_fact": (
         "insert into insights.insights_fact (day, family_key, text, source) values ('2026-11-10', "
-        "'ciencia', :tag || ' es un dato de prueba lo bastante largo', '{}'::jsonb)",
+        "'science', :tag || ' is a test fact long enough', '{}'::jsonb)",
         "select split_part(text, ' ', 1) as tag from insights.insights_fact",
     ),
     "insights_pick": (
         "insert into insights.insights_pick (kind, key, title, why, origin, verified) "
-        "values ('book', :tag, :tag, 'Un porqué de prueba', 'weekly', 'catalog')",
+        "values ('book', :tag, :tag, 'A test why', 'weekly', 'catalog')",
         "select title as tag from insights.insights_pick",
     ),
     "insights_question": (

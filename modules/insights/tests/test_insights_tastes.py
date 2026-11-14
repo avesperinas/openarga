@@ -23,24 +23,24 @@ async def test_it_starts_with_your_themes_and_without_the_outside_one(api) -> No
     assert started["done"] is False and started["answered"] == 0
     assert first["bank_key"] == "start.families" and first["kind"] == "many"
     keys = [one["value"] for one in first["options"]]
-    assert "historia" in keys and "fuera" not in keys
+    assert "history" in keys and "outside" not in keys
 
 
 async def test_choosing_themes_raises_them_and_the_favourite_only_offers_those(api) -> None:
-    after = await answer(api, "start.families", values=["historia", "ciencia", "nada"])
+    after = await answer(api, "start.families", values=["history", "science", "nada"])
 
     favourite = after["questions"][0]
     assert favourite["bank_key"] == "start.favourite"
-    assert [one["value"] for one in favourite["options"]] == ["historia", "ciencia"]
+    assert [one["value"] for one in favourite["options"]] == ["history", "science"]
 
-    await answer(api, "start.favourite", values=["ciencia"])
+    await answer(api, "start.favourite", values=["science"])
     tastes = (await api.get("/tastes")).json()
     weights = {one["key"]: one["weight"] for one in tastes["families"]}
-    assert (weights["historia"], weights["ciencia"], weights["economia"]) == (2, 3, 1)
+    assert (weights["history"], weights["science"], weights["economy"]) == (2, 3, 1)
     topics = {one["label"]: one for one in tastes["traits"] if one["facet"] == "topic"}
-    assert topics["Ciencia y universo"]["stance"] == 2
-    assert topics["Historia"]["status"] == "confirmed"
-    assert topics["Historia"]["source"] == "answered"
+    assert topics["Science and the universe"]["stance"] == 2
+    assert topics["History"]["status"] == "confirmed"
+    assert topics["History"]["source"] == "answered"
 
 
 async def test_a_skipped_question_does_not_come_back(api) -> None:
@@ -66,14 +66,14 @@ async def test_the_level_is_only_asked_when_you_learn_a_language(api) -> None:
 
 
 async def test_what_you_loved_and_what_you_avoid_are_said_by_you(api) -> None:
-    await answer(api, "start.loved", text="Dune\nCosmos, de Carl Sagan; The Wire")
-    await answer(api, "start.avoid", text="fútbol")
+    await answer(api, "start.loved", text="Dune\nCosmos, by Carl Sagan; The Wire")
+    await answer(api, "start.avoid", text="football")
 
     traits = (await api.get("/tastes")).json()["traits"]
     works = sorted(one["label"] for one in traits if one["facet"] == "work")
     avoid = [one for one in traits if one["facet"] == "avoid"]
-    assert works == ["Cosmos", "Dune", "The Wire", "de Carl Sagan"]
-    assert avoid[0]["label"] == "fútbol" and avoid[0]["stance"] == -2
+    assert works == ["Cosmos", "Dune", "The Wire", "by Carl Sagan"]
+    assert avoid[0]["label"] == "football" and avoid[0]["stance"] == -2
     assert all(one["source"] == "said" and one["status"] == "confirmed" for one in traits)
 
 
@@ -81,7 +81,7 @@ async def test_outside_your_zone_can_be_switched_off(api) -> None:
     await answer(api, "start.outside", values=["never"])
 
     families = (await api.get("/tastes")).json()["families"]
-    assert next(one for one in families if one["key"] == "fuera")["weight"] == 0
+    assert next(one for one in families if one["key"] == "outside")["weight"] == 0
 
 
 async def test_claude_only_proposes_and_what_you_reject_does_not_come_back(api) -> None:
@@ -90,9 +90,9 @@ async def test_claude_only_proposes_and_what_you_reject_does_not_come_back(api) 
         "propose_trait",
         {
             "facet": "genre",
-            "label": "Fantasía épica",
+            "label": "Epic fantasy",
             "stance": 2,
-            "evidence": "Seis novelas del género, media 4,2",
+            "evidence": "Six novels of the genre, average 4.2",
         },
     )
     trait = proposed["trait"]
@@ -102,17 +102,17 @@ async def test_claude_only_proposes_and_what_you_reject_does_not_come_back(api) 
     again = await tool(
         api,
         "propose_trait",
-        {"facet": "genre", "label": "fantasia  EPICA", "evidence": "Otra vez lo mismo"},
+        {"facet": "genre", "label": "epic  FANTASY", "evidence": "The same again"},
     )
 
     assert rejected["status"] == "rejected"
     assert again["trait"]["status"] == "rejected"
-    assert "no vuelve" in again["note"]
+    assert "does not come back" in again["note"]
 
 
 async def test_what_the_person_says_is_confirmed_and_can_be_forgotten(api) -> None:
     noted = await tool(api, "note_taste", {"facet": "creator", "label": "Ursula K. Le Guin"})
-    added = (await api.post("/traits", json={"facet": "topic", "label": "Física"})).json()
+    added = (await api.post("/traits", json={"facet": "topic", "label": "Physics"})).json()
 
     assert noted["trait"]["status"] == "confirmed"
     assert added["status"] == "confirmed" and added["source"] == "said"
@@ -123,20 +123,20 @@ async def test_what_the_person_says_is_confirmed_and_can_be_forgotten(api) -> No
 
 QUESTION = {
     "kind": "one",
-    "text": "¿Prefieres sagas largas o novelas que se cierran?",
-    "why": "Has terminado varias sagas este año",
-    "options": [{"value": "saga", "label": "Sagas"}, {"value": "one", "label": "Que se cierren"}],
+    "text": "Do you prefer long sagas or self-contained novels?",
+    "why": "You finished several sagas this year",
+    "options": [{"value": "saga", "label": "Sagas"}, {"value": "one", "label": "Self-contained"}],
     "topic": "gusto.longitud",
 }
 
 
 async def test_one_question_waits_at_a_time_and_the_answer_reaches_the_next_pass(api) -> None:
     asked = await tool(api, "ask_question", QUESTION)
-    second = await tool(api, "ask_question", QUESTION | {"topic": "gusto.otra"})
+    second = await tool(api, "ask_question", QUESTION | {"topic": "taste.other"})
     today = (await api.get("/today")).json()
 
     assert asked["asked"]["text"] == QUESTION["text"]
-    assert second["asked"] is None and "esperando" in second["note"]
+    assert second["asked"] is None and "already waiting" in second["note"]
     question = today["question"]
     assert question["why"] == QUESTION["why"]
 
@@ -152,7 +152,7 @@ async def test_confirming_a_trait_by_question_confirms_it(api) -> None:
         await tool(
             api,
             "propose_trait",
-            {"facet": "format", "label": "Podcasts largos", "evidence": "Escucha en el coche"},
+            {"facet": "format", "label": "Long podcasts", "evidence": "Listens in the car"},
         )
     )["trait"]
     asked = await tool(
@@ -160,8 +160,8 @@ async def test_confirming_a_trait_by_question_confirms_it(api) -> None:
         "ask_question",
         {
             "kind": "confirm",
-            "text": "¿Te gustan los podcasts largos?",
-            "why": "Lo he visto en tus datos",
+            "text": "Do you like long podcasts?",
+            "why": "I saw it in your data",
             "topic": "rasgo.podcasts-largos",
             "trait_id": trait["trait_id"],
         },
@@ -181,19 +181,19 @@ async def test_never_means_never_and_a_topic_is_not_asked_twice(api) -> None:
 
     repeated = await tool(api, "ask_question", QUESTION)
     await api.put("/settings", json={"questions": "never"})
-    never = await tool(api, "ask_question", QUESTION | {"topic": "otra.cosa"})
+    never = await tool(api, "ask_question", QUESTION | {"topic": "other.thing"})
 
     assert repeated["asked"] is None
-    assert never["asked"] is None and "nunca" in never["note"]
+    assert never["asked"] is None and "never" in never["note"]
 
 
 async def test_themes_and_sources_are_yours(api) -> None:
     await api.get("/tastes")
-    changed = (await api.put("/families/historia", json={"weight": 0})).json()
+    changed = (await api.put("/families/history", json={"weight": 0})).json()
     created = (
         await api.post(
             "/families",
-            json={"name": "Ajedrez", "themes": "aperturas, historia", "glyph": "target"},
+            json={"name": "Chess", "themes": "openings, history", "glyph": "target"},
         )
     ).json()
     source = (
@@ -201,21 +201,21 @@ async def test_themes_and_sources_are_yours(api) -> None:
             "/sources",
             json={
                 "family_key": created["key"],
-                "name": "Una revista de ajedrez",
+                "name": "A chess magazine",
                 "kind": "magazine",
-                "url": "https://example.org/ajedrez",
+                "url": "https://example.org/chess",
             },
         )
     ).json()
     hidden_id = next(
         one["id"]
         for one in (await api.get("/tastes")).json()["sources"]
-        if one["family_key"] == "historia"
+        if one["family_key"] == "history"
     )
     hidden = (await api.put(f"/sources/{hidden_id}", json={"hidden": True})).json()
 
     assert changed["weight"] == 0
-    assert created["key"] == "ajedrez" and created["weight"] == 2
+    assert created["key"] == "chess" and created["weight"] == 2
     assert source["builtin"] is False
     assert hidden["hidden"] is True
     assert (await api.put("/families/nada", json={"weight": 1})).status_code == 404
@@ -227,5 +227,5 @@ async def test_your_tastes_are_readable_by_claude(api) -> None:
     read = await tool(api, "get_tastes", {}, READ)
 
     assert read["traits"][0]["label"] == "Ursula K. Le Guin"
-    assert any(one["key"] == "historia" for one in read["families"])
+    assert any(one["key"] == "history" for one in read["families"])
     assert read["settings"]["pill_minutes"] == 15

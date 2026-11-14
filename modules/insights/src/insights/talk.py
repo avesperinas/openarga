@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_tenancy import kernel_url, user_headers
 from insights import insights
+from insights.words import say
 
 MODULE = "insights"
 CAPABILITY = "claude.run"
@@ -154,19 +155,13 @@ LAST_RUN = text("""
 
 def problem_of(outcome: str, code: str | None, detail: str | None, answered: bool) -> str | None:
     if outcome == "ok":
-        return None if answered else "Terminó sin contestar. Vuelve a preguntar."
+        return None if answered else say("chat.no_answer")
     if outcome == "rate_limited":
-        return (
-            "Has llegado al límite de uso de tu Claude. Vuelve a preguntar cuando se abra la "
-            "ventana siguiente."
-        )
+        return say("chat.rate_limited")
     if code == "not_granted":
-        return (
-            "Insights no tiene permiso para usar tu Claude. Dáselo en Hub, en la ficha de tu "
-            "cuenta de Claude: «Tu Claude en arga» → Insights."
-        )
+        return say("chat.not_granted")
     reason = (detail or "").strip()
-    return f"No ha podido contestar: {reason}" if reason else "No ha podido contestar."
+    return say("chat.failed_because", reason=reason) if reason else say("chat.failed")
 
 
 async def settle(connection: AsyncConnection, thread_id: str) -> None:
@@ -222,70 +217,62 @@ def brief(
     tastes: list[str] | None = None,
 ) -> str:
     lines = [
-        f"Eres {profile.name}, el asesor de una persona dentro de arga, su sistema personal. Hoy "
-        f"es {today}. Te escribe en la app de {profile.name} y le contestas por la tool "
-        f"insights_reply, con thread_id «{conversation.id}». Llámala una sola vez, al final, con tu "
-        "respuesta entera. Lo que no pase por insights_reply no lo verá.",
+        f"You are {profile.name}, a person's adviser inside arga, their personal system. Today "
+        f"is {today}. They write to you in the {profile.name} app and you answer through the "
+        f'insights_reply tool, with thread_id "{conversation.id}". Call it only once, at the '
+        "end, with your whole answer. What does not go through insights_reply they will not see.",
         "",
-        "Cómo contestas:",
-        "- Con sus datos, no con generalidades. Antes de contestar, mira lo que haga falta con las "
-        "tools de lectura de arga (cifras, movimientos, entrenos, comida, metas, notas de Notebook) y "
-        "cita las cifras: lo suyo frente a su propia línea base (su media, su objetivo, su ritmo).",
-        "- Directo y breve, en español, de tú. Sin relleno ni frases de ánimo. En Markdown: "
-        "párrafos cortos, **negrita** para la cifra que importa, listas si enumeras y una tabla "
-        "pequeña solo si compara varias cifras. Sin encabezados.",
-        "- Si propones algo, que sea concreto y comprobable: qué, cuánto y cuándo.",
-        "- Si un dato no está, dilo y di cómo conseguirlo; no lo inventes.",
-        "- No diagnostiques: en salud, di lo que ves en sus cifras y cuándo conviene preguntar a "
-        "un médico.",
-        "- Solo puedes escribir en Insights. Si te pide apuntar algo en otra app, dile cómo hacerlo.",
-        "- Si te dice algo de sus gustos («me encantó», «nada de fútbol»), apúntalo con "
-        "insights_note_taste. Si te pide recomendaciones, publícalas con insights_publish_picks (`origin` "
-        "«chat»), que las comprueba en catálogo, y cuéntale en tu respuesta las que salieron: "
-        "estarán en su Biblioteca.",
+        "How you answer:",
+        "- With their data, not with generalities. Before answering, look at what you need with "
+        "arga's read tools (figures, money movements, workouts, food, goals, Notebook notes) and "
+        "quote the figures: theirs against their own baseline (their average, their goal, their "
+        "pace).",
+        f"- Direct and brief, in {craft_language()}, informally. No filler or cheering. In "
+        "Markdown: short paragraphs, **bold** for the figure that matters, lists if you "
+        "enumerate and a small table only if it compares several figures. No headings.",
+        "- If you propose something, make it concrete and checkable: what, how much and when.",
+        "- If a piece of data is not there, say so and say how to get it; do not invent it.",
+        "- Do not diagnose: on health, say what you see in their figures and when it is worth "
+        "asking a doctor.",
+        "- You can only write to Insights. If they ask you to note something in another app, "
+        "tell them how to do it.",
+        '- If they tell you something about their tastes ("I loved it", "no football"), '
+        "note it with insights_note_taste. If they ask for recommendations, publish them with "
+        'insights_publish_picks (`origin` "chat"), which checks them in a catalogue, and tell '
+        "them in your answer which ones came out: they will be in their Library.",
     ]
     if profile.about.strip():
-        lines += ["", "Lo que la persona te ha contado de sí misma:", profile.about.strip()]
+        lines += ["", "What the person has told you about themselves:", profile.about.strip()]
     if tastes:
-        lines += ["", "Lo que sabes de sus gustos:", *tastes]
+        lines += ["", "What you know of their tastes:", *tastes]
     if about is not None:
         figures = "; ".join(
-            f"{one.label}: {one.value:g}{' ' + one.unit if one.unit else ''} frente a "
+            f"{one.label}: {one.value:g}{' ' + one.unit if one.unit else ''} against "
             f"{one.baseline:g} ({one.baseline_label})"
             for one in about.figures
         )
         lines += [
             "",
-            f"Esta conversación contesta a un consejo que le diste el {about.created_at:%Y-%m-%d}:",
-            f"«{about.title}». {about.body}",
-            f"Cifras: {figures}. Qué afecta: {about.affects}. Qué propusiste: {about.action}",
+            f"This conversation answers advice you gave them on {about.created_at:%Y-%m-%d}:",
+            f'"{about.title}". {about.body}',
+            f"Figures: {figures}. What it affects: {about.affects}. What you proposed: "
+            f"{about.action}",
         ]
-    lines += ["", "La conversación hasta ahora (lo último es lo que tienes que contestar):"]
+    lines += ["", "The conversation so far (the last message is the one to answer):"]
     for message in conversation.messages[-HISTORY:]:
-        who = "Persona" if message.author == "person" else profile.name
+        who = "Person" if message.author == "person" else profile.name
         lines.append(f"[{who}] {message.body}")
     return "\n".join(lines)
 
 
-DAYS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
-MONTHS = [
-    "enero",
-    "febrero",
-    "marzo",
-    "abril",
-    "mayo",
-    "junio",
-    "julio",
-    "agosto",
-    "septiembre",
-    "octubre",
-    "noviembre",
-    "diciembre",
-]
+def craft_language() -> str:
+    from insights.craft import written_in
+
+    return written_in()
 
 
-def spanish_day(moment: datetime) -> str:
-    return f"{DAYS[moment.weekday()]} {moment.day} de {MONTHS[moment.month - 1]} de {moment.year}"
+def said_day(moment: datetime) -> str:
+    return f"{moment:%A} {moment.day} {moment:%B} {moment.year}"
 
 
 def timeout() -> float:
@@ -306,15 +293,12 @@ async def ask(key: str, prompt: str) -> str | None:
                 timeout=timeout(),
             )
     except httpx.HTTPError as error:
-        return f"Hub no contesta ({type(error).__name__}). Vuelve a intentarlo."
+        return say("chat.hub_silent", error=type(error).__name__)
     if response.status_code != 200:
-        return f"Hub no ha podido apuntar la pregunta ({response.status_code})."
+        return say("chat.hub_refused", status=response.status_code)
     answer = response.json()
     if answer.get("outcome") in ("queued", "running") or answer.get("repeated"):
         return None
     if answer.get("code") == "not_granted":
-        return (
-            "Insights no tiene permiso para usar tu Claude. Dáselo en Hub, en la ficha de tu "
-            "cuenta de Claude: «Tu Claude en arga» → Insights."
-        )
-    return answer.get("detail") or "Hub no ha apuntado la pregunta."
+        return say("chat.not_granted")
+    return answer.get("detail") or say("chat.not_noted")

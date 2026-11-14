@@ -123,7 +123,7 @@ async def _brief(connection: AsyncConnection, thread_id: str) -> str:
     about = (
         await insights.one(connection, conversation.insight_id) if conversation.insight_id else None
     )
-    today = talk.spanish_day(datetime.now(MADRID))
+    today = talk.said_day(datetime.now(MADRID))
     found = tastes.described(await tastes.traits(connection))
     return talk.brief(await insights.profile(connection), conversation, about, today, found)
 
@@ -189,7 +189,7 @@ async def retry(thread_id: UUID) -> talk.ThreadOut:
         conversation = await talk.thread(connection, str(thread_id))
         last = conversation.messages[-1]
         if last.author != "person":
-            raise HTTPException(status_code=409, detail="ya está contestado")
+            raise HTTPException(status_code=409, detail="already answered")
         await talk.add_waiting(connection, str(thread_id))
         return last.id
 
@@ -478,7 +478,7 @@ async def save_pick(pick_id: UUID) -> picks.Pick:
     except hub.Unavailable as error:
         await _app(picks.change, str(pick_id), picks.PickChange(state="saved"))
         raise HTTPException(
-            status_code=502, detail=f"Guardado aquí, pero no en tus lecturas: {error}"
+            status_code=502, detail=f"saved here, but not in your reading list: {error}"
         ) from error
     return await _app(picks.mark_sent, str(pick_id), "library")
 

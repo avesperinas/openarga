@@ -24,16 +24,16 @@ publishes:
 
 notifications:
   - kind: insight
-    label: Consejo nuevo
+    label: New advice
     default: false
   - kind: pill
-    label: Tu píldora del día
+    label: Your pill of the day
     default: true
   - kind: question
-    label: Insights te pregunta
+    label: Insights asks you
     default: false
   - kind: picks
-    label: Para ti esta semana
+    label: For you this week
     default: false
 
 api:
@@ -43,111 +43,117 @@ tools:
   - name: get_profile
     scope: insights:read
     description: >
-      Lo que la persona ha escrito para que la conozcas: qué le importa, su contexto, sus
-      prioridades y de qué no quiere que le hables, y el nombre que te ha puesto. Léelo antes de
-      aconsejar: un consejo que choca con su perfil no sirve.
+      What the person wrote so you know them: what matters to them, their context, their
+      priorities and what they do not want to hear about, and the name they gave you. Read it
+      before advising: advice that clashes with their profile is useless.
   - name: get_insights
     scope: insights:read
     description: >
-      Los consejos ya dados, del más reciente al más antiguo, con la valoración de la persona:
-      `useful` (le sirvió), `known` (ya lo sabía) o `not_applicable` (no le aplica). Léelos antes
-      de publicar: no repitas lo dado y sube el listón en los temas marcados como `known`.
+      The advice already given, newest first, with the person's rating: `useful` (it helped),
+      `known` (they knew it) or `not_applicable` (it does not apply). Read it before publishing:
+      do not repeat what was given and raise the bar on topics marked `known`.
   - name: get_signals
     scope: insights:read
     description: >
-      Lo que se sale de lo suyo en un periodo, medido sin modelo sobre las cifras de todas las
-      apps: desvíos frente a su media de 90 días, saltos entre analíticas, tendencias que giran,
-      rachas cortadas, apps que deja de usar, metas por detrás, el gasto del mes frente a lo que
-      solía llevar ese día y cifras de apps distintas que empiezan a ir juntas. Cada señal trae su
-      cifra, su línea base y las claves de las que sale. Sin fechas, los últimos siete días.
+      What falls outside their usual in a period, measured without a model over the figures of
+      every app: deviations from their 90-day average, jumps between lab tests, trends that turn,
+      broken streaks, apps they stop using, goals that are behind, the month's spending against
+      what they used to have by that day and figures from different apps that start moving
+      together. Each signal carries its figure, its baseline and the keys it comes from. Without
+      dates, the last seven days.
   - name: get_series
     scope: insights:read
     description: >
-      Una o varias cifras de cualquier app, un valor por día en un rango, para mirar de cerca una
-      señal o cruzar dos cosas. Sin claves, la lista de todas las cifras que hay con su último
-      valor.
+      One or more figures from any app, one value per day over a range, to look closely at a
+      signal or cross two things. Without keys, the list of every figure there is with its last
+      value.
   - name: get_runs
     scope: insights:read
     description: >
-      Las veces que Insights ha mirado tus datos en los últimos días (cada mañana y el resumen del
-      domingo) y cómo acabó cada una: no hacía falta (`quiet`), pedida y sin acabar (`waiting`),
-      hecha (`ok`), o por qué no salió (`error`, `rate_limited`, `skipped`, `refused`), con qué
-      cuenta de Claude corrió, en qué intento va y qué hacer. Úsala para contestar por qué Insights no
-      dice nada.
+      The times Insights looked at the data in the last days (every morning and the Sunday
+      summary) and how each ended: not needed (`quiet`), asked and not finished (`waiting`), done
+      (`ok`), or why it did not come out (`error`, `rate_limited`, `skipped`, `refused`), which AI
+      account ran it, which attempt it is on and what to do. Use it to answer why Insights says
+      nothing.
   - name: publish_insight
     scope: insights:write
     description: >
-      Publica un consejo en la bandeja de Insights. Solo lo que pasa el listón: cita al menos una cifra
-      de la persona con su línea base (su media, su banda, su ritmo; no una regla general), dice qué
-      meta o qué cosa suya afecta y propone una acción concreta y comprobable (qué, cuánto, cuándo).
-      `topic` dice de qué trata: un consejo sobre el mismo tema de los últimos 30 días se rechaza
-      salvo que la cifra principal haya cambiado. Si nada pasa el listón, no publiques.
+      Publishes advice in the Insights inbox. Only what passes the bar: it quotes at least one of
+      the person's figures with its baseline (their average, their band, their pace; not a
+      general rule), says which goal or thing of theirs it affects and proposes a concrete and
+      checkable action (what, how much, when). `topic` says what it is about: advice on the same
+      topic in the last 30 days is refused unless the main figure changed. If nothing passes the
+      bar, do not publish.
   - name: reply
     scope: insights:write
     description: >
-      Contesta en una conversación de la app de Insights. Solo cuando el encargo te lo pide, con el
-      `thread_id` que trae, una vez y con la respuesta entera: es lo que la persona verá.
+      Answers in an Insights conversation. Only when the task asks for it, with the `thread_id`
+      it carries, once and with the whole answer: it is what the person will see.
   - name: get_tastes
     scope: insights:read
     description: >
-      Lo que Insights sabe de los gustos de la persona: sus rasgos (tema, género, formato, autores,
-      obras que le marcaron, cómo le gusta que se lo cuenten, de qué no quiere que le hables, lo que
-      vive ahora, idiomas), cada uno con su postura de −2 a +2, de dónde sale y si está confirmado o
-      solo propuesto; sus temas con su peso de 0 a 3; y cómo quiere la píldora. Léelo antes de
-      recomendar nada o de elegir un tema.
+      What Insights knows of the person's tastes: their traits (topic, genre, format, authors,
+      works that marked them, how they like to be told things, what they do not want to hear
+      about, what they live now, languages), each with its stance from −2 to +2, where it comes
+      from and whether it is confirmed or only proposed; their topics with their weight from 0
+      to 3; and how they want their pill. Read it before recommending anything or choosing a
+      topic.
   - name: get_pills
     scope: insights:read
     description: >
-      Las píldoras ya escritas, de la más reciente, con su tema, su subtema y su reacción
-      (`interested`, `known`, `other`). Para no repetir un tema y saber qué le engancha.
+      The pills already written, newest first, with their topic, subtopic and reaction
+      (`interested`, `known`, `other`). To avoid repeating a topic and know what hooks them.
   - name: get_facts
     scope: insights:read
     description: >
-      Los datos del día ya dados en los últimos días, con su reacción. Para no repetirlos.
+      The facts of the day already given in the last days, with their reaction. To avoid
+      repeating them.
   - name: get_library
     scope: insights:read
     description: >
-      Lo que Insights le ha recomendado y lo que hizo con ello: sin abrir, guardado, empezado, terminado
-      (con su nota de 0 a 5 y si quiere más así) o descartado.
+      What Insights recommended and what they did with it: not opened, saved, started, finished
+      (with their rating from 0 to 5 and whether they want more like it) or dismissed.
   - name: publish_pill
     scope: insights:write
     description: >
-      Publica la píldora del encargo: de 3 a 5 secciones con la longitud pedida, «para contar»,
-      «para pensar», tres ramas y las fuentes que has leído de verdad. Habla del mundo, nunca de
-      sus cifras. Solo con el `run_key` que trae el encargo; rechaza un subtema ya contado este año.
+      Publishes the task's pill: 3 to 5 sections of the asked length, "to tell", "to think",
+      three branches and the sources you really read. It talks about the world, never about their
+      figures. Only with the `run_key` the task carries; it refuses a subtopic already told this
+      year.
   - name: publish_facts
     scope: insights:write
     description: >
-      Publica los datos del día: de 3 a 7, ciertos y sorprendentes, de sus temas, cada uno con la
-      fuente que has leído para comprobarlo. Lo ya dado no se repite.
+      Publishes the facts of the day: 3 to 7, true and surprising, from their topics, each with
+      the source you read to check it. What was already given is not repeated.
   - name: publish_picks
     scope: insights:write
     description: >
-      Publica recomendaciones: libros, podcasts o episodios, películas, series, documentales,
-      vídeos, artículos o cursos. Cada una con por qué a esta persona, con lo suyo. Insights las
-      comprueba en catálogo y no publica lo que no aparece, lo ya recomendado ni lo que ya está en
-      sus lecturas; te dice qué no publicó y por qué.
+      Publishes recommendations: books, podcasts or episodes, films, series, documentaries,
+      videos, articles or courses. Each with why for this person, with their own things. Insights
+      checks them in a catalogue and does not publish what does not appear, what was already
+      recommended or what is already in their reading; it tells you what it did not publish and
+      why.
   - name: ask_question
     scope: insights:write
     description: >
-      Deja una pregunta para conocerle mejor, de un toque y con su porqué, cuando algo de sus gustos
-      no se puede deducir. Como mucho una esperando, nada sobre lo mismo en 60 días y al ritmo que
-      eligió; si no se puede, te dice por qué.
+      Leaves a question to know them better, answered with one tap and with its why, when
+      something about their tastes cannot be deduced. At most one waiting, nothing on the same
+      topic in 60 days and at the rhythm they chose; if it cannot, it tells you why.
   - name: propose_trait
     scope: insights:write
     description: >
-      Propone un rasgo de sus gustos que ves en sus datos, con su evidencia en una línea. Queda
-      propuesto hasta que la persona lo confirme; lo que descartó no vuelve.
+      Proposes a trait of their tastes that you see in their data, with its evidence in one line.
+      It stays proposed until the person confirms it; what they dismissed does not come back.
   - name: note_taste
     scope: insights:write
     description: >
-      Apunta un gusto que la persona dice ella misma, en la conversación o contestando una
-      pregunta ("me encantó", "nada de fútbol"). Solo con lo que ella diga, nunca por tu cuenta.
+      Notes a taste the person states themselves, in the conversation or answering a question
+      ("I loved it", "no football"). Only with what they say, never on your own.
   - name: rate_insight
     scope: insights:write
     description: >
-      Apunta la valoración que la persona da a un consejo cuando la dice en la conversación
-      ("eso ya lo sabía", "me ha servido"). Solo con lo que ella diga, nunca por tu cuenta.
+      Notes the rating the person gives to advice when they say it in the conversation ("I
+      already knew that", "it helped"). Only with what they say, never on your own.
 
 ui:
   widgets:
@@ -159,7 +165,7 @@ ui:
       refresh: 900
       link: /insights
     - id: today
-      title: Tu píldora
+      title: Your pill
       kind: list
       sizes: ["2x2", "4x1", "2x4", "4x2"]
       endpoint: /api/insights/widgets/today

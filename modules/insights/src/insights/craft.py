@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from arga_module import preferences
 from insights import insights, passes, picks, pills, talk, tastes
 
 MADRID = ZoneInfo("Europe/Madrid")
@@ -25,13 +26,21 @@ MAX_ATTEMPTS = passes.MAX_ATTEMPTS
 WEB = ("WebFetch", "WebSearch")
 
 LANGUAGE_NAMES = {
-    "es": "español de España",
-    "en": "inglés",
-    "de": "alemán",
-    "fr": "francés",
-    "it": "italiano",
-    "eu": "euskera",
+    "es": "Spanish from Spain",
+    "en": "English",
+    "de": "German",
+    "fr": "French",
+    "it": "Italian",
+    "eu": "Basque",
 }
+
+
+def language() -> str:
+    return preferences.current().locale
+
+
+def written_in() -> str:
+    return LANGUAGE_NAMES.get(language(), language())
 
 
 def _week(day: date) -> str:
@@ -98,19 +107,18 @@ async def profiled(connection: AsyncConnection) -> bool:
 
 def _head(profile: insights.Profile, today: str) -> list[str]:
     lines = [
-        f"Eres {profile.name}, dentro de arga, el sistema personal de una persona. Hoy es "
-        f"{today}. Lees sus datos con las tools de lectura de arga (mcp__arga__*) y escribes solo "
-        "en Insights, con sus tools.",
+        f"You are {profile.name}, inside arga, a person's personal system. Today is {today}. You "
+        "read their data with arga's read tools and write only to Insights, with its tools.",
     ]
     if profile.about.strip():
-        lines += ["", "Lo que la persona te ha contado de sí misma:", profile.about.strip()]
+        lines += ["", "What the person has told you about themselves:", profile.about.strip()]
     return lines
 
 
 def _families(found: list[tastes.Family]) -> list[str]:
     return [
-        f"- {one.key}: {one.name}, peso {one.weight} de 3"
-        + (" (fuera de su zona)" if one.outside else "")
+        f"- {one.key}: {one.name}, weight {one.weight} of 3"
+        + (" (outside their comfort zone)" if one.outside else "")
         + f". {one.themes}"
         for one in found
     ]
@@ -119,30 +127,34 @@ def _families(found: list[tastes.Family]) -> list[str]:
 def _sources(found: list[tastes.Source], family: str) -> list[str]:
     mine = [one for one in found if one.family_key == family and not one.hidden]
     return [f"- {one.name} ({one.kind}, {one.language}): {one.url}" for one in mine] or [
-        "(Ninguna: usa fuentes serias.)"
+        "(None: use serious sources.)"
     ]
 
 
 def _answers(found: list[tastes.Question]) -> list[str]:
     return [
-        f"- «{one.text}» → {tastes.said_answer(one)}" + (f" ({one.why})" if one.why else "")
+        f'- "{one.text}" → {tastes.said_answer(one)}' + (f" ({one.why})" if one.why else "")
         for one in found
     ]
 
 
-VOICE = [
-    "Cómo se escribe: en castellano de España, de tú cuando hables a la persona, con ritmo y sin "
-    "frases hechas ni de relleno. Cifras a la española (1.234,5). Sin Markdown en los textos.",
-]
+def voice() -> list[str]:
+    return [
+        f"How to write: in {written_in()}, addressing the person informally, with rhythm and "
+        "without stock phrases or filler. Numbers in that language's usual format. No Markdown "
+        "in the texts.",
+    ]
 
-CHICHA = [
-    "Con chicha, siempre:",
-    "- Habla del mundo, nunca de la persona ni de sus cifras: ni pasos, ni calorías, ni gastos, "
-    "ni entrenos, ni «hoy has hecho». Sus datos sirven para elegir el tema; nunca son el tema.",
-    "- Nada de autoayuda, consejos de vida, generalidades ni temas manidos. Un tema concreto, con "
-    "nombres, fechas, lugares, mecanismos, cifras del mundo y, si lo hay, debate.",
-    "- Rigor: no inventes cifras, citas ni fechas. Lo que cuentes, que esté en lo que has leído "
-    "con WebFetch o WebSearch, o que sea conocimiento bien establecido. Si algo se discute, dilo.",
+
+SUBSTANCE = [
+    "Always with substance:",
+    "- Talk about the world, never about the person or their figures: no steps, calories, "
+    'spending, workouts or "today you did". Their data helps choose the topic; it is never '
+    "the topic.",
+    "- No self-help, life advice, generalities or worn-out topics. A concrete topic, with names, "
+    "dates, places, mechanisms, figures about the world and, if there is one, a debate.",
+    "- Rigour: do not invent figures, quotes or dates. What you tell must be in what you read "
+    "with the web tools, or be well established knowledge. If something is disputed, say so.",
 ]
 
 
@@ -177,14 +189,15 @@ def pill_brief(
     minutes = settings.pill_minutes
     least, most = minutes * pills.WORDS_PER_MINUTE[0], minutes * pills.WORDS_PER_MINUTE[1]
     target = (minutes * 75, minutes * 90)
-    language = "es"
+    own = language()
+    practice = own
     if (
         origin == "daily"
         and settings.pill_language
         and day.weekday() == LANGUAGE_DAY
-        and settings.pill_language != "es"
+        and settings.pill_language != own
     ):
-        language = settings.pill_language
+        practice = settings.pill_language
     recent: list[pills.PillLine] = context["recent"]
     liked = [one.topic for one in recent if one.reaction == "interested"][:20]
     other = [one.topic for one in recent if one.reaction == "other"][:20]
@@ -194,111 +207,110 @@ def pill_brief(
     lines = [
         *_head(profile, today),
         "",
-        "Hoy no aconsejas: escribes una píldora, unos minutos de lectura para aprender algo que le "
-        "interese de verdad, como un buen artículo de una revista de divulgación seria.",
+        "Today you do not advise: you write a pill, a few minutes of reading to learn something "
+        "that truly interests them, like a good article in a serious popular science magazine.",
         "",
-        f"Tema: {family.name} (`{family.key}`). Qué entra: {family.themes}.",
+        f"Topic: {family.name} (`{family.key}`). What fits: {family.themes}.",
     ]
     if family.outside:
         lines.append(
-            "Este tema es para sacarle de su zona: tiene que estar fuera de sus intereses "
-            "habituales y de lo que ya le ha gustado. Elige algo concreto y sorprendente y cuenta "
-            "por qué le puede enganchar igualmente (personas, conflictos, cómo funcionan las "
-            "cosas)."
+            "This topic is meant to take them out of their comfort zone: it must be outside "
+            "their usual interests and what they already liked. Choose something concrete and "
+            "surprising and tell why it can hook them anyway (people, conflicts, how things work)."
         )
     if origin == "branch" and parent is not None and branch:
         lines += [
             "",
-            f"Es una rama de la píldora «{parent.headline}» ({parent.topic}): «{branch}». Ve más a "
-            "fondo justo en ese punto. No repitas lo básico de la anterior.",
+            f'It is a branch of the pill "{parent.headline}" ({parent.topic}): "{branch}". Go '
+            "deeper on exactly that point. Do not repeat the basics of the previous one.",
         ]
     elif origin == "surprise":
-        lines += ["", "La ha pedido ahora con «Sorpréndeme»: que sorprenda de verdad."]
+        lines += ["", 'They asked for it just now with "Surprise me": make it truly surprising.']
     elif origin == "daily":
         lines += [
             "",
-            "Antes de elegir, mira si algo de su vida pide un tema (solo si es fuerte): un viaje "
-            "en los próximos 7 a 21 días (travel_get_trips), una asignatura que esté cursando "
-            "(study_get_courses), un libro que esté leyendo o acabe de terminar "
-            "(library_get_currently_reading, library_find_books), de qué ha escrito estos días "
-            "(notebook_get_digest). Si lo hay, úsalo dentro de este tema o de otro suyo con peso 2 o "
-            "3 (y entonces pon ese `family_key`), y dilo en `hook` en una frase, sin cifras suyas. "
-            "Si no, sin `hook`.",
+            "Before choosing, see whether something in their life calls for a topic (only if it "
+            "is strong): a trip in the next 7 to 21 days (travel_get_trips), a subject they are "
+            "studying (study_get_courses), a book they are reading or just finished "
+            "(library_get_currently_reading, library_find_books), what they wrote about lately "
+            "(notebook_get_digest). If so, use it within this topic or another of theirs with "
+            "weight 2 or 3 (and then set that `family_key`), and say it in `hook` in one sentence, "
+            "without their figures. If not, no `hook`.",
         ]
     lines += [
         "",
-        "Lo que sabes de sus gustos:",
+        "What you know of their tastes:",
         *tastes.described(context["traits"]),
         "",
-        "Sus temas y cuánto le interesan:",
+        "Their topics and how much they interest them:",
         *_families(context["families"]),
     ]
     if avoid:
-        lines += ["", f"De esto no quiere que le hables: {'; '.join(avoid)}."]
+        lines += ["", f"They do not want you to talk about: {'; '.join(avoid)}."]
     lines += [
         "",
-        "Lo que ya ha leído (no repitas ni elijas algo casi igual):",
-        *([f"- {one.topic}" for one in recent[:120]] or ["(Nada todavía.)"]),
+        "What they already read (do not repeat it or choose something almost the same):",
+        *([f"- {one.topic}" for one in recent[:120]] or ["(Nothing yet.)"]),
     ]
     if liked:
-        lines += ["", f"Lo que más le interesó: {'; '.join(liked)}."]
+        lines += ["", f"What interested them most: {'; '.join(liked)}."]
     if other:
-        lines += ["", f"Lo que pidió cambiar por otro tema: {'; '.join(other)}."]
+        lines += ["", f"What they asked to swap for another topic: {'; '.join(other)}."]
     if context["answers"]:
-        lines += ["", "Lo que te ha contestado hace poco:", *_answers(context["answers"])]
+        lines += ["", "What they answered you recently:", *_answers(context["answers"])]
     lines += [
         "",
-        "Sus fuentes de confianza para este tema (úsalas si encajan; si no, otras serias):",
+        "Their trusted sources for this topic (use them if they fit; if not, other serious ones):",
         *_sources(context["sources"], family.key),
         "",
-        *CHICHA,
+        *SUBSTANCE,
         "",
-        "Cómo la haces:",
-        "1. Elige un subtema concreto, sorprendente y con sustancia que dé para "
-        f"{minutes} minutos.",
-        "2. Léelo de verdad: abre con WebFetch el artículo de Wikipedia que mejor lo cubre (en "
-        "español y, si es más completo, en inglés) y al menos otra fuente seria. Si hace falta, "
-        "busca con WebSearch.",
-        f"3. Escribe la lectura (entradilla y de 3 a 5 secciones con su ladillo) con unas "
-        f"{target[0]} a {target[1]} palabras; se rechaza por debajo de {least} o por encima de "
-        f"{most}. Empieza con un gancho, explica con ejemplos concretos, y cierra con por qué "
-        "importa hoy. En temas políticos, las ideas con honestidad y sus críticas principales.",
-        "4. «Para contar» (`to_tell`): un dato cierto y sorprendente que pueda contar a alguien. "
-        "«Para pensar» (`to_think`): una pregunta abierta. Tres ramas (`branches`): subtemas "
-        "concretos que den ganas de seguir, cada uno con por qué engancha.",
-        f"5. Publícala con insights_publish_pill: `run_key` «{key}», `family_key` el del tema, "
-        "`topic` el subtema, y en `sources` lo que has leído de verdad, con su dirección.",
-        "6. Después, insights_publish_picks con el `pill_id` que te devuelva y `origin` «pill»: de 2 a "
-        "5 cosas para seguir con este tema, en formatos que le gusten (libros que existan, mejor "
-        "con edición en español; un podcast o un episodio; un documental o una película si lo "
-        "hay). Cada una con por qué a esta persona, con lo suyo. Insights las comprueba en catálogo: "
-        "lo que no exista no sale.",
+        "How you make it:",
+        f"1. Choose a concrete, surprising subtopic with substance for {minutes} minutes.",
+        "2. Really read about it: open with web_fetch the Wikipedia article that covers it best "
+        "(in their language and, if more complete, in English) and at least one other serious "
+        "source. If needed, search with web_search.",
+        f"3. Write the reading (a lead and 3 to 5 sections with their subheadings) in about "
+        f"{target[0]} to {target[1]} words; it is refused under {least} or over {most}. Start "
+        "with a hook, explain with concrete examples, and close with why it matters today. On "
+        "political topics, the ideas honestly and their main criticisms.",
+        '4. "To tell" (`to_tell`): a true and surprising fact they could tell someone. "To '
+        'think" (`to_think`): an open question. Three branches (`branches`): concrete subtopics '
+        "that make them want to go on, each with why it hooks.",
+        f'5. Publish it with insights_publish_pill: `run_key` "{key}", `family_key` the topic\'s, '
+        "`topic` the subtopic, and in `sources` what you really read, with its address.",
+        '6. Then insights_publish_picks with the `pill_id` it returns and `origin` "pill": 2 to 5 '
+        "things to follow this topic, in formats they like (books that exist, preferably with an "
+        "edition in their language; a podcast or an episode; a documentary or a film if there "
+        "is one). Each with why for this person, with their own things. Insights checks them in "
+        "a catalogue: what does not exist does not show.",
     ]
-    if language != "es":
+    if practice != own:
         level = settings.pill_level or "B1"
         lines += [
             "",
-            f"Hoy toca en {LANGUAGE_NAMES.get(language, language)}, para practicar, a nivel "
-            f"{level}: frases claras, el vocabulario de ese nivel y lo difícil explicado. En "
-            f"`language` «{language}», y en `glossary` de 8 a 15 palabras difíciles con su "
-            "significado en español. Los datos del día, en español.",
+            f"Today it is in {LANGUAGE_NAMES.get(practice, practice)}, for practice, at level "
+            f"{level}: clear sentences, that level's vocabulary and the hard parts explained. In "
+            f'`language` "{practice}", and in `glossary` 8 to 15 hard words with their meaning '
+            f"in {written_in()}. The facts of the day, in {written_in()}.",
         ]
     if origin == "daily":
         recent_facts = [one.text for one in context["facts"]][:60]
         lines += [
             "",
-            f"7. Los datos del día con insights_publish_facts, `day` «{day.isoformat()}»: 5 datos, "
-            "repartidos entre sus temas con más peso (y alguno de otro), ciertos y sorprendentes, "
-            "cada uno con un nombre, una fecha o una cifra concreta, un poco más en `detail`, y la "
-            "fuente que has leído para comprobarlo. Nada de los que todo el mundo ha oído ya. No "
-            "repitas los de estos días:",
-            *([f"- {one}" for one in recent_facts] or ["(Ninguno todavía.)"]),
+            f'7. The facts of the day with insights_publish_facts, `day` "{day.isoformat()}": 5 '
+            "facts, spread over their topics with most weight (and one from another), true and "
+            "surprising, each with a name, a date or a concrete figure, a bit more in `detail`, "
+            "and the source you read to check it. None that everyone has heard already. Do not "
+            "repeat those of these days:",
+            *([f"- {one}" for one in recent_facts] or ["(None yet.)"]),
             "",
-            "8. Si algo de sus gustos no se puede deducir y te ayudaría a acertar, puedes dejarle "
-            "una pregunta con insights_ask_question (como mucho una, de un toque y con su porqué). Lo "
-            "que te haya contestado arriba, guárdalo como gusto con insights_note_taste.",
+            "8. If something about their tastes cannot be deduced and would help you get it "
+            "right, you can leave them a question with insights_ask_question (at most one, "
+            "answered with one tap, with its why). Save what they answered above as a taste with "
+            "insights_note_taste.",
         ]
-    lines += ["", *VOICE]
+    lines += ["", *voice()]
     return "\n".join(lines)
 
 
@@ -306,33 +318,35 @@ def picks_brief(profile: insights.Profile, today: str, context: dict[str, Any]) 
     lines = [
         *_head(profile, today),
         "",
-        "Toca «Para ti esta semana»: de 3 a 5 recomendaciones para el fin de semana y los días "
-        "que vienen, ligadas a esta persona y no a un tema.",
+        'Time for "For you this week": 3 to 5 recommendations for the weekend and the coming '
+        "days, tied to this person and not to a topic.",
         "",
-        "Lo que sabes de sus gustos:",
+        "What you know of their tastes:",
         *tastes.described(context["traits"]),
         "",
-        "Lo que ya le has recomendado, con lo que hizo:",
+        "What you already recommended, with what they did:",
         *picks.described(context["picks"]),
         "",
-        "Qué haces:",
-        "1. Mira sus lecturas con las tools de Library (lo que lee, lo terminado, sus notas por "
-        "libro, lo abandonado), lo que estudia (Study), adónde va (Travel), qué le interesa "
-        "(Outings) y de qué escribe (Notebook). Si ha terminado un libro estos días, lo siguiente "
-        "que le encajaría es la mejor recomendación posible.",
-        "2. Elige de 3 a 5, de formatos distintos según sus gustos (libro, podcast o episodio, "
-        "película, serie o documental), al menos una un poco fuera de lo suyo. Cosas que existan, "
-        "con el título exacto (el de su edición en español si la tiene) y su autoría.",
-        "3. Publica con insights_publish_picks, `origin` «weekly». En `why`, por qué a esta persona, "
-        "con lo suyo («Le diste un 5 a…», «Vas a…»). En `because`, los rasgos en los que te "
-        "apoyas. Insights las comprueba en catálogo y te dice lo que no ha publicado: si falla una, "
-        "prueba con otra.",
-        "4. Si ha terminado un libro, puedes preguntarle qué le pareció con insights_ask_question "
-        "(una, con su porqué).",
+        "What you do:",
+        "1. Look at their reading with the Library tools (what they read, what they finished, "
+        "their notes per book, what they abandoned), what they study (Study), where they go "
+        "(Travel), what interests them (Outings) and what they write about (Notebook). If they "
+        "finished a book these days, the next one that would suit them is the best "
+        "recommendation there is.",
+        "2. Choose 3 to 5, in different formats according to their tastes (book, podcast or "
+        "episode, film, series or documentary), at least one a little outside their usual. "
+        "Things that exist, with the exact title (that of the edition in their language if "
+        "there is one) and their authorship.",
+        '3. Publish with insights_publish_picks, `origin` "weekly". In `why`, why for this '
+        'person, with their own things ("You gave a 5 to...", "You are going to..."). In '
+        "`because`, the traits you lean on. Insights checks them in a catalogue and tells you "
+        "what it did not publish: if one fails, try another.",
+        "4. If they finished a book, you can ask what they thought of it with "
+        "insights_ask_question (one, with its why).",
         "",
-        "Sin cifras suyas en lo que escribas: aquí no aconsejas.",
+        "None of their figures in what you write: here you do not advise.",
         "",
-        *VOICE,
+        *voice(),
     ]
     return "\n".join(lines)
 
@@ -342,44 +356,45 @@ def profile_brief(profile: insights.Profile, today: str, context: dict[str, Any]
     lines = [
         *_head(profile, today),
         "",
-        "Toca conocerle mejor: qué le gusta, cómo y qué vive ahora. Lo que propongas lo verá en la "
-        "pantalla «Tú» de Insights, con su evidencia, y lo confirmará o descartará.",
+        "Time to know them better: what they like, how, and what they are living now. What you "
+        'propose they will see on the "You" screen of Insights, with its evidence, and they '
+        "will confirm or dismiss it.",
         "",
-        "Lo que ya sabes (no lo repitas; lo descartado no lo vuelvas a proponer):",
+        "What you already know (do not repeat it; do not propose again what was dismissed):",
         *tastes.described(context["traits"]),
     ]
     rejected = [one.label for one in context["traits"] if one.status == "rejected"]
     if rejected:
-        lines += [f"Descartado por la persona: {'; '.join(rejected)}."]
+        lines += [f"Dismissed by the person: {'; '.join(rejected)}."]
     if context["answers"]:
         lines += [
             "",
-            "Lo que te ha contestado y aún no has guardado:",
+            "What they answered you and you have not saved yet:",
             *_answers(context["answers"]),
         ]
     lines += [
         "",
-        "Qué haces:",
-        "1. Recorre sus apps con las tools de lectura: Library (géneros, autores, notas, lo "
-        "abandonado), Study (lo que estudia y los idiomas), Travel (viajes hechos y que vienen, "
-        "ideas), Outings (lo que le interesa y lo que silencia, sus ganas), Notebook (de qué "
-        "escribe, sus carpetas), Training y Vitals (qué deporte hace), Carrera (a qué se dedica), "
-        "Planner (lo que hace cada semana).",
-        f"2. Propón {'hasta 15' if first else 'hasta 6'} rasgos con insights_propose_trait, cada uno "
-        "concreto y con su evidencia en una línea («Library: 6 novelas de ciencia ficción, media "
-        "4,2»). Facetas: `topic` (un tema), `genre`, `format`, `creator` (un autor, un podcast), "
-        "`work` (una obra que le marcó), `style` (cómo le gusta que se lo cuenten), `avoid`, "
-        "`context` (lo que vive ahora: un máster, un viaje, un idioma), `language`. Mejor pocos y "
-        "ciertos que muchos y vagos.",
-        "3. Lo que te contestó, guárdalo con insights_note_taste: eso ya lo dijo, no hace falta "
-        "confirmarlo.",
-        "4. Si hay algo importante que no se puede deducir, déjale una pregunta con "
-        "insights_ask_question (como mucho una, de un toque, con su porqué). Si propusiste un rasgo "
-        "con poca evidencia, puede ser `confirm` con su `trait_id`.",
+        "What you do:",
+        "1. Go through their apps with the read tools: Library (genres, authors, notes, what "
+        "they abandoned), Study (what they study and the languages), Travel (trips done and "
+        "coming, ideas), Outings (what interests them and what they mute, their wishes), "
+        "Notebook (what they write about, their folders), Training and Vitals (which sport they "
+        "do), Career (what they work on), Planner (what they do each week).",
+        f"2. Propose {'up to 15' if first else 'up to 6'} traits with insights_propose_trait, "
+        'each concrete and with its evidence in one line ("Library: 6 science fiction novels, '
+        'average 4.2"). Facets: `topic` (a topic), `genre`, `format`, `creator` (an author, a '
+        "podcast), `work` (a work that marked them), `style` (how they like to be told things), "
+        "`avoid`, `context` (what they live now: a master's, a trip, a language), `language`. "
+        "Few and certain beats many and vague.",
+        "3. What they answered you, save it with insights_note_taste: they already said it, it "
+        "needs no confirmation.",
+        "4. If something important cannot be deduced, leave them a question with "
+        "insights_ask_question (at most one, answered with one tap, with its why). If you "
+        "proposed a trait with little evidence, it can be `confirm` with its `trait_id`.",
         "",
-        "Nada más: ni consejos ni píldoras en esta pasada.",
+        "Nothing else: no advice and no pills in this pass.",
         "",
-        *VOICE,
+        *voice(),
     ]
     return "\n".join(lines)
 
@@ -442,7 +457,7 @@ async def run(
     if attempt is None:
         return None
     local = now.astimezone(MADRID)
-    today = talk.spanish_day(local)
+    today = talk.said_day(local)
     profile = await insights.profile(connection)
     await tastes.ensure_defaults(connection)
     context = await _pill_context(connection)
@@ -491,7 +506,7 @@ async def more(
         {"day": local.date()},
     )
     if asked_today >= MORE_PER_DAY:
-        raise TooMany(f"Ya has pedido {MORE_PER_DAY} hoy: mañana hay más.")
+        raise TooMany(f"You already asked for {MORE_PER_DAY} today: there are more tomorrow.")
     parent = await pills.one(connection, parent_id) if parent_id else None
     if origin == "branch" and (parent is None or not branch):
         raise pills.NotFound(parent_id or "")
@@ -509,7 +524,7 @@ async def more(
     profile = await insights.profile(connection)
     prompt = pill_brief(
         profile,
-        talk.spanish_day(local),
+        talk.said_day(local),
         local.date(),
         key,
         family,

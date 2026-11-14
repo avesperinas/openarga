@@ -102,7 +102,7 @@ const settle = () =>
 const button = (name: string) =>
   Array.from(host.querySelectorAll<HTMLButtonElement>("button")).find((one) => one.textContent?.includes(name));
 
-async function open(path = "/insights/consejos") {
+async function open(path = "/insights/inbox") {
   window.history.replaceState(null, "", path);
   act(() => root.render(<App />));
   await settle();
@@ -129,7 +129,7 @@ describe("la bandeja", () => {
 
     act(() => button("Contarle qué te importa")!.click());
     await settle();
-    expect(window.location.pathname).toBe("/insights/tu");
+    expect(window.location.pathname).toBe("/insights/you");
   });
 
   it("si fallan los consejos, lo dice y reintentar los trae", async () => {
@@ -158,7 +158,7 @@ describe("la bandeja", () => {
 
 describe("el resumen del domingo", () => {
   it("trae sus propuestas numeradas, con su cifra y cómo pedírsela a Claude", async () => {
-    await open(`/insights/consejo/${ID}`);
+    await open(`/insights/insight/${ID}`);
 
     expect(asked).toContain(`POST /api/insights/insights/${ID}/read`);
     expect(host.textContent).toContain("La semana que viene");
@@ -173,7 +173,7 @@ describe("el resumen del domingo", () => {
     const alert = { ...WEEK, kind: "alert" as const, proposals: [] };
     replies[`POST /api/insights/insights/${ID}/read`] = () => alert;
     replies["GET /api/insights/insights"] = () => [alert];
-    await open(`/insights/consejo/${ID}`);
+    await open(`/insights/insight/${ID}`);
 
     expect(host.textContent).toContain("Qué haría");
     expect(host.textContent).not.toContain("La semana que viene");
@@ -182,7 +182,7 @@ describe("el resumen del domingo", () => {
   it("si no se puede abrir, reintentar", async () => {
     replies["GET /api/insights/insights"] = () => [];
     replies[`POST /api/insights/insights/${ID}/read`] = () => json({ detail: "no" }, 500);
-    await open(`/insights/consejo/${ID}`);
+    await open(`/insights/insight/${ID}`);
     expect(host.textContent).toContain("No se pudo abrir el consejo");
 
     replies[`POST /api/insights/insights/${ID}/read`] = () => WEEK;
@@ -194,17 +194,17 @@ describe("el resumen del domingo", () => {
 
 describe("hablar", () => {
   it("sin conversaciones, el botón empieza una", async () => {
-    await open("/insights/hablar");
+    await open("/insights/chat");
     expect(host.textContent).toContain("Pregúntale lo que quieras a Txuri");
 
     act(() => button("Empezar a hablar")!.click());
     await settle();
-    expect(window.location.pathname).toBe("/insights/hablar/nueva");
+    expect(window.location.pathname).toBe("/insights/chat/new");
   });
 
   it("si fallan las conversaciones, reintentar", async () => {
     replies["GET /api/insights/threads"] = () => json({ detail: "no" }, 500);
-    await open("/insights/hablar");
+    await open("/insights/chat");
     expect(host.textContent).toContain("No se pudieron leer las conversaciones");
 
     replies["GET /api/insights/threads"] = () => [];
@@ -214,11 +214,11 @@ describe("hablar", () => {
   });
 
   it("axe-core sin errores graves, también en los ajustes", async () => {
-    await open("/insights/hablar");
+    await open("/insights/chat");
     expect(await serious()).toEqual([]);
     act(() => root.unmount());
     root = createRoot(host);
-    await open("/insights/ajustes");
+    await open("/insights/settings");
     expect(await serious()).toEqual([]);
   });
 });
@@ -229,7 +229,7 @@ describe("los ajustes", () => {
     invalidate("profile");
     const waiting: ((profile: Profile) => void)[] = [];
     replies["GET /api/insights/profile"] = () => new Promise<Profile>((resolve) => waiting.push(resolve));
-    await open("/insights/ajustes");
+    await open("/insights/settings");
     expect(host.querySelector("textarea")).toBeNull();
 
     await act(async () => waiting.forEach((answer) => answer({ ...PROFILE, about: "lo mío" })));

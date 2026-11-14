@@ -20,15 +20,29 @@ type Tab = "today" | "inbox" | "library" | "you" | "chat" | "settings";
 
 const PATHS: Record<Tab, string> = {
   today: `${ROOT}/`,
-  inbox: `${ROOT}/consejos`,
-  library: `${ROOT}/biblioteca`,
-  you: `${ROOT}/tu`,
-  chat: `${ROOT}/hablar`,
-  settings: `${ROOT}/ajustes`,
+  inbox: `${ROOT}/inbox`,
+  library: `${ROOT}/library`,
+  you: `${ROOT}/you`,
+  chat: `${ROOT}/chat`,
+  settings: `${ROOT}/settings`,
 };
-const START = `${ROOT}/conocerte`;
+const START = `${ROOT}/start`;
 
 const UUID = "([0-9a-f-]{36})";
+
+const OLD: Record<string, string> = {
+  consejos: "inbox",
+  biblioteca: "library",
+  tu: "you",
+  hablar: "chat",
+  ajustes: "settings",
+  conocerte: "start",
+  consejo: "insight",
+  pildora: "pill",
+  nueva: "new",
+};
+
+const english = (path: string) => path.replace(/[a-z]+/g, (part) => OLD[part] ?? part);
 
 export type Route =
   | { tab: "today"; pill: string | null }
@@ -39,19 +53,19 @@ export type Route =
   | { tab: "settings" };
 
 export function route(pathname: string): Route {
-  const path = pathname.replace(/\/+$/, "");
+  const path = english(pathname.replace(/\/+$/, ""));
   if (path === PATHS.settings) return { tab: "settings" };
   if (path === PATHS.chat) return { tab: "chat", thread: null, fresh: false };
-  if (path === `${PATHS.chat}/nueva`) return { tab: "chat", thread: null, fresh: true };
-  const talking = new RegExp(`^/insights/hablar/${UUID}$`).exec(path);
+  if (path === `${PATHS.chat}/new`) return { tab: "chat", thread: null, fresh: true };
+  const talking = new RegExp(`^/insights/chat/${UUID}$`).exec(path);
   if (talking) return { tab: "chat", thread: talking[1] ?? null, fresh: false };
   if (path === PATHS.inbox) return { tab: "inbox", insight: null };
-  const opened = new RegExp(`^/insights/consejo/${UUID}$`).exec(path);
+  const opened = new RegExp(`^/insights/insight/${UUID}$`).exec(path);
   if (opened) return { tab: "inbox", insight: opened[1] ?? null };
   if (path === PATHS.library) return { tab: "library" };
   if (path === PATHS.you) return { tab: "you", start: false };
   if (path === START) return { tab: "you", start: true };
-  const pill = new RegExp(`^/insights/pildora/${UUID}$`).exec(path);
+  const pill = new RegExp(`^/insights/pill/${UUID}$`).exec(path);
   return { tab: "today", pill: pill?.[1] ?? null };
 }
 
@@ -76,8 +90,8 @@ export function App() {
 
   const app = useMemo(() => ({ ...APP, name: profile?.name ?? APP.name }), [profile]);
   const current = route(path);
-  const openPill = (id: string) => navigate(`${ROOT}/pildora/${id}`);
-  const openInsight = (id: string) => navigate(`${ROOT}/consejo/${id}`);
+  const openPill = (id: string) => navigate(`${ROOT}/pill/${id}`);
+  const openInsight = (id: string) => navigate(`${ROOT}/insight/${id}`);
 
   return (
     <AppContext.Provider value={app}>
@@ -106,7 +120,7 @@ export function App() {
           <InsightScreen
             id={current.insight}
             onBack={() => navigate(PATHS.inbox)}
-            onAnswer={(id) => navigate(`${PATHS.chat}/nueva?consejo=${id}`)}
+            onAnswer={(id) => navigate(`${PATHS.chat}/new?insight=${id}`)}
           />
         )}
         {current.tab === "library" && <LibraryScreen onOpenPill={openPill} />}
@@ -117,13 +131,13 @@ export function App() {
           <OnboardingScreen onBack={() => navigate(PATHS.today)} onDone={() => navigate(PATHS.you)} />
         )}
         {current.tab === "chat" && current.thread === null && !current.fresh && (
-          <ChatList onOpen={(id) => navigate(`${PATHS.chat}/${id}`)} onNew={() => navigate(`${PATHS.chat}/nueva`)} />
+          <ChatList onOpen={(id) => navigate(`${PATHS.chat}/${id}`)} onNew={() => navigate(`${PATHS.chat}/new`)} />
         )}
         {current.tab === "chat" && (current.thread !== null || current.fresh) && (
           <ThreadScreen
-            key={current.thread ?? "nueva"}
+            key={current.thread ?? "new"}
             id={current.thread}
-            insightId={current.fresh ? new URLSearchParams(window.location.search).get("consejo") : null}
+            insightId={current.fresh ? new URLSearchParams(window.location.search).get("insight") ?? new URLSearchParams(window.location.search).get("consejo") : null}
             onBack={() => navigate(PATHS.chat)}
             onStarted={(id) => {
               window.history.replaceState(null, "", `${PATHS.chat}/${id}`);

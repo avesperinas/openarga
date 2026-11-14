@@ -67,8 +67,8 @@ def test_the_pill_is_asked_a_while_before_your_time_and_picks_on_friday_evening(
 
 
 async def test_the_daily_pass_asks_for_a_pill_with_substance_and_web_reading(api, hub) -> None:
-    await api.post("/onboarding/start.families", json={"answer": {"values": ["ciencia"]}})
-    await api.post("/onboarding/start.favourite", json={"answer": {"values": ["ciencia"]}})
+    await api.post("/onboarding/start.families", json={"answer": {"values": ["science"]}})
+    await api.post("/onboarding/start.favourite", json={"answer": {"values": ["science"]}})
 
     outcome = await run("pill", "pill:2026-11-10", TUESDAY)
     again = await run("pill", "pill:2026-11-10", TUESDAY)
@@ -78,10 +78,10 @@ async def test_the_daily_pass_asks_for_a_pill_with_substance_and_web_reading(api
     assert asked["key"] == "pill:2026-11-10"
     assert set(asked["tools"]) == {"WebFetch", "WebSearch"}
     prompt = asked["prompt"]
-    assert "Con chicha" in prompt and "nunca de la persona ni de sus cifras" in prompt
+    assert "Always with substance" in prompt and "never about the person or their figures" in prompt
     assert "insights_publish_pill" in prompt and "insights_publish_facts" in prompt
-    assert "run_key` «pill:2026-11-10»" in prompt
-    assert "Ciencia y universo, peso 3 de 3" in prompt
+    assert 'run_key` "pill:2026-11-10"' in prompt
+    assert "Science and the universe, weight 3 of 3" in prompt
 
 
 async def test_a_pill_that_already_arrived_is_not_asked_again(api, hub) -> None:
@@ -100,8 +100,8 @@ async def test_in_the_language_you_learn_once_a_week(api, hub) -> None:
 
     await run("pill", "pill:2026-11-14", saturday)
 
-    assert "Hoy toca en alemán" in hub.asked[0]["prompt"]
-    assert "nivel B1" in hub.asked[0]["prompt"]
+    assert "Today it is in German" in hub.asked[0]["prompt"]
+    assert "at level B1" in hub.asked[0]["prompt"]
 
 
 async def test_a_published_pill_is_today_and_goes_to_the_notes(api, hub) -> None:
@@ -113,16 +113,16 @@ async def test_a_published_pill_is_today_and_goes_to_the_notes(api, hub) -> None
     added = await tool(api, "publish_facts", facts(day))
     today = (await api.get("/today")).json()
 
-    assert published["published"]["headline"] == "La columna que rompió Esparta"
+    assert published["published"]["headline"] == "The column that broke Sparta"
     assert added["published"] == 5
-    assert today["pill"]["topic"] == "La batalla de Leuctra"
+    assert today["pill"]["topic"] == "The battle of Leuctra"
     assert len(today["facts"]) == 5
     assert (await api.get("/badge")).json() == {"count": 1}
     async with as_role("mod_insights_read") as connection:
         built = await records.build(connection)
-    note = next(one for one in built if one["kind"] == "Píldora")
-    assert note["folder"] == "Píldoras"
-    assert "Para contar" in note["body"] and "Datos del día" in note["body"]
+    note = next(one for one in built if one["kind"] == "Pill")
+    assert note["folder"] == "Pills"
+    assert "To tell" in note["body"] and "Facts of the day" in note["body"]
 
 
 async def test_the_pill_must_have_the_length_asked_a_theme_of_yours_and_be_new(api, hub) -> None:
@@ -137,9 +137,9 @@ async def test_the_pill_must_have_the_length_asked_a_theme_of_yours_and_be_new(a
         "/tools/publish_pill", json=pill(key, branches=pill(key)["branches"][:2]), headers=WRITE
     )
 
-    assert too_short["published"] is None and "palabras" in too_short["note"]
-    assert unknown["published"] is None and "sus temas" in unknown["note"]
-    assert no_order["published"] is None and "encargo" in no_order["note"]
+    assert too_short["published"] is None and "words" in too_short["note"]
+    assert unknown["published"] is None and "their topics" in unknown["note"]
+    assert no_order["published"] is None and "no task" in no_order["note"]
     assert two_branches.status_code == 422
 
 
@@ -151,7 +151,7 @@ async def test_repeated_facts_are_not_given_twice(api) -> None:
     second = await tool(api, "publish_facts", facts(day, 4))
 
     assert first["published"] == 5
-    assert second["published"] == 0 and "no se repiten" in second["note"]
+    assert second["published"] == 0 and "not repeated" in second["note"]
 
 
 async def test_reading_and_reacting(api, hub) -> None:
@@ -183,7 +183,7 @@ async def test_surprise_me_and_a_branch_arrive_linked_with_a_daily_cap(api, hub)
     ).json()
     assert asked["state"] == "waiting" and asked["kind"] == "more"
     prompt = hub.asked[-1]["prompt"]
-    assert "Es una rama de la píldora «La columna que rompió Esparta»" in prompt
+    assert 'It is a branch of the pill "The column that broke Sparta"' in prompt
 
     child = await tool(
         api, "publish_pill", pill(asked["key"], topic="Epaminondas", headline="El general tebano")
@@ -215,7 +215,7 @@ def test_a_theme_switched_off_never_comes_and_a_heavy_one_comes_more() -> None:
     rng = random.Random(3)
     taken: list[pills.Taken] = []
     counts: dict[str, int] = {}
-    weights = {"historia": 3, "geopolitica": 0, "fuera": 0}
+    weights = {"history": 3, "geopolitics": 0, "outside": 0}
     for day in range(60):
         chosen = pills.choose(families(**weights), taken, now + timedelta(days=day), rng)
         counts[chosen.key] = counts.get(chosen.key, 0) + 1
@@ -224,8 +224,8 @@ def test_a_theme_switched_off_never_comes_and_a_heavy_one_comes_more() -> None:
             pills.Taken(family_key=chosen.key, created_at=now + timedelta(days=day), reaction=None),
         )
 
-    assert "geopolitica" not in counts and "fuera" not in counts
-    assert counts["historia"] == max(counts.values())
+    assert "geopolitics" not in counts and "outside" not in counts
+    assert counts["history"] == max(counts.values())
 
 
 def test_outside_your_zone_comes_once_a_week_if_you_want_it() -> None:
@@ -234,14 +234,14 @@ def test_outside_your_zone_comes_once_a_week_if_you_want_it() -> None:
     taken: list[pills.Taken] = []
     picked = []
     for day in range(28):
-        chosen = pills.choose(families(fuera=2), taken, now + timedelta(days=day), rng)
+        chosen = pills.choose(families(outside=2), taken, now + timedelta(days=day), rng)
         picked.append(chosen.key)
         taken.insert(
             0,
             pills.Taken(family_key=chosen.key, created_at=now + timedelta(days=day), reaction=None),
         )
 
-    assert picked.count("fuera") == 4
+    assert picked.count("outside") == 4
 
 
 def test_the_streak_forgives_one_day_a_week() -> None:
@@ -268,4 +268,4 @@ async def test_the_pill_notifies_at_your_time_and_the_widget_shows_it(api, hub) 
     assert found[0]["href"].startswith("/insights/pildora/")
     assert widget["state"] == "ready"
     validate("list", widget["body"], "ready")
-    assert widget["body"]["rows"][0]["label"] == "La columna que rompió Esparta"
+    assert widget["body"]["rows"][0]["label"] == "The column that broke Sparta"

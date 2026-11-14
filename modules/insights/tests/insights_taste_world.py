@@ -7,36 +7,36 @@ from typing import Any
 import httpx
 
 PARAGRAPH = (
-    "En el año 371 antes de nuestra era, en la llanura de Leuctra, un ejército tebano rompió la "
-    "formación espartana con una columna de cincuenta filas en el ala izquierda. Epaminondas "
-    "concentró allí su fuerza y dejó el resto atrás, en escalón, para que llegara tarde al choque. "
-    "Fue la primera derrota de Esparta en campo abierto en generaciones y cambió el equilibrio de "
-    "Grecia para siempre."
+    "In the year 371 before our era, on the plain of Leuctra, a Theban army broke the Spartan "
+    "formation with a column fifty ranks deep on its left wing. Epaminondas gathered his strength "
+    "there and left the rest behind, in echelon, so that it would reach the clash late. It was the "
+    "first defeat of Sparta in open battle for generations and it changed the balance of Greece "
+    "forever."
 )
 
 
 def pill(run_key: str, **overrides: Any) -> dict[str, Any]:
     sections = [
-        {"title": f"Sección {n}", "text": "\n\n".join([PARAGRAPH] * 4)} for n in range(1, 4)
+        {"title": f"Section {n}", "text": "\n\n".join([PARAGRAPH] * 4)} for n in range(1, 4)
     ]
     return {
         "run_key": run_key,
-        "family_key": "historia",
-        "topic": "La batalla de Leuctra",
-        "headline": "La columna que rompió Esparta",
+        "family_key": "history",
+        "topic": "The battle of Leuctra",
+        "headline": "The column that broke Sparta",
         "lead": PARAGRAPH,
         "sections": sections,
-        "to_tell": "Esparta no había perdido una batalla campal en siglos antes de Leuctra.",
-        "to_think": "¿Por qué una innovación táctica tan sencilla tardó tanto en llegar?",
+        "to_tell": "Sparta had not lost a pitched battle in centuries before Leuctra.",
+        "to_think": "Why did such a simple tactical innovation take so long to arrive?",
         "branches": [
-            {"title": "El Batallón Sagrado de Tebas", "why": "150 parejas que decidieron batallas"},
-            {"title": "Epaminondas", "why": "El general que enseñó a Filipo de Macedonia"},
-            {"title": "La caída de Esparta", "why": "De Leuctra a la irrelevancia"},
+            {"title": "The Sacred Band of Thebes", "why": "150 couples who decided battles"},
+            {"title": "Epaminondas", "why": "The general who taught Philip of Macedon"},
+            {"title": "The fall of Sparta", "why": "From Leuctra to irrelevance"},
         ],
         "sources": [
             {
-                "title": "Batalla de Leuctra",
-                "url": "https://es.wikipedia.org/wiki/Batalla_de_Leuctra",
+                "title": "Battle of Leuctra",
+                "url": "https://en.wikipedia.org/wiki/Battle_of_Leuctra",
             }
         ],
     } | overrides
@@ -47,9 +47,9 @@ def facts(day: str, count: int = 5) -> dict[str, Any]:
         "day": day,
         "facts": [
             {
-                "family_key": "ciencia",
-                "text": f"El dato número {n} es cierto, sorprendente y lleva su fuente comprobada.",
-                "source": {"title": "Fuente", "url": f"https://example.org/dato/{n}"},
+                "family_key": "science",
+                "text": f"Fact number {n} is true, surprising and carries its checked source.",
+                "source": {"title": "Source", "url": f"https://example.org/fact/{n}"},
             }
             for n in range(1, count + 1)
         ],
@@ -68,8 +68,8 @@ class FakeKernel:
             {
                 "source": "openlibrary",
                 "source_ref": "OL1M",
-                "title": "Las legiones malditas",
-                "authors": ["Santiago Posteguillo"],
+                "title": "The Cursed Legions",
+                "authors": ["Synthetic Author"],
                 "isbn13": "9788466648769",
                 "pages": 720,
                 "language": "es",
@@ -92,8 +92,8 @@ class FakeKernel:
                 "id": "Q1",
                 "title": "Agora",
                 "year": 2009,
-                "creators": ["Alejandro Amenábar"],
-                "wikipedia": "https://es.wikipedia.org/wiki/%C3%81gora_(pel%C3%ADcula)",
+                "creators": ["A. Director"],
+                "wikipedia": "https://en.wikipedia.org/wiki/Agora_(film)",
                 "minutes": 127,
             }
         ]
@@ -105,7 +105,7 @@ class FakeKernel:
         self.asked.append((capability, body))
         assert request.headers["x-arga-module"] == "insights"
         if self.down:
-            return httpx.Response(503, json={"detail": "Hub está caído"})
+            return httpx.Response(503, json={"detail": "Hub is down"})
         if capability == "books.search":
             return httpx.Response(200, json={"candidates": self.books, "failed": []})
         if capability == "books.cover":
@@ -118,4 +118,4 @@ class FakeKernel:
             return httpx.Response(200, json={"candidates": self.films})
         if capability == "books.want":
             return httpx.Response(200, json={"book_id": "b1", "already": False})
-        return httpx.Response(404, json={"detail": f"nadie sirve {capability}"})
+        return httpx.Response(404, json={"detail": f"nobody serves {capability}"})

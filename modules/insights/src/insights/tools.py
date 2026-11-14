@@ -68,9 +68,9 @@ async def get_profile(connection: AsyncConnection, arguments: GetProfile) -> dic
 
 class GetInsights(BaseModel):
     since: date | None = Field(
-        default=None, description="Solo los dados desde este día. Sin él, los más recientes."
+        default=None, description="Only those given since this day. Without it, the most recent."
     )
-    limit: int = Field(default=30, ge=1, le=200, description="Cuántos, como mucho.")
+    limit: int = Field(default=30, ge=1, le=200, description="How many, at most.")
 
 
 async def get_insights(connection: AsyncConnection, arguments: GetInsights) -> dict[str, Any]:
@@ -81,16 +81,16 @@ async def get_insights(connection: AsyncConnection, arguments: GetInsights) -> d
 
 class GetSignals(BaseModel):
     since: date | None = Field(
-        default=None, description="Desde qué día. Sin él, los siete días hasta `until`."
+        default=None, description="From which day. Without it, the seven days until `until`."
     )
-    until: date | None = Field(default=None, description="Hasta qué día. Sin él, hoy.")
+    until: date | None = Field(default=None, description="Until which day. Without it, today.")
 
 
 async def get_signals(connection: AsyncConnection, arguments: GetSignals) -> dict[str, Any]:
     until = arguments.until or datetime.now(MADRID).date()
     since = arguments.since or until - timedelta(days=6)
     if since > until:
-        return {"signals": [], "note": "`since` va después de `until`"}
+        return {"signals": [], "note": "`since` is after `until`"}
     since = max(since, until - timedelta(days=MAX_SIGNAL_DAYS - 1))
     found = await signals.read(connection, since, until)
     return {
@@ -105,12 +105,14 @@ class GetSeries(BaseModel):
         default_factory=list,
         max_length=10,
         description=(
-            "Las claves de las cifras (`vitals.weight`, `money.month_expense`). Vacío: la lista "
-            "de todas las cifras que hay, con su último valor, para elegir."
+            "The keys of the figures (`vitals.weight`, `money.month_expense`). Empty: the list of "
+            "every figure there is, with its last value, to choose from."
         ),
     )
-    since: date | None = Field(default=None, description="Desde qué día. Sin él, 90 días atrás.")
-    until: date | None = Field(default=None, description="Hasta qué día. Sin él, hoy.")
+    since: date | None = Field(
+        default=None, description="From which day. Without it, 90 days back."
+    )
+    until: date | None = Field(default=None, description="Until which day. Without it, today.")
 
 
 async def get_series(connection: AsyncConnection, arguments: GetSeries) -> dict[str, Any]:
@@ -155,12 +157,14 @@ async def get_series(connection: AsyncConnection, arguments: GetSeries) -> dict[
         )
     answer: dict[str, Any] = {"series": out}
     if missing:
-        answer["note"] = f"no hay cifras con esas claves: {', '.join(missing)}"
+        answer["note"] = f"no figures with those keys: {', '.join(missing)}"
     return answer
 
 
 class GetRuns(BaseModel):
-    days: int = Field(default=14, ge=1, le=60, description="Cuántos días atrás. Sin él, catorce.")
+    days: int = Field(
+        default=14, ge=1, le=60, description="How many days back. Without it, fourteen."
+    )
 
 
 async def get_runs(connection: AsyncConnection, arguments: GetRuns) -> dict[str, Any]:
@@ -189,11 +193,11 @@ class PublishInsight(insights.InsightIn):
         least, most = insights.PROPOSALS
         if self.kind == "weekly" and not least <= len(self.proposals) <= most:
             raise ValueError(
-                f"el resumen del domingo lleva de {least} a {most} propuestas para la semana que "
-                f"viene en `proposals`; trae {len(self.proposals)}"
+                f"the Sunday summary carries {least} to {most} proposals for next week in "
+                f"`proposals`; it has {len(self.proposals)}"
             )
         if self.kind == "alert" and self.proposals:
-            raise ValueError("un aviso suelto no lleva `proposals`: su propuesta es `action`")
+            raise ValueError("a single alert carries no `proposals`: its proposal is `action`")
         return self
 
 
@@ -201,14 +205,14 @@ async def publish_insight(connection: AsyncConnection, arguments: PublishInsight
     try:
         published = await insights.publish(connection, arguments)
     except insights.Repeated as error:
-        return {"published": None, "note": f"no lo he publicado: {error}"}
+        return {"published": None, "note": f"not published: {error}"}
     return {"published": _insight(published)}
 
 
 class RateInsight(BaseModel):
-    insight_id: str = Field(description="El `insight_id` que da `get_insights`.")
+    insight_id: str = Field(description="The `insight_id` that `get_insights` gives.")
     rating: insights.Rating | None = Field(
-        description="`useful`, `known` o `not_applicable`; `null` para quitarla."
+        description="`useful`, `known` or `not_applicable`; `null` to remove it."
     )
 
 
@@ -218,16 +222,16 @@ async def rate_insight(connection: AsyncConnection, arguments: RateInsight) -> d
             connection, arguments.insight_id, insights.RatingIn(rating=arguments.rating)
         )
     except insights.NotFound:
-        return {"rated": None, "note": "no hay ningún consejo con ese id"}
+        return {"rated": None, "note": "no advice with that id"}
     return {"rated": _insight(rated)}
 
 
 class Reply(BaseModel):
-    thread_id: str = Field(description="El hilo que te dieron en el encargo.")
+    thread_id: str = Field(description="The thread you were given in the task.")
     text: str = Field(
         min_length=1,
         max_length=12000,
-        description="Tu respuesta entera, en párrafos cortos separados por una línea en blanco.",
+        description="Your whole answer, in short paragraphs separated by a blank line.",
     )
 
 
@@ -235,7 +239,7 @@ async def reply(connection: AsyncConnection, arguments: Reply) -> dict[str, Any]
     try:
         message_id = await talk.add(connection, arguments.thread_id, "insights", arguments.text)
     except talk.NotFound:
-        return {"replied": None, "note": "no hay ninguna conversación con ese id"}
+        return {"replied": None, "note": "no conversation with that id"}
     return {"replied": message_id}
 
 
@@ -271,7 +275,7 @@ async def get_tastes(connection: AsyncConnection, arguments: GetTastes) -> dict[
 
 
 class GetPills(BaseModel):
-    limit: int = Field(default=30, ge=1, le=150, description="Cuántas, de la más reciente.")
+    limit: int = Field(default=30, ge=1, le=150, description="How many, newest first.")
 
 
 async def get_pills(connection: AsyncConnection, arguments: GetPills) -> dict[str, Any]:
@@ -294,7 +298,7 @@ async def get_pills(connection: AsyncConnection, arguments: GetPills) -> dict[st
 
 
 class GetFacts(BaseModel):
-    days: int = Field(default=14, ge=1, le=90, description="Cuántos días atrás.")
+    days: int = Field(default=14, ge=1, le=90, description="How many days back.")
 
 
 async def get_facts(connection: AsyncConnection, arguments: GetFacts) -> dict[str, Any]:
@@ -316,7 +320,7 @@ async def get_facts(connection: AsyncConnection, arguments: GetFacts) -> dict[st
 class GetLibrary(BaseModel):
     states: list[picks.State] = Field(
         default_factory=list,
-        description="`new`, `saved`, `doing`, `done`, `dismissed`. Vacío: todo.",
+        description="`new`, `saved`, `doing`, `done`, `dismissed`. Empty: all.",
     )
 
 
@@ -349,7 +353,7 @@ async def publish_pill(connection: AsyncConnection, arguments: PublishPill) -> d
     try:
         published = await pills.publish(connection, arguments, datetime.now(MADRID))
     except pills.Invalid as error:
-        return {"published": None, "note": f"no la he publicado: {error}"}
+        return {"published": None, "note": f"not published: {error}"}
     return {
         "published": {
             "pill_id": published.id,
@@ -367,31 +371,31 @@ async def publish_facts(connection: AsyncConnection, arguments: PublishFacts) ->
     try:
         published = await pills.publish_facts(connection, arguments)
     except pills.Invalid as error:
-        return {"published": [], "note": f"no los he publicado: {error}"}
+        return {"published": [], "note": f"not published: {error}"}
     skipped = len(arguments.facts) - len(published)
     return {
         "published": len(published),
-        **({"note": f"{skipped} ya se habían dado y no se repiten"} if skipped else {}),
+        **({"note": f"{skipped} were already given and are not repeated"} if skipped else {}),
     }
 
 
 class PublishPicks(BaseModel):
     origin: PickOrigin = Field(
-        description="`pill` (con `pill_id`), `weekly` (Para ti esta semana), `event` o `chat`."
+        description="`pill` (with `pill_id`), `weekly` (For you this week), `event` or `chat`."
     )
-    pill_id: str | None = Field(default=None, description="La píldora a la que acompañan.")
+    pill_id: str | None = Field(default=None, description="The pill they go with.")
     picks: list[PickIn] = Field(min_length=1, max_length=8)
 
 
 async def publish_picks(connection: AsyncConnection, arguments: PublishPicks) -> dict[str, Any]:
     if arguments.origin == "pill" and not arguments.pill_id:
-        return {"published": [], "note": "con `origin` «pill» va el `pill_id`"}
+        return {"published": [], "note": "with `origin` `pill` goes the `pill_id`"}
     try:
         published, notes = await picks.publish(
             connection, arguments.picks, arguments.origin, arguments.pill_id
         )
     except picks.NotFound:
-        return {"published": [], "note": "no hay ninguna píldora con ese id"}
+        return {"published": [], "note": "no pill with that id"}
     return {
         "published": [
             {"pick_id": one.id, "kind": one.kind, "title": one.title, "verified": one.verified}
@@ -409,20 +413,20 @@ async def ask_question(connection: AsyncConnection, arguments: AskQuestion) -> d
     try:
         asked = await tastes.ask(connection, arguments, datetime.now(MADRID))
     except (tastes.Refused, tastes.NotFound) as error:
-        return {"asked": None, "note": f"no la he dejado: {error}"}
+        return {"asked": None, "note": f"not left: {error}"}
     return {"asked": {"question_id": asked.id, "text": asked.text}}
 
 
 class ProposeTrait(BaseModel):
-    facet: tastes.Facet = Field(description="De qué tipo es el rasgo.")
+    facet: tastes.Facet = Field(description="What kind of trait it is.")
     label: str = Field(
-        min_length=2, max_length=120, description="Concreto: «Fantasía épica larga, en sagas»."
+        min_length=2, max_length=120, description="Concrete: `Long epic fantasy, in sagas`."
     )
     stance: int = Field(default=1, ge=-2, le=2, description="De −2 (no quiere) a +2 (le encanta).")
     evidence: str = Field(
         min_length=5,
         max_length=300,
-        description="Lo que lo sostiene, con su app: «Library: 6 novelas, media 4,2».",
+        description="What supports it, with its app: `Library: 6 novels, average 4.2`.",
     )
 
 
@@ -437,8 +441,8 @@ async def propose_trait(connection: AsyncConnection, arguments: ProposeTrait) ->
         confirmed=False,
     )
     notes = {
-        "rejected": "lo descartó la persona: no vuelve",
-        "kept": "ya estaba confirmado; he guardado la evidencia",
+        "rejected": "the person dismissed it: it does not come back",
+        "kept": "it was already confirmed; the evidence is saved",
     }
     return {
         "trait": {"trait_id": found.id, "label": found.label, "status": found.status},
@@ -451,7 +455,7 @@ class NoteTaste(BaseModel):
     label: str = Field(min_length=2, max_length=120)
     stance: int = Field(default=1, ge=-2, le=2)
     evidence: str | None = Field(
-        default=None, max_length=300, description="Lo que dijo, en una línea."
+        default=None, max_length=300, description="What they said, in one line."
     )
 
 

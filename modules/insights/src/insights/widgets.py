@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets import envelope
 from insights import insights, pills
+from insights.words import say
 
 MADRID = ZoneInfo("Europe/Madrid")
 
@@ -18,13 +19,13 @@ ROWS = 8
 async def latest(connection: AsyncConnection) -> dict:
     found = await insights.recent(connection, limit=ROWS)
     if not found:
-        return envelope(KINDS["latest"], "empty", {"detail": "todavía no te ha dicho nada"})
+        return envelope(KINDS["latest"], "empty", {"detail": say("widget.latest_empty")})
     unread = sum(1 for one in found if one.read_at is None)
     body: dict = {
         "rows": [{"label": one.title, "value": f"{one.created_at:%d/%m}"} for one in found]
     }
     if unread:
-        body["detail"] = f"{unread} sin leer" if unread > 1 else "1 sin leer"
+        body["detail"] = say("widget.unread", count=unread)
     return envelope(KINDS["latest"], "ready", body)
 
 
@@ -37,10 +38,10 @@ async def today(connection: AsyncConnection) -> dict:
         rows.append({"label": pill.headline, "value": f"{pill.minutes} min"})
     rows += [{"label": one.text, "value": ""} for one in found[: ROWS - len(rows)]]
     if not rows:
-        return envelope(KINDS["today"], "empty", {"detail": "tu píldora llega a tu hora"})
+        return envelope(KINDS["today"], "empty", {"detail": say("widget.pill_later")})
     body: dict = {"rows": rows}
     if pill is not None and pill.read_at is None:
-        body["detail"] = "sin leer"
+        body["detail"] = say("widget.pill_unread")
     return envelope(KINDS["today"], "ready", body)
 
 

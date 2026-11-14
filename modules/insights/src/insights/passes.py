@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_tenancy import kernel_url, user_headers
 from insights import insights, signals, talk
+from insights.words import say
 
 MODULE = "insights"
 CAPABILITY = "claude.run"
@@ -124,54 +125,65 @@ async def save(
     )
 
 
-RATINGS = {"useful": "le sirvió", "known": "ya lo sabía", "not_applicable": "no le aplica"}
+RATINGS = {"useful": "it helped", "known": "they knew it", "not_applicable": "does not apply"}
 
 
 def _told(given: list[insights.Insight]) -> list[str]:
     if not given:
-        return ["(Todavía no le has dicho nada.)"]
+        return ["(You have not told them anything yet.)"]
     return [
-        f"- {one.created_at.astimezone(MADRID):%Y-%m-%d} · {one.topic} · «{one.title}» · "
-        + (RATINGS[one.rating] if one.rating else "sin valorar")
+        f'- {one.created_at.astimezone(MADRID):%Y-%m-%d} · {one.topic} · "{one.title}" · '
+        + (RATINGS[one.rating] if one.rating else "not rated")
         for one in given
     ]
 
 
 def _signals(found: list[signals.Signal]) -> list[str]:
-    return [f"- [{one.id}] {one.text}" for one in found] or ["(Ninguna.)"]
+    return [f"- [{one.id}] {one.text}" for one in found] or ["(None.)"]
 
 
-LISTON = [
-    "El listón (si no lo pasa, no se publica; insights_publish_insight rechaza lo que no lo trae):",
-    "1. Cita una cifra suya y su línea base (su media, su banda, su ritmo, su objetivo), no una "
-    "regla general. En `figures`, la principal primero.",
-    "2. Dice qué afecta: una meta suya, algo de su perfil o una consecuencia con fecha.",
-    "3. Propone una acción concreta y comprobable: qué, cuánto y cuándo.",
-    "4. No repite un consejo de los últimos 30 días sobre el mismo tema salvo que la cifra haya "
-    "cambiado. Lo que valoró como «ya lo sabía», solo con algo que no sepa; lo que «no le aplica», "
-    "no vuelvas a ello.",
+BAR = [
+    "The bar (if it does not pass, it is not published; insights_publish_insight refuses what "
+    "lacks it):",
+    "1. Quote one of their figures and its baseline (their average, their band, their pace, "
+    "their goal), not a general rule. In `figures`, the main one first.",
+    "2. Say what it affects: one of their goals, something in their profile or a consequence "
+    "with a date.",
+    "3. Propose a concrete and checkable action: what, how much and when.",
+    "4. Do not repeat advice from the last 30 days on the same topic unless the figure changed. "
+    'What they rated "they knew it", only with something they do not know; what "does not '
+    'apply", do not come back to it.',
 ]
 
-VOICE = [
-    "Cómo se escribe: en español, de tú, directo y breve, sin frases de ánimo. El cuerpo en "
-    "párrafos cortos separados por una línea en blanco, sin Markdown ni encabezados: lo que ves, "
-    "por qué importa y qué harías. Las cifras a la española (1.234,5). No diagnostiques: en salud, "
-    "di lo que ves en sus cifras y cuándo conviene preguntar a un médico.",
-    "Solo escribes en Insights, con insights_publish_insight. No uses insights_reply: aquí no hay "
-    "conversación. Si un dato no está, no lo inventes.",
-]
+
+def voice() -> list[str]:
+    from insights.craft import written_in
+
+    return [
+        f"How to write: in {written_in()}, informally, direct and brief, without cheering. The "
+        "body in short paragraphs separated by a blank line, without Markdown or headings: what "
+        "you see, why it matters and what you would do. Numbers in that language's usual format. "
+        "Do not diagnose: on health, say what you see in their figures and when it is worth "
+        "asking a doctor.",
+        "You only write to Insights, with insights_publish_insight. Do not use insights_reply: "
+        "there is no conversation here. If a piece of data is not there, do not invent it.",
+    ]
 
 
 def _head(profile: insights.Profile, today: str) -> list[str]:
     lines = [
-        f"Eres {profile.name}, el asesor de una persona dentro de arga, su sistema personal. Hoy "
-        f"es {today}. Miras todos sus datos a la vez con las tools de lectura de arga (cifras, "
-        "movimientos, entrenos, comida, metas, agenda, notas) y le escribes lo que ve que importa.",
+        f"You are {profile.name}, a person's adviser inside arga, their personal system. Today "
+        f"is {today}. You look at all their data at once with arga's read tools (figures, money "
+        "movements, workouts, food, goals, agenda, notes) and write to them what you see that "
+        "matters.",
     ]
     if profile.about.strip():
-        lines += ["", "Lo que la persona te ha contado de sí misma:", profile.about.strip()]
+        lines += ["", "What the person has told you about themselves:", profile.about.strip()]
     else:
-        lines += ["", "No te ha contado nada de sí misma: aconseja con lo que digan sus datos."]
+        lines += [
+            "",
+            "They have told you nothing about themselves: advise with what their data says.",
+        ]
     return lines
 
 
@@ -185,30 +197,31 @@ def morning_brief(
     lines = [
         *_head(profile, today),
         "",
-        "Esta es tu mirada de la mañana. Insights ya ha medido, sin modelo, lo que se sale de lo suyo:",
+        "This is your morning look. Insights has already measured, without a model, what falls "
+        "outside their usual:",
         "",
-        "Señales nuevas:",
+        "New signals:",
         *_signals(fresh),
         "",
-        "Señales que siguen en pie y ya estaban otras mañanas (solo si cambian algo):",
+        "Signals still standing that were there other mornings (only if they change something):",
         *_signals(standing),
         "",
-        "Lo que le has dicho los últimos 90 días, con su valoración:",
+        "What you told them in the last 90 days, with their rating:",
         *_told(given),
         "",
-        "Qué haces:",
-        "1. Mira cada señal nueva de cerca con las tools de lectura: de dónde sale, si es un dato "
-        "mal apuntado, qué la explica y qué otras cifras se mueven con ella. insights_get_series te da "
-        "cualquier cifra en cualquier rango.",
-        "2. Cruza: lo que más vale es lo que ninguna app ve sola.",
-        "3. Publica con insights_publish_insight, kind «alert», como mucho dos consejos, solo lo que "
-        "pase el listón. `topic` estable y corto (la clave de la cifra, `vitals.weight`, o "
-        "`money.gasto:restaurantes`): es lo que evita repetirse.",
-        "4. Si nada pasa el listón, no publiques nada. Callarse es lo normal.",
+        "What you do:",
+        "1. Look closely at each new signal with the read tools: where it comes from, whether it "
+        "is a badly logged figure, what explains it and which other figures move with it. "
+        "insights_get_series gives you any figure over any range.",
+        "2. Cross them: what is worth most is what no app sees alone.",
+        '3. Publish with insights_publish_insight, kind "alert", at most two pieces of advice, '
+        "only what passes the bar. A stable and short `topic` (the figure's key, "
+        "`vitals.weight`, or `money.spend:restaurants`): it is what avoids repeating yourself.",
+        "4. If nothing passes the bar, publish nothing. Staying quiet is normal.",
         "",
-        *LISTON,
+        *BAR,
         "",
-        *VOICE,
+        *voice(),
     ]
     return "\n".join(lines)
 
@@ -222,40 +235,40 @@ def weekly_brief(
     sunday: date,
     key: str,
 ) -> str:
-    topic = "semana:" + key.split(":", 1)[1].lower()
+    topic = "week:" + key.split(":", 1)[1].lower()
     lines = [
         *_head(profile, today),
         "",
-        f"Toca el resumen de su semana, del lunes {monday:%d/%m} al domingo {sunday:%d/%m}.",
+        f"Time for the summary of their week, from Monday {monday:%d/%m} to Sunday {sunday:%d/%m}.",
         "",
-        "Las señales de la semana, medidas sin modelo:",
+        "The week's signals, measured without a model:",
         *_signals(week),
         "",
-        "Lo que le has dicho los últimos 90 días, con su valoración:",
+        "What you told them in the last 90 days, with their rating:",
         *_told(given),
         "",
-        "Qué haces:",
-        "1. Repasa la semana por ámbitos con las tools de lectura: dinero (Money, Carrera), "
-        "cuerpo (Vitals, Macros, Training), tiempo y metas (Planner, KPIs, Notebook) y ocio y viajes "
-        "(Library, Travel, Outings). En cada uno, lo que se movió frente a lo suyo, con cifras. "
-        "Si un ámbito no tiene nada, se dice en una línea o se omite.",
-        "2. Publica exactamente uno con insights_publish_insight: kind «weekly», domain «cross», "
-        f"topic «{topic}», título corto que diga lo principal de la semana. En el cuerpo, un "
-        "párrafo por ámbito. En `figures`, las tres a seis cifras que más importan, cada una "
-        "con su línea base. En `affects`, la meta o lo de su perfil que más pesa esta semana. En "
-        "`action`, la propuesta que más importa, en una frase.",
-        "3. En `proposals`, de 3 a 7 propuestas para la semana que viene, la más importante "
-        "primero. Cada una concreta y comprobable (`what`: qué, cuánto y cuándo), con la cifra "
-        "que mueve y su línea base (`figure`), y en `how` cómo se aplica: la app y lo que haría "
-        "Claude con sus tools cuando la persona se lo pida (`Planner: bloque de 45 min el martes a "
-        "las 19:00`). Tú no aplicas ninguna: solo las propones. Sin propuesta de relleno: si la "
-        "semana no da para más, tres.",
-        "4. Este se publica siempre, aunque la semana haya sido tranquila: entonces di eso, con "
-        "las cifras que lo muestran.",
+        "What you do:",
+        "1. Go over the week by area with the read tools: money (Money, Career), body (Vitals, "
+        "Macros, Training), time and goals (Planner, Goals, Notebook) and leisure and travel "
+        "(Library, Travel, Outings). In each, what moved against their usual, with figures. If an "
+        "area has nothing, say it in one line or leave it out.",
+        '2. Publish exactly one with insights_publish_insight: kind "weekly", domain "cross", '
+        f'topic "{topic}", a short title that says the main thing of the week. In the body, one '
+        "paragraph per area. In `figures`, the three to six figures that matter most, each with "
+        "its baseline. In `affects`, the goal or part of their profile that weighs most this "
+        "week. In `action`, the proposal that matters most, in one sentence.",
+        "3. In `proposals`, 3 to 7 proposals for next week, the most important first. Each "
+        "concrete and checkable (`what`: what, how much and when), with the figure it moves and "
+        "its baseline (`figure`), and in `how` how it is applied: the app and what an assistant "
+        "would do with its tools when the person asks (`Planner: a 45 min block on Tuesday at "
+        "19:00`). You apply none: you only propose them. No filler proposals: if the week gives "
+        "no more, three.",
+        "4. This one is always published, even if the week was quiet: then say that, with the "
+        "figures that show it.",
         "",
-        *LISTON[:4],
+        *BAR[:4],
         "",
-        *VOICE,
+        *voice(),
     ]
     return "\n".join(lines)
 
@@ -281,21 +294,21 @@ async def ask(key: str, prompt: str, tools: tuple[str, ...] = ()) -> dict[str, A
                 timeout=timeout(),
             )
     except httpx.HTTPError as error:
-        return {"outcome": "error", "detail": f"Hub no contesta ({type(error).__name__})"}
+        return {"outcome": "error", "detail": f"Hub does not answer ({type(error).__name__})"}
     if response.status_code != 200:
-        return {"outcome": "error", "detail": f"Hub contesta {response.status_code}"}
+        return {"outcome": "error", "detail": f"Hub answers {response.status_code}"}
     return response.json()
+
+
+NOT_GRANTED = "Insights is not allowed to use your AI: allow it in Hub."
 
 
 def refused_detail(answer: dict[str, Any]) -> str | None:
     if answer.get("outcome") in ("queued", "running") or answer.get("repeated"):
         return None
     if answer.get("code") == "not_granted":
-        return (
-            "Insights no tiene permiso para usar tu Claude. Dáselo en Hub, en la ficha de tu "
-            "cuenta de Claude: «Tu Claude en arga» → Insights."
-        )
-    return str(answer.get("detail") or "Hub no ha apuntado la pasada.")
+        return NOT_GRANTED
+    return str(answer.get("detail") or "Hub did not note the pass.")
 
 
 def week_of(key: str) -> tuple[date, date]:
@@ -312,7 +325,7 @@ async def run(connection: AsyncConnection, kind: Kind, key: str, now: datetime) 
     today = local.date()
     profile = await insights.profile(connection)
     given = await insights.recent(connection, limit=60, since=now - timedelta(days=TOLD_DAYS))
-    said_today = talk.spanish_day(local)
+    said_today = talk.said_day(local)
     if kind == "morning":
         found = await signals.read(connection, today - timedelta(days=1), today)
         before = await seen(connection, key)
@@ -349,12 +362,11 @@ RECENT_RUNS = text("""
     order by asked_at desc
 """)
 
-FIXES = {
-    "no_room": "Tus cuentas de Claude van sin hueco: se vuelve a pedir sola.",
-    "no_account": "Ninguna cuenta de Claude puede ahora: mira tus cuentas en Hub.",
-    "not_granted": "Dale permiso a Insights en Hub, en «Tu Claude en arga».",
-    "rate_limited": "Tu cuenta se quedó sin uso a mitad: se vuelve a pedir sola.",
-}
+FIXES = ("no_room", "no_account", "not_granted", "rate_limited")
+
+
+def fix_for(code: str | None) -> str | None:
+    return say(f"run.fix.{code}") if code in FIXES else None
 
 
 class LastRun(BaseModel):
@@ -377,15 +389,15 @@ async def _told_run(connection: AsyncConnection, row: Any) -> LastRun:
         detail = done.detail if done else None
         ran_with = done.ran_with if done else None
         if done and done.outcome != "ok":
-            fix = FIXES.get(done.code or done.outcome)
+            fix = fix_for(done.code or done.outcome)
             if fix is None:
                 fix = (
-                    f"Se vuelve a pedir sola (intento {row.attempt} de {MAX_ATTEMPTS})."
+                    say("run.retry", attempt=row.attempt, attempts=MAX_ATTEMPTS)
                     if row.attempt < MAX_ATTEMPTS
-                    else "Ya se intentó tres veces: la siguiente toca mañana."
+                    else say("run.gave_up")
                 )
     elif row.outcome == "refused":
-        fix = FIXES["not_granted"] if "permiso" in (row.detail or "") else None
+        fix = fix_for("not_granted") if row.detail == NOT_GRANTED else None
     return LastRun(
         kind=row.kind,
         key=row.key,

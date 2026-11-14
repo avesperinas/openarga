@@ -13,8 +13,8 @@ from insights import pills, tastes
 from insights.insights import COLUMNS, Insight
 
 MADRID = ZoneInfo("Europe/Madrid")
-KIND = "Resumen de la semana"
-FOLDER = "Semanas"
+KIND = "Week summary"
+FOLDER = "Weeks"
 
 WEEKLY = text(
     f"select {COLUMNS} from insights.insights_insight where kind = 'weekly' order by created_at"
@@ -36,7 +36,7 @@ def week_key(monday: date) -> str:
 def _figure(figure: Any) -> str:
     unit = f" {figure.unit}" if figure.unit else ""
     return (
-        f"{write.trimmed(figure.value)}{unit}, frente a {write.trimmed(figure.baseline)}{unit} "
+        f"{write.trimmed(figure.value)}{unit}, against {write.trimmed(figure.baseline)}{unit} "
         f"({figure.baseline_label})"
     )
 
@@ -49,7 +49,7 @@ def body(insight: Insight) -> str:
     return write.sections(
         f"**{insight.title}**",
         insight.body,
-        f"## Propuestas para la semana que viene\n\n{proposals}" if proposals else None,
+        f"## Proposals for next week\n\n{proposals}" if proposals else None,
     )
 
 
@@ -57,18 +57,18 @@ def record(insight: Insight) -> dict[str, Any]:
     monday = week_of(insight.created_at)
     key = week_key(monday)
     return contracts.record(
-        id=f"semana-{key}",
-        title=f"Semana del {write.long_date(monday)}",
+        id=f"week-{key}",
+        title=f"Week of {write.long_date(monday)}",
         kind=KIND,
-        href=f"/insights/consejo/{insight.id}",
+        href=f"/insights/insight/{insight.id}",
         folder=FOLDER,
         properties={"week": key, "proposals": len(insight.proposals)},
         body=body(insight),
     )
 
 
-PILL_KIND = "Píldora"
-PILL_FOLDER = "Píldoras"
+PILL_KIND = "Pill"
+PILL_FOLDER = "Pills"
 
 
 def pill_body(pill: pills.Pill, facts: list[pills.Fact]) -> str:
@@ -80,21 +80,21 @@ def pill_body(pill: pills.Pill, facts: list[pills.Fact]) -> str:
     return write.sections(
         f"*{pill.lead}*",
         sections,
-        f"> **Para contar.** {pill.to_tell}",
-        f"**Para pensar.** {pill.to_think}" if pill.to_think else None,
-        f"## Datos del día\n\n{said}" if said else None,
-        f"## Fuentes\n\n{sources}" if sources else None,
+        f"> **To tell.** {pill.to_tell}",
+        f"**To think.** {pill.to_think}" if pill.to_think else None,
+        f"## Facts of the day\n\n{said}" if said else None,
+        f"## Sources\n\n{sources}" if sources else None,
     )
 
 
 def pill_record(pill: pills.Pill, family: str, facts: list[pills.Fact]) -> dict[str, Any]:
     return contracts.record(
-        id=f"pildora-{pill.id}",
+        id=f"pill-{pill.id}",
         title=pill.headline[:200],
         kind=PILL_KIND,
-        href=f"/insights/pildora/{pill.id}",
+        href=f"/insights/pill/{pill.id}",
         folder=PILL_FOLDER,
-        properties={"tema": family, "subtema": pill.topic, "dia": pill.day.isoformat()},
+        properties={"topic": family, "subtopic": pill.topic, "day": pill.day.isoformat()},
         body=pill_body(pill, facts),
     )
 

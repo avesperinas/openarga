@@ -11,6 +11,8 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from insights.words import say
+
 Facet = Literal[
     "topic", "genre", "format", "creator", "work", "style", "avoid", "context", "language"
 ]
@@ -21,15 +23,15 @@ Rhythm = Literal["never", "sometimes", "daily"]
 SourceKind = Literal["magazine", "blog", "podcast", "video", "forum", "media", "reference"]
 
 FACETS: dict[str, str] = {
-    "topic": "Temas",
-    "genre": "Géneros",
-    "format": "Formatos",
-    "creator": "Autores y creadores",
-    "work": "Obras que te marcaron",
-    "style": "Cómo te gusta que te lo cuenten",
-    "avoid": "De lo que no quieres que te hable",
-    "context": "Lo que vives ahora",
-    "language": "Idiomas",
+    "topic": "Topics",
+    "genre": "Genres",
+    "format": "Formats",
+    "creator": "Authors and creators",
+    "work": "Works that marked them",
+    "style": "How they like to be told things",
+    "avoid": "What they do not want to hear about",
+    "context": "What they are living now",
+    "language": "Languages",
 }
 
 GLYPHS = frozenset(
@@ -164,12 +166,18 @@ class SourceSeed:
 @dataclass(frozen=True)
 class FamilySeed:
     key: str
-    name: str
     hue: int
     glyph: str
-    themes: str
     sources: tuple[SourceSeed, ...] = ()
     outside: bool = False
+
+    @property
+    def name(self) -> str:
+        return say(f"family.{self.key}.name")
+
+    @property
+    def themes(self) -> str:
+        return say(f"family.{self.key}.themes")
 
 
 def _s(name: str, kind: str, language: str, url: str) -> SourceSeed:
@@ -178,12 +186,9 @@ def _s(name: str, kind: str, language: str, url: str) -> SourceSeed:
 
 FAMILIES: tuple[FamilySeed, ...] = (
     FamilySeed(
-        "historia",
-        "Historia",
+        "history",
         3,
         "landmark",
-        "antigüedad, Edad Media, imperios y su caída, revoluciones, guerras del siglo XX, historia "
-        "de España y de Navarra, historia de la técnica, personajes que cambiaron algo",
         (
             _s("Desperta Ferro", "magazine", "es", "https://www.despertaferro-ediciones.com"),
             _s(
@@ -205,15 +210,12 @@ FAMILIES: tuple[FamilySeed, ...] = (
         ),
     ),
     FamilySeed(
-        "geopolitica",
-        "Geopolítica",
+        "geopolitics",
         1,
         "globe",
-        "relaciones internacionales, el fondo de un conflicto actual, energía, recursos y rutas, "
-        "fronteras, organismos internacionales, sistemas políticos comparados",
         (
             _s("El Orden Mundial", "media", "es", "https://elordenmundial.com"),
-            _s("Política Exterior", "magazine", "es", "https://www.politicaexterior.com"),
+            _s("Pol\u00edtica Exterior", "magazine", "es", "https://www.politicaexterior.com"),
             _s("CIDOB", "reference", "es", "https://www.cidob.org"),
             _s("Foreign Affairs", "magazine", "en", "https://www.foreignaffairs.com"),
             _s("International Crisis Group", "reference", "en", "https://www.crisisgroup.org"),
@@ -221,19 +223,18 @@ FAMILIES: tuple[FamilySeed, ...] = (
         ),
     ),
     FamilySeed(
-        "ciencia",
-        "Ciencia y universo",
+        "science",
         5,
         "atom",
-        "física, física cuántica, cosmología y astronomía, química, matemáticas, historia de la "
-        "ciencia, experimentos que lo cambiaron todo",
         (
             _s("Quanta Magazine", "magazine", "en", "https://www.quantamagazine.org"),
             _s("Naukas", "blog", "es", "https://naukas.com"),
-            _s("Cuaderno de Cultura Científica", "blog", "es", "https://culturacientifica.com"),
+            _s(
+                "Cuaderno de Cultura Cient\u00edfica", "blog", "es", "https://culturacientifica.com"
+            ),
             _s("QuantumFracture", "video", "es", "https://www.youtube.com/@QuantumFracture"),
             _s(
-                "Coffee Break: Señal y Ruido",
+                "Coffee Break: Se\u00f1al y Ruido",
                 "podcast",
                 "es",
                 "https://www.ivoox.com/podcast-coffee-break-senal-ruido_sq_f1172179_1.html",
@@ -242,12 +243,9 @@ FAMILIES: tuple[FamilySeed, ...] = (
         ),
     ),
     FamilySeed(
-        "tecnologia",
-        "Tecnología",
+        "technology",
         6,
         "chip",
-        "historia de la informática, cómo funcionan por dentro las cosas que usamos, ingeniería "
-        "de software y de datos, inteligencia artificial, internet, grandes obras de ingeniería",
         (
             _s("Ars Technica", "media", "en", "https://arstechnica.com"),
             _s("IEEE Spectrum", "magazine", "en", "https://spectrum.ieee.org"),
@@ -257,12 +255,9 @@ FAMILIES: tuple[FamilySeed, ...] = (
         ),
     ),
     FamilySeed(
-        "economia",
-        "Economía y dinero",
+        "economy",
         2,
         "wallet",
-        "historia económica, cómo funcionan los mercados, inversión, impuestos, empresas que "
-        "cambiaron algo, crisis financieras, economía del comportamiento",
         (
             _s("Nada es Gratis", "blog", "es", "https://nadaesgratis.es"),
             _s("The Economist", "magazine", "en", "https://www.economist.com"),
@@ -273,11 +268,8 @@ FAMILIES: tuple[FamilySeed, ...] = (
     ),
     FamilySeed(
         "ideas",
-        "Ideas y filosofía",
         8,
         "book",
-        "filosofía antigua y moderna, ética, filosofía política, epistemología, grandes "
-        "pensadoras y pensadores, ideas que cambiaron cómo vivimos",
         (
             _s(
                 "Stanford Encyclopedia of Philosophy",
@@ -286,20 +278,17 @@ FAMILIES: tuple[FamilySeed, ...] = (
                 "https://plato.stanford.edu",
             ),
             _s("Aeon", "magazine", "en", "https://aeon.co"),
-            _s("Filosofía&co", "magazine", "es", "https://www.filco.es"),
+            _s("Filosof\u00eda&co", "magazine", "es", "https://www.filco.es"),
             _s("Philosophize This!", "podcast", "en", "https://www.philosophizethis.org"),
         ),
     ),
     FamilySeed(
-        "naturaleza",
-        "Naturaleza",
+        "nature",
         2,
         "mountain",
-        "animales y su comportamiento, evolución, ecosistemas, océanos, clima, geología, el "
-        "cuerpo humano y cómo funciona",
         (
             _s(
-                "National Geographic España",
+                "National Geographic Espa\u00f1a",
                 "magazine",
                 "es",
                 "https://www.nationalgeographic.com.es",
@@ -309,12 +298,9 @@ FAMILIES: tuple[FamilySeed, ...] = (
         ),
     ),
     FamilySeed(
-        "cultura",
-        "Arte y cultura",
+        "culture",
         7,
         "image",
-        "historia del arte, arquitectura, cine, música y cómo funciona, literatura, lenguas y el "
-        "origen de las palabras",
         (
             _s("Jot Down", "magazine", "es", "https://www.jotdown.es"),
             _s("The Public Domain Review", "magazine", "en", "https://publicdomainreview.org"),
@@ -323,12 +309,9 @@ FAMILIES: tuple[FamilySeed, ...] = (
         ),
     ),
     FamilySeed(
-        "curiosidades",
-        "Datos curiosos",
+        "curiosities",
         3,
         "spark",
-        "lo insólito de cualquier campo: inventos, lugares, palabras, récords, coincidencias "
-        "históricas, cómo se hacen las cosas",
         (
             _s("Atlas Obscura", "magazine", "en", "https://www.atlasobscura.com"),
             _s("Damn Interesting", "blog", "en", "https://www.damninteresting.com"),
@@ -337,13 +320,9 @@ FAMILIES: tuple[FamilySeed, ...] = (
         ),
     ),
     FamilySeed(
-        "fuera",
-        "Fuera de tu zona",
+        "outside",
         4,
         "compass",
-        "lo que no elegirías: oficios y artesanía, gastronomía y su historia, deportes raros, "
-        "lingüística, matemáticas recreativas, medicina, moda, mitologías no europeas, "
-        "cartografía, diseño",
         (
             _s("99% Invisible", "podcast", "en", "https://99percentinvisible.org"),
             _s("Radiolab", "podcast", "en", "https://radiolab.org"),
@@ -375,7 +354,7 @@ class FamilyIn(BaseModel):
     @classmethod
     def _known_glyph(cls, value: str) -> str:
         if value not in GLYPHS:
-            raise ValueError(f"glyph: uno de {sorted(GLYPHS)}")
+            raise ValueError(f"glyph: one of {sorted(GLYPHS)}")
         return value
 
 
@@ -770,174 +749,50 @@ class Answer(BaseModel):
 class Asked:
     key: str
     kind: str
-    text: str
-    why: str
-    options: tuple[tuple[str, str], ...] = ()
+    options: tuple[str, ...] = ()
     families: bool = False
     when: tuple[str, str] | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def text(self) -> str:
+        return say(f"{self.key}.text")
+
+    @property
+    def why(self) -> str:
+        return say(f"{self.key}.why")
+
+    def label(self, value: str) -> str:
+        return say(f"{self.key}.option.{value}")
+
 
 BANK: tuple[Asked, ...] = (
-    Asked(
-        "start.families",
-        "many",
-        "¿De qué te gusta aprender?",
-        "Para saber qué temas traerte. Elige todos los que quieras.",
-        families=True,
-    ),
-    Asked(
-        "start.favourite",
-        "one",
-        "Y si solo pudiera ser uno…",
-        "Ese saldrá más a menudo.",
-        families=True,
-    ),
-    Asked(
-        "start.depth",
-        "one",
-        "¿Cómo te gusta que te lo cuenten?",
-        "Para saber hasta dónde bajar al detalle.",
-        (
-            ("clear", "Claro y con ritmo"),
-            ("deep", "A fondo, con detalle técnico"),
-            ("mixed", "Depende del tema"),
-        ),
-    ),
-    Asked(
-        "start.formats",
-        "many",
-        "¿Cómo te gusta descubrir cosas?",
-        "Para recomendarte en el formato que de verdad usas.",
-        (
-            ("read", "Leyendo"),
-            ("listen", "Con podcasts"),
-            ("watch", "Con documentales y vídeos"),
-            ("screen", "Con películas y series"),
-        ),
-    ),
-    Asked(
-        "start.fiction",
-        "many",
-        "¿Qué ficción te gusta?",
-        "Para recomendarte novelas, películas y series.",
-        (
-            ("fantasy", "Fantasía"),
-            ("scifi", "Ciencia ficción"),
-            ("historical", "Novela histórica"),
-            ("crime", "Policiaca y thriller"),
-            ("literary", "Literaria"),
-            ("none", "Casi no leo ni veo ficción"),
-        ),
-    ),
-    Asked(
-        "start.loved",
-        "free",
-        "Dime libros, películas, series o podcasts que te hayan marcado",
-        "Es lo que más dice de tus gustos. Uno por línea o separados por comas.",
-    ),
-    Asked(
-        "start.minutes",
-        "one",
-        "¿Cuánto tiempo al día para tu píldora?",
-        "Lo que dura la lectura; lo recomendado va aparte.",
-        (("5", "5 min"), ("10", "10 min"), ("15", "15 min"), ("20", "20 min"), ("30", "30 min")),
-    ),
-    Asked(
-        "start.time",
-        "one",
-        "¿A qué hora te viene bien?",
-        "Te aviso a esa hora con tu píldora y los datos del día.",
-        (
-            ("07:30", "7:30"),
-            ("09:00", "9:00"),
-            ("13:30", "13:30"),
-            ("18:00", "18:00"),
-            ("21:30", "21:30"),
-        ),
-    ),
-    Asked(
-        "start.languages",
-        "many",
-        "¿En qué idiomas puedes leer o escuchar?",
-        "Para no recomendarte nada que no puedas disfrutar.",
-        (
-            ("es", "Español"),
-            ("en", "Inglés"),
-            ("de", "Alemán"),
-            ("fr", "Francés"),
-            ("eu", "Euskera"),
-            ("it", "Italiano"),
-        ),
-    ),
-    Asked(
-        "start.learning",
-        "one",
-        "¿Quieres una píldora a la semana en un idioma que estés aprendiendo?",
-        "A tu nivel, con las palabras difíciles explicadas.",
-        (
-            ("none", "No, gracias"),
-            ("de", "Alemán"),
-            ("en", "Inglés"),
-            ("fr", "Francés"),
-            ("it", "Italiano"),
-        ),
-    ),
-    Asked(
-        "start.level",
-        "one",
-        "¿Qué nivel tienes en ese idioma?",
-        "Para escribirla a tu medida.",
-        (
-            ("A2", "Básico (A2)"),
-            ("B1", "Intermedio (B1)"),
-            ("B2", "Intermedio alto (B2)"),
-            ("C1", "Avanzado (C1)"),
-        ),
-        when=("start.learning", "!none"),
-    ),
-    Asked(
-        "start.outside",
-        "one",
-        "¿Te saco de tu zona de vez en cuando?",
-        "Temas que no elegirías, contados para que te enganchen.",
-        (("often", "Sí, una vez por semana"), ("sometimes", "Alguna vez"), ("never", "No")),
-    ),
-    Asked(
-        "start.avoid",
-        "free",
-        "¿De qué no quieres que te hable?",
-        "No volverá a salir. Puedes dejarlo en blanco.",
-    ),
+    Asked("start.families", "many", families=True),
+    Asked("start.favourite", "one", families=True),
+    Asked("start.depth", "one", ("clear", "deep", "mixed")),
+    Asked("start.formats", "many", ("read", "listen", "watch", "screen")),
+    Asked("start.fiction", "many", ("fantasy", "scifi", "historical", "crime", "literary", "none")),
+    Asked("start.loved", "free"),
+    Asked("start.minutes", "one", ("5", "10", "15", "20", "30")),
+    Asked("start.time", "one", ("07:30", "09:00", "13:30", "18:00", "21:30")),
+    Asked("start.languages", "many", ("es", "en", "de", "fr", "eu", "it")),
+    Asked("start.learning", "one", ("none", "de", "en", "fr", "it")),
+    Asked("start.level", "one", ("A2", "B1", "B2", "C1"), when=("start.learning", "!none")),
+    Asked("start.outside", "one", ("often", "sometimes", "never")),
+    Asked("start.avoid", "free"),
 )
 BANK_BY_KEY = {one.key: one for one in BANK}
 
-FORMATS = {
-    "read": "Leer",
-    "listen": "Podcasts",
-    "watch": "Documentales y vídeos",
-    "screen": "Películas y series",
-}
-DEPTH = {
-    "clear": "Divulgación clara y con ritmo",
-    "deep": "A fondo, con detalle técnico",
-    "mixed": "Según el tema: a veces claro, a veces a fondo",
-}
-FICTION = {
-    "fantasy": "Fantasía",
-    "scifi": "Ciencia ficción",
-    "historical": "Novela histórica",
-    "crime": "Policiaca y thriller",
-    "literary": "Narrativa literaria",
-}
-LANGUAGES = {
-    "es": "Español",
-    "en": "Inglés",
-    "de": "Alemán",
-    "fr": "Francés",
-    "eu": "Euskera",
-    "it": "Italiano",
-}
+FORMATS = ("read", "listen", "watch", "screen")
+DEPTH = ("clear", "deep", "mixed")
+FICTION = ("fantasy", "scifi", "historical", "crime", "literary")
+LANGUAGES = ("es", "en", "de", "fr", "eu", "it")
+
+
+def _said(kind: str, value: str) -> str:
+    return say(f"taste.{kind}.{value}")
+
+
 OUTSIDE_WEIGHT = {"often": 2, "sometimes": 1, "never": 0}
 
 QUESTION_COLUMNS = (
@@ -955,7 +810,7 @@ def _bank_question(asked: Asked, family_list: list[Family]) -> Question:
     options = (
         [Option(value=one.key, label=one.name) for one in family_list]
         if asked.families
-        else [Option(value=value, label=label) for value, label in asked.options]
+        else [Option(value=value, label=asked.label(value)) for value in asked.options]
     )
     return Question(
         id=None,
@@ -1045,17 +900,25 @@ async def _apply(connection: AsyncConnection, key: str, answer: Answer) -> None:
     elif key == "start.depth":
         for value in chosen[:1]:
             if value in DEPTH:
-                await remember(connection, "style", DEPTH[value], 1, "answered", confirmed=True)
+                await remember(
+                    connection, "style", _said("depth", value), 1, "answered", confirmed=True
+                )
     elif key == "start.formats":
         for value in chosen:
             if value in FORMATS:
-                await remember(connection, "format", FORMATS[value], 1, "answered", confirmed=True)
+                await remember(
+                    connection, "format", _said("format", value), 1, "answered", confirmed=True
+                )
     elif key == "start.fiction":
         if "none" in chosen:
-            await remember(connection, "genre", "Ficción", -1, "answered", confirmed=True)
+            await remember(
+                connection, "genre", _said("fiction", "all"), -1, "answered", confirmed=True
+            )
         for value in chosen:
             if value in FICTION:
-                await remember(connection, "genre", FICTION[value], 1, "answered", confirmed=True)
+                await remember(
+                    connection, "genre", _said("fiction", value), 1, "answered", confirmed=True
+                )
     elif key == "start.loved":
         for item in _items(answer.text):
             await remember(connection, "work", item, 2, "said", confirmed=True)
@@ -1066,7 +929,7 @@ async def _apply(connection: AsyncConnection, key: str, answer: Answer) -> None:
         for value in chosen:
             if value in LANGUAGES:
                 await remember(
-                    connection, "language", LANGUAGES[value], 1, "answered", confirmed=True
+                    connection, "language", _said("language", value), 1, "answered", confirmed=True
                 )
     elif key == "start.minutes" and chosen:
         await save_settings(connection, SettingsIn(pill_minutes=int(chosen[0])))  # type: ignore[arg-type]
@@ -1077,7 +940,10 @@ async def _apply(connection: AsyncConnection, key: str, answer: Answer) -> None:
     elif key == "start.level" and chosen:
         await save_settings(connection, SettingsIn(pill_level=chosen[0]))  # type: ignore[arg-type]
     elif key == "start.outside" and chosen:
-        await _weight(connection, "fuera", OUTSIDE_WEIGHT.get(chosen[0], 1), at_least=False)
+        await connection.execute(
+            text("update insights.insights_family set weight = :weight where outside"),
+            {"weight": OUTSIDE_WEIGHT.get(chosen[0], 1)},
+        )
 
 
 async def answer_start(
@@ -1124,31 +990,31 @@ async def answer_start(
 class QuestionIn(BaseModel):
     kind: QuestionKind = Field(
         description=(
-            "`one` elegir una, `many` varias, `either` entre dos, `scale` del 1 al 5, `confirm` "
-            "sí o no a un rasgo propuesto (con `trait_id`), `free` texto libre. Mejor las de un "
-            "toque."
+            "`one` choose one, `many` several, `either` between two, `scale` from 1 to 5, "
+            "`confirm` yes or no to a proposed trait (with `trait_id`), `free` free text. Better "
+            "those answered with one tap."
         )
     )
-    text: str = Field(min_length=3, max_length=200, description="La pregunta, de tú y corta.")
+    text: str = Field(min_length=3, max_length=200, description="The question, informal and short.")
     why: str = Field(
         min_length=5,
         max_length=200,
-        description="Por qué se lo preguntas, en una frase: «Terminaste El nombre del viento».",
+        description="Why you ask, in one sentence: `You finished a novel you rated 5`.",
     )
     options: list[Option] = Field(
         default_factory=list,
         max_length=8,
-        description="Para `one`, `many` y `either`: de 2 a 8 opciones. Vacío en las demás.",
+        description="For `one`, `many` and `either`: 2 to 8 options. Empty in the others.",
     )
     topic: str = Field(
         pattern=r"^[a-z0-9][a-z0-9._:-]{1,79}$",
         description=(
-            "De qué trata, para no volver a preguntarlo: `library.terminado:el-nombre-del-viento`, "
-            "`gusto.ritmo-de-lectura`."
+            "What it is about, to avoid asking it again: `library.finished:a-novel-title`, "
+            "`taste.reading-pace`."
         ),
     )
     trait_id: str | None = Field(
-        default=None, description="Solo en `confirm`: el rasgo propuesto que quieres confirmar."
+        default=None, description="Only in `confirm`: the proposed trait you want to confirm."
     )
 
 
@@ -1168,23 +1034,23 @@ async def current_question(connection: AsyncConnection) -> Question | None:
 async def ask(connection: AsyncConnection, wanted: QuestionIn, now: datetime) -> Question:
     rhythm = (await settings(connection)).questions
     if rhythm == "never":
-        raise Refused("la persona no quiere que le preguntes nada: está en «nunca»")
+        raise Refused("the person does not want questions: their rhythm is `never`")
     if wanted.kind in ("one", "many", "either") and len(wanted.options) < 2:
-        raise Refused("una pregunta de elegir lleva al menos dos opciones")
+        raise Refused("a choice question needs at least two options")
     if wanted.kind == "either" and len(wanted.options) != 2:
-        raise Refused("`either` es entre dos opciones exactamente")
+        raise Refused("`either` is between exactly two options")
     if wanted.kind == "confirm":
         if not wanted.trait_id:
-            raise Refused("`confirm` lleva el `trait_id` del rasgo propuesto")
+            raise Refused("`confirm` needs the `trait_id` of the proposed trait")
         await one_trait(connection, wanted.trait_id)
     if await current_question(connection) is not None:
-        raise Refused("ya hay una pregunta esperando respuesta: no dejes otra")
+        raise Refused("a question is already waiting for an answer: do not leave another")
     last = await connection.scalar(
         text("select max(asked_at) from insights.insights_question where origin = 'pass'")
     )
     gap = timedelta(days=RHYTHM_DAYS[rhythm])
     if last is not None and now - last < gap - timedelta(hours=2):
-        raise Refused(f"con su ritmo («{rhythm}»), como mucho una cada {gap.days} día(s)")
+        raise Refused(f"with their rhythm (`{rhythm}`), at most one every {gap.days} day(s)")
     repeated = await connection.scalar(
         text("""
             select count(*) from insights.insights_question
@@ -1193,10 +1059,13 @@ async def ask(connection: AsyncConnection, wanted: QuestionIn, now: datetime) ->
         {"topic": wanted.topic, "since": now - TOPIC_QUIET},
     )
     if repeated:
-        raise Refused(f"ya le preguntaste por «{wanted.topic}» hace menos de 60 días")
+        raise Refused(f"you asked about `{wanted.topic}` less than 60 days ago")
     options = wanted.options if wanted.kind in ("one", "many", "either") else []
     if wanted.kind == "confirm":
-        options = [Option(value="yes", label="Sí"), Option(value="no", label="No")]
+        options = [
+            Option(value="yes", label=say("answer.yes")),
+            Option(value="no", label=say("answer.no")),
+        ]
     if wanted.kind == "scale":
         options = [Option(value=str(n), label=str(n)) for n in range(1, 6)]
     row = (
@@ -1290,14 +1159,14 @@ async def mark_seen(connection: AsyncConnection, ids: list[str]) -> None:
 
 def said_answer(question: Question) -> str:
     if question.answer is None:
-        return "(saltada)"
+        return "(skipped)"
     labels = {one.value: one.label for one in question.options}
     if question.answer.get("text"):
         return str(question.answer["text"])
     chosen = question.answer.get("values") or (
         [question.answer["value"]] if question.answer.get("value") else []
     )
-    return ", ".join(labels.get(one, one) for one in chosen) or "(sin respuesta)"
+    return ", ".join(labels.get(one, one) for one in chosen) or "(no answer)"
 
 
 class Tastes(BaseModel):
@@ -1323,9 +1192,13 @@ def described(found: list[Trait]) -> list[str]:
     for one in found:
         if one.status == "rejected":
             continue
-        mark = "" if one.status == "confirmed" else " (propuesto, sin confirmar)"
-        stance = {2: "le encanta", 1: "le gusta", 0: "neutro", -1: "no le va", -2: "no quiere"}[
-            one.stance
-        ]
+        mark = "" if one.status == "confirmed" else " (proposed, not confirmed)"
+        stance = {
+            2: "loves it",
+            1: "likes it",
+            0: "neutral",
+            -1: "not their thing",
+            -2: "does not want it",
+        }[one.stance]
         lines.append(f"- [{FACETS[one.facet]}] {one.label}: {stance}{mark}")
-    return lines or ["(Todavía no sabes nada de sus gustos.)"]
+    return lines or ["(You do not know anything of their tastes yet.)"]

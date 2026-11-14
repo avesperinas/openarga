@@ -30,10 +30,10 @@ async def publish(api, *picks: dict, origin: str = "weekly") -> dict:
 
 BOOK = {
     "kind": "book",
-    "title": "Las legiones malditas",
-    "creators": ["Posteguillo"],
-    "why": "Le gustó la novela histórica de Roma y lee sagas largas",
-    "because": ["Novela histórica"],
+    "title": "The Cursed Legions",
+    "creators": ["Synthetic Author"],
+    "why": "They liked historical novels about Rome and read long sagas",
+    "because": ["Historical novels"],
 }
 
 
@@ -44,8 +44,8 @@ async def test_a_book_is_checked_in_the_catalogue_with_its_cover_and_own_links(a
     assert one["verified"] == "catalog"
     library = (await api.get("/picks")).json()
     found = library[0]
-    assert found["creators"] == ["Santiago Posteguillo"]
-    assert found["length"] == "720 páginas" and found["list"] == "read"
+    assert found["creators"] == ["Synthetic Author"]
+    assert found["length"] == "720 pages" and found["list"] == "read"
     assert found["links"][0]["url"] == "https://openlibrary.org/isbn/9788466648769"
     assert found["has_cover"] is True
     cover = await api.get(f"/picks/{found['id']}/cover")
@@ -57,11 +57,11 @@ async def test_what_is_not_in_the_catalogue_or_already_given_is_not_published(ap
     await publish(api, BOOK)
 
     again = await publish(api, BOOK)
-    invented = await publish(api, BOOK | {"title": "Un libro que no existe en ninguna parte"})
+    invented = await publish(api, BOOK | {"title": "A book that exists nowhere"})
     wrong_author = await publish(api, BOOK | {"creators": ["Otra Persona"]})
 
-    assert again["published"] == [] and "ya se lo recomendaste" in again["not_published"][0]
-    assert invented["published"] == [] and "no aparece" in invented["not_published"][0]
+    assert again["published"] == [] and "already recommended" in again["not_published"][0]
+    assert invented["published"] == [] and "not in the catalogue" in invented["not_published"][0]
     assert wrong_author["published"] == []
 
 
@@ -71,10 +71,10 @@ async def test_podcasts_films_and_videos(api, kernel) -> None:
         {
             "kind": "podcast",
             "title": "Fall of Civilizations",
-            "why": "Le encanta la historia antigua",
+            "why": "They love ancient history",
         },
-        {"kind": "film", "title": "Ágora", "year": 2009, "why": "Hipatia y la ciencia antigua"},
-        {"kind": "video", "title": "La batalla de Leuctra", "why": "Para verla en un mapa"},
+        {"kind": "film", "title": "Agora", "year": 2009, "why": "Hypatia and ancient science"},
+        {"kind": "video", "title": "The battle of Leuctra", "why": "To see it on a map"},
     )
 
     kinds = {one["kind"]: one for one in published["published"]}
@@ -94,7 +94,7 @@ async def test_when_the_catalogue_is_down_nothing_unchecked_is_published(api, ke
     published = await publish(api, BOOK)
 
     assert published["published"] == []
-    assert "no se pudo comprobar" in published["not_published"][0]
+    assert "could not be checked" in published["not_published"][0]
 
 
 async def test_saving_a_book_puts_it_in_your_readings(api, kernel) -> None:
@@ -106,7 +106,7 @@ async def test_saving_a_book_puts_it_in_your_readings(api, kernel) -> None:
     assert saved["state"] == "saved" and saved["sent_to"] == "library"
     want = next(body for name, body in kernel.asked if name == "books.want")
     assert want["isbn13"] == "9788466648769"
-    assert want["title"] == "Las legiones malditas"
+    assert want["title"] == "The Cursed Legions"
 
 
 async def test_if_your_readings_do_not_answer_it_stays_saved_here_and_says_so(api, kernel) -> None:
@@ -117,7 +117,7 @@ async def test_if_your_readings_do_not_answer_it_stays_saved_here_and_says_so(ap
     failed = await api.post(f"/picks/{pick['id']}/save")
 
     assert failed.status_code == 502
-    assert "Guardado aquí" in failed.json()["detail"]
+    assert "saved here" in failed.json()["detail"]
     assert (await api.get("/picks")).json()[0]["state"] == "saved"
 
 
@@ -136,7 +136,7 @@ async def test_finishing_and_rating_teaches_insights_who_you_like(api, kernel) -
 
     assert done["state"] == "done" and done["collections"] == ["Roma"]
     learned = next(one for one in traits if one["facet"] == "creator")
-    assert learned["label"] == "Santiago Posteguillo" and learned["stance"] == 2
+    assert learned["label"] == "Synthetic Author" and learned["stance"] == 2
     assert learned["source"] == "rated" and learned["status"] == "confirmed"
     assert library["content"]["picks"][0]["rating"] == 4.5
     half = await api.put(f"/picks/{pick['id']}", json={"rating": 4.3})
@@ -174,10 +174,10 @@ async def shelf(schema):
                 "payload": json.dumps(
                     {
                         "record": {
-                            "id": "libro-1",
-                            "title": "Las legiones malditas",
+                            "id": "book-1",
+                            "title": "The Cursed Legions",
                             "kind": "Libro",
-                            "href": "/estanteria/libro-1",
+                            "href": "/shelf/book-1",
                         }
                     }
                 ),
@@ -193,4 +193,4 @@ async def test_books_you_already_have_are_not_recommended(shelf, api, kernel) ->
     published = await publish(api, BOOK)
 
     assert published["published"] == []
-    assert "ya está en sus lecturas" in published["not_published"][0]
+    assert "already in their reading" in published["not_published"][0]
