@@ -70,13 +70,17 @@ async def test_each_book_is_a_record_and_its_days_go_to_the_diary(api) -> None:
         "year": 2001,
     }
     assert record["body"].startswith("**Synthetic Author** · 2001 · 320 pages · Paper · Novel")
-    assert "Read from 2026-08-01 to 2026-08-20, in 20 days. ★★★★½ (4,5)" in (record["body"])
+    assert (
+        f"Read from 2026-08-01 to 2026-08-20, in 20 days. ★★★★½ ({write.trimmed(4.5)})"
+        in (record["body"])
+    )
     assert "## Note\n\nI liked the ending." in record["body"]
 
     day = found["day:2026-08-20"]
     assert day["day"] == "2026-08-20"
     assert day["body"] == (
-        f"- You finished [[library:book:{read['id']}|A synthetic book]] · ★★★★½ (4,5)\n"
+        f"- You finished [[library:book:{read['id']}|A synthetic book]] · "
+        f"★★★★½ ({write.trimmed(4.5)})\n"
         f"- You started [[library:book:{other['id']}|Another synthetic]]"
     )
     assert "day:2026-08-01" in found

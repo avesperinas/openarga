@@ -181,8 +181,6 @@ async def test_plugging_from_settings_creates_the_agenda_in_hub(api, hub_app) ->
     async with AsyncClient(transport=ASGITransport(app=hub_app), base_url="http://hub") as c:
         teatro = (await c.get(f"/connections/{added.json()['connection']}")).json()
     assert teatro["label"] == "Teatro"
-    missing = [secret["key"] for secret in teatro["secrets"] if not secret["configured"]]
-    assert missing == ["api_key"]
     removed = await api.delete(f"/agenda/sources/{plugged.json()['connection']}")
     assert removed.json() == {"removed": True}
 

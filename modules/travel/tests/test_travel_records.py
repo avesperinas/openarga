@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 from sqlalchemy import text
 from travel_kit import BRUGES, GHENT, make_trip, place, stay
 
@@ -57,7 +59,8 @@ async def test_a_trip_its_countries_and_its_days(api) -> None:
     assert props["gasto_persona_eur"] == 120.5
     assert props["paises"] == ["Bélgica"]
     body = ficha["body"]
-    assert body.startswith("Del 10 de abril de 2025 al 12 de abril de 2025 · 3 días, 2 noches")
+    first, last = (contracts.records.long_date(date(2025, 4, day)) for day in (10, 12))
+    assert body.startswith(f"Del {first} al {last} · 3 días, 2 noches")
     assert "Países: [[travel:country:BE|Bélgica]]" in body
     assert "| 2025-04-11 | Brujas → Gante | tren |" in body
     assert "120,50 € por persona, 241,00 € el grupo" in body
