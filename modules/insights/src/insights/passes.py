@@ -4,7 +4,6 @@ import json
 import os
 from datetime import date, datetime, timedelta
 from typing import Any, Literal
-from zoneinfo import ZoneInfo
 
 import httpx
 from pydantic import BaseModel
@@ -12,12 +11,11 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_tenancy import kernel_url, user_headers
-from insights import insights, signals, talk
+from insights import clock, insights, signals, talk
 from insights.words import say
 
 MODULE = "insights"
 CAPABILITY = "claude.run"
-MADRID = ZoneInfo("Europe/Madrid")
 MORNING_FROM, MORNING_UNTIL = 7, 21
 WEEKLY_FROM = 18
 WEEKLY_UNTIL_MONDAY = 12
@@ -34,7 +32,7 @@ def _week_key(day: date) -> str:
 
 
 def due(now: datetime) -> list[tuple[Kind, str]]:
-    local = now.astimezone(MADRID)
+    local = now.astimezone(clock.zone())
     out: list[tuple[Kind, str]] = []
     if MORNING_FROM <= local.hour < MORNING_UNTIL:
         out.append(("morning", f"morning:{local.date().isoformat()}"))
@@ -132,7 +130,7 @@ def _told(given: list[insights.Insight]) -> list[str]:
     if not given:
         return ["(You have not told them anything yet.)"]
     return [
-        f'- {one.created_at.astimezone(MADRID):%Y-%m-%d} · {one.topic} · "{one.title}" · '
+        f'- {one.created_at.astimezone(clock.zone()):%Y-%m-%d} · {one.topic} · "{one.title}" · '
         + (RATINGS[one.rating] if one.rating else "not rated")
         for one in given
     ]
@@ -321,7 +319,7 @@ async def run(connection: AsyncConnection, kind: Kind, key: str, now: datetime) 
     attempt = await next_attempt(connection, key)
     if attempt is None:
         return None
-    local = now.astimezone(MADRID)
+    local = now.astimezone(clock.zone())
     today = local.date()
     profile = await insights.profile(connection)
     given = await insights.recent(connection, limit=60, since=now - timedelta(days=TOLD_DAYS))
