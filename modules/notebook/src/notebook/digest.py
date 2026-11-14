@@ -5,7 +5,6 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
 from typing import Any, Literal
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
@@ -18,7 +17,6 @@ from notebook import mirror, notes
 MODULE = "notebook"
 AUTHOR = "import"
 APP_NAME = "Digest"
-MADRID = ZoneInfo("Europe/Madrid")
 FROM_HOUR = 6
 METRIC = contracts.METRIC
 
@@ -92,7 +90,7 @@ def parse(ref: str) -> Period:
 
 
 def due(now: datetime) -> list[Period]:
-    local = now.astimezone(MADRID)
+    local = now.astimezone(notes.zone())
     today = local.date() if local.hour >= FROM_HOUR else local.date() - timedelta(days=1)
     this_week = of("week", today)
     last_week = this_week.previous()
@@ -377,8 +375,8 @@ async def compose(
         names = {row.app: row.app_name for row in await connection.execute(NAMES)}
     before = period.previous()
     found = await figures(connection, before.start, period.end)
-    since = datetime.combine(period.start, time.min, MADRID)
-    until = datetime.combine(period.end + timedelta(days=1), time.min, MADRID)
+    since = datetime.combine(period.start, time.min, notes.zone())
+    until = datetime.combine(period.end + timedelta(days=1), time.min, notes.zone())
     happened = (await connection.execute(CHANGED, {"since": since, "until": until})).all()
     told = (
         (await connection.execute(TOLD, {"week": period.title})).all()
@@ -458,9 +456,9 @@ async def notifications(
     from arga_contracts import notify
 
     now = now or datetime.now(UTC)
-    local = now.astimezone(MADRID)
+    local = now.astimezone(notes.zone())
     week = of("week", local.date()).previous()
-    when = datetime.combine(week.end + timedelta(days=1), time(FROM_HOUR), MADRID)
+    when = datetime.combine(week.end + timedelta(days=1), time(FROM_HOUR), notes.zone())
     if now < when or now - when > timedelta(days=2):
         return []
     found = await _note(connection, week)

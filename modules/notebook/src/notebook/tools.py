@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from notebook import digest, notes
 from notebook import markdown as md
-from notebook.notes import MADRID, PropertyFilter
+from notebook.notes import PropertyFilter
 
 MODULE = "notebook"
 WRITE_ROLE = f"mod_{MODULE}"
@@ -35,7 +35,7 @@ NOTE = Field(
 
 
 def _when(value: datetime) -> str:
-    return value.astimezone(MADRID).isoformat(timespec="seconds")
+    return value.astimezone(notes.zone()).isoformat(timespec="seconds")
 
 
 def _summary(one: notes.NoteSummary) -> dict[str, Any]:
@@ -94,9 +94,9 @@ async def search_notes(connection: AsyncConnection, arguments: SearchNotes) -> d
         arguments.tag,
         arguments.properties,
         arguments.limit,
-        datetime.combine(arguments.since, time(), MADRID) if arguments.since else None,
+        datetime.combine(arguments.since, time(), notes.zone()) if arguments.since else None,
         (
-            datetime.combine(arguments.until + timedelta(days=1), time(), MADRID)
+            datetime.combine(arguments.until + timedelta(days=1), time(), notes.zone())
             if arguments.until
             else None
         ),

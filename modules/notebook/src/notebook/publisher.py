@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+from dataclasses import replace
 from uuid import UUID
 
 import httpx
@@ -9,6 +10,7 @@ from sqlalchemy import text
 
 from arga_contracts import notify, records
 from arga_contracts.records import Every
+from arga_module import preferences
 from arga_module.publisher import Publisher
 from arga_tenancy import as_user
 from notebook import digest, export, mirror
@@ -38,10 +40,15 @@ async def _mirror(full: bool) -> None:
         _said("records", error)
 
 
-async def _digest() -> None:
+async def _digest(client: httpx.AsyncClient) -> None:
     try:
-        async with as_module() as connection:
-            done = await digest.refresh(connection)
+        zone = await notify.zone_of_person(client)
+        token = preferences.use(replace(preferences.current(), timezone=zone.key))
+        try:
+            async with as_module() as connection:
+                done = await digest.refresh(connection)
+        finally:
+            preferences.reset(token)
         if done.get("written") or done.get("failed"):
             print(f"digest · {done}", flush=True)
     except Exception as error:  # noqa: BLE001 - one person does not bring down the digest of another
@@ -62,7 +69,7 @@ async def _prune() -> None:
         async with as_module() as connection:
             await records.prune(connection, MODULE)
     except Exception as error:  # noqa: BLE001 - pruning does not stop what is published
-        _said("poda", error)
+        _said("prune", error)
 
 
 async def refresh(client: httpx.AsyncClient, user: UUID, fresh: bool) -> None:
@@ -74,7 +81,7 @@ async def refresh(client: httpx.AsyncClient, user: UUID, fresh: bool) -> None:
             if MIRROR.due(user):
                 await _mirror(MIRROR_FULL.due(user))
             if DIGEST.due(user):
-                await _digest()
+                await _digest(client)
             await notify.refresh(client, engine, MODULE, digest.notifications, NOTIFY, user)
             if EXPORT.due(user):
                 await _export(client)

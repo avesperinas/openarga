@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from arga_widgets import envelope
 from notebook import markdown as md
 from notebook import notes
-from notebook.notes import MADRID
 from notebook.words import say
 
 KINDS = {"recent": "list", "today": "list", "review": "list"}
@@ -16,7 +15,7 @@ ROWS = 6
 
 
 def _ago(when: datetime) -> str:
-    minutes = int((datetime.now(MADRID) - when).total_seconds() // 60)
+    minutes = int((datetime.now(notes.zone()) - when).total_seconds() // 60)
     if minutes < 60:
         return f"{max(minutes, 1)} min"
     if minutes < 60 * 24:
@@ -25,7 +24,7 @@ def _ago(when: datetime) -> str:
 
 
 async def recent(connection: AsyncConnection) -> dict:
-    since = datetime.combine(notes.today() - timedelta(days=30), time(), MADRID)
+    since = datetime.combine(notes.today() - timedelta(days=30), time(), notes.zone())
     found = await notes.recent(connection, since, None, None, ROWS, apps=False)
     if not found:
         return envelope(KINDS["recent"], "empty", {"detail": say("widget.recent_empty")})

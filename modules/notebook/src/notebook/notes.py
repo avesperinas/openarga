@@ -13,10 +13,10 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from arga_contracts import notify
+from arga_module import preferences
 from notebook import cards, mentions
 from notebook import markdown as md
-
-MADRID = ZoneInfo("Europe/Madrid")
 
 Author = Literal["app", "tool", "import"]
 
@@ -36,8 +36,13 @@ class Invalid(Exception):
     pass
 
 
+def zone() -> ZoneInfo:
+    person = preferences.current()
+    return person.zone if person != preferences.defaults() else notify.zone()
+
+
 def today() -> date:
-    return datetime.now(MADRID).date()
+    return datetime.now(zone()).date()
 
 
 class NoteSummary(BaseModel):
@@ -1161,8 +1166,8 @@ async def search(
     where = ["n.deleted_at is null"]
     changes = "null::int"
     if since is not None or until is not None:
-        params["since"] = since or datetime(1970, 1, 1, tzinfo=MADRID)
-        params["until"] = until or datetime.now(MADRID) + timedelta(minutes=1)
+        params["since"] = since or datetime(1970, 1, 1, tzinfo=zone())
+        params["until"] = until or datetime.now(zone()) + timedelta(minutes=1)
         where.append("n.updated_at >= :since and n.updated_at <= :until")
         changes = (
             "1 + (select count(*) from notebook.notebook_revision r where r.note_id = n.id "
@@ -1353,7 +1358,7 @@ async def recent(
             ),
             {
                 "since": since,
-                "until": until or datetime.now(MADRID) + timedelta(minutes=1),
+                "until": until or datetime.now(zone()) + timedelta(minutes=1),
                 "author": author,
                 "limit": limit,
                 "apps": apps,
