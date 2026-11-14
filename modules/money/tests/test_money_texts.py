@@ -50,3 +50,14 @@ def test_an_unknown_currency_is_shown_by_its_code() -> None:
 
 def test_both_catalogs_have_the_same_keys() -> None:
     assert i18n.missing(texts.CATALOGS) == []
+
+
+def test_today_is_the_person_day() -> None:
+    days = []
+    for zone in ("Pacific/Kiritimati", "Pacific/Pago_Pago"):
+        token = preferences.use(person(timezone=zone))
+        try:
+            days.append(texts.today())
+        finally:
+            preferences.reset(token)
+    assert (days[0] - days[1]).days == 1

@@ -4,7 +4,6 @@ import asyncio
 import contextlib
 import os
 import sys
-from datetime import date
 from pathlib import Path
 
 import httpx
@@ -14,7 +13,7 @@ from arga_contracts import metrics as cifras
 from arga_contracts import records as fichas
 from arga_tenancy import as_user, people
 from money import book as books
-from money import common, metrics, publisher
+from money import common, metrics, publisher, texts
 from money.db import engine
 
 MODULE = "money"
@@ -39,7 +38,7 @@ async def keep_common(user) -> int:
         if not await connection.scalar(KEEPS):
             return 0
         lo = await books.load(connection, user)
-        return await common.publish(connection, lo, date.today())
+        return await common.publish(connection, lo, texts.today())
 
 
 async def run_once(client: httpx.AsyncClient) -> dict[str, int]:

@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_tenancy import current_user
 from money import book as books
-from money import common, configure, kpis, products
+from money import common, configure, kpis, products, texts
 from money.interpret import fold
 from money.shared import totals, year_balance
 from money.texts import currency
@@ -65,7 +65,7 @@ async def get_summary(connection: AsyncConnection, _: GetSummary) -> dict[str, A
                 "detail": k.detail,
                 "carried": k.carried,
             }
-            for k in kpis.compute(lo, date.today())
+            for k in kpis.compute(lo, texts.today())
         ],
         "emergency_months": lo.settings.emergency_months,
     }
@@ -86,7 +86,7 @@ def _period(arguments: GetMovements) -> tuple[date, date]:
         y, m = map(int, arguments.month.split("-"))
         first = date(y, m, 1)
         return first, (date(y + (m == 12), m % 12 + 1, 1) - timedelta(days=1))
-    end = arguments.end or date.today()
+    end = arguments.end or texts.today()
     return arguments.start or end.replace(day=1), end
 
 
@@ -147,7 +147,7 @@ async def get_shared_balance(
     connection: AsyncConnection, arguments: GetSharedBalance
 ) -> dict[str, Any]:
     lo = await loaded(connection)
-    today = date.today()
+    today = texts.today()
     year = arguments.year or today.year
     view = await common.year_view(connection, lo, year, today)
     r = view.ratio_me
@@ -290,7 +290,7 @@ async def record_shared_expense(
                 lo,
                 current_user.get(),
                 arguments.payer,
-                arguments.on or date.today(),
+                arguments.on or texts.today(),
                 arguments.amount,
                 arguments.description.strip(),
                 arguments.category,
@@ -311,7 +311,7 @@ async def record_shared_expense(
         """),
             {
                 "p": arguments.payer,
-                "d": arguments.on or date.today(),
+                "d": arguments.on or texts.today(),
                 "a": arguments.amount,
                 "t": arguments.description.strip(),
                 "c": category,
@@ -352,7 +352,7 @@ def product_named(lo: books.Loaded, name: str) -> str:
 
 async def get_products(connection: AsyncConnection, arguments: GetProducts) -> dict[str, Any]:
     lo = await loaded(connection)
-    today = date.today()
+    today = texts.today()
     if arguments.product:
         try:
             key = product_named(lo, arguments.product)
@@ -387,7 +387,7 @@ class GetComposition(Arguments):
 
 async def get_composition(connection: AsyncConnection, arguments: GetComposition) -> dict[str, Any]:
     lo = await loaded(connection)
-    today = date.today()
+    today = texts.today()
     try:
         only = {product_named(lo, p) for p in arguments.products}
     except configure.Refused as error:
@@ -493,7 +493,7 @@ async def record_composition(
             connection,
             lo,
             key,
-            arguments.on or date.today(),
+            arguments.on or texts.today(),
             [configure.Typed(f.name, f.value, f.weight) for f in arguments.funds],
             arguments.value,
         )
@@ -513,7 +513,7 @@ async def record_value(connection: AsyncConnection, arguments: RecordValue) -> d
     try:
         key = product_named(lo, arguments.product)
         await configure.set_value(
-            connection, lo, key, arguments.on or date.today(), arguments.value
+            connection, lo, key, arguments.on or texts.today(), arguments.value
         )
     except configure.Refused as error:
         return {"error": str(error)}

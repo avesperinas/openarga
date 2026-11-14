@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 
+from arga_module import preferences
 from arga_tenancy import UserFromHeader
 from money import api as ledger_api
 from money.db import SCHEMA, engine
@@ -21,6 +22,15 @@ INSUFFICIENT_PRIVILEGE = "42501"
 app = FastAPI(title="Money", version=os.environ.get("APP_VERSION", "dev"))
 app.add_middleware(UserFromHeader)
 app.include_router(ledger_api.router)
+
+
+@app.middleware("http")
+async def person_preferences(request: Request, call_next):
+    token = preferences.use(preferences.from_headers(request.headers))
+    try:
+        return await call_next(request)
+    finally:
+        preferences.reset(token)
 
 
 def ui_dist() -> Path:

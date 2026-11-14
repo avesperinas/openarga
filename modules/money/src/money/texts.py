@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date, datetime
 from pathlib import Path
 
 from arga_module import i18n, preferences
@@ -50,3 +51,7 @@ def percent(value: float, sign: bool = False) -> str:
 
 def month(index: int) -> str:
     return t(f"month.{index}")
+
+
+def today() -> date:
+    return datetime.now(preferences.current().zone).date()

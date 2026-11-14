@@ -9,7 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 import arga_contracts as contracts
 from arga_tenancy import current_user
 from money import book as books
-from money import history, kpis
+from money import history, kpis, texts
+from money.texts import currency
 
 APP = "money"
 
@@ -19,7 +20,7 @@ def _point(key: str, label: str, day: date, value: Decimal, kind: str = "level")
         APP,
         key=f"{APP}.{key}",
         label=label,
-        unit="EUR",
+        unit=currency(),
         kind=kind,
         day=day,
         value=float(round(value, 2)),
@@ -60,7 +61,7 @@ def month_ends(first: date, today: date) -> list[date]:
 
 
 def today() -> date:
-    return date.today()
+    return texts.today()
 
 
 async def build(connection: AsyncConnection) -> list[dict[str, Any]]:

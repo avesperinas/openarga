@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from money import catalog, products
 from money.book import Loaded, bump, dumps
 from money.interpret import fold
+from money.texts import currency
 
 CENT = Decimal("0.01")
 ROUNDING = Decimal("0.01")
@@ -180,7 +181,7 @@ def known_funds(lo: Loaded) -> dict[str, str]:
 def symbol_for(lo: Loaded, name: str) -> str:
     wanted = _canonical(name)
     if wanted in ("liquidez", "efectivo", "cash"):
-        return "EUR"
+        return currency()
     for h in lo.book.holdings:
         if h.name and _canonical(h.name) == wanted and not h.symbol.startswith("name:"):
             return h.symbol
