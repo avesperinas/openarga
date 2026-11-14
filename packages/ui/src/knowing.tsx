@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { Button } from "./controls";
 import { Icon, type IconName } from "./icons";
+import { say } from "./words";
 
 export type QuestionKind = "one" | "many" | "scale" | "either" | "confirm" | "free";
 
@@ -41,7 +42,7 @@ export function QuestionCard({
   busy = false,
   eyebrow,
   progress,
-  skipLabel = "Ahora no",
+  skipLabel = say("question.skip"),
 }: QuestionCardProps) {
   const [chosen, setChosen] = React.useState<string[]>([]);
   const [free, setFree] = React.useState("");
@@ -61,7 +62,7 @@ export function QuestionCard({
             </span>
           )}
           {progress && (
-            <span className="question-card-progress" aria-label={`Pregunta ${progress.done + 1} de ${progress.total}`}>
+            <span className="question-card-progress" aria-label={say("question.progress", { number: progress.done + 1, total: progress.total })}>
               <span className="question-card-bar">
                 <span style={{ "--done": `${(progress.done / Math.max(progress.total, 1)) * 100}%` } as React.CSSProperties} />
               </span>
@@ -127,17 +128,17 @@ export function QuestionCard({
   );
 }
 
-const STANCES: Record<number, string> = {
-  2: "Le encanta",
-  1: "Le gusta",
-  0: "Neutro",
-  [-1]: "No le va",
-  [-2]: "No quiere",
+const STANCE_KEYS: Record<number, string> = {
+  2: "stance.loves",
+  1: "stance.likes",
+  0: "stance.neutral",
+  [-1]: "stance.dislikes",
+  [-2]: "stance.refuses",
 };
 
 export function StanceDots({ stance }: { stance: number }) {
   return (
-    <span className="stance-dots" data-stance={stance} role="img" aria-label={STANCES[stance] ?? ""}>
+    <span className="stance-dots" data-stance={stance} role="img" aria-label={STANCE_KEYS[stance] ? say(STANCE_KEYS[stance]) : ""}>
       {[-2, -1, 0, 1, 2].map((step) => (
         <span key={step} data-on={(stance > 0 && step > 0 && step <= stance) || (stance < 0 && step < 0 && step >= stance) || (stance === 0 && step === 0) || undefined} />
       ))}
@@ -173,17 +174,17 @@ export function TraitRow({ label, stance, source, evidence, proposed, icon = "sp
       </span>
       <span className="trait-row-actions">
         {proposed && onConfirm && (
-          <button type="button" className="trait-row-button" data-tone="yes" aria-label={`Sí: ${label}`} onClick={onConfirm}>
+          <button type="button" className="trait-row-button" data-tone="yes" aria-label={say("trait.confirm", { label })} onClick={onConfirm}>
             <Icon name="done" />
           </button>
         )}
         {proposed && onReject && (
-          <button type="button" className="trait-row-button" data-tone="no" aria-label={`No: ${label}`} onClick={onReject}>
+          <button type="button" className="trait-row-button" data-tone="no" aria-label={say("trait.reject", { label })} onClick={onReject}>
             <Icon name="close" />
           </button>
         )}
         {!proposed && onForget && (
-          <button type="button" className="trait-row-button" aria-label={`Olvidar: ${label}`} onClick={onForget}>
+          <button type="button" className="trait-row-button" aria-label={say("trait.forget", { label })} onClick={onForget}>
             <Icon name="trash" />
           </button>
         )}

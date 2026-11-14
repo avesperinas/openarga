@@ -17,6 +17,7 @@ import {
 import { List, ListRow, Sheet } from "./controls";
 import { Icon, type IconName } from "./icons";
 import { Hint, Screen, Section } from "./screen";
+import { say } from "./words";
 
 export interface AppIdentity {
   id: string;
@@ -65,7 +66,7 @@ export function AppHome({ app, className, always = true }: { app: string; classN
   const fromArga = useFromArga(app);
   if (!fromArga && !always) return null;
   return (
-    <a className={className ? `app-home ${className}` : "app-home"} href="/" aria-label="Ir al escritorio de arga">
+    <a className={className ? `app-home ${className}` : "app-home"} href="/" aria-label={say("chrome.home")}>
       <Icon name="modules" />
       arga
     </a>
@@ -155,8 +156,8 @@ export function AppBackgroundPicker({ app }: { app: AppIdentity }) {
   const backdrop = useAppBackdrop();
   if (!backdrop) return null;
   return (
-    <Section title="Fondo">
-      <ul className="background-grid" aria-label={`Fondo de ${app.name}`}>
+    <Section title={say("chrome.background")}>
+      <ul className="background-grid" aria-label={say("chrome.background_of", { app: app.name })}>
         {APP_BACKGROUNDS.map((option) => {
           const active = backdrop.background === option.value;
           return (
@@ -177,8 +178,7 @@ export function AppBackgroundPicker({ app }: { app: AppIdentity }) {
         })}
       </ul>
       <Hint>
-        Solo para {app.name}. La foto es de Hoy y Módulos; el tema y la transparencia, de todo arga,
-        en sus Ajustes.
+        {say("chrome.background_hint", { app: app.name })}
       </Hint>
     </Section>
   );
@@ -211,12 +211,12 @@ export function AppAbout({ app }: { app: AppIdentity }) {
     };
   }, [app.id]);
   return (
-    <Section title="Acerca de">
+    <Section title={say("chrome.about")}>
       <List>
         <ListRow title={app.name} value={version || "…"} />
         <ListRow
-          title="Ajustes de arga"
-          subtitle="Tema, transparencia, espacios y Claude"
+          title={say("chrome.settings")}
+          subtitle={say("chrome.settings_hint")}
           accessory="chevron-right"
           onClick={() => window.location.assign(ARGA_SETTINGS)}
         />

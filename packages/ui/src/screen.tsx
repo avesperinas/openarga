@@ -6,6 +6,7 @@ import { Button, IconButton } from "./controls";
 import { Icon, IconBadge, type IconName } from "./icons";
 import { Menu, type MenuItem } from "./overlays";
 import type { Hue } from "./Widget";
+import { say } from "./words";
 
 export function Screen({
   children,
@@ -289,7 +290,7 @@ export function SearchField({
         onChange={(event) => onChange(event.target.value)}
       />
       {value && (
-        <button type="button" className="search-field-clear" aria-label="Borrar la búsqueda" onClick={() => onChange("")}>
+        <button type="button" className="search-field-clear" aria-label={say("search.clear")} onClick={() => onChange("")}>
           <Icon name="close" />
         </button>
       )}

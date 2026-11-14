@@ -6,6 +6,7 @@ import { figureChars, compact } from "./format";
 import { useAnimatedNumber } from "./motion";
 import { spanOf } from "./sizes";
 import { useCardSize, useWidgetLayout } from "./Widget";
+import { say } from "./words";
 
 const W = 100;
 const H = 40;
@@ -109,7 +110,7 @@ export function Sparkline({
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
       role="img"
-      aria-label={label ?? `Evolución de ${clean.length} puntos`}
+      aria-label={label ?? say("chart.evolution", { count: clean.length })}
     >
       {joined && <path className="chart-area" d={`${line} L ${runs[0]!.at(-1)![0]} ${H} L ${runs[0]![0]![0]} ${H} Z`} />}
       {marks.map((index) => (
@@ -139,7 +140,7 @@ export function WidgetChart({ series, value, unit, detail, fill = true }: Widget
     <div className="chart">
       <Headline value={value} unit={unit} detail={detail} />
       {clean.length === 0 ? (
-        <p className="widget-note">Sin serie</p>
+        <p className="widget-note">{say("chart.no_series")}</p>
       ) : (
         <div className="chart-plot">
         <svg
@@ -147,7 +148,7 @@ export function WidgetChart({ series, value, unit, detail, fill = true }: Widget
           viewBox={`0 0 ${W} ${H}`}
           preserveAspectRatio="none"
           role="img"
-          aria-label={`Evolución de ${clean.length} puntos`}
+          aria-label={say("chart.evolution", { count: clean.length })}
         >
           {fill && line && (
             <path className="chart-area" d={`${line} L ${W} ${H} L 0 ${H} Z`} />
@@ -191,7 +192,7 @@ export function WidgetBars({
     <div className="chart">
       <Headline value={value} unit={unit} detail={detail} />
       {clean.length === 0 ? (
-        <p className="widget-note">Sin serie</p>
+        <p className="widget-note">{say("chart.no_series")}</p>
       ) : (
         <div className="chart-plot">
           <svg
@@ -274,7 +275,7 @@ export function WidgetHeatmap({ values: all, columns: given = 7, detail }: Widge
             "--heatmap-rows": Math.max(1, Math.ceil(values.length / columns)),
           } as React.CSSProperties
         }
-        aria-label={`Constancia de ${values.length} días`}
+        aria-label={say("chart.consistency", { count: values.length })}
       >
         {values.map((entry, index) => (
           <li

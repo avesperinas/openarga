@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { locale } from "./regional";
+import { say } from "./words";
 
 export type CareerHue = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
@@ -69,7 +70,7 @@ export function SpanRibbon({
             {span.name}
           </span>
         );
-        const description = `${span.name}, de ${span.from} a ${span.to ?? "hoy"}`;
+        const description = say("career.span", { name: span.name, from: span.from, to: span.to ?? say("career.now") });
         return (
           <li
             key={span.key}
@@ -152,7 +153,7 @@ export function PeriodBars({
   const showFirst = firstJanuary === -1 || firstJanuary > count * 0.1;
   const used = groups.filter((group) => periods.some((one) => one.parts.some((part) => part.group === group.key && part.value)));
 
-  if (count === 0) return <p className="widget-note">Sin datos todavía</p>;
+  if (count === 0) return <p className="widget-note">{say("career.no_data")}</p>;
 
   return (
     <figure className="period-bars" aria-label={label}>
@@ -224,7 +225,7 @@ export function PeriodBars({
           >
             <p className="series-chart-tip-title">
               {periods[shown]!.label}
-              {periods[shown]!.projected ? " · previsto" : ""}
+              {periods[shown]!.projected ? ` · ${say("career.projected")}` : ""}
             </p>
             {periods[shown]!.parts.map((part, at) => (
               <p key={`${part.group}-${at}`} className="series-chart-tip-row">
