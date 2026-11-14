@@ -313,11 +313,12 @@ async def sync(client: httpx.AsyncClient, _secrets: dict[str, str], connection: 
 SOURCES = (
     Provider(
         id="prices",
-        name="Precios de fondos",
+        name="Fund prices",
         category="finance",
-        description="El valor de cada día de los fondos, ETFs, ETCs y acciones que se saben "
-        "valorar, para que Money mueva tus carteras entre una foto y la siguiente. Público y sin "
-        "clave, de Yahoo Finance y onvista; se trae una vez al día.",
+        description="The daily value of the funds, ETFs, ETCs and shares that can"
+        " be priced, so Money moves your portfolios between one "
+        "snapshot and the next. Public and keyless, from Yahoo "
+        "Finance and onvista; fetched once a day.",
         capabilities=("sync",),
         emits=("finance.price",),
         available=True,

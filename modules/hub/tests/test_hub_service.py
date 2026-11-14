@@ -89,17 +89,17 @@ async def test_the_catalogue_comes_in_its_categories_in_order(api) -> None:
     listed = (await api.get("/catalogue")).json()
 
     assert [category["name"] for category in listed] == [
-        "Finanzas",
-        "IA",
-        "Alimentación",
-        "Salud",
-        "Lugares",
-        "Libros",
-        "Calendario",
-        "Notas",
-        "Economía",
-        "Ocio",
-        "Tiempo",
+        "Finance",
+        "AI",
+        "Food",
+        "Health",
+        "Places",
+        "Books",
+        "Calendar",
+        "Notes",
+        "Economy",
+        "Leisure",
+        "Weather",
     ]
     assert [p["id"] for p in listed[0]["providers"]] == [
         "enable_banking",

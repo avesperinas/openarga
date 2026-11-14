@@ -433,24 +433,25 @@ async def sync(
 SOURCES = (
     Provider(
         id="enable_banking",
-        name="Bancos (PSD2)",
+        name="Banks (PSD2)",
         category="finance",
-        description="Movimientos y saldos de tus cuentas y tarjetas, cuatro veces al día, por "
-        "Enable Banking. Cada banco se autoriza con tu biometría y caduca cada pocos meses.",
+        description="Transactions and balances of your accounts and cards, four "
+        "times a day, through Enable Banking. Each bank is authorised"
+        " with your biometrics and expires every few months.",
         capabilities=("sync",),
         serves=("enable_banking.handoff",),
         secrets=(
             Secret(
                 "app_id",
-                "Id de la aplicación",
-                "Da de alta tu aplicación en enablebanking.com (Restricted Production) y copia su "
-                "id, el UUID de su panel.",
+                "Application id",
+                "Register your application at enablebanking.com (Restricted "
+                "Production) and copy its id, the UUID on its dashboard.",
             ),
             Secret(
                 "private_key",
-                "Clave privada",
-                "El .pem que descargaste al crear la aplicación: pégalo entero, con su cabecera y "
-                "su pie.",
+                "Private key",
+                "The .pem you downloaded when creating the application: paste all"
+                " of it, with its header and footer.",
                 multiline=True,
             ),
         ),

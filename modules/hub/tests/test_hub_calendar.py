@@ -219,8 +219,8 @@ def test_formula1_brings_the_chosen_sessions_in_utc() -> None:
     items = formula1.items_of([RACE], ["race", "qualifying"])
 
     assert [item.title for item in items] == [
-        "GP de España · Carrera",
-        "GP de España · Clasificación",
+        "GP de España · Race",
+        "GP de España · Qualifying",
     ]
     race = items[0]
     assert (race.uid, race.start, race.end) == (

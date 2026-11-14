@@ -309,9 +309,10 @@ SOURCES = (
         id="wikimedia",
         name="Wikimedia",
         category="places",
-        description="La foto de un sitio, de Wikidata y Wikimedia Commons, con su autor y su "
-        "licencia: la de las escapadas y los viajes de Outings que no tienen. Sin clave: se "
-        "conecta sola la primera vez.",
+        description="A photo of a place, from Wikidata and Wikimedia Commons, "
+        "with its author and licence: for the getaways and trips in "
+        "Outings that have none. No key: it connects by itself the "
+        "first time.",
         capabilities=("lookup",),
         serves=("places.photo",),
         available=True,

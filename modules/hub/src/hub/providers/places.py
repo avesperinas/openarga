@@ -152,8 +152,9 @@ SOURCES = (
         id="nominatim",
         name="OpenStreetMap",
         category="places",
-        description="Los lugares de tus viajes por su nombre, con sus coordenadas, bajo demanda "
-        "desde Travel o desde Claude. Sin clave: se conecta sola la primera vez que buscas.",
+        description="The places of your trips by name, with their coordinates, on"
+        " demand from Travel or from an AI assistant. No key: it "
+        "connects by itself the first time you search.",
         capabilities=("lookup",),
         serves=("places.search",),
         available=True,

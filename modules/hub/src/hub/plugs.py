@@ -7,6 +7,7 @@ import httpx
 from arga_tenancy import kernel_url, user_headers
 from hub import catalogue
 from hub.connections import Refused
+from hub.words import local
 
 TONES = range(1, 11)
 TEXT_LIMIT = 60
@@ -96,4 +97,7 @@ def described(provider: catalogue.Provider, found: list[dict[str, Any]]) -> dict
 
 
 def groups() -> list[dict[str, str]]:
-    return [{"id": group.id, "title": group.name} for group in catalogue.GROUPS]
+    return [
+        {"id": group.id, "title": local(f"group.{group.id}", group.name)}
+        for group in catalogue.GROUPS
+    ]

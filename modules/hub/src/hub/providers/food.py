@@ -476,15 +476,14 @@ SOURCES = (
         id="usda",
         name="USDA FoodData Central",
         category="food",
-        description="Las macros de los ingredientes genéricos, bajo demanda al escribir una "
-        "receta.",
+        description="The macros of generic ingredients, on demand while writing a recipe.",
         capabilities=("lookup",),
         serves=("food.search", "food.get", "usda.handoff"),
         secrets=(
             Secret(
                 "api_key",
-                "Clave de API",
-                "Gratis en api.data.gov/signup: te llega por correo.",
+                "API key",
+                "Free at api.data.gov/signup: it arrives by email.",
             ),
         ),
         available=True,
@@ -495,8 +494,8 @@ SOURCES = (
         id="openfoodfacts",
         name="Open Food Facts",
         category="food",
-        description="Las macros de los productos de marca y por código de barras, bajo demanda. "
-        "Sin clave: se conecta sola la primera vez que buscas.",
+        description="The macros of branded products and by barcode, on demand. No"
+        " key: it connects by itself the first time you search.",
         capabilities=("lookup",),
         serves=("food.search", "food.get"),
         available=True,
