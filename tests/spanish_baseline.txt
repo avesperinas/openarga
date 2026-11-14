@@ -98,7 +98,6 @@ modules/hub/src/hub/providers/food.py
 modules/hub/src/hub/providers/holidays.py
 modules/hub/src/hub/providers/imap.py
 modules/hub/src/hub/providers/ine.py
-modules/hub/src/hub/providers/weather.py
 modules/hub/src/hub/providers/wikimedia.py
 modules/hub/src/hub/push.py
 modules/hub/src/hub/rules.py

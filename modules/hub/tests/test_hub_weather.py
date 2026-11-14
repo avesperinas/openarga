@@ -97,8 +97,8 @@ async def test_the_forecast_says_each_day_in_words_and_asks_once(api, schema, op
     days = first["weather"]["days"]
     assert first["failed"] is None and first["weather"]["timezone"] == "Asia/Tokyo"
     assert [(d["day"], d["sky"], d["max_c"], d["rain_chance"]) for d in days] == [
-        ("2027-11-01", "despejado", 17.2, 5),
-        ("2027-11-02", "lluvia", 15.0, 80),
+        ("2027-11-01", "clear", 17.2, 5),
+        ("2027-11-02", "rain", 15.0, 80),
     ]
     assert again == first and len(open_meteo.asked) == 1
     assert await runs(api) == ["ok", "ok"]
