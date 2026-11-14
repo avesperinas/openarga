@@ -205,7 +205,7 @@ async def test_claude_is_never_synced_by_hand(api) -> None:
     answer = await api.post(f"/connections/{created['id']}/sync")
 
     assert answer.status_code == 409
-    assert "a mano" in answer.json()["detail"]
+    assert "by hand" in answer.json()["detail"]
 
 
 def test_every_category_the_hub_brings_is_one_a_module_can_consume() -> None:

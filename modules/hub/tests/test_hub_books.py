@@ -117,7 +117,7 @@ async def test_open_library_is_asked_in_spanish_and_connects_itself(api, sources
         "cover_ref": "222",
     }
     assert answer["failed"] == [
-        {"source": "google_books", "reason": "sin clave de Google Books: ponla en Hub"}
+        {"source": "google_books", "reason": "no Google Books key: add it in Hub"}
     ]
     [url] = sources.asked
     assert (url.params["q"], url.params["lang"]) == ("libro sintético", "es")

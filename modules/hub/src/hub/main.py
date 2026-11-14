@@ -39,6 +39,7 @@ from hub.db import as_module
 from hub.providers import SourceError, imap
 from hub.tools import TOOLS, role_for_scopes
 from hub.widgets import RENDERERS
+from hub.words import say
 
 MODULE_ID = "hub"
 UI_ROOT = f"/{MODULE_ID}"
@@ -150,7 +151,7 @@ def refused(error: connections.Refused) -> HTTPException:
 async def detail_or_404(connection, connection_id: UUID) -> dict:
     found = await connections.detail(connection, connection_id)
     if found is None:
-        raise HTTPException(status_code=404, detail="esa conexión no existe")
+        raise HTTPException(status_code=404, detail="that connection does not exist")
     return found
 
 
@@ -181,7 +182,7 @@ async def create_connection(request: ConnectionIn) -> dict:
             return {**await tell(found), "authorization_url": url}
         if provider.authorizes:
             if not request.bank:
-                raise connections.Refused("Elige el banco")
+                raise connections.Refused(say("bank.choose"))
             async with source_client() as client, as_app() as connection:
                 created, url = await banks.start(
                     connection,
@@ -220,10 +221,12 @@ async def new_token(connection_id: UUID) -> dict:
     async with as_app() as connection:
         row = (await connection.execute(ROW, {"id": connection_id})).one_or_none()
         if row is None:
-            raise HTTPException(status_code=404, detail="esa conexión no existe")
+            raise HTTPException(status_code=404, detail="that connection does not exist")
         provider = catalogue.provider(row.provider)
         if "push" not in provider.capabilities:
-            raise HTTPException(status_code=409, detail=f"{provider.name} no llama con un token")
+            raise HTTPException(
+                status_code=409, detail=f"{provider.name} does not call with a token"
+            )
         token = await push.store(connection, provider.id, person, connection_id)
         found = await detail_or_404(connection, connection_id)
     return {**found, "ingest_token": token}
@@ -237,7 +240,7 @@ async def receive(source: str, request: Request, authorization: str | None = Hea
     provider_id, read = receiver
     unauthorised = HTTPException(
         status_code=401,
-        detail="token de ingesta no válido",
+        detail="invalid ingest token",
         headers={"www-authenticate": "Bearer"},
     )
     try:
@@ -264,7 +267,7 @@ async def receive(source: str, request: Request, authorization: str | None = Hea
                 await sync.publish_all(kernel, provider_id, received.events, result)
             except httpx.HTTPError as error:
                 result.outcome = "error"
-                result.detail = f"el kernel no contesta: {type(error).__name__}"
+                result.detail = f"the kernel does not answer: {type(error).__name__}"
             result.detail = result.detail or (
                 f"{len(received.events)} recibidos, {result.emitted} nuevos"
             )
@@ -318,17 +321,17 @@ async def sync_now(connection_id: UUID) -> dict:
     async with as_app() as connection:
         row = (await connection.execute(ROW, {"id": connection_id})).one_or_none()
         if row is None:
-            raise HTTPException(status_code=404, detail="esa conexión no existe")
+            raise HTTPException(status_code=404, detail="that connection does not exist")
         provider = catalogue.provider(row.provider)
         if row.provider not in sync.CLIENTS or not provider.by_hand:
-            raise HTTPException(status_code=409, detail=f"{provider.name} no se sincroniza a mano")
+            raise HTTPException(status_code=409, detail=f"{provider.name} does not sync by hand")
         if row.paused or row.status != "active":
-            raise HTTPException(status_code=409, detail=f"{row.label} no está activa")
+            raise HTTPException(status_code=409, detail=f"{row.label} is not active")
         left = sync.remaining(provider, await sync.used_today(connection, connection_id))
         if left == 0:
             raise HTTPException(
                 status_code=409,
-                detail=f"Hoy ya no quedan accesos a {row.label}: vuelve mañana.",
+                detail=say("sync.no_access_left", label=row.label),
             )
     async with (
         source_client() as client,
@@ -368,7 +371,9 @@ async def change_credential(connection_id: UUID, key: str, request: CredentialIn
             found = await detail_or_404(connection, connection_id)
             provider = catalogue.provider(found["provider"])
             if key not in {secret.key for secret in provider.secrets}:
-                raise HTTPException(status_code=404, detail=f"{provider.name} no pide '{key}'")
+                raise HTTPException(
+                    status_code=404, detail=f"{provider.name} does not ask for '{key}'"
+                )
             value = connections.clean_secret(provider, key, request.value)
             targets = (
                 list(
@@ -396,7 +401,7 @@ async def rename_connection(connection_id: UUID, request: LabelIn) -> dict:
     try:
         async with as_app() as connection:
             if not await connections.rename(connection, connection_id, request.label):
-                raise HTTPException(status_code=404, detail="esa conexión no existe")
+                raise HTTPException(status_code=404, detail="that connection does not exist")
             found = await detail_or_404(connection, connection_id)
     except connections.Refused as error:
         raise refused(error) from error
@@ -412,7 +417,7 @@ async def change_relay(connection_id: UUID, request: RelayIn) -> dict:
     require_person()
     async with as_app() as connection:
         if not await connections.set_relay(connection, connection_id, request.relay):
-            raise HTTPException(status_code=404, detail="esa cuenta de Claude no existe")
+            raise HTTPException(status_code=404, detail="that Claude account does not exist")
         found = await detail_or_404(connection, connection_id)
     return await tell(found)
 
@@ -427,7 +432,7 @@ async def change_rules(connection_id: UUID, request: RulesIn) -> dict:
     try:
         async with as_app() as connection:
             if not await connections.set_rules(connection, connection_id, request.rules):
-                raise HTTPException(status_code=404, detail="ese buzón no existe")
+                raise HTTPException(status_code=404, detail="that mailbox does not exist")
             found = await detail_or_404(connection, connection_id)
     except connections.Refused as error:
         raise refused(error) from error
@@ -444,11 +449,11 @@ async def try_rule(connection_id: UUID, request: dict[str, Any]) -> dict:
     async with as_app() as connection:
         found = await detail_or_404(connection, connection_id)
         if found["provider"] != "imap":
-            raise HTTPException(status_code=404, detail="ese buzón no existe")
+            raise HTTPException(status_code=404, detail="that mailbox does not exist")
         config = await connections.config_of(connection, connection_id)
         secrets = await sync.secrets_of(connection, catalogue.provider("imap"), connection_id)
     if not secrets.get(imap.PASSWORD):
-        raise HTTPException(status_code=422, detail="Falta la contraseña de aplicación del buzón")
+        raise HTTPException(status_code=422, detail=say("mailbox.missing_password"))
     try:
         results = await asyncio.to_thread(imap.trial, config, secrets[imap.PASSWORD], rule)
     except SourceError as error:
@@ -460,7 +465,7 @@ async def pause(connection_id: UUID, paused: bool) -> dict:
     require_person()
     async with as_app() as connection:
         if not await connections.set_paused(connection, connection_id, paused):
-            raise HTTPException(status_code=404, detail="esa conexión no existe")
+            raise HTTPException(status_code=404, detail="that connection does not exist")
         found = await detail_or_404(connection, connection_id)
     return await tell(found)
 
@@ -535,7 +540,7 @@ async def revoke_claude_run(app_id: str) -> Response:
     async with httpx.AsyncClient(timeout=30.0) as auth, as_app() as database:
         removed = await claude_run.revoke(database, auth, app_id)
     if not removed:
-        raise HTTPException(status_code=404, detail="esa app no tenía permiso")
+        raise HTTPException(status_code=404, detail="that app had no permission")
     return Response(status_code=204)
 
 
@@ -548,12 +553,12 @@ async def capability(
 ) -> dict[str, Any]:
     expected = os.environ.get("MODULE_REGISTRATION_TOKEN", "")
     if not expected:
-        raise HTTPException(status_code=503, detail="el hub no tiene MODULE_REGISTRATION_TOKEN")
+        raise HTTPException(status_code=503, detail="hub has no MODULE_REGISTRATION_TOKEN")
     if not hmac.compare_digest(x_module_token, expected):
-        raise HTTPException(status_code=401, detail="solo el kernel pide capacidades al hub")
+        raise HTTPException(status_code=401, detail="only the kernel asks hub for capabilities")
     handler = CAPABILITIES.get(capability)
     if handler is None:
-        raise HTTPException(status_code=404, detail=f"el hub no sabe hacer '{capability}'")
+        raise HTTPException(status_code=404, detail=f"hub cannot do '{capability}'")
     require_person()
     try:
         body = await request.json()
@@ -566,7 +571,9 @@ async def capability(
     except connections.Refused as error:
         raise refused(error) from error
     except IntegrityError as error:
-        raise HTTPException(status_code=409, detail="ese id ya es de otra conexión") from error
+        raise HTTPException(
+            status_code=409, detail="that id already belongs to another connection"
+        ) from error
 
 
 class StatementFile(BaseModel):
@@ -599,7 +606,7 @@ async def upload_statements(body: StatementsIn) -> dict[str, Any]:
                 )
             except httpx.HTTPError as error:
                 raise HTTPException(
-                    status_code=502, detail="el kernel no ha recogido el extracto"
+                    status_code=502, detail="the kernel did not take the statement"
                 ) from error
             results.append(
                 {

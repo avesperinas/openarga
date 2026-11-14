@@ -220,7 +220,7 @@ async def test_never_more_than_four_accesses_a_day(api, kernel, fake) -> None:
 
     assert [a.status_code for a in answers] == [200, 200, 200, 200, 409]
     assert [a.json()["budget"]["remaining"] for a in answers[:4]] == [3, 2, 1, 0]
-    assert "no quedan accesos" in answers[4].json()["detail"]
+    assert "No accesses to" in answers[4].json()["detail"]
     assert fake.account_calls == 4
 
 

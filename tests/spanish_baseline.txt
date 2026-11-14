@@ -85,13 +85,11 @@ modules/goals/ui/src/states.test.tsx
 modules/goals/ui/src/words.ts
 modules/hub/manifest.yaml
 modules/hub/src/hub/banks.py
-modules/hub/src/hub/capabilities.py
 modules/hub/src/hub/catalogue.py
 modules/hub/src/hub/claude_run.py
 modules/hub/src/hub/credentials.py
 modules/hub/src/hub/google_auth.py
 modules/hub/src/hub/instruments.py
-modules/hub/src/hub/main.py
 modules/hub/src/hub/notices.py
 modules/hub/src/hub/providers/agendas.py
 modules/hub/src/hub/providers/apple_health.py
