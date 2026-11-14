@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useBodyHost, useEscape, useFocusTrap } from "./focus";
 import { Icon, IconBadge, type IconName } from "./icons";
 import { numbers } from "./regional";
+import { say } from "./words";
 
 type NativeButton = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "className" | "style">;
 
@@ -414,7 +415,7 @@ export function Stepper({
       <button
         type="button"
         className="stepper-button"
-        aria-label={`Menos ${label.toLowerCase()}`}
+        aria-label={say("stepper.less", { label: label.toLowerCase() })}
         disabled={disabled || (value !== null && value <= min)}
         onClick={() => onChange(stepValue(value, step, -1, min, max))}
       >
@@ -440,7 +441,7 @@ export function Stepper({
         <button
           type="button"
           className="stepper-value"
-          aria-label={`${label}: ${formatDecimal(value)}${unit ? ` ${unit}` : ""}. Tocar para escribir`}
+          aria-label={say("stepper.value", { label, value: `${formatDecimal(value)}${unit ? ` ${unit}` : ""}` })}
           disabled={disabled}
           onClick={() => {
             setDraft(value === null ? "" : formatDecimal(value));
@@ -455,7 +456,7 @@ export function Stepper({
       <button
         type="button"
         className="stepper-button"
-        aria-label={`Más ${label.toLowerCase()}`}
+        aria-label={say("stepper.more", { label: label.toLowerCase() })}
         disabled={disabled || (max !== undefined && value !== null && value >= max)}
         onClick={() => onChange(stepValue(value, step, 1, min, max))}
       >
@@ -565,15 +566,11 @@ export function Elapsed({ since, label, size = "regular", now }: ElapsedProps) {
 
 export type SyncState = "saved" | "sending" | "pending";
 
-const SYNC_TEXT: Record<SyncState, string> = {
-  saved: "Guardada",
-  sending: "Enviando",
-  pending: "Pendiente de enviar",
-};
+
 
 export function SyncMark({ state }: { state: SyncState }) {
   return (
-    <span className="sync-mark" data-state={state} role="img" aria-label={SYNC_TEXT[state]}>
+    <span className="sync-mark" data-state={state} role="img" aria-label={say(`sync.${state}`)}>
       {state === "saved" && <Icon name="done" />}
     </span>
   );
@@ -779,9 +776,9 @@ export function Sheet({ title, onClose, children, action, back, foot }: SheetPro
       >
         <header className="bottom-sheet-head" {...grab}>
           <span className="bottom-sheet-grabber" aria-hidden="true" />
-          {back && <IconButton icon="chevron-left" label="Atrás" size="small" onClick={back} />}
+          {back && <IconButton icon="chevron-left" label={say("sheet.back")} size="small" onClick={back} />}
           <h2 className="bottom-sheet-title">{title}</h2>
-          <IconButton icon="close" label="Cerrar" size="small" onClick={close} />
+          <IconButton icon="close" label={say("sheet.close")} size="small" onClick={close} />
         </header>
         <div className="bottom-sheet-body">{children}</div>
         {action && (
@@ -838,7 +835,7 @@ export function ConfirmPanel({
     Promise.resolve()
       .then(onConfirm)
       .catch((reason: unknown) => {
-        setError(reason instanceof Error && reason.message ? reason.message : "No se ha podido guardar");
+        setError(reason instanceof Error && reason.message ? reason.message : say("confirm.save_failed"));
         setBusy(false);
       });
   };
@@ -854,7 +851,7 @@ export function ConfirmPanel({
                 {change.from !== undefined && (
                   <>
                     <span className="confirm-change-from">{change.from}</span>
-                    <span aria-label=" pasa a "> → </span>
+                    <span aria-label={` ${say("confirm.becomes")} `}> → </span>
                   </>
                 )}
                 <span className="confirm-change-to">{change.to}</span>
@@ -871,7 +868,7 @@ export function ConfirmPanel({
       )}
       <div className="confirm-delete-actions">
         <Button variant="secondary" block onClick={onCancel} disabled={busy}>
-          Volver
+          {say("confirm.back")}
         </Button>
         <Button
           variant={destructive ? "destructive" : "primary"}
@@ -895,7 +892,10 @@ export function ConfirmChange(props: ConfirmChangeProps) {
   );
 }
 
-export const CANNOT_UNDO = "No se puede deshacer.";
+export const cannotUndo = (): string => say("confirm.cannot_undo");
+
+/** @deprecated Fixed at load time; use cannotUndo(). */
+export const CANNOT_UNDO = cannotUndo();
 
 export function ConfirmDelete({ title, subject, consequence, action, onCancel, onConfirm }: ConfirmDeleteProps) {
   const [busy, setBusy] = React.useState(false);
@@ -906,14 +906,14 @@ export function ConfirmDelete({ title, subject, consequence, action, onCancel, o
     Promise.resolve()
       .then(onConfirm)
       .catch((reason: unknown) => {
-        setError(reason instanceof Error && reason.message ? reason.message : "No se ha podido borrar");
+        setError(reason instanceof Error && reason.message ? reason.message : say("confirm.delete_failed"));
         setBusy(false);
       });
   };
   return (
     <Sheet title={title} onClose={busy ? () => undefined : onCancel}>
       {subject && <p className="confirm-delete-subject">{subject}</p>}
-      <p className="confirm-delete-consequence">{consequence ?? CANNOT_UNDO}</p>
+      <p className="confirm-delete-consequence">{consequence ?? cannotUndo()}</p>
       {error && (
         <p className="confirm-delete-error" role="alert">
           {error}
@@ -921,10 +921,10 @@ export function ConfirmDelete({ title, subject, consequence, action, onCancel, o
       )}
       <div className="confirm-delete-actions">
         <Button variant="secondary" block onClick={onCancel} disabled={busy}>
-          Cancelar
+          {say("confirm.cancel")}
         </Button>
         <Button variant="destructive" icon="trash" block disabled={busy} onClick={confirm}>
-          {busy ? "Borrando…" : action}
+          {busy ? say("confirm.deleting") : action}
         </Button>
       </div>
     </Sheet>
@@ -1039,13 +1039,13 @@ export function CopyField({ label, value, copy }: CopyFieldProps) {
         <Button
           size="small"
           icon={copied ? "done" : undefined}
-          aria-label={`Copiar ${label}`}
+          aria-label={say("copy.label", { label })}
           onClick={() => {
             const write = copy ?? ((text: string) => navigator.clipboard.writeText(text));
             void write(value).then(() => setCopied(true));
           }}
         >
-          {copied ? "Copiado" : "Copiar"}
+          {copied ? say("copy.done") : say("copy.action")}
         </Button>
       </div>
     </div>
@@ -1077,7 +1077,7 @@ export function CredentialField({
   busy = false,
   problem = null,
 }: CredentialFieldProps) {
-  const placeholder = configured ? `Puesta (${hint ?? "…"}). Pega otra para cambiarla` : "Pégala aquí";
+  const placeholder = configured ? say("credential.set", { hint: hint ?? "…" }) : say("credential.paste");
   const [asking, setAsking] = React.useState(false);
   return (
     <div className="credential-field">
@@ -1093,20 +1093,20 @@ export function CredentialField({
       />
       <div className="credential-field-actions">
         <Button variant="primary" size="small" disabled={busy || !value.trim()} onClick={onSave}>
-          Guardar
+          {say("credential.save")}
         </Button>
         {configured && onRemove && (
           <Button variant="destructive" size="small" disabled={busy} onClick={() => setAsking(true)}>
-            Quitar
+            {say("credential.remove")}
           </Button>
         )}
       </div>
       {asking && onRemove && (
         <ConfirmDelete
-          title={`¿Quitar ${label.charAt(0).toLowerCase()}${label.slice(1)}?`}
-          subject={hint ? `Termina en ${hint.replace(/^…/, "")}` : undefined}
-          consequence="Lo que la usa deja de funcionar hasta que pegues otra."
-          action="Quitar"
+          title={say("credential.remove_title", { label: `${label.charAt(0).toLowerCase()}${label.slice(1)}` })}
+          subject={hint ? say("credential.ends_in", { hint: hint.replace(/^…/, "") }) : undefined}
+          consequence={say("credential.remove_consequence")}
+          action={say("credential.remove")}
           onCancel={() => setAsking(false)}
           onConfirm={async () => {
             await onRemove();

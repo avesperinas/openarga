@@ -321,13 +321,9 @@ packages/testing/src/arga_testing/contract.py
 packages/testing/src/arga_testing/panel.py
 packages/ui/.storybook/preview.tsx
 packages/ui/README.md
-packages/ui/src/controls.tsx
 packages/ui/src/health.tsx
-packages/ui/src/panels.tsx
-packages/ui/src/reading.tsx
 packages/ui/src/recurrence-picker.tsx
 packages/ui/src/recurrence.ts
-packages/ui/src/source-questions.tsx
 packages/ui/src/speech.tsx
 packages/ui/src/time-grid.tsx
 packages/ui/stories/Analysis.stories.tsx

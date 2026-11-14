@@ -244,6 +244,7 @@ export {
   AppBar,
   Button,
   CANNOT_UNDO,
+  cannotUndo,
   CheckChips,
   CheckRow,
   ChoiceChips,

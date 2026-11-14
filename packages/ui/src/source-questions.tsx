@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { TONES, type Tone } from "./calendar-layout";
 import { CheckChips, ChoiceChips, List, ListRow, TextField } from "./controls";
+import { say } from "./words";
 
 export interface SourceChoice {
   code: string;
@@ -70,9 +71,9 @@ export function sourceParams(asks: SourceAsk[], answers: SourceAnswers): Record<
 export function sourceMissing(asks: SourceAsk[], answers: SourceAnswers): string | null {
   for (const ask of asks) {
     const answer = answers[ask.key] ?? {};
-    if (ask.kind === "checks" && (answer.values ?? ask.defaults).length === 0) return `Elige al menos una: ${ask.label.toLowerCase()}.`;
-    if (ask.kind === "url" && !(answer.text ?? "").trim()) return `Falta: ${ask.label.toLowerCase()}.`;
-    if ((ask.kind === "lookup" || ask.kind === "pick") && !ask.optional && !answer.choice) return `Elige: ${ask.label.toLowerCase()}.`;
+    if (ask.kind === "checks" && (answer.values ?? ask.defaults).length === 0) return say("source.choose_one", { label: ask.label.toLowerCase() });
+    if (ask.kind === "url" && !(answer.text ?? "").trim()) return say("source.missing", { label: ask.label.toLowerCase() });
+    if ((ask.kind === "lookup" || ask.kind === "pick") && !ask.optional && !answer.choice) return say("source.choose", { label: ask.label.toLowerCase() });
   }
   return null;
 }
@@ -195,7 +196,7 @@ export function InletSettings({ settings, values, onChange, title }: InletSettin
         }
         return (
           <p key={setting.key} className="source-note">
-            «{setting.label}» se elige en una versión más nueva.
+            {say("source.newer", { label: setting.label })}
           </p>
         );
       })}
@@ -237,7 +238,7 @@ function Question({
       .current(ask.key, undefined, ask.depends_on ? parent?.code : undefined)
       .then((found) => {
         if (!alive) return;
-        if (found.failed) onError(`No se puede leer: ${found.failed}`);
+        if (found.failed) onError(say("source.read_failed", { reason: found.failed }));
         const named =
           ask.display === "country"
             ? found.results.map((one) => ({ ...one, name: countryName(one.code, one.name) })).sort((a, b) => a.name.localeCompare(b.name, "es"))
@@ -263,7 +264,7 @@ function Question({
         .then((found) => {
           if (!alive) return;
           setOptions(found.results);
-          onError(found.failed ? `No se puede buscar: ${found.failed}` : null);
+          onError(found.failed ? say("source.search_failed", { reason: found.failed }) : null);
         })
         .catch((failure: unknown) => alive && onError(failure instanceof Error ? failure.message : String(failure)));
     }, 300);
@@ -292,7 +293,7 @@ function Question({
     return (
       <div className="source-field">
         <span className="source-label">{label}</span>
-        <TextField label={`Buscar ${ask.label.toLowerCase()}`} type="search" value={query} placeholder={ask.placeholder} autoFocus onChange={setQuery} />
+        <TextField label={say("source.search", { label: ask.label.toLowerCase() })} type="search" value={query} placeholder={ask.placeholder} autoFocus onChange={setQuery} />
         {(options ?? []).length > 0 && (
           <List>
             {(options ?? []).map((one, index) => (
@@ -313,7 +314,7 @@ function Question({
     );
   }
   if (ask.kind !== "pick") {
-    return <p className="source-note">«{ask.label}» se elige en una versión más nueva.</p>;
+    return <p className="source-note">{say("source.newer", { label: ask.label })}</p>;
   }
   const all = options ?? [];
   const matches = query.trim() ? all.filter((one) => one.name.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 6) : [];
@@ -321,10 +322,10 @@ function Question({
     <div className="source-field">
       <span className="source-label">{label}</span>
       {options === null ? (
-        <p className="source-note">Cargando…</p>
+        <p className="source-note">{say("loading")}</p>
       ) : all.length > MANY ? (
         <>
-          <TextField label={`Buscar ${ask.label.toLowerCase()}`} type="search" value={query} placeholder={ask.placeholder} onChange={setQuery} />
+          <TextField label={say("source.search", { label: ask.label.toLowerCase() })} type="search" value={query} placeholder={ask.placeholder} onChange={setQuery} />
           {matches.length > 0 && (
             <List>
               {matches.map((one) => (
@@ -344,12 +345,12 @@ function Question({
       ) : all.length > 0 || ask.optional ? (
         <ChoiceChips
           label={ask.label}
-          options={[...(ask.optional ? [{ value: NONE, label: ask.none_label ?? "Ninguno" }] : []), ...all.map((one) => ({ value: one.code, label: one.name }))]}
+          options={[...(ask.optional ? [{ value: NONE, label: ask.none_label ?? say("source.none") }] : []), ...all.map((one) => ({ value: one.code, label: one.name }))]}
           value={chosen?.code ?? NONE}
           onChange={(code) => onChange({ choice: all.find((one) => one.code === code) ?? null })}
         />
       ) : (
-        <p className="source-note">No hay nada que elegir.</p>
+        <p className="source-note">{say("source.nothing")}</p>
       )}
       {ask.help && <p className="source-note">{ask.help}</p>}
     </div>
