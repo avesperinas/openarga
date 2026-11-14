@@ -187,22 +187,25 @@ SOURCES = (
         id="github",
         name="GitHub",
         category="notes",
-        description="La copia de tus notas de Notebook en un repo privado tuyo, como ficheros .md que "
-        "se abren en Obsidian. Notebook escribe un commit cada vez que cambian, como mucho cada diez "
-        "minutos. Es de ida: lo que cambies en el repo no vuelve.",
+        description="A copy of your Notebook notes in a private repository of "
+        "yours, as .md files that open in Obsidian. Notebook writes a"
+        " commit whenever they change, at most every ten minutes. One"
+        " way only: what you change in the repository does not come "
+        "back.",
         capabilities=("action",),
         serves=("notes.push",),
         secrets=(
             Secret(
                 "token",
-                "Token de GitHub",
-                "En github.com, Settings → Developer settings → Fine-grained tokens: solo ese "
-                "repo, y en permisos, Contents con lectura y escritura. Empieza por github_pat_.",
+                "GitHub token",
+                "On github.com, Settings → Developer settings → Fine-grained "
+                "tokens: only that repository, and under permissions, Contents "
+                "with read and write. It starts with github_pat_.",
             ),
         ),
         settings=(
-            Setting("repo", "Repo", "usuario/nombre: el repo privado donde va la copia."),
-            Setting("branch", "Rama", "Donde se escribe.", default="main"),
+            Setting("repo", "Repository", "user/name: the private repository the copy goes to."),
+            Setting("branch", "Branch", "Where it is written.", default="main"),
         ),
         available=True,
         single=True,

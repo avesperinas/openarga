@@ -278,8 +278,9 @@ SOURCES = (
         id="protomaps",
         name="Protomaps",
         category="places",
-        description="Las calles de cualquier sitio del mundo, de OpenStreetMap, para el mapa de "
-        "cada día de un viaje en Travel. Sin clave: se conecta sola la primera vez que se pide.",
+        description="The streets of anywhere in the world, from OpenStreetMap, "
+        "for the map of each day of a trip in Travel. No key: it "
+        "connects by itself the first time it is asked.",
         capabilities=("lookup",),
         serves=("maps.tile",),
         available=True,

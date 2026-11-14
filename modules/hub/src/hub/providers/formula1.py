@@ -14,11 +14,11 @@ BASE = "https://api.jolpi.ca/ergast/f1"
 SESSIONS_KEY = "sessions"
 
 SESSIONS: dict[str, tuple[str, str, timedelta]] = {
-    "race": ("", "Carrera", timedelta(hours=2)),
-    "qualifying": ("Qualifying", "Clasificación", timedelta(hours=1)),
+    "race": ("", "Race", timedelta(hours=2)),
+    "qualifying": ("Qualifying", "Qualifying", timedelta(hours=1)),
     "sprint": ("Sprint", "Sprint", timedelta(minutes=45)),
-    "sprint_qualifying": ("SprintQualifying", "Clasificación sprint", timedelta(minutes=45)),
-    "practice": ("", "Libres", timedelta(hours=1)),
+    "sprint_qualifying": ("SprintQualifying", "Sprint qualifying", timedelta(minutes=45)),
+    "practice": ("", "Practice", timedelta(hours=1)),
 }
 PRACTICE = (
     ("FirstPractice", "Libres 1"),
@@ -179,17 +179,17 @@ async def sync(client: httpx.AsyncClient, _secrets: dict[str, str], connection: 
 SOURCES = (
     Provider(
         id="formula1",
-        name="Fórmula 1",
+        name="Formula 1",
         category="calendar",
-        description="El calendario de la Fórmula 1 con las sesiones que elijas, de Jolpica: si "
-        "una carrera cambia o se cancela, cambia o desaparece de tu calendario. Se suscribe desde "
-        "Planner.",
+        description="The Formula 1 calendar with the sessions you choose, from "
+        "Jolpica: if a race changes or is cancelled, it changes or "
+        "disappears from your calendar. Subscribed from Planner.",
         capabilities=("sync",),
         settings=(
             Setting(
                 "sessions",
-                "Sesiones",
-                "Separadas por comas: race, qualifying, sprint, sprint_qualifying, practice.",
+                "Sessions",
+                "Comma separated: race, qualifying, sprint, sprint_qualifying, practice.",
                 "race,qualifying,sprint",
             ),
         ),
@@ -197,22 +197,22 @@ SOURCES = (
         available=True,
         schedule="45 3 * * *",
         offer=Offer(
-            title="Fórmula 1",
-            subtitle="Carreras, clasificaciones y sprints, a tu hora",
+            title="Formula 1",
+            subtitle="Races, qualifying and sprints, in your time zone",
             tone=1,
             group="sport",
-            name="Fórmula 1",
+            name="Formula 1",
             asks=(
                 Ask(
                     "sessions",
                     "checks",
-                    "Sesiones",
+                    "Sessions",
                     choices=(
-                        Choice("race", "Carrera"),
-                        Choice("qualifying", "Clasificación"),
+                        Choice("race", "Race"),
+                        Choice("qualifying", "Qualifying"),
                         Choice("sprint", "Sprint"),
-                        Choice("sprint_qualifying", "Clasificación sprint"),
-                        Choice("practice", "Libres"),
+                        Choice("sprint_qualifying", "Sprint qualifying"),
+                        Choice("practice", "Practice"),
                     ),
                     defaults=("race", "qualifying", "sprint"),
                 ),

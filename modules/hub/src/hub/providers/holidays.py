@@ -174,42 +174,50 @@ async def search_regions(
 SOURCES = (
     Provider(
         id="holidays",
-        name="Festivos",
+        name="Public holidays",
         category="calendar",
-        description="Los festivos de un país y, si quieres, los de tu comunidad, de Nager.Date. "
-        "Los de tu ciudad no están en ninguna fuente: van por un calendario .ics si lo hay. Se "
-        "suscriben desde Planner.",
+        description="The public holidays of a country and, if you want, of your "
+        "region, from Nager.Date. Your city's are in no source: add "
+        "them with a .ics calendar if there is one. Subscribed from "
+        "Planner.",
         capabilities=("sync",),
         settings=(
-            Setting("country", "País", "Su código de dos letras: ES, FR, PT…", "ES"),
+            Setting("country", "Country", "Its two-letter code: ES, FR, PT…", "ES"),
             Setting(
                 "region",
-                "Región",
-                "Su código ISO, como ES-NC para Navarra. Vacío, solo los nacionales.",
+                "Region",
+                "Its ISO code, like ES-NC for Navarre. Empty, only the national ones.",
             ),
         ),
         emits=("calendar.event", "calendar.feed", HOLIDAYS),
         available=True,
         schedule="30 3 * * 1",
         offer=Offer(
-            title="Festivos",
-            subtitle="Los de tu país y los de tu comunidad",
+            title="Public holidays",
+            subtitle="Your country's and your region's",
             tone=4,
             many=True,
             group="holidays",
-            name="Festivos · {region|country}",
+            name="Holidays · {region|country}",
             asks=(
-                Ask("country", "pick", "País", source="countries", default="ES", display="country"),
+                Ask(
+                    "country",
+                    "pick",
+                    "Country",
+                    source="countries",
+                    default="ES",
+                    display="country",
+                ),
                 Ask(
                     "region",
                     "pick",
-                    "Región",
+                    "Region",
                     source="regions",
                     depends_on="country",
                     optional=True,
-                    none_label="Solo los nacionales",
-                    help="Los de tu ciudad no están en ninguna fuente: si tu ayuntamiento publica "
-                    "un .ics, pégalo aparte.",
+                    none_label="Only the national ones",
+                    help="Your city's are in no source: if your city council "
+                    "publishes a .ics, paste it separately.",
                 ),
             ),
         ),

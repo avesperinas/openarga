@@ -311,8 +311,9 @@ SOURCES = (
         id="openlibrary",
         name="Open Library",
         category="books",
-        description="Los datos de un libro y su portada, por título, autor o ISBN, al añadirlo en "
-        "Library. Sin clave: se conecta sola la primera vez que buscas.",
+        description="A book's details and cover, by title, author or ISBN, when "
+        "you add it in Library. No key: it connects by itself the "
+        "first time you search.",
         capabilities=("lookup",),
         serves=("books.search", "books.cover"),
         available=True,
@@ -322,16 +323,16 @@ SOURCES = (
         id="google_books",
         name="Google Books",
         category="books",
-        description="Lo mismo que Open Library, y mejor con las ediciones en español recientes. "
-        "Se pregunta a las dos a la vez.",
+        description="The same as Open Library, and better with recent editions "
+        "outside English. Both are asked at once.",
         capabilities=("lookup",),
         serves=("books.search", "books.cover"),
         secrets=(
             Secret(
                 "api_key",
-                "Clave de API",
-                "En console.cloud.google.com: crea un proyecto, activa la Books API y crea una "
-                "clave de API en Credenciales. Es gratis.",
+                "API key",
+                "At console.cloud.google.com: create a project, enable the Books "
+                "API and create an API key under Credentials. It is free.",
             ),
         ),
         available=True,

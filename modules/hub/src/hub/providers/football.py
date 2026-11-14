@@ -202,23 +202,24 @@ def _fold(text: str) -> str:
 SOURCES = (
     Provider(
         id="football",
-        name="Fútbol",
+        name="Football",
         category="calendar",
-        description="Los partidos de un equipo, de ESPN: liga, copa y Europa, con el resultado de "
-        "lo jugado. Hasta que se fija la hora de un partido va como «hora por confirmar», y cuando "
-        "se fija pasa a su hora. Se suscribe desde Planner.",
+        description="A team's matches, from ESPN: league, cup and Europe, with "
+        "the result of those played. Until a match's time is set it "
+        'shows as "time to be confirmed", and once set it moves to '
+        "its time. Subscribed from Planner.",
         capabilities=("sync",),
         settings=(
-            Setting("team", "Equipo", "Su número en ESPN; desde Planner se elige por su nombre."),
-            Setting("league", "Liga", "Como esp.1 para LaLiga.", "esp.1"),
-            Setting("team_name", "Nombre", "Cómo se llama el equipo."),
+            Setting("team", "Team", "Its ESPN number; Planner lets you choose it by name."),
+            Setting("league", "League", "Like esp.1 for LaLiga.", "esp.1"),
+            Setting("team_name", "Name", "The team's name."),
         ),
         emits=("calendar.event", "calendar.feed"),
         available=True,
         schedule="20 */6 * * *",
         offer=Offer(
-            title="Fútbol",
-            subtitle="Los partidos de los equipos que elijas: liga, copa y Europa",
+            title="Football",
+            subtitle="The matches of the teams you choose: league, cup and Europe",
             tone=2,
             many=True,
             group="sport",
@@ -227,12 +228,12 @@ SOURCES = (
                 Ask(
                     "team",
                     "lookup",
-                    "Equipo",
+                    "Team",
                     source="teams",
                     carries=(("league", "league"), ("name", "team_name")),
                     placeholder="Osasuna, Athletic, Arsenal…",
-                    help="Cualquier equipo. Hasta que se fija la hora de un partido sale como "
-                    "«hora por confirmar».",
+                    help="Any team. Until a match's time is set it shows as \"time"
+                    ' to be confirmed".',
                 ),
             ),
         ),

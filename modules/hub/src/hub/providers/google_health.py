@@ -1062,22 +1062,24 @@ SOURCES = (
         id="google_health",
         name="Google Health",
         category="health",
-        description="Lo que mide tu pulsera Fitbit: pasos, vitals, sueño con fases, VFC, SpO₂, "
-        "temperatura, entrenos, electrocardiogramas, avisos de ritmo irregular y la batería, cada "
-        "cuarto de hora. Va con tu propio cliente OAuth de Google Cloud: "
-        "pega su id y su secreto, y al conectar te lleva a Google a autorizar.",
+        description="What your Fitbit band measures: steps, vitals, sleep with "
+        "stages, HRV, SpO₂, temperature, workouts, "
+        "electrocardiograms, irregular rhythm alerts and the battery,"
+        " every quarter of an hour. It uses your own Google Cloud "
+        "OAuth client: paste its id and secret, and connecting takes "
+        "you to Google to authorise it.",
         capabilities=("sync",),
         secrets=(
             Secret(
                 CLIENT_ID,
                 "Client ID",
-                "El de tu cliente OAuth de Google Cloud (Credentials): acaba en "
+                "Your Google Cloud OAuth client's (Credentials): it ends in "
                 ".apps.googleusercontent.com.",
             ),
             Secret(
                 CLIENT_SECRET,
                 "Client secret",
-                "El secreto del mismo cliente: empieza por GOCSPX-.",
+                "The same client's secret: it starts with GOCSPX-.",
             ),
         ),
         emits=(

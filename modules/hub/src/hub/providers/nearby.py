@@ -192,10 +192,11 @@ def as_dict(one: Nearby) -> dict:
 SOURCES = (
     Provider(
         id="overpass",
-        name="Lo que hay cerca",
+        name="Nearby places",
         category="places",
-        description="Restaurantes, museos, parques y lo demás que hay cerca de un sitio, de "
-        "OpenStreetMap, para un viaje en Travel o desde Claude. Sin clave: se conecta sola.",
+        description="Restaurants, museums, parks and everything else near a "
+        "place, from OpenStreetMap, for a trip in Travel or from an "
+        "AI assistant. No key: it connects by itself.",
         capabilities=("lookup",),
         serves=("places.nearby",),
         available=True,

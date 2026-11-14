@@ -211,9 +211,10 @@ SOURCES = (
         id="wikidata",
         name="Wikidata",
         category="leisure",
-        description="Comprobar que una película, una serie o un documental existe antes de que "
-        "Insights te lo recomiende, con su año, quién la dirige y su artículo de Wikipedia. Sin "
-        "clave: se conecta sola la primera vez.",
+        description="Checks that a film, a series or a documentary exists before "
+        "Insights recommends it, with its year, its director and its "
+        "Wikipedia article. No key: it connects by itself the first "
+        "time.",
         capabilities=("lookup",),
         serves=("films.search",),
         available=True,
