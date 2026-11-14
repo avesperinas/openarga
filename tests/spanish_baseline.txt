@@ -92,12 +92,10 @@ modules/hub/src/hub/google_auth.py
 modules/hub/src/hub/instruments.py
 modules/hub/src/hub/notices.py
 modules/hub/src/hub/providers/agendas.py
-modules/hub/src/hub/providers/apple_health.py
 modules/hub/src/hub/providers/bitvavo.py
 modules/hub/src/hub/providers/books.py
 modules/hub/src/hub/providers/claude.py
 modules/hub/src/hub/providers/enable_banking.py
-modules/hub/src/hub/providers/films.py
 modules/hub/src/hub/providers/food.py
 modules/hub/src/hub/providers/football.py
 modules/hub/src/hub/providers/formula1.py

@@ -5,11 +5,12 @@ from hub.declare import Provider
 SOURCES = (
     Provider(
         id="apple_health",
-        name="Apple Salud",
+        name="Apple Health",
         category="health",
-        description="Tus pasos, tu corazón, tu actividad y tu sueño de cada día, que manda un "
-        "atajo del iPhone, y tu ficha. Al conectar sale un token que se enseña una sola vez: "
-        "pégalo en el atajo como explica Vitals en sus ajustes.",
+        description="Your steps, heart, activity and sleep of each day, sent by "
+        "an iPhone shortcut, and your profile. Connecting shows a "
+        "token only once: paste it in the shortcut as Vitals explains"
+        " in its settings.",
         capabilities=("push",),
         emits=("health.steps", "health.daily", "health.profile"),
         available=True,

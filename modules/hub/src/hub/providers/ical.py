@@ -180,19 +180,19 @@ async def sync(client: httpx.AsyncClient, secrets: dict[str, str], connection: A
 SOURCES = (
     Provider(
         id="ical",
-        name="Calendario publicado",
+        name="Published calendar",
         category="calendar",
-        description="Cualquier calendario publicado en iCalendar, por su dirección .ics o "
-        "webcal://: el de un equipo, los festivos de tu ciudad, uno que te comparten. Se "
-        "actualiza cada día. Se suscribe desde Planner.",
+        description="Any calendar published in iCalendar, by its .ics or "
+        "webcal:// address: a team's, your city's holidays, one "
+        "shared with you. Updated every day. Subscribed from Planner.",
         capabilities=("sync",),
-        settings=(Setting("url", "Dirección", "La que empieza por https:// o webcal://."),),
+        settings=(Setting("url", "Address", "The one starting with https:// or webcal://."),),
         emits=("calendar.event", "calendar.feed"),
         available=True,
         schedule="15 4 * * *",
         offer=Offer(
-            title="Otro calendario",
-            subtitle="Cualquier calendario .ics o webcal://: una serie, un festival, otro deporte",
+            title="Another calendar",
+            subtitle="Any .ics or webcal:// calendar: a series, a festival, another sport",
             tone=7,
             many=True,
             group="other",
@@ -201,10 +201,10 @@ SOURCES = (
                 Ask(
                     "url",
                     "url",
-                    "Dirección",
-                    placeholder="https://… o webcal://…",
-                    help="Si es privada, como la de un calendario de iCloud, pégala en "
-                    "Hub: allí se guarda cifrada.",
+                    "Address",
+                    placeholder="https://… or webcal://…",
+                    help="If it is private, like an iCloud calendar's, paste it "
+                    "in Hub: it is stored encrypted there.",
                 ),
             ),
         ),
@@ -214,17 +214,18 @@ SOURCES = (
     ),
     Provider(
         id="ical_private",
-        name="Calendario privado",
+        name="Private calendar",
         category="calendar",
-        description="Un calendario .ics cuya dirección es secreta, como la de uno de iCloud: la "
-        "dirección se guarda cifrada, como una clave. Sale en Planner como una suscripción más.",
+        description="A .ics calendar whose address is secret, like an iCloud one:"
+        " the address is stored encrypted, like a key. It shows in "
+        "Planner as one more subscription.",
         capabilities=("sync",),
         secrets=(
             Secret(
                 "url",
-                "Dirección privada",
-                "La dirección .ics o webcal:// que da tu calendario al compartirlo. Quien la tiene "
-                "lo lee, por eso se guarda como un secreto.",
+                "Private address",
+                "The .ics or webcal:// address your calendar gives when you share"
+                " it. Whoever has it can read it, so it is stored as a secret.",
             ),
         ),
         emits=("calendar.event", "calendar.feed"),

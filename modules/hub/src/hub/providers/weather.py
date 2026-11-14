@@ -194,8 +194,9 @@ SOURCES = (
         id="open_meteo",
         name="Open-Meteo",
         category="weather",
-        description="El tiempo de los sitios de tus viajes: la previsión de los próximos días y "
-        "el clima de cada mes, para Travel y para Claude. Sin clave: se conecta sola.",
+        description="The weather at the places of your trips: the forecast for "
+        "the next days and the climate of each month, for Travel and "
+        "for an AI assistant. No key: it connects by itself.",
         capabilities=("lookup",),
         serves=("weather.forecast", "weather.climate"),
         available=True,

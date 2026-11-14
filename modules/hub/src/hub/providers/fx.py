@@ -65,10 +65,11 @@ async def rate(client: httpx.AsyncClient, currency: str, day: date, today: date)
 SOURCES = (
     Provider(
         id="frankfurter",
-        name="Cambio de moneda (BCE)",
+        name="Exchange rates (ECB)",
         category="finance",
-        description="El cambio a euros de un día, del Banco Central Europeo, para los gastos de un "
-        "viaje en otra moneda en Travel o desde Claude. Sin clave: se conecta sola.",
+        description="The euro exchange rate of a day, from the European Central "
+        "Bank, for trip expenses in another currency in Travel or "
+        "from an AI assistant. No key: it connects by itself.",
         capabilities=("lookup",),
         serves=("fx.rate",),
         available=True,

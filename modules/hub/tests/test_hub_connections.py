@@ -156,7 +156,7 @@ async def test_the_tool_tells_what_is_connected_and_what_still_lives_in_its_app(
         content = await get_connections(connection, NoArguments())
 
     assert [(c["name"], c["provider"], c["category"]) for c in content["connections"]] == [
-        ("Bitvavo", "Bitvavo", "Finanzas")
+        ("Bitvavo", "Bitvavo", "Finance")
     ]
     assert content["configured_elsewhere"] == []
 

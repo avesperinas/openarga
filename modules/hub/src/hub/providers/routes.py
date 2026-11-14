@@ -75,10 +75,11 @@ async def directions(
 SOURCES = (
     Provider(
         id="osrm",
-        name="Rutas de OpenStreetMap",
+        name="OpenStreetMap routes",
         category="places",
-        description="Cómo ir de un sitio a otro a pie, en bici o en coche, con su distancia y su "
-        "tiempo, para el mapa de cada día de un viaje en Travel. Sin clave: se conecta sola.",
+        description="How to get from one place to another on foot, by bike or by "
+        "car, with its distance and time, for the map of each day of "
+        "a trip in Travel. No key: it connects by itself.",
         capabilities=("lookup",),
         serves=("routes.directions",),
         available=True,

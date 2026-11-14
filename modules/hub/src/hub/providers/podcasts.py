@@ -92,8 +92,9 @@ SOURCES = (
         id="apple_podcasts",
         name="Apple Podcasts",
         category="leisure",
-        description="Comprobar que un podcast o un episodio existe antes de que Insights te lo "
-        "recomiende, con su enlace. Sin clave: se conecta sola la primera vez.",
+        description="Checks that a podcast or an episode exists before Insights "
+        "recommends it, with its link. No key: it connects by itself "
+        "the first time.",
         capabilities=("lookup",),
         serves=("podcasts.search",),
         available=True,

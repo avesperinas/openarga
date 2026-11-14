@@ -103,7 +103,7 @@ def test_the_economy_category_and_the_ine_are_in_the_catalogue() -> None:
     [category] = [c for c in catalogue.listed() if c["id"] == "economy"]
     [provider] = category["providers"]
 
-    assert category["name"] == "Economía"
+    assert category["name"] == "Economy"
     assert provider["id"] == "ine"
     assert provider["available"] is True
     assert catalogue.provider("ine").secrets == ()

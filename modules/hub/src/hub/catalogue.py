@@ -39,6 +39,7 @@ from hub.providers import (
     weather,
     wikimedia,
 )
+from hub.words import local
 
 __all__ = [
     "Ask",
@@ -59,23 +60,23 @@ class Category:
 
 
 CATEGORIES = (
-    Category("finance", "Finanzas"),
-    Category("ai", "IA"),
-    Category("food", "Alimentación"),
-    Category("health", "Salud"),
-    Category("places", "Lugares"),
-    Category("books", "Libros"),
-    Category("calendar", "Calendario"),
-    Category("notes", "Notas"),
-    Category("economy", "Economía"),
-    Category("leisure", "Ocio"),
-    Category("weather", "Tiempo"),
+    Category("finance", "Finance"),
+    Category("ai", "AI"),
+    Category("food", "Food"),
+    Category("health", "Health"),
+    Category("places", "Places"),
+    Category("books", "Books"),
+    Category("calendar", "Calendar"),
+    Category("notes", "Notes"),
+    Category("economy", "Economy"),
+    Category("leisure", "Leisure"),
+    Category("weather", "Weather"),
 )
 
 GROUPS = (
-    Category("sport", "Deporte"),
-    Category("holidays", "Festivos"),
-    Category("other", "Otros calendarios"),
+    Category("sport", "Sport"),
+    Category("holidays", "Holidays"),
+    Category("other", "Other calendars"),
     Category("leisure", "Agendas"),
 )
 
@@ -131,26 +132,40 @@ def offered(contracts: set[str] | None = None) -> list[Provider]:
 
 def offer_of(provider: Provider) -> dict:
     assert provider.offer is not None
-    return {"provider": provider.id, "produces": list(provider.emits), **asdict(provider.offer)}
+    offer = asdict(provider.offer)
+    base = f"provider.{provider.id}.offer"
+    for field in ("title", "subtitle", "name"):
+        offer[field] = local(f"{base}.{field}", offer[field])
+    for ask in offer["asks"]:
+        at = f"{base}.ask.{ask['key']}"
+        for field in ("label", "help", "placeholder", "none_label"):
+            ask[field] = local(f"{at}.{field}", ask[field])
+        for choice in ask["choices"]:
+            choice["label"] = local(f"{at}.choice.{choice['value']}.label", choice["label"])
+    return {"provider": provider.id, "produces": list(provider.emits), **offer}
 
 
 def provider(provider_id: str) -> Provider:
     try:
         return BY_ID[provider_id]
     except KeyError:
-        raise LookupError(f"arga no conoce el proveedor '{provider_id}'") from None
+        raise LookupError(f"unknown provider '{provider_id}'") from None
+
+
+def _texts(prefix: str, one: Secret | Setting) -> dict[str, str]:
+    return {"label": local(f"{prefix}.label", one.label), "help": local(f"{prefix}.help", one.help)}
 
 
 def listed() -> list[dict]:
     return [
         {
             "id": category.id,
-            "name": category.name,
+            "name": local(f"category.{category.id}", category.name),
             "providers": [
                 {
                     "id": item.id,
-                    "name": item.name,
-                    "description": item.description,
+                    "name": local(f"provider.{item.id}.name", item.name),
+                    "description": local(f"provider.{item.id}.description", item.description),
                     "capabilities": list(item.capabilities),
                     "available": item.available,
                     "single": item.single,
@@ -162,8 +177,7 @@ def listed() -> list[dict]:
                     "secrets": [
                         {
                             "key": secret.key,
-                            "label": secret.label,
-                            "help": secret.help,
+                            **_texts(f"provider.{item.id}.secret.{secret.key}", secret),
                             "multiline": secret.multiline,
                         }
                         for secret in item.secrets
@@ -171,8 +185,7 @@ def listed() -> list[dict]:
                     "settings": [
                         {
                             "key": setting.key,
-                            "label": setting.label,
-                            "help": setting.help,
+                            **_texts(f"provider.{item.id}.setting.{setting.key}", setting),
                             "default": setting.default,
                         }
                         for setting in item.settings
