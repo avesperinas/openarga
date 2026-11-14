@@ -1,7 +1,7 @@
 [project]
 name = "notebook"
 version = "0.1.0"
-description = "Módulo Notebook de OpenArga"
+description = "OpenArga Notebook module"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "arga-tenancy",

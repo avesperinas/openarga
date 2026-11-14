@@ -26,15 +26,15 @@ async def test_claude_writes_links_finds_edits_and_the_app_undoes_it(api) -> Non
         "create_note",
         {
             "title": "DE 4.2 Wechselpräpositionen",
-            "folder": "Study/Alemán/B1 Gramatik",
-            "content": "# Wechselpräpositionen\n\nin, an, auf: Akkusativ o Dativ.\n",
+            "folder": "Study/German/B1 Gramatik",
+            "content": "# Wechselpräpositionen\n\nin, an, auf: Akkusativ or Dativ.\n",
             "properties": {"status": "offen"},
         },
     )
     await content(
         api,
         "create_note",
-        {"title": "Índice", "content": "- [[DE 4.2 Wechselpräpositionen]]\n"},
+        {"title": "Index", "content": "- [[DE 4.2 Wechselpräpositionen]]\n"},
     )
 
     found = await content(api, "search_notes", {"query": "wechselprapositionen"}, READ)
@@ -43,24 +43,22 @@ async def test_claude_writes_links_finds_edits_and_the_app_undoes_it(api) -> Non
     edited = await content(
         api,
         "edit_note",
-        {"note": created["id"], "old_text": "Akkusativ o Dativ", "new_text": "Wohin? / Wo?"},
+        {"note": created["id"], "old_text": "Akkusativ or Dativ", "new_text": "Wohin? / Wo?"},
     )
 
-    assert found["notes"][0]["path"] == "Study/Alemán/B1 Gramatik/DE 4.2 Wechselpräpositionen"
-    assert found["notes"][0]["href"] == f"/notebook/nota/{created['id']}"
-    assert read["href"] == f"/notebook/nota/{created['id']}"
+    assert found["notes"][0]["path"] == "Study/German/B1 Gramatik/DE 4.2 Wechselpräpositionen"
+    assert found["notes"][0]["href"] == f"/notebook/note/{created['id']}"
+    assert read["href"] == f"/notebook/note/{created['id']}"
     assert "links" not in read
     assert read["properties"] == {"status": "offen"}
     assert read["backlinks"] == 1
-    assert links["backlinks"] == [
-        {"path": "Índice", "lines": ["- [[DE 4.2 Wechselpräpositionen]]"]}
-    ]
+    assert links["backlinks"] == [{"path": "Index", "lines": ["- [[DE 4.2 Wechselpräpositionen]]"]}]
     assert edited["version"] == 2
 
     history = (await api.get(f"/notes/{created['id']}/revisions")).json()
     assert [(r["replaced_by"], r["written_by"]) for r in history] == [("tool", "tool")]
     undone = await api.post(f"/notes/{created['id']}/revisions/{history[0]['id']}/restore")
-    assert "Akkusativ o Dativ" in undone.json()["content"]
+    assert "Akkusativ or Dativ" in undone.json()["content"]
 
 
 async def test_the_reader_scope_cannot_write(api) -> None:
@@ -75,10 +73,10 @@ async def test_a_title_shared_by_two_notes_asks_for_the_path(api) -> None:
 
     ambiguous = await call(api, "read_note", {"note": "plan"}, READ)
     by_path = await content(api, "read_note", {"note": "B/Plan"}, READ)
-    by_link = await content(api, "read_note", {"note": "[[A/Plan|el plan]]"}, READ)
+    by_link = await content(api, "read_note", {"note": "[[A/Plan|the plan]]"}, READ)
 
     assert ambiguous.status_code == 409
-    assert "«A/Plan», «B/Plan»" in ambiguous.json()["detail"]
+    assert "'A/Plan', 'B/Plan'" in ambiguous.json()["detail"]
     assert by_path["path"] == "B/Plan"
     assert by_link["path"] == "A/Plan"
 
@@ -89,36 +87,36 @@ async def test_a_missing_note_suggests_similar_ones(api) -> None:
     response = await call(api, "read_note", {"note": "Perfekt"}, READ)
 
     assert response.status_code == 404
-    assert "«DE 2.3 Perfekt»" in response.json()["detail"]
+    assert "'DE 2.3 Perfekt'" in response.json()["detail"]
 
 
 async def test_a_fragment_that_is_not_there_or_twice_changes_nothing(api) -> None:
-    await content(api, "create_note", {"title": "N", "content": "dos y dos"})
+    await content(api, "create_note", {"title": "N", "content": "two and two"})
 
-    missing = await call(api, "edit_note", {"note": "N", "old_text": "tres", "new_text": "3"})
-    twice = await call(api, "edit_note", {"note": "N", "old_text": "dos", "new_text": "2"})
+    missing = await call(api, "edit_note", {"note": "N", "old_text": "three", "new_text": "3"})
+    twice = await call(api, "edit_note", {"note": "N", "old_text": "two", "new_text": "2"})
     read = await content(api, "read_note", {"note": "N"}, READ)
 
-    assert missing.status_code == 422 and "no aparece" in missing.json()["detail"]
-    assert twice.status_code == 409 and "2 veces" in twice.json()["detail"]
-    assert read["content"] == "dos y dos" and read["version"] == 1
+    assert missing.status_code == 422 and "does not appear" in missing.json()["detail"]
+    assert twice.status_code == 409 and "2 times" in twice.json()["detail"]
+    assert read["content"] == "two and two" and read["version"] == 1
 
 
 async def test_sections_are_read_replaced_and_appended_to(api) -> None:
     await content(
         api,
         "create_note",
-        {"title": "Kasus", "content": "# Kasus\n\n## Dativ\n\nviejo\n\n## Genitiv\n\ng\n"},
+        {"title": "Kasus", "content": "# Kasus\n\n## Dativ\n\nold\n\n## Genitiv\n\ng\n"},
     )
 
-    await content(api, "replace_section", {"note": "Kasus", "heading": "Dativ", "text": "nuevo"})
+    await content(api, "replace_section", {"note": "Kasus", "heading": "Dativ", "text": "new"})
     await content(api, "append_to_note", {"note": "Kasus", "text": "- mit", "heading": "## Dativ"})
-    await content(api, "append_to_note", {"note": "Kasus", "text": "Fin."})
+    await content(api, "append_to_note", {"note": "Kasus", "text": "End."})
     dative = await content(api, "read_note", {"note": "Kasus", "section": "dativ"}, READ)
     whole = await content(api, "read_note", {"note": "Kasus"}, READ)
 
-    assert dative["content"] == "## Dativ\nnuevo\n\n- mit\n\n"
-    assert whole["content"].endswith("## Genitiv\n\ng\n\nFin.\n")
+    assert dative["content"] == "## Dativ\nnew\n\n- mit\n\n"
+    assert whole["content"].endswith("## Genitiv\n\ng\n\nEnd.\n")
     assert whole["outline"] == ["# Kasus", "## Dativ", "## Genitiv"]
 
 
@@ -128,14 +126,14 @@ async def test_what_is_due_for_review_is_found_by_its_property(api) -> None:
         api,
         "create_note",
         {
-            "title": "Toca",
+            "title": "Due",
             "properties": {"naechste_wiederholung": "2020-01-01", "fehlerquote": 0.4},
         },
     )
     await content(
         api,
         "create_note",
-        {"title": "Aún no", "properties": {"naechste_wiederholung": "2999-01-01"}},
+        {"title": "Not yet", "properties": {"naechste_wiederholung": "2999-01-01"}},
     )
 
     due = await content(
@@ -153,12 +151,12 @@ async def test_what_is_due_for_review_is_found_by_its_property(api) -> None:
     await content(
         api,
         "set_properties",
-        {"note": "Toca", "set": {"naechste_wiederholung": day}, "remove": ["fehlerquote"]},
+        {"note": "Due", "set": {"naechste_wiederholung": day}, "remove": ["fehlerquote"]},
     )
-    read = await content(api, "read_note", {"note": "Toca"}, READ)
+    read = await content(api, "read_note", {"note": "Due"}, READ)
 
-    assert [n["path"] for n in due["notes"]] == ["Toca"]
-    assert [n["path"] for n in errors["notes"]] == ["Toca"]
+    assert [n["path"] for n in due["notes"]] == ["Due"]
+    assert [n["path"] for n in errors["notes"]] == ["Due"]
     assert read["properties"] == {"naechste_wiederholung": day}
     assert read["content"].startswith(f"---\nnaechste_wiederholung: {day}\n---\n")
 
@@ -178,14 +176,16 @@ async def test_a_tag_in_a_list_property_is_found_with_eq(api) -> None:
 
 async def test_the_daily_note_is_created_and_added_to(api) -> None:
     before = await content(api, "read_note", {"day": "2026-09-28"}, READ)
-    await content(api, "add_to_daily_note", {"text": "- Hablé de Notebook", "day": "2026-09-28"})
-    await content(api, "add_to_daily_note", {"text": "- Y del alemán", "day": "2026-09-28"})
+    await content(
+        api, "add_to_daily_note", {"text": "- Talked about Notebook", "day": "2026-09-28"}
+    )
+    await content(api, "add_to_daily_note", {"text": "- And about German", "day": "2026-09-28"})
     after = await content(api, "read_note", {"day": "2026-09-28"}, READ)
     today = await content(api, "read_note", {}, READ)
 
     assert before == {"date": "2026-09-28", "exists": False}
     assert after["path"] == "Diario/2026-09-28"
-    assert after["content"] == "- Hablé de Notebook\n\n- Y del alemán\n"
+    assert after["content"] == "- Talked about Notebook\n\n- And about German\n"
     assert after["exists"] is True and after["date"] == "2026-09-28"
     assert today["exists"] is False
 

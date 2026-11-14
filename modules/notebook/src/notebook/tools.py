@@ -27,8 +27,8 @@ def role_for_scopes(scopes: set[str]) -> str | None:
 
 
 NOTE = Field(
-    description="La nota: su título (`DE 2.3 Perfekt`), su ruta si hay dos con el mismo título "
-    "(`Study/Alemán/DE 2.3 Perfekt`) o su id.",
+    description="The note: its title (`DE 2.3 Perfekt`), its path when two share the title "
+    "(`Study/German/DE 2.3 Perfekt`) or its id.",
     min_length=1,
     max_length=1200,
 )
@@ -55,34 +55,34 @@ class SearchNotes(BaseModel):
     query: str | None = Field(
         default=None,
         max_length=300,
-        description="Palabras a buscar en título, texto y propiedades. Da igual acentos, diéresis "
-        "y mayúsculas, y una palabra encuentra las que empiezan por ella.",
+        description="Words to find in the title, text and properties. Accents, umlauts and case "
+        "do not matter, and a word finds those that start with it.",
     )
-    folder: str | None = Field(default=None, description="Solo en esta carpeta y sus subcarpetas.")
-    tag: str | None = Field(default=None, description="Solo con este tag o uno hijo suyo.")
+    folder: str | None = Field(default=None, description="Only in this folder and its subfolders.")
+    tag: str | None = Field(default=None, description="Only with this tag or a child of it.")
     properties: list[PropertyFilter] = Field(
         default_factory=list,
         max_length=10,
-        description="Filtros por propiedad del frontmatter. `op`: eq, ne, lt, lte, gt, gte, "
-        "exists, missing. Las fechas se comparan como texto ISO, y `today` es hoy. En una lista, "
-        "`eq` es que la contiene.",
+        description="Filters on frontmatter properties. `op`: eq, ne, lt, lte, gt, gte, "
+        "exists, missing. Dates compare as ISO text, and `today` is today. On a list, `eq` means "
+        "it contains the value.",
     )
     since: date | None = Field(
         default=None,
-        description="Solo las cambiadas desde este día, y cuántas veces cambió cada una. Es lo "
-        "que cambió en un periodo: sin palabras, de lo más reciente a lo más viejo.",
+        description="Only those changed since this day, and how many times each changed. It is "
+        "what changed in a period: without words, newest first.",
     )
-    until: date | None = Field(default=None, description="Solo las cambiadas hasta este día.")
+    until: date | None = Field(default=None, description="Only those changed until this day.")
     by: str | None = Field(
         default=None,
         pattern="^(me|claude|import)$",
-        description="Solo las que cambiaste tú, Claude o la importación por última vez.",
+        description="Only those last changed by you, Claude or the import.",
     )
     limit: int = Field(default=20, ge=1, le=100)
 
 
 def _href(one: notes.NoteSummary) -> str:
-    return f"/notebook/nota/{one.id}"
+    return f"/notebook/note/{one.id}"
 
 
 async def search_notes(connection: AsyncConnection, arguments: SearchNotes) -> dict[str, Any]:
@@ -116,24 +116,25 @@ async def search_notes(connection: AsyncConnection, arguments: SearchNotes) -> d
 class ReadNote(BaseModel):
     note: str | None = Field(
         default=None,
-        description="La nota: su título (`DE 2.3 Perfekt`), su ruta si hay dos con el mismo título "
-        "(`Study/Alemán/DE 2.3 Perfekt`) o su id. Sin ella, la nota del día de `day`.",
+        description="The note: its title (`DE 2.3 Perfekt`), its path when two share the title "
+        "(`Study/German/DE 2.3 Perfekt`) or its id. Without it, the note of `day`.",
         min_length=1,
         max_length=1200,
     )
     day: date | None = Field(
         default=None,
-        description="La nota de ese día (`2026-09-28`), en vez de `note`. Sin ninguno de los dos, "
-        "la de hoy.",
+        description="The note of that day (`2026-09-28`), instead of `note`. Without either, "
+        "today's.",
     )
     section: str | None = Field(
         default=None,
-        description="Solo lo que hay bajo este encabezado, con sus subsecciones. Sin él, entera.",
+        description="Only what is under this heading, with its subsections. Without it, all of "
+        "the note.",
     )
     links: bool = Field(
         default=False,
-        description="Con sus enlaces: a qué nota llega cada uno, y las notas que la enlazan con "
-        "la línea donde lo hacen.",
+        description="With its links: which note each one reaches, and the notes that link to it "
+        "with the line where they do.",
     )
 
 
@@ -172,8 +173,8 @@ async def read_note(connection: AsyncConnection, arguments: ReadNote) -> dict[st
         found["of_apps"] = {
             "apps": [app["name"] for app in owner.apps],
             "properties": owner.properties,
-            "note": "El bloque entre `%% arga %%` y `%% /arga %%` y estas propiedades los "
-            "escribe la app y se cambian con sus tools; lo de fuera del bloque es tuyo.",
+            "note": "The block between `%% arga %%` and `%% /arga %%` and these properties are "
+            "written by the app and changed with its tools; what is outside the block is yours.",
         }
     if arguments.note is None:
         found["date"] = (arguments.day or notes.today()).isoformat()
@@ -195,7 +196,7 @@ async def read_note(connection: AsyncConnection, arguments: ReadNote) -> dict[st
 
 class ExploreGraph(BaseModel):
     note: str = NOTE
-    depth: int = Field(default=1, ge=1, le=2, description="Saltos desde la nota: 1 o 2.")
+    depth: int = Field(default=1, ge=1, le=2, description="Hops from the note: 1 or 2.")
 
 
 async def explore_graph(connection: AsyncConnection, arguments: ExploreGraph) -> dict[str, Any]:
@@ -212,7 +213,7 @@ async def explore_graph(connection: AsyncConnection, arguments: ExploreGraph) ->
 
 class ListFolder(BaseModel):
     folder: str | None = Field(
-        default=None, description="La ruta. Sin ella, la raíz, y además todos los tags."
+        default=None, description="The path. Without it, the root, plus every tag."
     )
 
 
@@ -232,7 +233,7 @@ class GetDigest(BaseModel):
     period: str | None = Field(
         default=None,
         pattern=r"^\d{4}-([Ww]\d{1,2}|[Tt][1-4]|\d{1,2})$",
-        description="`2026-W41`, `2026-09` o `2026-T4`. Sin él, la última semana cerrada.",
+        description="`2026-W41`, `2026-09` or `2026-Q4`. Without it, the last closed week.",
     )
 
 
@@ -241,7 +242,7 @@ async def get_digest(connection: AsyncConnection, arguments: GetDigest) -> dict[
         try:
             period = digest.parse(arguments.period)
         except ValueError:
-            return {"note": f"no entiendo el periodo «{arguments.period}»"}
+            return {"note": f"'{arguments.period}' is not a period"}
     else:
         period = digest.of("week", notes.today()).previous()
     content = await digest.compose(connection, period)
@@ -261,7 +262,7 @@ async def get_digest(connection: AsyncConnection, arguments: GetDigest) -> dict[
 class CreateNote(BaseModel):
     title: str = Field(min_length=1, max_length=200, description="Sin `/ \\ : [ ] # ^ |`.")
     folder: str | None = Field(
-        default=None, description="La carpeta; se crea si no existe. Sin ella, en la raíz."
+        default=None, description="The folder; created if missing. Without it, the root."
     )
     content: str = Field(default="", max_length=notes.MAX_CONTENT)
     properties: dict[str, Any] = Field(
@@ -282,8 +283,8 @@ class AppendToNote(BaseModel):
     text: str = Field(min_length=1, max_length=200_000)
     heading: str | None = Field(
         default=None,
-        description="Al final de la sección de este encabezado, antes del siguiente. Sin él, al "
-        "final de la nota.",
+        description="At the end of this heading's section, before the next one. Without it, at "
+        "the end of the note.",
     )
 
 
@@ -302,9 +303,9 @@ class EditNote(BaseModel):
     old_text: str = Field(
         min_length=1,
         max_length=200_000,
-        description="El fragmento exacto que hay ahora. Tiene que aparecer una sola vez.",
+        description="The exact fragment there now. It must appear only once.",
     )
-    new_text: str = Field(max_length=200_000, description="Por lo que se cambia. Vacío, lo quita.")
+    new_text: str = Field(max_length=200_000, description="What replaces it. Empty removes it.")
 
 
 async def edit_note(connection: AsyncConnection, arguments: EditNote) -> dict[str, Any]:
@@ -319,8 +320,8 @@ async def edit_note(connection: AsyncConnection, arguments: EditNote) -> dict[st
 
 class ReplaceSection(BaseModel):
     note: str = NOTE
-    heading: str = Field(min_length=1, max_length=300, description="El encabezado, que se queda.")
-    text: str = Field(max_length=200_000, description="Lo nuevo bajo el encabezado.")
+    heading: str = Field(min_length=1, max_length=300, description="The heading, which stays.")
+    text: str = Field(max_length=200_000, description="The new text under the heading.")
 
 
 async def replace_section(connection: AsyncConnection, arguments: ReplaceSection) -> dict[str, Any]:
@@ -336,14 +337,14 @@ async def replace_section(connection: AsyncConnection, arguments: ReplaceSection
 class SetProperties(BaseModel):
     note: str = NOTE
     set: dict[str, Any] = Field(
-        default_factory=dict, description="Las propiedades a poner o cambiar, con su valor."
+        default_factory=dict, description="The properties to set or change, with their value."
     )
-    remove: list[str] = Field(default_factory=list, description="Las propiedades a quitar.")
+    remove: list[str] = Field(default_factory=list, description="The properties to remove.")
 
 
 async def set_properties(connection: AsyncConnection, arguments: SetProperties) -> dict[str, Any]:
     if not arguments.set and not arguments.remove:
-        raise notes.Invalid("no hay nada que poner ni quitar")
+        raise notes.Invalid("nothing to set or remove")
     _, saved = await notes.edit(
         connection,
         arguments.note,
@@ -355,8 +356,8 @@ async def set_properties(connection: AsyncConnection, arguments: SetProperties) 
 
 class AddToDailyNote(BaseModel):
     text: str = Field(min_length=1, max_length=200_000)
-    day: date | None = Field(default=None, description="El día. Por defecto, hoy.")
-    heading: str | None = Field(default=None, description="Bajo este encabezado, si lo tiene.")
+    day: date | None = Field(default=None, description="The day. Today by default.")
+    heading: str | None = Field(default=None, description="Under this heading, if it has it.")
 
 
 async def add_to_daily_note(
@@ -376,14 +377,14 @@ async def add_to_daily_note(
 class MoveNote(BaseModel):
     note: str = NOTE
     folder: str | None = Field(
-        default=None, description='La carpeta nueva; `""` es la raíz. Sin ella, la misma.'
+        default=None, description='The new folder; `""` is the root. Without it, the same.'
     )
-    title: str | None = Field(default=None, description="El título nuevo. Sin él, el mismo.")
+    title: str | None = Field(default=None, description="The new title. Without it, the same.")
 
 
 async def move_note(connection: AsyncConnection, arguments: MoveNote) -> dict[str, Any]:
     if arguments.folder is None and arguments.title is None:
-        raise notes.Invalid("di a qué carpeta o con qué título")
+        raise notes.Invalid("say which folder or which title")
     moved, relinked = await notes.move(
         connection, arguments.note, arguments.folder, arguments.title, AUTHOR
     )

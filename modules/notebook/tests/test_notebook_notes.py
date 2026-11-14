@@ -26,15 +26,15 @@ async def test_a_note_is_created_in_its_folder_with_its_properties_and_tags(api)
         api,
         "DE 1.1 Kasus",
         "---\ntags: [deutsch]\nstatus: offen\n---\n# Kasus\n\n#grammatik\n",
-        "Study/Alemán/B1 Gramatik",
+        "Study/German/B1 Gramatik",
     )
 
-    assert note["path"] == "Study/Alemán/B1 Gramatik/DE 1.1 Kasus"
+    assert note["path"] == "Study/German/B1 Gramatik/DE 1.1 Kasus"
     assert note["properties"] == {"tags": ["deutsch"], "status": "offen"}
     assert note["tags"] == ["grammatik", "deutsch"]
     assert note["outline"] == [{"level": 1, "text": "Kasus", "line": 4}]
     tree = (await api.get("/tree")).json()
-    assert tree["folders"] == ["Study", "Study/Alemán", "Study/Alemán/B1 Gramatik"]
+    assert tree["folders"] == ["Study", "Study/German", "Study/German/B1 Gramatik"]
 
 
 async def test_a_title_taken_in_the_same_folder_is_a_conflict_whatever_its_case(api) -> None:
@@ -43,55 +43,57 @@ async def test_a_title_taken_in_the_same_folder_is_a_conflict_whatever_its_case(
     elsewhere = await api.post("/notes", json={"folder": "B", "title": "Plan"})
 
     assert again.status_code == 409
-    assert "ya hay una nota «PLAN» en «A»" in again.json()["detail"]
+    assert "there is already a note 'PLAN' in 'A'" in again.json()["detail"]
     assert elsewhere.status_code == 201
 
 
 async def test_a_folder_keeps_the_case_it_was_created_with(api) -> None:
-    await create(api, "Uno", folder="Study/Alemán")
-    second = await create(api, "Dos", folder="study/alemán")
+    await create(api, "One", folder="Study/German")
+    second = await create(api, "Two", folder="study/german")
 
-    assert second["folder"] == "Study/Alemán"
+    assert second["folder"] == "Study/German"
 
 
 async def test_a_bad_title_says_why(api) -> None:
     response = await api.post("/notes", json={"title": "a/b"})
 
     assert response.status_code == 422
-    assert "«/»" in response.json()["detail"]
+    assert "'/'" in response.json()["detail"]
 
 
 async def test_a_link_written_in_nfd_reaches_the_note_and_counts_as_a_backlink(api) -> None:
-    target = await create(api, "DE 4.2 Wechselpräpositionen", "Texto", "B1")
-    source = await create(api, "Índice", f"Ver [[DE 4.2 {nfd('Wechselpräpositionen')}]] hoy.", "B1")
+    target = await create(api, "DE 4.2 Wechselpräpositionen", "Text", "B1")
+    source = await create(
+        api, "Index", f"See [[DE 4.2 {nfd('Wechselpräpositionen')}]] today.", "B1"
+    )
 
     out = await links(api, source)
     back = await links(api, target)
 
     assert out["links"][0]["note"]["id"] == target["id"]
     assert [(b["note"]["id"], b["lines"]) for b in back["backlinks"]] == [
-        (source["id"], ["Ver [[DE 4.2 Wechselpräpositionen]] hoy."])
+        (source["id"], ["See [[DE 4.2 Wechselpräpositionen]] today."])
     ]
 
 
 async def test_a_link_waits_for_its_note_and_finds_it_when_created(api) -> None:
-    source = await create(api, "Índice", "[[Todavía no]]")
+    source = await create(api, "Index", "[[Not yet]]")
     assert (await links(api, source))["links"][0]["note"] is None
 
-    created = await create(api, "Todavía no")
+    created = await create(api, "Not yet")
 
     assert (await links(api, source))["links"][0]["note"]["id"] == created["id"]
 
 
 async def test_two_notes_with_the_same_title_the_same_folder_wins(api) -> None:
-    near = await create(api, "Plan", folder="Proyectos/Casa")
-    await create(api, "Plan", folder="Otros")
-    source = await create(api, "Obra", "[[Plan]] y [[Otros/Plan]]", "Proyectos/Casa")
+    near = await create(api, "Plan", folder="Projects/House")
+    await create(api, "Plan", folder="Others")
+    source = await create(api, "Works", "[[Plan]] and [[Others/Plan]]", "Projects/House")
 
     found = (await links(api, source))["links"]
 
     assert found[0]["note"]["id"] == near["id"]
-    assert found[1]["note"]["path"] == "Otros/Plan"
+    assert found[1]["note"]["path"] == "Others/Plan"
 
 
 async def test_resolving_a_link_for_the_app(api) -> None:
@@ -105,43 +107,43 @@ async def test_resolving_a_link_for_the_app(api) -> None:
 
 
 async def test_search_ignores_umlauts_accents_and_case_and_puts_titles_first(api) -> None:
-    await create(api, "Otra", "Aquí se habla de Präfixe de pasada.")
+    await create(api, "Other", "Präfixe are mentioned here in passing.")
     await create(api, "Präfixe und Suffixe", "Wortbildung.")
 
     found = (await api.get("/search", params={"q": "prafix"})).json()
 
-    assert [hit["title"] for hit in found] == ["Präfixe und Suffixe", "Otra"]
+    assert [hit["title"] for hit in found] == ["Präfixe und Suffixe", "Other"]
     assert "Präfixe" in found[1]["snippet"]
 
 
 async def test_search_by_folder_and_by_parent_tag(api) -> None:
-    await create(api, "Uno", "#deutsch/b1 nada", "Study/Alemán")
-    await create(api, "Dos", "#deutsch nada", "Otros")
-    await create(api, "Tres", "#english nada", "Study")
+    await create(api, "One", "#deutsch/b1 nothing", "Study/German")
+    await create(api, "Two", "#deutsch nothing", "Others")
+    await create(api, "Three", "#english nothing", "Study")
 
     by_folder = (await api.get("/search", params={"folder": "study"})).json()
     by_tag = (await api.get("/search", params={"tag": "#Deutsch"})).json()
 
-    assert {hit["title"] for hit in by_folder} == {"Uno", "Tres"}
-    assert {hit["title"] for hit in by_tag} == {"Uno", "Dos"}
+    assert {hit["title"] for hit in by_folder} == {"One", "Three"}
+    assert {hit["title"] for hit in by_tag} == {"One", "Two"}
 
 
 async def test_renaming_a_note_rewrites_the_links_that_would_lose_it(api) -> None:
-    target = await create(api, "Viejo", folder="A")
-    source = await create(api, "Fuente", "[[Viejo#Parte|alias]] y ![[Viejo]] y [[Otro]]", "B")
+    target = await create(api, "Old", folder="A")
+    source = await create(api, "Source", "[[Old#Part|alias]] and ![[Old]] and [[Other]]", "B")
 
-    moved = await api.post(f"/notes/{target['id']}/move", json={"title": "Nuevo"})
+    moved = await api.post(f"/notes/{target['id']}/move", json={"title": "New"})
 
     assert moved.status_code == 200, moved.text
     assert moved.json()["relinked"] == 1
     content = (await api.get(f"/notes/{source['id']}")).json()["content"]
-    assert content == "[[Nuevo#Parte|alias]] y ![[Nuevo]] y [[Otro]]"
+    assert content == "[[New#Part|alias]] and ![[New]] and [[Other]]"
 
 
 async def test_moving_a_note_next_to_a_namesake_writes_the_path(api) -> None:
     target = await create(api, "Plan", folder="A")
     await create(api, "Plan", folder="C")
-    source = await create(api, "Fuente", "[[A/Plan]]", "C")
+    source = await create(api, "Source", "[[A/Plan]]", "C")
 
     await api.post(f"/notes/{target['id']}/move", json={"folder": "B"})
 
@@ -149,20 +151,20 @@ async def test_moving_a_note_next_to_a_namesake_writes_the_path(api) -> None:
 
 
 async def test_moving_a_folder_moves_its_notes_and_fixes_path_links(api) -> None:
-    inside = await create(api, "Dentro", folder="Viejo/Sub")
-    source = await create(api, "Fuente", "[[Viejo/Sub/Dentro]] y [[Dentro]]")
+    inside = await create(api, "Inside", folder="Old/Sub")
+    source = await create(api, "Source", "[[Old/Sub/Inside]] and [[Inside]]")
 
-    moved = await api.put("/folders", json={"from": "Viejo", "to": "Study/Nuevo"})
+    moved = await api.put("/folders", json={"from": "Old", "to": "Study/New"})
 
-    assert moved.json() == {"path": "Study/Nuevo", "notes": 1}
-    assert (await api.get(f"/notes/{inside['id']}")).json()["path"] == "Study/Nuevo/Sub/Dentro"
+    assert moved.json() == {"path": "Study/New", "notes": 1}
+    assert (await api.get(f"/notes/{inside['id']}")).json()["path"] == "Study/New/Sub/Inside"
     content = (await api.get(f"/notes/{source['id']}")).json()["content"]
-    assert content == "[[Dentro]] y [[Dentro]]"
-    assert (await api.get("/tree")).json()["folders"] == ["Study", "Study/Nuevo", "Study/Nuevo/Sub"]
+    assert content == "[[Inside]] and [[Inside]]"
+    assert (await api.get("/tree")).json()["folders"] == ["Study", "Study/New", "Study/New/Sub"]
 
 
 async def test_a_folder_cannot_move_inside_itself(api) -> None:
-    await create(api, "Uno", folder="A")
+    await create(api, "One", folder="A")
 
     response = await api.put("/folders", json={"from": "A", "to": "A/B"})
 
@@ -170,17 +172,17 @@ async def test_a_folder_cannot_move_inside_itself(api) -> None:
 
 
 async def test_listing_a_folder_counts_what_is_inside(api) -> None:
-    await create(api, "Uno", folder="Study/Alemán/B1")
-    await create(api, "Dos", folder="Study/Alemán")
-    await create(api, "Raíz")
+    await create(api, "One", folder="Study/German/B1")
+    await create(api, "Two", folder="Study/German")
+    await create(api, "Root")
 
     root = (await api.get("/folders")).json()
     study = (await api.get("/folders", params={"path": "study"})).json()
 
     assert [(f["path"], f["notes"]) for f in root["folders"]] == [("Study", 2)]
-    assert [n["title"] for n in root["notes"]] == ["Raíz"]
+    assert [n["title"] for n in root["notes"]] == ["Root"]
     assert study["path"] == "Study"
-    assert [(f["name"], f["notes"]) for f in study["folders"]] == [("Alemán", 2)]
+    assert [(f["name"], f["notes"]) for f in study["folders"]] == [("German", 2)]
 
 
 async def test_the_trash_keeps_a_note_until_it_is_emptied(api) -> None:
@@ -203,7 +205,7 @@ async def test_the_trash_keeps_a_note_until_it_is_emptied(api) -> None:
 
 
 async def test_deleting_a_folder_sends_its_notes_to_the_trash(api) -> None:
-    await create(api, "Uno", folder="Fuera/Sub")
+    await create(api, "One", folder="Fuera/Sub")
 
     assert (await api.delete("/folders", params={"path": "Fuera"})).json() == {"trashed": 1}
     assert (await api.get("/tree")).json() == {"folders": [], "notes": []}
@@ -211,13 +213,13 @@ async def test_deleting_a_folder_sends_its_notes_to_the_trash(api) -> None:
 
 
 async def test_the_app_cannot_overwrite_a_version_it_did_not_see(api) -> None:
-    note = await create(api, "Compartida", "uno")
-    await api.put(f"/notes/{note['id']}", json={"content": "dos", "version": note["version"]})
+    note = await create(api, "Shared", "one")
+    await api.put(f"/notes/{note['id']}", json={"content": "two", "version": note["version"]})
 
-    stale = await api.put(f"/notes/{note['id']}", json={"content": "tres", "version": 1})
+    stale = await api.put(f"/notes/{note['id']}", json={"content": "three", "version": 1})
 
     assert stale.status_code == 409
-    assert "cambió mientras la editabas" in stale.json()["detail"]
+    assert "changed while you were editing it" in stale.json()["detail"]
 
 
 async def test_typing_in_the_app_keeps_one_version_every_ten_minutes(api) -> None:
@@ -232,7 +234,7 @@ async def test_typing_in_the_app_keeps_one_version_every_ten_minutes(api) -> Non
 
 
 async def test_a_version_is_restored_and_the_restore_is_undoable(api) -> None:
-    note = await create(api, "Texto", "original")
+    note = await create(api, "Text", "original")
     await api.put(f"/notes/{note['id']}", json={"content": "cambiado"})
     (first,) = (await api.get(f"/notes/{note['id']}/revisions")).json()
     old = (await api.get(f"/notes/{note['id']}/revisions/{first['id']}")).json()
@@ -274,7 +276,7 @@ async def test_the_app_is_served_for_any_of_its_paths(api, tmp_path, monkeypatch
     (tmp_path / "index.html").write_text("<!doctype html><title>Notebook</title>")
     monkeypatch.setenv("UI_DIST", str(tmp_path))
 
-    page = await api.get("/notebook/nota/cualquiera")
+    page = await api.get("/notebook/note/anything")
     ready = await api.get("/readyz")
 
     assert page.status_code == 200 and "Notebook" in page.text
@@ -289,13 +291,13 @@ async def test_an_unknown_note_is_a_404(api) -> None:
 
 
 async def test_the_properties_form_changes_them_without_touching_the_text(api) -> None:
-    note = await create(api, "Con", "---\na: 1\nb: x\n---\nTexto\n")
+    note = await create(api, "Con", "---\na: 1\nb: x\n---\nText\n")
 
     changed = await api.put(
         f"/notes/{note['id']}/properties", json={"set": {"b": "y", "c": [1, 2]}, "remove": ["a"]}
     )
 
     assert changed.status_code == 200, changed.text
-    assert changed.json()["content"] == "---\nb: y\nc:\n  - 1\n  - 2\n---\nTexto\n"
+    assert changed.json()["content"] == "---\nb: y\nc:\n  - 1\n  - 2\n---\nText\n"
     history = (await api.get(f"/notes/{note['id']}/revisions")).json()
     assert len(history) == 1

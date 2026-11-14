@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from notebook import fichas, mentions
+from notebook import cards, mentions
 from notebook import markdown as md
 
 MADRID = ZoneInfo("Europe/Madrid")
@@ -161,7 +161,7 @@ async def _by_id(connection: AsyncConnection, note_id: str) -> _Row:
     try:
         UUID(note_id)
     except ValueError as error:
-        raise NotFound(f"la nota {note_id}") from error
+        raise NotFound(f"note {note_id} not found") from error
     found = (
         await connection.execute(
             text(
@@ -171,7 +171,7 @@ async def _by_id(connection: AsyncConnection, note_id: str) -> _Row:
         )
     ).first()
     if found is None:
-        raise NotFound(f"la nota {note_id}")
+        raise NotFound(f"note {note_id} not found")
     return _row(found)
 
 
@@ -222,16 +222,14 @@ async def find_row(connection: AsyncConnection, ref: str) -> _Row:
         ).all()
         hint = ""
         if similar:
-            hint = ". Parecidas: " + ", ".join(
-                f"«{md.path_of(r.folder, r.title)}»" for r in similar
-            )
-        raise NotFound(f"la nota «{ref}»{hint}")
+            hint = ". Similar: " + ", ".join(f"'{md.path_of(r.folder, r.title)}'" for r in similar)
+        raise NotFound(f"note '{ref}' not found{hint}")
     exact = [r for r in rows if folder_key is None or r.folder_key == folder_key]
     if folder_key is not None and len(exact) == 1:
         return _row(exact[0])
     if len(rows) > 1:
-        paths = ", ".join(f"«{md.path_of(r.folder, r.title)}»" for r in rows[:10])
-        raise Conflict(f"hay {len(rows)} notas «{name}»: {paths}. Di cuál con su ruta")
+        paths = ", ".join(f"'{md.path_of(r.folder, r.title)}'" for r in rows[:10])
+        raise Conflict(f"there are {len(rows)} notes '{name}': {paths}. Say which by its path")
     return _row(rows[0])
 
 
@@ -373,7 +371,7 @@ async def _publish(connection: AsyncConnection, note_id: str, dedup: str, **payl
 def _check_content(content: str) -> str:
     content = content.replace("\x00", "")
     if len(content) > MAX_CONTENT:
-        raise Invalid(f"la nota pasa de {MAX_CONTENT:,} caracteres".replace(",", "."))
+        raise Invalid(f"the note is longer than {MAX_CONTENT:,} characters")
     return content
 
 
@@ -391,8 +389,8 @@ async def _taken(connection: AsyncConnection, folder: str, title: str, but: str 
 
 
 def _taken_message(folder: str, title: str) -> str:
-    where = f"en «{folder}»" if folder else "en la raíz"
-    return f"ya hay una nota «{title}» {where}"
+    where = f"in '{folder}'" if folder else "at the root"
+    return f"there is already a note '{title}' {where}"
 
 
 async def create(
@@ -496,11 +494,11 @@ async def write(
     current = await _by_id(connection, note_id)
     if version is not None and version != current.version:
         raise Conflict(
-            f"la nota cambió mientras la editabas (versión {current.version}, no {version})"
+            f"the note changed while you were editing it (version {current.version}, not {version})"
         )
     theirs = await owned(connection, current.id)
     if theirs is not None:
-        content = fichas.compose(content, theirs)
+        content = cards.compose(content, theirs)
     return _note(await _save(connection, current, content, author))
 
 
@@ -516,10 +514,10 @@ async def edit(connection: AsyncConnection, ref: str, change, author: Author) ->
         theirs = await owned(connection, current.id)
         if theirs is not None and touches(theirs, current.content, content):
             raise Invalid(
-                f"lo de arga en esta nota (el bloque entre «{md.BLOCK_START}» y «{md.BLOCK_END}» "
-                f"y las propiedades {', '.join(sorted(theirs.properties))}) lo escribe "
-                f"{theirs.names}: se cambia allí y aquí se rehace solo. Lo que escribas fuera del "
-                "bloque es tuyo"
+                f"what arga keeps in this note (the block between '{md.BLOCK_START}' and "
+                f"'{md.BLOCK_END}' and the properties {', '.join(sorted(theirs.properties))}) is "
+                f"written by {theirs.names}: change it there and it is rebuilt here. What you write "
+                "outside the block is yours"
             )
     saved = await _save(connection, current, content, author)
     return _note(current), _note(saved)
@@ -532,8 +530,8 @@ OWNED = text("""
 """)
 
 
-def ficha(row: Any) -> fichas.Ficha:
-    return fichas.Ficha(
+def card(row: Any) -> cards.Card:
+    return cards.Card(
         app=row.app,
         app_name=row.app_name,
         record_id=row.record_id,
@@ -546,15 +544,15 @@ def ficha(row: Any) -> fichas.Ficha:
     )
 
 
-async def owned(connection: AsyncConnection, note_id: str) -> fichas.Owned | None:
+async def owned(connection: AsyncConnection, note_id: str) -> cards.Owned | None:
     rows = (await connection.execute(OWNED, {"id": note_id})).all()
-    return fichas.owned([ficha(row) for row in rows])
+    return cards.owned([card(row) for row in rows])
 
 
 _ABSENT = object()
 
 
-def touches(theirs: fichas.Owned, before: str, after: str) -> bool:
+def touches(theirs: cards.Owned, before: str, after: str) -> bool:
     old, new = md.block(before), md.block(after)
     if (old is None) != (new is None) or (old and new and old.inner != new.inner):
         return True
@@ -734,7 +732,7 @@ async def move(
 async def create_folder(connection: AsyncConnection, path: str) -> str:
     clean = _folder(path)
     if not clean:
-        raise Invalid("la carpeta no tiene nombre")
+        raise Invalid("the folder has no name")
     clean = await _folder_path(connection, clean)
     await ensure_folder(connection, clean)
     return clean
@@ -744,23 +742,23 @@ async def move_folder(connection: AsyncConnection, old: str, new: str, author: A
     old_path = _folder(old)
     new_path = _folder(new)
     if not old_path or not new_path:
-        raise Invalid("la raíz no se mueve")
+        raise Invalid("the root does not move")
     old_key, new_key = md.key(old_path), md.key(new_path)
     exists = await connection.scalar(
         text("select 1 from notebook.notebook_folder where path_key = :key"), {"key": old_key}
     )
     if not exists:
-        raise NotFound(f"la carpeta «{old}»")
+        raise NotFound(f"folder '{old}' not found")
     if new_key == old_key and new_path == old_path:
         return 0
     if new_key.startswith(old_key + "/"):
-        raise Invalid("una carpeta no se mueve dentro de sí misma")
+        raise Invalid("a folder does not move inside itself")
     if new_key != old_key:
         taken = await connection.scalar(
             text("select 1 from notebook.notebook_folder where path_key = :key"), {"key": new_key}
         )
         if taken:
-            raise Conflict(f"ya hay una carpeta «{new_path}»")
+            raise Conflict(f"there is already a folder '{new_path}'")
     under = "(path_key = :old_key or left(path_key, length(:old_key) + 1) = :old_key || '/')"
     notes_under = (
         "(folder_key = :old_key or left(folder_key, length(:old_key) + 1) = :old_key || '/')"
@@ -801,13 +799,13 @@ async def move_folder(connection: AsyncConnection, old: str, new: str, author: A
 async def delete_folder(connection: AsyncConnection, path: str) -> int:
     clean = _folder(path)
     if not clean:
-        raise Invalid("la raíz no se borra")
+        raise Invalid("the root is not deleted")
     key = md.key(clean)
     exists = await connection.scalar(
         text("select 1 from notebook.notebook_folder where path_key = :key"), {"key": key}
     )
     if not exists:
-        raise NotFound(f"la carpeta «{path}»")
+        raise NotFound(f"folder '{path}' not found")
     trashed = (
         await connection.execute(
             text(
@@ -866,12 +864,10 @@ async def restore(connection: AsyncConnection, note_id: str) -> Note:
         )
     ).first()
     if found is None:
-        raise NotFound(f"la nota {note_id} en la papelera")
+        raise NotFound(f"note {note_id} not found in the trash")
     row = _row(found)
     if await _taken(connection, row.folder, row.title, row.id):
-        raise Conflict(
-            _taken_message(row.folder, row.title) + "; cambia el nombre de una de las dos"
-        )
+        raise Conflict(_taken_message(row.folder, row.title) + "; rename one of the two")
     await ensure_folder(connection, row.folder)
     await connection.execute(
         text("update notebook.notebook_note set deleted_at = null where id = :id"), {"id": row.id}
@@ -923,7 +919,7 @@ async def revision(connection: AsyncConnection, note_id: str, revision_id: str) 
         )
     ).first()
     if found is None:
-        raise NotFound(f"la versión {revision_id}")
+        raise NotFound(f"version {revision_id} not found")
     return RevisionFull(**{**found._asdict(), "id": str(found.id)})
 
 
@@ -935,7 +931,7 @@ async def restore_revision(
     wanted = old.content
     theirs = await owned(connection, current.id)
     if theirs is not None:
-        wanted = fichas.compose(wanted, theirs)
+        wanted = cards.compose(wanted, theirs)
     if current.content == wanted:
         return _note(current)
     await connection.execute(
@@ -980,11 +976,11 @@ async def restore_revision(
     return _note(row)
 
 
-FICHA_OF = (
+CARD_OF = (
     "select r.note_id from notebook.notebook_record r where r.link_key = :key and r.day is null "
     "and not r.removed limit 1"
 )
-FICHA_OF_LINK = (
+CARD_OF_LINK = (
     "select r.note_id from notebook.notebook_record r where r.link_key = l.title_key "
     "and r.day is null and not r.removed limit 1"
 )
@@ -1000,7 +996,7 @@ async def links_of(connection: AsyncConnection, note_id: str) -> list[LinkOut]:
                 "from notebook.notebook_link l "
                 "left join notebook.notebook_note t on t.deleted_at is null and ("
                 "  (l.kind = 'note' and t.id = notebook.resolve(l.title_key, l.folder_key, :from)) "
-                f"  or (l.kind = 'app' and t.id = ({FICHA_OF_LINK})))"
+                f"  or (l.kind = 'app' and t.id = ({CARD_OF_LINK})))"
                 "where l.note_id = :id order by l.position"
             ),
             {"id": note.id, "from": note.folder_key},
@@ -1058,7 +1054,7 @@ async def link_target(
             await connection.execute(
                 text(
                     "select id, folder, title, updated_at, updated_by, updated_app "
-                    f"from notebook.notebook_note t where t.deleted_at is null and t.id = ({FICHA_OF})"
+                    f"from notebook.notebook_note t where t.deleted_at is null and t.id = ({CARD_OF})"
                 ),
                 {"key": title_key},
             )
@@ -1109,14 +1105,14 @@ def _property_sql(i: int, one: PropertyFilter, params: dict[str, Any]) -> str:
     name = f"pn{i}"
     params[name] = one.name
     value = one.value
-    if isinstance(value, str) and value.strip().lower() in ("today", "hoy"):
+    if isinstance(value, str) and value.strip().lower() == "today":
         value = today().isoformat()
     if one.op == "exists":
         return f"n.properties ? :{name}"
     if one.op == "missing":
         return f"not n.properties ? :{name}"
     if value is None:
-        raise Invalid(f"el filtro de «{one.name}» necesita un valor")
+        raise Invalid(f"the filter on '{one.name}' needs a value")
     val = f"pv{i}"
     if one.op in ("eq", "ne"):
         if isinstance(value, bool):
@@ -1223,7 +1219,7 @@ async def search(
             snippet=md.snippet(r.content, query or ""),
             tags=md.tags(r.content),
             changes=r.changes if since is not None or until is not None else None,
-            href=f"/notebook/nota/{r.id}",
+            href=f"/notebook/note/{r.id}",
             source=(
                 Source(app=r.source_app, name=r.source_name, href=r.source_href)
                 if r.source_app
@@ -1254,7 +1250,7 @@ async def list_folder(connection: AsyncConnection, path: str | None) -> Listing:
             text("select 1 from notebook.notebook_folder where path_key = :key"), {"key": key}
         )
         if not exists:
-            raise NotFound(f"la carpeta «{path}»")
+            raise NotFound(f"folder '{path}' not found")
         clean = await _folder_path(connection, clean)
     children = (
         await connection.execute(
@@ -1469,7 +1465,7 @@ async def settings(connection: AsyncConnection) -> Settings:
 async def save_settings(connection: AsyncConnection, wanted: Settings) -> Settings:
     folder = _folder(wanted.daily_folder)
     if not folder:
-        raise Invalid("el diario necesita una carpeta")
+        raise Invalid("the journal needs a folder")
     review = (wanted.review_property or "").strip() or None
     await connection.execute(
         text(

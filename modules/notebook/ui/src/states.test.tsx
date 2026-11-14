@@ -112,20 +112,20 @@ async function serious(): Promise<string[]> {
 describe("las notas", () => {
   it("mientras llega el árbol, el esqueleto, y nada de «Cargando…»", async () => {
     replies["GET /api/notebook/tree"] = () => new Promise(() => undefined);
-    await open("/notebook/notas");
+    await open("/notebook/notes");
     expect(host.querySelector(".skeleton")).not.toBeNull();
     expect(host.textContent).not.toContain("Cargando");
   });
 
   it("sin notas, el botón crea la primera", async () => {
-    await open("/notebook/notas");
+    await open("/notebook/notes");
     expect(host.textContent).toContain("Aún no hay notas");
     expect(button("Nota nueva")).toBeDefined();
   });
 
   it("si falla, lo dice y reintentar lo trae", async () => {
     replies["GET /api/notebook/tree"] = () => json({ detail: "la base no contesta" }, 503);
-    await open("/notebook/notas");
+    await open("/notebook/notes");
     expect(host.textContent).toContain("Notebook no contesta");
     expect(host.textContent).toContain("la base no contesta");
 
@@ -137,7 +137,7 @@ describe("las notas", () => {
 
   it("sin red, lo dice arriba", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
-    await open("/notebook/notas");
+    await open("/notebook/notes");
     expect(host.textContent).toContain("Sin conexión");
   });
 });
@@ -147,13 +147,13 @@ describe("una nota", () => {
     replies["GET /api/notebook/tree"] = () => ({ folders: ["Proyectos"], notes: [SUMMARY] });
     replies[`GET /api/notebook/notes/${NOTE}`] = () => FULL;
     replies[`GET /api/notebook/notes/${NOTE}/links`] = () => ({ links: [], backlinks: [] });
-    await open(`/notebook/nota/${NOTE}`);
+    await open(`/notebook/note/${NOTE}`);
     expect(host.textContent).toContain("Tomates y albahaca.");
     expect(button("Editar")).toBeDefined();
   });
 
   it("si no existe lo dice; otro fallo se reintenta", async () => {
-    await open(`/notebook/nota/${NOTE}`);
+    await open(`/notebook/note/${NOTE}`);
     expect(host.textContent).toContain("Esta nota ya no está");
     expect(button("Reintentar")).toBeUndefined();
 
@@ -161,7 +161,7 @@ describe("una nota", () => {
     root = createRoot(host);
     void reset();
     replies[`GET /api/notebook/notes/${NOTE}`] = () => json({ detail: "la base no contesta" }, 503);
-    await open(`/notebook/nota/${NOTE}`);
+    await open(`/notebook/note/${NOTE}`);
     expect(host.textContent).toContain("la base no contesta");
     expect(button("Reintentar")).toBeDefined();
   });
@@ -169,12 +169,12 @@ describe("una nota", () => {
 
 describe("las demás pantallas", () => {
   it("repasar, sin propiedad elegida, lleva a elegirla", async () => {
-    await open("/notebook/repasar");
+    await open("/notebook/review");
     expect(button("Elegirla")).toBeDefined();
   });
 
   it("la papelera vacía vuelve a las notas", async () => {
-    await open("/notebook/papelera");
+    await open("/notebook/trash");
     expect(host.textContent).toContain("La papelera está vacía");
     expect(button("Volver a las notas")).toBeDefined();
   });
@@ -186,7 +186,7 @@ describe("las demás pantallas", () => {
   });
 
   it("el grafo sin enlaces ofrece una nota nueva", async () => {
-    await open("/notebook/grafo");
+    await open("/notebook/graph");
     expect(host.textContent).toContain("Aún no hay nada que enlazar");
     expect(button("Nota nueva")).toBeDefined();
   });
@@ -205,7 +205,7 @@ describe("las demás pantallas", () => {
 });
 
 describe("axe-core sin errores graves", () => {
-  it.each(["/notebook/", "/notebook/notas", "/notebook/buscar?q=nada", "/notebook/repasar", "/notebook/papelera", "/notebook/grafo", "/notebook/ajustes"])(
+  it.each(["/notebook/", "/notebook/notes", "/notebook/buscar?q=nada", "/notebook/review", "/notebook/trash", "/notebook/graph", "/notebook/ajustes"])(
     "%s",
     async (path) => {
       await open(path);
@@ -217,7 +217,7 @@ describe("axe-core sin errores graves", () => {
     replies["GET /api/notebook/tree"] = () => ({ folders: ["Proyectos"], notes: [SUMMARY] });
     replies[`GET /api/notebook/notes/${NOTE}`] = () => FULL;
     replies[`GET /api/notebook/notes/${NOTE}/links`] = () => ({ links: [], backlinks: [] });
-    await open(`/notebook/nota/${NOTE}`);
+    await open(`/notebook/note/${NOTE}`);
     expect(await serious()).toEqual([]);
   });
 });

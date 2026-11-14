@@ -62,7 +62,7 @@ def record(insight: Insight) -> dict[str, Any]:
         kind=KIND,
         href=f"/insights/consejo/{insight.id}",
         folder=FOLDER,
-        properties={"semana": key, "propuestas": len(insight.proposals)},
+        properties={"week": key, "proposals": len(insight.proposals)},
         body=body(insight),
     )
 

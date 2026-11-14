@@ -20,19 +20,21 @@ async def test_empty_widgets_say_why(api) -> None:
 
 
 async def test_recent_marks_what_claude_changed_and_today_shows_its_first_lines(api) -> None:
-    await api.post("/notes", json={"title": "Mía"})
+    await api.post("/notes", json={"title": "Mine"})
     await api.post(
         "/tools/create_note",
-        json={"title": "De Claude"},
+        json={"title": "From Claude"},
         headers={"x-arga-scopes": "notebook:write"},
     )
     daily = (await api.post("/daily")).json()
-    await api.put(f"/notes/{daily['id']}", json={"content": "---\na: 1\n---\n# Hoy\n\n- Algo\n"})
+    await api.put(
+        f"/notes/{daily['id']}", json={"content": "---\na: 1\n---\n# Today\n\n- Something\n"}
+    )
 
     recent = await widget(api, "recent")
     today = await widget(api, "today")
 
     values = {row["label"]: row["value"] for row in recent["body"]["rows"]}
-    assert values["De Claude"].startswith("Claude · ")
-    assert not values["Mía"].startswith("Claude")
-    assert [row["label"] for row in today["body"]["rows"]] == ["Hoy", "Algo"]
+    assert values["From Claude"].startswith("Claude · ")
+    assert not values["Mine"].startswith("Claude")
+    assert [row["label"] for row in today["body"]["rows"]] == ["Today", "Something"]

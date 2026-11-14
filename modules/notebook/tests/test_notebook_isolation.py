@@ -39,7 +39,7 @@ async def write_as(engine, person: UUID, title: str, content: str) -> None:
     with as_user(person):
         async with engine.begin() as connection:
             await connection.execute(text(f'set local role "{WRITE}"'))
-            created = await notes.create(connection, "Carpeta", title, "primera", "app")
+            created = await notes.create(connection, "Folder", title, "first", "app")
             await notes.write(connection, created.id, content, None, "tool")
             await files.save(connection, "foto.png", str(person).encode())
             await connection.execute(
@@ -55,8 +55,8 @@ async def write_as(engine, person: UUID, title: str, content: str) -> None:
 
 @pytest.fixture
 async def two_people(schema):
-    await write_as(schema, ANA, "Plan", "El de Ana #ana [[Otro]]")
-    await write_as(schema, LUIS, "Plan", "El de Luis #luis [[Otro]]")
+    await write_as(schema, ANA, "Plan", "Ana's #ana [[Other]]")
+    await write_as(schema, LUIS, "Plan", "Luis's #luis [[Other]]")
     return schema
 
 
@@ -128,7 +128,7 @@ async def test_a_title_is_unique_per_folder_only_for_its_owner(two_people) -> No
             WRITE,
             ANA,
             "insert into notebook.notebook_note (folder, folder_key, title, title_key) "
-            "values ('Carpeta', 'carpeta', 'PLAN', 'plan')",
+            "values ('Folder', 'folder', 'PLAN', 'plan')",
         )
 
     assert "notebook_note_one_per_place" in str(refused.value)

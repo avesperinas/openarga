@@ -8,7 +8,7 @@ from notebook.widgets import KINDS
 
 
 async def note(api, title: str, due: str | None) -> None:
-    content = f"---\nnaechste_wiederholung: {due}\nthema: x\n---\n" if due else "sin fecha"
+    content = f"---\nnaechste_wiederholung: {due}\nthema: x\n---\n" if due else "no date"
     response = await api.post("/notes", json={"title": title, "content": content})
     assert response.status_code == 201, response.text
 
@@ -18,16 +18,16 @@ async def test_without_a_chosen_property_the_widget_asks_for_one(api) -> None:
 
     validate(KINDS["review"], widget["body"], widget["state"])
     assert widget["state"] == "empty"
-    assert "elige" in widget["body"]["detail"]
+    assert "choose" in widget["body"]["detail"]
     assert (await api.get("/review")).json() == {"chosen": False, "notes": []}
 
 
 async def test_the_date_properties_are_offered_and_what_is_due_is_listed(api) -> None:
     now = today()
-    await note(api, "Atrasada", (now - timedelta(days=3)).isoformat())
-    await note(api, "Hoy", now.isoformat())
-    await note(api, "Luego", (now + timedelta(days=5)).isoformat())
-    await note(api, "Sin fecha", None)
+    await note(api, "Late", (now - timedelta(days=3)).isoformat())
+    await note(api, "Today", now.isoformat())
+    await note(api, "Later", (now + timedelta(days=5)).isoformat())
+    await note(api, "Undated", None)
 
     names = (await api.get("/properties")).json()
     saved = await api.put(
@@ -38,11 +38,11 @@ async def test_the_date_properties_are_offered_and_what_is_due_is_listed(api) ->
 
     assert {n["name"]: n["dates"] for n in names} == {"naechste_wiederholung": True, "thema": False}
     assert saved.json()["review_property"] == "naechste_wiederholung"
-    assert [n["title"] for n in due["notes"]] == ["Atrasada", "Hoy"]
+    assert [n["title"] for n in due["notes"]] == ["Late", "Today"]
     validate(KINDS["review"], widget["body"], widget["state"])
     assert [(r["label"], r["value"]) for r in widget["body"]["rows"]] == [
-        ("Atrasada", "hace 3 d"),
-        ("Hoy", "hoy"),
+        ("Late", "3 d ago"),
+        ("Today", "today"),
     ]
 
 

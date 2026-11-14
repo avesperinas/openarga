@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_contracts as contracts
 from arga_tenancy import kernel_url, user_headers
-from notebook import fichas, notes
+from notebook import cards, notes
 from notebook import markdown as md
 
 MODULE = "notebook"
@@ -86,14 +86,12 @@ def _ref(item: Any) -> str:
 def _valid(module: str, item: Any, at: datetime) -> dict[str, Any] | None:
     try:
         if not isinstance(item, dict):
-            raise contracts.BadContract("Record no casa: no es un objeto")
+            raise contracts.BadContract("record does not match: it is not an object")
         return contracts.record(**item)
     except (contracts.BadContract, TypeError) as error:
         if (module, _ref(item), at) not in _TOLD:
             _TOLD.add((module, _ref(item), at))
-            print(
-                f"fichas · descartada {module}:{_ref(item)}: {error}", file=sys.stderr, flush=True
-            )
+            print(f"records · dropped {module}:{_ref(item)}: {error}", file=sys.stderr, flush=True)
         return None
 
 
@@ -154,7 +152,7 @@ async def derive(
                 if await _day(connection, when, touched):
                     result.days += 1
         except Exception as error:  # noqa: BLE001
-            _say_once("día", when.isoformat(), BEGINNING, error)
+            _say_once("day", when.isoformat(), BEGINNING, error)
     return result.asdict()
 
 
@@ -162,7 +160,7 @@ def _say_once(where: str, ref: str, at: datetime, error: Exception) -> None:
     if (where, ref, at) in _TOLD:
         return
     _TOLD.add((where, ref, at))
-    print(f"fichas · {where}:{ref}: {type(error).__name__}: {error}", file=sys.stderr, flush=True)
+    print(f"records · {where}:{ref}: {type(error).__name__}: {error}", file=sys.stderr, flush=True)
 
 
 async def _apply(
@@ -182,7 +180,7 @@ async def _apply(
             {
                 "app": row.module,
                 "record_id": item["id"],
-                "link_key": fichas.link_key(row.module, item["id"]),
+                "link_key": cards.link_key(row.module, item["id"]),
                 "app_name": named[row.module],
                 "title": item["title"],
                 "kind": item["kind"],
@@ -229,7 +227,7 @@ class Placed:
 def _owned_before(before: Any) -> dict[str, Any]:
     if before is None or before.day is not None:
         return {}
-    return {"arga": f"{before.app}:{before.record_id}", "tipo": before.kind, **before.properties}
+    return {"arga": f"{before.app}:{before.record_id}", "type": before.kind, **before.properties}
 
 
 @dataclass
@@ -258,7 +256,7 @@ async def _create(
             return await notes.create(connection, folder, wanted, content, AUTHOR, app_name)
         except notes.Conflict:
             continue
-    raise notes.Conflict(f"no hay un título libre para «{title}» en «{folder}»")
+    raise notes.Conflict(f"there is no free title for '{title}' in '{folder}'")
 
 
 async def _move(
@@ -271,7 +269,7 @@ async def _move(
             return moved
         except notes.Conflict:
             continue
-    raise notes.Conflict(f"no hay un título libre para «{title}» en «{folder}»")
+    raise notes.Conflict(f"there is no free title for '{title}' in '{folder}'")
 
 
 async def _alive(connection: AsyncConnection, note_id: Any) -> tuple[bool, bool]:
@@ -304,7 +302,7 @@ async def _note(
             await _remove(connection, str(placed.note_id), before, app_name)
         await connection.execute(PLACED, {**params, "note": None, "folder": None, "title": None})
         return "removed"
-    one = fichas.Ficha(
+    one = cards.Card(
         app=app,
         app_name=app_name,
         record_id=item["id"],
@@ -314,11 +312,11 @@ async def _note(
         properties=item["properties"],
         body=item["body"],
     )
-    wanted = fichas.owned([one])
+    wanted = cards.owned([one])
     folder = _place(app_name, item["folder"])
     title = md.safe_title(item["title"])
     if not exists:
-        created = await _create(connection, folder, title, fichas.compose("", wanted), app_name)
+        created = await _create(connection, folder, title, cards.compose("", wanted), app_name)
         await connection.execute(
             PLACED, {**params, "note": created.id, "folder": folder, "title": title}
         )
@@ -332,7 +330,7 @@ async def _note(
             PLACED, {**params, "note": note_id, "folder": folder, "title": title}
         )
         current = await notes._by_id(connection, note_id)
-    content = fichas.compose(current.content, wanted, before)
+    content = cards.compose(current.content, wanted, before)
     await notes._save(connection, current, content, AUTHOR, app=app_name)
     return "written"
 
@@ -341,7 +339,7 @@ async def _remove(
     connection: AsyncConnection, note_id: str, before: dict[str, Any], app_name: str
 ) -> None:
     current = await notes._by_id(connection, note_id)
-    left = fichas.compose(current.content, None, before)
+    left = cards.compose(current.content, None, before)
     if not md.outside_block(left).strip() and not md.properties(left):
         await notes.trash(connection, note_id)
         return
@@ -350,7 +348,7 @@ async def _remove(
 
 async def _day(connection: AsyncConnection, day: date, touched: _Day) -> bool:
     rows = (await connection.execute(OF_DAY, {"day": day})).all()
-    active = [notes.ficha(row) for row in rows if not row.removed]
+    active = [notes.card(row) for row in rows if not row.removed]
     note_id = next((row.note_id for row in rows if row.note_id is not None), None)
     exists, trashed = await _alive(connection, note_id)
     if trashed:
@@ -362,8 +360,8 @@ async def _day(connection: AsyncConnection, day: date, touched: _Day) -> bool:
         assert daily is not None
         note_id = daily.id
     current = await notes._by_id(connection, str(note_id))
-    wanted = fichas.owned(active)
-    content = fichas.compose(current.content, wanted, touched.before)
+    wanted = cards.owned(active)
+    content = cards.compose(current.content, wanted, touched.before)
     await notes._save(connection, current, content, AUTHOR, app=", ".join(sorted(touched.apps)))
     await connection.execute(
         text("update notebook.notebook_record set note_id = :note where day = :day"),

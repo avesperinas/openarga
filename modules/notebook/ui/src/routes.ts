@@ -12,45 +12,48 @@ export type Route =
   | { screen: "review" }
   | { screen: "settings" };
 
+const SCREENS: Record<string, Route["screen"]> = {
+  notes: "home",
+  notas: "home",
+  trash: "trash",
+  papelera: "trash",
+  today: "today",
+  hoy: "today",
+  import: "import",
+  importar: "import",
+  review: "review",
+  repasar: "review",
+  settings: "settings",
+  ajustes: "settings",
+};
+
 export function route(pathname: string, search = ""): Route {
   const path = pathname.replace(/\/+$/, "");
   const params = new URLSearchParams(search);
-  const note = new RegExp(`^${ROOT}/nota/${ID}$`).exec(path);
+  const note = new RegExp(`^${ROOT}/(?:note|nota)/${ID}$`).exec(path);
   if (note) return { screen: "note", id: note[1]! };
-  if (path === `${ROOT}/buscar`) return { screen: "search", q: params.get("q") ?? "", tag: params.get("tag") ?? "" };
-  if (path === `${ROOT}/papelera`) return { screen: "trash" };
-  if (path === `${ROOT}/hoy`) return { screen: "today" };
-  if (path === `${ROOT}/importar`) return { screen: "import" };
-  if (path === `${ROOT}/notas`) return { screen: "home" };
-  if (path === `${ROOT}/repasar`) return { screen: "review" };
-  if (path === `${ROOT}/ajustes`) return { screen: "settings" };
-  return { screen: "graph" };
+  const name = path.startsWith(`${ROOT}/`) ? path.slice(ROOT.length + 1) : "";
+  if (name === "search" || name === "buscar") return { screen: "search", q: params.get("q") ?? "", tag: params.get("tag") ?? "" };
+  const screen = SCREENS[name];
+  return screen ? ({ screen } as Route) : { screen: "graph" };
 }
 
 export function pathOf(to: Route): string {
   switch (to.screen) {
     case "home":
-      return `${ROOT}/notas`;
+      return `${ROOT}/notes`;
     case "note":
-      return `${ROOT}/nota/${to.id}`;
+      return `${ROOT}/note/${to.id}`;
     case "search": {
       const params = new URLSearchParams();
       if (to.q) params.set("q", to.q);
       if (to.tag) params.set("tag", to.tag);
       const query = params.toString();
-      return `${ROOT}/buscar${query ? `?${query}` : ""}`;
+      return `${ROOT}/search${query ? `?${query}` : ""}`;
     }
-    case "trash":
-      return `${ROOT}/papelera`;
-    case "today":
-      return `${ROOT}/hoy`;
-    case "import":
-      return `${ROOT}/importar`;
     case "graph":
       return `${ROOT}/`;
-    case "review":
-      return `${ROOT}/repasar`;
-    case "settings":
-      return `${ROOT}/ajustes`;
+    default:
+      return `${ROOT}/${to.screen}`;
   }
 }

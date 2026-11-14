@@ -1,0 +1,17 @@
+{
+  "panel.open": "Abrir Notas",
+  "panel.today": "Nota de hoy",
+  "panel.recent": "Recientes",
+  "panel.review": "Para repasar",
+  "panel.ask_today": "¿Qué escribí hoy?",
+  "panel.ask_today_words": "nota, notas, diario, hoy",
+  "panel.ask_review": "¿Qué tengo que repasar?",
+  "panel.ask_review_words": "repasar, repaso, estudiar",
+  "search.note": "Nota",
+  "widget.recent_empty": "nada cambiado este mes",
+  "widget.today_empty": "sin nota de hoy",
+  "widget.review_unset": "elige en Notas qué propiedad dice cuándo repasar",
+  "widget.review_empty": "nada que repasar hoy",
+  "widget.due_today": "hoy",
+  "widget.late": "hace {days} d"
+}

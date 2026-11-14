@@ -15,11 +15,11 @@ PNG = bytes.fromhex(
 class Repo:
     def __init__(self) -> None:
         self.head = "c0"
-        self.files: dict[str, str] = {"README.md": "# Notas\n"}
+        self.files: dict[str, str] = {"README.md": "# Notes\n"}
         self.messages: list[str] = []
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
-        path = request.url.path.removeprefix("/repos/ana/notas")
+        path = request.url.path.removeprefix("/repos/ana/notes")
         body = json.loads(request.content) if request.content else {}
         if request.method == "GET" and path == "/git/ref/heads/main":
             return httpx.Response(200, json={"object": {"sha": self.head}})
@@ -44,7 +44,7 @@ class Repo:
                     self.files[entry["path"]] = entry["sha"]
             self.head = body["sha"]
             return httpx.Response(200, json={"object": {"sha": self.head}})
-        raise AssertionError(f"nadie debería pedir {request.method} {request.url}")
+        raise AssertionError(f"nobody should ask for {request.method} {request.url}")
 
 
 async def note(api, title: str, content: str, folder: str = "") -> dict:
@@ -56,9 +56,9 @@ async def note(api, title: str, content: str, folder: str = "") -> dict:
 async def test_a_change_becomes_a_commit_and_only_the_change_travels(api, hub) -> None:
     repo = Repo()
     hub.answer(repo)
-    kasus = await note(api, "DE 1.1 Kasus", "---\nthema: Kasus\n---\n# Kasus\n", "Study/Alemán")
-    vieja = await note(api, "Vieja", "se irá")
-    await api.post("/files", params={"name": "tabla.png"}, content=PNG)
+    kasus = await note(api, "DE 1.1 Kasus", "---\nthema: Kasus\n---\n# Kasus\n", "Study/German")
+    old = await note(api, "Old", "will go")
+    await api.post("/files", params={"name": "table.png"}, content=PNG)
 
     before = await api.post("/export")
     assert before.json()["outcome"] == "unconnected"
@@ -67,32 +67,32 @@ async def test_a_change_becomes_a_commit_and_only_the_change_travels(api, hub) -
 
     connected = await hub.client.post(
         "/connections",
-        json={"provider": "github", "secrets": {"token": PAT}, "settings": {"repo": "ana/notas"}},
+        json={"provider": "github", "secrets": {"token": PAT}, "settings": {"repo": "ana/notes"}},
     )
     assert connected.status_code == 201, connected.text
 
     first = (await api.post("/export")).json()
 
     assert (first["outcome"], first["pending"]) == ("ok", 0)
-    assert first["commit_url"] == "https://github.com/ana/notas/commit/c1"
-    assert repo.files["Study/Alemán/DE 1.1 Kasus.md"] == "---\nthema: Kasus\n---\n# Kasus\n"
-    assert repo.files["Vieja.md"] == "se irá"
-    assert repo.files["Adjuntos/tabla.png"] == "blob:" + PNG.hex()
+    assert first["commit_url"] == "https://github.com/ana/notes/commit/c1"
+    assert repo.files["Study/German/DE 1.1 Kasus.md"] == "---\nthema: Kasus\n---\n# Kasus\n"
+    assert repo.files["Old.md"] == "will go"
+    assert repo.files["Adjuntos/table.png"] == "blob:" + PNG.hex()
 
     await api.post(
         "/tools/edit_note",
         json={"note": kasus["id"], "old_text": "# Kasus", "new_text": "# Die Kasus"},
         headers={"x-arga-scopes": "notebook:write"},
     )
-    await api.delete(f"/notes/{vieja['id']}")
+    await api.delete(f"/notes/{old['id']}")
     pending = (await api.get("/export")).json()
     second = (await api.post("/export")).json()
 
     assert pending["pending"] == 2
     assert second["outcome"] == "ok" and second["pending"] == 0
-    assert repo.files["Study/Alemán/DE 1.1 Kasus.md"].endswith("# Die Kasus\n")
-    assert "Vieja.md" not in repo.files
-    assert repo.messages[1].startswith("Notebook: 1 cambio, 1 borrado (Claude en 1)")
+    assert repo.files["Study/German/DE 1.1 Kasus.md"].endswith("# Die Kasus\n")
+    assert "Old.md" not in repo.files
+    assert repo.messages[1].startswith("Notebook: 1 change, 1 deletion (Claude in 1)")
     assert (await api.post("/export")).json()["pending"] == 0
     assert len(repo.messages) == 2
 
@@ -105,10 +105,10 @@ async def test_a_failed_copy_is_said_and_retried_whole(api, hub) -> None:
         return httpx.Response(401, json={"message": "Bad credentials"})
 
     hub.answer(down)
-    await note(api, "Una", "uno")
+    await note(api, "One", "one")
     await hub.client.post(
         "/connections",
-        json={"provider": "github", "secrets": {"token": PAT}, "settings": {"repo": "ana/notas"}},
+        json={"provider": "github", "secrets": {"token": PAT}, "settings": {"repo": "ana/notes"}},
     )
 
     failed = (await api.post("/export")).json()

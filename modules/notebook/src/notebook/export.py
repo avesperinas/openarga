@@ -44,7 +44,7 @@ def _sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-FICHAS = text("""
+CARDS = text("""
     select r.link_key, r.title, n.folder, n.title as note_title
     from notebook.notebook_record r
     join notebook.notebook_note n on n.id = r.note_id and n.deleted_at is null
@@ -52,10 +52,10 @@ FICHAS = text("""
 """)
 
 
-def obsidian(content: str, fichas: dict[str, tuple[str, str]]) -> str:
+def obsidian(content: str, cards: dict[str, tuple[str, str]]) -> str:
     out = content
     for link in reversed(md.links(content)):
-        found = fichas.get(link.title_key) if link.kind == "app" else None
+        found = cards.get(link.title_key) if link.kind == "app" else None
         if found is None:
             continue
         path, title = found
@@ -88,15 +88,15 @@ async def change(connection: AsyncConnection) -> Change:
             )
         )
     ).all()
-    fichas = {
+    cards = {
         row.link_key: (md.path_of(row.folder, row.note_title), row.title)
-        for row in (await connection.execute(FICHAS)).all()
+        for row in (await connection.execute(CARDS)).all()
     }
     wanted: set[str] = set()
     for note in notes:
         path = md.path_of(note.folder, note.title) + ".md"
         wanted.add(path)
-        written = obsidian(note.content, fichas)
+        written = obsidian(note.content, cards)
         digest = _sha(written.encode())
         if exported.get(path) != digest:
             texts[path] = written
@@ -143,12 +143,14 @@ def message(found: Change) -> str:
     changed = len(found.texts) + len(found.binaries)
     parts = []
     if changed:
-        parts.append(f"{changed} {'cambio' if changed == 1 else 'cambios'}")
+        parts.append(f"{changed} {'change' if changed == 1 else 'changes'}")
     if found.deletes:
-        parts.append(f"{len(found.deletes)} {'borrado' if len(found.deletes) == 1 else 'borrados'}")
-    line = "Notebook: " + (", ".join(parts) or "nada")
+        parts.append(
+            f"{len(found.deletes)} {'deletion' if len(found.deletes) == 1 else 'deletions'}"
+        )
+    line = "Notebook: " + (", ".join(parts) or "nothing")
     if found.by_claude:
-        line += f" (Claude en {found.by_claude})"
+        line += f" (Claude in {found.by_claude})"
     names = sorted([*found.texts, *found.binaries, *found.deletes])[:20]
     return line + "\n\n" + "\n".join(f"- {name}" for name in names)
 
@@ -235,14 +237,14 @@ async def push(begin, client: httpx.AsyncClient) -> dict[str, Any]:
     except httpx.HTTPError as error:
         async with begin() as connection:
             await _record(
-                connection, "error", f"Hub no contesta ({type(error).__name__})", None, False
+                connection, "error", f"Hub does not answer ({type(error).__name__})", None, False
             )
         return {"outcome": "error"}
     if response.status_code == 404:
         detail = response.json().get("detail") if response.content else None
         async with begin() as connection:
             await _record(
-                connection, "unconnected", detail or "no hay repo de GitHub conectado", None, False
+                connection, "unconnected", detail or "no GitHub repository connected", None, False
             )
         return {"outcome": "unconnected"}
     if response.status_code != 200:

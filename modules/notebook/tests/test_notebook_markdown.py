@@ -14,7 +14,7 @@ def test_a_name_from_icloud_is_the_same_name() -> None:
     assert md.key(NFD) == md.key("präpositionen")
 
 
-@pytest.mark.parametrize("bad", ["a/b", "a:b", "a#b", "a|b", "[a]", "a^b", "", "   ", ".oculto"])
+@pytest.mark.parametrize("bad", ["a/b", "a:b", "a#b", "a|b", "[a]", "a^b", "", "   ", ".hidden"])
 def test_a_title_that_would_break_a_link_is_refused(bad: str) -> None:
     with pytest.raises(md.InvalidName):
         md.title(bad)
@@ -25,7 +25,7 @@ def test_a_title_loses_its_md_and_its_spaces() -> None:
 
 
 def test_a_folder_is_a_clean_path() -> None:
-    assert md.folder("/Study//Alemán/ B1 Gramatik /") == "Study/Alemán/B1 Gramatik"
+    assert md.folder("/Study//German/ B1 Gramatik /") == "Study/German/B1 Gramatik"
     assert md.folder("") == ""
     assert md.ancestors("a/b/c") == ["a", "a/b", "a/b/c"]
     with pytest.raises(md.InvalidName):
@@ -48,12 +48,12 @@ Siehe [[DE 1.2 Artikelwörter und Deklination]] und [[B1 Gramatik/DE 1.8 Genitiv
 | Dativ | [[DE 4.1 Akkusativ- und Dativpräpositionen\\|Dativ]] |
 
 ```python
-x = "[[no es un enlace]]"  # tampoco #tag
+x = "[[not a link]]"  # nor #tag
 ```
 
-Mit `[[tampoco]]` en línea. ![[mapa.png]] y [[#Kasus]] y [[training:sentadilla]].
+Mit `[[neither]]` inline. ![[map.png]] and [[#Kasus]] and [[training:squat]].
 
-#grammatik #2026 %% [[comentario]] %%
+#grammatik #2026 %% [[comment]] %%
 """
 
 
@@ -73,8 +73,8 @@ def test_links_outside_code_and_comments() -> None:
         ("note", "DE 1.2 Artikelwörter und Deklination"),
         ("note", "B1 Gramatik/DE 1.8 Genitiv"),
         ("note", "DE 4.1 Akkusativ- und Dativpräpositionen"),
-        ("file", "mapa.png"),
-        ("app", "training:sentadilla"),
+        ("file", "map.png"),
+        ("app", "training:squat"),
     ]
     genitive = found[1]
     assert (genitive.title_key, genitive.folder_key, genitive.alias) == (
@@ -97,15 +97,15 @@ def test_tags_from_text_and_properties_without_numbers_or_code() -> None:
 
 
 def test_a_heading_is_not_a_tag_and_an_url_fragment_is_not_either() -> None:
-    assert md.tags("# Titel\n\nhttps://x.de/#anker y [[Nota#Parte]]") == []
+    assert md.tags("# Titel\n\nhttps://x.de/#anker and [[Note#Part]]") == []
 
 
 def test_rewriting_a_link_keeps_its_heading_alias_embed_and_escaped_pipe() -> None:
-    text = "[[Alt#Teil|Alias]] | ![[Alt]] | [[Alt\\|x]] | [[Otra]]"
+    text = "[[Alt#Teil|Alias]] | ![[Alt]] | [[Alt\\|x]] | [[Other]]"
 
     rewritten = md.rewrite_links(text, lambda link: "Neu" if link.title_key == "alt" else None)
 
-    assert rewritten == "[[Neu#Teil|Alias]] | ![[Neu]] | [[Neu\\|x]] | [[Otra]]"
+    assert rewritten == "[[Neu#Teil|Alias]] | ![[Neu]] | [[Neu\\|x]] | [[Other]]"
 
 
 def test_setting_properties_keeps_the_order_and_writes_dates_as_dates() -> None:
@@ -144,9 +144,9 @@ Intro.
 
 Dativ text.
 
-### Detalle
+### Detail
 
-Más.
+More.
 
 ## Genitiv
 
@@ -158,22 +158,22 @@ def test_the_outline_skips_the_frontmatter() -> None:
     assert [(h.level, h.text, h.line) for h in md.headings(SECTIONS)] == [
         (1, "Kasus", 3),
         (2, "Dativ", 7),
-        (3, "Detalle", 11),
+        (3, "Detail", 11),
         (2, "Genitiv", 15),
     ]
 
 
 def test_replacing_a_section_keeps_its_heading_and_the_next_one() -> None:
-    changed = md.replace_section(SECTIONS, "## dativ", "Nuevo.")
+    changed = md.replace_section(SECTIONS, "## dativ", "New.")
 
-    assert "## Dativ\nNuevo.\n\n## Genitiv\n" in changed
-    assert "Detalle" not in changed
+    assert "## Dativ\nNew.\n\n## Genitiv\n" in changed
+    assert "Detail" not in changed
 
 
 def test_appending_under_a_heading_goes_before_the_next_one() -> None:
-    changed = md.append(SECTIONS, "- punto", "Dativ")
+    changed = md.append(SECTIONS, "- point", "Dativ")
 
-    assert "Más.\n\n- punto\n\n## Genitiv" in changed
+    assert "More.\n\n- point\n\n## Genitiv" in changed
 
 
 def test_appending_at_the_end() -> None:
@@ -182,26 +182,26 @@ def test_appending_at_the_end() -> None:
 
 
 def test_a_missing_or_repeated_heading_says_so() -> None:
-    with pytest.raises(md.NotFoundInNote, match="Los que hay"):
+    with pytest.raises(md.NotFoundInNote, match="The ones there are"):
         md.section(SECTIONS, "Akkusativ")
     with pytest.raises(md.Ambiguous):
         md.section("# A\n\n# A\n", "A")
 
 
 def test_a_fragment_must_appear_exactly_once() -> None:
-    assert md.replace_fragment("uno dos tres", "dos", "2") == "uno 2 tres"
+    assert md.replace_fragment("one two three", "two", "2") == "one 2 three"
     with pytest.raises(md.NotFoundInNote):
-        md.replace_fragment("uno", "dos", "2")
-    with pytest.raises(md.Ambiguous, match="2 veces"):
-        md.replace_fragment("dos dos", "dos", "2")
+        md.replace_fragment("one", "two", "2")
+    with pytest.raises(md.Ambiguous, match="2 times"):
+        md.replace_fragment("two two", "two", "2")
 
 
 def test_a_fragment_in_nfd_finds_the_same_text() -> None:
-    assert md.replace_fragment("Präpositionen hoy", NFD, "X") == "X hoy"
+    assert md.replace_fragment("Präpositionen today", NFD, "X") == "X today"
 
 
 def test_search_folds_accents_umlauts_and_eszett() -> None:
-    assert md.fold("Präfix Straße Canción") == "prafix strasse cancion"
+    assert md.fold("Präfix Straße Crème") == "prafix strasse creme"
     assert md.query_words("  Präfix, straße! ") == ["prafix", "strasse"]
 
 
@@ -227,20 +227,20 @@ def test_an_excerpt_does_not_repeat_the_title() -> None:
     from notebook.service import without_title
 
     assert without_title("# DE 1.1 Kasus\n\nKern", "DE 1.1 Kasus") == "\nKern"
-    assert without_title("# Otro\nKern", "DE 1.1 Kasus") == "# Otro\nKern"
+    assert without_title("# Other\nKern", "DE 1.1 Kasus") == "# Other\nKern"
 
 
 def test_the_excerpt_of_a_list_reads_as_text() -> None:
     from notebook.service import plain
 
     body = (
-        "Repaso para el **Goethe-Zertifikat B1**. Alcance _B1+_.\n\n"
+        "Review for the **Goethe-Zertifikat B1**. Scope _B1+_.\n\n"
         "| Kasus | Frage |\n|---|---|\n| Nominativ | wer? |\n\n---\n\n"
-        "> [!tip] Ojo\n> tras *sein* va en `nominativo`.\n\n"
-        "```python\nprint(1)\n```\n- una snake_case"
+        "> [!tip] Careful\n> after *sein* comes the `nominative`.\n\n"
+        "```python\nprint(1)\n```\n- a snake_case"
     )
 
     assert plain(body) == (
-        "Repaso para el Goethe-Zertifikat B1. Alcance B1+. Ojo tras sein va en nominativo. "
-        "una snake_case"
+        "Review for the Goethe-Zertifikat B1. Scope B1+. Careful after sein comes the "
+        "nominative. a snake_case"
     )

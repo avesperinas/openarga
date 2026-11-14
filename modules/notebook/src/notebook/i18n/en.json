@@ -1,0 +1,17 @@
+{
+  "panel.open": "Open Notes",
+  "panel.today": "Today's note",
+  "panel.recent": "Recent",
+  "panel.review": "To review",
+  "panel.ask_today": "What did I write today?",
+  "panel.ask_today_words": "note, notes, journal, today",
+  "panel.ask_review": "What do I have to review?",
+  "panel.ask_review_words": "review, revise, study",
+  "search.note": "Note",
+  "widget.recent_empty": "nothing changed this month",
+  "widget.today_empty": "no note today",
+  "widget.review_unset": "choose in Notes which property says when to review",
+  "widget.review_empty": "nothing to review today",
+  "widget.due_today": "today",
+  "widget.late": "{days} d ago"
+}

@@ -19,6 +19,7 @@ from notebook import markdown as md
 from notebook import panel as home_panel
 from notebook.db import as_module
 from notebook.notes import MADRID, ImportNote
+from notebook.words import say
 
 MODULE_ID = "notebook"
 
@@ -69,12 +70,14 @@ async def capability(
 ) -> dict:
     expected = os.environ.get("MODULE_REGISTRATION_TOKEN", "")
     if not expected:
-        raise HTTPException(status_code=503, detail="Notebook no tiene MODULE_REGISTRATION_TOKEN")
+        raise HTTPException(status_code=503, detail="Notebook has no MODULE_REGISTRATION_TOKEN")
     if not hmac.compare_digest(x_module_token, expected):
-        raise HTTPException(status_code=401, detail="solo el kernel pide cosas a Notebook")
+        raise HTTPException(status_code=401, detail="only the kernel asks Notebook for things")
     served = service.SERVICES.get(capability)
     if served is None:
-        raise HTTPException(status_code=404, detail=f"Notebook no sabe hacer '{capability}'")
+        raise HTTPException(
+            status_code=404, detail=f"Notebook does not know how to do '{capability}'"
+        )
     require_person()
     model, action = served
     try:
@@ -306,7 +309,8 @@ async def search_arga(
             detail = " · ".join(part for part in (hit.source.name, where) if part)
             found.append(Found(title=hit.title[:160], detail=detail[:200], href=hit.source.href))
         else:
-            detail = f"Nota · {hit.folder}" if hit.folder else "Nota"
+            note = say("search.note")
+            detail = f"{note} · {hit.folder}" if hit.folder else note
             found.append(Found(title=hit.title[:160], detail=detail[:200], href=hit.href))
     return Results(results=found)
 

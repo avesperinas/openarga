@@ -17,14 +17,14 @@ VAULT = [
         "folder": "B1 Gramatik",
         "title": nfd("DE 4.2 Wechselpräpositionen"),
         "content": "---\nthema: Präpositionen\nnaechste_wiederholung: 2026-10-01\n---\n"
-        "# Wechsel\n\nVer [[DE 1.1 Kasus]] y ![[tabla.png]].\n",
+        "# Wechsel\n\nSee [[DE 1.1 Kasus]] and ![[table.png]].\n",
     },
     {
         "folder": "B1 Gramatik",
         "title": "DE 1.1 Kasus",
         "content": f"# Kasus\n\n[[DE 4.2 {nfd('Wechselpräpositionen')}]]\n",
     },
-    {"folder": "", "title": "Ideas", "content": "Sin carpeta."},
+    {"folder": "", "title": "Ideas", "content": "No folder."},
 ]
 
 
@@ -67,18 +67,18 @@ async def test_the_properties_of_the_vault_are_searchable(api) -> None:
 async def test_what_cannot_be_saved_is_said_and_does_not_stop_the_rest(api) -> None:
     result = await api.post(
         "/import",
-        json={"notes": [{"folder": "", "title": "a|b"}, {"folder": "X", "title": "Bien"}]},
+        json={"notes": [{"folder": "", "title": "a|b"}, {"folder": "X", "title": "Fine"}]},
     )
 
     assert result.json()["created"] == 1
-    assert result.json()["invalid"] == [{"path": "a|b", "reason": "un título no lleva «|»"}]
+    assert result.json()["invalid"] == [{"path": "a|b", "reason": "a title cannot contain '|'"}]
 
 
 async def test_an_image_is_stored_once_and_served_by_its_name(api) -> None:
-    first = await api.post("/files", params={"name": "tabla.png"}, content=PNG)
-    again = await api.post("/files", params={"name": "Tabla.PNG"}, content=PNG)
-    other = await api.post("/files", params={"name": "tabla.png"}, content=PNG + b"x")
-    served = await api.get("/files/tabla.png")
+    first = await api.post("/files", params={"name": "table.png"}, content=PNG)
+    again = await api.post("/files", params={"name": "Table.PNG"}, content=PNG)
+    other = await api.post("/files", params={"name": "table.png"}, content=PNG + b"x")
+    served = await api.get("/files/table.png")
 
     assert first.status_code == 201 and first.json()["existed"] is False
     assert again.json()["existed"] is True
@@ -100,13 +100,13 @@ async def test_only_images_and_not_too_big(api) -> None:
 
 async def test_a_null_character_is_dropped_instead_of_breaking_the_batch(api) -> None:
     result = await api.post(
-        "/import", json={"notes": [{"folder": "", "title": "Rara", "content": "uno\u0000dos"}]}
+        "/import", json={"notes": [{"folder": "", "title": "Odd", "content": "one\u0000two"}]}
     )
     tree = (await api.get("/tree")).json()
     note = (await api.get(f"/notes/{tree['notes'][0]['id']}")).json()
 
     assert result.json()["created"] == 1
-    assert note["content"] == "unodos"
+    assert note["content"] == "onetwo"
 
 
 async def test_a_note_imported_empty_is_filled_by_importing_it_again(api) -> None:
@@ -114,8 +114,8 @@ async def test_a_note_imported_empty_is_filled_by_importing_it_again(api) -> Non
         "/import",
         json={
             "notes": [
-                {"folder": "claude", "title": "Vacía", "content": "\u0000" * 40},
-                {"folder": "claude", "title": "Con texto", "content": "mío"},
+                {"folder": "claude", "title": "Empty", "content": "\u0000" * 40},
+                {"folder": "claude", "title": "With text", "content": "mine"},
             ]
         },
     )
@@ -123,8 +123,8 @@ async def test_a_note_imported_empty_is_filled_by_importing_it_again(api) -> Non
         "/import",
         json={
             "notes": [
-                {"folder": "claude", "title": "Vacía", "content": "Ahora sí."},
-                {"folder": "claude", "title": "Con texto", "content": "otro"},
+                {"folder": "claude", "title": "Empty", "content": "Now yes."},
+                {"folder": "claude", "title": "With text", "content": "other"},
             ]
         },
     )
@@ -134,5 +134,5 @@ async def test_a_note_imported_empty_is_filled_by_importing_it_again(api) -> Non
     }
 
     assert empty.json()["created"] == 2
-    assert (good.json()["filled"], good.json()["skipped"]) == (1, ["claude/Con texto"])
-    assert texts == {"Vacía": "Ahora sí.", "Con texto": "mío"}
+    assert (good.json()["filled"], good.json()["skipped"]) == (1, ["claude/With text"])
+    assert texts == {"Empty": "Now yes.", "With text": "mine"}

@@ -89,13 +89,13 @@ async def test_a_change_reaches_the_log_once_with_its_owner_and_without_the_text
             {"id": person, "s": subject},
         )
     try:
-        created = await api.post("/notes", json={"title": "Secreto", "content": "lo que sé"})
+        created = await api.post("/notes", json={"title": "Secret", "content": "what I know"})
         assert created.status_code == 201, created.text
 
         def down(request: httpx.Request) -> httpx.Response:
             if request.url.path == "/internal/users":
                 return httpx.Response(200, json=[{"id": str(person)}])
-            raise httpx.ConnectError("el kernel no contesta", request=request)
+            raise httpx.ConnectError("the kernel does not answer", request=request)
 
         async with httpx.AsyncClient(transport=httpx.MockTransport(down)) as client:
             failed = await publisher.run_once(client)
@@ -115,7 +115,7 @@ async def test_a_change_reaches_the_log_once_with_its_owner_and_without_the_text
             ).all()
         assert [(row.type, row.user_id) for row in events] == [("notebook.note_changed", person)]
         assert events[0].payload["note_id"] == created.json()["id"]
-        assert "lo que sé" not in str(events[0].payload)
+        assert "what I know" not in str(events[0].payload)
         assert "Secreto" not in str(events[0].payload)
     finally:
         async with schema.begin() as connection:
