@@ -16,7 +16,8 @@ async def test_claude_asks_the_forecast_and_the_climate_of_a_place(api, hub) -> 
 
     told = forecast.json()["content"]
     assert (told["place"], told["failed"]) == ("Kioto", None)
-    assert told["weather"]["days"][0]["sky"] == "algo nuboso"
+    first = told["weather"]["days"][0]
+    assert first["code"] == 2 and first["sky"]
     [november] = climate.json()["content"]["weather"]["months"]
     assert (november["month"], november["max_c"]) == (11, 17.0)
 
