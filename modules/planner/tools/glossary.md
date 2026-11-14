@@ -12,7 +12,7 @@
 - **All day**: dates without a time. For the tools, the last day is included ("from the 1st to the
   3rd").
 - **Zone**: each event's zone decides daylight saving changes. A series at 10:00 in Madrid stays at
-  10:00 after the change. A time without a zone is read in the home zone.
+  10:00 after the change. A time without a zone is read in the person's zone.
 - **Cancel** does not delete: the event stops showing and the row stays.
 - **Background**: a layer that shows not as events but as the frame they fall in: working hours, a
   trip. Its items take no time; reads return them apart, in `backgrounds`. Events decide whether
