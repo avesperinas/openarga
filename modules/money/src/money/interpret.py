@@ -83,7 +83,7 @@ class Interpreter:
     window_days: int = 4
     holders: tuple[str, ...] = ()
     merchant_of: dict[str, str] = field(default_factory=dict)
-    """El comercio de cada hecho, ya limpio, si la fuente lo sabe sacar; si no, su texto."""
+    """The merchant of each fact, cleaned, if the source can tell it; otherwise its text."""
 
     def merchant(self, fact: Fact) -> str:
         return merchant_key(self.merchant_of.get(fact.id) or fact.counterparty or fact.text)

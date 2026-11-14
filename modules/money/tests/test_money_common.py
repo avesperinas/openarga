@@ -4,7 +4,7 @@ from uuid import UUID
 
 import pytest
 from money_people import OTHER, PERSON
-from test_money_api import book  # noqa: F401 - el libro de siempre, el de Uno
+from test_money_api import book  # noqa: F401 - the usual book, One's
 
 from arga_tenancy import SPACES_HEADER, USER_HEADER, as_user
 from money import worker
@@ -44,10 +44,10 @@ async def test_the_other_member_sees_the_same_balance_from_the_other_side(casa) 
         assert mine["paid"]["me"] == theirs["paid"]["other"]
         assert mine["deposits"]["other"] == theirs["deposits"]["me"]
     assert {c["name"] for c in dos["common_categories"]} == {
-        "Alquiler",
-        "Supermercado",
-        "Suministros",
-        "Otros",
+        "Rent",
+        "Groceries",
+        "Utilities",
+        "Other",
     }
     assert dos["kept_at"] is not None
 
@@ -62,8 +62,8 @@ async def test_what_the_other_member_puts_down_counts_for_both(casa) -> None:
             "payer": "me",
             "on": "2026-03-03",
             "amount": "100",
-            "description": "Luz",
-            "category": "suministros",
+            "description": "Electricity",
+            "category": "utilities",
         },
         headers=DOS,
     )
@@ -76,8 +76,8 @@ async def test_what_the_other_member_puts_down_counts_for_both(casa) -> None:
     r = 30000 / 50000
     assert uno["balance_me"] == pytest.approx(before - (r * 100 + r * 100) / 2, abs=0.01)
     assert dos["balance_me"] == pytest.approx(-uno["balance_me"], abs=0.01)
-    assert [(e["description"], e["payer"]) for e in uno["entries"]] == [("Luz", "other")]
-    assert [(e["description"], e["payer"]) for e in dos["entries"]] == [("Luz", "me")]
+    assert [(e["description"], e["payer"]) for e in uno["entries"]] == [("Electricity", "other")]
+    assert [(e["description"], e["payer"]) for e in dos["entries"]] == [("Electricity", "me")]
 
     gone = await casa.delete(f"/shared/entries/{dos['entries'][0]['id']}", headers=UNO)
     assert gone.status_code == 204
@@ -94,8 +94,8 @@ async def test_what_was_put_down_before_moves_to_the_space(book) -> None:  # noq
             "payer": "other",
             "on": "2026-03-03",
             "amount": "40",
-            "description": "Bombona",
-            "category": cats["Suministros"],
+            "description": "Gas bottle",
+            "category": cats["Utilities"],
         },
         headers=UNO,
     )
@@ -107,8 +107,8 @@ async def test_what_was_put_down_before_moves_to_the_space(book) -> None:  # noq
     dos = await shared(book, DOS)
 
     assert uno["balance_me"] == pytest.approx(alone, abs=0.01)
-    assert [(e["description"], e["payer"]) for e in uno["entries"]] == [("Bombona", "other")]
-    assert [(e["description"], e["payer"]) for e in dos["entries"]] == [("Bombona", "me")]
+    assert [(e["description"], e["payer"]) for e in uno["entries"]] == [("Gas bottle", "other")]
+    assert [(e["description"], e["payer"]) for e in dos["entries"]] == [("Gas bottle", "me")]
 
 
 async def test_the_widget_and_the_tool_say_the_same_from_both_sides(casa) -> None:
@@ -127,7 +127,7 @@ async def test_the_widget_and_the_tool_say_the_same_from_both_sides(casa) -> Non
     uno, dos = tool_uno.json()["content"], tool_dos.json()["content"]
     assert dos["balance_me"] == pytest.approx(-uno["balance_me"], abs=0.01)
     assert dos["balance"] == uno["balance"]
-    assert dos["kept_by"] == "Uno"
+    assert dos["kept_by"] == "One"
 
 
 async def test_claude_puts_down_a_common_expense_from_the_other_side(casa) -> None:
@@ -135,19 +135,19 @@ async def test_claude_puts_down_a_common_expense_from_the_other_side(casa) -> No
 
     recorded = await casa.post(
         "/tools/record_shared_expense",
-        json={"description": "Butano", "amount": "25", "category": "Suministros", "payer": "me"},
+        json={"description": "Butane", "amount": "25", "category": "Utilities", "payer": "me"},
         headers={**DOS, **WRITE},
     )
     unknown = await casa.post(
         "/tools/record_shared_expense",
-        json={"description": "Algo", "amount": "5", "category": "Inventada", "payer": "me"},
+        json={"description": "Something", "amount": "5", "category": "Invented", "payer": "me"},
         headers={**DOS, **WRITE},
     )
 
     assert recorded.json()["content"]["shared_space"] is True
-    assert "Inventada" in unknown.json()["content"]["error"]
+    assert "Invented" in unknown.json()["content"]["error"]
     dos = await shared(casa, DOS)
-    assert [(e["description"], e["payer"]) for e in dos["entries"]] == [("Butano", "me")]
+    assert [(e["description"], e["payer"]) for e in dos["entries"]] == [("Butane", "me")]
 
 
 async def test_settling_the_year_is_for_whoever_keeps_the_account(casa) -> None:
@@ -173,11 +173,11 @@ async def test_without_anyone_keeping_the_account_the_other_member_is_told(book)
             "on": "2026-03-03",
             "amount": "10",
             "description": "X",
-            "category": "Otros",
+            "category": "Other",
         },
         headers=DOS,
     )
 
     assert (dos["role"], dos["has_keeper"], dos["months"]) == ("member", False, [])
     assert refused.status_code == 422
-    assert "nadie" in refused.json()["detail"]
+    assert "nobody" in refused.json()["detail"]

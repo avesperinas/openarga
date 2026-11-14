@@ -15,6 +15,7 @@ from money import book as books
 from money import common, configure, kpis, products
 from money.interpret import fold
 from money.shared import totals, year_balance
+from money.texts import currency
 
 MODULE = "money"
 WRITE_ROLE = f"mod_{MODULE}"
@@ -116,7 +117,7 @@ async def get_movements(connection: AsyncConnection, arguments: GetMovements) ->
                 "amount": money(f.amount),
                 "account": b.accounts[f.account].name
                 if f.account in b.accounts
-                else "Fuera de cuenta",
+                else "outside any account",
                 "merchant": merchant,
                 "status": status,
                 "parts": [
@@ -154,11 +155,11 @@ async def get_shared_balance(
     me, other = view.me_name, view.other_name
     owe = abs(yb.balance_me)
     if owe < Decimal("0.005"):
-        who = "Estáis a cero"
+        who = "you are even"
     elif yb.balance_me < 0:
-        who = f"{me} debe {money(owe)} € a {other}"
+        who = f"{me} owes {money(owe)} {currency()} to {other}"
     else:
-        who = f"{other} debe {money(owe)} € a {me}"
+        who = f"{other} owes {money(owe)} {currency()} to {me}"
     answer: dict[str, Any] = {
         "year": year,
         "settled": view.settled,
@@ -172,7 +173,7 @@ async def get_shared_balance(
         answer["kept_by"] = other
         answer["as_of"] = view.kept_at.isoformat() if view.kept_at else None
         if view.keeper is None:
-            answer["note"] = "nadie del espacio lleva todavía la cuenta común en su Money"
+            answer["note"] = "nobody in the space keeps the shared account in their Money yet"
     else:
         answer["incomes"] = incomes_of(lo, year)
     return answer
@@ -199,9 +200,9 @@ def category_named(lo: books.Loaded, name: str, nature: str | None, ownership: s
     if len(found) == 1:
         return found[0].id
     if not found:
-        raise Ambiguous(f"no hay ninguna categoría «{name}»")
+        raise Ambiguous(f"there is no category '{name}'")
     raise Ambiguous(
-        f"hay varias «{name}»: di si es individual o compartida, y si es gasto o ingreso"
+        f"there are several '{name}': say whether individual or shared, expense or income"
     )
 
 
@@ -220,7 +221,7 @@ async def categorise_movement(
     try:
         fact = lo.book.fact(arguments.movement_id)
     except KeyError:
-        return {"error": "no hay ese movimiento: búscalo antes con get_movements"}
+        return {"error": "no such movement: find it first with get_movements"}
     try:
         category = category_named(lo, arguments.category, arguments.nature, arguments.ownership)
     except Ambiguous as error:
@@ -256,18 +257,18 @@ async def mark_transfer(connection: AsyncConnection, arguments: MarkTransfer) ->
     try:
         fact = lo.book.fact(arguments.movement_id)
     except KeyError:
-        return {"error": "no hay ese movimiento: búscalo antes con get_movements"}
+        return {"error": "no such movement: find it first with get_movements"}
     if fact.account not in lo.book.accounts:
-        return {"error": "ese movimiento no es de ninguna cuenta tuya"}
+        return {"error": "that movement is not from any account of yours"}
     try:
         other = product_named(lo, arguments.product)
     except configure.Refused as error:
         return {"error": str(error)}
     if other == fact.account:
-        return {"error": "es su misma cuenta: un traspaso es con otra cuenta tuya"}
+        return {"error": "it is its own account: a transfer is with another account of yours"}
     await save_label(connection, fact.id, {"transfer_with": other})
     name = lo.book.accounts[other].name
-    return {"movement": fact.id, "transfer": f"{'a' if fact.amount < 0 else 'desde'} {name}"}
+    return {"movement": fact.id, "transfer": f"{'to' if fact.amount < 0 else 'from'} {name}"}
 
 
 class RecordSharedExpense(Arguments):
@@ -344,7 +345,7 @@ def product_named(lo: books.Loaded, name: str) -> str:
     found = [a.id for a in lo.book.accounts.values() if fold(a.name) == wanted]
     if len(found) != 1:
         raise configure.Refused(
-            f"no hay un producto que se llame «{name}»: míralo con get_products"
+            f"there is no product called '{name}': look it up with get_products"
         )
     return found[0]
 

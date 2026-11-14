@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from test_money_api import book  # noqa: F401 -- la fixture con el log y la configuración
+from test_money_api import book  # noqa: F401 -- the fixture with the log and the configuration
 
 READ = {"x-arga-scopes": "money:read"}
 WRITE = {"x-arga-scopes": "money:write"}
@@ -41,15 +41,15 @@ async def test_reading_tools_answer_with_the_reading_role(book) -> None:  # noqa
     assert {m["status"] for m in pending.json()["content"]["movements"]} <= {"ask", "pending"}
     shared = await book.post("/tools/get_shared_balance", json={"year": 2026}, headers=READ)
     assert (
-        "debe" in shared.json()["content"]["balance"]
-        or "cero" in shared.json()["content"]["balance"]
+        "owes" in shared.json()["content"]["balance"]
+        or "even" in shared.json()["content"]["balance"]
     )
 
 
 async def test_a_write_with_the_reading_role_is_refused_by_postgres(book) -> None:  # noqa: F811
     response = await book.post(
         "/tools/record_shared_expense",
-        json={"description": "Luz", "amount": "30", "category": "Suministros"},
+        json={"description": "Electricity", "amount": "30", "category": "Utilities"},
         headers=READ,
     )
     assert response.status_code == 403
@@ -58,34 +58,39 @@ async def test_a_write_with_the_reading_role_is_refused_by_postgres(book) -> Non
 async def test_writing_tools_label_a_movement_and_record_an_expense(book) -> None:  # noqa: F811
     labelled = await book.post(
         "/tools/categorise_movement",
-        json={"movement_id": "main:old1", "category": "Suscripciones"},
+        json={"movement_id": "main:old1", "category": "Subscriptions"},
         headers=WRITE,
     )
     assert labelled.status_code == 200, labelled.text
-    assert labelled.json()["content"]["category"] == "Suscripciones"
+    assert labelled.json()["content"]["category"] == "Subscriptions"
     rows = (await book.get("/movements", params={"from": "2026-03-01", "to": "2026-03-31"})).json()
     old = next(m for m in rows["movements"] if m["id"] == "main:old1")
     assert old["status"] == "manual"
     unknown = await book.post(
         "/tools/categorise_movement",
-        json={"movement_id": "main:old1", "category": "No existe"},
+        json={"movement_id": "main:old1", "category": "Does not exist"},
         headers=WRITE,
     )
     assert "error" in unknown.json()["content"]
     recorded = await book.post(
         "/tools/record_shared_expense",
-        json={"description": "Luz", "amount": "30", "category": "Suministros", "on": "2026-03-04"},
+        json={
+            "description": "Electricity",
+            "amount": "30",
+            "category": "Utilities",
+            "on": "2026-03-04",
+        },
         headers=WRITE,
     )
     assert recorded.status_code == 200, recorded.text
     shared = (await book.get("/shared", params={"year": 2026})).json()
-    assert any(e["description"] == "Luz" for e in shared["entries"])
+    assert any(e["description"] == "Electricity" for e in shared["entries"])
 
 
 async def test_a_movement_marked_as_a_transfer_is_money_put_into_an_etf(book) -> None:  # noqa: F811
     created = await book.post(
         "/tools/create_product",
-        json={"name": "Bróker", "type": "etf", "institution": "Bróker Inventado"},
+        json={"name": "Broker", "type": "etf", "institution": "Invented Broker"},
         headers=WRITE,
     )
     assert created.status_code == 200, created.text
@@ -97,28 +102,28 @@ async def test_a_movement_marked_as_a_transfer_is_money_put_into_an_etf(book) ->
         headers=WRITE,
     )
     assert marked.status_code == 200, marked.text
-    assert marked.json()["content"] == {"movement": "main:old1", "transfer": "a Bróker"}
+    assert marked.json()["content"] == {"movement": "main:old1", "transfer": "to Broker"}
     rows = (await book.get("/movements", params={"from": "2026-03-01", "to": "2026-03-31"})).json()
     assert next(m for m in rows["movements"] if m["id"] == "main:old1")["status"] == "transfer"
-    product = await book.post("/tools/get_products", json={"product": "Bróker"}, headers=READ)
+    product = await book.post("/tools/get_products", json={"product": "Broker"}, headers=READ)
     detail = product.json()["content"]
-    assert (detail["type_label"], detail["group"]) == ("ETF o acciones", "Bolsa")
+    assert (detail["type_label"], detail["group"]) == ("ETF or shares", "Stocks")
     assert detail["contributed"] == 12.99
 
     same = await book.post(
         "/tools/mark_transfer",
-        json={"movement_id": "main:m3", "product": "Principal"},
+        json={"movement_id": "main:m3", "product": "Main"},
         headers=WRITE,
     )
     assert "error" in same.json()["content"]
     nowhere = await book.post(
         "/tools/mark_transfer",
-        json={"movement_id": "main:m3", "product": "No existe"},
+        json={"movement_id": "main:m3", "product": "Does not exist"},
         headers=WRITE,
     )
     assert "error" in nowhere.json()["content"]
     reading = await book.post(
-        "/tools/mark_transfer", json={"movement_id": "main:m3", "product": "Bróker"}, headers=READ
+        "/tools/mark_transfer", json={"movement_id": "main:m3", "product": "Broker"}, headers=READ
     )
     assert reading.status_code == 403
 

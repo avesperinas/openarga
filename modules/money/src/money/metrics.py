@@ -72,36 +72,36 @@ def points(lo: books.Loaded, now: date) -> list[dict[str, Any]]:
     found: list[dict[str, Any]] = []
     has_fund = any(one.role == "emergency_fund" for one in lo.book.accounts.values())
     for day in month_ends(date(min(years), 1, 1), now):
-        found.append(_point("net_worth", "Patrimonio", day, kpis.worth(lo, day)[0]))
-        found.append(_point("liquid", "Líquido", day, kpis.worth(lo, day, liquid_only=True)[0]))
+        found.append(_point("net_worth", "Net worth", day, kpis.worth(lo, day)[0]))
+        found.append(_point("liquid", "Liquid", day, kpis.worth(lo, day, liquid_only=True)[0]))
         found.append(_point("cash", "Cash", day, kpis.cash(lo, day)[0]))
         if has_fund:
             fund = kpis.emergency(lo, day)[0]
-            found.append(_point("emergency_fund", "Fondo de contingencia", day, fund))
+            found.append(_point("emergency_fund", "Emergency fund", day, fund))
         if day == now:
             continue
         for key, label, basic in (
-            ("month_expense", "Gasto del mes", False),
-            ("month_basic_expense", "Gasto básico del mes", True),
+            ("month_expense", "Spending of the month", False),
+            ("month_basic_expense", "Basic spending of the month", True),
         ):
             spent = kpis.month_expense(lo, day.year, day.month, basic)
             if spent is not None:
                 found.append(_point(key, label, day, spent))
     for key, label, basic in (
-        ("average_expense", "Gasto mensual (media)", False),
-        ("average_basic_expense", "Gasto básico (media)", True),
+        ("average_expense", "Monthly spending (average)", False),
+        ("average_basic_expense", "Basic spending (average)", True),
     ):
         average, _ = kpis.average_expense(lo, now, basic=basic)
         if average is not None:
             found.append(_point(key, label, now, average))
     interest, pension = by_day(lo)
     found += [
-        _point("interest", "Intereses cobrados", day, value, "amount")
+        _point("interest", "Interest received", day, value, "amount")
         for day, value in sorted(interest.items())
         if day <= now
     ]
     found += [
-        _point("pension_contribution", "Aportaciones a planes de pensiones", day, value, "amount")
+        _point("pension_contribution", "Pension plan contributions", day, value, "amount")
         for day, value in sorted(pension.items())
         if day <= now
     ]

@@ -22,6 +22,7 @@ from money.ledger import balance_check
 from money.model import OTHER, Book
 from money.panel import build as home_panel_of
 from money.shared import monthly_average, totals, year_balance
+from money.texts import t
 from money.value import value_at
 
 router = APIRouter()
@@ -120,8 +121,8 @@ async def state() -> dict:
             {"key": u.key, "bank": u.bank, "name": u.name, "iban_tail": u.iban_tail}
             for u in lo.unmapped
         ],
-        "assets": [{"value": k, "label": v} for k, v in products.ASSETS.items()],
-        "regions": [{"value": k, "label": v} for k, v in products.REGIONS.items()],
+        "assets": [{"value": k, "label": v} for k, v in products.assets().items()],
+        "regions": [{"value": k, "label": v} for k, v in products.regions().items()],
         "years": years,
         "rules": len(lo.rules),
     }
@@ -129,7 +130,7 @@ async def state() -> dict:
 
 def account_name(b: Book, key: str, lo: books.Loaded) -> tuple[str, str]:
     if key == OTHER:
-        return "Fuera de cuenta", "—"
+        return t("account.outside"), "—"
     a = b.accounts.get(key)
     return (a.name, a.institution) if a else (key, "")
 
@@ -202,12 +203,12 @@ def movement_out(lo: books.Loaded, fact_id: str, transfers: dict[str, tuple]) ->
 
 def transfer_index(b: Book) -> dict[str, tuple]:
     out: dict[str, tuple] = {}
-    for t in b.transfers:
-        if t.out_fact:
-            out[t.out_fact] = (t.in_fact, t.basis)
-            out[t.in_fact] = (t.out_fact, t.basis)
+    for one in b.transfers:
+        if one.out_fact:
+            out[one.out_fact] = (one.in_fact, one.basis)
+            out[one.in_fact] = (one.out_fact, one.basis)
         else:
-            out[t.in_fact] = (None, t.basis)
+            out[one.in_fact] = (None, one.basis)
     return out
 
 
@@ -218,7 +219,7 @@ async def movements(
 ) -> dict:
     if end < start or (end - start).days > 400:
         raise HTTPException(
-            status_code=422, detail="el periodo va de una fecha a otra, como mucho un año"
+            status_code=422, detail="the period goes from one date to another, at most a year"
         )
     async with as_app() as connection:
         lo = await loaded(connection)
@@ -239,7 +240,7 @@ async def movement(fact: Annotated[str, Query(alias="id", max_length=300)]) -> d
     try:
         lo.book.fact(fact)
     except KeyError as error:
-        raise HTTPException(status_code=404, detail="no hay ese movimiento") from error
+        raise HTTPException(status_code=404, detail="no such movement") from error
     out = movement_out(lo, fact, transfer_index(lo.book))
     out["label"] = lo.labels.get(fact)
     out["same_merchant"] = sum(
@@ -264,7 +265,7 @@ class LabelIn(BaseModel):
     settlement: bool = False
     is_return: bool = False
     transfer_with: str | None = Field(default=None, max_length=100)
-    """Un traspaso con esta otra cuenta tuya."""
+    """A transfer with this other account of yours."""
 
 
 @router.put("/label")
@@ -274,7 +275,7 @@ async def label(request: LabelIn, fact: Annotated[str, Query(alias="id", max_len
         try:
             f = lo.book.fact(fact)
         except KeyError as error:
-            raise HTTPException(status_code=404, detail="no hay ese movimiento") from error
+            raise HTTPException(status_code=404, detail="no such movement") from error
         said = [
             bool(request.parts),
             request.settlement,
@@ -283,17 +284,17 @@ async def label(request: LabelIn, fact: Annotated[str, Query(alias="id", max_len
         ]
         if sum(said) > 1:
             raise HTTPException(
-                status_code=422, detail="o partes, o liquidación, o rentabilidad, o traspaso"
+                status_code=422, detail="either parts, settlement, return or transfer"
             )
         if request.parts:
             total = sum((p.amount for p in request.parts), Decimal(0))
             if total.copy_abs() != f.amount.copy_abs():
                 raise HTTPException(
-                    status_code=422, detail="las partes tienen que sumar el importe"
+                    status_code=422, detail="the parts have to add up to the amount"
                 )
             for p in request.parts:
                 if p.category not in lo.book.categories:
-                    raise HTTPException(status_code=422, detail="esa categoría no existe")
+                    raise HTTPException(status_code=422, detail="that category does not exist")
             sign = -1 if f.amount < 0 else 1
             spec = {
                 "parts": [
@@ -313,10 +314,10 @@ async def label(request: LabelIn, fact: Annotated[str, Query(alias="id", max_len
             spec = {"return": True}
         elif request.transfer_with:
             if request.transfer_with not in lo.book.accounts or request.transfer_with == f.account:
-                raise HTTPException(status_code=422, detail="elige otra cuenta tuya")
+                raise HTTPException(status_code=422, detail="choose another account of yours")
             spec = {"transfer_with": request.transfer_with}
         else:
-            raise HTTPException(status_code=422, detail="falta qué es")
+            raise HTTPException(status_code=422, detail="what it is is missing")
         await connection.execute(
             text("""
             insert into money.money_v1_label (fact_id, spec) values (:f, cast(:s as jsonb))
@@ -347,7 +348,7 @@ async def unlabel(fact: Annotated[str, Query(alias="id", max_length=300)]) -> di
     try:
         return movement_out(lo, fact, transfer_index(lo.book))
     except KeyError as error:
-        raise HTTPException(status_code=404, detail="no hay ese movimiento") from error
+        raise HTTPException(status_code=404, detail="no such movement") from error
 
 
 class MerchantRuleIn(BaseModel):
@@ -363,9 +364,9 @@ async def merchant_rule(
         try:
             f = lo.book.fact(fact)
         except KeyError as error:
-            raise HTTPException(status_code=404, detail="no hay ese movimiento") from error
+            raise HTTPException(status_code=404, detail="no such movement") from error
         if request.category not in lo.book.categories:
-            raise HTTPException(status_code=422, detail="esa categoría no existe")
+            raise HTTPException(status_code=422, detail="that category does not exist")
         name = lo.merchant_of.get(f.id) or f.text
         key = merchant_key(name)
         await connection.execute(
@@ -569,7 +570,7 @@ async def add_entry(request: EntryIn) -> dict:
         try:
             UUID(request.category)
         except ValueError as error:
-            raise HTTPException(status_code=422, detail="esa categoría no existe") from error
+            raise HTTPException(status_code=422, detail="that category does not exist") from error
         found = (
             await connection.execute(
                 text("select 1 from money.money_v1_category where id = :c"),
@@ -577,7 +578,7 @@ async def add_entry(request: EntryIn) -> dict:
             )
         ).first()
         if not found:
-            raise HTTPException(status_code=422, detail="esa categoría no existe")
+            raise HTTPException(status_code=422, detail="that category does not exist")
         row = (
             await connection.execute(
                 text("""
@@ -607,7 +608,7 @@ async def remove_entry(entry_id: UUID) -> None:
             text("delete from money.money_v1_entry where id = :i"), {"i": entry_id}
         )
         if gone.rowcount == 0:
-            raise HTTPException(status_code=404, detail="no hay ese gasto")
+            raise HTTPException(status_code=404, detail="no such expense")
         await books.bump(connection)
 
 
@@ -618,11 +619,11 @@ class YearIn(BaseModel):
 @router.put("/shared/years/{year}")
 async def settle_year(year: int, request: YearIn) -> dict:
     if not 2000 <= year <= 2100:
-        raise HTTPException(status_code=422, detail="año fuera de rango")
+        raise HTTPException(status_code=422, detail="year out of range")
     async with as_app() as connection:
         if common.role_of(await loaded(connection)) == common.MEMBER:
             raise HTTPException(
-                status_code=409, detail="liquida el año quien lleva la cuenta común (ADR-0124)"
+                status_code=409, detail="the year is settled by whoever keeps the shared account"
             )
         await connection.execute(
             text("""
@@ -653,7 +654,8 @@ async def set_incomes(year: int, request: IncomesIn) -> dict:
     for i in request.incomes:
         if i.to_on < i.from_on or not (i.from_on.year <= year <= i.to_on.year):
             raise HTTPException(
-                status_code=422, detail="cada tramo va de una fecha a otra y toca el año"
+                status_code=422,
+                detail="each range goes from one date to another and touches the year",
             )
     async with as_app() as connection:
         await connection.execute(
@@ -682,14 +684,15 @@ class SpaceIn(BaseModel):
 @router.put("/shared/space")
 async def set_space(request: SpaceIn) -> dict:
     if request.space_id is not None and request.space_id not in current_spaces.get():
-        raise HTTPException(status_code=404, detail="no estás en ese espacio")
+        raise HTTPException(status_code=404, detail="you are not in that space")
     async with as_app() as connection:
         await connection.execute(
             text("""
-            insert into money.money_v1_setting (space_id) values (:s)
+            insert into money.money_v1_setting (space_id, me_name, other_name)
+            values (:s, :me, :other)
             on conflict (user_id) do update set space_id = excluded.space_id, updated_at = now()
         """),
-            {"s": request.space_id},
+            {"s": request.space_id, "me": t("person.me"), "other": t("person.other")},
         )
         await books.bump(connection)
     return {"space_id": str(request.space_id) if request.space_id else None}
@@ -750,14 +753,15 @@ async def change_settings(request: SettingsIn) -> dict:
                 )
             ).first()
             if not found:
-                raise HTTPException(status_code=422, detail="no hay esa cuenta")
+                raise HTTPException(status_code=422, detail="no such account")
         await connection.execute(
             text("""
-            insert into money.money_v1_setting (emergency_months) values (:m)
+            insert into money.money_v1_setting (emergency_months, me_name, other_name)
+            values (:m, :me, :other)
             on conflict (user_id) do update set emergency_months = excluded.emergency_months,
                 updated_at = now()
         """),
-            {"m": request.emergency_months},
+            {"m": request.emergency_months, "me": t("person.me"), "other": t("person.other")},
         )
         await connection.execute(
             text("""
@@ -784,7 +788,7 @@ class AccountIn(BaseModel):
 @router.put("/accounts/{key}")
 async def change_account(key: str, request: AccountIn) -> dict:
     if request.type not in catalog.account_types():
-        raise HTTPException(status_code=422, detail="no hay ese tipo de cuenta")
+        raise HTTPException(status_code=422, detail="no such account type")
     async with as_app() as connection:
         found = (
             await connection.execute(
@@ -798,7 +802,7 @@ async def change_account(key: str, request: AccountIn) -> dict:
             )
         ).first()
         if not found:
-            raise HTTPException(status_code=404, detail="no hay esa cuenta")
+            raise HTTPException(status_code=404, detail="no such account")
         await books.bump(connection)
     return {"key": key, **request.model_dump(mode="json")}
 
@@ -882,7 +886,7 @@ async def product(key: str) -> dict:
         lo = await loaded(connection)
     account = lo.book.accounts.get(key)
     if account is None:
-        raise HTTPException(status_code=404, detail="no hay ese producto")
+        raise HTTPException(status_code=404, detail="no such product")
     return plain(products.detail(lo, account, date.today()))
 
 
@@ -925,7 +929,7 @@ async def remove_composition(key: str, on: Annotated[date, Query()]) -> dict:
         lo = await loaded(connection)
     account = lo.book.accounts.get(key)
     if account is None:
-        raise HTTPException(status_code=404, detail="no hay ese producto")
+        raise HTTPException(status_code=404, detail="no such product")
     return plain(products.detail(lo, account, date.today()))
 
 
@@ -1022,11 +1026,11 @@ class NewCategoryIn(CategoryIn):
 
 def _category_problem(name: str, ownership: str, split: str | None) -> None:
     if name != name.strip():
-        raise HTTPException(
-            status_code=422, detail="el nombre no puede empezar ni acabar en espacio"
-        )
+        raise HTTPException(status_code=422, detail="the name cannot start or end with a space")
     if (ownership == "shared") != (split is not None):
-        raise HTTPException(status_code=422, detail="una común dice cómo se reparte; una tuya, no")
+        raise HTTPException(
+            status_code=422, detail="a shared category says how it is split; one of yours does not"
+        )
 
 
 async def _name_taken(
@@ -1054,10 +1058,12 @@ async def change_category(category_id: UUID, request: CategoryIn) -> dict:
             )
         ).first()
         if row is None:
-            raise HTTPException(status_code=404, detail="no hay esa categoría")
+            raise HTTPException(status_code=404, detail="no such category")
         _category_problem(request.name, row.ownership, request.split)
         if await _name_taken(connection, row.nature, row.ownership, request.name, str(category_id)):
-            raise HTTPException(status_code=422, detail="ya hay una categoría con ese nombre")
+            raise HTTPException(
+                status_code=422, detail="there is already a category with that name"
+            )
         await connection.execute(
             text("""
             update money.money_v1_category
@@ -1092,7 +1098,9 @@ async def add_category(request: NewCategoryIn) -> dict:
     _category_problem(request.name, request.ownership, request.split)
     async with as_app() as connection:
         if await _name_taken(connection, request.nature, request.ownership, request.name, None):
-            raise HTTPException(status_code=422, detail="ya hay una categoría con ese nombre")
+            raise HTTPException(
+                status_code=422, detail="there is already a category with that name"
+            )
         new_id = (
             await connection.execute(
                 text("""
@@ -1121,22 +1129,24 @@ KPI_WIDGETS = {
 
 def widget_of(k: kpis.Kpi) -> dict:
     kind, good = KPI_WIDGETS[k.key]
-    uncertainty = {"summary": "no es de hoy: " + ", ".join(k.carried[:3])} if k.carried else None
+    uncertainty = (
+        {"summary": t("widget.not_today", accounts=", ".join(k.carried[:3]))} if k.carried else None
+    )
     if k.value is None:
-        return envelope(kind, "empty", {"detail": k.detail or "Aún no hay datos"})
+        return envelope(kind, "empty", {"detail": k.detail or t("widget.no_data")})
     if kind == "progress":
         body = {
             "value": money(k.value),
             "target": money(k.target) if k.target else None,
             "unit": "€",
-            "label": "del objetivo",
+            "label": t("widget.of_target"),
         }
     else:
         body = {"value": money(k.value), "unit": "€"}
         if kind == "kpi-delta":
             body |= {
                 "previous": money(k.previous) if k.previous is not None else 0,
-                "since": "hace 12 meses",
+                "since": t("widget.year_ago"),
                 "good_when": good,
             }
     if k.detail:
@@ -1168,7 +1178,7 @@ async def home_panel() -> dict:
     async with as_app() as connection:
         lo = await loaded(connection)
         if not lo.book.accounts and common.role_of(lo) != common.MEMBER:
-            raise HTTPException(status_code=404, detail="Money aún no tiene cuentas")
+            raise HTTPException(status_code=404, detail=t("widget.no_accounts"))
         owed, years, other = await pending_shared(connection, lo, today)
     cutoff = lo.settings.cutoff
     waiting = sum(
@@ -1176,7 +1186,7 @@ async def home_panel() -> dict:
         for fid, status in lo.statuses.items()
         if status in ("ask", "pending") and not (cutoff and lo.book.fact(fid).on < cutoff)
     )
-    return home_panel_of(lo, today, owed, other or "la otra persona", years, waiting)
+    return home_panel_of(lo, today, owed, other or t("person.other_lower"), years, waiting)
 
 
 @router.get("/widgets/shared")
@@ -1184,31 +1194,31 @@ async def shared_widget() -> dict:
     async with as_app() as connection:
         lo = await loaded(connection)
         if not lo.book.accounts and common.role_of(lo) != common.MEMBER:
-            return envelope("kpi", "empty", {"detail": "Money aún no tiene cuentas"})
+            return envelope("kpi", "empty", {"detail": t("widget.no_accounts")})
         owed, years, other = await pending_shared(connection, lo, date.today())
     if not years:
-        return envelope("kpi", "ready", {"value": 0, "unit": "€", "detail": "Todo liquidado"})
+        return envelope("kpi", "ready", {"value": 0, "unit": "€", "detail": t("widget.settled")})
     when = ", ".join(str(y) for y in years)
     if abs(owed) < Decimal("0.005"):
-        detail = f"Estáis a cero · {when}"
+        detail = t("widget.even", years=when)
     elif owed > 0:
-        detail = f"Te debe {other} · {when}"
+        detail = t("widget.owes_you", other=other, years=when)
     else:
-        detail = f"Debes a {other} · {when}"
+        detail = t("widget.you_owe", other=other, years=when)
     return envelope("kpi", "ready", {"value": money(owed), "unit": "€", "detail": detail})
 
 
 @router.get("/widgets/{key}")
 async def kpi_widget(key: str) -> dict:
     if key == "account":
-        raise HTTPException(status_code=422, detail="falta la cuenta")
+        raise HTTPException(status_code=422, detail="the account is missing")
     if key not in KPI_WIDGETS:
-        raise HTTPException(status_code=404, detail="no hay ese widget")
+        raise HTTPException(status_code=404, detail="no such widget")
     async with as_app() as connection:
         lo = await loaded(connection)
     if not lo.book.accounts:
         kind = KPI_WIDGETS[key][0]
-        return envelope(kind, "empty", {"detail": "Money aún no tiene cuentas"})
+        return envelope(kind, "empty", {"detail": t("widget.no_accounts")})
     found = next(k for k in kpis.compute(lo, date.today()) if k.key == key)
     return widget_of(found)
 
@@ -1228,15 +1238,15 @@ async def account_widget(option: Annotated[str | None, Query(max_length=40)] = N
         lo = await loaded(connection)
     account = lo.book.accounts.get(option or "")
     if account is None:
-        return envelope("kpi", "empty", {"detail": "Elige una cuenta al poner el widget"})
+        return envelope("kpi", "empty", {"detail": t("widget.pick_account")})
     v = value_at(lo.book, account, date.today(), lo.valuations)
     if not v.known:
-        return envelope("kpi", "empty", {"detail": f"{account.name}: sin saldo todavía"})
+        return envelope("kpi", "empty", {"detail": t("widget.no_balance", account=account.name)})
     detail = account.name
     if v.estimated:
-        detail += f" · estimado a {v.estimated.day}/{v.estimated.month}"
+        detail += " · " + t("widget.estimated", day=f"{v.estimated.day}/{v.estimated.month}")
     elif v.since and (date.today() - v.since).days > 7:
-        detail += f" · a {v.since.day}/{v.since.month}"
+        detail += " · " + t("widget.as_of", day=f"{v.since.day}/{v.since.month}")
     return envelope("kpi", "ready", {"value": money(v.amount), "unit": "€", "detail": detail})
 
 
@@ -1261,7 +1271,7 @@ End = Annotated[date, Query(alias="to")]
 
 def checked(start: date, end: date) -> None:
     if end < start or (end - start).days > 366 * 25:
-        raise HTTPException(status_code=422, detail="el periodo va de una fecha a otra posterior")
+        raise HTTPException(status_code=422, detail="the period goes from one date to a later one")
 
 
 Groups = Annotated[list[str], Query(alias="group", max_length=50)]

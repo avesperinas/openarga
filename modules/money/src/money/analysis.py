@@ -8,7 +8,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from statistics import median
 
-from money import catalog, history
+from money import catalog, history, texts
 from money.book import Loaded, ratio_of
 from money.model import OTHER, Account
 from money.shared import from_history
@@ -90,7 +90,7 @@ class Contribution:
     amount: Decimal
     mine: bool
     equity: bool = False
-    """Pagado a un inmueble como gasto común (`equity_in`): ya está en el gasto del periodo."""
+    """Paid to a property as shared spending (`equity_in`): already in the period's spending."""
 
 
 def equity_links(lo: Loaded) -> dict[str, str]:
@@ -470,7 +470,7 @@ class Flows:
     equity: dict[tuple[str, str], Decimal] = field(
         default_factory=lambda: defaultdict(lambda: ZERO)
     )
-    """(categoría común, inmueble) → lo tuyo pagado a él."""
+    """(shared category, property) → your part paid to it."""
     equity_whole: dict[tuple[str, str], Decimal] = field(
         default_factory=lambda: defaultdict(lambda: ZERO)
     )
@@ -663,7 +663,9 @@ def spending(
             "series": [
                 {
                     "key": f"{own}:{name}",
-                    "name": name if own == "individual" else f"{name} (común)",
+                    "name": name
+                    if own == "individual"
+                    else texts.t("analysis.shared_suffix", name=name),
                     "values": [pm.get((own, name), ZERO) for pm in per_month],
                 }
                 for own, name in keys
@@ -708,7 +710,7 @@ def category_detail(
                 "amount": spent,
                 "account": acc.name
                 if acc
-                else ("Fuera de cuenta" if f.account == OTHER else f.account),
+                else (texts.t("account.outside") if f.account == OTHER else f.account),
             }
         )
         m = merchants.setdefault(merchant, {"name": merchant, "total": ZERO, "count": 0})
@@ -739,7 +741,7 @@ class Segment:
     start: date
     end: date
     month: tuple[int, int]
-    """El mes al que pertenece: el suyo, o en un ciclo el que paga su nómina (`paid_month`)."""
+    """Its own month, or in a cycle the month its pay cheque pays (`paid_month`)."""
     kind: str
     open: bool = False
 
@@ -865,9 +867,12 @@ def segments(lo: Loaded, cycle: bool, today: date) -> list[Segment]:
     return out
 
 
-UNLOGGED = "Sin etiquetar"
-"""Lo que no se apuntó en los meses del histórico sin gasto individual: lo que quedó en ellos, como
-gasto, o lo que faltó, como entrada."""
+def unlogged() -> str:
+    return texts.t("analysis.unlabelled")
+
+
+"""What was not recorded in the history months without individual spending: what was left in
+them, as spending, or what was missing, as income."""
 
 
 def unlogged_left(fl: Flows) -> Decimal:
@@ -921,9 +926,9 @@ def flow(
             for k, v in theirs.items():
                 mine[k] += v
     if unlabelled > 0:
-        total.expense[UNLOGGED] += unlabelled
+        total.expense[unlogged()] += unlabelled
     elif unlabelled < 0:
-        total.income[UNLOGGED] -= unlabelled
+        total.income[unlogged()] -= unlabelled
     me, other = lo.settings.me_name, lo.settings.other_name
     accounts = lo.book.accounts
     common = dict(total.shared if whole else total.shared_mine)
@@ -963,16 +968,33 @@ def flow(
         links.append({"source": f"in:{name}", "target": "you", "value": amount})
     if member > 0:
         nodes.append(
-            {"id": "member", "name": f"{other}, a lo común", "column": 0, "kind": "member"}
+            {
+                "id": "member",
+                "name": texts.t("analysis.member_to_shared", other=other),
+                "column": 0,
+                "kind": "member",
+            }
         )
         links.append({"source": "member", "target": "you", "value": member})
     if withdrawn > 0:
         nodes.append(
-            {"id": "withdrawn", "name": "Sacado de inversiones", "column": 0, "kind": "income"}
+            {
+                "id": "withdrawn",
+                "name": texts.t("analysis.withdrawn"),
+                "column": 0,
+                "kind": "income",
+            }
         )
         links.append({"source": "withdrawn", "target": "you", "value": withdrawn})
     if left < 0:
-        nodes.append({"id": "deficit", "name": "De tus ahorros", "column": 0, "kind": "deficit"})
+        nodes.append(
+            {
+                "id": "deficit",
+                "name": texts.t("analysis.from_savings"),
+                "column": 0,
+                "kind": "deficit",
+            }
+        )
         links.append({"source": "deficit", "target": "you", "value": -left})
 
     def branch(node: str, name: str, kind: str, items: dict[str, Decimal], label) -> None:
@@ -986,11 +1008,11 @@ def flow(
             nodes.append({"id": leaf, "name": label(key), "column": 3, "kind": kind})
             links.append({"source": node, "target": leaf, "value": amount})
 
-    branch("spent", "Individual", "expense", spent, lambda k: k)
-    branch("common", "Común", "common", common, lambda k: k)
+    branch("spent", texts.t("analysis.individual"), "expense", spent, lambda k: k)
+    branch("common", texts.t("analysis.shared"), "common", common, lambda k: k)
     branch(
         "invest",
-        "Inversión",
+        texts.t("analysis.investment"),
         "saving",
         {k: v for k, v in invest.items() if v > 0},
         lambda k: accounts[k].name if k in accounts else k,
@@ -1038,7 +1060,7 @@ def flow(
 
 
 OUTSIDE_NOT_INCOME = {"in:return", "in:refund", "in:refund:shared", "in:pending"}
-"""Lo que entra de fuera sin ser un ingreso: no hace de una cuenta la puerta del dinero."""
+"""What comes in from outside without being income: it does not make an account the way in."""
 
 
 def circuit(lo: Loaded, start: date, end: date, today: date) -> dict:
@@ -1113,30 +1135,40 @@ def circuit(lo: Loaded, start: date, end: date, today: date) -> dict:
             if f.by_other:
                 node("member", other, "income", "member", other)
             else:
-                node("cash", "Fuera de cuenta", "income", "income", "Ingresos")
+                node(
+                    "cash",
+                    texts.t("account.outside"),
+                    "income",
+                    "income",
+                    texts.t("analysis.income"),
+                )
             key = "out:shared" if imp.ownership == "shared" else "out:individual"
             node(
                 key,
-                "Gasto común" if imp.ownership == "shared" else "Gasto individual",
+                texts.t("analysis.shared_expense")
+                if imp.ownership == "shared"
+                else texts.t("analysis.individual_expense"),
                 "expense",
                 "expense",
-                "Gasto",
+                texts.t("analysis.expense"),
             )
             add("member" if f.by_other else "cash", key, -imp.amount, item(f, -imp.amount))
             continue
         acc = account_node(f.account)
         if imp.nature == "income":
             key = f"in:{cat.name}"
-            node(key, cat.name, "income", "income", "Ingresos")
+            node(key, cat.name, "income", "income", texts.t("analysis.income"))
             add(key, acc, imp.amount, item(f, imp.amount))
         else:
             key = "out:shared" if imp.ownership == "shared" else "out:individual"
             node(
                 key,
-                "Gasto común" if imp.ownership == "shared" else "Gasto individual",
+                texts.t("analysis.shared_expense")
+                if imp.ownership == "shared"
+                else texts.t("analysis.individual_expense"),
                 "expense",
                 "expense",
-                "Gasto",
+                texts.t("analysis.expense"),
             )
             if imp.amount < 0:
                 add(acc, key, -imp.amount, item(f, -imp.amount))
@@ -1144,10 +1176,12 @@ def circuit(lo: Loaded, start: date, end: date, today: date) -> dict:
                 refund = "in:refund:shared" if imp.ownership == "shared" else "in:refund"
                 node(
                     refund,
-                    "Devoluciones de lo común" if imp.ownership == "shared" else "Devoluciones",
+                    texts.t("analysis.shared_refunds")
+                    if imp.ownership == "shared"
+                    else texts.t("analysis.refunds"),
                     "income",
                     "income",
-                    "Ingresos",
+                    texts.t("analysis.income"),
                 )
                 add(refund, acc, imp.amount, item(f, imp.amount))
 
@@ -1157,7 +1191,13 @@ def circuit(lo: Loaded, start: date, end: date, today: date) -> dict:
         status = lo.statuses.get(f.id)
         acc = None
         if f.id in b.returns:
-            node("in:return", "Rentabilidad", "income", "income", "Ingresos")
+            node(
+                "in:return",
+                texts.t("analysis.return"),
+                "income",
+                "income",
+                texts.t("analysis.income"),
+            )
             add("in:return", account_node(f.account), f.amount, item(f, f.amount))
         elif f.id in b.settlements:
             node("member", other, "income", "member", other)
@@ -1172,10 +1212,10 @@ def circuit(lo: Loaded, start: date, end: date, today: date) -> dict:
             rest = f.amount - imputed
             acc = account_node(f.account)
             if rest < 0:
-                node("out:pending", "Sin etiquetar", "elsewhere", "pending", "Sin etiquetar")
+                node("out:pending", unlogged(), "elsewhere", "pending", unlogged())
                 add(acc, "out:pending", -rest, item(f, -rest))
             elif rest > 0:
-                node("in:pending", "Sin etiquetar", "elsewhere", "pending", "Sin etiquetar")
+                node("in:pending", unlogged(), "elsewhere", "pending", unlogged())
                 add("in:pending", acc, rest, item(f, rest))
 
     for link in links.values():

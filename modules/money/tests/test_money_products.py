@@ -8,7 +8,7 @@ from money_people import PERSON
 from sqlalchemy import text
 from test_money_api import (
     BUNDLE,
-    book,  # noqa: F401 -- la fixture con el log y la configuración
+    book,  # noqa: F401 -- the fixture with the log and the configuration
     event,
     movement,
 )
@@ -50,7 +50,7 @@ def held(symbol: str, value: str, name: str, photo: str | None = None, on: str =
 PLAN_EVENTS = [
     event(
         "finance.account",
-        {"bank": "Entidad", "account": PLAN, "name": "Plan Uno", "kind": "roboadvisor"},
+        {"bank": "Institution", "account": PLAN, "name": "Plan One", "kind": "roboadvisor"},
         "acc-plan",
     ),
     event(
@@ -61,11 +61,11 @@ PLAN_EVENTS = [
 ]
 PLAN_ACCOUNT = {
     "key": "plan",
-    "name": "Plan Uno",
-    "institution": "Entidad",
+    "name": "Plan One",
+    "institution": "Institution",
     "type": "fund",
     "movements": "statement",
-    "match": {"bank": "Entidad", "key": "Plan Uno"},
+    "match": {"bank": "Institution", "key": "Plan One"},
 }
 
 
@@ -89,7 +89,7 @@ async def test_a_new_photo_of_the_same_day_replaces_the_one_before(book, schema)
         [
             held("name:bonos-hedged", "400.00", "Bonos Hedged"),
             held("SPY", "600.00", "SPDR S&P 500 ETF", "a"),
-            held("name:otros-bonos", "400.00", "Otros Bonos", "a"),
+            held("name:otros-bonos", "400.00", "Other Bonds", "a"),
         ],
     )
     await publish(
@@ -104,15 +104,15 @@ async def test_a_new_photo_of_the_same_day_replaces_the_one_before(book, schema)
     assert set(funds) == {"SPY", "0P0001I704.F"}
     assert sum(f["value"] for f in funds.values()) == 1000.0
     assert funds["SPY"]["asset"] == "equity" and funds["SPY"]["regions"][0]["key"] == "us"
-    assert product["value_how"].startswith("La última foto")
-    assert product["source"]["name"] == "Plan Uno"
+    assert product["value_how"].startswith("Its source's last snapshot")
+    assert product["source"]["name"] == "Plan One"
 
 
 async def test_a_corrected_photo_of_the_same_day_brings_its_value_too(book, schema) -> None:  # noqa: F811
     await with_plan(
         book,
         schema,
-        [held("SPY", "900.00", "SPDR S&P 500 ETF", "a"), held("EUR", "100.00", "Liquidez", "a")],
+        [held("SPY", "900.00", "SPDR S&P 500 ETF", "a"), held("EUR", "100.00", "Cash", "a")],
     )
     await publish(
         schema,
@@ -123,7 +123,7 @@ async def test_a_corrected_photo_of_the_same_day_brings_its_value_too(book, sche
                 "bal-plan-corrected",
             ),
             held("SPY", "1000.00", "SPDR S&P 500 ETF", "b"),
-            held("EUR", "50.00", "Liquidez", "b"),
+            held("EUR", "50.00", "Cash", "b"),
         ],
     )
     product = (await book.get("/products/plan")).json()
@@ -136,7 +136,7 @@ async def test_photos_without_an_id_still_add_up_fund_by_fund(book, schema) -> N
     await with_plan(
         book,
         schema,
-        [held("SPY", "600.00", "SPDR S&P 500 ETF"), held("EUR", "400.00", "Liquidez")],
+        [held("SPY", "600.00", "SPDR S&P 500 ETF"), held("EUR", "400.00", "Cash")],
     )
     funds = (await book.get("/products/plan")).json()["photo"]["funds"]
     assert {f["symbol"] for f in funds} == {"SPY", "EUR"}
@@ -152,8 +152,8 @@ async def test_the_composition_by_asset_region_and_fund_and_what_cannot_be_split
         [
             held("SPY", "500.00", "SPDR S&P 500 ETF", "a"),
             held("VPL", "200.00", "Vanguard FTSE Pacific ETF", "a"),
-            held("name:raro", "200.00", "Fondo Raro", "a"),
-            held("EUR", "100.00", "Liquidez", "a"),
+            held("name:raro", "200.00", "Odd Fund", "a"),
+            held("EUR", "100.00", "Cash", "a"),
         ],
     )
     comp = (await book.get("/analysis/composition", params=period())).json()
@@ -185,7 +185,7 @@ async def test_each_fund_moves_with_its_price_and_the_funds_add_up_to_the_produc
         schema,
         [
             held("SPY", "500.00", "SPDR S&P 500 ETF", "a"),
-            held("EUR", "500.00", "Liquidez", "a"),
+            held("EUR", "500.00", "Cash", "a"),
             event("finance.price", {"symbol": "SPY", "on": SHOT, "price": "100"}, "p1"),
             event("finance.price", {"symbol": "SPY", "on": LATER, "price": "110"}, "p2"),
         ],
@@ -210,7 +210,7 @@ async def test_an_etf_valued_by_its_isin_moves_with_the_price_of_its_line(
         schema,
         [
             etf,
-            held("EUR", "100.00", "Liquidez", "a"),
+            held("EUR", "100.00", "Cash", "a"),
             event("finance.price", {"symbol": symbol, "on": SHOT, "price": "30", **line}, "p1"),
             event("finance.price", {"symbol": symbol, "on": LATER, "price": "33", **line}, "p2"),
         ],
@@ -225,28 +225,31 @@ async def test_an_etf_valued_by_its_isin_moves_with_the_price_of_its_line(
 async def test_a_product_is_created_changed_and_given_its_ibans(book) -> None:  # noqa: F811
     created = await book.post(
         "/accounts",
-        json={"name": "Fianza del piso", "type": "deposit", "institution": "Una inmobiliaria"},
+        json={"name": "Flat deposit", "type": "deposit", "institution": "A property"},
     )
     assert created.status_code == 201, created.text
     product = created.json()
-    assert product["key"] == "fianza_del_piso" and product["group"] == "Fianzas"
+    assert product["key"] == "flat_deposit" and product["group"] == "Deposits"
     assert product["movements"] == "matched"
-    assert "Es dinero tuyo fuera que vuelve: ni ahorro ni gasto" in product["traits"]
+    assert (
+        "Your money held elsewhere that comes back: neither savings nor spending"
+        in product["traits"]
+    )
 
     again = await book.post(
-        "/accounts", json={"name": "Fianza del piso", "type": "deposit", "institution": "Otra"}
+        "/accounts", json={"name": "Flat deposit", "type": "deposit", "institution": "Another"}
     )
-    assert again.json()["key"] == "fianza_del_piso_2"
+    assert again.json()["key"] == "flat_deposit_2"
 
     changed = await book.patch(
-        "/accounts/fianza_del_piso",
-        json={"name": "Fianza del local", "ibans": ["es00 0000 0000 0000 0000 9999"]},
+        "/accounts/flat_deposit",
+        json={"name": "Shop deposit", "ibans": ["es00 0000 0000 0000 0000 9999"]},
     )
     assert changed.status_code == 200, changed.text
-    assert changed.json()["name"] == "Fianza del local"
+    assert changed.json()["name"] == "Shop deposit"
     assert changed.json()["ibans"] == ["ES0000000000000000009999"]
-    assert changed.json()["institution"] == "Una inmobiliaria"
-    bad = await book.patch("/accounts/fianza_del_piso", json={"ibans": ["no es un iban"]})
+    assert changed.json()["institution"] == "A property"
+    bad = await book.patch("/accounts/flat_deposit", json={"ibans": ["not an iban"]})
     assert bad.status_code == 422
     wrong = await book.post(
         "/accounts", json={"name": "X", "type": "no-existe", "institution": "Y"}
@@ -254,7 +257,7 @@ async def test_a_product_is_created_changed_and_given_its_ibans(book) -> None:  
     assert wrong.status_code == 422
 
     valued = await book.put(
-        "/accounts/fianza_del_piso/value", json={"on": date.today().isoformat(), "value": "900"}
+        "/accounts/flat_deposit/value", json={"on": date.today().isoformat(), "value": "900"}
     )
     assert valued.json()["value"] == 900.0 and valued.json()["value_how"]
 
@@ -267,7 +270,7 @@ async def test_an_unassigned_source_account_becomes_a_product(book, schema) -> N
                 "finance.account",
                 {
                     "account": "src-new",
-                    "bank": "Banco Uno",
+                    "bank": "Bank One",
                     "name": "TITULAR UNO",
                     "kind": "savings",
                     "iban_tail": "3333",
@@ -282,7 +285,7 @@ async def test_an_unassigned_source_account_becomes_a_product(book, schema) -> N
     assert [u["key"] for u in state["unmapped"]] == ["src-new"]
     created = await book.post(
         "/accounts",
-        json={"name": "Ahorro", "type": "savings", "institution": "BBVA", "source": "src-new"},
+        json={"name": "Savings", "type": "savings", "institution": "BBVA", "source": "src-new"},
     )
     assert created.status_code == 201, created.text
     assert created.json()["movements"] == "api"
@@ -291,7 +294,7 @@ async def test_an_unassigned_source_account_becomes_a_product(book, schema) -> N
     assert state["unmapped"] == []
     twice = await book.post(
         "/accounts",
-        json={"name": "Otra", "type": "savings", "institution": "BBVA", "source": "src-new"},
+        json={"name": "Another", "type": "savings", "institution": "BBVA", "source": "src-new"},
     )
     assert twice.status_code == 422
 
@@ -320,7 +323,7 @@ async def test_what_bitvavo_brings_is_the_value_of_its_product(book, schema) -> 
     assert [u["key"] for u in state["unmapped"]] == ["bitvavo"]
 
     created = await book.post(
-        "/accounts", json={"name": "Cripto", "type": "crypto", "institution": "Bitvavo"}
+        "/accounts", json={"name": "Crypto", "type": "crypto", "institution": "Bitvavo"}
     )
     assert created.status_code == 201, created.text
     assert created.json()["value"] is None
@@ -356,7 +359,7 @@ async def test_a_typed_composition_wins_over_the_source_and_sets_the_value(
         "/accounts/plan/composition",
         json={"on": SHOT, "total": "1200", "funds": [{"name": "SPY", "value": "100"}]},
     )
-    assert wrong.status_code == 422 and "suman" in wrong.json()["detail"]
+    assert wrong.status_code == 422 and "add up" in wrong.json()["detail"]
     removed = await book.delete("/accounts/plan/composition", params={"on": SHOT})
     assert not removed.json()["photo"]["typed"]
     exported = (await book.get("/export")).json()
@@ -370,8 +373,8 @@ async def test_a_rule_is_shown_and_removed_keeping_what_it_explained(book, schem
     )
     deposit = {
         "key": "deposit",
-        "name": "Fianza",
-        "institution": "Una inmobiliaria",
+        "name": "Deposit",
+        "institution": "A property",
         "type": "deposit",
         "movements": "matched",
     }
@@ -386,7 +389,7 @@ async def test_a_rule_is_shown_and_removed_keeping_what_it_explained(book, schem
     assert imported.status_code == 200, imported.text
     rules = (await book.get("/rules")).json()
     first = rules[0]
-    assert first["then"] == "Traspaso con Fianza" and first["movements"] == 1
+    assert first["then"] == "Transfer with Deposit" and first["movements"] == 1
     assert "deposit" in first["accounts"]
     assert (await book.get("/products/deposit")).json()["rules"][0]["id"] == first["id"]
 
@@ -403,30 +406,30 @@ async def test_the_product_tools_read_and_write_with_their_roles(book, schema) -
     await with_plan(
         book,
         schema,
-        [held("SPY", "600.00", "SPDR S&P 500 ETF", "a"), held("EUR", "400.00", "Liquidez", "a")],
+        [held("SPY", "600.00", "SPDR S&P 500 ETF", "a"), held("EUR", "400.00", "Cash", "a")],
     )
     listed = (await book.post("/tools/get_products", json={}, headers=READ)).json()["content"]
     assert "plan" in {p["key"] for p in listed["products"]}
-    one = await book.post("/tools/get_products", json={"product": "plan uno"}, headers=READ)
+    one = await book.post("/tools/get_products", json={"product": "plan one"}, headers=READ)
     assert one.json()["content"]["photo"]["funds"][0]["symbol"] == "SPY"
     comp = (await book.post("/tools/get_composition", json={}, headers=READ)).json()["content"]
     assert {r["key"] for r in comp["by_asset"]} >= {"equity", "cash"}
 
     refused = await book.post(
         "/tools/create_product",
-        json={"name": "Cripto", "type": "crypto", "institution": "Exchange"},
+        json={"name": "Crypto", "type": "crypto", "institution": "Exchange"},
         headers=READ,
     )
     assert refused.status_code == 403
     created = await book.post(
         "/tools/create_product",
-        json={"name": "Cripto", "type": "crypto", "institution": "Exchange", "ownership": 100},
+        json={"name": "Crypto", "type": "crypto", "institution": "Exchange", "ownership": 100},
         headers=WRITE,
     )
-    assert created.json()["content"]["created"] == "cripto"
+    assert created.json()["content"]["created"] == "crypto"
     renamed = await book.post(
         "/tools/update_product",
-        json={"product": "Plan Uno", "name": "Plan Global", "ownership": 50},
+        json={"product": "Plan One", "name": "Plan Global", "ownership": 50},
         headers=WRITE,
     )
     assert renamed.json()["content"] == {"updated": "plan"}
@@ -437,18 +440,18 @@ async def test_the_product_tools_read_and_write_with_their_roles(book, schema) -
             "on": SHOT,
             "funds": [
                 {"name": "SPDR S&P 500 ETF", "value": "500"},
-                {"name": "Fondo Nuevo", "value": "500"},
+                {"name": "New Fund", "value": "500"},
             ],
         },
         headers=WRITE,
     )
-    assert recorded.json()["content"]["unclassified"] == ["Fondo Nuevo"]
+    assert recorded.json()["content"]["unclassified"] == ["New Fund"]
     classified = await book.post(
         "/tools/classify_fund",
-        json={"fund": "Fondo Nuevo", "asset": "bond", "regions": {"europe": 100}},
+        json={"fund": "New Fund", "asset": "bond", "regions": {"europe": 100}},
         headers=WRITE,
     )
-    assert classified.json()["content"]["fund"] == "name:fondo-nuevo"
+    assert classified.json()["content"]["fund"] == "name:new"
     comp = (await book.post("/tools/get_composition", json={}, headers=READ)).json()["content"]
     assert {r["key"]: r["value"] for r in comp["by_region"]}["europe"] == 250.0
     rules = (await book.post("/tools/get_rules", json={}, headers=READ)).json()["content"]

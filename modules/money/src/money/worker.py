@@ -49,8 +49,8 @@ async def run_once(client: httpx.AsyncClient) -> dict[str, int]:
             await cifras.refresh(engine, MODULE, metrics.build, METRICS, user, client)
             try:
                 await keep_common(user)
-            except Exception as error:  # noqa: BLE001 - lo común no para las cifras ni la cola
-                print(f"money worker · común: {type(error).__name__}: {error}", file=sys.stderr)
+            except Exception as error:  # noqa: BLE001 - shared money does not stop the figures or the queue
+                print(f"money worker · shared: {type(error).__name__}: {error}", file=sys.stderr)
             async with engine().begin() as connection:
                 await connection.execute(text(f'set local role "mod_{MODULE}"'))
                 result = await publisher.publish_pending(connection, client)
@@ -59,7 +59,7 @@ async def run_once(client: httpx.AsyncClient) -> dict[str, int]:
     return total
 
 
-async def loop() -> None:  # pragma: no cover -- el bucle de siempre
+async def loop() -> None:  # pragma: no cover -- the usual loop
     async with httpx.AsyncClient() as client:
         while True:
             beat()
@@ -67,7 +67,7 @@ async def loop() -> None:  # pragma: no cover -- el bucle de siempre
                 result = await run_once(client)
                 if result["published"]:
                     print(f"money worker · {result['published']} publicado(s)", flush=True)
-            except Exception as error:  # noqa: BLE001 - un fallo no tumba el proceso
+            except Exception as error:  # noqa: BLE001 - one failure does not bring the process down
                 print(
                     f"money worker · {type(error).__name__}: {error}", file=sys.stderr, flush=True
                 )
@@ -75,7 +75,7 @@ async def loop() -> None:  # pragma: no cover -- el bucle de siempre
 
 
 def main() -> None:  # pragma: no cover
-    print("money worker: publica sus cifras (ADR-0087)", flush=True)
+    print("money worker: publishes its figures", flush=True)
     with contextlib.suppress(KeyboardInterrupt):
         asyncio.run(loop())
 

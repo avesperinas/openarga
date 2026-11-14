@@ -41,16 +41,16 @@ async def readyz() -> dict:
                 text("select 1 from information_schema.schemata where schema_name = :schema"),
                 {"schema": SCHEMA},
             )
-    except Exception as error:  # noqa: BLE001 -- cualquier fallo de conexión es "no listo"
-        raise HTTPException(status_code=503, detail=f"sin base de datos: {error}") from error
+    except Exception as error:  # noqa: BLE001 -- any connection failure means "not ready"
+        raise HTTPException(status_code=503, detail=f"no database: {error}") from error
     if not found:
         raise HTTPException(
             status_code=503,
-            detail=f"el schema '{SCHEMA}' no existe todavía; lo aprovisiona el kernel al "
-            f"registrar el manifiesto",
+            detail=f"schema '{SCHEMA}' does not exist yet; the kernel provisions it when it "
+            f"registers the manifest",
         )
     if not (ui_dist() / "index.html").is_file():
-        raise HTTPException(status_code=503, detail=f"la app no está construida en {ui_dist()}")
+        raise HTTPException(status_code=503, detail=f"the app is not built in {ui_dist()}")
     return {"status": "ready", "module": MODULE_ID, "schema": SCHEMA}
 
 
@@ -71,10 +71,10 @@ async def list_tools() -> list[dict]:
 async def call_tool(name: str, request: Request, x_arga_scopes: str = Header(default="")) -> dict:
     tool = TOOLS.get(name)
     if tool is None:
-        raise HTTPException(status_code=404, detail=f"money no tiene la tool '{name}'")
+        raise HTTPException(status_code=404, detail=f"money has no tool '{name}'")
     role = role_for_scopes(set(x_arga_scopes.split()))
     if role is None:
-        raise HTTPException(status_code=403, detail=f"ningún scope de {MODULE_ID} en la llamada")
+        raise HTTPException(status_code=403, detail=f"no {MODULE_ID} scope in the call")
     try:
         arguments = tool.arguments.model_validate(await request.json())
     except (ValidationError, ValueError) as error:
@@ -86,7 +86,7 @@ async def call_tool(name: str, request: Request, x_arga_scopes: str = Header(def
     except DBAPIError as error:
         if getattr(error.orig, "sqlstate", None) == INSUFFICIENT_PRIVILEGE:
             raise HTTPException(
-                status_code=403, detail=f"Postgres no deja a {role} hacer esto: {name}"
+                status_code=403, detail=f"Postgres does not let {role} do this: {name}"
             ) from error
         raise
 
@@ -112,5 +112,5 @@ async def ui(path: str = "") -> FileResponse:
         )
     index = root / "index.html"
     if not index.is_file():
-        raise HTTPException(status_code=503, detail="la app no está construida")
+        raise HTTPException(status_code=503, detail="the app is not built")
     return FileResponse(index, headers={"cache-control": "no-cache"})

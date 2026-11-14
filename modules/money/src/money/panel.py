@@ -7,16 +7,17 @@ from typing import Any
 
 from arga_widgets import panel
 from money import analysis, kpis
+from money.texts import amount, month, number, percent, t
 
 HUES = [1, 2, 7, 6, 4, 3, 5, 8]
 GROUP_HUES = {
-    "Efectivo": 2,
-    "Fondos": 1,
-    "Bolsa": 6,
-    "Pensión": 5,
-    "Cripto": 3,
-    "Vivienda": 4,
-    "Fianzas": 8,
+    "Cash": 2,
+    "Funds": 1,
+    "Stocks": 6,
+    "Pension": 5,
+    "Crypto": 3,
+    "Property": 4,
+    "Deposits": 8,
 }
 
 
@@ -26,30 +27,21 @@ def num(value: Any) -> float:
     return float(value)
 
 
-def eur(value: float, sign: bool = False) -> str:
-    whole = round(value)
-    text = f"{abs(whole):,}".replace(",", ".") + " €"
-    if whole < 0:
-        return f"−{text}"
-    return f"+{text}" if sign and whole > 0 else text
-
-
-def percent(value: float, sign: bool = False) -> str:
-    whole = round(value * 100)
-    text = f"{abs(whole)} %"
-    if whole < 0:
-        return f"−{text}"
-    return f"+{text}" if sign and whole > 0 else text
+eur = amount
 
 
 def months_text(value: float) -> str:
     rounded = round(value, 1)
-    shown = f"{rounded:.1f}".replace(".", ",").replace(",0", "")
-    return f"{shown} {'mes' if rounded == 1 else 'meses'}"
+    shown = number(rounded, 1).removesuffix(t("number.decimal") + "0")
+    return t("panel.months_one" if rounded == 1 else "panel.months_other", value=shown)
 
 
 def labelling(waiting: int) -> str:
-    return f"{waiting} {'movimiento' if waiting == 1 else 'movimientos'} por etiquetar"
+    return t("panel.to_label_one") if waiting == 1 else t("panel.to_label_other", count=waiting)
+
+
+def group_name(group: str) -> str:
+    return t(f"group.{group}") if group in GROUP_HUES else group
 
 
 def build(
@@ -93,29 +85,29 @@ def build(
         if margin >= 0:
             headlines.append(
                 {
-                    "text": f"Llegas a fin de mes con unos {eur(margin)} de margen",
-                    "emphasis": f"unos {eur(margin)}",
+                    "text": t("panel.margin", amount=eur(margin)),
+                    "emphasis": t("panel.about", amount=eur(margin)),
                     "tone": "positive",
-                    "status": "Vas bien",
+                    "status": t("panel.on_track"),
                     "priority": 55,
                 }
             )
         else:
             headlines.append(
                 {
-                    "text": f"Al ritmo de este mes te pasas unos {eur(-margin)} de tu media",
-                    "emphasis": f"unos {eur(-margin)}",
+                    "text": t("panel.over", amount=eur(-margin)),
+                    "emphasis": t("panel.about", amount=eur(-margin)),
                     "tone": "warning",
-                    "status": "Ojo al gasto",
+                    "status": t("panel.watch"),
                     "priority": 70,
                 }
             )
     elif networth and networth.value is not None:
         headlines.append(
             {
-                "text": f"Tienes {eur(num(networth.value))}",
+                "text": t("panel.you_have", amount=eur(num(networth.value))),
                 "emphasis": eur(num(networth.value)),
-                "status": "Al día",
+                "status": t("panel.up_to_date"),
                 "priority": 30,
             }
         )
@@ -125,7 +117,7 @@ def build(
                 "text": labelling(waiting),
                 "emphasis": str(waiting),
                 "tone": "warning",
-                "status": "Por etiquetar",
+                "status": t("panel.to_label"),
                 "priority": 40,
             }
         )
@@ -138,11 +130,11 @@ def build(
         summary.append(
             {
                 "type": "figure",
-                "label": "Patrimonio",
+                "label": t("panel.networth"),
                 "value": eur(num(networth.value)),
                 **(
                     {
-                        "delta": f"{percent(change, sign=True)} en 12 meses",
+                        "delta": t("panel.in_12_months", change=percent(change, sign=True)),
                         "tone": "positive" if change >= 0 else "warning",
                     }
                     if change is not None
@@ -154,17 +146,27 @@ def build(
         summary.append(
             {
                 "type": "trend",
-                "label": "Patrimonio a final de cada mes",
+                "label": t("panel.networth_trend"),
                 "points": points,
                 "unit": "money",
             }
         )
     if entered > 0:
         parts = [
-            {"label": "Gastas", "value": eur(spent), "share": max(0.0, spent), "hue": 4},
-            {"label": "Inviertes", "value": eur(invested), "share": max(0.0, invested), "hue": 5},
             {
-                "label": "Queda" if left >= 0 else "Tiras de ahorros",
+                "label": t("panel.you_spend"),
+                "value": eur(spent),
+                "share": max(0.0, spent),
+                "hue": 4,
+            },
+            {
+                "label": t("panel.you_invest"),
+                "value": eur(invested),
+                "share": max(0.0, invested),
+                "hue": 5,
+            },
+            {
+                "label": t("panel.left") if left >= 0 else t("panel.from_savings"),
                 "value": eur(left),
                 "share": max(0.0, left),
                 "hue": 2,
@@ -173,8 +175,8 @@ def build(
         summary.append(
             {
                 "type": "split",
-                "label": f"{MONTHS[today.month - 1].capitalize()}, hasta hoy",
-                "total": f"entran {eur(entered)}",
+                "label": t("panel.so_far", month=month(today.month).capitalize()),
+                "total": t("panel.coming_in", amount=eur(entered)),
                 "parts": parts,
             }
         )
@@ -184,9 +186,13 @@ def build(
         covered = num(emergency.value) / monthly if monthly else 0
         tiles.append(
             {
-                "label": "Colchón",
+                "label": t("panel.cushion"),
                 "value": months_text(covered),
-                "foot": f"de {lo.settings.emergency_months} · {eur(num(emergency.value))}",
+                "foot": t(
+                    "panel.cushion_foot",
+                    months=lo.settings.emergency_months,
+                    amount=eur(num(emergency.value)),
+                ),
                 "tone": "positive"
                 if covered >= lo.settings.emergency_months
                 else "warning"
@@ -197,9 +203,9 @@ def build(
     if rate is not None and entered > 0:
         tiles.append(
             {
-                "label": "Ahorras",
+                "label": t("panel.you_save"),
                 "value": percent(num(rate)),
-                "foot": "de lo que entra este mes",
+                "foot": t("panel.of_income"),
                 "tone": "positive" if num(rate) > 0 else "warning",
             }
         )
@@ -207,25 +213,31 @@ def build(
         if abs(owed) < Decimal("0.005"):
             tiles.append(
                 {
-                    "label": "Lo común",
-                    "value": "a cero",
-                    "foot": f"con {other}",
-                    "href": "/money/compartido",
+                    "label": t("panel.shared"),
+                    "value": t("panel.even"),
+                    "foot": t("panel.with", other=other),
+                    "href": "/money/shared",
                 }
             )
         else:
             tiles.append(
                 {
-                    "label": f"{other} te debe" if owed > 0 else f"Debes a {other}",
+                    "label": t("panel.owes_you", other=other)
+                    if owed > 0
+                    else t("panel.you_owe", other=other),
                     "value": eur(abs(num(owed))),
-                    "foot": "Liquidar",
+                    "foot": t("panel.settle"),
                     "tone": "neutral" if owed > 0 else "warning",
-                    "href": "/money/compartido",
+                    "href": "/money/shared",
                 }
             )
     if liquid and liquid.value is not None:
         tiles.append(
-            {"label": "Líquido", "value": eur(num(liquid.value)), "foot": "lo que puedes sacar ya"}
+            {
+                "label": t("panel.liquid"),
+                "value": eur(num(liquid.value)),
+                "foot": t("panel.liquid_foot"),
+            }
         )
     if tiles:
         summary.append({"type": "tiles", "items": tiles[:4]})
@@ -234,33 +246,33 @@ def build(
             {
                 "type": "alert",
                 "text": labelling(waiting),
-                "href": "/money/movimientos?estado=pendiente",
+                "href": "/money/movements?status=pending",
             }
         )
 
-    gasto: list[dict] = []
+    spending_blocks: list[dict] = []
     if month_spent or average:
-        gasto.append(
+        spending_blocks.append(
             {
                 "type": "figure",
-                "label": f"Gastado en {MONTHS[today.month - 1]}",
+                "label": t("panel.spent_in", month=month(today.month)),
                 "value": eur(month_spent),
                 **(
                     {
-                        "delta": f"acabas en {eur(projected)}",
+                        "delta": t("panel.ends_at", amount=eur(projected)),
                         "tone": "positive" if average and projected <= average else "warning",
                     }
                     if month_spent
                     else {}
                 ),
-                **({"foot": f"Tu media, {eur(average)} al mes"} if average else {}),
+                **({"foot": t("panel.average", amount=eur(average))} if average else {}),
             }
         )
     if rows:
-        gasto.append(
+        spending_blocks.append(
             {
                 "type": "treemap",
-                "label": "En qué",
+                "label": t("panel.on_what"),
                 "items": [
                     {
                         "label": row["name"][:60],
@@ -274,10 +286,10 @@ def build(
         off = [row for row in rows if row.get("average") is not None and num(row["average"]) > 0]
         off.sort(key=lambda row: num(row["total"]) - num(row["average"]), reverse=True)
         if off:
-            gasto.append(
+            spending_blocks.append(
                 {
                     "type": "list",
-                    "label": "Contra su media",
+                    "label": t("panel.against_average"),
                     "rows": [
                         {
                             "label": row["name"][:200],
@@ -290,10 +302,10 @@ def build(
                     ],
                 }
             )
-        gasto.append(
+        spending_blocks.append(
             {
                 "type": "list",
-                "label": "Todas las categorías",
+                "label": t("panel.all_categories"),
                 "rows": [
                     {"label": row["name"][:200], "value": eur(num(row["total"]))}
                     for row in rows[:12]
@@ -302,21 +314,21 @@ def build(
             }
         )
 
-    patrimonio: list[dict] = []
+    worth_blocks: list[dict] = []
     if networth and networth.value is not None:
-        patrimonio.append(
+        worth_blocks.append(
             {
                 "type": "figure",
-                "label": "Hoy",
+                "label": t("panel.today"),
                 "value": eur(num(networth.value)),
-                "foot": "Sin la vivienda; las cuentas comunes, por tu parte",
+                "foot": t("panel.today_foot"),
             }
         )
     if len(points) >= 2:
-        patrimonio.append(
+        worth_blocks.append(
             {
                 "type": "trend",
-                "label": "Patrimonio a final de cada mes",
+                "label": t("panel.networth_trend"),
                 "points": points,
                 "unit": "money",
             }
@@ -327,13 +339,13 @@ def build(
         groups = [(group, value) for group, value in groups if value > 0]
         groups.sort(key=lambda one: one[1], reverse=True)
         if groups:
-            patrimonio.append(
+            worth_blocks.append(
                 {
                     "type": "split",
-                    "label": "Dónde está",
+                    "label": t("panel.where"),
                     "parts": [
                         {
-                            "label": group[:60],
+                            "label": group_name(group)[:60],
                             "value": eur(value),
                             "share": value,
                             "hue": GROUP_HUES.get(group, 8),
@@ -343,129 +355,108 @@ def build(
                 }
             )
     more = [
-        {"label": "Líquido", "value": eur(num(liquid.value))}
+        {"label": t("panel.liquid"), "value": eur(num(liquid.value))}
         if liquid and liquid.value is not None
         else None,
-        {"label": "Cash", "value": eur(num(cash.value)), "foot": "en cuentas, sin el colchón"}
+        {
+            "label": t("panel.cash"),
+            "value": eur(num(cash.value)),
+            "foot": t("panel.cash_foot"),
+        }
         if cash and cash.value is not None
         else None,
     ]
     more = [one for one in more if one]
     if more:
-        patrimonio.append({"type": "tiles", "items": more})
+        worth_blocks.append({"type": "tiles", "items": more})
 
-    comun: list[dict] = []
+    shared_blocks: list[dict] = []
     if open_years:
         if abs(owed) < Decimal("0.005"):
-            comun.append({"type": "figure", "label": f"Con {other}", "value": "Estáis a cero"})
-        else:
-            comun.append(
+            shared_blocks.append(
                 {
                     "type": "figure",
-                    "label": "Lo común por saldar",
-                    "value": eur(abs(num(owed))),
-                    "foot": f"{other} te debe" if owed > 0 else f"Debes a {other}",
+                    "label": t("panel.with_title", other=other),
+                    "value": t("panel.you_are_even"),
                 }
             )
-        comun.append(
+        else:
+            shared_blocks.append(
+                {
+                    "type": "figure",
+                    "label": t("panel.to_settle"),
+                    "value": eur(abs(num(owed))),
+                    "foot": t("panel.owes_you", other=other)
+                    if owed > 0
+                    else t("panel.you_owe", other=other),
+                }
+            )
+        shared_blocks.append(
             {
                 "type": "list",
-                "rows": [{"label": f"{year}", "value": "sin liquidar"} for year in open_years],
+                "rows": [
+                    {"label": f"{year}", "value": t("panel.unsettled")} for year in open_years
+                ],
             }
         )
 
     tabs = [
         {
-            "id": "resumen",
-            "label": "Resumen",
+            "id": "summary",
+            "label": t("panel.tab_summary"),
             "blocks": summary,
             "actions": [
                 *(
                     [
                         {
-                            "label": "Etiquetar",
-                            "href": "/money/movimientos?estado=pendiente",
+                            "label": t("panel.label"),
+                            "href": "/money/movements?status=pending",
                             "primary": True,
                         }
                     ]
                     if waiting
                     else []
                 ),
-                {"label": "Abrir Money", "href": "/money/"},
+                {"label": t("panel.open"), "href": "/money/"},
             ],
         },
         {
-            "id": "gasto",
-            "label": "Gasto",
-            "blocks": gasto,
-            "actions": [{"label": "Ver movimientos", "href": "/money/movimientos"}],
+            "id": "spending",
+            "label": t("panel.tab_spending"),
+            "blocks": spending_blocks,
+            "actions": [{"label": t("panel.see_movements"), "href": "/money/movements"}],
         },
         {
-            "id": "patrimonio",
-            "label": "Patrimonio",
-            "blocks": patrimonio,
-            "actions": [{"label": "Análisis", "href": "/money/analisis"}],
+            "id": "worth",
+            "label": t("panel.tab_worth"),
+            "blocks": worth_blocks,
+            "actions": [{"label": t("panel.analysis"), "href": "/money/analysis"}],
         },
     ]
-    if comun:
+    if shared_blocks:
         tabs.append(
             {
-                "id": "comun",
-                "label": "Común",
-                "blocks": comun,
-                "actions": [{"label": "Liquidar", "href": "/money/compartido", "primary": True}],
+                "id": "shared",
+                "label": t("panel.tab_shared"),
+                "blocks": shared_blocks,
+                "actions": [{"label": t("panel.settle"), "href": "/money/shared", "primary": True}],
             }
         )
+
+    def question(name: str, tab: str, block: int) -> dict:
+        return {
+            "text": t(f"panel.q_{name}"),
+            "words": t(f"panel.w_{name}").split(","),
+            "tab": tab,
+            "block": block,
+        }
 
     questions = [
-        {
-            "text": "¿Cuánto tengo?",
-            "words": ["patrimonio", "cuanto tengo", "dinero", "ahorros"],
-            "tab": "resumen",
-            "block": 0,
-        },
-        {
-            "text": "¿Llego a fin de mes?",
-            "words": ["fin de mes", "llego", "gasto del mes", "presupuesto"],
-            "tab": "gasto",
-            "block": 0,
-        },
-        {
-            "text": "¿En qué se me va el dinero?",
-            "words": ["gasto", "gastos", "categorias", "en que gasto"],
-            "tab": "gasto",
-            "block": 1 if rows else 0,
-        },
-        {
-            "text": "¿Cuánto colchón tengo?",
-            "words": ["colchon", "fondo de emergencia", "contingencia", "ahorro"],
-            "tab": "resumen",
-            "block": max(0, len(summary) - (2 if waiting else 1)),
-        },
+        question("have", "summary", 0),
+        question("month", "spending", 0),
+        question("where", "spending", 1 if rows else 0),
+        question("cushion", "summary", max(0, len(summary) - (2 if waiting else 1))),
     ]
-    if comun:
-        questions.append(
-            {
-                "text": "¿Quién debe a quién?",
-                "words": ["debe", "deuda", "comun", "compartido", "liquidar"],
-                "tab": "comun",
-                "block": 0,
-            }
-        )
+    if shared_blocks:
+        questions.append(question("owes", "shared", 0))
     return panel("money", order=10, headlines=headlines, tabs=tabs, questions=questions)
-
-
-MONTHS = [
-    "enero",
-    "febrero",
-    "marzo",
-    "abril",
-    "mayo",
-    "junio",
-    "julio",
-    "agosto",
-    "septiembre",
-    "octubre",
-    "noviembre",
-    "diciembre",
-]

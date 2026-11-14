@@ -2,8 +2,8 @@ create table money.money_v1_setting (
     user_id      uuid        primary key
                              default nullif(current_setting('arga.user_id', true), '')::uuid,
     cutoff       date,
-    me_name      text        not null default 'Yo' check (length(me_name) between 1 and 40),
-    other_name   text        not null default 'La otra persona' check (length(other_name) between 1 and 40),
+    me_name      text        not null default 'Me' check (length(me_name) between 1 and 40),
+    other_name   text        not null default 'The other person' check (length(other_name) between 1 and 40),
     holders      text[]      not null default '{}',
     window_days  smallint    not null default 4 check (window_days between 1 and 15),
     revision     bigint      not null default 0,

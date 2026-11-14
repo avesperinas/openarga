@@ -32,7 +32,7 @@ def clean_ibans(ibans: list[str]) -> list[str]:
     for raw in ibans:
         iban = raw.replace(" ", "").upper()
         if not IBAN.match(iban):
-            raise Refused(f"«{raw}» no es un IBAN")
+            raise Refused(f"'{raw}' is not an IBAN")
         if iban not in out:
             out.append(iban)
     return out
@@ -40,15 +40,15 @@ def clean_ibans(ibans: list[str]) -> list[str]:
 
 def check_type(kind: str) -> None:
     if kind not in catalog.account_types():
-        raise Refused("no hay ese tipo de producto")
+        raise Refused("no such product type")
 
 
 async def _source_match(lo: Loaded, source_key: str) -> tuple[str, str, str]:
     found = next((s for s in lo.source_accounts if s.key == source_key), None)
     if found is None:
-        raise Refused("no hay esa cuenta en tus fuentes")
+        raise Refused("no such account in your sources")
     if source_key in lo.source_of:
-        raise Refused("esa cuenta de tus fuentes ya es otro producto")
+        raise Refused("that account of your sources is already another product")
     movements = "statement" if source_key.startswith("statement:") else "api"
     return movements, found.bank, found.iban_tail or found.name
 
@@ -68,7 +68,7 @@ async def create_account(
     check_type(kind)
     name, institution = name.strip(), institution.strip()
     if not name or not institution:
-        raise Refused("falta el nombre o la entidad")
+        raise Refused("the name or the institution is missing")
     movements, bank, key_of_source = "matched", None, None
     if source_key:
         movements, bank, key_of_source = await _source_match(lo, source_key)
@@ -117,11 +117,11 @@ class Change:
 
 async def update_account(connection: AsyncConnection, lo: Loaded, key: str, change: Change) -> None:
     if key not in lo.book.accounts:
-        raise Refused("no hay ese producto")
+        raise Refused("no such product")
     sets, params = [], {"key": key}
     if change.name is not None:
         if not change.name.strip():
-            raise Refused("falta el nombre")
+            raise Refused("the name is missing")
         sets.append("name = :name")
         params["name"] = change.name.strip()
     if change.kind is not None:
@@ -130,12 +130,12 @@ async def update_account(connection: AsyncConnection, lo: Loaded, key: str, chan
         params["type"] = change.kind
     if change.institution is not None:
         if not change.institution.strip():
-            raise Refused("falta la entidad")
+            raise Refused("the institution is missing")
         sets.append("institution = :institution")
         params["institution"] = change.institution.strip()
     if change.ownership is not None:
         if not Decimal(0) < change.ownership <= 1:
-            raise Refused("tu parte va de 1 % a 100 %")
+            raise Refused("your share goes from 1% to 100%")
         sets.append("ownership = :ownership")
         params["ownership"] = change.ownership
     if change.shared is not None:
@@ -146,7 +146,7 @@ async def update_account(connection: AsyncConnection, lo: Loaded, key: str, chan
         params["ibans"] = clean_ibans(change.ibans)
     if change.value_mode is not None:
         if change.value_mode and change.value_mode not in products.VALUE_HOW:
-            raise Refused("no hay esa forma de valorar")
+            raise Refused("no such way of valuing")
         sets.append("value = :value")
         params["value"] = change.value_mode or None
     if change.source_key is not None:
@@ -195,7 +195,7 @@ class Typed:
     name: str
     value: Decimal | None = None
     weight: Decimal | None = None
-    """En tanto por ciento."""
+    """In percent."""
     symbol: str | None = None
 
 
@@ -209,30 +209,30 @@ async def set_composition(
 ) -> dict:
     account = lo.book.accounts.get(key)
     if account is None:
-        raise Refused("no hay ese producto")
+        raise Refused("no such product")
     if account.asset_class != "investment":
-        raise Refused("solo un producto de inversión tiene fondos")
+        raise Refused("only an investment product has funds")
     if not funds:
-        raise Refused("falta al menos un fondo")
+        raise Refused("at least one fund is missing")
     if total is None and any(f.value is None for f in funds):
         now = products.analysis.valued(lo, account, on)
         if not now.known or now.amount <= 0:
-            raise Refused("con pesos hace falta lo que vale el producto")
+            raise Refused("with weights, what the product is worth is needed")
         total = now.amount
     rows: dict[str, tuple[str, Decimal]] = {}
     for f in funds:
         if f.value is None and f.weight is None:
-            raise Refused(f"«{f.name}» no dice lo que vale ni su peso")
+            raise Refused(f"'{f.name}' gives neither its value nor its weight")
         value = f.value if f.value is not None else (total * f.weight / 100).quantize(CENT)
         if value < 0:
-            raise Refused(f"«{f.name}» no puede valer menos de cero")
+            raise Refused(f"'{f.name}' cannot be worth less than zero")
         symbol = f.symbol or symbol_for(lo, f.name)
         if symbol in rows:
-            raise Refused(f"«{f.name}» está dos veces")
+            raise Refused(f"'{f.name}' is there twice")
         rows[symbol] = (f.name.strip(), value)
     held = sum((v for _, v in rows.values()), Decimal(0))
     if total is not None and abs(held - total) > max(total * ROUNDING, Decimal(1)):
-        raise Refused(f"los fondos suman {held} y el producto vale {total}")
+        raise Refused(f"the funds add up to {held} and the product is worth {total}")
     await connection.execute(
         text("delete from money.money_v1_holding where account = :a and on_date = :d"),
         {"a": key, "d": on},
@@ -283,9 +283,9 @@ async def set_value(
     connection: AsyncConnection, lo: Loaded, key: str, on: date, value: Decimal
 ) -> None:
     if key not in lo.book.accounts:
-        raise Refused("no hay ese producto")
+        raise Refused("no such product")
     if value < 0:
-        raise Refused("el valor no puede ser negativo")
+        raise Refused("the value cannot be negative")
     await _valuation(connection, key, on, value)
     await bump(connection)
 
@@ -294,13 +294,13 @@ async def classify_fund(
     connection: AsyncConnection, symbol: str, asset: str, regions: dict[str, Decimal]
 ) -> None:
     if asset not in products.ASSETS:
-        raise Refused("no hay esa clase de activo")
+        raise Refused("no such asset class")
     unknown = set(regions) - set(products.REGIONS)
     if unknown:
-        raise Refused(f"no hay esa región: {', '.join(sorted(unknown))}")
+        raise Refused(f"no such region: {', '.join(sorted(unknown))}")
     kept = {k: v for k, v in regions.items() if v > 0}
     if kept and abs(sum(kept.values(), Decimal(0)) - 100) > Decimal("0.5"):
-        raise Refused("las regiones tienen que sumar 100 %")
+        raise Refused("the regions have to add up to 100%")
     await connection.execute(
         text("""
         insert into money.money_v1_fund (symbol, asset, regions)
@@ -350,7 +350,7 @@ async def delete_rule(
     connection: AsyncConnection, lo: Loaded, rule_id: str, keep: bool = True
 ) -> int:
     if not any(str(r["id"]) == rule_id for r in lo.rules):
-        raise Refused("no hay esa regla")
+        raise Refused("no such rule")
     kept = 0
     if keep:
         for fact_id in products.ruled_by(lo, rule_id):

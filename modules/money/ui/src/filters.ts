@@ -148,7 +148,7 @@ export function byDay(rows: Movement[]): Day[] {
 
 export function fromLink(search: string): { period: Period; filters: Filters } | null {
   const p = new URLSearchParams(search);
-  if (p.get("estado") === "pendiente") {
+  if (p.get("status") === "pending") {
     return { period: { kind: "year", year: new Date().getFullYear() }, filters: { ...NO_FILTERS, statuses: ["ask", "pending"] } };
   }
   const from = p.get("desde") ?? "";

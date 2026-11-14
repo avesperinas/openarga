@@ -25,10 +25,10 @@ def acc(id, inst, cls, movements, value, **kw) -> Account:
 ACCOUNTS = {
     a.id: a
     for a in [
-        acc("main", "Banco A", "cash", "api", "balance", internal="^TRASPASO INTERNO"),
+        acc("main", "Bank A", "cash", "api", "balance", internal="^TRASPASO INTERNO"),
         acc(
             "joint",
-            "Banco A",
+            "Bank A",
             "cash",
             "api",
             "balance",
@@ -36,11 +36,11 @@ ACCOUNTS = {
             shared_space=True,
             internal="^TRASPASO INTERNO",
         ),
-        acc("cashpoint", "Banco B", "cash", "api", "balance"),
-        acc("savings", "Banco C", "cash", "matched", "computed", spending=False),
+        acc("cashpoint", "Bank B", "cash", "api", "balance"),
+        acc("savings", "Bank C", "cash", "matched", "computed", spending=False),
         acc(
             "fund",
-            "Gestora",
+            "Manager",
             "investment",
             "statement",
             "snapshot",
@@ -49,7 +49,7 @@ ACCOUNTS = {
         ),
         acc(
             "home_fund",
-            "Gestora",
+            "Manager",
             "investment",
             "statement",
             "snapshot",
@@ -63,13 +63,13 @@ ACCOUNTS = {
 CATS = {
     c.id: c
     for c in [
-        Category("salary", "Salario", "income", "individual"),
-        Category("leisure", "Ocio", "expense", "individual"),
-        Category("subs", "Suscripciones", "expense", "individual"),
-        Category("rent", "Alquiler", "expense", "shared", "fifty_fifty"),
-        Category("groceries", "Supermercado", "expense", "shared", "proportional"),
-        Category("utilities", "Suministros", "expense", "shared", "proportional"),
-        Category("others", "Otros", "expense", "shared", "proportional"),
+        Category("salary", "Salary", "income", "individual"),
+        Category("leisure", "Leisure", "expense", "individual"),
+        Category("subs", "Subscriptions", "expense", "individual"),
+        Category("rent", "Rent", "expense", "shared", "fifty_fifty"),
+        Category("groceries", "Groceries", "expense", "shared", "proportional"),
+        Category("utilities", "Utilities", "expense", "shared", "proportional"),
+        Category("others", "Other", "expense", "shared", "proportional"),
     ]
 }
 
@@ -103,11 +103,11 @@ FACTS = [
         "main",
         29,
         "-300",
-        "TRANSFERENCIA // Gestora - Ana",
+        "TRANSFERENCIA // Manager - Alex",
         counterparty_iban="ES00FONDO",
     ),
-    f("other_fund", "home_fund", 29, "200", "Aportación de la pareja", source="statement"),
-    f("other_rent", OTHER, 1, "-400", "Alquiler, su mitad", source="manual", by_other=True),
+    f("other_fund", "home_fund", 29, "200", "Partner contribution", source="statement"),
+    f("other_rent", OTHER, 1, "-400", "Rent, their half", source="manual", by_other=True),
 ]
 
 RULES = [
@@ -195,8 +195,8 @@ def test_someone_else_with_the_same_amount_is_not_my_transfer():
 
 def test_iban_decides_between_same_day_twins():
     facts = [
-        f("a", "main", 29, "-250", "Gestora - Ana", counterparty_iban="ES00VIVIENDA"),
-        f("b", "main", 29, "-250", "Gestora - Ana", counterparty_iban="ES00FONDO"),
+        f("a", "main", 29, "-250", "Manager - Alex", counterparty_iban="ES00VIVIENDA"),
+        f("b", "main", 29, "-250", "Manager - Alex", counterparty_iban="ES00FONDO"),
         f("c", "fund", 30, "250", "entrada"),
         f("d", "home_fund", 30, "250", "entrada"),
     ]
@@ -214,7 +214,9 @@ def test_without_evidence_two_institutions_are_too_many():
 
 
 def test_merchant_rules_ignore_numbers_and_accents():
-    assert merchant_key("Mercadona 0231 Avda. Sánchez") == merchant_key("MERCADONA AVDA SANCHEZ")
+    assert merchant_key("Mercadona 0231 Avda. S\u00e1nchez") == merchant_key(
+        "MERCADONA AVDA SANCHEZ"
+    )
 
 
 def test_a_label_wins_over_any_rule():
@@ -239,7 +241,7 @@ def test_a_transfer_told_by_hand_infers_the_other_side_until_it_arrives():
     assert statuses(b)["came"] == "transfer"
     assert not [i for i in b.imputations if i.fact == "came"]
 
-    real = f("left", "savings", 9, "-100", "Traspaso a otra entidad", source="statement")
+    real = f("left", "savings", 9, "-100", "Transfer to another institution", source="statement")
     b = Interpreter(labels=[said]).run(Book(ACCOUNTS, CATS, [came, real]))
     assert [(t.out_fact, t.in_fact, t.basis) for t in b.transfers] == [("left", "came", "manual")]
     assert not [x for x in b.facts if x.source == "inferred"]
@@ -260,7 +262,7 @@ def test_shared_balance_follows_caudal():
 
 def test_closed_months_come_from_history_only():
     rows = [
-        HistoryRow(2030, 2, "expense", D("1000"), "Alquiler", "fifty_fifty", "me"),
+        HistoryRow(2030, 2, "expense", D("1000"), "Rent", "fifty_fifty", "me"),
         HistoryRow(2030, 2, "deposit", D("100"), payer="other"),
     ]
     m = from_history(rows, 2030, 2)
@@ -276,13 +278,13 @@ def test_closed_months_come_from_history_only():
 
 def test_the_shared_monthly_average_leaves_out_the_month_in_course():
     months = [
-        Month(2030, 1, "book", {"Súper": D("300")}),
-        Month(2030, 2, "book", {"Súper": D("500"), "Luz": D("80")}),
-        Month(2030, 3, "book", {"Súper": D("20")}),
+        Month(2030, 1, "book", {"Grocer": D("300")}),
+        Month(2030, 2, "book", {"Grocer": D("500"), "Electricity": D("80")}),
+        Month(2030, 3, "book", {"Grocer": D("20")}),
     ]
     assert monthly_average(months, 2030, date(2030, 3, 9)) == (
         2,
-        {"Súper": D("400"), "Luz": D("40")},
+        {"Grocer": D("400"), "Electricity": D("40")},
     )
     assert monthly_average(months, 2030, date(2031, 1, 2))[0] == 3
     assert monthly_average(months[:1], 2030, date(2030, 1, 20)) == (0, {})

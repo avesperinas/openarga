@@ -1,7 +1,7 @@
 [project]
 name = "money"
 version = "0.1.0"
-description = "Módulo Money de OpenArga"
+description = "OpenArga Money module"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "arga-tenancy",

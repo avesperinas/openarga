@@ -33,7 +33,7 @@ def test_the_figures_are_the_kpis_of_the_app() -> None:
     assert found[f"money.liquid@{today}"]["value"] == kpis["liquid"]
     assert found[f"money.cash@{today}"]["value"] == kpis["cash"]
     assert found[f"money.emergency_fund@{today}"]["value"] == kpis["emergency"]
-    assert found["money.net_worth@2030-09-30"]["label"] == "Patrimonio"
+    assert found["money.net_worth@2030-09-30"]["label"] == "Net worth"
 
 
 def test_interest_and_pension_contributions_are_published_day_by_day() -> None:
@@ -49,9 +49,9 @@ def test_interest_and_pension_contributions_are_published_day_by_day() -> None:
     }
     facts = [
         Fact("i1", "joint", date(2030, 6, 30), D("40"), "intereses"),
-        Fact("o1", "main", date(2030, 7, 1), D("-100"), "aportación"),
-        Fact("p1", "plan", date(2030, 7, 1), D("100"), "aportación"),
-        Fact("p2", "plan", date(2030, 7, 2), D("50"), "aportación de la empresa"),
+        Fact("o1", "main", date(2030, 7, 1), D("-100"), "contribution"),
+        Fact("p1", "plan", date(2030, 7, 1), D("100"), "contribution"),
+        Fact("p2", "plan", date(2030, 7, 2), D("50"), "employer contribution"),
     ]
     book = Book(
         accounts,

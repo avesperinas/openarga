@@ -16,7 +16,7 @@ from money.shared import HistoryRow, Income
 
 
 def acc(id, cls, value, type=None, **kw) -> Account:
-    return Account(id, id.title(), "Banco", type or cls, cls, "api", value, **kw)
+    return Account(id, id.title(), "Bank", type or cls, cls, "api", value, **kw)
 
 
 ACCOUNTS = {
@@ -34,12 +34,12 @@ ACCOUNTS = {
 CATS = {
     c.id: c
     for c in [
-        Category("salario", "Salario", "income", "individual"),
-        Category("otros", "Otros ingresos", "income", "individual"),
-        Category("ocio", "Ocio", "expense", "individual", not_basic=True),
-        Category("salud", "Salud", "expense", "individual"),
-        Category("super", "Supermercado", "expense", "shared", "proportional"),
-        Category("alquiler", "Alquiler", "expense", "shared", "fifty_fifty"),
+        Category("salario", "Salary", "income", "individual"),
+        Category("otros", "Other income", "income", "individual"),
+        Category("ocio", "Leisure", "expense", "individual", not_basic=True),
+        Category("salud", "Health", "expense", "individual"),
+        Category("super", "Groceries", "expense", "shared", "proportional"),
+        Category("alquiler", "Rent", "expense", "shared", "fifty_fifty"),
     ]
 }
 
@@ -59,7 +59,7 @@ def label(
 def loaded(facts=(), labels=(), flows=(), valuations=(), history=()) -> Loaded:
     book = Interpreter(labels=list(labels)).run(Book(ACCOUNTS, CATS, list(facts), []))
     return Loaded(
-        settings=Settings(CUTOFF, "Yo", "Otra", (), 4, 0, 3),
+        settings=Settings(CUTOFF, "Me", "Another", (), 4, 0, 3),
         book=book,
         statuses=statuses(book),
         merchant_of={},
@@ -89,7 +89,7 @@ def book_with_payrolls() -> Loaded:
             "fondo", "main", date(2030, 10, 7), D("-300"), "a fondo", counterparty_iban="ES00FONDO"
         ),
         Fact("casa", "main", date(2030, 10, 8), D("-1000"), "virgen"),
-        Fact("x", "main", date(2030, 9, 3), D("-40"), "sin nada"),
+        Fact("x", "main", date(2030, 9, 3), D("-40"), "nothing in it"),
     ]
     labels = [
         label("n1", "2000", "salario", "income", "individual"),
@@ -100,12 +100,12 @@ def book_with_payrolls() -> Loaded:
         label("casa", "-1000", "alquiler", "expense", "shared", "me", "house"),
     ]
     flows = [
-        Flow(2030, 8, "income", D("2000"), "Salario"),
-        Flow(2030, 8, "expense", D("100"), "Salud"),
+        Flow(2030, 8, "income", D("2000"), "Salary"),
+        Flow(2030, 8, "expense", D("100"), "Health"),
         Flow(2030, 8, "contribution", D("200"), account="fund"),
         Flow(2030, 8, "contribution", D("200"), account="fund", mine=False),
     ]
-    history = [HistoryRow(2030, 8, "expense", D("400"), "Supermercado", "proportional", "account")]
+    history = [HistoryRow(2030, 8, "expense", D("400"), "Groceries", "proportional", "account")]
     valuations = [
         Valuation("main", date(2030, 8, 31), D("1000")),
         Valuation("joint", date(2030, 8, 31), D("600")),
@@ -153,13 +153,13 @@ def test_worth_matches_the_networth_kpi_and_splits_saving_from_return():
     w = analysis.worth(lo, date(2030, 10, 1), date(2030, 10, 31), False, False, TODAY)
     networth = next(k for k in compute(lo, date(2030, 10, 31)) if k.key == "networth")
     assert w["total"] == networth.value
-    assert "Vivienda" not in w["groups"] and w["groups"][0] == "Efectivo"
+    assert "Property" not in w["groups"] and w["groups"][0] == "Cash"
     last = w["points"][-1]
-    cash = last["by_group"]["Efectivo"]
+    cash = last["by_group"]["Cash"]
     assert last["contributed"] == cash + D("500")
     assert last["total"] == cash + D("500")
     with_home = analysis.worth(lo, date(2030, 10, 1), date(2030, 10, 31), True, True, TODAY)
-    assert "Vivienda" in with_home["groups"]
+    assert "Property" in with_home["groups"]
 
 
 def test_investments_give_capital_gain_and_xirr_mine_and_the_other_apart():
@@ -180,21 +180,21 @@ def test_worth_and_investments_narrow_to_the_chosen_types_and_accounts():
     lo = book_with_payrolls()
     span = (date(2030, 10, 1), date(2030, 10, 31))
     full = analysis.worth(lo, *span, True, False, TODAY)
-    funds = analysis.worth(lo, *span, True, False, TODAY, groups={"Fondos"})
+    funds = analysis.worth(lo, *span, True, False, TODAY, groups={"Funds"})
     assert [r["key"] for r in funds["rows"]] == ["fund"]
-    assert funds["groups"] == ["Fondos"]
+    assert funds["groups"] == ["Funds"]
     assert funds["total"] == next(r for r in full["rows"] if r["key"] == "fund")["value"]
     assert funds["points"][-1]["contributed"] == D("500")
     one = analysis.worth(lo, *span, True, False, TODAY, only={"main", "joint"})
     assert {r["key"] for r in one["rows"]} == {"main", "joint"}
-    both = analysis.worth(lo, *span, True, False, TODAY, groups={"Fondos"}, only={"main"})
+    both = analysis.worth(lo, *span, True, False, TODAY, groups={"Funds"}, only={"main"})
     assert both["rows"] == [] and both["total"] == D("0")
 
     inv = analysis.investments(lo, *span, True, False, TODAY, only={"fund"})
     assert [r["key"] for r in inv["rows"]] == ["fund"]
     assert inv["total"]["capital"] == D("500") and inv["total"]["value"] == D("500")
     assert [s["key"] for s in inv["contributions"]["series"]] == ["fund"]
-    home = analysis.investments(lo, *span, True, False, TODAY, groups={"Vivienda"})
+    home = analysis.investments(lo, *span, True, False, TODAY, groups={"Property"})
     assert [r["key"] for r in home["rows"]] == ["house"]
 
 
@@ -202,9 +202,9 @@ def test_spending_by_category_against_the_previous_period():
     lo = book_with_payrolls()
     s = analysis.spending(lo, date(2030, 10, 1), date(2030, 10, 31), "all", False, "all", TODAY)
     by = {(r["ownership"], r["name"]): r for r in s["rows"]}
-    assert by[("shared", "Supermercado")]["total"] == D("150")
-    assert by[("shared", "Alquiler")]["total"] == D("500")
-    assert by[("individual", "Ocio")]["total"] == D("60")
+    assert by[("shared", "Groceries")]["total"] == D("150")
+    assert by[("shared", "Rent")]["total"] == D("500")
+    assert by[("individual", "Leisure")]["total"] == D("60")
     assert s["total"] == D("710") and s["groups"]["not_basic"] == D("60")
     assert s["previous_period"] == {"from": date(2030, 9, 1), "to": date(2030, 9, 30)}
     whole = analysis.spending(
@@ -229,7 +229,7 @@ def test_spending_averages_leave_out_the_month_in_course():
     assert ongoing["months"] == 2 and ongoing["closed_months"] == 1
     assert ongoing["monthly"] == october["total"]
     by = {r["key"]: r for r in ongoing["rows"]}
-    assert by["individual:Ocio"]["average"] == D("60")
+    assert by["individual:Leisure"]["average"] == D("60")
     assert ongoing["usual_months"] == october["usual_months"]
     only_now = analysis.spending(
         lo, date(2030, 11, 1), date(2030, 11, 30), "all", False, "all", TODAY
@@ -241,7 +241,7 @@ def test_spending_averages_leave_out_the_month_in_course():
 def test_a_category_shows_its_movements_and_what_only_the_history_knows():
     lo = book_with_payrolls()
     d = analysis.category_detail(
-        lo, date(2030, 8, 1), date(2030, 10, 31), "Supermercado", "shared", False
+        lo, date(2030, 8, 1), date(2030, 10, 31), "Groceries", "shared", False
     )
     assert [m["id"] for m in d["movements"]] == ["super"] and d["movements"][0]["amount"] == D(
         "150"
@@ -268,10 +268,10 @@ def test_the_flow_balances_and_sends_what_was_paid_to_the_home_to_investment():
     f = analysis.flow(lo, date(2030, 10, 1), date(2030, 10, 31), True, False, TODAY)
     links = {(k["source"], k["target"]): k["value"] for k in f["links"]}
     assert f["segments"][0]["from"] == date(2030, 9, 28)
-    assert links[("in:Salario", "you")] == D("2005")
-    assert links[("spent", "spent:Ocio")] == D("60")
-    assert links[("common", "common:Supermercado")] == D("150")
-    assert ("common", "common:Alquiler") not in links
+    assert links[("in:Salary", "you")] == D("2005")
+    assert links[("spent", "spent:Leisure")] == D("60")
+    assert links[("common", "common:Groceries")] == D("150")
+    assert ("common", "common:Rent") not in links
     assert links[("invest", "invest:house")] == D("500")
     assert links[("invest", "invest:fund")] == D("300")
     inflow = sum(v for (s, t), v in links.items() if t == "you")
@@ -302,7 +302,7 @@ def test_the_first_cycle_after_the_cutoff_carries_the_last_history_payroll():
     )
     august = analysis.flow(lo, date(2030, 8, 1), date(2030, 8, 31), True, False, TODAY)
     september = analysis.flow(lo, date(2030, 9, 1), date(2030, 9, 30), True, False, TODAY)
-    assert "in:Salario" not in {link["source"] for link in august["links"]}
+    assert "in:Salary" not in {link["source"] for link in august["links"]}
     assert [(s["from"], s["to"]) for s in september["segments"]] == [
         (date(2030, 9, 1), date(2030, 9, 27))
     ]
@@ -316,7 +316,7 @@ def test_the_rent_paid_to_the_home_can_be_read_as_shared_spending():
         lo, date(2030, 10, 1), date(2030, 10, 31), True, False, TODAY, rent_invested=False
     )
     links = {(k["source"], k["target"]): k["value"] for k in f["links"]}
-    assert links[("common", "common:Alquiler")] == D("500")
+    assert links[("common", "common:Rent")] == D("500")
     assert ("invest", "invest:house") not in links
     assert links[("invest", "invest:fund")] == D("300")
     inflow = sum(v for (s, t), v in links.items() if t == "you")
@@ -330,47 +330,47 @@ def test_what_was_left_in_a_history_month_without_personal_spending_is_unlabelle
     lo = book_with_payrolls()
     lo.flows.extend(
         [
-            Flow(2030, 7, "income", D("2000"), "Salario"),
+            Flow(2030, 7, "income", D("2000"), "Salary"),
             Flow(2030, 7, "contribution", D("300"), account="fund"),
         ]
     )
     lo.history.append(
-        HistoryRow(2030, 7, "expense", D("400"), "Supermercado", "proportional", "account")
+        HistoryRow(2030, 7, "expense", D("400"), "Groceries", "proportional", "account")
     )
     july = analysis.flow(lo, date(2030, 7, 1), date(2030, 7, 31), False, False, TODAY)
     links = {(k["source"], k["target"]): k["value"] for k in july["links"]}
     assert july["unlogged"] == 1
-    assert links[("spent", "spent:Sin etiquetar")] == D("2000") - D("300") - D("300")
+    assert links[("spent", "spent:Unlabelled")] == D("2000") - D("300") - D("300")
     assert july["totals"]["left"] == 0
     whole = analysis.flow(lo, date(2030, 7, 1), date(2030, 7, 31), False, True, TODAY)
     assert whole["totals"]["spent"] == july["totals"]["spent"]
     august = analysis.flow(lo, date(2030, 8, 1), date(2030, 8, 31), False, False, TODAY)
-    assert "spent:Sin etiquetar" not in {n["id"] for n in august["nodes"]}
+    assert "spent:Unlabelled" not in {n["id"] for n in august["nodes"]}
 
 
 def test_what_was_missing_in_a_history_month_without_personal_spending_never_comes_from_savings():
     lo = book_with_payrolls()
     lo.flows.extend(
         [
-            Flow(2030, 6, "income", D("1000"), "Salario"),
+            Flow(2030, 6, "income", D("1000"), "Salary"),
             Flow(2030, 6, "contribution", D("1500"), account="fund"),
-            Flow(2030, 7, "income", D("2000"), "Salario"),
+            Flow(2030, 7, "income", D("2000"), "Salary"),
             Flow(2030, 7, "contribution", D("300"), account="fund"),
         ]
     )
     lo.history.append(
-        HistoryRow(2030, 7, "expense", D("400"), "Supermercado", "proportional", "account")
+        HistoryRow(2030, 7, "expense", D("400"), "Groceries", "proportional", "account")
     )
     both = analysis.flow(lo, date(2030, 6, 1), date(2030, 7, 31), False, False, TODAY)
     links = {(k["source"], k["target"]): k["value"] for k in both["links"]}
     assert both["unlogged"] == 2
-    assert links[("spent", "spent:Sin etiquetar")] == D("1400") - D("500")
+    assert links[("spent", "spent:Unlabelled")] == D("1400") - D("500")
     assert "deficit" not in {n["id"] for n in both["nodes"]}
     assert both["totals"]["left"] == 0
 
     june = analysis.flow(lo, date(2030, 6, 1), date(2030, 6, 30), False, False, TODAY)
     links = {(k["source"], k["target"]): k["value"] for k in june["links"]}
-    assert links[("in:Sin etiquetar", "you")] == D("500")
+    assert links[("in:Unlabelled", "you")] == D("500")
     assert "deficit" not in {n["id"] for n in june["nodes"]}
     assert june["totals"]["left"] == 0
     whole = analysis.flow(lo, date(2030, 6, 1), date(2030, 6, 30), False, True, TODAY)
@@ -389,8 +389,8 @@ def test_by_calendar_month_before_the_cutoff_the_history_counts():
     lo = book_with_payrolls()
     f = analysis.flow(lo, date(2030, 8, 1), date(2030, 8, 31), False, False, TODAY)
     links = {(k["source"], k["target"]): k["value"] for k in f["links"]}
-    assert links[("in:Salario", "you")] == D("2000")
-    assert links[("common", "common:Supermercado")] == D("300")
+    assert links[("in:Salary", "you")] == D("2000")
+    assert links[("common", "common:Groceries")] == D("300")
     assert links[("invest", "invest:fund")] == D("200")
     assert f["totals"]["left"] == D("2000") - D("100") - D("300") - D("200")
 
@@ -406,22 +406,22 @@ def test_the_rent_paid_to_the_home_counts_once_in_the_history_and_without_saying
     )
     lo.history.extend(
         [
-            HistoryRow(2030, 8, "expense", D("1000"), "Alquiler", "fifty_fifty", "account"),
-            HistoryRow(2030, 7, "expense", D("1000"), "Alquiler", "fifty_fifty", "account"),
+            HistoryRow(2030, 8, "expense", D("1000"), "Rent", "fifty_fifty", "account"),
+            HistoryRow(2030, 7, "expense", D("1000"), "Rent", "fifty_fifty", "account"),
         ]
     )
     august = analysis.flow(lo, date(2030, 8, 1), date(2030, 8, 31), False, False, TODAY)
     links = {(k["source"], k["target"]): k["value"] for k in august["links"]}
-    assert ("common", "common:Alquiler") not in links
+    assert ("common", "common:Rent") not in links
     assert links[("invest", "invest:house")] == D("500")
     whole = analysis.flow(lo, date(2030, 8, 1), date(2030, 8, 31), False, True, TODAY)
     links = {(k["source"], k["target"]): k["value"] for k in whole["links"]}
-    assert ("common", "common:Alquiler") not in links
+    assert ("common", "common:Rent") not in links
     assert links[("invest", "invest:house")] == D("1000")
 
     july = analysis.flow(lo, date(2030, 7, 1), date(2030, 7, 31), False, False, TODAY)
     links = {(k["source"], k["target"]): k["value"] for k in july["links"]}
-    assert ("common", "common:Alquiler") not in links
+    assert ("common", "common:Rent") not in links
     assert links[("invest", "invest:house")] == D("20000")
     assert july["unlogged"] == 1
 
@@ -442,7 +442,7 @@ def test_the_rent_paid_to_the_home_counts_once_in_the_history_and_without_saying
     )
     f = analysis.flow(lo, date(2030, 10, 1), date(2030, 10, 31), True, False, TODAY)
     links = {(k["source"], k["target"]): k["value"] for k in f["links"]}
-    assert ("common", "common:Alquiler") not in links
+    assert ("common", "common:Rent") not in links
     assert links[("invest", "invest:house")] == D("1000")
     house = [c for c in analysis.contributions(lo) if c.account == "house"]
     assert sum(c.amount for c in house) == D("2000")
@@ -453,13 +453,13 @@ def test_the_circuit_joins_accounts_by_what_passed_between_them():
     c = analysis.circuit(lo, date(2030, 10, 1), date(2030, 10, 31), TODAY)
     links = {(k["source"], k["target"]): k for k in c["links"]}
     assert links[("acc:main", "acc:fund")]["value"] == D("300")
-    assert links[("in:Salario", "acc:main")]["value"] == D("2005")
+    assert links[("in:Salary", "acc:main")]["value"] == D("2005")
     assert links[("acc:main", "out:individual")]["value"] == D("60")
     assert links[("acc:joint", "out:shared")]["value"] == D("200")
     assert c["balances"]["acc:fund"]["end"] == D("1000")
     nodes = {n["id"]: n for n in c["nodes"]}
     assert nodes["acc:main"]["outflow"] == D("1360")
-    assert nodes["in:Salario"]["column"] == 0 and nodes["acc:main"]["column"] == 1
+    assert nodes["in:Salary"]["column"] == 0 and nodes["acc:main"]["column"] == 1
     assert nodes["acc:joint"]["column"] == 2 and nodes["acc:fund"]["column"] == 2
     assert nodes["out:individual"]["column"] == 3
 
@@ -498,12 +498,12 @@ async def test_every_analysis_endpoint_answers_on_an_empty_book(api) -> None:
         assert response.status_code == 200, (path, response.text)
     detail = await api.get(
         "/analysis/spending/category",
-        params={**period, "name": "Ocio", "ownership": "individual"},
+        params={**period, "name": "Leisure", "ownership": "individual"},
     )
     assert detail.status_code == 200
     narrowed = await api.get(
         "/analysis/investments",
-        params={**period, "group": ["Fondos", "Cripto"], "account": ["fondo"]},
+        params={**period, "group": ["Funds", "Crypto"], "account": ["fondo"]},
     )
     assert narrowed.status_code == 200 and narrowed.json()["rows"] == []
     wrong = await api.get("/analysis/worth", params={"from": "2030-02-01", "to": "2030-01-01"})
