@@ -42,9 +42,7 @@ class Unverifiable(Exception):
 class Sealer:
     def __init__(self, secret: str):
         if len(secret) < MIN_SECRET_LENGTH:
-            raise NotConfigured(
-                f"SESSION_SECRET tiene que tener al menos {MIN_SECRET_LENGTH} caracteres"
-            )
+            raise NotConfigured(f"SESSION_SECRET must have at least {MIN_SECRET_LENGTH} characters")
         key = HKDF(
             algorithm=hashes.SHA256(), length=32, salt=None, info=b"arga gateway cookies"
         ).derive(secret.encode())

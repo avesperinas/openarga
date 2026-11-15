@@ -549,3 +549,13 @@ def test_the_gateway_starts_without_cloudflare_access(monkeypatch: pytest.Monkey
     finally:
         server.terminate()
         server.wait(timeout=10)
+
+
+async def test_the_logout_page_speaks_the_browsers_language(browser) -> None:
+    english = await browser.post("/logout", headers={"accept-language": "en-GB,en;q=0.9"})
+    spanish = await browser.post("/logout", headers={"accept-language": "es-ES,es;q=0.9"})
+    german = await browser.post("/logout", headers={"accept-language": "de-DE"})
+
+    assert '<html lang="en">' in english.text and "You have left OpenArga" in english.text
+    assert '<html lang="es">' in spanish.text and "You have left" not in spanish.text
+    assert '<html lang="en">' in german.text

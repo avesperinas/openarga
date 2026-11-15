@@ -23,9 +23,9 @@ from arga_mcp.catalogue import (
 
 SERVICE = "mcp"
 INSTRUCTIONS = (
-    "Datos personales de una sola persona, repartidos en módulos. Cada tool lleva el prefijo de "
-    "su módulo. Las de lectura consultan; las de escritura cambian algo en su nombre, así que "
-    "úsalas solo cuando lo pida."
+    "One person's data, split into modules. Each tool carries its module's prefix. Read tools "
+    "look things up; write tools change something on the person's behalf, so use them only "
+    "when asked."
 )
 
 trace = logging.getLogger("uvicorn.error")
@@ -89,7 +89,7 @@ def build_server(catalogue: Catalogue, version: str) -> Server:
             spaces_of(ctx),
         )
         trace.info(
-            "tool %s · sujeto %s · scopes %s · %s",
+            "tool %s · subject %s · scopes %s · %s",
             params.name,
             subject or "-",
             " ".join(sorted(scopes)) or "-",

@@ -198,8 +198,8 @@ def from_environment(client: httpx.AsyncClient) -> Oidc:
     missing = [name for name, value in values.items() if not value]
     if missing:
         raise NotConfigured(
-            f"falta {', '.join(missing)}. El gateway no arranca sin login: una puerta sin "
-            f"cerradura no es algo que ninguna sonda vaya a detectar."
+            f"{', '.join(missing)} missing. The gateway does not start without login: a door "
+            f"without a lock is not something any probe would notice."
         )
     return Oidc(
         issuer=values["OAUTH_ISSUER"].rstrip("/"),

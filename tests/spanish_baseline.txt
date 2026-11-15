@@ -2,10 +2,7 @@ auth/client-scopes.ndjson
 auth/realm.json
 backup/arga-backup
 backup/e2e.sh
-gateway/src/gateway/main.py
-gateway/src/gateway/oidc.py
 gateway/src/gateway/privacy.py
-gateway/src/gateway/session.py
 gateway/tests/test_login.py
 kernel/src/kernel/identity.py
 kernel/tests/corpus.py
@@ -20,8 +17,6 @@ kernel/tests/test_seed.py
 kernel/tests/test_table_classes.py
 kernel/tests/test_tenant_isolation.py
 kernel/tests/test_ui_preferences.py
-mcp/src/arga_mcp/catalogue.py
-mcp/src/arga_mcp/main.py
 mcp/tests/test_server.py
 modules/_template/manifest.yaml
 modules/_template/pyproject.toml

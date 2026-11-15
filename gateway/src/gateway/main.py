@@ -18,6 +18,7 @@ from gateway import privacy as privacy_module
 from gateway import session as session_module
 from gateway.flight import Flight
 from gateway.session import COOKIE, LOGIN_COOKIE, NoSession, Resolved, Unverifiable
+from gateway.words import language, say
 
 SERVICE = "gateway"
 SUBJECT_HEADER = "x-arga-subject"
@@ -140,7 +141,7 @@ def refuse(request: Request, error: Exception) -> Response:
     if isinstance(error, Unverifiable):
         return JSONResponse(
             status_code=503,
-            content={"detail": "no se puede comprobar la sesión ahora mismo; prueba en un momento"},
+            content={"detail": "the session cannot be checked right now; try again in a moment"},
         )
     if navigating(request):
         target = request.url.path + (f"?{request.url.query}" if request.url.query else "")
@@ -148,7 +149,7 @@ def refuse(request: Request, error: Exception) -> Response:
         return RedirectResponse(str(login), status_code=302)
     return JSONResponse(
         status_code=401,
-        content={"detail": f"hace falta iniciar sesión: {error}", "login": "/login"},
+        content={"detail": f"sign-in required: {error}", "login": "/login"},
     )
 
 
@@ -326,13 +327,13 @@ async def mcp(request: Request) -> Response:
     oauth = request.app.state.oauth
     if oauth is None:
         return JSONResponse(
-            status_code=503, content={"detail": "el servidor de autorización no está configurado"}
+            status_code=503, content={"detail": "the authorisation server is not configured"}
         )
     caller = await oauth.caller(request.headers.get("authorization"))
     if caller is None:
         return JSONResponse(
             status_code=401,
-            content={"detail": "hace falta un token del servidor de autorización"},
+            content={"detail": "a token from the authorisation server is required"},
             headers={"www-authenticate": oauth.challenge(await remote_scopes(request.app.state))},
         )
     return await forward(request, mcp_url(), "/mcp", caller.subject, caller.scopes)
@@ -361,11 +362,18 @@ async def authorization_server(request: Request, path: str) -> Response:
 
 
 def page(
-    title: str, message: str, link: str, label: str, status_code: int = 200, script: str = ""
+    request: Request,
+    title: str,
+    message: str,
+    link: str,
+    label: str,
+    status_code: int = 200,
+    script: str = "",
 ) -> HTMLResponse:
     tail = f"<script>{script}</script>" if script else ""
+    title, message, label = say(request, title), say(request, message), say(request, label)
     body = (
-        '<!doctype html><html lang="es"><head><meta charset="utf-8">'
+        f'<!doctype html><html lang="{language(request)}"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         f"<title>{title} · arga</title></head><body><h1>{title}</h1><p>{message}</p>"
         f'<p><a href="{link}">{label}</a></p>{tail}</body></html>'
@@ -399,19 +407,21 @@ async def login_callback(
     again = "/login"
     if pending is None or not state or not code:
         return page(
-            "No se pudo terminar de entrar",
-            "El inicio de sesión caducó o empezó en otra ventana.",
+            request,
+            "login.failed",
+            "login.expired",
             again,
-            "Volver a entrar",
+            "login.again",
             status_code=400,
         )
     again = str(httpx.URL("/login", params={"next": pending.next}))
     if not session_module.secrets_equal(state, pending.challenge.state):
         return page(
-            "No se pudo terminar de entrar",
-            "Esta respuesta no corresponde a tu inicio de sesión.",
+            request,
+            "login.failed",
+            "login.mismatch",
             again,
-            "Volver a entrar",
+            "login.again",
             status_code=400,
         )
     try:
@@ -421,18 +431,20 @@ async def login_callback(
         identity = await oidc.identity(tokens.id_token, pending.challenge)
     except oidc_module.Rejected:
         return page(
-            "No se pudo terminar de entrar",
-            "El servidor de autorización no aceptó este inicio de sesión.",
+            request,
+            "login.failed",
+            "login.refused",
             again,
-            "Volver a entrar",
+            "login.again",
             status_code=400,
         )
     except oidc_module.Unreachable:
         return page(
-            "No se pudo terminar de entrar",
-            "El servidor de autorización no contesta. Prueba en un momento.",
+            request,
+            "login.failed",
+            "login.unreachable",
             again,
-            "Volver a entrar",
+            "login.again",
             status_code=503,
         )
 
@@ -463,10 +475,11 @@ async def logout(request: Request) -> Response:
     if session is not None:
         await request.app.state.oidc.revoke(session.refresh_token)
     response = page(
-        "Has salido de arga",
-        "Tu sesión está cerrada y lo guardado en este dispositivo, borrado.",
+        request,
+        "logout.title",
+        "logout.body",
         "/login",
-        "Entrar",
+        "logout.enter",
         script=FORGET_HERE,
     )
     response.headers.append("set-cookie", session_module.expired_cookie_header(COOKIE))
