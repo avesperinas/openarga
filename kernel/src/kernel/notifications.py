@@ -22,6 +22,7 @@ from arga_tenancy import CURRENT_USER_SQL, as_user, require_person
 from kernel.db import engine
 from kernel.manifests import NOTIFICATION_KIND_PATTERN
 from kernel.preferences import of_person
+from kernel.words import say
 
 router = APIRouter(tags=["notifications"])
 
@@ -278,7 +279,9 @@ class QuietIn(BaseModel):
 async def set_quiet(body: QuietIn) -> Response:
     require_person()
     if (body.quiet_from is None) != (body.quiet_to is None):
-        raise HTTPException(status_code=422, detail="el silencio tiene principio y fin, o ninguno")
+        raise HTTPException(
+            status_code=422, detail="quiet hours need both a start and an end, or neither"
+        )
     async with engine().begin() as connection:
         await connection.execute(
             text("""
@@ -297,8 +300,8 @@ async def set_quiet(body: QuietIn) -> Response:
 async def send_test() -> dict[str, Any]:
     require_person()
     if vapid() is None:
-        raise HTTPException(status_code=503, detail="los avisos aún no están configurados")
-    message = {"title": "arga", "body": "Así te llegan los avisos.", "href": "/"}
+        raise HTTPException(status_code=503, detail="notifications are not configured yet")
+    message = {"title": "arga", "body": say("notifications.test"), "href": "/"}
     async with engine().begin() as connection:
         done = await deliver(connection, message)
     return {
@@ -309,7 +312,7 @@ async def send_test() -> dict[str, Any]:
 
 
 INBOX_DAYS = 30
-NOT_FOR_YOU = ("apagado", "su app ya no lo declara")
+NOT_FOR_YOU = ("apagado", "its app no longer declares it")
 
 INBOX = text(f"""
     select n.id::text, n.app, coalesce(m.manifest->>'name', n.app) as app_name, n.title, n.body,
@@ -355,7 +358,7 @@ async def mark_read(notification_id: UUID) -> Response:
     async with engine().begin() as connection:
         found = await connection.scalar(READ, {"id": notification_id})
     if found is None:
-        raise HTTPException(status_code=404, detail="ese aviso no está en tu bandeja")
+        raise HTTPException(status_code=404, detail="that notification is not in your inbox")
     return Response(status_code=204)
 
 
@@ -417,7 +420,7 @@ async def serve(capability: str, app: str, payload: dict[str, Any]) -> dict[str,
         declared = {one.kind for one in await kinds(connection) if one.app == app}
         if wanted.kind not in declared:
             raise HTTPException(
-                status_code=422, detail=f"'{app}' no declara el aviso '{wanted.kind}'"
+                status_code=422, detail=f"'{app}' does not declare the notification '{wanted.kind}'"
             )
         row = (
             await connection.execute(
@@ -438,7 +441,7 @@ async def _sync(connection: AsyncConnection, app: str, wanted: SyncIn) -> dict[s
     for item in wanted.items:
         if item.kind not in declared:
             raise HTTPException(
-                status_code=422, detail=f"'{app}' no declara el aviso '{item.kind}'"
+                status_code=422, detail=f"'{app}' does not declare the notification '{item.kind}'"
             )
     known = {row.key for row in (await connection.execute(KNOWN_KEYS, {"app": app})).all()}
     old = datetime.now(UTC) - STALE
@@ -494,7 +497,7 @@ def _reason(response: Any) -> str:
         return ""
     try:
         body = response.json()
-    except Exception:  # noqa: BLE001 - no era JSON: vale el texto
+    except Exception:  # noqa: BLE001 - not JSON: the text will do
         body = None
     if isinstance(body, dict) and body.get("reason"):
         return str(body["reason"])[:120]
@@ -520,7 +523,7 @@ def _push(subscription: Any, message: dict[str, Any], keys: tuple[str, str, str]
     except WebPushException as error:
         response = getattr(error, "response", None)
         return Refused(getattr(response, "status_code", None), _reason(response))
-    except Exception as error:  # noqa: BLE001 - la red, un certificado: se dice y se sigue
+    except Exception as error:  # noqa: BLE001 - the network, a certificate: said and moved on
         return Refused(None, type(error).__name__)
     return None
 
@@ -538,8 +541,8 @@ class Delivery:
 
     def outcome(self) -> str:
         if not self.devices:
-            return "sin dispositivos"
-        said = [f"enviado a {self.sent} de {self.devices}"]
+            return "no devices"
+        said = [f"sent to {self.sent} of {self.devices}"]
         said += [f"{name}: {refused.said()}" for name, refused in self.failed]
         return "; ".join(said)[:300]
 
@@ -594,7 +597,9 @@ async def _again(connection: AsyncConnection, row: Any, now: datetime, why: str)
         later = now + timedelta(minutes=RETRY_MINUTES[row.attempts])
         await connection.execute(RETRY, {"id": row.id, "at": later, "why": why[:300]})
         return "retrying"
-    await _done(connection, row.id, f"no salió tras {row.attempts + 1} intentos: {why}"[:300])
+    await _done(
+        connection, row.id, f"did not go out after {row.attempts + 1} attempts: {why}"[:300]
+    )
     return "sent"
 
 
@@ -607,7 +612,7 @@ async def _one(
 ) -> str:
     state = enabled.get((row.app, row.kind))
     if not state:
-        why = "apagado" if state is False else "su app ya no lo declara"
+        why = "apagado" if state is False else "its app no longer declares it"
         await _done(connection, row.id, why)
         return "skipped"
     if until is not None:
@@ -634,12 +639,12 @@ async def send_due(connection: AsyncConnection, now: datetime) -> dict[str, int]
         try:
             async with connection.begin_nested():
                 counts[await _one(connection, row, now, enabled, until)] += 1
-        except Exception as error:  # noqa: BLE001 - lo de un aviso no para a los demás
+        except Exception as error:  # noqa: BLE001 - one notification does not stop the rest
             print(
                 f"avisos · {row.id}: {type(error).__name__}: {error}", file=sys.stderr, flush=True
             )
             counts[
-                await _again(connection, row, now, f"falló al mandarlo: {type(error).__name__}")
+                await _again(connection, row, now, f"failed to send it: {type(error).__name__}")
             ] += 1
     return counts
 
@@ -664,7 +669,7 @@ async def send_once(now: datetime | None = None) -> dict[str, int]:
             with as_user(person):
                 async with engine().begin() as connection:
                     found = await send_due(connection, now)
-        except Exception as error:  # noqa: BLE001 - lo de una persona no para a las demás
+        except Exception as error:  # noqa: BLE001 - one person does not stop the rest
             print(
                 f"avisos · {person}: {type(error).__name__}: {error}", file=sys.stderr, flush=True
             )
@@ -681,6 +686,6 @@ async def loop() -> None:
                 found = await send_once()
                 if found["sent"] or found["retrying"]:
                     print(f"avisos · {found}", flush=True)
-            except Exception as error:  # noqa: BLE001 - los avisos no tumban el kernel
+            except Exception as error:  # noqa: BLE001 - notifications do not bring the kernel down
                 print(f"avisos · {type(error).__name__}: {error}", file=sys.stderr, flush=True)
         await asyncio.sleep(SEND_EVERY)

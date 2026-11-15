@@ -154,7 +154,7 @@ async def invite(space_id: UUID) -> InviteOut:
         if space is None:
             raise HTTPException(status_code=404, detail="no existe ese espacio")
         if space.role != "owner":
-            raise HTTPException(status_code=403, detail="solo quien es dueño del espacio invita")
+            raise HTTPException(status_code=403, detail="only the space's owner can invite")
         code = new_code()
         expires_at = await connection.scalar(
             text(
@@ -182,12 +182,12 @@ async def join(body: JoinIn) -> SpaceOut:
             )
         ).first()
         if invite is None:
-            raise HTTPException(status_code=404, detail="ese código no existe")
+            raise HTTPException(status_code=404, detail="that code does not exist")
         already = await describe(connection, user, invite.space_id)
         if already is not None:
             return already
         if invite.used_at is not None or invite.expired:
-            raise HTTPException(status_code=410, detail="ese código ya se usó o ha caducado")
+            raise HTTPException(status_code=410, detail="that code was already used or has expired")
         await connection.execute(
             text(
                 "update kernel.space_invites set used_at = now(), used_by = :user "
@@ -239,13 +239,11 @@ async def leave(space_id: UUID, member_id: UUID) -> None:
             raise HTTPException(status_code=404, detail="no existe ese espacio")
         target = next((m for m in space.members if m.user_id == member_id), None)
         if target is None:
-            raise HTTPException(status_code=404, detail="esa persona no está en el espacio")
+            raise HTTPException(status_code=404, detail="that person is not in the space")
         if member_id != user and space.role != "owner":
-            raise HTTPException(
-                status_code=403, detail="solo quien es dueño del espacio quita a alguien"
-            )
+            raise HTTPException(status_code=403, detail="only the space's owner can remove someone")
         if len(space.members) == 1:
-            raise HTTPException(status_code=409, detail="eres la única persona del espacio")
+            raise HTTPException(status_code=409, detail="you are the only person in the space")
         await connection.execute(
             text(
                 "update kernel.space_members set status = 'left', role = 'member', "

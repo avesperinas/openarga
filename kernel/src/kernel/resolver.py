@@ -45,7 +45,7 @@ class Abstained:
     name: str
     best_name: str | None
     best_confidence: float | None
-    reason: str = "por debajo del umbral"
+    reason: str = "below the threshold"
 
 
 @dataclass
@@ -161,7 +161,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         outcome = asyncio.run(_run())
-    except Exception as error:  # noqa: BLE001 - se traduce a un exit code, no se traga
+    except Exception as error:  # noqa: BLE001 - turned into an exit code, not swallowed
         print(f"pasada fallida: {type(error).__name__}: {error}", file=sys.stderr)
         return 1
 
@@ -172,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     for skipped in outcome.abstained:
         best = (
-            f"lo más parecido: {skipped.best_name!r} ({skipped.best_confidence})"
+            f"closest: {skipped.best_name!r} ({skipped.best_confidence})"
             if skipped.best_name
             else "nada parecido"
         )

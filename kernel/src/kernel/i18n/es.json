@@ -1,0 +1,19 @@
+{
+  "activity.days": "{active} de {days} días con actividad",
+  "entities.none": "sin entidades todavía",
+  "entities.week": "{count} esta semana",
+  "events.last_days": "últimos {days} días",
+  "events.none": "sin eventos todavía",
+  "events.since": "vs. ayer",
+  "events.total": "{total} en total",
+  "notifications.test": "Así te llegan los avisos.",
+  "today": "hoy",
+  "weekdays.short": "L M X J V S D",
+  "widget.activity": "Constancia",
+  "widget.entities": "Entidades",
+  "widget.entities_by_volume": "Entidades por volumen",
+  "widget.events": "Eventos",
+  "widget.events_by_weekday": "Por día de la semana",
+  "widget.events_trend": "Actividad",
+  "widget.version": "Versión desplegada"
+}

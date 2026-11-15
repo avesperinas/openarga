@@ -183,7 +183,7 @@ def normalise(raw: bytes) -> Image.Image:
         image = Image.open(io.BytesIO(raw))
         image.load()
     except Exception as error:
-        raise HTTPException(status_code=415, detail="no se pudo decodificar la imagen") from error
+        raise HTTPException(status_code=415, detail="the image could not be decoded") from error
 
     if image.format not in FORMATS:
         raise HTTPException(
@@ -318,7 +318,7 @@ def completed(entry: Uploaded, soft: bytes | None) -> Uploaded:
                     )["alpha"]
                     for theme, spec in THEMES.items()
                 }
-            except Exception:  # noqa: BLE001 - sin desenfocada legible, el cristal va opaco
+            except Exception:  # noqa: BLE001 - without a readable blurred copy, the glass is opaque
                 pass
     return entry
 
@@ -387,7 +387,7 @@ async def backfill(entry: Uploaded, who: str) -> None:
             await connection.execute(
                 COMPLETE, {"id": entry.id, "subject": who, "extra": json.dumps(extra)}
             )
-    except Exception as error:  # noqa: BLE001 - un relleno que falla no rompe la lista
+    except Exception as error:  # noqa: BLE001 - a failing fill does not break the list
         print(f"fondo {entry.id} sin variantes: {type(error).__name__}", flush=True)
     finally:
         BACKFILLS.pop(entry.id, None)
@@ -405,10 +405,10 @@ async def upload(
     if len(raw) > MAX_BYTES:
         raise HTTPException(
             status_code=413,
-            detail=f"la imagen pasa de {MAX_BYTES // (1024 * 1024)} MB",
+            detail=f"the image is over {MAX_BYTES // (1024 * 1024)} MB",
         )
     if not raw:
-        raise HTTPException(status_code=400, detail="no llegó ninguna imagen")
+        raise HTTPException(status_code=400, detail="no image arrived")
 
     identifier = secrets.token_urlsafe(12)
     made = await asyncio.to_thread(prepared, raw, identifier)

@@ -96,8 +96,8 @@ async def apply(
         if file.name in done:
             if done[file.name] != digest:
                 raise ChangedMigration(
-                    f"{module_id}/schema/{file.name} ya se aplicó y su contenido ha cambiado. "
-                    "Un fichero aplicado no se edita: el cambio va en uno nuevo."
+                    f"{module_id}/schema/{file.name} was already applied and its content changed. "
+                    "An applied file is not edited: the change goes in a new one."
                 )
             continue
 

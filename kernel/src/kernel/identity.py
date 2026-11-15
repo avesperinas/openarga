@@ -167,7 +167,7 @@ def match(left: Normalised, right: Normalised) -> Match | None:
         smaller, larger = sorted((left.distinctive, right.distinctive), key=len)
         if len(smaller) >= 2 and smaller <= larger:
             return Match(
-                "token_subset", 0.75, f"tokens propios {sorted(smaller)} contenidos en el otro"
+                "token_subset", 0.75, f"own tokens {sorted(smaller)} contained in the other"
             )
 
         if len(shared_distinctive) >= 2:

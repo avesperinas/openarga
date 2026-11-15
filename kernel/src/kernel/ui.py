@@ -10,6 +10,7 @@ from arga_tenancy import require_person
 from kernel.db import engine
 from kernel.subject import SUBJECT_HEADER, subject_of
 from kernel.widgets import BY_ID, CATALOGUE, KERNEL, KINDS, LIST_LIKE, RENDERERS
+from kernel.words import say
 
 router = APIRouter(tags=["ui"])
 
@@ -134,7 +135,7 @@ async def widget_catalogue() -> list[CatalogueEntry]:
         CatalogueEntry(
             source=KERNEL,
             id=widget.id,
-            title=widget.title,
+            title=say(f"widget.{widget.id}"),
             hue=widget.hue,
             kind=widget.kind,
             shape=widget.shape,

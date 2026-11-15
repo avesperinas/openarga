@@ -28,12 +28,12 @@ begin
     login_name := 'svc_' || module_id;
 
     if not exists (select 1 from pg_catalog.pg_roles where rolname = role_name) then
-        -- Sin login: el rol lleva los permisos, no las credenciales (ADR-0013).
+        -- No login: the role carries the permissions, not the credentials (ADR-0013).
         execute format('create role %I nologin', role_name);
     end if;
 
-    -- SET para poder aplicar las tablas como el módulo; INHERIT no, para que el kernel no lea
-    -- los datos de un módulo sin ponerse su rol a propósito.
+    -- SET so the tables can be applied as the module; not INHERIT, so the kernel does not
+    -- read a module's data without taking its role on purpose.
     execute format('grant %I to current_user with set true, inherit false', role_name);
 
     execute format('create schema if not exists %I', module_id);

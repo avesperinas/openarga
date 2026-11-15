@@ -475,12 +475,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         manifests = load_all(root)
     except InvalidManifest as error:
-        print(f"manifiesto inválido · {error}", file=sys.stderr)
+        print(f"invalid manifest · {error}", file=sys.stderr)
         return 1
 
     for manifest in manifests:
         print(f"ok  {manifest.id} {manifest.version}  scopes={manifest.scopes or '[]'}")
-    print(f"{len(manifests)} manifiesto(s) válido(s) en {root}/{MANIFEST_GLOB}")
+    print(f"{len(manifests)} valid manifest(s) in {root}/{MANIFEST_GLOB}")
     return 0
 
 

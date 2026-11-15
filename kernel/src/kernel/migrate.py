@@ -45,26 +45,26 @@ def upgrade(revision: str = "head") -> None:
 def main() -> int:
     try:
         stamped = asyncio.run(stamped_revision())
-    except Exception as error:  # noqa: BLE001 - sin base de datos no hay nada que decidir
+    except Exception as error:  # noqa: BLE001 - without a database there is nothing to decide
         print(
-            f"no se pudo leer la revisión aplicada: {type(error).__name__}: {error}",
+            f"could not read the applied revision: {type(error).__name__}: {error}",
             file=sys.stderr,
         )
         return 1
 
     if stamped is not None and stamped not in known_revisions():
         print(
-            f"la base de datos está en '{stamped}', que esta versión no conoce: es un "
-            f"rollback. No se migra y se arranca igual, porque el esquema nuevo tiene que "
-            f"servir al código anterior (principio 11).",
+            f"the database is at '{stamped}', which this version does not know: it is a "
+            f"rollback. Nothing is migrated and it starts anyway, because the newer schema must "
+            f"serve the previous code (principle 11).",
             file=sys.stderr,
         )
         return sealed.main(database_url())
 
     try:
         upgrade()
-    except Exception as error:  # noqa: BLE001 - se traduce a un exit code, no se traga
-        print(f"migración fallida: {type(error).__name__}: {error}", file=sys.stderr)
+    except Exception as error:  # noqa: BLE001 - turned into an exit code, not swallowed
+        print(f"migration failed: {type(error).__name__}: {error}", file=sys.stderr)
         return 1
     return sealed.main(database_url())
 

@@ -143,7 +143,7 @@ async def register(
         ).all()
         if taken:
             raise ServedElsewhere(
-                "; ".join(f"'{row.served}' ya lo sirve '{row.id}'" for row in taken)
+                "; ".join(f"'{row.served}' is already served by '{row.id}'" for row in taken)
             )
     clash = (
         (await connection.execute(VIEW_TAKEN, {"id": manifest.id, "view": manifest.ui.view}))
@@ -151,7 +151,7 @@ async def register(
         .all()
     )
     if clash:
-        raise ServedElsewhere(f"la dirección '{manifest.ui.view}' choca con '{', '.join(clash)}'")
+        raise ServedElsewhere(f"the address '{manifest.ui.view}' clashes with '{', '.join(clash)}'")
     await connection.execute(
         UPSERT,
         {
@@ -165,7 +165,7 @@ async def register(
     )
     moved = await backfill_module(connection, manifest.id)
     for table, rows in moved.items():
-        print(f"dueño      {table}: {rows} fila(s) de antes de M5")
+        print(f"owner      {table}: {rows} row(s) from before M5")
     await schemas.apply(connection, files, manifest.id)
     for table in await rls.enforce(connection, manifest.id):
         print(f"separado   {table}: cada persona ve lo suyo")
@@ -301,17 +301,17 @@ async def register_module(
 ) -> Registered:
     expected = registration_token()
     if not expected:
-        raise HTTPException(status_code=503, detail="el kernel no tiene MODULE_REGISTRATION_TOKEN")
+        raise HTTPException(status_code=503, detail="the kernel has no MODULE_REGISTRATION_TOKEN")
     if not hmac.compare_digest(x_module_token, expected):
-        raise HTTPException(status_code=401, detail="token de registro inválido")
+        raise HTTPException(status_code=401, detail="invalid registration token")
 
     try:
         manifest = Manifest.model_validate(body.manifest)
-    except Exception as error:  # noqa: BLE001 - pydantic y el validador propio, misma respuesta
-        raise HTTPException(status_code=422, detail=f"manifiesto inválido: {error}") from error
+    except Exception as error:  # noqa: BLE001 - pydantic and our own validator, same answer
+        raise HTTPException(status_code=422, detail=f"invalid manifest: {error}") from error
     if manifest.id != module_id:
         raise HTTPException(
-            status_code=422, detail=f"el manifiesto es de '{manifest.id}', no de '{module_id}'"
+            status_code=422, detail=f"the manifest is '{manifest.id}', not '{module_id}'"
         )
 
     files = [schemas.SchemaFile(file.name, file.sql) for file in body.schema_files]
@@ -323,7 +323,7 @@ async def register_module(
             raise HTTPException(status_code=409, detail=str(error)) from error
         after = set((await connection.execute(schemas.APPLIED, {"module": module_id})).scalars())
         for stale in await disable_stale(connection, heartbeat_days()):
-            print(f"apagado    {stale}: lleva días sin registrarse")
+            print(f"disabled   {stale}: it has not registered for days")
     return Registered(id=module_id, version=body.version, applied=sorted(after - before))
 
 
@@ -353,15 +353,15 @@ def main(argv: list[str] | None = None) -> int:
     try:
         manifests = asyncio.run(_sync_from_disk(root))
     except InvalidManifest as error:
-        print(f"manifiesto inválido · {error}", file=sys.stderr)
+        print(f"invalid manifest · {error}", file=sys.stderr)
         return 1
-    except Exception as error:  # noqa: BLE001 - se traduce a un exit code, no se traga
-        print(f"sincronización fallida: {type(error).__name__}: {error}", file=sys.stderr)
+    except Exception as error:  # noqa: BLE001 - turned into an exit code, not swallowed
+        print(f"sync failed: {type(error).__name__}: {error}", file=sys.stderr)
         return 1
 
     for manifest in manifests:
-        print(f"registrado  {manifest.id} {manifest.version}  scopes={manifest.scopes or '[]'}")
-    print(f"{len(manifests)} módulo(s) en kernel.modules desde {root}")
+        print(f"registered  {manifest.id} {manifest.version}  scopes={manifest.scopes or '[]'}")
+    print(f"{len(manifests)} module(s) in kernel.modules from {root}")
     return 0
 
 

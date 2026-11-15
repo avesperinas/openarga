@@ -32,17 +32,17 @@ begin
     login_name := 'svc_' || module_id;
 
     if not exists (select 1 from pg_catalog.pg_roles where rolname = role_name) then
-        -- Sin login: el rol lleva los permisos, no las credenciales (ADR-0013).
+        -- No login: the role carries the permissions, not the credentials (ADR-0013).
         execute format('create role %I nologin', role_name);
     end if;
 
-    -- SET para poder aplicar las tablas como el módulo; INHERIT no, para que el kernel no lea
-    -- los datos de un módulo sin ponerse su rol a propósito.
+    -- SET so the tables can be applied as the module; not INHERIT, so the kernel does not
+    -- read a module's data without taking its role on purpose.
     execute format('grant %I to current_user with set true, inherit false', role_name);
 
-    -- El rol del scope de lectura: lo mismo que ve el módulo, sin poder cambiar nada. Las
-    -- tablas se le conceden al aplicarlas, como el dueño (kernel.schemas); aquí, lo que es del
-    -- kernel: el schema y la vista de eventos.
+    -- The read scope's role: what the module sees, without changing anything. Tables are
+    -- granted to it when applied, like the owner (kernel.schemas); here, what belongs to the
+    -- kernel: the schema and the events view.
     if not exists (select 1 from pg_catalog.pg_roles where rolname = reader_name) then
         execute format('create role %I nologin', reader_name);
     end if;
@@ -76,20 +76,21 @@ begin
     execute format('revoke all on schema kernel from %I', reader_name);
     execute format('revoke all on all tables in schema kernel from %I', reader_name);
 
-    -- Lo suyo y lo que declara consumir de Hub, que es lo que el kernel validó al
-    -- registrar el manifiesto (ADR-0045). Sale de `kernel.modules` y no de un argumento: la firma
-    -- no cambia, y el kernel anterior, que la llama igual, deja la misma vista.
+    -- Its own events and what it declares to consume from Hub, as the kernel validated when
+    -- registering the manifest (ADR-0045). It comes from `kernel.modules`, not an argument: the
+    -- signature does not change, and the previous kernel, calling it the same way, gets
+    -- the same view.
     select coalesce(array_agg(consumed), '{}')
     into consumes
     from kernel.modules m,
          jsonb_array_elements_text(coalesce(m.manifest->'consumes', '[]'::jsonb)) as consumed
     where m.id = module_id;
 
-    -- Y los contratos que recibe (ADR-0081): los eventos de cualquier app cuyo manifiesto dice que
-    -- ese tipo suyo cumple uno de ellos. Se resuelve al leer, no al aprovisionar: una app que
-    -- empieza a publicar un contrato aparece en las vistas de quien lo recibe sin
-    -- reaprovisionarlas, y la que deja de declararlo desaparece igual. Quien no recibe nada queda
-    -- con la misma vista.
+    -- And the contracts it receives (ADR-0081): events of any app whose manifest says one of its
+    -- types meets one of them. Resolved at read time, not at provisioning: an app that starts
+    -- publishing a contract appears in the views of whoever receives it without reprovisioning,
+    -- and one that stops declaring it disappears the same way. A module that receives nothing
+    -- keeps the same view.
     select coalesce(array_agg(received), '{}')
     into receives
     from kernel.modules m,

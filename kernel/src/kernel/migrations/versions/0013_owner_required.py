@@ -48,8 +48,9 @@ begin
         select id into owner from kernel.users;
 {updates}
     elsif {checks} then
-        raise exception 'hay filas del kernel sin dueño y % persona(s): no se puede saber de quién '
-                        'son (ADR-0028). Hay que dárselas a mano antes de migrar.', people;
+        raise exception 'there are kernel rows without an owner and % person(s): '
+                        'it is not known whose they are (ADR-0028). '
+                        'Assign them by hand before migrating.', people;
     end if;
 end $$
 """

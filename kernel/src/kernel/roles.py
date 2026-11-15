@@ -65,7 +65,7 @@ class Report:
 
 def _quote_ident(name: str) -> str:
     if not ROLE_NAME.fullmatch(name):
-        raise ValueError(f"nombre de rol inválido: {name!r}")
+        raise ValueError(f"invalid role name: {name!r}")
     return f'"{name}"'
 
 
@@ -87,12 +87,12 @@ async def _ensure_login(
             text("select rolpassword from pg_authid where rolname = :name"), {"name": name}
         )
         if verifies(password, stored):
-            report.say(f"sin cambios  {name}")
+            report.say(f"unchanged    {name}")
             return
-        action = "contraseña   "
+        action = "password     "
     else:
         await connection.execute(text(f"create role {role} {attributes}"))
-        action = "creado       "
+        action = "created      "
     verifier = scram_verifier(password).replace("'", "''")
     await connection.exec_driver_sql(f"alter role {role} password '{verifier}'")
     report.say(f"{action}{name}")
@@ -114,7 +114,7 @@ TRANSFERABLE = text("""
         join pg_namespace n on n.oid = c.relnamespace
         where c.relkind in ('r', 'p', 'v', 'm', 'f', 'S')
           and c.relowner = (select oid from pg_roles where rolname = current_user)
-          -- Una secuencia de identidad cambia de dueño con su tabla; tocarla aparte es un error.
+          -- An identity sequence changes owner with its table; touching it apart is an error.
           and not exists (
               select 1 from pg_depend d
               where d.objid = c.oid and d.classid = 'pg_class'::regclass and d.deptype in ('a', 'i')
@@ -145,13 +145,13 @@ async def _transfer_ownership(
         )
         if owned_by_admin:
             await connection.execute(text(f'alter schema "{schema}" owner to {role}'))
-            report.say(f"propiedad    schema {schema}")
+            report.say(f"ownership    schema {schema}")
 
     targets = (await connection.execute(TRANSFERABLE, {"schemas": schemas})).scalars().all()
     for target in targets:
         await connection.execute(text(f"alter {target} owner to {role}"))
     if targets:
-        report.say(f"propiedad    {len(targets)} objeto(s) de {', '.join(schemas)}")
+        report.say(f"ownership    {len(targets)} object(s) of {', '.join(schemas)}")
 
 
 async def bootstrap(
@@ -167,9 +167,7 @@ async def bootstrap(
     if not await connection.scalar(
         text("select rolsuper from pg_roles where rolname = current_user")
     ):
-        raise PermissionError(
-            "kernel.roles necesita una conexión de superusuario en ADMIN_DATABASE_URL"
-        )
+        raise PermissionError("kernel.roles needs a superuser connection in ADMIN_DATABASE_URL")
 
     await _ensure_login(
         connection,
@@ -203,7 +201,7 @@ async def bootstrap(
         password = module_passwords[module_id]
         login = login_for(module_id)
         if not password:
-            report.say(f"sin login    {login}: falta {password_variable(module_id)}")
+            report.say(f"no login     {login}: {password_variable(module_id)} is missing")
             continue
         await _ensure_login(
             connection,
@@ -231,7 +229,7 @@ async def bootstrap(
         )
         await connection.execute(text(f'alter schema "{AUTH_SCHEMA}" owner to {owner}'))
     else:
-        report.say(f"sin login    {AUTH_USER}: falta AUTH_DB_PASSWORD")
+        report.say(f"no login     {AUTH_USER}: AUTH_DB_PASSWORD is missing")
 
     if backup_password:
         await _ensure_login(
@@ -243,7 +241,7 @@ async def bootstrap(
         )
         await connection.execute(text(f"grant pg_read_all_data to {_quote_ident(BACKUP_USER)}"))
     else:
-        report.say(f"sin login    {BACKUP_USER}: falta BACKUP_DB_PASSWORD")
+        report.say(f"no login     {BACKUP_USER}: BACKUP_DB_PASSWORD is missing")
 
     return report
 
@@ -311,7 +309,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         report = asyncio.run(_run(admin_url, kernel_user, kernel_password, root))
-    except Exception as error:  # noqa: BLE001 - se traduce a un exit code, no se traga
+    except Exception as error:  # noqa: BLE001 - turned into an exit code, not swallowed
         print(f"roles: {type(error).__name__}: {error}", file=sys.stderr)
         return 1
 

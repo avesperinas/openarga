@@ -108,7 +108,7 @@ async def test_the_counters_count_once_there_is_something(api) -> None:
     assert events["state"] == "ready"
     assert events["body"]["previous"] is not None
     assert events["body"]["good_when"] == "up"
-    assert "8 en total" in events["body"]["detail"]
+    assert "8 in total" in events["body"]["detail"]
     assert entities["state"] == "ready"
     assert entities["body"]["value"] == 5
 
@@ -125,7 +125,7 @@ async def test_the_series_come_dense_with_zeros_and_not_with_holes(api) -> None:
         assert all(isinstance(point, int) for point in trend["body"]["series"])
     if weekday["state"] == "ready":
         assert len(weekday["body"]["series"]) == 7
-        assert weekday["body"]["labels"] == ["L", "M", "X", "J", "V", "S", "D"]
+        assert weekday["body"]["labels"] == ["M", "T", "W", "T", "F", "S", "S"]
         assert 0 <= weekday["body"]["highlight"] <= 6
     if activity["state"] == "ready":
         assert len(activity["body"]["values"]) == 56
