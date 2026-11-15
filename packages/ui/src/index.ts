@@ -375,8 +375,9 @@ export { Skeleton } from "./controls";
 export { RecurrencePicker } from "./recurrence-picker";
 export type { RecurrencePickerProps } from "./recurrence-picker";
 export {
-  DAY_NAMES,
-  MONTH_NAMES,
+  dayName,
+  monthName,
+  ordinal,
   WEEKDAYS,
   describe as describeRecurrence,
   fromRRule,

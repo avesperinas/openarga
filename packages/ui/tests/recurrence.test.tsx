@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { configureRegional } from "../src/regional";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -21,6 +22,15 @@ const PHRASES: { rrule: string; en: string; es: string }[] = JSON.parse(
 describe("la frase dice lo mismo que en Python", () => {
   it.each(PHRASES)("$rrule", ({ rrule, es }) => {
     expect(describeRecurrence(fromRRule(rrule))).toBe(es);
+  });
+
+  it.each(PHRASES)("in English: $rrule", ({ rrule, en }) => {
+    configureRegional({ locale: "en-US" });
+    try {
+      expect(describeRecurrence(fromRRule(rrule))).toBe(en);
+    } finally {
+      configureRegional({ locale: "es-ES" });
+    }
   });
 });
 

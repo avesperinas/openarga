@@ -1,3 +1,6 @@
+import type { Vars } from "./i18n";
+import { say } from "./words";
+
 export type Freq = "daily" | "weekly" | "monthly" | "yearly";
 export type Weekday = "MO" | "TU" | "WE" | "TH" | "FR" | "SA" | "SU";
 
@@ -18,48 +21,14 @@ export interface RecurrenceRule {
   until?: string;
 }
 
-export const DAY_NAMES: Record<Weekday, { one: string; many: string; short: string }> = {
-  MO: { one: "lunes", many: "lunes", short: "L" },
-  TU: { one: "martes", many: "martes", short: "M" },
-  WE: { one: "miércoles", many: "miércoles", short: "X" },
-  TH: { one: "jueves", many: "jueves", short: "J" },
-  FR: { one: "viernes", many: "viernes", short: "V" },
-  SA: { one: "sábado", many: "sábados", short: "S" },
-  SU: { one: "domingo", many: "domingos", short: "D" },
-};
+const word = (key: string, vars?: Vars): string => say(`recurrence.${key}`, vars);
 
-export const MONTH_NAMES = [
-  "enero",
-  "febrero",
-  "marzo",
-  "abril",
-  "mayo",
-  "junio",
-  "julio",
-  "agosto",
-  "septiembre",
-  "octubre",
-  "noviembre",
-  "diciembre",
-] as const;
+export const dayName = (weekday: Weekday, form: "one" | "many" | "short" = "one"): string =>
+  word(`day.${weekday}.${form}`);
 
-export const ORDINALS: Record<number, string> = {
-  1: "primer",
-  2: "segundo",
-  3: "tercer",
-  4: "cuarto",
-  5: "quinto",
-  [-1]: "último",
-  [-2]: "penúltimo",
-  [-3]: "antepenúltimo",
-};
+export const monthName = (month: number): string => word(`month.${month}`);
 
-const UNITS: Record<Freq, { one: string; many: string }> = {
-  daily: { one: "cada día", many: "días" },
-  weekly: { one: "cada semana", many: "semanas" },
-  monthly: { one: "cada mes", many: "meses" },
-  yearly: { one: "cada año", many: "años" },
-};
+export const ordinal = (pos: number): string => word(`ordinal.${pos}`);
 
 const WORKWEEK: Weekday[] = ["MO", "TU", "WE", "TH", "FR"];
 
@@ -118,7 +87,7 @@ export function fromRRule(text: string): RecurrenceRule {
   const list = (key: string) => (fields.get(key) ?? "").split(",").filter(Boolean);
   const byDay = list("BYDAY").map((item): RecurrenceDay => {
     const weekday = item.slice(-2).toUpperCase() as Weekday;
-    if (!WEEKDAYS.includes(weekday)) throw new Error(`día desconocido: ${item}`);
+    if (!WEEKDAYS.includes(weekday)) throw new Error(`unknown day: ${item}`);
     const pos = item.slice(0, -2);
     return pos ? { weekday, pos: Number(pos) } : { weekday };
   });
@@ -137,58 +106,59 @@ export function fromRRule(text: string): RecurrenceRule {
 
 function join(items: string[]): string {
   if (items.length <= 1) return items.join("");
-  return `${items.slice(0, -1).join(", ")} y ${items[items.length - 1]}`;
+  return items.slice(0, -1).join(", ") + word("and") + items[items.length - 1];
 }
 
 function monthDayPhrase(days: number[]): string {
   const ordered = orderMonthDays(days);
   if (ordered.every((d) => d > 0)) {
-    return ordered.length === 1 ? `el día ${ordered[0]}` : `los días ${join(ordered.map(String))}`;
+    return ordered.length === 1
+      ? word("month_day.one", { day: ordered[0]! })
+      : word("month_day.many", { days: join(ordered.map(String)) });
   }
-  return join(ordered.map((d) => (d > 0 ? `el día ${d}` : `el ${ORDINALS[d]} día`)));
+  return join(ordered.map((d) => (d > 0 ? word("month_day.one", { day: d }) : word("month_day.from_end", { ordinal: ordinal(d) }))));
 }
 
 function positioned(days: RecurrenceDay[]): string {
-  return join(orderDays(days).map((d) => `el ${ORDINALS[d.pos ?? 1]} ${DAY_NAMES[d.weekday].one}`));
+  return join(orderDays(days).map((d) => word("positioned", { ordinal: ordinal(d.pos ?? 1), day: dayName(d.weekday) })));
 }
 
 export function describe(value: RecurrenceRule): string {
-  const unit = UNITS[value.freq];
-  let parts = [value.interval === 1 ? unit.one : `cada ${value.interval} ${unit.many}`];
+  let parts = [value.interval === 1 ? word(`every.${value.freq}`) : word(`every_n.${value.freq}`, { n: value.interval })];
   const weekdays = orderDays(value.byDay).map((d) => d.weekday);
 
   if (value.freq === "weekly" && weekdays.length) {
     if (value.interval === 1 && weekdays.join() === WORKWEEK.join()) {
-      parts = ["de lunes a viernes"];
+      parts = [word("workweek")];
     } else if (weekdays.length === 1) {
-      parts.push(`el ${DAY_NAMES[weekdays[0]!].one}`);
+      parts.push(word("weekly.one", { day: dayName(weekdays[0]!) }));
     } else {
-      parts.push(join(weekdays.map((d) => DAY_NAMES[d].one)));
+      parts.push(join(weekdays.map((d) => dayName(d))));
     }
   } else if (value.freq === "monthly") {
     if (value.byMonthDay.length) parts.push(monthDayPhrase(value.byMonthDay));
     else if (value.byDay.length && value.byDay[0]!.pos !== undefined) parts.push(positioned(value.byDay));
-    else if (value.byDay.length) parts.push(`los ${join(weekdays.map((d) => DAY_NAMES[d].many))}`);
+    else if (value.byDay.length) parts.push(word("monthly.weekdays", { days: join(weekdays.map((d) => dayName(d, "many"))) }));
   } else if (value.freq === "yearly" && value.byMonth.length) {
-    const months = join([...value.byMonth].sort((a, b) => a - b).map((m) => MONTH_NAMES[m - 1]!));
+    const months = join([...value.byMonth].sort((a, b) => a - b).map(monthName));
     if (value.byMonthDay.length) {
       const ordered = orderMonthDays(value.byMonthDay);
       parts.push(
         ordered.length === 1 && ordered[0]! > 0
-          ? `el ${ordered[0]} de ${months}`
-          : `${monthDayPhrase(value.byMonthDay)} de ${months}`,
+          ? word("yearly.date", { day: ordered[0]!, month: months })
+          : word("yearly.of", { what: monthDayPhrase(value.byMonthDay), months }),
       );
     } else if (value.byDay.length) {
-      parts.push(`${positioned(value.byDay)} de ${months}`);
+      parts.push(word("yearly.of", { what: positioned(value.byDay), months }));
     } else {
-      parts.push(`en ${months}`);
+      parts.push(word("yearly.in", { months }));
     }
   }
 
-  if (value.count !== undefined) parts.push(value.count === 1 ? "una vez" : `${value.count} veces`);
+  if (value.count !== undefined) parts.push(value.count === 1 ? word("count.one") : word("count.many", { count: value.count }));
   if (value.until !== undefined) {
     const [year, month, day] = value.until.slice(0, 10).split("-").map(Number);
-    parts.push(`hasta el ${day} de ${MONTH_NAMES[month! - 1]} de ${year}`);
+    parts.push(word("until", { date: word("date", { day: day!, month: monthName(month!), year: year! }) }));
   }
   return parts.join(", ");
 }
