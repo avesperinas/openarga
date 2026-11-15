@@ -262,6 +262,9 @@ importers:
 
   modules/money/ui:
     dependencies:
+      '@openarga/app':
+        specifier: workspace:*
+        version: link:../../../packages/app
       '@openarga/ui':
         specifier: workspace:*
         version: link:../../../packages/ui
