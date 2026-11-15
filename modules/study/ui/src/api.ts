@@ -357,7 +357,7 @@ async function upload<T>(path: string, file: Blob, method = "POST"): Promise<T> 
     headers: { "content-type": file.type || "application/octet-stream", accept: "application/json" },
     body: file,
   });
-  if (response.status === 401) throw new Unauthorised("sin sesión");
+  if (response.status === 401) throw new Unauthorised("no session");
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new Error(problemOf(body) ?? `${path}: ${response.status}`);

@@ -9,6 +9,7 @@ import { ScreenHeader } from "./Header";
 import { NoteList } from "./Notes";
 import { AssessmentSheet, GradeSheet, MaterialSheet, RecordSheet, ScheduleSheet, SessionSheet, SubjectSheet } from "./Sheets";
 import { grade, hhmm, plural } from "./words";
+import { intl, t } from "./lang";
 
 type Open =
   | { sheet: "edit" }
@@ -36,7 +37,7 @@ export function SubjectScreen({ id }: { id: string }) {
   if (!data) {
     return (
       <Screen>
-        <ScreenHeader back={{ label: "Study", onClick: () => navigate({ tab: "home" }) }} />
+        <ScreenHeader back={{ label: t("app.name"), onClick: () => navigate({ tab: "home" }) }} />
         <OfflineNotice />
         <Problem text={problem} />
         <Pending found={found} />
@@ -58,7 +59,7 @@ export function SubjectScreen({ id }: { id: string }) {
       <ScreenHeader
         back={{ label: course.name, onClick: () => navigate({ tab: "course", id: course.id }) }}
         eyebrow={[
-          subject.credits ? `${grade(subject.credits, 100)} créditos` : null,
+          subject.credits ? t("subject.credits", { credits: grade(subject.credits, 100) }) : null,
           subject.period,
           subject.teacher,
         ]
@@ -73,10 +74,10 @@ export function SubjectScreen({ id }: { id: string }) {
         <GradeMeter grade={subject.grade} scale={course.scale_max} passMark={course.pass_mark} tone={course.tone} />
         <div className="study-row-actions">
           <Button variant="tinted" size="small" icon="plus" onClick={() => setOpen({ sheet: "assessment", assessment: null })}>
-            Evaluable
+            {t("assessment.one")}
           </Button>
           <Button variant="secondary" size="small" onClick={() => setOpen({ sheet: "record" })}>
-            {subject.final_grade === null ? "Nota de acta" : `Acta: ${grade(subject.final_grade, course.scale_max)}`}
+            {subject.final_grade === null ? t("meter.record") : t("subject.record_is", { grade: grade(subject.final_grade, course.scale_max) })}
           </Button>
         </div>
       </section>
@@ -84,9 +85,9 @@ export function SubjectScreen({ id }: { id: string }) {
       {next && (
         <List>
           <ListRow
-            title="Próxima clase"
+            title={t("subject.next_session")}
             subtitle={[
-              new Date(next.starts_at).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }),
+              new Date(next.starts_at).toLocaleDateString(intl(), { weekday: "long", day: "numeric", month: "long" }),
               hhmm(new Date(next.starts_at).toTimeString()),
               next.place,
             ]
@@ -108,9 +109,9 @@ export function SubjectScreen({ id }: { id: string }) {
       />
 
       <Section
-        title="Clases"
+        title={t("sessions.title")}
         count={data.sessions.length}
-        action={{ label: data.schedules.length ? "Sesión suelta" : "Horario", icon: "plus", onClick: () => setOpen(data.schedules.length ? { sheet: "session" } : { sheet: "schedule", schedule: null }) }}
+        action={{ label: data.schedules.length ? t("sessions.one_off") : t("schedule.title"), icon: "plus", onClick: () => setOpen(data.schedules.length ? { sheet: "session" } : { sheet: "schedule", schedule: null }) }}
       >
         {data.schedules.length > 0 && (
           <List>
@@ -118,7 +119,7 @@ export function SubjectScreen({ id }: { id: string }) {
               <ListRow
                 key={block.id}
                 title={block.phrase.charAt(0).toUpperCase() + block.phrase.slice(1)}
-                subtitle={[`de ${hhmm(block.start_time)} a ${hhmm(block.end_time)}`, block.place].filter(Boolean).join(" · ")}
+                subtitle={[t("schedule.from_to", { from: hhmm(block.start_time), to: hhmm(block.end_time) }), block.place].filter(Boolean).join(" · ")}
                 icon="repeat"
                 accessory="edit"
                 onClick={() => setOpen({ sheet: "schedule", schedule: block })}
@@ -128,25 +129,25 @@ export function SubjectScreen({ id }: { id: string }) {
         )}
         {marked.length > 0 && (
           <p className="study-muted">
-            Asistencia: {present} de {plural(marked.length, "clase pasada", "clases pasadas")}
-            {marked.length - present - marked.filter((s) => s.attendance === "absent").length > 0 &&
-              ` · ${marked.filter((s) => s.attendance === null).length} sin marcar`}
+            {t("subject.attendance", { present, of: plural(marked.length, "subject.past_sessions") })}
+            {marked.filter((s) => s.attendance === null).length > 0 &&
+              ` · ${t("subject.unmarked", { count: marked.filter((s) => s.attendance === null).length })}`}
           </p>
         )}
         {data.sessions.length === 0 ? (
-          <p className="study-muted">Sin clases. Añade su horario y salen todas las del periodo.</p>
+          <p className="study-muted">{t("sessions.empty")}</p>
         ) : (
           <>
             <SessionList inSubject sessions={future.slice(0, allClasses ? undefined : 4)} onOpen={(s) => navigate({ tab: "session", id: s.id })} />
             {past.length > 0 && (
               <>
-                <GroupLabel>Ya pasaron</GroupLabel>
+                <GroupLabel>{t("sessions.past")}</GroupLabel>
                 <SessionList inSubject sessions={past.slice(0, allClasses ? undefined : 4)} onOpen={(s) => navigate({ tab: "session", id: s.id })} />
               </>
             )}
             {(future.length > 4 || past.length > 4) && (
               <Button variant="plain" size="small" onClick={() => setAllClasses(!allClasses)}>
-                {allClasses ? "Ver menos" : `Ver las ${data.sessions.length}`}
+                {allClasses ? t("action.see_less") : t("sessions.see_all", { count: data.sessions.length })}
               </Button>
             )}
           </>
@@ -154,20 +155,20 @@ export function SubjectScreen({ id }: { id: string }) {
       </Section>
 
       <Section
-        title="Apuntes"
+        title={t("notes.title")}
         count={data.notes.length}
-        action={{ label: "Nuevos", icon: "plus", onClick: () =>
+        action={{ label: t("action.new"), icon: "plus", onClick: () =>
               void api
                 .addNote({ course_id: course.id, subject_id: subject.id, title: "" })
                 .then((note) => navigate({ tab: "note", id: note.id }))
                 .catch(fail) }}
       >
         {data.notes_unavailable ? (
-          <Notice tone="warning" title="Los apuntes no contestan ahora">
+          <Notice tone="warning" title={t("notes.unavailable")}>
             {data.notes_unavailable}
           </Notice>
         ) : data.notes.length === 0 ? (
-          <p className="study-muted">Los de cada clase salen aquí, y también los sueltos de la asignatura.</p>
+          <p className="study-muted">{t("notes.subject_empty")}</p>
         ) : (
           <NoteList notes={data.notes} showCourse={false} />
         )}
@@ -181,10 +182,10 @@ export function SubjectScreen({ id }: { id: string }) {
 
       <footer className="study-footer-actions">
         <Button variant="secondary" icon="edit" onClick={() => setOpen({ sheet: "edit" })}>
-          Editar asignatura
+          {t("subject.edit")}
         </Button>
         <Button variant="plain" onClick={() => setOpen({ sheet: "delete" })}>
-          Borrar asignatura
+          {t("subject.delete")}
         </Button>
       </footer>
 
@@ -196,10 +197,10 @@ export function SubjectScreen({ id }: { id: string }) {
       )}
       {open?.sheet === "delete" && (
         <ConfirmDelete
-          title="¿Borrar esta asignatura?"
+          title={t("subject.delete_title")}
           subject={subject.name}
-          consequence="Se borran sus clases, sus evaluables con sus notas y sus apuntes."
-          action="Borrar asignatura"
+          consequence={t("subject.delete_consequence")}
+          action={t("subject.delete")}
           onCancel={() => setOpen(null)}
           onConfirm={async () => {
             await api.deleteSubject(subject.id);
@@ -225,10 +226,10 @@ export function SubjectScreen({ id }: { id: string }) {
       )}
       {open?.sheet === "delete-assessment" && (
         <ConfirmDelete
-          title="¿Borrar este evaluable?"
+          title={t("assessment.delete_title")}
           subject={open.assessment.title}
-          consequence={open.assessment.grade !== null ? "Se pierde su nota y deja de contar." : undefined}
-          action="Borrar evaluable"
+          consequence={open.assessment.grade !== null ? t("assessment.delete_consequence") : undefined}
+          action={t("assessment.delete")}
           onCancel={() => setOpen(null)}
           onConfirm={async () => {
             await api.deleteAssessment(open.assessment.id);
@@ -272,9 +273,9 @@ export function SubjectScreen({ id }: { id: string }) {
       )}
       {open?.sheet === "delete-material" && (
         <ConfirmDelete
-          title="¿Quitar este material?"
+          title={t("material.delete_title")}
           subject={open.material.title}
-          action="Quitar material"
+          action={t("material.delete")}
           onCancel={() => setOpen(null)}
           onConfirm={async () => {
             await api.deleteMaterial(open.material.id);

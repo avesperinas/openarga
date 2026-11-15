@@ -54,6 +54,7 @@ import {
   verdictLabel,
   verdictTone,
 } from "./words";
+import { intl, t } from "./lang";
 
 interface Loaded {
   detail: CourseDetail;
@@ -127,8 +128,8 @@ export function CourseScreen({ id, section }: { id: string; section: CourseTab }
       <ScreenHeader
         back={
           closed
-            ? { label: "Archivo", onClick: () => navigate({ tab: "archive" }) }
-            : { label: "Study", onClick: () => navigate({ tab: "home" }) }
+            ? { label: t("archive.title"), onClick: () => navigate({ tab: "archive" }) }
+            : { label: t("app.name"), onClick: () => navigate({ tab: "home" }) }
         }
         eyebrow={eyebrow}
         title={course.name}
@@ -136,20 +137,20 @@ export function CourseScreen({ id, section }: { id: string; section: CourseTab }
       <OfflineNotice />
       <Problem text={problem} />
 
-      <section className="study-hero" data-tone={course.tone} aria-label="Resumen">
+      <section className="study-hero" data-tone={course.tone} aria-label={t("course.summary")}>
         <div className="study-hero-facts">
           <span>
             {[
               period(course.starts_on, course.ends_on),
               labelOf(MODALITIES, course.modality),
-              `de 0 a ${grade(course.scale_max, 100)}, aprobado ${grade(course.pass_mark, course.scale_max)}`,
+              t("course.scale_pass", { max: grade(course.scale_max, 100), pass: grade(course.pass_mark, course.scale_max) }),
             ]
               .filter(Boolean)
               .join(" · ")}
           </span>
           {closed && (
             <Badge tone={course.status === "finished" ? "positive" : "neutral"}>
-              {course.status === "finished" ? "Terminado" : "Abandonado"}
+              {course.status === "finished" ? t("archive.finished") : t("archive.abandoned")}
               {course.closed_on && ` · ${dateShort(course.closed_on)}`}
             </Badge>
           )}
@@ -158,37 +159,37 @@ export function CourseScreen({ id, section }: { id: string; section: CourseTab }
         <dl className="study-figures">
           {course.tracks.includes("grades") && (
           <div className="study-figure">
-            <dt>Media</dt>
+            <dt>{t("home.average_label")}</dt>
             <dd className="study-figure-value">{grade(average, course.scale_max)}</dd>
             <dd className="study-figure-foot">
               {course.average.subjects
                 ? average === null && provisional !== null
-                  ? `Provisional ${grade(provisional, course.scale_max)}`
-                  : `${course.average.counted} de ${plural(course.average.subjects, "asignatura", "asignaturas")}`
+                  ? t("course.provisional", { grade: grade(provisional, course.scale_max) })
+                  : t("course.counted_of", { counted: course.average.counted, of: plural(course.average.subjects, "subjects.count") })
                 : course.grade?.verdict === "empty"
-                  ? "Sin evaluables"
-                  : "De lo calificado"}
+                  ? t("verdict.empty")
+                  : t("course.of_graded")}
             </dd>
           </div>
           )}
           {course.tracks.includes("progress") && (
           <div className="study-figure">
-            <dt>Progreso</dt>
+            <dt>{t("track.progress")}</dt>
             <dd className="study-figure-value">{course.progress ? percent(course.progress.ratio * 100) : "—"}</dd>
-            <dd className="study-figure-foot">{course.progress?.label ?? "Sin créditos ni horas"}</dd>
+            <dd className="study-figure-foot">{course.progress?.label ?? t("course.no_credits")}</dd>
           </div>
           )}
           {course.tracks.includes("attendance") && (
           <div className="study-figure">
-            <dt>Asistencia</dt>
+            <dt>{t("track.attendance")}</dt>
             <dd className="study-figure-value">
               {course.attendance.ratio === null ? "—" : percent(course.attendance.ratio * 100)}
             </dd>
             <dd className="study-figure-foot">
               {course.attendance.past
-                ? `${course.attendance.present} de ${course.attendance.present + course.attendance.absent}` +
-                  (course.attendance.unmarked ? ` · ${course.attendance.unmarked} sin marcar` : "")
-                : "Aún ninguna clase"}
+                ? t("course.attended", { present: course.attendance.present, of: course.attendance.present + course.attendance.absent }) +
+                  (course.attendance.unmarked ? ` · ${t("subject.unmarked", { count: course.attendance.unmarked })}` : "")
+                : t("course.no_sessions_yet")}
             </dd>
           </div>
           )}
@@ -199,7 +200,7 @@ export function CourseScreen({ id, section }: { id: string; section: CourseTab }
           {course.campus_url && (
             <a className="button" data-variant="tinted" href={course.campus_url} target="_blank" rel="noreferrer">
               <Icon name="arrow-right" />
-              <span className="button-label">Campus</span>
+              <span className="button-label">{t("field.campus_short")}</span>
             </a>
           )}
           {course.has_certificate && course.certificate_name && (
@@ -209,7 +210,7 @@ export function CourseScreen({ id, section }: { id: string; section: CourseTab }
             </a>
           )}
           <Button variant="secondary" icon="edit" onClick={() => setOpen({ sheet: "edit" })}>
-            Editar
+            {t("action.edit")}
           </Button>
         </div>
       </section>
@@ -220,7 +221,7 @@ export function CourseScreen({ id, section }: { id: string; section: CourseTab }
             {assessments.length > 0 && (
               <div id="estudio-assessments">
                 <AssessmentsSection
-                  title="Tareas y exámenes"
+                  title={t("course.tasks_exams")}
                   assessments={assessments}
                   onOpen={(assessment) => setOpen({ sheet: "assessment", assessment })}
                   onGrade={(assessment) => setOpen({ sheet: "grade", assessment })}
@@ -264,10 +265,10 @@ export function CourseScreen({ id, section }: { id: string; section: CourseTab }
             </div>
           </>
         }
-        asideLabel="Apuntes y materiales"
+        asideLabel={t("course.notes_materials")}
       />
 
-      {!closed && <CreateButton label="Apuntar" onClick={() => setAdding(true)} />}
+      {!closed && <CreateButton label={t("home.add")} onClick={() => setAdding(true)} />}
 
       <footer className="study-footer-actions">
         {closed ? (
@@ -323,10 +324,10 @@ export function CourseScreen({ id, section }: { id: string; section: CourseTab }
       )}
       {open?.sheet === "delete" && (
         <ConfirmDelete
-          title="¿Borrar este estudio?"
+          title={t("course.delete_title")}
           subject={course.name}
-          consequence={`Se borran sus ${plural(subjects.length, "asignatura", "asignaturas")}, sus clases, sus evaluables con sus notas, sus apuntes y sus ficheros. Si lo has terminado, mejor archívalo.`}
-          action="Borrar estudio"
+          consequence={t("course.delete_consequence", { subjects: plural(subjects.length, "subjects.count") })}
+          action={t("course.delete")}
           onCancel={() => setOpen(null)}
           onConfirm={async () => {
             await api.deleteCourse(id);
@@ -354,10 +355,10 @@ export function CourseScreen({ id, section }: { id: string; section: CourseTab }
       )}
       {open?.sheet === "delete-assessment" && (
         <ConfirmDelete
-          title="¿Borrar este evaluable?"
+          title={t("assessment.delete_title")}
           subject={open.assessment.title}
-          consequence={open.assessment.grade !== null ? "Se pierde su nota y deja de contar en la media." : undefined}
-          action="Borrar evaluable"
+          consequence={open.assessment.grade !== null ? t("assessment.delete_from_average") : undefined}
+          action={t("assessment.delete")}
           onCancel={() => setOpen(null)}
           onConfirm={async () => {
             await api.deleteAssessment(open.assessment.id);
@@ -378,10 +379,10 @@ export function CourseScreen({ id, section }: { id: string; section: CourseTab }
       )}
       {open?.sheet === "delete-schedule" && (
         <ConfirmDelete
-          title="¿Quitar este bloque del horario?"
+          title={t("schedule.delete_title")}
           subject={`${open.schedule.subject ?? course.name} · ${open.schedule.phrase}`}
-          consequence="Se quitan sus clases futuras sin tocar. Las que ya pasaron o tienen apuntes o asistencia se quedan."
-          action="Quitar del horario"
+          consequence={t("schedule.delete_consequence")}
+          action={t("schedule.delete")}
           onCancel={() => setOpen(null)}
           onConfirm={async () => {
             await api.deleteSchedule(open.schedule.id);
@@ -407,10 +408,10 @@ export function CourseScreen({ id, section }: { id: string; section: CourseTab }
       )}
       {open?.sheet === "delete-material" && (
         <ConfirmDelete
-          title="¿Quitar este material?"
+          title={t("material.delete_title")}
           subject={open.material.title}
-          consequence={open.material.attachment_id ? "Se borra el fichero." : undefined}
-          action="Quitar material"
+          consequence={open.material.attachment_id ? t("material.delete_file") : undefined}
+          action={t("material.delete")}
           onCancel={() => setOpen(null)}
           onConfirm={async () => {
             await api.deleteMaterial(open.material.id);
@@ -441,14 +442,14 @@ function SubjectsSection({
 }) {
   return (
     <Section
-      title="Asignaturas"
+      title={t("subjects.title")}
       count={subjects.length}
-      action={{ label: "Añadir", icon: "plus", onClick: onAdd }}
+      action={{ label: t("action.add"), icon: "plus", onClick: onAdd }}
     >
       {subjects.length === 0 ? (
-        <Empty title="Sin asignaturas">
+        <Empty title={t("subjects.empty")}>
           <p>
-            Un curso corto no las necesita: sus evaluables cuelgan del estudio.
+            {t("subjects.empty_detail")}
             {courseGrade && courseGrade.verdict !== "empty" && ` ${courseGrade.sentence}`}
           </p>
         </Empty>
@@ -457,9 +458,9 @@ function SubjectsSection({
           {subjects.map((subject) => {
             const hint = neededLine(subject.grade, scale);
             const meta =
-              [subject.credits ? `${grade(subject.credits, 100)} créditos` : null, subject.period, subject.teacher]
+              [subject.credits ? t("subject.credits", { credits: grade(subject.credits, 100) }) : null, subject.period, subject.teacher]
                 .filter(Boolean)
-                .join(" · ") || plural(subject.assessments, "evaluable", "evaluables");
+                .join(" · ") || plural(subject.assessments, "assessments.count");
             return (
               <ListRow
                 key={subject.id}
@@ -491,7 +492,7 @@ export function scheduleEvents(schedules: Schedule[], tone: CourseDetail["course
       if (!day) continue;
       events.push({
         id: `${block.id}:${weekday}`,
-        title: block.subject ?? "Clase",
+        title: block.subject ?? t("session.kind.class"),
         start: `${day}T${hhmm(block.start_time)}:00`,
         end: `${day}T${hhmm(block.end_time)}:00`,
         tone,
@@ -535,24 +536,21 @@ function ScheduleSection({
   return (
     <>
       <Section
-        title="Horario"
-        action={{ label: "Añadir clase", icon: "plus", onClick: onAdd }}
+        title={t("schedule.title")}
+        action={{ label: t("schedule.add_class"), icon: "plus", onClick: onAdd }}
       >
         {loaded.schedules.length === 0 ? (
-          <Empty title="Sin horario todavía">
-            <p>
-              Añade cada clase que se repite —«Estadística, martes y jueves de 18:00 a 20:00 hasta enero»— y Study crea todas
-              las del periodo, cada una con su asistencia y sus apuntes.
-            </p>
+          <Empty title={t("schedule.empty")}>
+            <p>{t("schedule.empty_detail")}</p>
             <Button variant="tinted" icon="plus" onClick={onAdd}>
-              Añadir la primera
+              {t("schedule.add_first")}
             </Button>
           </Empty>
         ) : (
           <>
             <div className="surface study-timetable">
               <TimeGrid
-                label={`Horario semanal de ${course.name}`}
+                label={t("schedule.weekly_of", { name: course.name })}
                 days={shown}
                 events={events}
                 showDates={false}
@@ -569,7 +567,7 @@ function ScheduleSection({
                   key={block.id}
                   title={block.subject ?? course.name}
                   subtitle={`${capital(block.phrase)} · ${hhmm(block.start_time)}–${hhmm(block.end_time)}${block.place ? ` · ${block.place}` : ""}`}
-                  detail={plural(block.sessions, "clase", "clases")}
+                  detail={plural(block.sessions, "sessions.count")}
                   accessory="chevron-right"
                   onClick={() => onBlock(block)}
                 />
@@ -580,11 +578,11 @@ function ScheduleSection({
       </Section>
 
       <Section
-        title="Próximas clases"
-        action={{ label: "Sesión suelta", icon: "plus", onClick: onLoose }}
+        title={t("sessions.upcoming")}
+        action={{ label: t("sessions.one_off"), icon: "plus", onClick: onLoose }}
       >
         {upcoming.length === 0 && loose.length === 0 ? (
-          <p className="study-muted">No queda ninguna. Una tutoría, una jornada o la defensa, con «Sesión suelta».</p>
+          <p className="study-muted">{t("sessions.none_left")}</p>
         ) : (
           <SessionList sessions={upcoming} onOpen={onSession} />
         )}
@@ -610,25 +608,25 @@ export function SessionList({
         const start = new Date(session.starts_at);
         const status =
           session.status === "cancelled"
-            ? "Cancelada"
+            ? t("session.cancelled_short")
             : session.attendance === "present"
-              ? "Fui"
+              ? t("session.went")
               : session.attendance === "absent"
-                ? "No fui"
+                ? t("session.missed")
                 : undefined;
         return (
           <ListRow
             key={session.id}
             title={
               inSubject && session.kind === "class"
-                ? (session.topic ?? capital(start.toLocaleDateString("es-ES", { weekday: "long" })))
+                ? (session.topic ?? capital(start.toLocaleDateString(intl(), { weekday: "long" })))
                 : session.title
             }
             subtitle={[
               `${capital(dateLong(todayIsoOf(start)))} · ${hhmm(start.toTimeString())}`,
               session.place,
               !inSubject ? session.topic : null,
-              session.has_notes ? "con apuntes" : null,
+              session.has_notes ? t("session.with_notes") : null,
             ]
               .filter(Boolean)
               .join(" · ")}
@@ -654,7 +652,7 @@ export function AssessmentsSection({
   onOpen,
   onGrade,
   onAdd,
-  title = "Evaluables",
+  title = undefined as string | undefined,
 }: {
   assessments: Assessment[];
   onOpen: (assessment: Assessment) => void;
@@ -667,20 +665,20 @@ export function AssessmentsSection({
   const weights = assessments.reduce((sum, a) => sum + (a.weight ?? 0), 0);
   return (
     <Section
-      title={title}
+      title={title ?? t("assessments.title")}
       count={assessments.length}
-      action={{ label: "Añadir", icon: "plus", onClick: onAdd }}
+      action={{ label: t("action.add"), icon: "plus", onClick: onAdd }}
     >
       {assessments.length === 0 ? (
-        <Empty title="Sin evaluables">
-          <p>Las entregas y los exámenes con su peso. Con ellos, Study te dice qué nota necesitas en lo que queda.</p>
+        <Empty title={t("assessments.empty")}>
+          <p>{t("assessments.empty_detail")}</p>
         </Empty>
       ) : (
         <>
           {weights > 0 && Math.abs(weights - 100) > 0.01 && assessments.every((a) => a.subject_id === assessments[0]!.subject_id) && (
             <p className="study-muted">
-              Los pesos suman {percent(weights)}.{" "}
-              {weights < 100 ? "Lo que falta cuenta como pendiente." : "Revisa los pesos: pasan del 100 %."}
+              {t("assessments.weights_sum", { percent: percent(weights) })}{" "}
+              {weights < 100 ? t("assessments.weights_under") : t("assessments.weights_over")}
             </p>
           )}
           {pending.length > 0 && (
@@ -692,7 +690,7 @@ export function AssessmentsSection({
           )}
           {graded.length > 0 && (
             <>
-              <GroupLabel>Calificados</GroupLabel>
+              <GroupLabel>{t("assessments.graded")}</GroupLabel>
               <List>
                 {graded.map((item) => (
                   <AssessmentRow key={item.id} item={item} onOpen={onOpen} onGrade={onGrade} />
@@ -723,17 +721,17 @@ function AssessmentRow({
       subtitle={[
         labelOf(ASSESSMENT_KINDS, item.kind),
         item.subject,
-        item.due_on ? `${dateShort(item.due_on)}${item.due_time ? ` ${hhmm(item.due_time)}` : ""}` : "Sin fecha",
-        item.weight !== null ? percent(item.weight) : "sin peso",
-        item.min_grade !== null ? `mín. ${grade(item.min_grade, item.scale_max)}` : null,
+        item.due_on ? `${dateShort(item.due_on)}${item.due_time ? ` ${hhmm(item.due_time)}` : ""}` : t("assessment.no_date"),
+        item.weight !== null ? percent(item.weight) : t("assessment.no_weight"),
+        item.min_grade !== null ? t("assessment.min_short", { grade: grade(item.min_grade, item.scale_max) }) : null,
       ]
         .filter(Boolean)
         .join(" · ")}
       detail={
         below
-          ? "Bajo el mínimo"
+          ? t("verdict.below_minimum")
           : item.status === "submitted"
-            ? "Entregado"
+            ? t("assessment.submitted")
             : pending && item.days_left !== null
               ? countdown(item.days_left)
               : undefined
@@ -743,7 +741,7 @@ function AssessmentRow({
       onClick={() => onOpen(item)}
       action={{
         icon: "edit",
-        label: item.grade === null ? `Poner nota a ${item.title}` : `Cambiar la nota de ${item.title}`,
+        label: item.grade === null ? t("assessment.grade_label", { title: item.title }) : t("assessment.regrade_label", { title: item.title }),
         onClick: () => onGrade(item),
       }}
     />
@@ -761,13 +759,13 @@ export function MaterialsSection({
 }) {
   return (
     <Section
-      title="Materiales"
+      title={t("materials.title")}
       count={materials.length}
-      action={{ label: "Añadir", icon: "plus", onClick: onAdd }}
+      action={{ label: t("action.add"), icon: "plus", onClick: onAdd }}
     >
       {materials.length === 0 ? (
-        <Empty title="Sin materiales">
-          <p>La guía docente, el campus de cada asignatura, las diapositivas, la bibliografía.</p>
+        <Empty title={t("materials.empty")}>
+          <p>{t("materials.empty_detail")}</p>
         </Empty>
       ) : (
         <List>
@@ -780,7 +778,7 @@ export function MaterialsSection({
                 .join(" · ")}
               icon={material.url ? "external" : "file"}
               onClick={() => window.open(material.url ?? fileUrl(material.attachment_id!), "_blank", "noreferrer")}
-              action={{ icon: "trash", label: `Quitar ${material.title}`, onClick: () => onDelete(material) }}
+              action={{ icon: "trash", label: t("material.remove_label", { name: material.title }), onClick: () => onDelete(material) }}
             />
           ))}
         </List>
@@ -804,10 +802,10 @@ function CourseNotes({ courseId }: { courseId: string }) {
   const { data, found, problem, fail } = useLoad(`notes:course:${courseId}`, () => api.notes({ courseId }));
   return (
     <Section
-      title="Apuntes"
+      title={t("notes.title")}
       count={data?.length}
       action={{
-        label: "Nuevos",
+        label: t("action.new"),
         icon: "plus",
         onClick: () =>
           void api
@@ -819,7 +817,7 @@ function CourseNotes({ courseId }: { courseId: string }) {
       <Problem text={problem} />
       {data === null && <Pending found={found} />}
       {data && data.length === 0 && (
-        <p className="study-muted">Los de cada clase salen aquí, y todo lo que haya en la carpeta del estudio en Notebook.</p>
+        <p className="study-muted">{t("course.notes_empty")}</p>
       )}
       {data && data.length > 0 && <NoteGroups notes={data} />}
     </Section>

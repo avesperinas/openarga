@@ -7,6 +7,7 @@ import { type Note, api } from "./api";
 import { pathOf, useNavigate } from "./App";
 import { reading } from "./order";
 import { dateShort, plural } from "./words";
+import { t } from "./lang";
 
 type EditorView = Parameters<typeof wrapSelection>[0];
 
@@ -201,15 +202,15 @@ export function NoteEditor({
   const picker = useRef<HTMLInputElement>(null);
 
   return (
-    <section className="study-editor" data-focus={focus || undefined} aria-label="Apuntes">
+    <section className="study-editor" data-focus={focus || undefined} aria-label={t("notes.title")}>
       <div className="study-editor-bar">
         <span className="study-editor-state">
-          {uploading > 0 && <span className="study-muted">Subiendo imagen…</span>}
+          {uploading > 0 && <span className="study-muted">{t("editor.uploading")}</span>}
           <SyncMark state={sync} />
         </span>
         {mode === "read" ? (
           <Button size="small" icon="edit" onClick={() => setMode("write")}>
-            Editar
+            {t("action.edit")}
           </Button>
         ) : (
           body.trim() && (
@@ -221,13 +222,13 @@ export function NoteEditor({
                 setMode("read");
               }}
             >
-              Leer
+              {t("editor.read")}
             </Button>
           )
         )}
         <IconButton
           icon={focus ? "close" : "expand"}
-          label={focus ? "Salir de pantalla completa" : "Pantalla completa"}
+          label={focus ? t("editor.exit_full") : t("editor.full")}
           variant="plain"
           size="small"
           onClick={() => setFocus(!focus)}
@@ -239,8 +240,8 @@ export function NoteEditor({
         className="study-editor-title"
         value={title}
         rows={1}
-        placeholder="Título"
-        aria-label="Título de los apuntes"
+        placeholder={t("field.title")}
+        aria-label={t("editor.title_label")}
         maxLength={200}
         onChange={(event) => {
           setTitle(event.target.value.replace(/\n/g, " "));
@@ -259,23 +260,23 @@ export function NoteEditor({
 
       {mode === "write" ? (
         <>
-          <div className="study-editor-tools" role="toolbar" aria-label="Formato">
-            <button type="button" className="study-tool" onClick={() => tool("heading")} aria-label="Título de sección">
+          <div className="study-editor-tools" role="toolbar" aria-label={t("editor.format")}>
+            <button type="button" className="study-tool" onClick={() => tool("heading")} aria-label={t("editor.heading")}>
               <span className="study-tool-heading">T</span>
             </button>
-            <button type="button" className="study-tool" onClick={() => tool("bold")} aria-label="Negrita">
+            <button type="button" className="study-tool" onClick={() => tool("bold")} aria-label={t("editor.bold")}>
               <span className="study-tool-bold">N</span>
             </button>
-            <button type="button" className="study-tool" onClick={() => tool("list")} aria-label="Lista">
+            <button type="button" className="study-tool" onClick={() => tool("list")} aria-label={t("editor.list")}>
               <span aria-hidden="true">•</span>
             </button>
-            <button type="button" className="study-tool" onClick={() => tool("task")} aria-label="Casilla">
+            <button type="button" className="study-tool" onClick={() => tool("task")} aria-label={t("editor.checkbox")}>
               <span aria-hidden="true">☐</span>
             </button>
-            <button type="button" className="study-tool" onClick={() => tool("code")} aria-label="Código">
+            <button type="button" className="study-tool" onClick={() => tool("code")} aria-label={t("editor.code")}>
               <span className="study-tool-code">{"</>"}</span>
             </button>
-            <button type="button" className="study-tool" onClick={() => picker.current?.click()} aria-label="Imagen">
+            <button type="button" className="study-tool" onClick={() => picker.current?.click()} aria-label={t("editor.image")}>
               <span aria-hidden="true">▣</span>
             </button>
             <input
@@ -302,7 +303,7 @@ export function NoteEditor({
               onOpenLink={() => undefined}
               onTag={() => undefined}
               onImage={upload}
-              placeholder="Escribe aquí. Pega una foto de la pizarra y se queda en los apuntes."
+              placeholder={t("editor.placeholder")}
               autoFocus={autoFocus}
               onReady={(editor) => {
                 view.current = editor;
@@ -321,8 +322,8 @@ function Meta({ body, updatedAt }: { body: string; updatedAt: string | null }) {
   const { words, minutes } = reading(body);
   return (
     <p className="study-editor-meta">
-      {plural(words, "palabra", "palabras")} · {minutes} min de lectura
-      {updatedAt && ` · editado ${dateShort(updatedAt.slice(0, 10))}`}
+      {t("editor.reading", { words: plural(words, "editor.words"), minutes })}
+      {updatedAt && ` · ${t("editor.edited", { date: dateShort(updatedAt.slice(0, 10)) })}`}
     </p>
   );
 }
@@ -361,7 +362,7 @@ function Reader({ html, empty, onToggle, onEdit }: { html: string; empty: boolea
   if (empty) {
     return (
       <div className="study-editor-read" onDoubleClick={onEdit}>
-        <p className="study-muted">Sin apuntes todavía.</p>
+        <p className="study-muted">{t("editor.empty")}</p>
       </div>
     );
   }
@@ -385,15 +386,15 @@ function Reader({ html, empty, onToggle, onEdit }: { html: string; empty: boolea
     <div className="study-editor-read" data-toc={toc || undefined}>
       {toc && (
         <div className="study-toc-inline">
-          <Collapsible title="Índice" subtitle={plural(headings.length, "sección", "secciones")}>
+          <Collapsible title={t("editor.contents")} subtitle={plural(headings.length, "editor.sections")}>
             {list}
           </Collapsible>
         </div>
       )}
       <div ref={prose} className="mn-prose study-prose" onClick={onToggle} onDoubleClick={onEdit} dangerouslySetInnerHTML={{ __html: html }} />
       {toc && (
-        <nav className="study-toc study-toc-side" aria-label="Índice">
-          <p className="study-toc-heading">En estos apuntes</p>
+        <nav className="study-toc study-toc-side" aria-label={t("editor.contents")}>
+          <p className="study-toc-heading">{t("editor.in_this_note")}</p>
           {list}
         </nav>
       )}

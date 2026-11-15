@@ -5,6 +5,7 @@ import { api } from "./api";
 import { useNavigate } from "./App";
 import { Pending, Problem, useLoad } from "./Bits";
 import { ScreenHeader } from "./Header";
+import { t } from "./lang";
 
 export function AssessmentRedirect({ id }: { id: string }) {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export function AssessmentRedirect({ id }: { id: string }) {
 
   return (
     <Screen>
-      <ScreenHeader back={{ label: "Study", onClick: () => navigate({ tab: "home" }) }} />
+      <ScreenHeader back={{ label: t("app.name"), onClick: () => navigate({ tab: "home" }) }} />
       <OfflineNotice />
       <Problem text={problem} />
       <Pending found={found} />

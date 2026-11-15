@@ -14,15 +14,16 @@ import { useState } from "react";
 
 import { type AssessmentKind, type Course, api } from "./api";
 import { ASSESSMENT_KINDS, atTime, localIso, ruleToServer, todayIso } from "./words";
+import { t } from "./lang";
 
 export type AddKind = "class" | "task" | "exam" | "note";
 
-const KINDS: { value: AddKind; label: string }[] = [
-  { value: "class", label: "Clase" },
-  { value: "task", label: "Tarea o entrega" },
-  { value: "exam", label: "Examen" },
-  { value: "note", label: "Apunte" },
-];
+const KINDS: { value: AddKind; readonly label: string }[] = (["class", "task", "exam", "note"] as const).map((value) => ({
+  value,
+  get label() {
+    return t(`add.kind.${value}`);
+  },
+}));
 
 export function plan(
   kind: AddKind,
@@ -97,7 +98,7 @@ export function AddSheet({
       const what = plan(kind, { title, day, from, to, time, repeats, type, place, url });
       if (what.call === "note") {
         const note = await api.addNote({ course_id: course, title: what.title || undefined });
-        onSaved("Apunte creado", { tab: "note", id: note.id });
+        onSaved(t("add.note_created"), { tab: "note", id: note.id });
         return;
       }
       if (what.call === "schedule" && rule) {
@@ -110,12 +111,12 @@ export function AddSheet({
           place: place.trim() || null,
           url: url.trim() || null,
         });
-        onSaved("Horario apuntado · sale en tu calendario");
+        onSaved(t("add.schedule_added"));
         return;
       }
       if (what.call === "session") {
         await api.addSession(course, what.body);
-        onSaved("Clase apuntada · sale en tu calendario");
+        onSaved(t("add.session_added"));
         return;
       }
       if (what.call === "assessment") {
@@ -128,62 +129,66 @@ export function AddSheet({
           grade: null,
           note: null,
         });
-        onSaved(`${kind === "exam" ? "Examen" : "Tarea"} apuntada · sale en tu calendario`);
+        onSaved(t(kind === "exam" ? "add.exam_added" : "add.task_added"));
       }
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : "No se pudo guardar.");
+      setProblem(error instanceof Error ? error.message : t("error.save"));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Sheet title="Apuntar" onClose={onClose} action={{ label: saving ? "Guardando…" : "Guardar", onClick: () => void save(), disabled: saving || !ready }}>
-      <ChoiceChips label="Qué es" options={KINDS} value={kind} onChange={setKind} />
+    <Sheet
+      title={t("home.add")}
+      onClose={onClose}
+      action={{ label: saving ? t("action.saving") : t("action.save"), onClick: () => void save(), disabled: saving || !ready }}
+    >
+      <ChoiceChips label={t("add.what")} options={KINDS} value={kind} onChange={setKind} />
       {problem && <Hint tone="warning">{problem}</Hint>}
       <TextField
-        label={kind === "class" ? "Título (opcional)" : "Título"}
+        label={kind === "class" ? t("field.title_optional") : t("field.title")}
         value={title}
         onChange={setTitle}
-        placeholder={kind === "class" ? "El del estudio" : kind === "exam" ? "Examen final" : kind === "note" ? "Tema 3" : "Práctica 1"}
+        placeholder={t(kind === "class" ? "add.ph.class" : kind === "exam" ? "add.ph.exam" : kind === "note" ? "add.ph.note" : "add.ph.task")}
         autoFocus
       />
       {courses.length > 1 && (
-        <SelectField label="Estudio" options={courses.map((one) => ({ value: one.id, label: one.name }))} value={course} onChange={setCourse} />
+        <SelectField label={t("field.course")} options={courses.map((one) => ({ value: one.id, label: one.name }))} value={course} onChange={setCourse} />
       )}
-      {kind !== "note" && <DateField label={kind === "class" ? "Día" : kind === "exam" ? "Día" : "Para cuándo"} value={day} onChange={setDay} />}
+      {kind !== "note" && <DateField label={kind === "task" ? t("field.due") : t("field.day")} value={day} onChange={setDay} />}
       {kind === "class" && (
         <>
-          <TextField label="De" type="time" value={from} onChange={setFrom} />
-          <TextField label="A" type="time" value={to} onChange={setTo} />
+          <TextField label={t("field.from")} type="time" value={from} onChange={setFrom} />
+          <TextField label={t("field.to")} type="time" value={to} onChange={setTo} />
           <div className="study-switch">
-            <span>Se repite</span>
-            <Switch label="Se repite" checked={repeats} onChange={setRepeats} />
+            <span>{t("add.repeats")}</span>
+            <Switch label={t("add.repeats")} checked={repeats} onChange={setRepeats} />
           </div>
           {repeats && (
             <>
-              <RecurrencePicker date={day || todayIso()} value={rule} onChange={setRule} label="Cada" />
-              <DateField label="Hasta" value={until} onChange={setUntil} />
+              <RecurrencePicker date={day || todayIso()} value={rule} onChange={setRule} label={t("field.every")} />
+              <DateField label={t("field.until")} value={until} onChange={setUntil} />
             </>
           )}
         </>
       )}
-      {(kind === "task" || kind === "exam") && <TextField label="Hora" type="time" value={time} onChange={setTime} hint="Sin hora, todo el día" />}
+      {(kind === "task" || kind === "exam") && <TextField label={t("field.time")} type="time" value={time} onChange={setTime} hint={t("add.no_time_hint")} />}
       {kind !== "note" && (
-        <Collapsible title="Más detalles" subtitle={kind === "class" ? "Lugar y enlace" : "Tipo y peso en la nota"}>
-          {kind === "task" && <ChoiceChips label="Tipo" options={ASSESSMENT_KINDS.filter((one) => one.value !== "exam")} value={type} onChange={setType} />}
+        <Collapsible title={t("add.more")} subtitle={kind === "class" ? t("add.place_link") : t("add.type_weight")}>
+          {kind === "task" && <ChoiceChips label={t("field.type")} options={ASSESSMENT_KINDS.filter((one) => one.value !== "exam")} value={type} onChange={setType} />}
           {(kind === "task" || kind === "exam") && (
-            <TextField label="Peso" value={weight} onChange={setWeight} inputMode="decimal" placeholder="%" hint="De la nota de la asignatura" />
+            <TextField label={t("field.weight")} value={weight} onChange={setWeight} inputMode="decimal" placeholder="%" hint={t("add.weight_hint")} />
           )}
           {kind === "class" && (
             <>
-              <TextField label="Lugar" value={place} onChange={setPlace} placeholder="Study 2.3" />
-              <TextField label="Enlace" value={url} onChange={setUrl} placeholder="Si es en línea" />
+              <TextField label={t("field.place")} value={place} onChange={setPlace} placeholder="Room 2.3" />
+              <TextField label={t("field.link")} value={url} onChange={setUrl} placeholder={t("add.link_placeholder")} />
             </>
           )}
         </Collapsible>
       )}
-      {kind !== "note" && <Hint>Sale en tu calendario.</Hint>}
+      {kind !== "note" && <Hint>{t("add.in_calendar")}</Hint>}
     </Sheet>
   );
 }

@@ -5,6 +5,7 @@ import { useNavigate } from "./App";
 import { Empty, Pending, Problem, useLoad } from "./Bits";
 import { ScreenHeader } from "./Header";
 import { KINDS, dateLong, grade, labelOf } from "./words";
+import { t } from "./lang";
 
 export function ArchiveScreen() {
   const navigate = useNavigate();
@@ -12,13 +13,13 @@ export function ArchiveScreen() {
 
   return (
     <Screen>
-      <ScreenHeader back={{ label: "Study", onClick: () => navigate({ tab: "home" }) }} title="Archivo" />
+      <ScreenHeader back={{ label: t("app.name"), onClick: () => navigate({ tab: "home" }) }} title={t("archive.title")} />
       <OfflineNotice />
       <Problem text={problem} />
       {data === null && <Pending found={found} />}
       {data && data.length === 0 && (
-        <Empty title="Nada archivado">
-          <p>Al terminar o abandonar un estudio, pasa aquí con su nota y su certificado.</p>
+        <Empty title={t("archive.empty")}>
+          <p>{t("archive.empty_detail")}</p>
         </Empty>
       )}
       {data && data.length > 0 && (
@@ -31,13 +32,15 @@ export function ArchiveScreen() {
                 key={course.id}
                 title={course.name}
                 subtitle={[
-                  `${finished ? "Terminado" : "Abandonado"}${course.closed_on ? ` el ${dateLong(course.closed_on)}` : ""}`,
+                  course.closed_on
+                    ? t(finished ? "archive.finished_on" : "archive.abandoned_on", { date: dateLong(course.closed_on) })
+                    : t(finished ? "archive.finished" : "archive.abandoned"),
                   course.institution ?? labelOf(KINDS, course.kind),
                   course.progress?.label,
                 ]
                   .filter(Boolean)
                   .join(" · ")}
-                detail={course.has_certificate ? "Con título" : undefined}
+                detail={course.has_certificate ? t("archive.with_certificate") : undefined}
                 value={finished ? grade(average, course.scale_max) : undefined}
                 tone={finished ? "positive" : undefined}
                 accessory="chevron-right"
