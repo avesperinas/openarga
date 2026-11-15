@@ -13,6 +13,7 @@ from arga_tenancy import kernel_url, user_headers
 from study import notes as local
 from study.notes import Hit, Note, NoteBrief, NoteEdit, NoteIn
 from study.studies import Conflict, NotFound, Source, _own
+from study.words import say
 
 MODULE = "study"
 ROOT = "Study"
@@ -32,7 +33,7 @@ async def ask(client: httpx.AsyncClient, service: str, body: dict[str, Any]) -> 
             timeout=30.0,
         )
     except httpx.HTTPError as error:
-        raise Unavailable(f"los apuntes no contestan ({type(error).__name__})") from error
+        raise Unavailable(f"Notes does not answer ({type(error).__name__})") from error
     detail = ""
     if response.status_code != 200:
         try:
@@ -40,18 +41,18 @@ async def ask(client: httpx.AsyncClient, service: str, body: dict[str, Any]) -> 
         except ValueError:
             detail = response.text[:200]
     if response.status_code == 404:
-        raise NotFound(detail or "ese apunte")
+        raise NotFound(detail or "that note")
     if response.status_code == 409:
         raise Conflict(detail)
     if response.status_code == 422:
         raise Conflict(detail)
     if response.status_code != 200:
-        raise Unavailable(detail or f"los apuntes contestan {response.status_code}")
+        raise Unavailable(detail or f"Notes answers {response.status_code}")
     return response.json()
 
 
 def clean(name: str) -> str:
-    return FORBIDDEN.sub("-", name).strip(" .-") or "Sin nombre"
+    return FORBIDDEN.sub("-", name).strip(" .-") or say("note.untitled")
 
 
 COURSES = text("select id, name, tone, notes_folder from study.study_course order by created_at")
@@ -107,18 +108,27 @@ async def _index(connection: AsyncConnection, ids: list[str]) -> dict[str, Any]:
     return {str(row.notebook_id): row for row in rows}
 
 
+PROPERTIES = {
+    "course": ("study_course", "study_estudio"),
+    "subject": ("study_subject", "study_asignatura"),
+    "session": ("study_session", "study_clase"),
+}
+
+
+def _prop(props: dict[str, Any], what: str) -> Any:
+    return next((props[name] for name in PROPERTIES[what] if props.get(name)), None)
+
+
 def _brief(ref: dict[str, Any], places: Places, row: Any | None, course_id: str | None) -> dict:
     props = ref.get("properties") or {}
     located_course, located_subject = places.locate(ref["folder"])
-    course = (
-        str(row.course_id) if row else (props.get("study_estudio") or located_course or course_id)
-    )
+    course = str(row.course_id) if row else (_prop(props, "course") or located_course or course_id)
     subject = (
         str(row.subject_id)
         if row and row.subject_id
-        else props.get("study_asignatura") or located_subject
+        else _prop(props, "subject") or located_subject
     )
-    session = str(row.session_id) if row and row.session_id else props.get("study_clase")
+    session = str(row.session_id) if row and row.session_id else _prop(props, "session")
     if course not in places.courses:
         course = course_id
     if subject not in places.subjects:
@@ -171,14 +181,16 @@ async def notes(
     places = await Places.load(connection)
     refs: dict[str, dict] = {}
     if session_id:
-        for ref in await _list(client, property="study_clase", value=session_id, limit=limit):
-            refs[ref["id"]] = ref
+        for name in PROPERTIES["session"]:
+            for ref in await _list(client, property=name, value=session_id, limit=limit):
+                refs[ref["id"]] = ref
     elif subject_id:
         await _own(connection, "study_subject", subject_id)
         for ref in await _list(client, folder=places.subject_folder(subject_id), limit=limit):
             refs[ref["id"]] = ref
-        for ref in await _list(client, property="study_asignatura", value=subject_id, limit=limit):
-            refs[ref["id"]] = ref
+        for name in PROPERTIES["subject"]:
+            for ref in await _list(client, property=name, value=subject_id, limit=limit):
+                refs[ref["id"]] = ref
     elif course_id:
         await _own(connection, "study_course", course_id)
         for ref in await _list(client, folder=places.course_folder(course_id), limit=limit):
@@ -197,7 +209,7 @@ async def note(connection: AsyncConnection, client: httpx.AsyncClient, note_id: 
     index = await _index(connection, [note_id])
     brief = _brief(full, places, index.get(note_id), None)
     if not brief["course_id"]:
-        raise NotFound("ese apunte no es de ningún estudio")
+        raise NotFound("that note belongs to no course")
     return Note(**brief, body=full["body"])
 
 
@@ -208,7 +220,8 @@ async def _place(connection: AsyncConnection, item: NoteIn) -> tuple[str, str | 
         row = (
             await connection.execute(
                 text(
-                    "select course_id, subject_id, starts_at from study.study_session where id = :id"
+                    "select course_id, subject_id, starts_at from study.study_session "
+                    "where id = :id"
                 ),
                 {"id": item.session_id},
             )
@@ -227,8 +240,8 @@ def _title(item: NoteIn, starts: Any) -> str:
     if item.title.strip():
         return item.title.strip()
     if starts is not None:
-        return f"Clase del {starts.date().isoformat()}"
-    return "Apuntes"
+        return say("note.of_session", day=starts.date().isoformat())
+    return say("note.notes")
 
 
 async def add_note(
@@ -237,11 +250,11 @@ async def add_note(
     course_id, subject_id, starts = await _place(connection, item)
     places = await Places.load(connection)
     folder = places.subject_folder(subject_id) if subject_id else places.course_folder(course_id)
-    properties: dict[str, Any] = {"study_estudio": course_id}
+    properties: dict[str, Any] = {PROPERTIES["course"][0]: course_id}
     if subject_id:
-        properties["study_asignatura"] = subject_id
+        properties[PROPERTIES["subject"][0]] = subject_id
     if item.session_id:
-        properties["study_clase"] = item.session_id
+        properties[PROPERTIES["session"][0]] = item.session_id
     created = await ask(
         client,
         contracts.NOTES_CREATE,

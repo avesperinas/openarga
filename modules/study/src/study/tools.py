@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, ValidationError, model_validator
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_recurrence import Rule
-from study import apuntes, notes, studies, timetable
+from study import class_notes, notes, studies, timetable
 from study.studies import LOCAL
 
 MODULE = "study"
@@ -109,7 +109,7 @@ def _assessment(one: studies.AssessmentOut) -> dict[str, Any]:
 class GetCourses(BaseModel):
     scope: Literal["current", "archive", "all"] = Field(
         default="current",
-        description="current: en curso y planeados; archive: terminados y abandonados.",
+        description="current: active and planned; archive: finished and abandoned.",
     )
 
 
@@ -138,9 +138,9 @@ async def get_courses(connection: AsyncConnection, arguments: GetCourses) -> dic
 
 
 class GetWeek(BaseModel):
-    since: date | None = Field(default=None, description="Primer día; hoy si no se dice.")
+    since: date | None = Field(default=None, description="First day; today if not said.")
     until: date | None = Field(
-        default=None, description="Último día incluido; una semana después del primero si no."
+        default=None, description="Last day included; a week after the first if not said."
     )
 
 
@@ -148,7 +148,7 @@ async def get_week(connection: AsyncConnection, arguments: GetWeek) -> dict[str,
     first = arguments.since or studies.today()
     last = arguments.until or first + timedelta(days=6)
     if last < first:
-        raise studies.Conflict("el último día va después del primero")
+        raise studies.Conflict("the last day goes after the first")
     start = datetime.combine(first, time(0), tzinfo=LOCAL)
     end = datetime.combine(last + timedelta(days=1), time(0), tzinfo=LOCAL)
     found = await timetable.sessions(connection, start, end)
@@ -162,13 +162,13 @@ async def get_week(connection: AsyncConnection, arguments: GetWeek) -> dict[str,
 
 
 class GetGrades(BaseModel):
-    course_id: UUID | None = Field(default=None, description="El estudio, de get_courses.")
-    subject_id: UUID | None = Field(default=None, description="O una asignatura sola.")
+    course_id: UUID | None = Field(default=None, description="The course, from get_courses.")
+    subject_id: UUID | None = Field(default=None, description="Or a single subject.")
 
     @model_validator(mode="after")
     def _one(self) -> Self:
         if (self.course_id is None) == (self.subject_id is None):
-            raise ValueError("di el estudio o la asignatura, uno de los dos")
+            raise ValueError("say the course or the subject, one of the two")
         return self
 
 
@@ -197,14 +197,14 @@ async def get_grades(connection: AsyncConnection, arguments: GetGrades) -> dict[
 
 
 class FindNotes(BaseModel):
-    query: str = Field(min_length=1, max_length=200, description="Palabras, en castellano.")
+    query: str = Field(min_length=1, max_length=200, description="Words to look for.")
     limit: int = Field(default=10, ge=1, le=50)
 
 
 async def find_notes(
     connection: AsyncConnection, arguments: FindNotes, client: httpx.AsyncClient
 ) -> dict[str, Any]:
-    hits = await apuntes.find(connection, client, arguments.query, limit=arguments.limit)
+    hits = await class_notes.find(connection, client, arguments.query, limit=arguments.limit)
     return {
         "notes": [
             {
@@ -225,15 +225,15 @@ async def find_notes(
 class ScheduleSpec(BaseModel):
     rule: Rule = Field(
         description=(
-            "Como {freq: 'weekly', by_day: [{weekday: 'TU'}, {weekday: 'TH'}], until: "
-            "'2027-01-22'}. until es el último día incluido."
+            "Like {freq: 'weekly', by_day: [{weekday: 'TU'}, {weekday: 'TH'}], until: "
+            "'2027-01-22'}. until is the last day included."
         )
     )
-    starts_on: date = Field(description="El primer día del periodo de clases.")
+    starts_on: date = Field(description="The first day of the teaching period.")
     start_time: time
     end_time: time
-    place: str | None = Field(default=None, max_length=200, description="Study o edificio.")
-    url: str | None = Field(default=None, max_length=500, description="Enlace a la clase en línea.")
+    place: str | None = Field(default=None, max_length=200, description="Room or building.")
+    url: str | None = Field(default=None, max_length=500, description="Link to the online session.")
 
 
 class AssessmentSpec(BaseModel):
@@ -242,16 +242,18 @@ class AssessmentSpec(BaseModel):
     due_on: date | None = None
     due_time: time | None = None
     weight: float | None = Field(
-        default=None, gt=0, le=100, description="Tanto por ciento de la nota de su asignatura."
+        default=None, gt=0, le=100, description="Percentage of its subject's grade."
     )
-    min_grade: float | None = Field(default=None, ge=0, description="Nota mínima para hacer media.")
+    min_grade: float | None = Field(
+        default=None, ge=0, description="Minimum grade for it to count towards the average."
+    )
 
 
 class SubjectSpec(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     teacher: str | None = None
     credits: float | None = Field(default=None, gt=0)
-    period: str | None = Field(default=None, max_length=60, description='"1.er cuatrimestre".')
+    period: str | None = Field(default=None, max_length=60, description='"first semester".')
     schedule: list[ScheduleSpec] = Field(default_factory=list, max_length=10)
     assessments: list[AssessmentSpec] = Field(default_factory=list, max_length=40)
 
@@ -264,18 +266,20 @@ class CreateCourse(BaseModel):
     starts_on: date | None = None
     ends_on: date | None = None
     status: Literal["planned", "active"] = "active"
-    credits: float | None = Field(default=None, gt=0, description="ECTS del total, si los tiene.")
-    hours: float | None = Field(default=None, gt=0, description="Horas del curso, si se miden así.")
+    credits: float | None = Field(default=None, gt=0, description="Total ECTS, if it has them.")
+    hours: float | None = Field(
+        default=None, gt=0, description="Hours of the course, if it is measured that way."
+    )
     scale_max: Literal[10, 100] = 10
     pass_mark: float | None = Field(default=None, gt=0)
     target_grade: float | None = Field(default=None, gt=0)
-    tone: int = Field(default=1, ge=1, le=10, description="Color de la paleta, de 1 a 10.")
+    tone: int = Field(default=1, ge=1, le=10, description="Palette colour, from 1 to 10.")
     campus_url: str | None = None
     tracks: list[studies.Track] | None = Field(
         default=None,
-        description="Qué se sigue: grades (notas y media), progress (créditos u horas) y "
-        "attendance (asistencia). Lista vacía: nada, solo el horario y los apuntes, como un idioma "
-        "sin examen a la vista. Sin decirlo: nada en un idioma, las tres en lo demás.",
+        description="What is tracked: grades (grades and average), progress (credits or hours) and "
+        "attendance. Empty list: nothing, only the schedule and the notes, like a language "
+        "with no exam in sight. If not said: nothing for a language, all three otherwise.",
     )
     subjects: list[SubjectSpec] = Field(default_factory=list, max_length=60)
     schedule: list[ScheduleSpec] = Field(default_factory=list, max_length=10)
@@ -325,13 +329,13 @@ async def create_course(connection: AsyncConnection, arguments: CreateCourse) ->
         "subjects": [{"subject_id": s.id, "name": s.name} for s in detail.subjects],
         "sessions_created": sessions,
         "assessments": len(detail.assessments),
-        "open_in_app": f"/study/estudio/{course_id}",
+        "open_in_app": f"/study/course/{course_id}",
     }
 
 
 class AddAssessment(AssessmentSpec):
-    course_id: UUID = Field(description="El estudio, de get_courses.")
-    subject_id: UUID | None = Field(default=None, description="Su asignatura, si la tiene.")
+    course_id: UUID = Field(description="The course, from get_courses.")
+    subject_id: UUID | None = Field(default=None, description="Its subject, if it has one.")
 
 
 async def add_assessment(connection: AsyncConnection, arguments: AddAssessment) -> dict[str, Any]:
@@ -344,18 +348,18 @@ async def add_assessment(connection: AsyncConnection, arguments: AddAssessment) 
 
 
 class RecordGrade(BaseModel):
-    assessment_id: UUID | None = Field(default=None, description="El evaluable calificado.")
+    assessment_id: UUID | None = Field(default=None, description="The graded assessment.")
     subject_id: UUID | None = Field(
-        default=None, description="O la asignatura, para poner su nota de acta."
+        default=None, description="Or the subject, to set its record grade."
     )
     grade: float | None = Field(
-        ge=0, description="En la escala del estudio. Null quita la calificación o la de acta."
+        ge=0, description="On the course's scale. Null removes the grade or the record grade."
     )
 
     @model_validator(mode="after")
     def _one(self) -> Self:
         if (self.assessment_id is None) == (self.subject_id is None):
-            raise ValueError("di el evaluable o la asignatura, uno de los dos")
+            raise ValueError("say the assessment or the subject, one of the two")
         return self
 
 
@@ -380,16 +384,16 @@ async def record_grade(connection: AsyncConnection, arguments: RecordGrade) -> d
 
 
 class AddNote(BaseModel):
-    session_id: UUID | None = Field(default=None, description="La clase, de get_week.")
-    subject_id: UUID | None = Field(default=None, description="O una asignatura.")
-    course_id: UUID | None = Field(default=None, description="O el estudio, sin asignatura.")
+    session_id: UUID | None = Field(default=None, description="The session, from get_week.")
+    subject_id: UUID | None = Field(default=None, description="Or a subject.")
+    course_id: UUID | None = Field(default=None, description="Or the course, without a subject.")
     title: str = Field(default="", max_length=200)
     body: str = Field(min_length=1, max_length=100000, description="Markdown.")
 
     @model_validator(mode="after")
     def _somewhere(self) -> Self:
         if not (self.session_id or self.subject_id or self.course_id):
-            raise ValueError("di de qué clase, asignatura o estudio son los apuntes")
+            raise ValueError("say which session, subject or course the note is for")
         return self
 
 
@@ -407,7 +411,7 @@ async def add_note(
         title=arguments.title,
         body=arguments.body,
     )
-    added = await apuntes.add_note(connection, client, item, source="tool")
+    added = await class_notes.add_note(connection, client, item, source="tool")
     return {
         "note_id": added.id,
         "course": added.course,
@@ -417,9 +421,9 @@ async def add_note(
 
 
 class MarkAttendance(BaseModel):
-    session_id: UUID = Field(description="La clase, de get_week.")
+    session_id: UUID = Field(description="The session, from get_week.")
     attendance: Literal["present", "absent"] | None = Field(
-        description="present si fue, absent si no; null lo deja sin marcar."
+        description="present if they went, absent if not; null leaves it unmarked."
     )
 
 
@@ -472,7 +476,7 @@ def _note(one: notes.NoteBrief) -> dict[str, Any]:
 
 
 class GetCourse(BaseModel):
-    course_id: UUID = Field(description="El estudio, de get_courses.")
+    course_id: UUID = Field(description="The course, from get_courses.")
 
 
 async def get_course(
@@ -482,10 +486,10 @@ async def get_course(
     detail = await studies.course(connection, course_id)
     try:
         found: list[dict[str, Any]] | None = [
-            _note(one) for one in await apuntes.notes(connection, client, course_id=course_id)
+            _note(one) for one in await class_notes.notes(connection, client, course_id=course_id)
         ]
         unavailable = None
-    except apuntes.Unavailable as error:
+    except class_notes.Unavailable as error:
         found, unavailable = None, str(error)
     return {
         "course": _course(detail.course),
@@ -509,18 +513,18 @@ async def get_course(
         ],
         "notes": found,
         **({"notes_unavailable": unavailable} if unavailable else {}),
-        "open_in_app": f"/study/estudio/{course_id}",
+        "open_in_app": f"/study/course/{course_id}",
     }
 
 
 class GetNote(BaseModel):
-    note_id: UUID = Field(description="Los apuntes, de find_notes o get_course.")
+    note_id: UUID = Field(description="The note, from find_notes or get_course.")
 
 
 async def get_note(
     connection: AsyncConnection, arguments: GetNote, client: httpx.AsyncClient
 ) -> dict[str, Any]:
-    found = await apuntes.note(connection, client, str(arguments.note_id))
+    found = await class_notes.note(connection, client, str(arguments.note_id))
     return {
         **_note(found),
         "course": found.course,
@@ -544,7 +548,7 @@ def _same(stored: str, given: str) -> bool:
 def _mismatch(what: str, stored: str, given: str) -> dict[str, Any]:
     return {
         "deleted": None,
-        "note": f"{what} se llama «{stored}», no «{given}»; no he borrado nada",
+        "note": f'{what} is called "{stored}", not "{given}"; nothing was deleted',
     }
 
 
@@ -583,31 +587,32 @@ COURSE_REQUIRED = {
 
 
 class UpdateCourse(BaseModel):
-    course_id: UUID = Field(description="El estudio, de get_courses.")
+    course_id: UUID = Field(description="The course, from get_courses.")
     name: str | None = Field(default=None, min_length=1, max_length=200)
     kind: studies.Kind | None = None
-    institution: str | None = Field(default=None, description="Null la quita.")
+    institution: str | None = Field(default=None, description="Null removes it.")
     modality: studies.Modality | None = None
-    starts_on: date | None = Field(default=None, description="Null la quita.")
-    ends_on: date | None = Field(default=None, description="Null la quita.")
+    starts_on: date | None = Field(default=None, description="Null removes it.")
+    ends_on: date | None = Field(default=None, description="Null removes it.")
     status: Literal["planned", "active"] | None = Field(
         default=None,
-        description="Planeado o en curso. Para terminarlo o abandonarlo, archive_course.",
+        description="Planned or active. To finish or abandon it, archive_course.",
     )
-    credits: float | None = Field(default=None, gt=0, description="Null los quita.")
-    hours: float | None = Field(default=None, gt=0, description="Null las quita.")
+    credits: float | None = Field(default=None, gt=0, description="Null removes them.")
+    hours: float | None = Field(default=None, gt=0, description="Null removes them.")
     scale_max: Literal[10, 100] | None = Field(
-        default=None, description="Si cambia y no se dice el aprobado, pasa a la mitad."
+        default=None, description="If it changes and the pass mark is not said, it becomes half."
     )
     pass_mark: float | None = Field(default=None, gt=0)
-    target_grade: float | None = Field(default=None, gt=0, description="Null lo quita.")
+    target_grade: float | None = Field(default=None, gt=0, description="Null removes it.")
     tone: int | None = Field(default=None, ge=1, le=10)
-    campus_url: str | None = Field(default=None, description="Null lo quita.")
-    note: str | None = Field(default=None, max_length=4000, description="Null la quita.")
+    campus_url: str | None = Field(default=None, description="Null removes it.")
+    note: str | None = Field(default=None, max_length=4000, description="Null removes it.")
     tracks: list[studies.Track] | None = Field(
         default=None,
-        description="Qué se sigue: grades, progress, attendance. Lista vacía: nada. Sin decirlo, "
-        "se queda como estaba.",
+        description="What is tracked: grades, progress, attendance. Empty list: nothing. "
+        "If not said, "
+        "it stays as it was.",
     )
 
 
@@ -630,13 +635,13 @@ async def update_course(connection: AsyncConnection, arguments: UpdateCourse) ->
 
 
 class ArchiveCourse(BaseModel):
-    course_id: UUID = Field(description="El estudio, de get_courses.")
+    course_id: UUID = Field(description="The course, from get_courses.")
     outcome: Literal["finished", "abandoned"] = Field(
-        description="finished si se terminó, abandoned si se dejó."
+        description="finished if it was completed, abandoned if it was dropped."
     )
-    closed_on: date | None = Field(default=None, description="Cuándo; hoy si no se dice.")
+    closed_on: date | None = Field(default=None, description="When; today if not said.")
     final_grade: float | None = Field(
-        default=None, ge=0, description="La nota final del estudio, en su escala, si la tiene."
+        default=None, ge=0, description="The course's final grade, on its scale, if it has one."
     )
 
 
@@ -654,7 +659,7 @@ async def archive_course(connection: AsyncConnection, arguments: ArchiveCourse) 
 
 
 class ReopenCourse(BaseModel):
-    course_id: UUID = Field(description="El estudio archivado, de get_courses con scope archive.")
+    course_id: UUID = Field(description="The archived course, from get_courses with scope archive.")
 
 
 async def reopen_course(connection: AsyncConnection, arguments: ReopenCourse) -> dict[str, Any]:
@@ -663,11 +668,11 @@ async def reopen_course(connection: AsyncConnection, arguments: ReopenCourse) ->
 
 
 class DeleteCourse(BaseModel):
-    course_id: UUID = Field(description="El estudio, de get_courses.")
+    course_id: UUID = Field(description="The course, from get_courses.")
     name: str = Field(
         min_length=1,
         max_length=200,
-        description="Su nombre tal como está guardado. Si no coincide no se borra nada.",
+        description="Its name as stored. If it does not match nothing is deleted.",
     )
 
 
@@ -675,7 +680,7 @@ async def delete_course(connection: AsyncConnection, arguments: DeleteCourse) ->
     course_id = str(arguments.course_id)
     detail = await studies.course(connection, course_id)
     if not _same(detail.course.name, arguments.name):
-        return _mismatch("ese estudio", detail.course.name, arguments.name)
+        return _mismatch("that course", detail.course.name, arguments.name)
     await studies.delete_course(connection, course_id)
     return {
         "deleted": {
@@ -684,12 +689,12 @@ async def delete_course(connection: AsyncConnection, arguments: DeleteCourse) ->
             "subjects": len(detail.subjects),
             "assessments": len(detail.assessments),
         },
-        "note": "los apuntes siguen en Notas, en su carpeta",
+        "note": "the notes stay in Notes, in their folder",
     }
 
 
 class AddSubject(SubjectSpec):
-    course_id: UUID = Field(description="El estudio, de get_courses.")
+    course_id: UUID = Field(description="The course, from get_courses.")
 
 
 async def add_subject(connection: AsyncConnection, arguments: AddSubject) -> dict[str, Any]:
@@ -720,13 +725,13 @@ async def add_subject(connection: AsyncConnection, arguments: AddSubject) -> dic
 
 
 class UpdateSubject(BaseModel):
-    subject_id: UUID = Field(description="La asignatura, de get_course.")
+    subject_id: UUID = Field(description="The subject, from get_course.")
     name: str | None = Field(default=None, min_length=1, max_length=200)
-    teacher: str | None = Field(default=None, max_length=200, description="Null lo quita.")
-    credits: float | None = Field(default=None, gt=0, description="Null los quita.")
-    period: str | None = Field(default=None, max_length=60, description="Null lo quita.")
+    teacher: str | None = Field(default=None, max_length=200, description="Null removes it.")
+    credits: float | None = Field(default=None, gt=0, description="Null removes them.")
+    period: str | None = Field(default=None, max_length=60, description="Null removes it.")
     position: int | None = Field(
-        default=None, ge=0, le=100, description="Su sitio en la lista del estudio, desde 0."
+        default=None, ge=0, le=100, description="Its place in the course's list, from 0."
     )
 
 
@@ -752,11 +757,11 @@ async def update_subject(connection: AsyncConnection, arguments: UpdateSubject) 
 
 
 class DeleteSubject(BaseModel):
-    subject_id: UUID = Field(description="La asignatura, de get_course.")
+    subject_id: UUID = Field(description="The subject, from get_course.")
     name: str = Field(
         min_length=1,
         max_length=200,
-        description="Su nombre tal como está guardado. Si no coincide no se borra nada.",
+        description="Its name as stored. If it does not match nothing is deleted.",
     )
 
 
@@ -764,17 +769,17 @@ async def delete_subject(connection: AsyncConnection, arguments: DeleteSubject) 
     subject_id = str(arguments.subject_id)
     current = await studies.subject_summary(connection, subject_id)
     if not _same(current.name, arguments.name):
-        return _mismatch("esa asignatura", current.name, arguments.name)
+        return _mismatch("that subject", current.name, arguments.name)
     await studies.delete_subject(connection, subject_id)
     return {
         "deleted": {"subject_id": subject_id, "name": current.name},
-        "note": "los apuntes siguen en Notas, en su carpeta",
+        "note": "the notes stay in Notes, in their folder",
     }
 
 
 class AddSchedule(ScheduleSpec):
-    course_id: UUID = Field(description="El estudio, de get_courses.")
-    subject_id: UUID | None = Field(default=None, description="Su asignatura, si la tiene.")
+    course_id: UUID = Field(description="The course, from get_courses.")
+    subject_id: UUID | None = Field(default=None, description="Its subject, if it has one.")
 
 
 async def add_schedule(connection: AsyncConnection, arguments: AddSchedule) -> dict[str, Any]:
@@ -786,15 +791,16 @@ async def add_schedule(connection: AsyncConnection, arguments: AddSchedule) -> d
 
 
 class UpdateSchedule(BaseModel):
-    schedule_id: UUID = Field(description="El bloque del horario, de get_course.")
-    rule: Rule | None = Field(default=None, description="La regla entera, como en create_course.")
+    schedule_id: UUID = Field(description="The schedule block, from get_course.")
+    rule: Rule | None = Field(default=None, description="The whole rule, as in create_course.")
     starts_on: date | None = None
     start_time: time | None = None
     end_time: time | None = None
-    place: str | None = Field(default=None, max_length=200, description="Null lo quita.")
-    url: str | None = Field(default=None, max_length=500, description="Null lo quita.")
+    place: str | None = Field(default=None, max_length=200, description="Null removes it.")
+    url: str | None = Field(default=None, max_length=500, description="Null removes it.")
     subject_id: UUID | None = Field(
-        default=None, description="Otra asignatura del mismo estudio; null lo deja sin asignatura."
+        default=None,
+        description="Another subject of the same course; null leaves it without a subject.",
     )
 
 
@@ -819,19 +825,19 @@ async def update_schedule(connection: AsyncConnection, arguments: UpdateSchedule
     )
     return {
         "schedule": _schedule(updated),
-        "note": "las clases que ya pasaron o que tocaste (movidas, con apuntes) no cambian",
+        "note": "sessions already past or touched (moved, with notes) do not change",
     }
 
 
 class DeleteSchedule(BaseModel):
-    schedule_id: UUID = Field(description="El bloque del horario, de get_course.")
+    schedule_id: UUID = Field(description="The schedule block, from get_course.")
 
 
 async def delete_schedule(connection: AsyncConnection, arguments: DeleteSchedule) -> dict[str, Any]:
     removed = await timetable.delete_schedule(connection, str(arguments.schedule_id))
     return {
         "deleted": {"schedule_id": str(arguments.schedule_id), "removed_sessions": removed},
-        "note": "las clases que ya pasaron o que tocaste se quedan, sueltas",
+        "note": "sessions already past or touched stay, as one-off sessions",
     }
 
 
@@ -840,16 +846,17 @@ def _local(moment: datetime) -> datetime:
 
 
 class AddSession(BaseModel):
-    course_id: UUID = Field(description="El estudio, de get_courses.")
-    subject_id: UUID | None = Field(default=None, description="Su asignatura, si la tiene.")
+    course_id: UUID = Field(description="The course, from get_courses.")
+    subject_id: UUID | None = Field(default=None, description="Its subject, if it has one.")
     kind: Literal["class", "tutorial", "event"] = Field(
-        default="event", description="class: una clase de más; tutorial; event: jornada, defensa."
+        default="event",
+        description="class: an extra class; tutorial; event: a day event, a defence.",
     )
     title: str | None = Field(
-        default=None, max_length=200, description="Hace falta salvo en una clase."
+        default=None, max_length=200, description="Required except for a class."
     )
-    starts_at: datetime = Field(description="Sin zona, hora de Madrid.")
-    ends_at: datetime = Field(description="Sin zona, hora de Madrid.")
+    starts_at: datetime = Field(description="Without a zone, the course's time zone.")
+    ends_at: datetime = Field(description="Without a zone, the course's time zone.")
     place: str | None = Field(default=None, max_length=200)
     url: str | None = Field(default=None, max_length=500)
 
@@ -870,21 +877,26 @@ async def add_session(connection: AsyncConnection, arguments: AddSession) -> dic
 
 
 class UpdateSession(BaseModel):
-    session_id: UUID = Field(description="La clase, de get_week.")
+    session_id: UUID = Field(description="The session, from get_week.")
     starts_at: datetime | None = Field(
-        default=None, description="Sin zona, hora de Madrid. Si no se dice el fin, dura lo mismo."
+        default=None,
+        description=(
+            "Without a zone, the course's time zone. If the end is not said, it lasts the same."
+        ),
     )
     ends_at: datetime | None = None
-    place: str | None = Field(default=None, max_length=200, description="Null lo quita.")
-    url: str | None = Field(default=None, max_length=500, description="Null lo quita.")
+    place: str | None = Field(default=None, max_length=200, description="Null removes it.")
+    url: str | None = Field(default=None, max_length=500, description="Null removes it.")
     title: str | None = Field(
-        default=None, max_length=200, description="Solo en una sesión suelta; una clase no lo usa."
+        default=None,
+        max_length=200,
+        description="Only for a one-off session; a class does not use it.",
     )
     status: Literal["scheduled", "cancelled"] | None = Field(
-        default=None, description="cancelled la cancela; scheduled la recupera."
+        default=None, description="cancelled cancels it; scheduled brings it back."
     )
     topic: str | None = Field(
-        default=None, max_length=300, description="De qué fue o de qué va. Null lo quita."
+        default=None, max_length=300, description="What it was or is about. Null removes it."
     )
 
 
@@ -919,7 +931,7 @@ async def update_session(connection: AsyncConnection, arguments: UpdateSession) 
 
 
 class DeleteSession(BaseModel):
-    session_id: UUID = Field(description="La sesión suelta, de get_week.")
+    session_id: UUID = Field(description="The one-off session, from get_week.")
 
 
 async def delete_session(connection: AsyncConnection, arguments: DeleteSession) -> dict[str, Any]:
@@ -928,21 +940,22 @@ async def delete_session(connection: AsyncConnection, arguments: DeleteSession) 
 
 
 class UpdateAssessment(BaseModel):
-    assessment_id: UUID = Field(description="El evaluable, de get_grades o get_week.")
+    assessment_id: UUID = Field(description="The assessment, from get_grades or get_week.")
     title: str | None = Field(default=None, min_length=1, max_length=200)
     kind: studies.AssessmentKind | None = None
     subject_id: UUID | None = Field(
-        default=None, description="Otra asignatura del mismo estudio; null lo cuelga del estudio."
+        default=None,
+        description="Another subject of the same course; null hangs it from the course.",
     )
-    due_on: date | None = Field(default=None, description="Null quita la fecha.")
-    due_time: time | None = Field(default=None, description="Null quita la hora.")
-    weight: float | None = Field(default=None, gt=0, le=100, description="Null quita el peso.")
-    min_grade: float | None = Field(default=None, ge=0, description="Null quita la mínima.")
+    due_on: date | None = Field(default=None, description="Null removes the date.")
+    due_time: time | None = Field(default=None, description="Null removes the time.")
+    weight: float | None = Field(default=None, gt=0, le=100, description="Null removes the weight.")
+    min_grade: float | None = Field(default=None, ge=0, description="Null removes the minimum.")
     status: Literal["pending", "submitted"] | None = Field(
         default=None,
-        description="Pendiente o entregado. La nota se pone con record_grade y manda sobre esto.",
+        description="Pending or submitted. The grade is set with record_grade and overrides this.",
     )
-    note: str | None = Field(default=None, max_length=2000, description="Null la quita.")
+    note: str | None = Field(default=None, max_length=2000, description="Null removes it.")
 
 
 async def update_assessment(
@@ -978,11 +991,11 @@ async def update_assessment(
 
 
 class DeleteAssessment(BaseModel):
-    assessment_id: UUID = Field(description="El evaluable, de get_grades o get_week.")
+    assessment_id: UUID = Field(description="The assessment, from get_grades or get_week.")
     title: str = Field(
         min_length=1,
         max_length=200,
-        description="Su título tal como está guardado. Si no coincide no se borra nada.",
+        description="Its title as stored. If it does not match nothing is deleted.",
     )
 
 
@@ -992,31 +1005,31 @@ async def delete_assessment(
     assessment_id = str(arguments.assessment_id)
     current = await studies.assessment(connection, assessment_id)
     if not _same(current.title, arguments.title):
-        return _mismatch("ese evaluable", current.title, arguments.title)
+        return _mismatch("that assessment", current.title, arguments.title)
     await studies.delete_assessment(connection, assessment_id)
     return {"deleted": {"assessment_id": assessment_id, "title": current.title}}
 
 
 class UpdateNote(BaseModel):
-    note_id: UUID = Field(description="Los apuntes, de find_notes o get_course.")
+    note_id: UUID = Field(description="The note, from find_notes or get_course.")
     title: str | None = Field(default=None, min_length=1, max_length=200)
     body: str | None = Field(
-        default=None, min_length=1, max_length=100000, description="Markdown; sustituye el texto."
+        default=None, min_length=1, max_length=100000, description="Markdown; replaces the text."
     )
     append: str | None = Field(
         default=None,
         min_length=1,
         max_length=100000,
-        description="Markdown que se añade al final, sin reescribir lo que hay.",
+        description="Markdown added at the end, without rewriting what is there.",
     )
     subject_id: UUID | None = Field(
-        default=None, description="Los pasa a otra asignatura del mismo estudio."
+        default=None, description="Moves it to another subject of the same course."
     )
 
     @model_validator(mode="after")
     def _one_text(self) -> Self:
         if self.body is not None and self.append is not None:
-            raise ValueError("o body o append, no los dos")
+            raise ValueError("either body or append, not both")
         return self
 
 
@@ -1024,7 +1037,7 @@ async def update_note(
     connection: AsyncConnection, arguments: UpdateNote, client: httpx.AsyncClient
 ) -> dict[str, Any]:
     note_id = str(arguments.note_id)
-    current = await apuntes.note(connection, client, note_id)
+    current = await class_notes.note(connection, client, note_id)
     body = arguments.body if arguments.body is not None else current.body
     if arguments.append:
         body = f"{current.body.rstrip()}\n\n{arguments.append}".lstrip()
@@ -1034,31 +1047,31 @@ async def update_note(
         body=body,
         subject_id=str(arguments.subject_id) if arguments.subject_id else None,
     )
-    updated = await apuntes.update_note(connection, client, note_id, edit)
+    updated = await class_notes.update_note(connection, client, note_id, edit)
     return {**_note(updated), "course": updated.course}
 
 
 class DeleteNote(BaseModel):
-    note_id: UUID = Field(description="Los apuntes, de find_notes o get_course.")
+    note_id: UUID = Field(description="The note, from find_notes or get_course.")
 
 
 async def delete_note(
     connection: AsyncConnection, arguments: DeleteNote, client: httpx.AsyncClient
 ) -> dict[str, Any]:
     note_id = str(arguments.note_id)
-    current = await apuntes.note(connection, client, note_id)
-    await apuntes.delete_note(connection, client, note_id)
+    current = await class_notes.note(connection, client, note_id)
+    await class_notes.delete_note(connection, client, note_id)
     return {
         "deleted": {"note_id": note_id, "title": current.title},
-        "note": "están en la papelera de Notas, de donde se recuperan",
+        "note": "it is in the Notes trash, where it can be restored",
     }
 
 
 class AddMaterial(BaseModel):
-    course_id: UUID = Field(description="El estudio, de get_courses.")
-    subject_id: UUID | None = Field(default=None, description="Su asignatura, si la tiene.")
+    course_id: UUID = Field(description="The course, from get_courses.")
+    subject_id: UUID | None = Field(default=None, description="Its subject, if it has one.")
     title: str = Field(min_length=1, max_length=200)
-    url: str = Field(min_length=1, max_length=1000, description="El enlace al material.")
+    url: str = Field(min_length=1, max_length=1000, description="The link to the material.")
 
 
 async def add_material(connection: AsyncConnection, arguments: AddMaterial) -> dict[str, Any]:
@@ -1073,7 +1086,7 @@ async def add_material(connection: AsyncConnection, arguments: AddMaterial) -> d
 
 
 class DeleteMaterial(BaseModel):
-    material_id: UUID = Field(description="El material, de get_course.")
+    material_id: UUID = Field(description="The material, from get_course.")
 
 
 async def delete_material(connection: AsyncConnection, arguments: DeleteMaterial) -> dict[str, Any]:

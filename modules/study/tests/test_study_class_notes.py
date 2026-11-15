@@ -11,10 +11,10 @@ from study.studies import today
 MADRID = ZoneInfo("Europe/Madrid")
 
 
-async def course(api, name: str = "Alemán") -> tuple[str, str]:
+async def course(api, name: str = "German") -> tuple[str, str]:
     created = (
         await api.post(
-            "/courses", json={"name": name, "tone": 3, "subjects": [{"name": "Gramática"}]}
+            "/courses", json={"name": name, "tone": 3, "subjects": [{"name": "Grammar"}]}
         )
     ).json()
     return created["course"]["id"], created["subjects"][0]["id"]
@@ -44,11 +44,11 @@ async def test_the_course_shows_what_lives_in_its_folder_and_a_class_note_become
         json={
             "notes": [
                 {
-                    "folder": "Study/Alemán/B1 Gramatik",
+                    "folder": "Study/German/B1 Grammatik",
                     "title": "DE 1.1 Kasus",
                     "content": "Kasus.",
                 },
-                {"folder": "Otros", "title": "Fuera", "content": "No es del estudio."},
+                {"folder": "Others", "title": "Outside", "content": "Not from the course."},
             ]
         },
     )
@@ -64,15 +64,15 @@ async def test_the_course_shows_what_lives_in_its_folder_and_a_class_note_become
 
     assert written.status_code == 201, written.text
     note = written.json()
-    assert note["title"] == f"Clase del {today().isoformat()}"
+    assert note["title"] == f"Session of {today().isoformat()}"
     assert (note["course"], note["subject"], note["session_id"]) == (
-        "Alemán",
-        "Gramática",
+        "German",
+        "Grammar",
         session_id,
     )
     assert sorted(n["title"] for n in listed) == [
-        "Clase del " + today().isoformat(),
         "DE 1.1 Kasus",
+        "Session of " + today().isoformat(),
     ]
     kasus = next(n for n in listed if n["title"] == "DE 1.1 Kasus")
     assert (kasus["course_id"], kasus["subject_id"]) == (course_id, None)
@@ -83,12 +83,12 @@ async def test_the_course_shows_what_lives_in_its_folder_and_a_class_note_become
         else True
     )
     paths = {n["path"] for n in tree["notes"]}
-    assert f"Study/Alemán/Gramática/Clase del {today().isoformat()}" in paths
+    assert f"Study/German/Grammar/Session of {today().isoformat()}" in paths
     in_notebook = (await notebook.get(f"/notes/{note['id']}")).json()
     assert in_notebook["properties"] == {
-        "study_estudio": course_id,
-        "study_asignatura": subject_id,
-        "study_clase": session_id,
+        "study_course": course_id,
+        "study_subject": subject_id,
+        "study_session": session_id,
     }
     assert in_notebook["content"].endswith("Dativ: *wem?*")
 
@@ -103,18 +103,18 @@ async def test_editing_from_study_keeps_the_frontmatter_and_deleting_sends_it_to
 
     edited = await api.put(
         f"/notes/{note['id']}",
-        json={"title": "Verbos fuertes", "body": "dos", "subject_id": subject_id},
+        json={"title": "Strong verbs", "body": "dos", "subject_id": subject_id},
     )
     in_notebook = (await notebook.get(f"/notes/{note['id']}")).json()
     deleted = await api.delete(f"/notes/{note['id']}")
     trash = (await notebook.get("/trash")).json()
 
     assert edited.status_code == 200, edited.text
-    assert (edited.json()["title"], edited.json()["subject"]) == ("Verbos fuertes", "Gramática")
-    assert in_notebook["path"] == "Study/Alemán/Gramática/Verbos fuertes"
-    assert in_notebook["content"] == f"---\nstudy_estudio: {course_id}\n---\ndos"
+    assert (edited.json()["title"], edited.json()["subject"]) == ("Strong verbs", "Grammar")
+    assert in_notebook["path"] == "Study/German/Grammar/Strong verbs"
+    assert in_notebook["content"] == f"---\nstudy_course: {course_id}\n---\ndos"
     assert deleted.status_code == 204
-    assert [n["title"] for n in trash] == ["Verbos fuertes"]
+    assert [n["title"] for n in trash] == ["Strong verbs"]
 
 
 async def test_the_old_text_of_a_note_is_no_longer_read(api, notebook, schema) -> None:
@@ -142,18 +142,19 @@ async def test_the_old_text_of_a_note_is_no_longer_read(api, notebook, schema) -
 async def test_searching_finds_plurals_and_marks_what_it_found(api, notebook) -> None:
     course_id, _ = await course(api)
     await api.post(
-        "/notes", json={"course_id": course_id, "title": "Redes", "body": "El **gradiente** baja."}
+        "/notes",
+        json={"course_id": course_id, "title": "Networks", "body": "The **gradient** goes down."},
     )
 
-    hits = (await api.get("/notes", params={"q": "gradientes"})).json()
+    hits = (await api.get("/notes", params={"q": "gradients"})).json()
 
-    assert [h["title"] for h in hits] == ["Redes"]
-    assert "«gradiente»" in hits[0]["fragment"]
+    assert [h["title"] for h in hits] == ["Networks"]
+    assert "«gradient»" in hits[0]["fragment"]
     assert "**" not in hits[0]["fragment"]
 
 
 async def test_a_custom_folder_for_a_course(api, notebook, schema) -> None:
-    course_id, _ = await course(api, "Máster")
+    course_id, _ = await course(api, "Master")
     await notebook.post(
         "/import", json={"notes": [{"folder": "Estudios/MSc", "title": "TFM", "content": "x"}]}
     )
@@ -180,7 +181,7 @@ async def test_when_the_notes_do_not_answer_the_subject_still_opens(
     course_id, subject_id = await course(api)
 
     def down(request: httpx.Request) -> httpx.Response:
-        raise httpx.ConnectError("caído", request=request)
+        raise httpx.ConnectError("down", request=request)
 
     monkeypatch.setattr(kernel_capabilities, "module_transport", lambda: httpx.MockTransport(down))
     subject = await api.get(f"/subjects/{subject_id}")
@@ -196,3 +197,25 @@ async def test_notebook_refuses_whoever_does_not_come_from_the_kernel(notebook) 
     response = await notebook.post("/capabilities/notes.list", json={})
 
     assert response.status_code == 401
+
+
+async def test_notes_written_with_the_old_property_names_still_belong_to_their_session(
+    api, notebook
+) -> None:
+    course_id, subject_id = await course(api)
+    session_id = await session(api, course_id, subject_id)
+    old = (
+        f"---\nstudy_estudio: {course_id}\nstudy_asignatura: {subject_id}\n"
+        f"study_clase: {session_id}\n---\nAkkusativ."
+    )
+    imported = await notebook.post(
+        "/import",
+        json={"notes": [{"folder": "Elsewhere", "title": "Old note", "content": old}]},
+    )
+    assert imported.json()["created"] == 1
+
+    page = (await api.get(f"/sessions/{session_id}")).json()
+    by_subject = (await api.get("/notes", params={"subject_id": subject_id})).json()
+
+    assert [n["body"] for n in page["notes"]] == ["Akkusativ."]
+    assert [(n["title"], n["subject_id"]) for n in by_subject] == [("Old note", subject_id)]

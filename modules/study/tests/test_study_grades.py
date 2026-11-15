@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
-from study.grades import Item, SubjectResult, ceil1, compute, course_average, number
+from arga_module import preferences
+from study.grades import Item, SubjectResult, ceil1, compute, course_average, number, percent
 
 
 def grade(items, **options):
@@ -17,9 +20,9 @@ def grade(items, **options):
 def test_with_forty_percent_graded_it_says_what_is_needed_to_pass() -> None:
     result = grade(
         [
-            Item("Práctica 1", weight=20, grade=6),
-            Item("Práctica 2", weight=20, grade=4),
-            Item("Examen final", weight=60, grade=None),
+            Item("Lab 1", weight=20, grade=6),
+            Item("Lab 2", weight=20, grade=4),
+            Item("Final exam", weight=60, grade=None),
         ]
     )
 
@@ -28,34 +31,34 @@ def test_with_forty_percent_graded_it_says_what_is_needed_to_pass() -> None:
     assert result.secured == 2.0
     assert (result.graded_weight, result.remaining_weight) == (40, 60)
     assert result.needed_to_pass == 5.0
-    assert result.sentence == "Necesitas un 5 de media en lo que queda (60 %) para aprobar."
+    assert result.sentence == "You need 5 on average in what is left (60 %) to pass."
 
 
 def test_it_says_impossible_when_it_is() -> None:
-    result = grade([Item("Parcial", weight=70, grade=1), Item("Final", weight=30, grade=None)])
+    result = grade([Item("Midterm", weight=70, grade=1), Item("Final", weight=30, grade=None)])
 
     assert result.verdict == "impossible"
     assert result.needed_to_pass == pytest.approx(14.33, abs=0.01)
-    assert result.sentence.startswith("Aprobar ya no es posible")
+    assert result.sentence.startswith("Passing is no longer possible")
 
 
 def test_it_says_when_it_is_passed_whatever_happens() -> None:
-    result = grade([Item("Parcial", weight=80, grade=9), Item("Final", weight=20, grade=None)])
+    result = grade([Item("Midterm", weight=80, grade=9), Item("Final", weight=20, grade=None)])
 
     assert result.verdict == "secured"
     assert result.needed_to_pass is not None and result.needed_to_pass <= 0
-    assert result.sentence == "Aprobada pase lo que pase."
+    assert result.sentence == "Passed whatever happens."
 
 
 def test_a_target_gets_its_own_figure() -> None:
     result = grade(
-        [Item("Trabajo", weight=40, grade=8), Item("Examen", weight=60, grade=None)],
+        [Item("Essay", weight=40, grade=8), Item("Exam", weight=60, grade=None)],
         target=9,
     )
 
     assert result.needed_to_pass == 3.0
     assert result.needed_for_target == pytest.approx(9.67, abs=0.01)
-    assert "Para tu 9, un 9,7 (60 %)." in result.sentence
+    assert "For your 9, 9.7 (60 %)." in result.sentence
 
 
 def test_what_is_needed_rounds_up_never_down() -> None:
@@ -67,36 +70,36 @@ def test_what_is_needed_rounds_up_never_down() -> None:
 def test_a_minimum_not_reached_fails_it_even_if_the_average_passes() -> None:
     result = grade(
         [
-            Item("Trabajo", weight=50, grade=10),
-            Item("Examen", weight=50, grade=3, min_grade=4),
+            Item("Essay", weight=50, grade=10),
+            Item("Exam", weight=50, grade=3, min_grade=4),
         ]
     )
 
     assert result.current == 6.5
     assert result.verdict == "below_minimum"
-    assert result.sentence == "Suspensa: Examen no llega al 4 que pide."
+    assert result.sentence == "Failed: Exam does not reach the 4 it requires."
 
 
 def test_a_pending_minimum_is_said_and_keeps_it_from_being_secured() -> None:
     result = grade(
         [
-            Item("Trabajo", weight=60, grade=10),
-            Item("Examen", weight=40, grade=None, min_grade=4),
+            Item("Essay", weight=60, grade=10),
+            Item("Exam", weight=40, grade=None, min_grade=4),
         ]
     )
 
     assert result.verdict == "in_progress"
-    assert result.sentence.endswith("para aprobar, y al menos un 4 en Examen.")
+    assert result.sentence.endswith("to pass, and at least 4 in Exam.")
 
 
 def test_the_record_grade_overrides_the_computed_one() -> None:
     result = grade(
-        [Item("Examen", weight=100, grade=4.5)],
+        [Item("Exam", weight=100, grade=4.5)],
         record=5,
     )
 
     assert (result.verdict, result.final, result.final_source) == ("passed", 5, "record")
-    assert result.sentence == "Aprobada con un 5 en el acta."
+    assert result.sentence == "Passed with 5 on the record."
 
 
 def test_all_graded_gives_the_final_grade() -> None:
@@ -121,7 +124,7 @@ def test_a_missing_weight_among_weighted_ones_does_not_count_and_is_said() -> No
 
 
 def test_weights_under_a_hundred_leave_the_rest_for_what_is_missing() -> None:
-    result = grade([Item("Examen", weight=60, grade=7)])
+    result = grade([Item("Exam", weight=60, grade=7)])
 
     assert result.verdict == "in_progress"
     assert result.secured == 4.2
@@ -136,7 +139,7 @@ def test_on_a_hundred_point_scale() -> None:
     )
 
     assert result.needed_to_pass == 60
-    assert result.sentence == "Necesitas un 60 de media en lo que queda (50 %) para aprobar."
+    assert result.sentence == "You need 60 on average in what is left (50 %) to pass."
 
 
 def test_nothing_to_grade_says_so() -> None:
@@ -164,7 +167,13 @@ def test_without_credits_subjects_weigh_the_same() -> None:
     assert result.average == 6.5
 
 
-def test_numbers_read_in_spanish() -> None:
-    assert number(6.24) == "6,2"
-    assert number(7.0) == "7"
-    assert number(85.0, 100) == "85"
+def test_numbers_follow_the_language() -> None:
+    assert [number(6.24), number(7.0), number(85.0, 100)] == ["6.2", "7", "85"]
+    token = preferences.use(replace(preferences.defaults(), locale="es"))
+    try:
+        assert [number(6.24), percent(12.5)] == ["6,2", "12,5 %"]
+        assert grade([Item("Exam", weight=100, grade=4.5)], record=5).sentence.startswith(
+            "Aprobada"
+        )
+    finally:
+        preferences.reset(token)

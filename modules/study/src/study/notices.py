@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_contracts import notify
 from study import studies
+from study.words import say
 
 KIND = "assessment"
 HOUR = time(19, 0)
@@ -27,8 +28,8 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
             notify.notification(
                 KIND,
                 f"assessment:{one.id}:{one.due_on.isoformat()}",
-                f"Mañana: {one.title}",
-                f"/study/estudio/{one.course_id}",
+                say("notice.tomorrow", title=one.title),
+                f"/study/course/{one.course_id}",
                 notify.at(one.due_on - timedelta(days=1), HOUR),
                 body=where,
             )

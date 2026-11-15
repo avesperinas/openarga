@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from arga_module import preferences
 from arga_recurrence import Rule, describe, expand, parse, to_rrule
 from study import outbox
 from study.studies import (
@@ -54,11 +55,11 @@ class ScheduleIn(BaseModel):
     @model_validator(mode="after")
     def _coherent(self) -> Self:
         if self.end_time <= self.start_time:
-            raise ValueError("la clase tiene que acabar después de empezar")
+            raise ValueError("a session has to end after it starts")
         if isinstance(self.rule.until, datetime):
             self.rule = self.rule.model_copy(update={"until": self.rule.until.date()})
         if self.rule.until is not None and self.rule.until < self.starts_on:
-            raise ValueError("el horario no puede acabar antes de empezar")
+            raise ValueError("a schedule cannot end before it starts")
         return self
 
 
@@ -101,11 +102,11 @@ class SessionIn(BaseModel):
     @model_validator(mode="after")
     def _coherent(self) -> Self:
         if self.ends_at <= self.starts_at:
-            raise ValueError("la sesión tiene que acabar después de empezar")
+            raise ValueError("a session has to end after it starts")
         if self.starts_at.tzinfo is None or self.ends_at.tzinfo is None:
-            raise ValueError("las horas van con su zona")
+            raise ValueError("times go with their zone")
         if self.kind != "class" and not self.title:
-            raise ValueError("una sesión suelta necesita un título")
+            raise ValueError("a one-off session needs a title")
         return self
 
 
@@ -130,7 +131,7 @@ class SessionEdit(BaseModel):
     @model_validator(mode="after")
     def _coherent(self) -> Self:
         if self.ends_at <= self.starts_at:
-            raise ValueError("la clase tiene que acabar después de empezar")
+            raise ValueError("a session has to end after it starts")
         return self
 
 
@@ -166,7 +167,7 @@ def _schedule_out(row) -> ScheduleOut:
         subject=row.subject,
         rrule=row.rrule,
         rule=rule,
-        phrase=describe(rule),
+        phrase=describe(rule, preferences.current().locale),
         starts_on=row.starts_on,
         ends_on=until.date() if isinstance(until, datetime) else until,
         start_time=row.start_time,
@@ -206,7 +207,7 @@ async def _check_subject(
         text("select course_id from study.study_subject where id = :id"), {"id": subject_id}
     )
     if str(owner) != course_id:
-        raise Conflict("esa asignatura es de otro estudio")
+        raise Conflict("that subject belongs to another course")
 
 
 async def add_schedule(
@@ -467,7 +468,7 @@ async def session(connection: AsyncConnection, session_id: str) -> SessionDetail
         subject_name=row.subject,
         tz=row.tz,
         schedule_id=str(row.schedule_id) if row.schedule_id else None,
-        phrase=describe(parse(row.rrule)) if row.rrule else None,
+        phrase=describe(parse(row.rrule), preferences.current().locale) if row.rrule else None,
         touched=row.touched,
         previous_id=str(previous_id) if previous_id else None,
         next_id=str(next_id) if next_id else None,
@@ -511,7 +512,7 @@ async def update_session(
         text("select kind from study.study_session where id = :id"), {"id": session_id}
     )
     if kind != "class" and not edit.title:
-        raise Conflict("una sesión suelta necesita un título")
+        raise Conflict("a one-off session needs a title")
     await connection.execute(
         text("""
             update study.study_session
@@ -542,7 +543,7 @@ async def mark_attendance(
         text("select status from study.study_session where id = :id"), {"id": session_id}
     )
     if status == "cancelled" and given.attendance is not None:
-        raise Conflict("una clase cancelada no tiene asistencia")
+        raise Conflict("a cancelled session has no attendance")
     await connection.execute(
         text("update study.study_session set attendance = :a, updated_at = now() where id = :id"),
         {"a": given.attendance, "id": session_id},
@@ -569,7 +570,7 @@ async def delete_session(connection: AsyncConnection, session_id: str) -> None:
         )
     ).one()
     if row.schedule_id is not None:
-        raise Conflict("una clase del horario se cancela, no se borra")
+        raise Conflict("a session from the schedule is cancelled, not deleted")
     await outbox.enqueue(connection, "study.session", outbox.session_payload(row, removed=True))
     await connection.execute(
         text("delete from study.study_session where id = :id"), {"id": session_id}

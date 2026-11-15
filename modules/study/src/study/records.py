@@ -9,38 +9,38 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_contracts as contracts
 from arga_contracts import records as write
-from study import apuntes, studies, timetable
+from study import class_notes, studies, timetable
 
 APP = "study"
 KINDS = {
-    "master": "Máster",
-    "degree": "Grado",
-    "course": "Curso",
-    "certification": "Certificación",
-    "language": "Idioma",
-    "other": "Estudio",
+    "master": "Master",
+    "degree": "Degree",
+    "course": "Course",
+    "certification": "Certification",
+    "language": "Language",
+    "other": "Study",
 }
-MODALITY = {"in_person": "presencial", "online": "en línea", "hybrid": "mixta"}
+MODALITY = {"in_person": "in person", "online": "online", "hybrid": "hybrid"}
 STATUS = {
-    "planned": "planeado",
-    "active": "en curso",
-    "finished": "terminado",
-    "abandoned": "abandonado",
+    "planned": "planned",
+    "active": "in progress",
+    "finished": "finished",
+    "abandoned": "abandoned",
 }
 ASSESSMENT = {
-    "assignment": "Entrega",
-    "exam": "Examen",
-    "practical": "Práctica",
-    "participation": "Participación",
-    "other": "Evaluable",
+    "assignment": "Assignment",
+    "exam": "Exam",
+    "practical": "Practical",
+    "participation": "Participation",
+    "other": "Assessment",
 }
-ATTENDANCE = {"present": "fuiste", "absent": "no fuiste"}
+ATTENDANCE = {"present": "attended", "absent": "missed"}
 BEGINNING = datetime(1970, 1, 1, tzinfo=UTC)
 END = datetime(2200, 1, 1, tzinfo=UTC)
 
 
 def _relative(folder: str) -> str:
-    prefix = f"{apuntes.ROOT}/"
+    prefix = f"{class_notes.ROOT}/"
     return folder[len(prefix) :] if folder.startswith(prefix) else ""
 
 
@@ -65,19 +65,19 @@ def course(
         "modalidad": MODALITY[one.modality],
     }
     for name, value in (
-        ("centro", one.institution),
-        ("inicio", one.starts_on.isoformat() if one.starts_on else None),
-        ("fin", one.ends_on.isoformat() if one.ends_on else None),
-        ("creditos", one.credits),
-        ("horas", one.hours),
-        ("nota_media", one.average.average if grades else None),
-        ("nota_final", one.final_grade if grades else None),
+        ("institution", one.institution),
+        ("start", one.starts_on.isoformat() if one.starts_on else None),
+        ("end", one.ends_on.isoformat() if one.ends_on else None),
+        ("credits", one.credits),
+        ("hours", one.hours),
+        ("average_grade", one.average.average if grades else None),
+        ("final_grade", one.final_grade if grades else None),
         (
-            "progreso",
+            "progress",
             round(one.progress.ratio * 100) if one.progress and "progress" in one.tracks else None,
         ),
         (
-            "asistencia",
+            "attendance",
             round(one.attendance.ratio * 100)
             if one.attendance.ratio is not None and "attendance" in one.tracks
             else None,
@@ -91,15 +91,15 @@ def course(
     lead.append(MODALITY[one.modality])
     lead.append(STATUS[one.status])
     if one.starts_on:
-        lead.append(f"desde el {write.long_date(one.starts_on)}")
+        lead.append(f"since {write.long_date(one.starts_on)}")
     if one.progress and "progress" in one.tracks:
         lead.append(one.progress.label)
     subjects = "\n".join(
         f"- {write.link(APP, f'subject:{subject.id}', subject.name)}"
-        + (f" · {write.trimmed(subject.credits)} créditos" if subject.credits else "")
+        + (f" · {write.trimmed(subject.credits)} credits" if subject.credits else "")
         + (f" · {subject.teacher}" if subject.teacher else "")
         + (
-            f" · nota {_grade(subject.grade.final, one.scale_max)}"
+            f" · grade {_grade(subject.grade.final, one.scale_max)}"
             if grades and subject.grade.final is not None
             else ""
         )
@@ -115,14 +115,14 @@ def course(
         id=f"course:{one.id}",
         title=one.name,
         kind=KINDS[one.kind],
-        href=f"/study/estudio/{one.id}",
+        href=f"/study/course/{one.id}",
         folder=folder,
         properties=properties,
         body=write.sections(
             " · ".join(lead) + ".",
             one.note,
-            f"## Asignaturas\n\n{subjects}" if subjects else None,
-            f"## Horario\n\n{schedule}" if schedule else None,
+            f"## Subjects\n\n{subjects}" if subjects else None,
+            f"## Schedule\n\n{schedule}" if schedule else None,
             _assessments(found.assessments, one.scale_max, grades),
         ),
     )
@@ -135,17 +135,17 @@ def _assessments(found: list[studies.AssessmentOut], scale: float, grades: bool)
             ASSESSMENT[one.kind],
             one.subject or "",
             one.due_on.isoformat() if one.due_on else "",
-            {"pending": "pendiente", "submitted": "entregado", "graded": "calificado"}[one.status],
+            {"pending": "pending", "submitted": "submitted", "graded": "graded"}[one.status],
             _grade(one.grade, scale) if grades else "",
         ]
         for one in found
     ]
     if not rows:
         return None
-    headers = ["Evaluable", "Clase", "Asignatura", "Fecha", "Estado", "Nota"]
+    headers = ["Assessment", "Kind", "Subject", "Due", "Status", "Grade"]
     if not grades:
         headers, rows = headers[:-1], [row[:-1] for row in rows]
-    return "## Evaluables\n\n" + write.table(headers, rows)
+    return "## Assessments\n\n" + write.table(headers, rows)
 
 
 def subject(
@@ -157,13 +157,13 @@ def subject(
 ) -> dict[str, Any]:
     grades = "grades" in course_.tracks
     tz = ZoneInfo(course_.tz)
-    properties: dict[str, Any] = {"estudio": course_.name, "evaluables": one.assessments}
+    properties: dict[str, Any] = {"course": course_.name, "assessments": one.assessments}
     for name, value in (
-        ("profesor", one.teacher),
-        ("creditos", one.credits),
-        ("periodo", one.period),
-        ("nota", one.grade.final if grades else None),
-        ("clases", len(sessions) or None),
+        ("teacher", one.teacher),
+        ("credits", one.credits),
+        ("period", one.period),
+        ("grade", one.grade.final if grades else None),
+        ("sessions", len(sessions) or None),
     ):
         if value is not None:
             properties[name] = value
@@ -175,44 +175,45 @@ def subject(
             if session.attendance in ATTENDANCE and "attendance" in course_.tracks
             else ""
         )
-        + (" · cancelada" if session.status == "cancelled" else "")
+        + (" · cancelled" if session.status == "cancelled" else "")
         for session in sessions
     )
-    lead = f"De {write.link(APP, f'course:{course_.id}', course_.name)}"
+    lead = f"From {write.link(APP, f'course:{course_.id}', course_.name)}"
     if one.teacher:
-        lead += f", con {one.teacher}"
+        lead += f", with {one.teacher}"
     if one.credits:
-        lead += f", {write.trimmed(one.credits)} créditos"
+        lead += f", {write.trimmed(one.credits)} credits"
     return contracts.record(
         id=f"subject:{one.id}",
         title=one.name,
-        kind="Asignatura",
-        href=f"/study/asignatura/{one.id}",
+        kind="Subject",
+        href=f"/study/subject/{one.id}",
         folder=folder,
         properties=properties,
         body=write.sections(
             lead + ".",
             one.grade.sentence if grades and one.grade.sentence else None,
             _assessments(assessments, course_.scale_max, grades),
-            f"## Clases\n\n{classes}" if classes else None,
+            f"## Sessions\n\n{classes}" if classes else None,
         ),
     )
 
 
 async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
-    places = await apuntes.Places.load(connection)
+    places = await class_notes.Places.load(connection)
     found: list[dict[str, Any]] = []
     courses = {one.id: one for one in await studies.courses(connection, "all")}
     for course_id, one in courses.items():
         detail = await studies.course(connection, course_id)
-        folder = _relative(places.course_folder(course_id)) or apuntes.clean(one.name)
+        folder = _relative(places.course_folder(course_id)) or class_notes.clean(one.name)
         blocks = await timetable.schedules(connection, course_id)
         found.append(course(detail, folder, blocks))
         for item in detail.subjects:
             mine = [a for a in detail.assessments if a.subject_id == item.id]
             sessions = await timetable.course_sessions(connection, subject_id=item.id)
             where = (
-                _relative(places.subject_folder(item.id)) or f"{folder}/{apuntes.clean(item.name)}"
+                _relative(places.subject_folder(item.id))
+                or f"{folder}/{class_notes.clean(item.name)}"
             )
             found.append(subject(item, one, where, mine, sessions))
 
@@ -228,7 +229,7 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
             if session.subject_id
             else write.link(APP, f"course:{session.course_id}", session.course)
         )
-        line = f"- Clase: {target} · {start:%H:%M}–{end:%H:%M}"
+        line = f"- Session: {target} · {start:%H:%M}–{end:%H:%M}"
         if session.topic:
             line += f" · {session.topic}"
         if session.attendance in ATTENDANCE and "attendance" in owner.tracks:
@@ -241,15 +242,15 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
             where = write.link(APP, f"course:{course_id}", owner.name)
             line = f"- {ASSESSMENT[one.kind]}: {one.title} · {where}"
             if one.grade is not None and "grades" in owner.tracks:
-                line += f" · nota {_grade(one.grade, owner.scale_max)}"
+                line += f" · grade {_grade(one.grade, owner.scale_max)}"
             lines[one.due_on].append(line)
     for day, told in sorted(lines.items()):
         found.append(
             contracts.record(
                 id=f"day:{day.isoformat()}",
-                title="Estudios",
-                kind="Día",
-                href=f"/study/semana?semana={day.isoformat()}",
+                title="Study",
+                kind="Day",
+                href=f"/study/week?week={day.isoformat()}",
                 day=day,
                 body="\n".join(told),
             )

@@ -21,10 +21,10 @@ async def test_a_course_its_subjects_and_its_class_days(api) -> None:
         await api.post(
             "/courses",
             json={
-                "name": "Máster sintético",
+                "name": "Synthetic master",
                 "kind": "master",
-                "institution": "Universidad de Ejemplo",
-                "subjects": [{"name": "Óptica", "credits": 6, "teacher": "Dra. Ejemplo"}],
+                "institution": "Example University",
+                "subjects": [{"name": "Optics", "credits": 6, "teacher": "Dr Example"}],
             },
         )
     ).json()
@@ -41,27 +41,27 @@ async def test_a_course_its_subjects_and_its_class_days(api) -> None:
     )
     await api.post(
         f"/courses/{course_id}/assessments",
-        json={"subject_id": subject_id, "title": "Parcial", "kind": "exam", "due_on": "2026-10-15"},
+        json={"subject_id": subject_id, "title": "Midterm", "kind": "exam", "due_on": "2026-10-15"},
     )
 
     found = await built()
 
-    ficha = found[f"course:{course_id}"]
-    assert ficha["title"] == "Máster sintético"
-    assert ficha["folder"] == "Máster sintético"
-    assert ficha["kind"] == "Máster" and ficha["href"] == f"/study/estudio/{course_id}"
-    assert ficha["properties"]["centro"] == "Universidad de Ejemplo"
-    assert f"- [[study:subject:{subject_id}|Óptica]] · 6 créditos · Dra. Ejemplo" in ficha["body"]
-    assert "| Parcial | Examen | Óptica | 2026-10-15 | pendiente |" in ficha["body"]
+    card = found[f"course:{course_id}"]
+    assert card["title"] == "Synthetic master"
+    assert card["folder"] == "Synthetic master"
+    assert card["kind"] == "Master" and card["href"] == f"/study/course/{course_id}"
+    assert card["properties"]["institution"] == "Example University"
+    assert f"- [[study:subject:{subject_id}|Optics]] · 6 credits · Dr Example" in card["body"]
+    assert "| Midterm | Exam | Optics | 2026-10-15 | pending |" in card["body"]
 
     optics = found[f"subject:{subject_id}"]
-    assert optics["folder"] == "Máster sintético/Óptica" and optics["title"] == "Óptica"
-    assert optics["properties"]["profesor"] == "Dra. Ejemplo"
+    assert optics["folder"] == "Synthetic master/Optics" and optics["title"] == "Optics"
+    assert optics["properties"]["teacher"] == "Dr Example"
     assert "- 2026-09-28 18:00" in optics["body"]
 
     assert found["day:2026-09-28"]["body"] == (
-        f"- Clase: [[study:subject:{subject_id}|Óptica]] · 18:00–20:00"
+        f"- Session: [[study:subject:{subject_id}|Optics]] · 18:00–20:00"
     )
     assert found["day:2026-10-15"]["body"] == (
-        f"- Examen: Parcial · [[study:course:{course_id}|Máster sintético]]"
+        f"- Exam: Midterm · [[study:course:{course_id}|Synthetic master]]"
     )

@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from study import grades, outbox
+from study.words import say
 
 LOCAL = ZoneInfo("Europe/Madrid")
 
@@ -58,7 +59,7 @@ class SubjectIn(BaseModel):
     def _name(cls, value: str) -> str:
         value = value.strip()
         if not value:
-            raise ValueError("la asignatura necesita un nombre")
+            raise ValueError("a subject needs a name")
         return value
 
     @field_validator("teacher", "period")
@@ -101,7 +102,7 @@ class CourseIn(BaseModel):
     def _name(cls, value: str) -> str:
         value = value.strip()
         if not value:
-            raise ValueError("el estudio necesita un nombre")
+            raise ValueError("a course needs a name")
         return value
 
     @field_validator("institution", "note")
@@ -120,19 +121,19 @@ class CourseIn(BaseModel):
         try:
             ZoneInfo(value)
         except (ZoneInfoNotFoundError, ValueError) as error:
-            raise ValueError(f"{value!r} no es una zona horaria") from error
+            raise ValueError(f"{value!r} is not a time zone") from error
         return value
 
     @model_validator(mode="after")
     def _coherent(self) -> Self:
         if self.starts_on and self.ends_on and self.ends_on < self.starts_on:
-            raise ValueError("el estudio no puede acabar antes de empezar")
+            raise ValueError("a course cannot end before it starts")
         if self.pass_mark is None:
             self.pass_mark = self.scale_max / 2
         if self.pass_mark > self.scale_max:
-            raise ValueError(f"el aprobado no puede pasar de {self.scale_max}")
+            raise ValueError(f"the pass mark cannot be above {self.scale_max}")
         if self.target_grade is not None and self.target_grade > self.scale_max:
-            raise ValueError(f"el objetivo no puede pasar de {self.scale_max}")
+            raise ValueError(f"the target cannot be above {self.scale_max}")
         return self
 
 
@@ -143,7 +144,7 @@ def _link(value: str | None) -> str | None:
     if not value.startswith(("http://", "https://")):
         value = "https://" + value
     if " " in value or "." not in value:
-        raise ValueError("eso no parece un enlace")
+        raise ValueError("that does not look like a link")
     return value
 
 
@@ -175,7 +176,7 @@ class AssessmentIn(BaseModel):
     def _title(cls, value: str) -> str:
         value = value.strip()
         if not value:
-            raise ValueError("el evaluable necesita un título")
+            raise ValueError("an assessment needs a title")
         return value
 
     @field_validator("note")
@@ -186,11 +187,11 @@ class AssessmentIn(BaseModel):
     @model_validator(mode="after")
     def _coherent(self) -> Self:
         if self.due_time is not None and self.due_on is None:
-            raise ValueError("una hora sin día no dice cuándo")
+            raise ValueError("a time without a day does not say when")
         if self.grade is not None:
             self.status = "graded"
         elif self.status == "graded":
-            raise ValueError("calificado es con nota")
+            raise ValueError("graded means with a grade")
         return self
 
 
@@ -322,7 +323,7 @@ async def _own(connection: AsyncConnection, table: str, id_: str | None) -> None
         found = await connection.scalar(
             text(f"select 1 from study.{table} where id = cast(:id as uuid)"), {"id": id_}
         )
-    except Exception as error:  # noqa: BLE001 -- un id que no es uuid es un id que no está
+    except Exception as error:  # noqa: BLE001 -- an id that is not a uuid is an id that is not there
         raise NotFound(id_) from error
     if not found:
         raise NotFound(id_)
@@ -335,7 +336,8 @@ async def _load(connection: AsyncConnection, course_ids: list) -> dict:
     subjects = (
         await connection.execute(
             text("""
-                select s.*, (select count(*) from study.study_assessment a where a.subject_id = s.id)
+                select s.*,
+                       (select count(*) from study.study_assessment a where a.subject_id = s.id)
                        as assessments
                 from study.study_subject s
                 where s.course_id = any(cast(:ids as uuid[]))
@@ -438,7 +440,11 @@ def _progress(course, subjects: list[SubjectOut], hours_done: float) -> Progress
             done=done,
             total=total_credits,
             ratio=min(done / total_credits, 1.0),
-            label=f"{grades.number(done, 100)} de {grades.number(total_credits, 100)} créditos",
+            label=say(
+                "progress.credits",
+                done=grades.number(done, 100),
+                total=grades.number(total_credits, 100),
+            ),
         )
     if course.hours:
         total = float(course.hours)
@@ -447,7 +453,9 @@ def _progress(course, subjects: list[SubjectOut], hours_done: float) -> Progress
             done=round(hours_done, 1),
             total=total,
             ratio=min(hours_done / total, 1.0),
-            label=f"{grades.number(hours_done)} de {grades.number(total, 100)} horas",
+            label=say(
+                "progress.hours", done=grades.number(hours_done), total=grades.number(total, 100)
+            ),
         )
     if subjects:
         return Progress(
@@ -455,7 +463,7 @@ def _progress(course, subjects: list[SubjectOut], hours_done: float) -> Progress
             done=len(passed),
             total=len(subjects),
             ratio=len(passed) / len(subjects),
-            label=f"{len(passed)} de {len(subjects)} asignaturas aprobadas",
+            label=say("progress.subjects", done=len(passed), total=len(subjects)),
         )
     if course.starts_on and course.ends_on and course.ends_on > course.starts_on:
         span = (course.ends_on - course.starts_on).days + 1
@@ -466,7 +474,9 @@ def _progress(course, subjects: list[SubjectOut], hours_done: float) -> Progress
             done=gone,
             total=span,
             ratio=gone / span,
-            label=f"Semana {min(week, weeks)} de {weeks}" if gone else "Aún no ha empezado",
+            label=say("progress.week", week=min(week, weeks), weeks=weeks)
+            if gone
+            else say("progress.not_started"),
         )
     return None
 
@@ -638,12 +648,12 @@ async def update_course(
         )
     ).one()
     if edit.final_grade is not None and edit.final_grade > edit.scale_max:
-        raise Conflict(f"la nota no puede pasar de {edit.scale_max}")
+        raise Conflict(f"the grade cannot be above {edit.scale_max}")
     params = _course_params(edit)
     if current.status in ("finished", "abandoned"):
         params["status"] = current.status
     await _check_record_grades(connection, course_id, edit.scale_max)
-    from study.apuntes import ROOT, clean
+    from study.class_notes import ROOT, clean
 
     await connection.execute(
         text("""
@@ -690,7 +700,7 @@ async def _check_record_grades(
         {"id": course_id, "max": scale_max},
     )
     if over:
-        raise Conflict(f"hay notas por encima de {grades.number(scale_max, 100)}: cámbialas antes")
+        raise Conflict(f"there are grades above {grades.number(scale_max, 100)}: change them first")
 
 
 async def close_course(connection: AsyncConnection, course_id: str, close: CloseIn) -> CourseDetail:
@@ -699,7 +709,7 @@ async def close_course(connection: AsyncConnection, course_id: str, close: Close
         text("select scale_max from study.study_course where id = :id"), {"id": course_id}
     )
     if close.final_grade is not None and close.final_grade > float(scale):
-        raise Conflict(f"la nota no puede pasar de {grades.number(float(scale), 100)}")
+        raise Conflict(f"the grade cannot be above {grades.number(float(scale), 100)}")
     await connection.execute(
         text("""
             update study.study_course
@@ -786,7 +796,8 @@ async def _insert_subject(
     return str(
         await connection.scalar(
             text("""
-                insert into study.study_subject (course_id, name, teacher, credits, period, position)
+                insert into study.study_subject
+                    (course_id, name, teacher, credits, period, position)
                 values (:course_id, :name, :teacher, :credits, :period, :position)
                 returning id
             """),
@@ -863,7 +874,7 @@ async def record_grade(
         {"id": subject_id},
     )
     if record.final_grade is not None and record.final_grade > float(scale):
-        raise Conflict(f"la nota no puede pasar de {grades.number(float(scale), 100)}")
+        raise Conflict(f"the grade cannot be above {grades.number(float(scale), 100)}")
     await connection.execute(
         text(
             "update study.study_subject set final_grade = :grade, updated_at = now() where id = :id"
@@ -1007,15 +1018,15 @@ async def _check_assessment(
             {"id": item.subject_id},
         )
         if str(owner) != course_id:
-            raise Conflict("esa asignatura es de otro estudio")
+            raise Conflict("that subject belongs to another course")
     scale = float(
         await connection.scalar(
             text("select scale_max from study.study_course where id = :id"), {"id": course_id}
         )
     )
-    for label, value in (("la nota", item.grade), ("la nota mínima", item.min_grade)):
+    for label, value in (("the grade", item.grade), ("the minimum grade", item.min_grade)):
         if value is not None and value > scale:
-            raise Conflict(f"{label} no puede pasar de {grades.number(scale, 100)}")
+            raise Conflict(f"{label} cannot be above {grades.number(scale, 100)}")
 
 
 async def add_assessment(
@@ -1083,7 +1094,7 @@ async def grade_assessment(
 ) -> AssessmentOut:
     current = await assessment(connection, assessment_id)
     if given.grade is not None and given.grade > current.scale_max:
-        raise Conflict(f"la nota no puede pasar de {grades.number(current.scale_max, 100)}")
+        raise Conflict(f"the grade cannot be above {grades.number(current.scale_max, 100)}")
     await connection.execute(
         text("""
             update study.study_assessment

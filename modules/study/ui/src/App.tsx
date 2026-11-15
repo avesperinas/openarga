@@ -27,32 +27,43 @@ export type Route =
   | { tab: "session"; id: string }
   | { tab: "assessment"; id: string };
 
-const SECTIONS: Record<string, CourseTab> = {
+const SECTIONS: readonly CourseTab[] = ["subjects", "schedule", "assessments", "materials", "notes"];
+
+const OLD: Record<string, string> = {
+  semana: "week",
+  apuntes: "notes",
+  archivo: "archive",
+  ajustes: "settings",
+  estudio: "course",
+  asignatura: "subject",
+  clase: "session",
+  evaluable: "assessment",
   asignaturas: "subjects",
   horario: "schedule",
   evaluables: "assessments",
   materiales: "materials",
-  apuntes: "notes",
 };
+
+const english = (path: string) => path.replace(/[a-z]+/g, (part) => OLD[part] ?? part);
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function route(pathname: string, _search = ""): Route {
-  const path = pathname.replace(/\/+$/, "");
+  const path = english(pathname.replace(/\/+$/, ""));
   const one = (name: string) => new RegExp(`^${ROOT}/${name}/${ID}$`).exec(path)?.[1];
-  if (path === `${ROOT}/semana`) return { tab: "home" };
-  if (path === `${ROOT}/apuntes`) return { tab: "notes" };
-  if (path === `${ROOT}/archivo`) return { tab: "archive" };
-  if (path === `${ROOT}/ajustes`) return { tab: "settings" };
-  const course = new RegExp(`^${ROOT}/estudio/${ID}(?:/(\\w+))?$`).exec(path);
+  if (path === `${ROOT}/week`) return { tab: "home" };
+  if (path === `${ROOT}/notes`) return { tab: "notes" };
+  if (path === `${ROOT}/archive`) return { tab: "archive" };
+  if (path === `${ROOT}/settings`) return { tab: "settings" };
+  const course = new RegExp(`^${ROOT}/course/${ID}(?:/(\\w+))?$`).exec(path);
   if (course) {
-    const section = course[2] ? SECTIONS[course[2]] : undefined;
+    const section = SECTIONS.find((one) => one === course[2]);
     return section ? { tab: "course", id: course[1]!, section } : { tab: "course", id: course[1]! };
   }
   for (const [name, tab] of [
-    ["apuntes", "note"],
-    ["asignatura", "subject"],
-    ["clase", "session"],
-    ["evaluable", "assessment"],
+    ["notes", "note"],
+    ["subject", "subject"],
+    ["session", "session"],
+    ["assessment", "assessment"],
   ] as const) {
     const id = one(name);
     if (id) return { tab, id };
@@ -65,23 +76,21 @@ export function pathOf(to: Route): string {
     case "home":
       return `${ROOT}/`;
     case "notes":
-      return `${ROOT}/apuntes`;
+      return `${ROOT}/notes`;
     case "note":
-      return `${ROOT}/apuntes/${to.id}`;
+      return `${ROOT}/notes/${to.id}`;
     case "archive":
-      return `${ROOT}/archivo`;
+      return `${ROOT}/archive`;
     case "settings":
-      return `${ROOT}/ajustes`;
-    case "course": {
-      const section = Object.entries(SECTIONS).find(([, value]) => value === to.section)?.[0];
-      return section && to.section !== "subjects" ? `${ROOT}/estudio/${to.id}/${section}` : `${ROOT}/estudio/${to.id}`;
-    }
+      return `${ROOT}/settings`;
+    case "course":
+      return to.section && to.section !== "subjects" ? `${ROOT}/course/${to.id}/${to.section}` : `${ROOT}/course/${to.id}`;
     case "subject":
-      return `${ROOT}/asignatura/${to.id}`;
+      return `${ROOT}/subject/${to.id}`;
     case "session":
-      return `${ROOT}/clase/${to.id}`;
+      return `${ROOT}/session/${to.id}`;
     case "assessment":
-      return `${ROOT}/evaluable/${to.id}`;
+      return `${ROOT}/assessment/${to.id}`;
   }
 }
 

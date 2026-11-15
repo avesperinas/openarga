@@ -30,7 +30,7 @@ async def a_course(api) -> tuple[str, str]:
     created = (
         await api.post(
             "/courses",
-            json={"name": "Máster", "tone": 5, "subjects": [{"name": "Estadística", "credits": 6}]},
+            json={"name": "Master", "tone": 5, "subjects": [{"name": "Statistics", "credits": 6}]},
         )
     ).json()
     return created["course"]["id"], created["subjects"][0]["id"]
@@ -95,7 +95,7 @@ async def test_an_assessment_keeps_the_start_or_becomes_a_whole_day(api) -> None
             f"/courses/{course_id}/assessments",
             json={
                 "subject_id": subject_id,
-                "title": "Parcial",
+                "title": "Midterm",
                 "kind": "exam",
                 "due_on": (today() + timedelta(days=5)).isoformat(),
                 "due_time": "10:00",

@@ -26,8 +26,8 @@ async def course_with_a_class(api, name: str) -> tuple[str, str]:
 async def test_a_word_finds_the_notes_of_a_class_in_another_course_with_its_fragment(
     api, notebook
 ) -> None:
-    master, _ = await course_with_a_class(api, "Máster en Finanzas")
-    other, class_id = await course_with_a_class(api, "Curso de Cálculo")
+    master, _ = await course_with_a_class(api, "Master en Finanzas")
+    other, class_id = await course_with_a_class(api, "Calculus course")
     await api.post(
         "/notes",
         json={"course_id": master, "title": "Presupuestos", "body": "Nada que ver con esto."},
@@ -37,19 +37,19 @@ async def test_a_word_finds_the_notes_of_a_class_in_another_course_with_its_frag
         json={
             "course_id": other,
             "session_id": class_id,
-            "title": "Clase 3",
-            "body": "# Límites\n\nHoy vimos **las derivadas** de funciones compuestas y la regla "
-            "de la cadena, con muchos ejemplos.",
+            "title": "Session 3",
+            "body": "# Limits\n\nToday we saw **the derivatives** of composite functions "
+            "and the chain rule, with many examples.",
         },
     )
     assert written.status_code == 201, written.text
 
-    hits = (await api.get("/notes", params={"q": "derivada"})).json()
+    hits = (await api.get("/notes", params={"q": "derivative"})).json()
 
     assert len(hits) == 1
     hit = hits[0]
-    assert (hit["course"], hit["session_id"]) == ("Curso de Cálculo", class_id)
-    assert "«derivadas»" in hit["fragment"]
+    assert (hit["course"], hit["session_id"]) == ("Calculus course", class_id)
+    assert "«derivatives»" in hit["fragment"]
     assert "**" not in hit["fragment"]
 
 
@@ -100,7 +100,7 @@ async def test_a_file_that_lies_about_its_type_is_not_served_as_that(api) -> Non
 async def test_materials_are_links_or_files(api) -> None:
     course_id, _ = await course_with_a_class(api, "Curso")
     link = await api.post(
-        f"/courses/{course_id}/materials", json={"title": "Guía docente", "url": "example.org/guia"}
+        f"/courses/{course_id}/materials", json={"title": "Syllabus", "url": "example.org/syllabus"}
     )
     upload = await api.post(
         f"/courses/{course_id}/materials/file?filename=temario.pdf",
@@ -112,7 +112,7 @@ async def test_materials_are_links_or_files(api) -> None:
     found = (await api.get(f"/courses/{course_id}/materials")).json()
 
     assert {(m["title"], m["url"], m["filename"]) for m in found} == {
-        ("Guía docente", "https://example.org/guia", None),
+        ("Syllabus", "https://example.org/syllabus", None),
         ("temario.pdf", None, "temario.pdf"),
     }
     await api.delete(f"/materials/{upload.json()['id']}")

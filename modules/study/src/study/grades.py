@@ -8,6 +8,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from study.words import decimal, say
+
 Verdict = Literal[
     "empty",
     "not_started",
@@ -62,13 +64,13 @@ def number(value: float | None, scale_max: float = 10) -> str:
     if value is None:
         return "—"
     places = 0 if scale_max >= 100 else 1
-    text = f"{value:.{places}f}".replace(".", ",")
-    return text[:-2] if text.endswith(",0") else text
+    text = f"{value:.{places}f}"
+    return decimal(text[:-2] if text.endswith(".0") else text)
 
 
 def percent(value: float) -> str:
-    text = f"{value:.1f}".replace(".", ",")
-    return (text[:-2] if text.endswith(",0") else text) + " %"
+    text = f"{value:.1f}"
+    return decimal(text[:-2] if text.endswith(".0") else text) + " %"
 
 
 def _as_float(value: Decimal | float | None) -> float | None:
@@ -168,44 +170,36 @@ def sentence(grade: Grade, *, scale_max: float, pass_mark: float) -> str:
     n = lambda value: number(value, scale_max)  # noqa: E731
     left = percent(grade.remaining_weight)
     minimums = "".join(
-        f", y al menos un {n(m.min_grade)} en {m.title}" for m in grade.pending_minimums
+        say("grade.minimum", grade=n(m.min_grade), title=m.title) for m in grade.pending_minimums
     )
     match grade.verdict:
         case "empty":
-            return "Sin evaluables todavía. Añade las entregas y los exámenes con su peso."
+            return say("grade.empty")
         case "passed" if grade.final_source == "record":
-            return f"Aprobada con un {n(grade.final)} en el acta."
+            return say("grade.passed_record", grade=n(grade.final))
         case "failed" if grade.final_source == "record":
-            return f"Suspensa con un {n(grade.final)} en el acta."
+            return say("grade.failed_record", grade=n(grade.final))
         case "passed":
-            return f"Aprobada con un {n(grade.final)}."
+            return say("grade.passed", grade=n(grade.final))
         case "failed":
-            return f"Suspensa con un {n(grade.final)}: no queda nada por calificar."
+            return say("grade.failed", grade=n(grade.final))
         case "below_minimum":
             first = grade.failed_minimums[0]
-            return f"Suspensa: {first.title} no llega al {n(first.min_grade)} que pide."
+            return say("grade.below_minimum", title=first.title, grade=n(first.min_grade))
         case "impossible":
-            return (
-                f"Aprobar ya no es posible: harían falta {n(grade.needed_to_pass)} de media "
-                f"en lo que queda ({left})."
-            )
+            return say("grade.impossible", grade=n(grade.needed_to_pass), left=left)
         case "secured":
-            base = "Aprobada pase lo que pase."
+            base = say("grade.secured")
             if grade.target is not None and grade.needed_for_target is not None:
                 return f"{base} {_target_sentence(grade, n, left)}"
             return base
         case "not_started":
-            return (
-                f"Necesitas un {n(ceil1(pass_mark))} de media para aprobar{minimums}."
-                if not grade.target
-                else f"Necesitas un {n(ceil1(pass_mark))} de media para aprobar{minimums}. "
-                f"{_target_sentence(grade, n, left)}"
-            )
+            text = say("grade.need_to_pass", grade=n(ceil1(pass_mark)), minimums=minimums)
+            return f"{text} {_target_sentence(grade, n, left)}" if grade.target else text
         case _:
             needed = grade.needed_to_pass or 0.0
-            text = (
-                f"Necesitas un {n(ceil1(needed))} de media en lo que queda ({left}) "
-                f"para aprobar{minimums}."
+            text = say(
+                "grade.need_in_what_is_left", grade=n(ceil1(needed)), left=left, minimums=minimums
             )
             if grade.target is not None:
                 text += f" {_target_sentence(grade, n, left)}"
@@ -217,8 +211,8 @@ def _target_sentence(grade: Grade, n, left: str) -> str:
     if needed is None:
         return ""
     if needed <= 0:
-        return f"Tu objetivo del {n(grade.target)} ya está asegurado."
-    return f"Para tu {n(grade.target)}, un {n(ceil1(needed))} ({left})."
+        return say("grade.target_secured", grade=n(grade.target))
+    return say("grade.target", target=n(grade.target), grade=n(ceil1(needed)), left=left)
 
 
 @dataclass(frozen=True)

@@ -5,8 +5,9 @@ from datetime import datetime, time, timedelta
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets import envelope
-from study import grades, studies, timetable
+from study import grades, outbox, studies, timetable
 from study.studies import LOCAL
+from study.words import say
 
 KINDS = {"upnext": "upnext", "progress": "progress", "average": "kpi"}
 EVENTS = 5
@@ -39,11 +40,12 @@ async def upnext(connection: AsyncConnection) -> dict:
         ):
             continue
         at = datetime.combine(item.due_on, item.due_time or time(23, 59), tzinfo=LOCAL)
-        kind = {"exam": "Examen", "assignment": "Entrega"}.get(item.kind, "Evaluable")
-        events.append((at, f"{kind}: {item.title}", item.subject or item.course))
+        events.append(
+            (at, f"{outbox.kind_label(item.kind)}: {item.title}", item.subject or item.course)
+        )
     events.sort(key=lambda e: e[0])
     if not events:
-        return envelope(KINDS["upnext"], "empty", {"detail": "nada en las dos próximas semanas"})
+        return envelope(KINDS["upnext"], "empty", {"detail": say("widget.nothing_soon")})
     return envelope(
         KINDS["upnext"],
         "ready",
@@ -59,19 +61,18 @@ async def upnext(connection: AsyncConnection) -> dict:
 async def progress(connection: AsyncConnection) -> dict:
     course = await _current(connection, "progress")
     if course is None:
-        return envelope(KINDS["progress"], "empty", {"detail": "ningún estudio en curso"})
+        return envelope(KINDS["progress"], "empty", {"detail": say("widget.no_course")})
     if course.progress is None or course.progress.kind == "time":
         return envelope(
-            KINDS["progress"], "empty", {"detail": f"{course.name}: sin créditos ni horas"}
+            KINDS["progress"], "empty", {"detail": say("widget.no_units", course=course.name)}
         )
-    units = {"credits": "créditos", "hours": "h", "subjects": "asignaturas"}
     return envelope(
         KINDS["progress"],
         "ready",
         {
             "value": course.progress.done,
             "target": course.progress.total,
-            "unit": units[course.progress.kind],
+            "unit": say(f"unit.{course.progress.kind}"),
             "label": course.name,
         },
     )
@@ -80,16 +81,21 @@ async def progress(connection: AsyncConnection) -> dict:
 async def average(connection: AsyncConnection) -> dict:
     course = await _current(connection, "grades")
     if course is None:
-        return envelope(KINDS["average"], "empty", {"detail": "ningún estudio en curso"})
+        return envelope(KINDS["average"], "empty", {"detail": say("widget.no_course")})
     value = course.average.average
     if value is None and course.grade is not None and course.grade.current is not None:
         value = course.grade.current
     if value is None:
-        return envelope(KINDS["average"], "empty", {"detail": f"{course.name}: sin notas todavía"})
+        return envelope(
+            KINDS["average"], "empty", {"detail": say("widget.no_grades", course=course.name)}
+        )
     detail = course.name
     if course.average.subjects:
-        detail = (
-            f"{course.average.counted} de {course.average.subjects} asignaturas · {course.name}"
+        detail = say(
+            "widget.counted",
+            counted=course.average.counted,
+            subjects=course.average.subjects,
+            course=course.name,
         )
     return envelope(
         KINDS["average"],
