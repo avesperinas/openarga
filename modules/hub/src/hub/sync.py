@@ -19,7 +19,7 @@ from arga_contracts import sources
 from arga_tenancy import user_headers
 from hub import catalogue, credentials
 from hub.db import as_module
-from hub.providers import Fetched, SourceError, claude, enable_banking
+from hub.providers import Fetched, SourceError, enable_banking
 
 MODULE = "hub"
 RUN = "hub.run"
@@ -33,19 +33,6 @@ Fetch = Callable[
     [httpx.AsyncClient, dict[str, str], Any], Awaitable["list[dict[str, Any]] | Fetched"]
 ]
 ShouldRun = Callable[[AsyncConnection, Any, datetime], Awaitable[bool]]
-
-LAST_OBSERVATION = text("""
-    select ts, payload from hub.events
-    where type in ('ai.claude.ping', 'ai.claude.usage') and payload->>'account_id' = :account
-    order by ts desc
-    limit 1
-""")
-
-
-async def claude_window_open(database: AsyncConnection, connection: Any, now: datetime) -> bool:
-    row = (await database.execute(LAST_OBSERVATION, {"account": str(connection.id)})).first()
-    return claude.usage_due(row.ts if row else None, row.payload if row else None, now)
-
 
 USED_TODAY = text("""
     select count(*) from hub.hub_run
@@ -123,7 +110,6 @@ class Client:
 
 POLICIES: dict[str, tuple[ShouldRun | None, ShouldRun | None]] = {
     "budget": (bank_due, bank_urgent),
-    "open_window": (claude_window_open, None),
     "authorized": (None, bank_urgent),
 }
 

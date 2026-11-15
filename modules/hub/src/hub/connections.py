@@ -407,20 +407,7 @@ async def detail(
         if provider and provider.id == "imap"
         else [],
         "rules": rules.of(config) if provider and provider.id == "imap" else [],
-        **({"relay": config.get("relay", True) is not False} if found.provider == "claude" else {}),
     }
-
-
-SET_RELAY = text("""
-    update hub.hub_connection
-    set config = jsonb_set(config, '{relay}', to_jsonb(cast(:relay as boolean)))
-    where id = :id and provider = 'claude'
-    returning id
-""")
-
-
-async def set_relay(database: AsyncConnection, connection_id: UUID, relay: bool) -> bool:
-    return await database.scalar(SET_RELAY, {"id": connection_id, "relay": relay}) is not None
 
 
 SET_RULES = text("""

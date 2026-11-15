@@ -117,7 +117,6 @@ export interface ConnectionDetail extends Connection {
   rules?: MailRule[];
   plugs?: Record<string, InletValues>;
   inlets?: Inlet[];
-  relay?: boolean;
 }
 
 export type RuleFact = "balance" | "deposit" | "withdrawal";
@@ -189,8 +188,6 @@ export const changeCredential = (id: string, key: string, value: string) =>
 export const pauseConnection = (id: string) => send<ConnectionDetail>(`/connections/${id}/pause`, "POST");
 export const resumeConnection = (id: string) => send<ConnectionDetail>(`/connections/${id}/resume`, "POST");
 export const removeConnection = (id: string) => send<void>(`/connections/${id}`, "DELETE");
-export const setRelay = (id: string, relay: boolean) =>
-  send<ConnectionDetail>(`/connections/${id}/relay`, "PUT", { relay });
 export const renameConnection = (id: string, label: string) =>
   send<ConnectionDetail>(`/connections/${id}/label`, "PUT", { label });
 
@@ -231,13 +228,3 @@ export interface StatementRead {
 export const uploadStatements = (files: { name: string; content: string }[]) =>
   send<{ files: StatementRead[] }>("/statements", "POST", { files });
 
-export interface ClaudeRunApp {
-  id: string;
-  name: string;
-  granted: { app: string; connection: string; label: string; since: string } | null;
-}
-
-export const readClaudeRun = () => get<{ configured: boolean; apps: ClaudeRunApp[] }>("/claude-run");
-export const revokeClaudeRun = (app: string) => send<void>(`/claude-run/${app}`, "DELETE");
-export const authorizeClaudeRun = (connection: string, app: string) =>
-  `/api/hub/claude-run/authorize?${new URLSearchParams({ connection, app }).toString()}`;

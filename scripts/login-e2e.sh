@@ -108,7 +108,7 @@ say "auth-sync, como en cada despliegue"
 docker run --rm --network "$NET" --entrypoint /bin/bash \
   -e KC_ADMIN_PASSWORD=$ADMIN_PASSWORD -e ARGA_WEB_CLIENT_SECRET=$WEB_SECRET \
   -e GOOGLE_CLIENT_ID=id-de-google-de-prueba -e GOOGLE_CLIENT_SECRET=secreto-de-google-de-prueba \
-  -e ARGA_ALLOWED_EMAILS="Dueno@Ejemplo.com=dueno" -e CLAUDE_RUN_CLIENT_SECRET=secreto-de-claude-run \
+  -e ARGA_ALLOWED_EMAILS="Dueno@Ejemplo.com=dueno" \
   -e OPENARGA_ADMIN_USERNAME=first-admin -e OPENARGA_ADMIN_PASSWORD=first-admin-password-1 \
   "arga-auth:$TAG" /opt/arga/sync.sh
 
@@ -118,24 +118,9 @@ admin_id=$(kc get users -r arga -q username=first-admin -q exact=true --fields i
 kc get-roles -r arga --uusername first-admin --effective --fields name --format csv --noquotes | grep -qxF admin \
   || { echo "FAIL: the first admin has no admin role" >&2; exit 1; }
 
-say "claude-run: confidencial, con su secreto, sus scopes opcionales y offline_access (ADR-0136)"
-run_id=$(kc get clients -r arga -q clientId=claude-run --fields id --format csv --noquotes)
-[ -n "$run_id" ] || { echo "FALLA: no está el cliente claude-run" >&2; exit 1; }
-run_optional=$(kc get "clients/$run_id/optional-client-scopes" -r arga --fields name --format csv --noquotes)
-for scope in offline_access outings:write insights:read; do
-  grep -qxF "$scope" <<<"$run_optional" || { echo "FALLA: claude-run sin $scope opcional" >&2; exit 1; }
-done
-run_defaults=$(kc get "clients/$run_id/default-client-scopes" -r arga --fields name --format csv --noquotes)
-if grep -q ':' <<<"$run_defaults"; then
-  echo "FALLA: claude-run con un scope de módulo por defecto" >&2
-  exit 1
-fi
-[ "$(kc get "clients/$run_id/client-secret" -r arga --fields value --format csv --noquotes)" = secreto-de-claude-run ] \
-  || { echo "FALLA: claude-run sin el secreto de infra" >&2; exit 1; }
-echo "  claude-run: $(wc -l <<<"$run_optional") scopes opcionales, offline_access entre ellos"
 
 kc create identity-provider/instances -r arga -s alias=fake -s providerId=oidc -s enabled=true \
-  -s trustEmail=true -s firstBrokerLoginFlowAlias=arga-primer-login \
+  -s trustEmail=true -s firstBrokerLoginFlowAlias=arga-first-login \
   -s config.authorizationUrl=http://auth:8080/auth/realms/fake/protocol/openid-connect/auth \
   -s config.tokenUrl=http://auth:8080/auth/realms/fake/protocol/openid-connect/token \
   -s config.clientId=arga-broker -s config.clientSecret=secreto-del-broker \

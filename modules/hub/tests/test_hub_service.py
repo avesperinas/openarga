@@ -90,7 +90,6 @@ async def test_the_catalogue_comes_in_its_categories_in_order(api) -> None:
 
     assert [category["name"] for category in listed] == [
         "Finance",
-        "AI",
         "Food",
         "Health",
         "Places",
@@ -147,65 +146,20 @@ async def test_bitvavo_is_connected_here_now_and_says_what_it_asks_for(api) -> N
     assert [s["key"] for s in providers["bitvavo"]["secrets"]] == ["api_key", "api_secret"]
 
 
-async def test_claude_accounts_are_added_here_each_with_its_own_name(api) -> None:
-    providers = {
-        p["id"]: p
-        for category in (await api.get("/catalogue")).json()
-        for p in category["providers"]
-    }
-    first = await api.post(
-        "/connections",
-        json={"provider": "claude", "label": "Personal", "secrets": {"token": "sintetico-abc"}},
-    )
-    twin = await api.post(
-        "/connections",
-        json={"provider": "claude", "label": " personal ", "secrets": {"token": "sintetico-def"}},
-    )
-    work = await api.post(
-        "/connections",
-        json={"provider": "claude", "label": "Trabajo", "secrets": {"token": "sintetico-ghi"}},
-    )
-
-    assert providers["claude"]["available"] is True
-    assert (providers["claude"]["lives_in"], providers["claude"]["created_in"]) == (None, None)
-    assert [s["key"] for s in providers["claude"]["secrets"]] == ["token"]
-    assert first.status_code == 201
-    assert twin.status_code == 409
-    assert "Personal" in twin.json()["detail"]
-    assert work.status_code == 201
-
-
-async def test_a_connection_is_renamed_but_not_onto_another_claude_account(api) -> None:
-    token = {"token": "sintetico-abc"}
+async def test_a_connection_is_renamed(api) -> None:
+    address = {"url": "https://calendar.example/private.ics"}
     personal = (
         await api.post(
-            "/connections", json={"provider": "claude", "label": "Personal", "secrets": token}
+            "/connections",
+            json={"provider": "ical_private", "label": "Personal", "secrets": address},
         )
     ).json()
-    await api.post(
-        "/connections", json={"provider": "claude", "label": "Trabajo", "secrets": token}
-    )
 
-    renamed = await api.put(f"/connections/{personal['id']}/label", json={"label": "  Casa  "})
-    clash = await api.put(f"/connections/{personal['id']}/label", json={"label": "trabajo"})
-    same = await api.put(f"/connections/{personal['id']}/label", json={"label": "CASA"})
-    missing = await api.put(f"/connections/{uuid4()}/label", json={"label": "Otra"})
+    renamed = await api.put(f"/connections/{personal['id']}/label", json={"label": "  Home  "})
+    missing = await api.put(f"/connections/{uuid4()}/label", json={"label": "Other"})
 
-    assert (renamed.status_code, renamed.json()["label"]) == (200, "Casa")
-    assert clash.status_code == 409
-    assert (same.status_code, same.json()["label"]) == (200, "CASA")
+    assert (renamed.status_code, renamed.json()["label"]) == (200, "Home")
     assert missing.status_code == 404
-
-
-async def test_claude_is_never_synced_by_hand(api) -> None:
-    created = (
-        await api.post("/connections", json={"provider": "claude", "secrets": {"token": "sint"}})
-    ).json()
-
-    answer = await api.post(f"/connections/{created['id']}/sync")
-
-    assert answer.status_code == 409
-    assert "by hand" in answer.json()["detail"]
 
 
 def test_every_category_the_hub_brings_is_one_a_module_can_consume() -> None:

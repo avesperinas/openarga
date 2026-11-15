@@ -11,7 +11,6 @@ from hub.words import say
 
 FAILING = "failing"
 REAUTH = "reauth"
-BLOCKED = "claude_blocked"
 STREAK = 3
 HOUR = time(9, 0)
 HREF = "/hub"
@@ -28,44 +27,8 @@ RUNS = text("""
 """)
 
 
-BLOCKED_RUNS = text("""
-    select distinct on (app) id, app, finished_at, detail
-    from (
-        select id, split_part(idempotency_key, ':', 1) as app, finished_at, detail
-        from hub.hub_run
-        where capability = 'action' and operation = 'run' and code in ('no_room', 'no_account')
-          and finished_at > now() - interval '1 day'
-    ) as lost
-    order by app, finished_at desc
-""")
-LATER_OK = text("""
-    select 1 from hub.hub_run
-    where capability = 'action' and operation = 'run' and outcome = 'ok'
-      and split_part(idempotency_key, ':', 1) = :app and finished_at > :after
-    limit 1
-""")
-
-
-async def blocked(connection: AsyncConnection) -> list[dict[str, Any]]:
-    out = []
-    for row in (await connection.execute(BLOCKED_RUNS)).all():
-        if await connection.scalar(LATER_OK, {"app": row.app, "after": row.finished_at}):
-            continue
-        out.append(
-            notify.notification(
-                BLOCKED,
-                f"claude_blocked:{row.id}",
-                f"{row.app.capitalize()} could not use your Claude",
-                HREF,
-                row.finished_at,
-                body=(row.detail or "None of your Claude accounts could do it.")[:400],
-            )
-        )
-    return out
-
-
 async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
-    out: list[dict[str, Any]] = await blocked(connection)
+    out: list[dict[str, Any]] = []
     for row in (await connection.execute(CONNECTIONS)).all():
         runs = (await connection.execute(RUNS, {"id": row.id, "limit": STREAK})).all()
         if len(runs) == STREAK and all(one.outcome == "error" for one in runs):

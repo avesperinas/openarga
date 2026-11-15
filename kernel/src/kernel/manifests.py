@@ -64,8 +64,6 @@ SOURCE_CONTRACTS = frozenset(
         "health.ecg",
         "health.irn",
         "health.device",
-        "ai.claude.ping",
-        "ai.claude.usage",
         "economy.cpi",
         "leisure.event",
     }

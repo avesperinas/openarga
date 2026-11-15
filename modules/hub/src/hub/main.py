@@ -24,7 +24,6 @@ from hub import (
     banks,
     capabilities,
     catalogue,
-    claude_run,
     connections,
     credentials,
     google_auth,
@@ -408,20 +407,6 @@ async def rename_connection(connection_id: UUID, request: LabelIn) -> dict:
     return await tell(found)
 
 
-class RelayIn(BaseModel):
-    relay: bool
-
-
-@app.put("/connections/{connection_id}/relay")
-async def change_relay(connection_id: UUID, request: RelayIn) -> dict:
-    require_person()
-    async with as_app() as connection:
-        if not await connections.set_relay(connection, connection_id, request.relay):
-            raise HTTPException(status_code=404, detail="that Claude account does not exist")
-        found = await detail_or_404(connection, connection_id)
-    return await tell(found)
-
-
 class RulesIn(BaseModel):
     rules: Annotated[list[dict[str, Any]], Field(max_length=rules.MAX_RULES)]
 
@@ -487,60 +472,6 @@ async def remove_connection(connection_id: UUID) -> Response:
         found = await detail_or_404(connection, connection_id)
         await connections.remove(connection, connection_id)
     await tell(found, removed=True)
-    return Response(status_code=204)
-
-
-@app.get("/claude-run")
-async def read_claude_run() -> dict:
-    require_person()
-    modules = await apps.modules(capabilities.kernel_transport())
-    async with as_app() as connection:
-        granted = {grant.app: grant for grant in await claude_run.grants(connection)}
-    return {
-        "configured": bool(claude_run.client_secret()),
-        "apps": [
-            {
-                "id": one.id,
-                "name": one.name,
-                "granted": granted[one.id].model_dump(mode="json") if one.id in granted else None,
-            }
-            for one in claude_run.runners(modules)
-        ],
-    }
-
-
-@app.get("/claude-run/authorize")
-async def authorize_claude_run(connection: UUID, app: str) -> RedirectResponse:
-    require_person()
-    modules = await apps.modules(capabilities.kernel_transport())
-    try:
-        async with as_app() as database:
-            url = await claude_run.authorize(database, connection, app, modules)
-    except claude_run.Refused as error:
-        raise HTTPException(status_code=error.status, detail=str(error)) from error
-    return RedirectResponse(url, status_code=303)
-
-
-@app.get("/claude-run/callback")
-async def claude_run_callback(state: str = "", code: str = "", error: str = "") -> RedirectResponse:
-    require_person()
-    if error or not (state and code):
-        return RedirectResponse(f"{UI_ROOT}/?claude=cancelado", status_code=303)
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as auth, as_app() as database:
-            app_id, account = await claude_run.finish_grant(database, auth, code, state)
-    except (claude_run.Refused, httpx.HTTPError):
-        return RedirectResponse(f"{UI_ROOT}/?claude=fallo", status_code=303)
-    return RedirectResponse(f"{UI_ROOT}/{account}?claude={app_id}", status_code=303)
-
-
-@app.delete("/claude-run/{app_id}", status_code=204)
-async def revoke_claude_run(app_id: str) -> Response:
-    require_person()
-    async with httpx.AsyncClient(timeout=30.0) as auth, as_app() as database:
-        removed = await claude_run.revoke(database, auth, app_id)
-    if not removed:
-        raise HTTPException(status_code=404, detail="that app had no permission")
     return Response(status_code=204)
 
 

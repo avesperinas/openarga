@@ -321,28 +321,6 @@ class HealthDevice(Source):
     features: list[str] = []
 
 
-class ClaudeWindow(Source):
-    key: Text
-    account_id: Text
-    success: bool
-    status_code: int | None = None
-    window_resets_at: Instant | None = None
-    window_utilization: float | None = None
-    week_resets_at: Instant | None = None
-    week_utilization: float | None = None
-
-
-class ClaudePing(ClaudeWindow):
-    trigger: str
-    request_id: str | None = None
-    duration_ms: int | None = None
-    output: str | None = None
-
-
-class ClaudeUsage(ClaudeWindow):
-    detail: str | None = None
-
-
 class EconomyCpi(Source):
     month: Month
     index: float
@@ -398,8 +376,6 @@ SHAPES: dict[str, type[Source]] = {
     "health.ecg": HealthEcg,
     "health.irn": HealthIrn,
     "health.device": HealthDevice,
-    "ai.claude.ping": ClaudePing,
-    "ai.claude.usage": ClaudeUsage,
     "economy.cpi": EconomyCpi,
     "leisure.event": LeisureEvent,
 }

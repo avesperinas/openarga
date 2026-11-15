@@ -117,32 +117,6 @@ def test_the_sync_grants_the_same_scopes_the_realm_declares() -> None:
     assert '"$name" == *:*' in sync
 
 
-def run_client() -> dict:
-    (client,) = [c for c in REALM["clients"] if c["clientId"] == "claude-run"]
-    return client
-
-
-def test_claude_run_is_confidential_and_asks_for_its_scopes_one_app_at_a_time() -> None:
-    client = run_client()
-
-    assert client["publicClient"] is False
-    assert client["redirectUris"] == ["${PUBLIC_URL}/api/hub/claude-run/callback"]
-    assert client["attributes"]["pkce.code.challenge.method"] == "S256"
-    assert client["implicitFlowEnabled"] is False
-    assert client["directAccessGrantsEnabled"] is False
-    assert client["serviceAccountsEnabled"] is False
-    assert client["fullScopeAllowed"] is False
-    assert client["defaultClientScopes"] == ["basic"]
-    assert "outings:write" in client["optionalClientScopes"]
-    assert "insights:read" in client["optionalClientScopes"]
-
-
-def test_the_sync_file_of_claude_run_is_the_realm_one() -> None:
-    synced = json.loads((ROOT / "auth" / "client-claude-run.json").read_text())
-
-    assert synced == run_client()
-
-
 def test_the_login_speaks_english_and_spanish_and_nobody_signs_up_alone() -> None:
     assert REALM["displayName"] == "OpenArga"
     assert REALM["internationalizationEnabled"] is True

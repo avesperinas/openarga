@@ -31,7 +31,6 @@ import {
   syncNow,
 } from "./api";
 import { TokenSheet } from "./Add";
-import { ClaudeRun } from "./ClaudeRun";
 import { ScreenHeader } from "./Header";
 import { Pending, changed, useLoad } from "./Loads";
 import { MailRules } from "./Rules";
@@ -121,14 +120,10 @@ export function landsIn(connection: Pick<ConnectionDetail, "inlets">): string | 
 }
 
 export function removeConsequence(connection: ConnectionDetail): string {
-  if (connection.provider === "claude") {
-    return "Chuping deja de lanzar sus pings y su token se borra. Los pings que ya se lanzaron no se borran.";
-  }
   return `Deja de entrar lo que trae ${connection.provider_name}, y su clave se borra. Lo que ya trajo se queda en tus apps.`;
 }
 
-export function labelHint(connection: ConnectionDetail): string {
-  if (connection.provider === "claude") return "Es como la nombras al pedirle a Claude que cambie su horario.";
+export function labelHint(): string {
   return "Como la verás aquí y en tus apps.";
 }
 
@@ -269,9 +264,6 @@ export function ConnectionScreen({ id, onBack }: { id: string; onBack: () => voi
         </Card>
       )}
       {connection.provider === "imap" && <MailRules connection={connection} onChange={show} />}
-      {connection.provider === "claude" && (
-        <ClaudeRun connection={connection.id} relay={connection.relay !== false} onChange={show} />
-      )}
 
       <Card title="Pasadas">
         {connection.runs.length === 0 ? (
@@ -398,7 +390,7 @@ export function RenameSheet({
         onChange={setLabel}
         onSubmit={save}
         autoFocus
-        hint={problem ?? labelHint(connection)}
+        hint={problem ?? labelHint()}
         invalid={problem !== null}
       />
     </Sheet>
