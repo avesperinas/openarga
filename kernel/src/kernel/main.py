@@ -21,6 +21,7 @@ from kernel.tools import router as tools_router
 from kernel.ui import router as ui_router
 from kernel.users import router as users_router
 from kernel.wallpapers import router as wallpapers_router
+from kernel.words import Language
 
 SERVICE = "kernel"
 
@@ -38,6 +39,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="OpenArga kernel", lifespan=lifespan)
 app.add_middleware(UserFromHeader)
+app.add_middleware(Language)
 app.include_router(events_router)
 app.include_router(entities_router)
 app.include_router(resolution_router)

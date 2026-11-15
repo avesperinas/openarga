@@ -1,0 +1,19 @@
+{
+  "activity.days": "{active} of {days} days with activity",
+  "entities.none": "no entities yet",
+  "entities.week": "{count} this week",
+  "events.last_days": "last {days} days",
+  "events.none": "no events yet",
+  "events.since": "vs. yesterday",
+  "events.total": "{total} in total",
+  "notifications.test": "This is how your notifications arrive.",
+  "today": "today",
+  "weekdays.short": "M T W T F S S",
+  "widget.activity": "Consistency",
+  "widget.entities": "Entities",
+  "widget.entities_by_volume": "Entities by volume",
+  "widget.events": "Events",
+  "widget.events_by_weekday": "By day of the week",
+  "widget.events_trend": "Activity",
+  "widget.version": "Deployed version"
+}

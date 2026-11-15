@@ -356,7 +356,7 @@ async def test_a_push_service_that_does_not_answer_is_tried_again_and_stops_no_o
     del pushed.refuse["https://push.ejemplo.com/1"]
     assert (await send("2026-10-06T07:05:00+00:00"))["sent"] == 1
     why, gone, _ = await outcome_of("de-ana")
-    assert gone and why == "enviado a 1 de 1"
+    assert gone and why == "sent to 1 of 1"
 
 
 async def test_what_keeps_failing_ends_and_says_why(kernel, people, pushed) -> None:
@@ -367,7 +367,7 @@ async def test_what_keeps_failing_ends_and_says_why(kernel, people, pushed) -> N
     for minute in ("07:00", "07:05", "07:20", "08:00"):
         await send(f"2026-10-06T{minute}:00+00:00")
     why, gone, attempts = await outcome_of("seguro")
-    assert gone and attempts == 3 and why.startswith("no salió tras 4 intentos")
+    assert gone and attempts == 3 and why.startswith("did not go out after 4 attempts")
 
 
 async def test_a_refusal_is_not_retried_and_the_device_says_it(kernel, people, pushed) -> None:
@@ -378,7 +378,7 @@ async def test_a_refusal_is_not_retried_and_the_device_says_it(kernel, people, p
     found = await send("2026-10-06T07:00:00+00:00")
     assert found["sent"] == 1 and found["retrying"] == 0
     why, gone, _ = await outcome_of("seguro")
-    assert gone and why == "enviado a 0 de 1; Dispositivo 1: 403 BadJwtToken"
+    assert gone and why == "sent to 0 of 1; Dispositivo 1: 403 BadJwtToken"
 
     settings = (await kernel.get("/notifications", headers=ana)).json()
     assert settings["devices"][0]["last_error"] == "403 BadJwtToken"

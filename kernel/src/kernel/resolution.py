@@ -173,7 +173,7 @@ async def merge(item_id: UUID, request: MergeRequest) -> Entity:
             method="manual",
             decided_by="person",
             confidence=1.0,
-            evidence=f"fusión pedida desde la cola, item {item_id}",
+            evidence=f"merge asked from the queue, item {item_id}",
         )
         await connection.execute(CONFIRM_ENTITY, {"entity_id": target})
         entity = await read_entity(connection, UUID(target))

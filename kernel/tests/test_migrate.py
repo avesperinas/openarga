@@ -57,7 +57,7 @@ def test_a_database_ahead_starts_instead_of_dying(stamped, capsys) -> None:
     stamp(FUTURO)
 
     assert migrate.main() == 0
-    assert "es un rollback" in capsys.readouterr().err
+    assert "it is a rollback" in capsys.readouterr().err
 
 
 def test_it_does_not_touch_the_schema_when_it_is_ahead(stamped) -> None:

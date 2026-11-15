@@ -4,8 +4,8 @@ Revision ID: ${up_revision}
 Revises: ${down_revision | comma,n}
 Create Date: ${create_date}
 
-Principio 11: esta migración debe ser compatible hacia atrás. El código de la
-versión anterior tiene que seguir funcionando contra el esquema que deja.
+Principle 11: this migration must be backward compatible. The previous version's code
+must keep working against the schema it leaves.
 """
 
 from collections.abc import Sequence

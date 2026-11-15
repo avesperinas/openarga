@@ -95,8 +95,8 @@ async def backfill_module(connection: AsyncConnection, module_id: str) -> dict[s
             if orphan:
                 await connection.execute(text("reset role"))
                 raise AmbiguousOwner(
-                    f"{table} tiene filas sin dueño y hay varias personas: no se puede saber de "
-                    "quién son. Hay que dárselas a mano antes de arrancar (ADR-0028)."
+                    f"{table} has rows without an owner and there are several people: it is not "
+                    "known whose they are. Assign them by hand before starting (ADR-0028)."
                 )
     await connection.execute(text("reset role"))
     return moved

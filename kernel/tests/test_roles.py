@@ -200,9 +200,9 @@ def test_running_it_again_changes_nothing(database, modules) -> None:
     again = run("kernel.roles", env)
 
     assert again.returncode == 0, again.stderr
-    assert f"sin cambios  {KERNEL_USER}" in again.stdout
-    assert f"sin cambios  {MODULE_LOGIN}" in again.stdout
-    assert "contraseña" not in again.stdout and "creado" not in again.stdout
+    assert f"unchanged    {KERNEL_USER}" in again.stdout
+    assert f"unchanged    {MODULE_LOGIN}" in again.stdout
+    assert "password" not in again.stdout and "created" not in again.stdout
     start_kernel(database, modules)
 
 
@@ -221,7 +221,7 @@ def test_a_changed_password_is_rewritten(database, modules) -> None:
     rotated = secrets.token_urlsafe(24)
     result = run("kernel.roles", {**env, f"{MODULE.upper()}_DB_PASSWORD": rotated})
 
-    assert f"contraseña   {MODULE_LOGIN}" in result.stdout
+    assert f"password     {MODULE_LOGIN}" in result.stdout
     assert query(url_for(database, MODULE_LOGIN, rotated), "select 1") == [(1,)]
 
 
@@ -232,7 +232,7 @@ def test_a_module_without_a_password_is_named_and_skipped(database, modules) -> 
     result = run("kernel.roles", env)
 
     assert result.returncode == 0, result.stderr
-    assert f"falta {MODULE.upper()}_DB_PASSWORD" in result.stdout
+    assert f"{MODULE.upper()}_DB_PASSWORD is missing" in result.stdout
 
 
 @pytest.mark.parametrize("missing", ["ADMIN_DATABASE_URL", "KERNEL_DB_PASSWORD"])
@@ -258,7 +258,7 @@ def test_it_refuses_a_connection_that_is_not_a_superuser(database, modules) -> N
     )
 
     assert result.returncode == 1
-    assert "superusuario" in result.stderr
+    assert "superuser" in result.stderr
 
 
 def test_the_verifier_checks_against_its_own_salt() -> None:
@@ -313,7 +313,7 @@ def test_the_backup_login_reads_everything_and_changes_nothing(database, modules
             query(as_backup, statement)
 
     again = run("kernel.roles", {**roles_env(database, modules), "BACKUP_DB_PASSWORD": password})
-    assert "sin cambios  arga_backup" in again.stdout
+    assert "unchanged    arga_backup" in again.stdout
 
 
 def test_infra_declares_the_modules_by_giving_each_a_password() -> None:

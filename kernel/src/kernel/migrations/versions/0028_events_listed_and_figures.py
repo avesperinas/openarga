@@ -32,17 +32,17 @@ begin
     login_name := 'svc_' || module_id;
 
     if not exists (select 1 from pg_catalog.pg_roles where rolname = role_name) then
-        -- Sin login: el rol lleva los permisos, no las credenciales (ADR-0013).
+        -- No login: the role carries the permissions, not the credentials (ADR-0013).
         execute format('create role %I nologin', role_name);
     end if;
 
-    -- SET para poder aplicar las tablas como el módulo; INHERIT no, para que el kernel no lea
-    -- los datos de un módulo sin ponerse su rol a propósito.
+    -- SET so the tables can be applied as the module; not INHERIT, so the kernel does not
+    -- read a module's data without taking its role on purpose.
     execute format('grant %I to current_user with set true, inherit false', role_name);
 
-    -- El rol del scope de lectura: lo mismo que ve el módulo, sin poder cambiar nada. Las
-    -- tablas se le conceden al aplicarlas, como el dueño (kernel.schemas); aquí, lo que es del
-    -- kernel: el schema y la vista de eventos.
+    -- The read scope's role: what the module sees, without changing anything. Tables are
+    -- granted to it when applied, like the owner (kernel.schemas); here, what belongs to the
+    -- kernel: the schema and the events view.
     if not exists (select 1 from pg_catalog.pg_roles where rolname = reader_name) then
         execute format('create role %I nologin', reader_name);
     end if;
@@ -76,26 +76,28 @@ begin
     execute format('revoke all on schema kernel from %I', reader_name);
     execute format('revoke all on all tables in schema kernel from %I', reader_name);
 
-    -- Lo suyo y lo que declara consumir de Hub, que es lo que el kernel validó al
-    -- registrar el manifiesto (ADR-0045). Sale de `kernel.modules` y no de un argumento: la firma
-    -- no cambia, y el kernel anterior, que la llama igual, deja la misma vista.
+    -- Its own events and what it declares to consume from Hub, as the kernel validated when
+    -- registering the manifest (ADR-0045). It comes from `kernel.modules`, not an argument: the
+    -- signature does not change, and the previous kernel, calling it the same way, gets
+    -- the same view.
     select coalesce(array_agg(consumed), '{}')
     into consumes
     from kernel.modules m,
          jsonb_array_elements_text(coalesce(m.manifest->'consumes', '[]'::jsonb)) as consumed
     where m.id = module_id;
 
-    -- Y los contratos que recibe (ADR-0081), como lista de tipos fijada aquí (T-V14): los de cada
-    -- app cuyo manifiesto dice que ese tipo suyo cumple uno de ellos. El tipo lleva el prefijo de
-    -- su app (`vitals.metric`). Con una lista literal la consulta usa el
-    -- índice por tipo en vez de cruzar con `kernel.modules` en cada lectura. El precio: cuando
-    -- cambia lo que publica una app, se reaprovisiona a quien recibe (`reprovision_receivers`).
+    -- And the contracts it receives (ADR-0081), as a list of types fixed here (T-V14): those of
+    -- each app whose manifest says one of its types meets one of them. The type carries its app's
+    -- prefix (`vitals.metric`). With a literal list the query uses the index by type instead of
+    -- joining `kernel.modules` on every read. The price: when what an app publishes changes,
+    -- its receivers are reprovisioned (`reprovision_receivers`).
     select coalesce(array_agg(distinct published->>'type'), '{}')
     into receives
     from kernel.modules p,
          jsonb_array_elements(coalesce(p.manifest->'publishes', '[]'::jsonb)) as published
-    -- Solo los tipos con el id de su app delante: un manifiesto que declarase uno ajeno no
-    -- haría pasar por suyo lo de otra app (el registro ya lo rechaza; aquí tampoco entra).
+    -- Only types with their app's id in front: a manifest declaring someone else's would not
+    -- pass another app's events off as its own (registration already refuses it; it does not
+    -- get in here either).
     where split_part(published->>'type', '.', 1) = p.id
       and published->>'contract' in (
         select received
@@ -104,9 +106,9 @@ begin
         where m.id = module_id
     );
 
-    -- Lo recibido, solo si viene de la app que publica ese tipo: el tipo lleva su id delante
-    -- (lo exige el manifiesto), así que es la misma pareja (módulo, tipo) que antes, sin dejar
-    -- entrar un evento que otra app mandase con un tipo ajeno.
+    -- What is received, only if it comes from the app that publishes that type: the type
+    -- carries its id in front (the manifest requires it), so it is the same (module, type)
+    -- pair as before, without letting in an event another app sent with a foreign type.
     execute format(
         'create or replace view %I.events with (security_invoker = false) as '
         'select id, ts, ingested_at, module, source, type, entity_id, payload '

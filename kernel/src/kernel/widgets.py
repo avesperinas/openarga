@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from kernel.entities import find_matches
+from kernel.words import say
 
 KERNEL = "kernel"
 
@@ -88,7 +89,7 @@ class Catalogued:
 
     def __post_init__(self) -> None:
         if self.kind not in KINDS:
-            raise ValueError(f"{self.id}: kind desconocido {self.kind!r}")
+            raise ValueError(f"{self.id}: unknown kind {self.kind!r}")
 
     @property
     def shape(self) -> str:
@@ -96,15 +97,13 @@ class Catalogued:
 
 
 CATALOGUE: tuple[Catalogued, ...] = (
-    Catalogued("events", "Eventos", 1, "kpi-delta", ("1x1", "2x2", "2x1", "4x1", "4x2")),
-    Catalogued("events_trend", "Actividad", 1, "chart", ("2x2", "2x1", "4x1", "2x4", "4x2", "4x4")),
-    Catalogued(
-        "events_by_weekday", "Por día de la semana", 5, "bars", ("2x2", "2x1", "4x1", "4x2")
-    ),
-    Catalogued("activity", "Constancia", 2, "heatmap", ("2x2", "4x1", "4x2", "4x4")),
-    Catalogued("entities", "Entidades", 6, "kpi", ("1x1", "1x2", "2x2")),
-    Catalogued("entities_by_volume", "Entidades por volumen", 5, "list", ("2x4", "4x2", "4x4")),
-    Catalogued("version", "Versión desplegada", 8, "kpi", ("1x1", "2x1", "2x2")),
+    Catalogued("events", "Events", 1, "kpi-delta", ("1x1", "2x2", "2x1", "4x1", "4x2")),
+    Catalogued("events_trend", "Activity", 1, "chart", ("2x2", "2x1", "4x1", "2x4", "4x2", "4x4")),
+    Catalogued("events_by_weekday", "By day of the week", 5, "bars", ("2x2", "2x1", "4x1", "4x2")),
+    Catalogued("activity", "Consistency", 2, "heatmap", ("2x2", "4x1", "4x2", "4x4")),
+    Catalogued("entities", "Entities", 6, "kpi", ("1x1", "1x2", "2x2")),
+    Catalogued("entities_by_volume", "Entities by volume", 5, "list", ("2x4", "4x2", "4x4")),
+    Catalogued("version", "Deployed version", 8, "kpi", ("1x1", "2x1", "2x2")),
 )
 
 BY_ID = {widget.id: widget for widget in CATALOGUE}
@@ -124,15 +123,15 @@ def envelope(state: str, body: Any, uncertainty: dict | None = None) -> dict:
 async def events(connection: AsyncConnection) -> dict:
     row = (await connection.execute(COUNT_EVENTS)).one()
     if row.total == 0:
-        return envelope("empty", {"value": 0, "detail": "sin eventos todavía"})
+        return envelope("empty", {"value": 0, "detail": say("events.none")})
     return envelope(
         "ready",
         {
             "value": row.today,
             "previous": row.yesterday,
-            "since": "vs. ayer",
+            "since": say("events.since"),
             "good_when": "up",
-            "detail": f"{row.total} en total",
+            "detail": say("events.total", total=row.total),
         },
     )
 
@@ -154,7 +153,7 @@ async def events_trend(connection: AsyncConnection, days: int = 14) -> dict:
         {
             "series": series,
             "value": series[-1],
-            "detail": f"últimos {days} días",
+            "detail": say("events.last_days", days=days),
         },
     )
 
@@ -171,10 +170,10 @@ async def events_by_weekday(connection: AsyncConnection) -> dict:
         "ready",
         {
             "series": series,
-            "labels": ["L", "M", "X", "J", "V", "S", "D"],
+            "labels": say("weekdays.short").split(),
             "highlight": today - 1,
             "value": series[today - 1],
-            "detail": "hoy",
+            "detail": say("today"),
         },
     )
 
@@ -191,7 +190,7 @@ async def activity(connection: AsyncConnection, days: int = 56) -> dict:
         {
             "values": series,
             "columns": 7,
-            "detail": f"{active} de {days} días con actividad",
+            "detail": say("activity.days", active=active, days=days),
         },
     )
 
@@ -199,8 +198,8 @@ async def activity(connection: AsyncConnection, days: int = 56) -> dict:
 async def entities(connection: AsyncConnection) -> dict:
     row = (await connection.execute(COUNT_ENTITIES)).one()
     if row.total == 0:
-        return envelope("empty", {"value": 0, "detail": "sin entidades todavía"})
-    return envelope("ready", {"value": row.total, "detail": f"{row.week} esta semana"})
+        return envelope("empty", {"value": 0, "detail": say("entities.none")})
+    return envelope("ready", {"value": row.total, "detail": say("entities.week", count=row.week)})
 
 
 async def entities_by_volume(connection: AsyncConnection, limit: int = 5) -> dict:
