@@ -26,6 +26,7 @@ async def hub_app(migrated, schema, monkeypatch):
     from arga_testing import fresh_modules
     from kernel import capabilities as kernel_capabilities
     from kernel import db as kernel_db
+
     os.environ.setdefault("HUB_CREDENTIALS_KEY", os.urandom(32).hex())
     from hub import capabilities as hub_capabilities
     from hub import db as hub_db
