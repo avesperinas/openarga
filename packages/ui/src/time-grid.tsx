@@ -26,6 +26,7 @@ import {
 } from "./calendar-layout";
 import { Icon } from "./icons";
 import { dates } from "./regional";
+import { say } from "./words";
 
 export interface TimeRange {
   start: Date;
@@ -658,7 +659,7 @@ export function TimeGrid({
                   type="button"
                   className="tg-strip-toggle"
                   aria-expanded={stripOpen}
-                  aria-label={stripOpen ? "Plegar lo de todo el día" : "Desplegar lo de todo el día"}
+                  aria-label={stripOpen ? say("time_grid.fold_all_day") : say("time_grid.unfold_all_day")}
                   onClick={() => setStripOpen((open) => !open)}
                 >
                   <Icon name={stripOpen ? "chevron-up" : "chevron-down"} />
@@ -681,7 +682,7 @@ export function TimeGrid({
                       ))}
                     {hiddenPerDay[index]! > 0 && (
                       <button type="button" className="tg-strip-more" onClick={() => setStripOpen(true)}>
-                        {hiddenPerDay[index]} más
+                        {say("month.more", { count: hiddenPerDay[index]! })}
                       </button>
                     )}
                   </div>
@@ -703,7 +704,7 @@ export function TimeGrid({
                     >
                       <span className="tg-bar-title">{bar.event.title}</span>
                       {bar.event.recurring && <Icon name="repeat" />}
-                      {bar.event.duplicateOf && <Icon name="layers" label={`También en ${bar.event.duplicateOf}`} />}
+                      {bar.event.duplicateOf && <Icon name="layers" label={say("time_grid.also_in", { calendar: bar.event.duplicateOf })} />}
                     </button>
                   ))}
               </div>
@@ -775,7 +776,7 @@ export function TimeGrid({
                             onEventClick?.(one.segment.event.id);
                           }}
                         >
-                          {one.segment.event.title || "Sin título"}
+                          {one.segment.event.title || say("untitled")}
                         </button>
                       )}
                       {!one.segment.event.readOnly && !!onEventChange && !one.segment.continuesAfter && (
@@ -853,11 +854,12 @@ export function describe(event: CalendarEvent): string {
   const start = toDate(event.start);
   const end = toDate(event.end);
   const when = event.allDay || isStripEvent(event)
-    ? `${dayMonth().format(start)}, todo el día`
+    ? `${dayMonth().format(start)}, ${say("time_grid.all_day")}`
     : `${dayMonth().format(start)}, ${formatSpan(start, end)}`;
-  const status = event.status === "cancelled" ? ", cancelado" : event.status === "tentative" ? ", por confirmar" : "";
-  const title = `${event.title || "Sin título"}${event.background ? ", de fondo" : ""}`;
-  const twin = event.duplicateOf ? `también en ${event.duplicateOf}` : null;
+  const status =
+    event.status === "cancelled" ? `, ${say("time_grid.cancelled")}` : event.status === "tentative" ? `, ${say("time_grid.tentative")}` : "";
+  const title = `${event.title || say("untitled")}${event.background ? `, ${say("time_grid.background")}` : ""}`;
+  const twin = event.duplicateOf ? say("time_grid.also_in_lower", { calendar: event.duplicateOf }) : null;
   return [title, when + status, event.subtitle, twin].filter(Boolean).join(". ");
 }
 
@@ -920,9 +922,9 @@ const EventBlock = React.memo(function EventBlock({
       onClick={onOpen}
     >
       <span className="tg-event-title">
-        {event.title || "Sin título"}
+        {event.title || say("untitled")}
         {event.recurring && <Icon name="repeat" />}
-        {event.duplicateOf && <Icon name="layers" label={`También en ${event.duplicateOf}`} />}
+        {event.duplicateOf && <Icon name="layers" label={say("time_grid.also_in", { calendar: event.duplicateOf })} />}
       </span>
       <span className="tg-event-time">{oneLine ? formatClock(start) : formatSpan(start, end)}</span>
       {event.subtitle && !oneLine && <span className="tg-event-subtitle">{event.subtitle}</span>}
@@ -946,7 +948,7 @@ function GhostBlock({ ghost, source, day, hh }: { ghost: Ghost; source?: Calenda
       style={{ "--top": ghost.top, "--bottom": ghost.bottom, "--left": 0, "--width": 1, "--layer": 90 } as React.CSSProperties}
       aria-hidden="true"
     >
-      <span className="tg-event-title">{source?.title || "Nuevo evento"}</span>
+      <span className="tg-event-title">{source?.title || say("time_grid.new_event")}</span>
       <span className="tg-event-time">{formatSpan(start, end)}</span>
     </div>
   );
@@ -985,8 +987,8 @@ function DraftBlock({
         ref={inputRef}
         className="tg-draft-input"
         value={title}
-        placeholder="Título"
-        aria-label="Título del evento nuevo"
+        placeholder={say("time_grid.title")}
+        aria-label={say("time_grid.new_title")}
         enterKeyHint="done"
         onChange={(event) => setTitle(event.target.value)}
         onKeyDown={(event) => {
