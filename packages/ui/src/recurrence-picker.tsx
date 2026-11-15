@@ -7,9 +7,9 @@ import {
 } from "./controls";
 import { DateField } from "./date-field";
 import {
-  DAY_NAMES,
-  MONTH_NAMES,
-  ORDINALS,
+  dayName,
+  monthName,
+  ordinal,
   WEEKDAYS,
   describe,
   positionOf,
@@ -21,6 +21,7 @@ import {
   type RecurrenceRule,
   type Weekday,
 } from "./recurrence";
+import { say } from "./words";
 
 export interface RecurrencePickerProps {
   date: string;
@@ -32,12 +33,8 @@ export interface RecurrencePickerProps {
 const NEVER = "never";
 const CUSTOM = "custom";
 
-const FREQS: { value: Freq; label: string }[] = [
-  { value: "daily", label: "Días" },
-  { value: "weekly", label: "Semanas" },
-  { value: "monthly", label: "Meses" },
-  { value: "yearly", label: "Años" },
-];
+const FREQS: Freq[] = ["daily", "weekly", "monthly", "yearly"];
+const pick = (key: string, vars?: Record<string, string | number>) => say(`recurrence.picker.${key}`, vars);
 
 type Ends = "never" | "until" | "count";
 type Anchor = "day" | "position" | "last";
@@ -113,9 +110,9 @@ export function RecurrencePicker({
   };
 
   const chips = [
-    { value: NEVER, label: "No se repite" },
+    { value: NEVER, label: pick("never") },
     ...quick.map((q) => ({ value: q.key, label: q.label })),
-    { value: CUSTOM, label: "Personalizar…" },
+    { value: CUSTOM, label: pick("custom") },
   ];
 
   const ending: Ends =
@@ -131,14 +128,14 @@ export function RecurrencePicker({
   };
 
   const whereLabel =
-    value?.freq === "yearly" ? ` de ${MONTH_NAMES[month - 1]}` : "";
+    value?.freq === "yearly" ? ` ${pick("of_month", { month: monthName(month) })}` : "";
   const anchors: { value: Anchor; label: string }[] = [
-    { value: "day", label: `El ${day}${whereLabel}` },
+    { value: "day", label: `${pick("anchor.day", { day })}${whereLabel}` },
     {
       value: "position",
-      label: capital(`${ORDINALS[pos]} ${DAY_NAMES[weekday].one}${whereLabel}`),
+      label: capital(`${ordinal(pos)} ${dayName(weekday)}${whereLabel}`),
     },
-    { value: "last", label: `Último día${whereLabel}` },
+    { value: "last", label: `${pick("anchor.last")}${whereLabel}` },
   ];
 
   return (
@@ -154,9 +151,9 @@ export function RecurrencePicker({
       {custom && value && (
         <div className="recurrence-detail">
           <div className="recurrence-every">
-            <span className="recurrence-caption">Cada</span>
+            <span className="recurrence-caption">{pick("every")}</span>
             <Stepper
-              label="Intervalo"
+              label={pick("interval")}
               value={value.interval}
               step={1}
               min={1}
@@ -166,8 +163,8 @@ export function RecurrencePicker({
             />
           </div>
           <ChoiceChips<Freq>
-            label="Frecuencia"
-            options={FREQS}
+            label={pick("frequency")}
+            options={FREQS.map((freq) => ({ value: freq, label: pick(`freq.${freq}`) }))}
             value={value.freq}
             onChange={(freq) => onChange(shaped(freq, anchorOf(value), value))}
           />
@@ -175,10 +172,10 @@ export function RecurrencePicker({
           {value.freq === "weekly" && (
             <div className="recurrence-weekdays">
               <CheckChips<Weekday>
-                label="Días de la semana"
+                label={pick("weekdays")}
                 options={WEEKDAYS.map((w) => ({
                   value: w,
-                  label: DAY_NAMES[w].one.slice(0, 3),
+                  label: dayName(w).slice(0, 3),
                 }))}
                 values={value.byDay.map((d) => d.weekday)}
                 onChange={(days) => {
@@ -194,7 +191,7 @@ export function RecurrencePicker({
 
           {(value.freq === "monthly" || value.freq === "yearly") && (
             <ChoiceChips<Anchor>
-              label="Qué día"
+              label={pick("which_day")}
               options={anchors}
               value={anchorOf(value)}
               onChange={(anchor) => onChange(shaped(value.freq, anchor, value))}
@@ -202,32 +199,32 @@ export function RecurrencePicker({
           )}
 
           <div className="recurrence-ends">
-            <span className="recurrence-caption">Termina</span>
+            <span className="recurrence-caption">{pick("ends")}</span>
             <SegmentedControl<Ends>
-              label="Termina"
+              label={pick("ends")}
               options={[
-                { value: "never", label: "Nunca" },
-                { value: "until", label: "Un día" },
-                { value: "count", label: "Veces" },
+                { value: "never", label: pick("ends.never") },
+                { value: "until", label: pick("ends.until") },
+                { value: "count", label: pick("ends.count") },
               ]}
               value={ending}
               onChange={setEnding}
             />
             {ending === "until" && (
               <DateField
-                label="Hasta el día"
+                label={pick("until_day")}
                 value={value.until?.slice(0, 10) ?? ""}
                 onChange={(until) => until && onChange({ ...value, until })}
               />
             )}
             {ending === "count" && (
               <Stepper
-                label="Veces"
+                label={pick("ends.count")}
                 value={value.count ?? 10}
                 step={1}
                 min={1}
                 max={999}
-                unit="veces"
+                unit={pick("times_unit")}
                 inputMode="numeric"
                 onChange={(count) => onChange({ ...value, count: count ?? 1 })}
               />
@@ -237,7 +234,7 @@ export function RecurrencePicker({
       )}
 
       <p className="recurrence-phrase" aria-live="polite">
-        {value ? capital(describe(value)) : "Solo una vez"}
+        {value ? capital(describe(value)) : pick("once")}
       </p>
     </fieldset>
   );
