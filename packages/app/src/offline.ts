@@ -1,3 +1,4 @@
+import { platformSay } from "@openarga/ui";
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 
 import { answer } from "./api";
@@ -28,13 +29,13 @@ export interface Store {
 
 export class Queued extends Error {
   constructor() {
-    super("Sin conexión: se guarda y se envía al volver la red.");
+    super(platformSay("offline.queued"));
   }
 }
 
 export class NeedsNetwork extends Error {
   constructor() {
-    super("Sin conexión: esto necesita red.");
+    super(platformSay("offline.needs_network"));
   }
 }
 
