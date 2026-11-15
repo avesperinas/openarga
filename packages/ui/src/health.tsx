@@ -5,7 +5,8 @@ import * as React from "react";
 import { Icon } from "./icons";
 import { StatRow, StatTile } from "./reading";
 import { Hint } from "./screen";
-import { locale } from "./regional";
+import { dates, locale } from "./regional";
+import { say } from "./words";
 
 const MINUTE = 60_000;
 
@@ -27,7 +28,7 @@ export function InfoButton({ label, open, onToggle }: { label: string; open: boo
     <button
       type="button"
       className="info-button"
-      aria-label={open ? `Cerrar qué es ${label.toLowerCase()}` : `Qué es ${label.toLowerCase()}`}
+      aria-label={open ? say("info.close", { label: label.toLowerCase() }) : say("info.open", { label: label.toLowerCase() })}
       aria-expanded={open}
       onClick={onToggle}
     >
@@ -96,7 +97,7 @@ export function KeyFigures({ items, label }: { items: KeyFigure[]; label: string
 export function BatteryLine({ name, percent, detail }: { name: string; percent: number; detail?: string }) {
   const low = percent <= 20;
   return (
-    <div className="battery-line" data-low={low || undefined} role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label={`Batería de ${name}`}>
+    <div className="battery-line" data-low={low || undefined} role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-label={say("battery.of", { name })}>
       <span className="battery-line-text">
         <span>{name}</span>
         <span className="battery-line-value">
@@ -113,10 +114,18 @@ export function BatteryLine({ name, percent, detail }: { name: string; percent: 
 export type Quality = "excellent" | "good" | "fair" | "poor";
 
 export const QUALITY_NAMES: Record<Quality, string> = {
-  excellent: "Excelente",
-  good: "Buena",
-  fair: "Regular",
-  poor: "Mala",
+  get excellent() {
+    return say("quality.excellent");
+  },
+  get good() {
+    return say("quality.good");
+  },
+  get fair() {
+    return say("quality.fair");
+  },
+  get poor() {
+    return say("quality.poor");
+  },
 };
 
 export interface HealthRingProps {
@@ -195,10 +204,16 @@ export function HealthRing({ value, target, display, label, caption, quality, si
 export type SleepStage = "awake" | "rem" | "light" | "deep";
 
 export const STAGE_NAMES: Record<SleepStage, string> = {
-  awake: "Despierto",
+  get awake() {
+    return say("stage.awake");
+  },
   rem: "REM",
-  light: "Ligero",
-  deep: "Profundo",
+  get light() {
+    return say("stage.light");
+  },
+  get deep() {
+    return say("stage.deep");
+  },
 };
 
 export const STAGE_LANES: SleepStage[] = ["awake", "rem", "light", "deep"];
@@ -285,7 +300,7 @@ export function Hypnogram({ segments, start, end, pulse = [], label }: Hypnogram
     })
     .join(" ");
 
-  if (bars.length === 0) return <p className="widget-note">Esta noche llegó sin fases.</p>;
+  if (bars.length === 0) return <p className="widget-note">{say("sleep.no_stages")}</p>;
 
   return (
     <figure className="hypnogram" aria-label={label}>
@@ -396,7 +411,7 @@ export function StageBreakdown({ stages }: { stages: StageShare[] }) {
   const total = stages.reduce((sum, one) => sum + one.minutes, 0);
   if (total <= 0) return null;
   return (
-    <ul className="stage-breakdown" aria-label="Las fases de la noche">
+    <ul className="stage-breakdown" aria-label={say("sleep.stages")}>
       {stages.map((one) => {
         const share = Math.round((one.minutes / total) * 100);
         return (
@@ -502,7 +517,7 @@ export interface QualityMonthProps {
   label: string;
 }
 
-const MONTH_NAMES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
 
 export function monthCells(month: string): (string | null)[][] {
   const [year = 1970, number = 1] = month.split("-").map(Number);
@@ -523,11 +538,11 @@ export function QualityMonth({ month, days, selected, onSelect, onPrevious, onNe
   return (
     <figure className="quality-month" aria-label={label}>
       <div className="quality-month-head">
-        <button type="button" className="quality-month-step" onClick={onPrevious} disabled={!onPrevious} aria-label="Mes anterior">
+        <button type="button" className="quality-month-step" onClick={onPrevious} disabled={!onPrevious} aria-label={say("calendar.previous_month")}>
           <Icon name="chevron-left" />
         </button>
-        <span className="quality-month-name">{`${MONTH_NAMES[number - 1]} ${year}`}</span>
-        <button type="button" className="quality-month-step" onClick={onNext} disabled={!onNext} aria-label="Mes siguiente">
+        <span className="quality-month-name">{dates({ month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(year, number - 1, 1)))}</span>
+        <button type="button" className="quality-month-step" onClick={onNext} disabled={!onNext} aria-label={say("calendar.next_month")}>
           <Icon name="chevron-right" />
         </button>
       </div>
@@ -542,7 +557,7 @@ export function QualityMonth({ month, days, selected, onSelect, onPrevious, onNe
             {week.map((day, column) => {
               if (day === null) return <span key={column} className="quality-month-cell" data-empty="" role="gridcell" />;
               const found = byDay.get(day);
-              const text = `${Number(day.slice(8))}${found ? `: ${found.value}, ${QUALITY_NAMES[found.quality].toLowerCase()}` : ", sin noche"}`;
+              const text = `${Number(day.slice(8))}${found ? `: ${found.value}, ${QUALITY_NAMES[found.quality].toLowerCase()}` : `, ${say("sleep.no_night")}`}`;
               return (
                 <button
                   key={day}
@@ -576,7 +591,7 @@ export function QualityMonth({ month, days, selected, onSelect, onPrevious, onNe
 }
 
 export const ZONE_SHARES = [0.5, 0.6, 0.7, 0.8, 0.9];
-export const ZONE_LABELS = ["Calentamiento", "Quema de grasa", "Aeróbica", "Anaeróbica", "Máximo"];
+export const zoneLabel = (index: number): string => say(`zone.${index + 1}`);
 
 export function zoneEdges(maxHeartRate: number): number[] {
   return ZONE_SHARES.map((share) => Math.round(share * maxHeartRate));
@@ -586,7 +601,7 @@ export function ZoneBar({ zones, maxHeartRate }: { zones: number[]; maxHeartRate
   const total = zones.reduce((sum, one) => sum + one, 0);
   const edges = maxHeartRate ? zoneEdges(maxHeartRate) : null;
   return (
-    <figure className="zone-bar" aria-label="Minutos en cada zona de vitals">
+    <figure className="zone-bar" aria-label={say("zone.minutes")}>
       <div className="zone-bar-track" aria-hidden="true">
         {total > 0 &&
           zones.map((minutes, index) =>
@@ -598,7 +613,7 @@ export function ZoneBar({ zones, maxHeartRate }: { zones: number[]; maxHeartRate
           <li key={index} data-zone={index + 1}>
             <span className="zone-bar-dot" aria-hidden="true" />
             <span className="zone-bar-name">
-              Zona {index + 1} · {ZONE_LABELS[index]}
+              {say("zone.name", { number: index + 1 })} · {zoneLabel(index)}
             </span>
             <span className="zone-bar-range">
               {edges ? (index < 4 ? `${edges[index]}–${(edges[index + 1] ?? 0) - 1}` : `≥ ${edges[index]}`) : ""}
@@ -637,7 +652,7 @@ const CURVE_H = 60;
 export function HeartCurve({ beats, maxHeartRate, marks = [], seconds, label }: HeartCurveProps) {
   const [hover, setHover] = React.useState<number | null>(null);
   const plot = React.useRef<HTMLDivElement>(null);
-  if (beats.length < 2) return <p className="widget-note">Sin vitals de esas horas.</p>;
+  if (beats.length < 2) return <p className="widget-note">{say("heart.none")}</p>;
   const { low, high } = heartDomain(beats);
   const last = Math.max(beats[beats.length - 1]?.s ?? 1, seconds ?? 0, 1);
   const x = (s: number) => (s / last) * 100;
@@ -727,13 +742,12 @@ export interface WorkoutHeartData {
   marks: { at: string; label: string }[];
 }
 
-export const ZONES_INFO =
-  "Cinco tramos de vitals sobre tu máximo teórico (220 menos tu edad): calentamiento del 50 al 60 %, quema de grasa del 60 al 70 %, aeróbica del 70 al 80 %, anaeróbica del 80 al 90 % y máximo por encima. Cuántos minutos pasaste en cada uno dice qué tipo de esfuerzo fue.";
+export const zonesInfo = (): string => say("zone.info");
 
 export function heartSourceText(source: WorkoutHeartData["source"]): string {
-  if (source === "band") return "Vitals de la pulsera durante el entreno.";
-  if (source === "day") return "Vitals del día, minuto a minuto: la pulsera no lo registró como entreno.";
-  return "Sin vitals de esas horas.";
+  if (source === "band") return say("heart.from_band");
+  if (source === "day") return say("heart.from_day");
+  return say("heart.none");
 }
 
 export function WorkoutHeart({ heart, start }: { heart: WorkoutHeartData; start: string }) {
@@ -742,44 +756,44 @@ export function WorkoutHeart({ heart, start }: { heart: WorkoutHeartData; start:
   const seconds = heart.minutes * 60;
   return (
     <div className="workout-heart health-figures">
-      <StatRow label="El vitals">
+      <StatRow label={say("heart.title")}>
         <StatTile
-          label="Media"
+          label={say("heart.average")}
           value={heart.avg != null ? `${Math.round(heart.avg)} lpm` : "—"}
-          info="Las pulsaciones por minuto de media durante el entreno, sin contar lo de después."
+          info={say("heart.average_info")}
         />
         <StatTile
-          label="Máximo"
+          label={say("heart.max")}
           value={heart.max != null ? `${Math.round(heart.max)} lpm` : "—"}
-          foot={heart.max != null ? `${Math.round((heart.max / heart.max_heart_rate) * 100)} % de tu máximo` : undefined}
-          info="El vitals más alto del entreno, y qué parte es de tu máximo teórico (220 menos tu edad)."
+          foot={heart.max != null ? say("heart.of_max", { pct: Math.round((heart.max / heart.max_heart_rate) * 100) }) : undefined}
+          info={say("heart.max_info")}
         />
         <StatTile
-          label="Carga"
+          label={say("heart.load")}
           value={Math.round(heart.load).toLocaleString(locale())}
-          info="Cada minuto cuenta lo que su zona, de 1 a 5 (Edwards). Las zonas, sobre 220 menos tu edad."
+          info={say("heart.load_info")}
         />
         {heart.kcal != null && (
-          <StatTile label="Calorías" value={`${Math.round(heart.kcal)} kcal`} info="Las que calcula la pulsera para ese entreno, con tu vitals y tu ficha." />
+          <StatTile label={say("heart.calories")} value={`${Math.round(heart.kcal)} kcal`} info={say("heart.calories_info")} />
         )}
         {heart.recovery_2min != null && (
           <StatTile
-            label="Recuperación"
+            label={say("heart.recovery")}
             value={`−${Math.round(heart.recovery_2min)} lpm`}
-            foot="en 2 min al acabar"
-            info="Cuánto bajó el vitals en los dos minutos después de acabar. Cuanto más baja, mejor se recupera el corazón; se compara contigo mismo, no con otros."
+            foot={say("heart.recovery_foot")}
+            info={say("heart.recovery_info")}
           />
         )}
       </StatRow>
-      {heart.beats.length > 1 && <HeartCurve beats={heart.beats} maxHeartRate={heart.max_heart_rate} marks={marks} seconds={seconds} label="El vitals del entreno sobre sus zonas" />}
+      {heart.beats.length > 1 && <HeartCurve beats={heart.beats} maxHeartRate={heart.max_heart_rate} marks={marks} seconds={seconds} label={say("heart.curve")} />}
       {heart.zones.some((one) => one > 0) && (
         <>
-          <InfoHeading info={ZONES_INFO}>Zonas de vitals</InfoHeading>
+          <InfoHeading info={zonesInfo()}>{say("zone.title")}</InfoHeading>
           <ZoneBar zones={heart.zones} maxHeartRate={heart.max_heart_rate} />
         </>
       )}
       <Hint>
-        {heartSourceText(heart.source)} Zonas sobre {heart.max_heart_rate} lpm (220 menos tu edad).
+        {heartSourceText(heart.source)} {say("zone.basis", { max: heart.max_heart_rate })}
       </Hint>
     </div>
   );
@@ -832,7 +846,7 @@ export function HourStrip({
           {hours.map((value, hour) => (
             <tr key={hour}>
               <th scope="row">{`${String(hour).padStart(2, "0")} h`}</th>
-              <td>{now !== undefined && hour > now ? "todavía no" : format(value)}</td>
+              <td>{now !== undefined && hour > now ? say("hour.not_yet") : format(value)}</td>
             </tr>
           ))}
         </tbody>

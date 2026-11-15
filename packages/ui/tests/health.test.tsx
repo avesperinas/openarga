@@ -2,6 +2,8 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import es from "../src/i18n/es.json";
+
 import {
   HealthRing,
   Hypnogram,
@@ -145,7 +147,7 @@ describe("el vitals", () => {
         }}
       />,
     );
-    expect(html).toContain("Vitals de la pulsera");
+    expect(html).toContain(es["heart.from_band"]);
     expect(html).toContain("−21 lpm");
     expect(html).toContain("562 kcal");
     expect(html).toContain("84 % de tu máximo");
