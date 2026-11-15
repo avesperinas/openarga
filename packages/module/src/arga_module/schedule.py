@@ -66,8 +66,8 @@ def _field(part: str, low: int, high: int, expression: str) -> frozenset[int]:
             else:
                 start = end = int(body)
         except ValueError as error:
-            raise InvalidSchedule(f"'{expression}': no entiendo '{chunk}'") from error
+            raise InvalidSchedule(f"'{expression}': cannot read '{chunk}'") from error
         if step < 1 or start < low or end > high or start > end:
-            raise InvalidSchedule(f"'{expression}': '{chunk}' se sale de {low}-{high}")
+            raise InvalidSchedule(f"'{expression}': '{chunk}' is outside {low}-{high}")
         values.update(range(start, end + 1, step))
     return frozenset(values)

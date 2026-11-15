@@ -52,12 +52,12 @@ def test_a_deadline_is_an_instant() -> None:
 
 
 def test_a_time_without_a_zone_is_rejected() -> None:
-    with pytest.raises(BadDated, match="zona"):
+    with pytest.raises(BadDated, match="zone"):
         dated(**a_class(start="2026-10-06T18:00:00", end="2026-10-06T20:00:00"))
 
 
 def test_the_end_cannot_go_before_the_start() -> None:
-    with pytest.raises(BadDated, match="antes del inicio"):
+    with pytest.raises(BadDated, match="before the start"):
         dated(**a_class(end="2026-10-06T17:00:00+02:00"))
 
 
@@ -80,14 +80,14 @@ def test_all_day_is_dates_with_an_exclusive_end() -> None:
 
 
 def test_a_one_day_event_ending_the_same_day_is_rejected() -> None:
-    with pytest.raises(BadDated, match="exclusivo"):
+    with pytest.raises(BadDated, match="exclusive"):
         dated(**a_class(all_day=True, start="2026-11-03", end="2026-11-03"))
 
 
 def test_all_day_does_not_take_a_time() -> None:
-    with pytest.raises(BadDated, match="no es una fecha"):
+    with pytest.raises(BadDated, match="is not a date"):
         dated(**a_class(all_day=True))
-    with pytest.raises(BadDated, match="sin hora"):
+    with pytest.raises(BadDated, match="without a time"):
         dated(
             **a_class(
                 all_day=True,
@@ -98,7 +98,7 @@ def test_all_day_does_not_take_a_time() -> None:
 
 
 def test_a_timed_object_does_not_take_bare_dates() -> None:
-    with pytest.raises(BadDated, match="lleva hora"):
+    with pytest.raises(BadDated, match="carries a time"):
         dated(**a_class(start=date(2026, 11, 3), end=date(2026, 11, 4)))
 
 

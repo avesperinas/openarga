@@ -1,7 +1,7 @@
 [project]
 name = "arga-module"
 version = "0.1.0"
-description = "Un módulo se registra en el kernel al arrancar (ADR-0031) y sirve lo común (T-V09)"
+description = "A module registers with the kernel on start and serves what is common"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "httpx>=0.28",

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import json
+from collections.abc import Callable
 from datetime import UTC, date, datetime
+from functools import cache
+from pathlib import Path
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -274,10 +278,10 @@ def panel(
         raise BadPanel(str(error)) from error
     ids = [tab.id for tab in checked.tabs]
     if len(ids) != len(set(ids)):
-        raise BadPanel("dos pestañas con el mismo id")
+        raise BadPanel("two tabs with the same id")
     for question in checked.questions:
         if question.tab not in ids:
-            raise BadPanel(f"la pregunta «{question.text}» apunta a una pestaña que no hay")
+            raise BadPanel(f"the question '{question.text}' points to a tab that does not exist")
     return {
         "updated_at": datetime.now(UTC).isoformat(),
         **checked.model_dump(mode="json", exclude_none=True),
@@ -287,7 +291,7 @@ def panel(
 def panels(*items: dict[str, Any]) -> dict[str, Any]:
     areas = [item["area"] for item in items]
     if len(areas) != len(set(areas)):
-        raise BadPanel("dos paneles de la misma app en la misma área")
+        raise BadPanel("two panels of the same app in the same area")
     return {"panels": list(items)}
 
 
@@ -304,7 +308,31 @@ def served(body: dict[str, Any]) -> list[dict[str, Any]]:
     return items
 
 
-_MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+_CATALOGS = Path(__file__).resolve().parent / "i18n"
+
+
+def _english() -> str:
+    return "en"
+
+
+_language: Callable[[], str] = _english
+
+
+def language_from(resolver: Callable[[], str]) -> None:
+    global _language
+    _language = resolver
+
+
+@cache
+def _catalog(language: str) -> dict[str, str]:
+    path = _CATALOGS / f"{language}.json"
+    return json.loads(
+        (path if path.exists() else _CATALOGS / "en.json").read_text(encoding="utf-8")
+    )
+
+
+def _words() -> dict[str, str]:
+    return _catalog(_language())
 
 
 def _when(value: Any) -> str:
@@ -313,13 +341,15 @@ def _when(value: Any) -> str:
         day = date.fromisoformat(text[:10])
     except ValueError:
         return text[:60]
-    return f"{day.day} {_MONTHS[day.month - 1]}"
+    return f"{day.day} {_words()['months'].split()[day.month - 1]}"
 
 
 def _number(value: Any, unit: str | None = None) -> str:
     if isinstance(value, int | float):
         rounded = round(value, 1) if abs(value) < 100 else round(value)
-        text = f"{rounded:,}".replace(",", " ").replace(".", ",").replace(" ", ".")
+        text = f"{rounded:,}"
+        if _language() == "es":
+            text = text.replace(",", " ").replace(".", ",").replace(" ", ".")
         if isinstance(rounded, float) and text.endswith(",0"):
             text = text[:-2]
     else:
@@ -350,7 +380,7 @@ def blocks_of(
             return []
         figure: dict[str, Any] = {
             "type": "figure",
-            "label": name or "Hoy",
+            "label": name or _words()["today"],
             "value": _number(body["value"], body.get("unit"))[:60],
         }
         previous = body.get("previous")
@@ -397,7 +427,7 @@ def blocks_of(
                 "type": "rings",
                 "items": [
                     {
-                        "label": (body.get("label") or name or "Hoy")[:60],
+                        "label": (body.get("label") or name or _words()["today"])[:60],
                         "value": _number(value),
                         "share": max(0.0, float(value) / float(target)),
                         "hue": hue,
@@ -501,7 +531,7 @@ def blocks_of(
             blocks.append(
                 {
                     "type": "list",
-                    "label": "Después",
+                    "label": _words()["later"],
                     "rows": [
                         {
                             "label": str(e["title"])[:60],
@@ -552,7 +582,7 @@ def blocks_of(
                     }
                     for t in tasks[:20]
                 ],
-                **({"add": "Añadir…"} if body.get("checkable") else {}),
+                **({"add": _words()["add"]} if body.get("checkable") else {}),
             }
         ]
     return []
@@ -567,7 +597,9 @@ def tile_of(kind: str, envelope: dict[str, Any] | None, label: str) -> dict[str,
         return None
     tile: dict[str, Any] = {"label": label[:60]}
     if kind in ("progress", "ring") and body.get("target"):
-        tile["value"] = f"{_number(value)} de {_number(body['target'], body.get('unit'))}"[:60]
+        tile["value"] = (
+            f"{_number(value)} {_words()['of']} {_number(body['target'], body.get('unit'))}"[:60]
+        )
     else:
         tile["value"] = _number(value, body.get("unit"))[:60]
     figure = blocks_of("kpi-delta" if kind == "kpi-delta" else "kpi", envelope)
@@ -593,6 +625,6 @@ async def gather(
         try:
             async with connection.begin_nested():
                 found[widget_id] = await renderer(connection)
-        except Exception:  # noqa: BLE001 - un widget roto no puede dejar el inicio sin su área
+        except Exception:  # noqa: BLE001 - a broken widget must not leave the home without its area
             continue
     return found

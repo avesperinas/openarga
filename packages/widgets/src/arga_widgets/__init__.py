@@ -212,7 +212,7 @@ class Act(BaseModel):
 def validate(kind: str, body: dict[str, Any], state: State = "ready") -> dict[str, Any]:
     model = BODIES.get(kind)
     if model is None:
-        raise UnknownKind(f"'{kind}' no es un kind de la biblioteca: {', '.join(sorted(BODIES))}")
+        raise UnknownKind(f"'{kind}' is not a kind of the library: {', '.join(sorted(BODIES))}")
 
     try:
         model.model_validate(body)
@@ -224,7 +224,7 @@ def validate(kind: str, body: dict[str, Any], state: State = "ready") -> dict[st
         if missing:
             raise BadBody(
                 f"{kind} con state 'ready' necesita {', '.join(missing)}. "
-                "Si todavía no hay dato, el estado es 'empty'."
+                "Without data yet, the state is 'empty'."
             )
     return body
 

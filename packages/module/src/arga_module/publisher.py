@@ -150,7 +150,7 @@ class Publisher:
                 await connection.add_listener(self.channel, lambda *_: wake())
                 wake()
                 await lost.wait()
-            except Exception as error:  # noqa: BLE001 - sin avisos se sigue con la pasada de seguridad
+            except Exception as error:  # noqa: BLE001 - without notices the safety pass still runs
                 print(
                     f"publisher · sin avisos: {type(error).__name__}: {error}",
                     file=sys.stderr,
@@ -183,7 +183,7 @@ class Publisher:
                         failures = 0
                         if result["published"]:
                             print(f"publisher · {result['published']} publicado(s)", flush=True)
-                except Exception as error:  # noqa: BLE001 - un fallo de base no tumba el proceso
+                except Exception as error:  # noqa: BLE001 - a database failure does not bring the process down
                     failures += 1
                     print(
                         f"publisher · {type(error).__name__}: {error}", file=sys.stderr, flush=True
