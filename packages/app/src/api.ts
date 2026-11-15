@@ -11,7 +11,7 @@ export function problemOf(body: unknown): string | null {
 }
 
 export async function answer<T>(url: string, response: Response): Promise<T> {
-  if (response.status === 401) throw new Unauthorised("sin sesión");
+  if (response.status === 401) throw new Unauthorised("no session");
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new Error(problemOf(body) ?? `${url}: ${response.status}`);

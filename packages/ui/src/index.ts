@@ -514,3 +514,4 @@ export {
   regionalFrom,
   zonedDates,
 } from "./regional";
+export { say as platformSay } from "./words";

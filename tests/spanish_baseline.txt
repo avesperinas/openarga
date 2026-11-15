@@ -244,8 +244,6 @@ modules/travel/ui/src/weather.test.ts
 modules/travel/ui/src/words.test.ts
 modules/travel/ui/src/words.ts
 packages/agenda/tests/test_dated.py
-packages/app/src/api.ts
-packages/app/src/offline.ts
 packages/app/tests/api.test.ts
 packages/app/tests/fresh.test.tsx
 packages/app/tests/mount.test.tsx
