@@ -1,16 +1,17 @@
-# Study · glosario
+# Study glossary
 
-- **Estudio** (`course`): un máster, un grado, un curso, una certificación o un idioma. Tiene escala
-  (0-10 o 0-100) y nota de aprobado, un tono de la paleta y, si se mide así, créditos u horas.
-- **Asignatura** (`subject`): una parte de un estudio con sus créditos. Un curso corto no tiene.
-- **Bloque del horario** (`schedule`): una clase que se repite, con su regla, su hora de pared en la
-  zona del estudio, y su study o enlace. De ahí salen las clases.
-- **Clase** o **sesión** (`session`): existe como fila. Tocada (movida, cancelada, con asistencia,
-  tema, apuntes o ficheros) ya no la regenera el horario.
-- **Evaluable** (`assessment`): entrega, examen, práctica o participación, con peso en tanto por
-  ciento de la nota de su asignatura, nota mínima opcional y calificación.
-- **Nota de lo calificado**: media ponderada de lo que ya tiene nota.
-- **Asegurado**: esos puntos sobre el total, como si lo pendiente fuese un cero.
-- **Lo que necesitas**: la media mínima en lo pendiente para aprobar o llegar al objetivo.
-- **Nota de acta**: la oficial de una asignatura; manda sobre la calculada.
-- **Media del estudio**: ponderada por créditos entre las asignaturas con nota final.
+- **Course** (`course`): a master, a degree, a course, a certification or a language. It has a
+  scale (0-10 or 0-100) and a pass mark, a palette tone and, if it is measured that way, credits
+  or hours.
+- **Subject** (`subject`): a part of a course with its credits. A short course has none.
+- **Schedule block** (`schedule`): a repeating class, with its rule, its wall-clock time in the
+  course's zone, and its room or link. The sessions come from it.
+- **Session** (`session`): it exists as a row. Once touched (moved, cancelled, with attendance,
+  topic, notes or files) the schedule no longer regenerates it.
+- **Assessment** (`assessment`): an assignment, exam, practical or participation, with a weight in
+  percent of its subject's grade, an optional minimum grade and a grade.
+- **Grade so far**: the weighted average of what already has a grade.
+- **Secured**: those points out of the total, as if what is pending were a zero.
+- **What you need**: the minimum average in what is pending to pass or to reach the target.
+- **Record grade**: the official grade of a subject; it overrides the computed one.
+- **Course average**: weighted by credits among the subjects with a final grade.

@@ -32,9 +32,9 @@ async def _session(
 ) -> dict[str, Any] | None:
     await _own(connection, "study_session", session_id)
     if asked.all_day:
-        raise Conflict("una clase tiene hora")
+        raise Conflict("a session has a time")
     if asked.end <= asked.start:
-        raise Conflict("la clase tiene que acabar después de empezar")
+        raise Conflict("a session has to end after it starts")
     await connection.execute(
         text("""
             update study.study_session
@@ -52,7 +52,8 @@ async def _assessment(
     await _own(connection, "study_assessment", assessment_id)
     tz = await connection.scalar(
         text("""
-            select c.tz from study.study_assessment a join study.study_course c on c.id = a.course_id
+            select c.tz from study.study_assessment a
+            join study.study_course c on c.id = a.course_id
             where a.id = :id
         """),
         {"id": assessment_id},

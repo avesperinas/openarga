@@ -13,7 +13,7 @@ async def a_course(api, name: str) -> tuple[str, str]:
     created = (
         await api.post(
             "/courses",
-            json={"name": name, "tone": 3, "subjects": [{"name": "Álgebra", "credits": 6}]},
+            json={"name": name, "tone": 3, "subjects": [{"name": "Algebra", "credits": 6}]},
         )
     ).json()
     return created["course"]["id"], created["subjects"][0]["id"]
@@ -35,7 +35,7 @@ async def with_class_and_exam(api, name: str) -> str:
         f"/courses/{course_id}/assessments",
         json={
             "subject_id": subject_id,
-            "title": "Parcial",
+            "title": "Midterm",
             "kind": "exam",
             "due_on": (today() + timedelta(days=5)).isoformat(),
         },
@@ -59,18 +59,18 @@ async def last_layers(schema) -> dict[tuple[str, str], str]:
 
 async def test_each_course_asks_for_its_own_layer(api, schema) -> None:
     master = await with_class_and_exam(api, "Grado en Historia")
-    german = await with_class_and_exam(api, "Inglés C1")
+    german = await with_class_and_exam(api, "English C1")
 
     assert await last_layers(schema) == {
         (master, "study.session"): "Grado en Historia",
         (master, "study.assessment"): "Grado en Historia",
-        (german, "study.session"): "Inglés C1",
-        (german, "study.assessment"): "Inglés C1",
+        (german, "study.session"): "English C1",
+        (german, "study.assessment"): "English C1",
     }
 
 
 async def test_renaming_a_course_moves_its_things_to_the_new_layer(api, schema) -> None:
-    course_id = await with_class_and_exam(api, "Inglés C1")
+    course_id = await with_class_and_exam(api, "English C1")
     current = (await api.get(f"/courses/{course_id}")).json()["course"]
     edit = {
         key: current[key]
@@ -78,10 +78,10 @@ async def test_renaming_a_course_moves_its_things_to_the_new_layer(api, schema) 
         if key in current
     }
 
-    renamed = await api.put(f"/courses/{course_id}", json={**edit, "name": "Inglés C2"})
+    renamed = await api.put(f"/courses/{course_id}", json={**edit, "name": "English C2"})
 
     assert renamed.status_code == 200, renamed.text
-    assert set((await last_layers(schema)).values()) == {"Inglés C2"}
+    assert set((await last_layers(schema)).values()) == {"English C2"}
 
 
 async def count_queued(schema) -> int:
@@ -90,7 +90,7 @@ async def count_queued(schema) -> int:
 
 
 async def test_what_was_published_before_layers_goes_to_its_course_once(api, schema) -> None:
-    course_id = await with_class_and_exam(api, "Inglés C1")
+    course_id = await with_class_and_exam(api, "English C1")
     async with schema.begin() as connection:
         await connection.execute(
             text(
@@ -106,13 +106,13 @@ async def test_what_was_published_before_layers_goes_to_its_course_once(api, sch
         await outbox.republish(connection)
 
     assert await last_layers(schema) == {
-        (course_id, "study.session"): "Inglés C1",
-        (course_id, "study.assessment"): "Inglés C1",
+        (course_id, "study.session"): "English C1",
+        (course_id, "study.assessment"): "English C1",
     }
     assert await count_queued(schema) == queued
 
 
 def test_a_long_name_is_cut_to_what_the_calendar_takes() -> None:
-    layer = outbox.course_layer("Máster   universitario en " + "x" * 60)
+    layer = outbox.course_layer("Master   universitario en " + "x" * 60)
     assert len(layer) == outbox.LAYER_MAX
-    assert layer.startswith("Máster universitario en x")
+    assert layer.startswith("Master universitario en x")

@@ -10,6 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_agenda import KEY, dated, uid
+from study.words import say
 
 ENQUEUE = text("""
     insert into study.study_outbox (type, payload, dedup_hash)
@@ -37,14 +38,11 @@ async def enqueue(
     await connection.execute(ENQUEUE, {"type": type_, "payload": body, "dedup": dedup})
 
 
-KINDS = {"class": "Clase", "tutorial": "Tutoría", "event": "Sesión"}
-ASSESSMENTS = {
-    "assignment": "Entrega",
-    "exam": "Examen",
-    "practical": "Práctica",
-    "participation": "Participación",
-    "other": "Evaluable",
-}
+ASSESSMENTS = ("assignment", "exam", "practical", "participation", "other")
+
+
+def kind_label(kind: str) -> str:
+    return say(f"assessment.{kind if kind in ASSESSMENTS else 'other'}")
 
 
 LAYER_MAX = 40
@@ -95,7 +93,7 @@ def session_payload(row, *, removed: bool = False) -> dict[str, Any]:
             tz=row.tz,
             location=row.place,
             status="cancelled" if removed or row.status == "cancelled" else "confirmed",
-            href=f"/study/clase/{row.id}",
+            href=f"/study/session/{row.id}",
         ),
         "course_id": str(row.course_id),
         "subject_id": str(row.subject_id) if row.subject_id else None,
@@ -136,10 +134,10 @@ def assessment_payload(row, *, removed: bool = False) -> dict[str, Any]:
     payload["layer"] = course_layer(row.course)
     common = {
         "uid": uid("study", "assessment", row.id),
-        "title": f"{ASSESSMENTS.get(row.kind, 'Evaluable')}: {row.title}",
+        "title": f"{kind_label(row.kind)}: {row.title}",
         "tz": row.tz,
         "status": "cancelled" if removed else "confirmed",
-        "href": f"/study/evaluable/{row.id}",
+        "href": f"/study/assessment/{row.id}",
     }
     if row.due_time is None:
         payload[KEY] = dated(

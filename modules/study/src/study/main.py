@@ -17,7 +17,7 @@ from sqlalchemy import text
 import arga_contracts as contracts
 from arga_module.service import Service
 from arga_tenancy import require_person
-from study import apuntes, moving, notes, publisher, studies, timetable, tools, widgets
+from study import class_notes, moving, notes, publisher, studies, timetable, tools, widgets
 from study import panel as home_panel
 
 MODULE_ID = "study"
@@ -29,7 +29,7 @@ service = Service(
     role_for_scopes=tools.role_for_scopes,
     widgets=widgets.RENDERERS,
     panel=home_panel.build,
-    errors={studies.NotFound: 404, studies.Conflict: 409, apuntes.Unavailable: 503},
+    errors={studies.NotFound: 404, studies.Conflict: 409, class_notes.Unavailable: 503},
     publisher=publisher.PUBLISHER,
     ui_dist=Path(__file__).resolve().parents[2] / "ui" / "dist",
 )
@@ -39,7 +39,7 @@ as_app = service.as_app
 
 def notes_client() -> httpx.AsyncClient:
     if getattr(app.state, "client", None) is None:
-        raise apuntes.Unavailable("el cliente del kernel no está listo")
+        raise class_notes.Unavailable("the kernel client is not ready")
     return service.client()
 
 
@@ -57,18 +57,18 @@ async def capability(
 ) -> dict:
     expected = os.environ.get("MODULE_REGISTRATION_TOKEN", "")
     if not expected:
-        raise HTTPException(status_code=503, detail="Study no tiene MODULE_REGISTRATION_TOKEN")
+        raise HTTPException(status_code=503, detail="Study has no MODULE_REGISTRATION_TOKEN")
     if not hmac.compare_digest(x_module_token, expected):
-        raise HTTPException(status_code=401, detail="solo el kernel pide cosas a Study")
+        raise HTTPException(status_code=401, detail="only the kernel asks Study for things")
     if capability != contracts.AGENDA_MOVE:
-        raise HTTPException(status_code=404, detail=f"Study no sabe hacer '{capability}'")
+        raise HTTPException(status_code=404, detail=f"Study cannot do '{capability}'")
     require_person()
     try:
         asked = contracts.AgendaMove.model_validate(await request.json())
     except (ValidationError, ValueError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     answer = await _run(moving.move, asked)
-    print(f"calendario {asked.uid} movido por {x_arga_module}", flush=True)
+    print(f"calendar {asked.uid} moved by {x_arga_module}", flush=True)
     return answer
 
 
@@ -124,7 +124,7 @@ async def read_certificate(course_id: UUID) -> Response:
             {"id": str(course_id)},
         )
         if found is None:
-            raise studies.NotFound("el estudio no tiene certificado")
+            raise studies.NotFound("the course has no certificate")
         return await notes.read_file(connection, str(found))
 
     name, kind, content, inline = await _run(find)
@@ -180,9 +180,9 @@ async def read_subject(subject_id: UUID) -> SubjectDetail:
         subject = await studies.subject_summary(connection, str(subject_id))
         course = await studies.course(connection, subject.course_id)
         try:
-            found = await apuntes.notes(connection, notes_client(), subject_id=str(subject_id))
+            found = await class_notes.notes(connection, notes_client(), subject_id=str(subject_id))
             unavailable = None
-        except apuntes.Unavailable as error:
+        except class_notes.Unavailable as error:
             found, unavailable = [], str(error)
         return SubjectDetail(
             subject=subject,
@@ -254,7 +254,7 @@ async def list_sessions(
     course_id: UUID | None = None,
 ) -> list[studies.SessionBrief]:
     if since.tzinfo is None or until.tzinfo is None:
-        raise HTTPException(status_code=422, detail="las horas van con su zona")
+        raise HTTPException(status_code=422, detail="times go with their zone")
     return await _run(
         timetable.sessions, since, until, course_id=str(course_id) if course_id else None
     )
@@ -288,10 +288,10 @@ async def read_session(session_id: UUID) -> SessionPage:
         detail = await timetable.session(connection, str(session_id))
         client = notes_client()
         try:
-            briefs = await apuntes.notes(connection, client, session_id=str(session_id))
-            found = [await apuntes.note(connection, client, brief.id) for brief in briefs]
+            briefs = await class_notes.notes(connection, client, session_id=str(session_id))
+            found = [await class_notes.note(connection, client, brief.id) for brief in briefs]
             unavailable = None
-        except apuntes.Unavailable as error:
+        except class_notes.Unavailable as error:
             found, unavailable = [], str(error)
         return SessionPage(
             detail=detail,
@@ -372,9 +372,9 @@ async def list_notes(
     subject_id: UUID | None = None,
 ) -> list[notes.NoteBrief] | list[notes.Hit]:
     if q and q.strip():
-        return await _run(apuntes.find, notes_client(), q)
+        return await _run(class_notes.find, notes_client(), q)
     return await _run(
-        apuntes.notes,
+        class_notes.notes,
         notes_client(),
         course_id=str(course_id) if course_id else None,
         subject_id=str(subject_id) if subject_id else None,
@@ -383,32 +383,32 @@ async def list_notes(
 
 @app.post("/notes", status_code=201)
 async def add_note(request: notes.NoteIn) -> notes.Note:
-    return await _run(apuntes.add_note, notes_client(), request)
+    return await _run(class_notes.add_note, notes_client(), request)
 
 
 @app.get("/notes/{note_id}")
 async def read_note(note_id: UUID) -> notes.Note:
-    return await _run(apuntes.note, notes_client(), str(note_id))
+    return await _run(class_notes.note, notes_client(), str(note_id))
 
 
 @app.put("/notes/{note_id}")
 async def update_note(note_id: UUID, request: notes.NoteEdit) -> notes.Note:
-    return await _run(apuntes.update_note, notes_client(), str(note_id), request)
+    return await _run(class_notes.update_note, notes_client(), str(note_id), request)
 
 
 @app.delete("/notes/{note_id}", status_code=204)
 async def delete_note(note_id: UUID) -> Response:
-    await _run(apuntes.delete_note, notes_client(), str(note_id))
+    await _run(class_notes.delete_note, notes_client(), str(note_id))
     return Response(status_code=204)
 
 
 async def _body(request: Request) -> bytes:
     declared = int(request.headers.get("content-length") or 0)
     if declared > notes.FILE_LIMIT:
-        raise HTTPException(status_code=413, detail="el fichero pasa de 20 MB")
+        raise HTTPException(status_code=413, detail="the file is over 20 MB")
     content = await request.body()
     if len(content) > notes.FILE_LIMIT:
-        raise HTTPException(status_code=413, detail="el fichero pasa de 20 MB")
+        raise HTTPException(status_code=413, detail="the file is over 20 MB")
     return content
 
 

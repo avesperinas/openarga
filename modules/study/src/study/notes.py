@@ -76,7 +76,7 @@ class MaterialIn(BaseModel):
     def _title(cls, value: str) -> str:
         value = value.strip()
         if not value:
-            raise ValueError("el material necesita un nombre")
+            raise ValueError("a material needs a name")
         return value
 
     @field_validator("url")
@@ -116,7 +116,7 @@ class Place(BaseModel):
     @model_validator(mode="after")
     def _one(self) -> Self:
         if (self.note_id is None) == (self.session_id is None):
-            raise ValueError("un fichero es de unos apuntes o de una clase")
+            raise ValueError("a file belongs to a note or to a session")
         return self
 
 
@@ -128,7 +128,7 @@ async def _place_note(connection: AsyncConnection, item: NoteIn | NoteEdit, cour
             {"id": item.subject_id},
         )
         if str(owner) != course_id:
-            raise Conflict("esa asignatura es de otro estudio")
+            raise Conflict("that subject belongs to another course")
 
 
 async def _claim_images(connection: AsyncConnection, note_id: str, body: str) -> None:
@@ -212,9 +212,9 @@ async def save_file(
     connection: AsyncConnection, filename: str, content: bytes, declared: str
 ) -> AttachmentOut:
     if not content:
-        raise Conflict("el fichero está vacío")
+        raise Conflict("the file is empty")
     if len(content) > FILE_LIMIT:
-        raise Conflict("el fichero pasa de 20 MB")
+        raise Conflict("the file is over 20 MB")
     row = (
         await connection.execute(
             text("""
@@ -311,7 +311,8 @@ async def set_certificate(connection: AsyncConnection, course_id: str, attachmen
     )
     await connection.execute(
         text(
-            "update study.study_course set certificate_id = :file, updated_at = now() where id = :id"
+            "update study.study_course set certificate_id = :file, updated_at = now() "
+            "where id = :id"
         ),
         {"file": attachment_id, "id": course_id},
     )
@@ -373,9 +374,9 @@ async def add_material(
             {"id": item.subject_id},
         )
         if str(owner) != course_id:
-            raise Conflict("esa asignatura es de otro estudio")
+            raise Conflict("that subject belongs to another course")
     if (item.url is None) == (attachment_id is None):
-        raise Conflict("un material es un enlace o un fichero")
+        raise Conflict("a material is a link or a file")
     if attachment_id:
         await _own(connection, "study_attachment", attachment_id)
     material_id = await connection.scalar(

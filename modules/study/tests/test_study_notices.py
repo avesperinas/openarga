@@ -23,13 +23,13 @@ async def test_the_evening_before_each_pending_assessment(api) -> None:
     entrega = (
         await api.post(
             f"/courses/{course_id}/assessments",
-            json={"title": "Entrega 1", "due_on": soon.isoformat()},
+            json={"title": "Assignment 1", "due_on": soon.isoformat()},
         )
     ).json()
     await api.post(f"/courses/{course_id}/assessments", json={"title": "Sin fecha"})
 
     [notice] = await built()
-    assert notice["title"] == "Mañana: Entrega 1" and notice["kind"] == "assessment"
+    assert notice["title"] == "Tomorrow: Assignment 1" and notice["kind"] == "assessment"
     assert notice["at"].startswith((soon - timedelta(days=1)).isoformat())
     assert "T19:00:00+0" in notice["at"]
 

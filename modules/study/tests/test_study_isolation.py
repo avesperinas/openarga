@@ -29,7 +29,7 @@ COURSE = "insert into study.study_course (name) values (:name) returning id"
 
 @pytest.fixture
 async def two_students(schema):
-    await as_role(schema, WRITE, ANA, COURSE, name="El máster de Ana")
+    await as_role(schema, WRITE, ANA, COURSE, name="Ana's master")
     await as_role(schema, WRITE, LUIS, COURSE, name="El curso de Luis")
     return schema
 
@@ -39,7 +39,7 @@ async def test_each_one_reads_only_their_own(two_students, role: str) -> None:
     ana = await as_role(two_students, role, ANA, "select name from study.study_course")
     luis = await as_role(two_students, role, LUIS, "select name from study.study_course")
 
-    assert [row.name for row in ana] == ["El máster de Ana"]
+    assert [row.name for row in ana] == ["Ana's master"]
     assert [row.name for row in luis] == ["El curso de Luis"]
 
 

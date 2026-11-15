@@ -20,7 +20,7 @@ async def test_editing_a_course_changes_only_what_is_said(api, notebook) -> None
     edited = await call(
         api,
         "update_course",
-        {"course_id": course["course_id"], "name": "Máster en IA", "hours": 1500},
+        {"course_id": course["course_id"], "name": "Master in AI", "hours": 1500},
     )
     cleared = await call(
         api, "update_course", {"course_id": course["course_id"], "institution": None}
@@ -29,7 +29,7 @@ async def test_editing_a_course_changes_only_what_is_said(api, notebook) -> None
 
     assert edited.status_code == 200, edited.text
     assert cleared.status_code == 200, cleared.text
-    assert app["name"] == "Máster en IA"
+    assert app["name"] == "Master in AI"
     assert app["hours"] == 1500
     assert app["institution"] is None
     assert app["credits"] == 60
@@ -46,7 +46,7 @@ async def test_an_edit_that_does_not_add_up_is_a_conflict_not_a_crash(api, noteb
     )
 
     assert refused.status_code == 409
-    assert "antes de empezar" in refused.json()["detail"]
+    assert "before it starts" in refused.json()["detail"]
 
 
 async def test_archiving_and_reopening_a_course(api, notebook) -> None:
@@ -69,20 +69,22 @@ async def test_deleting_a_course_asks_for_its_name(api, notebook) -> None:
     course = (await a_course(api))["course"]
 
     wrong = (
-        await call(api, "delete_course", {"course_id": course["course_id"], "name": "Otro máster"})
+        await call(
+            api, "delete_course", {"course_id": course["course_id"], "name": "Another master"}
+        )
     ).json()["content"]
     still = await api.get(f"/courses/{course['course_id']}")
     right = (
         await call(
             api,
             "delete_course",
-            {"course_id": course["course_id"], "name": "máster en inteligencia artificial"},
+            {"course_id": course["course_id"], "name": "master in artificial intelligence"},
         )
     ).json()["content"]
     gone = await api.get(f"/courses/{course['course_id']}")
 
     assert wrong["deleted"] is None
-    assert "Máster en Inteligencia Artificial" in wrong["note"]
+    assert "Master in Artificial Intelligence" in wrong["note"]
     assert still.status_code == 200
     assert right["deleted"]["subjects"] == 2
     assert gone.status_code == 404
@@ -98,7 +100,7 @@ async def test_subjects_are_added_edited_moved_and_deleted(api, notebook) -> Non
             "add_subject",
             {
                 "course_id": course_id,
-                "name": "Visión por computador",
+                "name": "Computer vision",
                 "credits": 4.5,
                 "assessments": [{"title": "Proyecto", "weight": 100}],
             },
@@ -112,20 +114,18 @@ async def test_subjects_are_added_edited_moved_and_deleted(api, notebook) -> Non
         )
     ).json()["content"]
     names = [s["name"] for s in (await api.get(f"/courses/{course_id}")).json()["subjects"]]
-    ethics = next(s for s in course["subjects"] if s["name"] == "Ética de la IA")
+    ethics = next(s for s in course["subjects"] if s["name"] == "AI ethics")
     deleted = (
-        await call(
-            api, "delete_subject", {"subject_id": ethics["subject_id"], "name": "Ética de la IA"}
-        )
+        await call(api, "delete_subject", {"subject_id": ethics["subject_id"], "name": "AI ethics"})
     ).json()["content"]
     after = [s["name"] for s in (await api.get(f"/courses/{course_id}")).json()["subjects"]]
 
     assert added["assessments"] == 1
     assert moved["teacher"] == "Prof. Ficticia"
     assert moved["credits"] == 4.5
-    assert names == ["Visión por computador", "Redes neuronales", "Ética de la IA"]
-    assert deleted["deleted"]["name"] == "Ética de la IA"
-    assert after == ["Visión por computador", "Redes neuronales"]
+    assert names == ["Computer vision", "Neural networks", "AI ethics"]
+    assert deleted["deleted"]["name"] == "AI ethics"
+    assert after == ["Computer vision", "Neural networks"]
 
 
 async def test_the_timetable_is_edited_block_by_block(api, notebook) -> None:
@@ -202,7 +202,7 @@ async def test_a_loose_session_is_added_moved_and_deleted(api, notebook) -> None
             {
                 "course_id": course_id,
                 "kind": "tutorial",
-                "title": "Tutoría del TFM",
+                "title": "Thesis tutorial",
                 "starts_at": f"{day.isoformat()}T12:00:00",
                 "ends_at": f"{day.isoformat()}T12:30:00",
             },
@@ -221,14 +221,14 @@ async def test_a_loose_session_is_added_moved_and_deleted(api, notebook) -> None
     assert added["starts_at"].startswith(f"{day.isoformat()}T12:00:00")
     assert moved["starts_at"].startswith(f"{day.isoformat()}T13:00:00")
     assert moved["ends_at"].startswith(f"{day.isoformat()}T13:30:00")
-    assert moved["title"] == "Tutoría del TFM"
+    assert moved["title"] == "Thesis tutorial"
     assert deleted.status_code == 200, deleted.text
     assert gone.status_code == 404
 
 
 async def test_an_assessment_is_edited_and_deleted_by_its_title(api, notebook) -> None:
     course = await a_course(api)
-    practice = next(a for a in course["assessments"] if a["title"] == "Práctica 1")
+    practice = next(a for a in course["assessments"] if a["title"] == "Lab 1")
     await call(api, "record_grade", {"assessment_id": practice["assessment_id"], "grade": 7})
 
     edited = (
@@ -249,7 +249,7 @@ async def test_an_assessment_is_edited_and_deleted_by_its_title(api, notebook) -
         await call(
             api,
             "delete_assessment",
-            {"assessment_id": practice["assessment_id"], "title": "Práctica 1"},
+            {"assessment_id": practice["assessment_id"], "title": "Lab 1"},
         )
     ).json()["content"]
     gone = await api.get(f"/assessments/{practice['assessment_id']}")
@@ -258,26 +258,24 @@ async def test_an_assessment_is_edited_and_deleted_by_its_title(api, notebook) -
     assert edited["due_on"] is None
     assert edited["grade"] == 7
     assert edited["status"] == "graded"
-    assert edited["title"] == "Práctica 1"
+    assert edited["title"] == "Lab 1"
     assert wrong["deleted"] is None
-    assert right["deleted"]["title"] == "Práctica 1"
+    assert right["deleted"]["title"] == "Lab 1"
     assert gone.status_code == 404
 
 
 async def test_notes_are_read_whole_extended_and_sent_to_the_bin(api, notebook) -> None:
     course = await a_course(api)
-    subject = next(s for s in course["subjects"] if s["name"] == "Redes neuronales")
+    subject = next(s for s in course["subjects"] if s["name"] == "Neural networks")
     note_id = (
         await call(
             api,
             "add_note",
-            {"subject_id": subject["subject_id"], "title": "Tema 1", "body": "Perceptrón."},
+            {"subject_id": subject["subject_id"], "title": "Unit 1", "body": "Perceptron."},
         )
     ).json()["content"]["note_id"]
 
-    extended = await call(
-        api, "update_note", {"note_id": note_id, "append": "Descenso de gradiente."}
-    )
+    extended = await call(api, "update_note", {"note_id": note_id, "append": "Gradient descent."})
     whole = (await call(api, "get_note", {"note_id": note_id}, READ)).json()["content"]
     listed = (
         await call(api, "get_course", {"course_id": course["course"]["course_id"]}, READ)
@@ -286,9 +284,9 @@ async def test_notes_are_read_whole_extended_and_sent_to_the_bin(api, notebook) 
     gone = await api.get(f"/notes/{note_id}")
 
     assert extended.status_code == 200, extended.text
-    assert whole["body"] == "Perceptrón.\n\nDescenso de gradiente."
-    assert whole["title"] == "Tema 1"
-    assert whole["subject"] == "Redes neuronales"
+    assert whole["body"] == "Perceptron.\n\nGradient descent."
+    assert whole["title"] == "Unit 1"
+    assert whole["subject"] == "Neural networks"
     assert [n["note_id"] for n in listed] == [note_id]
     assert binned.status_code == 200, binned.text
     assert gone.status_code == 404
@@ -301,13 +299,13 @@ async def test_materials_are_links_added_and_removed(api, notebook) -> None:
         await call(
             api,
             "add_material",
-            {"course_id": course_id, "title": "Guía docente", "url": "example.org/guia"},
+            {"course_id": course_id, "title": "Syllabus", "url": "example.org/syllabus"},
         )
     ).json()["content"]["material"]
     removed = await call(api, "delete_material", {"material_id": added["material_id"]})
     left = (await api.get(f"/courses/{course_id}/materials")).json()
 
-    assert added["url"] == "https://example.org/guia"
+    assert added["url"] == "https://example.org/syllabus"
     assert removed.status_code == 200, removed.text
     assert left == []
 
@@ -328,12 +326,12 @@ async def test_renaming_a_course_keeps_its_notes(api, notebook) -> None:
     course = await a_course(api)
     course_id = course["course"]["course_id"]
     note_id = (
-        await call(api, "add_note", {"course_id": course_id, "body": "Bibliografía."})
+        await call(api, "add_note", {"course_id": course_id, "body": "Bibliography."})
     ).json()["content"]["note_id"]
 
-    await call(api, "update_course", {"course_id": course_id, "name": "Máster en IA"})
+    await call(api, "update_course", {"course_id": course_id, "name": "Master in AI"})
     listed = (await call(api, "get_course", {"course_id": course_id}, READ)).json()["content"]
     new = (await call(api, "add_note", {"course_id": course_id, "body": "Otra."})).json()["content"]
 
     assert note_id in [n["note_id"] for n in listed["notes"]]
-    assert new["course"] == "Máster en IA"
+    assert new["course"] == "Master in AI"

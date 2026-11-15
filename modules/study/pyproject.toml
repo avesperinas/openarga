@@ -1,7 +1,7 @@
 [project]
 name = "study"
 version = "0.1.0"
-description = "Módulo Study de OpenArga"
+description = "OpenArga Study module"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "arga-tenancy",

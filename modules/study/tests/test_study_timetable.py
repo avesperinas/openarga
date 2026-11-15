@@ -14,7 +14,7 @@ async def a_course(api) -> tuple[str, str]:
     created = (
         await api.post(
             "/courses",
-            json={"name": "Máster", "tone": 5, "subjects": [{"name": "Estadística", "credits": 6}]},
+            json={"name": "Master", "tone": 5, "subjects": [{"name": "Statistics", "credits": 6}]},
         )
     ).json()
     return created["course"]["id"], created["subjects"][0]["id"]
@@ -46,7 +46,7 @@ async def test_changing_the_timetable_midterm_moves_future_classes_and_keeps_tou
     created = await api.post(f"/courses/{course_id}/schedules", json=block)
     assert created.status_code == 201, created.text
     schedule = created.json()
-    assert schedule["phrase"].startswith("cada semana, martes y jueves")
+    assert schedule["phrase"].startswith("every week, Tuesday and Thursday")
     total = schedule["sessions"]
     assert 22 <= total <= 26
 
@@ -64,7 +64,7 @@ async def test_changing_the_timetable_midterm_moves_future_classes_and_keeps_tou
             "course_id": course_id,
             "session_id": with_notes["id"],
             "title": "Tema 7",
-            "body": "Lo que se vio",
+            "body": "What was covered",
         },
     )
     assert note.status_code == 201, note.text
@@ -117,7 +117,7 @@ async def test_a_class_is_moved_or_cancelled_on_its_own(api) -> None:
         json={
             "starts_at": later.isoformat(),
             "ends_at": (later + timedelta(hours=2)).isoformat(),
-            "place": "Salón de actos",
+            "place": "Main hall",
             "status": "cancelled",
         },
     )
@@ -127,7 +127,7 @@ async def test_a_class_is_moved_or_cancelled_on_its_own(api) -> None:
     await api.put(f"/schedules/{schedule['id']}", json={**block, "place": "Study 3"})
     again = {s["id"]: s for s in (await api.get(f"/courses/{course_id}/sessions")).json()}
     assert again[first["id"]]["status"] == "cancelled"
-    assert again[first["id"]]["place"] == "Salón de actos"
+    assert again[first["id"]]["place"] == "Main hall"
     assert len(again) == 4
 
     refused = await api.put(f"/sessions/{first['id']}/attendance", json={"attendance": "present"})
@@ -142,7 +142,7 @@ async def test_loose_sessions_and_the_week_on_the_home(api, notebook) -> None:
         f"/courses/{course_id}/sessions",
         json={
             "kind": "tutorial",
-            "title": "Tutoría del TFM",
+            "title": "Thesis tutorial",
             "starts_at": at.isoformat(),
             "ends_at": (at + timedelta(minutes=30)).isoformat(),
             "url": "meet.example.org/abc",
@@ -152,13 +152,13 @@ async def test_loose_sessions_and_the_week_on_the_home(api, notebook) -> None:
 
     home = (await api.get("/home")).json()
     today_ = next(day for day in home["days"] if day["today"])
-    assert [s["title"] for s in today_["sessions"]] == ["Tutoría del TFM"]
+    assert [s["title"] for s in today_["sessions"]] == ["Thesis tutorial"]
     assert today_["sessions"][0]["tone"] == 5
     assert today_["sessions"][0]["url"] == "https://meet.example.org/abc"
 
     session_id = added.json()["session"]["id"]
     page = (await api.get(f"/sessions/{session_id}")).json()
-    assert page["detail"]["course_name"] == "Máster"
+    assert page["detail"]["course_name"] == "Master"
     assert (await api.delete(f"/sessions/{session_id}")).status_code == 204
 
 
@@ -202,4 +202,4 @@ async def test_the_schedule_cannot_end_before_it_starts(api) -> None:
     )
 
     assert response.status_code == 422
-    assert "acabar después de empezar" in response.text
+    assert "end after it starts" in response.text
