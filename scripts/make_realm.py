@@ -10,12 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "auth" / "realm.json"
 SCOPES_OUTPUT = ROOT / "auth" / "client-scopes.ndjson"
 WEB_CLIENT_OUTPUT = ROOT / "auth" / "client-arga-web.json"
-RUN_CLIENT_OUTPUT = ROOT / "auth" / "client-claude-run.json"
 PUBLIC_URL = "${PUBLIC_URL}"
 RESOURCE = f"{PUBLIC_URL}/mcp"
 REDIRECTS = ["https://claude.ai/api/mcp/auth_callback", "https://claude.com/api/mcp/auth_callback"]
 WEB_CLIENT = "arga-web"
-RUN_CLIENT = "claude-run"
 DAY = 86400
 
 
@@ -126,29 +124,6 @@ def web_client() -> dict:
     }
 
 
-def run_client() -> dict:
-    return {
-        "clientId": RUN_CLIENT,
-        "name": "Tu Claude, lanzado por arga",
-        "enabled": True,
-        "protocol": "openid-connect",
-        "publicClient": False,
-        "clientAuthenticatorType": "client-secret",
-        "standardFlowEnabled": True,
-        "implicitFlowEnabled": False,
-        "directAccessGrantsEnabled": False,
-        "serviceAccountsEnabled": False,
-        "consentRequired": False,
-        "fullScopeAllowed": False,
-        "frontchannelLogout": False,
-        "redirectUris": [f"{PUBLIC_URL}/api/hub/claude-run/callback"],
-        "webOrigins": [],
-        "attributes": {"pkce.code.challenge.method": "S256"},
-        "defaultClientScopes": ["basic"],
-        "optionalClientScopes": declared_scopes(),
-    }
-
-
 def optional(name: str, validations: dict) -> dict:
     return {
         "name": name,
@@ -233,7 +208,6 @@ def realm() -> dict:
                 "optionalClientScopes": [],
             },
             web_client(),
-            run_client(),
         ],
     }
 
@@ -252,16 +226,11 @@ def rendered_web_client() -> str:
     return json.dumps(web_client(), indent=2, ensure_ascii=False) + "\n"
 
 
-def rendered_run_client() -> str:
-    return json.dumps(run_client(), indent=2, ensure_ascii=False) + "\n"
-
-
 def main(argv: list[str]) -> int:
     outputs = {
         OUTPUT: rendered(),
         SCOPES_OUTPUT: rendered_scopes(),
         WEB_CLIENT_OUTPUT: rendered_web_client(),
-        RUN_CLIENT_OUTPUT: rendered_run_client(),
     }
     if "--check" in argv:
         stale = [

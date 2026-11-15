@@ -8,7 +8,7 @@ import httpx
 
 Capability = Literal["sync", "action", "lookup", "push"]
 
-Policy = Literal["budget", "open_window", "authorized"]
+Policy = Literal["budget", "authorized"]
 
 Fetch = Callable[[httpx.AsyncClient, dict[str, str], Any], Awaitable[Any]]
 Normalise = Callable[[str, str], str]

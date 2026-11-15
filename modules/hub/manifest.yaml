@@ -23,9 +23,6 @@ notifications:
   - kind: reauth
     label: Reautorizar un banco
     default: true
-  - kind: claude_blocked
-    label: Tu Claude no puede trabajar
-    default: true
 
 api:
   prefix: /api/hub

@@ -12,7 +12,6 @@ COPY --from=builder /opt/keycloak/ /opt/keycloak/
 COPY auth/realm.json /opt/keycloak/data/import/arga.json
 COPY auth/client-scopes.ndjson /opt/arga/client-scopes.ndjson
 COPY auth/client-arga-web.json /opt/arga/client-arga-web.json
-COPY auth/client-claude-run.json /opt/arga/client-claude-run.json
 COPY auth/sync.sh /opt/arga/sync.sh
 
 EXPOSE 8080

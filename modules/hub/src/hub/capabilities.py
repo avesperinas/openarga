@@ -14,12 +14,11 @@ from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import text
 
 from arga_tenancy import kernel_url
-from hub import ai, banks, catalogue, claude_run, connections, credentials, plugs, sync
+from hub import ai, banks, catalogue, connections, credentials, plugs, sync
 from hub.db import as_module
 from hub.providers import (
     SourceError,
     books,
-    claude,
     films,
     food,
     fx,
@@ -91,76 +90,6 @@ def handoff(provider: str) -> Handler:
         return {"connection": str(created), "created": True}
 
     return run
-
-
-class PingIn(BaseModel):
-    connection: UUID
-    key: Annotated[str, Field(min_length=1, max_length=200)]
-    trigger: Literal["scheduled", "manual"]
-    request_id: str | None = None
-
-
-CONNECTION = text("""
-    select id, provider, label, paused from hub.hub_connection
-    where id = :id and provider = 'claude'
-""")
-
-PREVIOUS = text("""
-    select outcome, detail from hub.hub_run
-    where connection_id = :connection and idempotency_key = :key
-""")
-
-
-async def ping(module: str, body: dict[str, Any]) -> dict[str, Any]:
-    request = PingIn.model_validate(body)
-    provider = catalogue.provider("claude")
-    async with as_module() as database:
-        connection = (await database.execute(CONNECTION, {"id": request.connection})).one_or_none()
-        if connection is None:
-            raise connections.Refused("that Claude account is not in Hub", 404)
-        run_id = await sync.start(database, connection.id, "action", "ping", request.key)
-        if run_id is None:
-            previous = (
-                await database.execute(PREVIOUS, {"connection": connection.id, "key": request.key})
-            ).one()
-            return {"outcome": previous.outcome, "detail": previous.detail, "repeated": True}
-        secrets = await sync.secrets_of(database, provider, connection.id)
-
-    result = sync.Outcome(run_id, "ok")
-    async with (
-        httpx.AsyncClient(transport=source_transport()) as source,
-        httpx.AsyncClient(
-            base_url=kernel_url(), transport=kernel_transport(), timeout=30.0
-        ) as kernel,
-    ):
-        if connection.paused:
-            result.outcome = "skipped"
-            result.detail = "Paused: nothing runs until you resume it in Hub."
-        elif not sync.missing_credential(provider, secrets, result):
-            started_at = datetime.now(UTC)
-            said = await claude.message(source, secrets[claude.TOKEN] or "")
-            event = claude.ping_event(
-                request.key,
-                request.trigger,
-                str(connection.id),
-                request.request_id,
-                started_at,
-                said,
-            )
-            try:
-                await sync.publish_all(kernel, provider.id, [event], result)
-            except httpx.HTTPError as error:
-                result.detail = f"Started, but the kernel did not record it: {type(error).__name__}"
-            if not said.success:
-                result.outcome = "rate_limited" if said.rate_limited else "error"
-                result.detail = said.first_line
-        await sync.finish(kernel, connection, provider.id, "action", "ping", result)
-    return {
-        "outcome": result.outcome,
-        "detail": result.detail,
-        "code": result.code,
-        "repeated": False,
-    }
 
 
 class SearchIn(BaseModel):
@@ -940,6 +869,12 @@ GITHUB = text("""
 """)
 
 
+PREVIOUS = text("""
+    select outcome, detail from hub.hub_run
+    where connection_id = :connection and idempotency_key = :key
+""")
+
+
 async def notes_push(module: str, body: dict[str, Any]) -> dict[str, Any]:
     request = NotesPushIn.model_validate(body)
     provider = catalogue.provider("github")
@@ -1003,9 +938,6 @@ CAPABILITIES: dict[str, Handler] = {
     "ai.status": ai.status,
     "bitvavo.handoff": handoff("bitvavo"),
     "enable_banking.handoff": handoff("enable_banking"),
-    "claude.handoff": handoff("claude"),
-    "claude.ping": ping,
-    "claude.run": claude_run.request,
     "food.search": food_search,
     "food.get": food_get,
     "books.search": book_search,

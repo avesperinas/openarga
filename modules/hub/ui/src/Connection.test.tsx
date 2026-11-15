@@ -37,16 +37,10 @@ test("quitar una conexión dice que lo ya traído se queda", () => {
   expect(removeConsequence(connection)).toContain("Lo que ya trajo se queda en tus apps.");
 });
 
-test("quitar una cuenta de Claude dice que Chuping deja de lanzar sus pings", () => {
-  const connection = { provider: "claude", provider_name: "Claude" } as ConnectionDetail;
-
-  expect(removeConsequence(connection)).toContain("Chuping deja de lanzar sus pings");
-});
-
-test("cambiar el nombre parte del que tiene, y el de Claude dice para qué sirve", () => {
+test("cambiar el nombre parte del que tiene", () => {
   const html = renderToString(
     <RenameSheet
-      connection={{ id: "x", provider: "claude", provider_name: "Claude", label: "Trabajo" } as ConnectionDetail}
+      connection={{ id: "x", provider: "ical_private", provider_name: "Calendario privado", label: "Trabajo" } as ConnectionDetail}
       onClose={() => undefined}
       onSaved={() => undefined}
     />,
@@ -54,7 +48,6 @@ test("cambiar el nombre parte del que tiene, y el de Claude dice para qué sirve
 
   expect(html).toContain("Cambiar nombre");
   expect(html).toContain('value="Trabajo"');
-  expect(html).toContain("al pedirle a Claude que cambie su horario");
 });
 
 test("una conexión tiene su dirección, para recargar o llegar desde otra app", () => {

@@ -57,11 +57,9 @@ modules/goals/ui/src/goalWords.ts
 modules/goals/ui/src/states.test.tsx
 modules/goals/ui/src/words.ts
 modules/hub/manifest.yaml
-modules/hub/src/hub/claude_run.py
 modules/hub/src/hub/instruments.py
 modules/hub/src/hub/providers/agendas.py
 modules/hub/src/hub/providers/bitvavo.py
-modules/hub/src/hub/providers/claude.py
 modules/hub/src/hub/providers/food.py
 modules/hub/src/hub/providers/holidays.py
 modules/hub/src/hub/providers/imap.py
@@ -78,9 +76,6 @@ modules/hub/tests/test_hub_batch.py
 modules/hub/tests/test_hub_bitvavo.py
 modules/hub/tests/test_hub_books.py
 modules/hub/tests/test_hub_calendar.py
-modules/hub/tests/test_hub_claude.py
-modules/hub/tests/test_hub_claude_relay.py
-modules/hub/tests/test_hub_claude_run.py
 modules/hub/tests/test_hub_economy.py
 modules/hub/tests/test_hub_food.py
 modules/hub/tests/test_hub_github.py
@@ -98,8 +93,6 @@ modules/hub/tools/glossary.md
 modules/hub/ui/src/Add.test.tsx
 modules/hub/ui/src/Add.tsx
 modules/hub/ui/src/BankSheet.tsx
-modules/hub/ui/src/ClaudeRun.test.tsx
-modules/hub/ui/src/ClaudeRun.tsx
 modules/hub/ui/src/Connection.test.tsx
 modules/hub/ui/src/Connection.tsx
 modules/hub/ui/src/Home.test.tsx

@@ -106,33 +106,6 @@ for name in basic email; do
   fi
 done
 
-RUN_CLIENT=claude-run
-RUN_CLIENT_FILE=$(render "${RUN_CLIENT_FILE:-/opt/arga/client-claude-run.json}")
-if [ -n "${CLAUDE_RUN_CLIENT_SECRET:-}" ]; then
-  run_id=$("$KCADM" get clients -r "$REALM" -q clientId="$RUN_CLIENT" --fields id --format csv --noquotes)
-  if [ -z "$run_id" ]; then
-    "$KCADM" create clients -r "$REALM" -f "$RUN_CLIENT_FILE" >/dev/null 2>&1
-    run_id=$("$KCADM" get clients -r "$REALM" -q clientId="$RUN_CLIENT" --fields id --format csv --noquotes)
-    echo "sync  created   client $RUN_CLIENT"
-    changes=$((changes + 1))
-  fi
-  "$KCADM" update "clients/$run_id" -r "$REALM" -s "secret=$CLAUDE_RUN_CLIENT_SECRET"
-  run_optional=$("$KCADM" get "clients/$run_id/optional-client-scopes" -r "$REALM" --fields name --format csv --noquotes)
-  while IFS= read -r line; do
-    name=$(sed -E 's/^\{"name": "([^"]+)".*/\1/' <<<"$line")
-    if [[ "$name" == *:* ]] && ! grep -qxF "$name" <<<"$run_optional"; then
-      "$KCADM" update "clients/$run_id/optional-client-scopes/$(scope_id "$name")" -r "$REALM"
-      echo "sync  assigned  $name to $RUN_CLIENT, optional"
-      changes=$((changes + 1))
-    fi
-  done <"$SCOPES"
-  if [ -n "$offline" ] && ! grep -qxF offline_access <<<"$run_optional"; then
-    "$KCADM" update "clients/$run_id/optional-client-scopes/$offline" -r "$REALM"
-    echo "sync  assigned  offline_access to $RUN_CLIENT, optional"
-    changes=$((changes + 1))
-  fi
-fi
-
 if ! "$KCADM" get authentication/flows -r "$REALM" --fields alias --format csv --noquotes | grep -xF "$FLOW" >/dev/null; then
   "$KCADM" create authentication/flows -r "$REALM" -s alias="$FLOW" -s providerId=basic-flow \
     -s topLevel=true -s builtIn=false \

@@ -177,10 +177,10 @@ async def test_the_tool_runs_as_the_read_role_and_refuses_without_a_scope(schema
 
 
 async def test_a_connection_without_its_credential_is_half_done_and_says_what(schema) -> None:
-    await connect(schema, "Claude del trabajo", provider="claude", with_credentials=False)
+    await connect(schema, "Work calendar", provider="ical_private", with_credentials=False)
 
     async with schema.connect() as connection:
         [found] = await connections.listed(connection, NOW)
 
     assert found.state == "pending"
-    assert found.reason == "Claude del trabajo is missing its credential: paste it in its page."
+    assert found.reason == "Work calendar is missing its credential: paste it in its page."
