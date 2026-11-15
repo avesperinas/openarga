@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_contracts as contracts
-from arga_contracts import metrics as cifras
+from arga_contracts import metrics as published
 from study import studies
 
 APP = "study"
@@ -35,7 +35,7 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
         found.append(
             _point(
                 f"finished:{course.id}",
-                f"Terminado · {course.name}",
+                f"Finished · {course.name}",
                 "count",
                 course.closed_on if done and course.closed_on else today,
                 1 if done else 0,
@@ -45,7 +45,7 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
             found.append(
                 _point(
                     f"progress:{course.id}",
-                    f"Progreso · {course.name}",
+                    f"Progress · {course.name}",
                     "percent",
                     today,
                     course.progress.ratio * 100,
@@ -57,7 +57,7 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
         grade = course.final_grade if course.final_grade is not None else course.average.average
         if grade is not None:
             found.append(
-                _point(f"average:{course.id}", f"Media · {course.name}", "points", today, grade)
+                _point(f"average:{course.id}", f"Average · {course.name}", "points", today, grade)
             )
         passed_subjects = sum(
             1
@@ -68,7 +68,7 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
             found.append(
                 _point(
                     f"subjects_passed:{course.id}",
-                    f"Asignaturas aprobadas · {course.name}",
+                    f"Subjects passed · {course.name}",
                     "count",
                     today,
                     passed_subjects,
@@ -78,10 +78,10 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
         found.append(
             _point(
                 f"passed:{course.id}",
-                f"Aprobado · {course.name}",
+                f"Passed · {course.name}",
                 "count",
                 course.closed_on if passed and course.closed_on else today,
                 1 if passed else 0,
             )
         )
-    return await cifras.steady(connection, APP, found)
+    return await published.steady(connection, APP, found)

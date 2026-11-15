@@ -4,9 +4,9 @@ from uuid import UUID
 
 import httpx
 
-from arga_contracts import metrics as cifras
-from arga_contracts import notify as avisos
-from arga_contracts import records as fichas
+from arga_contracts import metrics as published_metrics
+from arga_contracts import notify as notices_contract
+from arga_contracts import records as records_contract
 from arga_module.db import engine
 from arga_module.publisher import Publisher
 from arga_tenancy import as_user
@@ -14,9 +14,9 @@ from study import metrics, notices, outbox, records
 
 MODULE = "study"
 
-RECORDS = fichas.Every()
-NOTICES = fichas.Every()
-METRICS = fichas.Every()
+RECORDS = records_contract.Every()
+NOTICES = records_contract.Every()
+METRICS = records_contract.Every()
 REPUBLISHED: set[UUID] = set()
 
 
@@ -24,9 +24,9 @@ async def refresh(client: httpx.AsyncClient, user: UUID, fresh: bool) -> None:
     if fresh:
         for every in (RECORDS, NOTICES, METRICS):
             every.forget(user)
-    await fichas.refresh(client, engine, MODULE, records.build, RECORDS, user)
-    await avisos.refresh(client, engine, MODULE, notices.build, NOTICES, user)
-    await cifras.refresh(engine, MODULE, metrics.build, METRICS, user)
+    await records_contract.refresh(client, engine, MODULE, records.build, RECORDS, user)
+    await notices_contract.refresh(client, engine, MODULE, notices.build, NOTICES, user)
+    await published_metrics.refresh(engine, MODULE, metrics.build, METRICS, user)
     if user not in REPUBLISHED:
         with as_user(user):
             async with PUBLISHER.as_module() as connection:
