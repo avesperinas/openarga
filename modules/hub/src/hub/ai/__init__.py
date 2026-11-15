@@ -101,6 +101,12 @@ async def run(module: str, body: dict[str, Any]) -> dict[str, Any]:
     return await enqueue(module, body)
 
 
+async def status(module: str, body: dict[str, Any]) -> dict[str, Any]:
+    from hub.ai.runs import status as read
+
+    return await read(module, body)
+
+
 class KeyIn(BaseModel):
     key: Annotated[str, Field(min_length=8, max_length=500, pattern=r"^\S+$")]
 

@@ -78,6 +78,11 @@ with the same `key` (a key that failed can be asked again). The hub worker then 
    declines, or when the month's budget runs out (`over_budget`). The attempt keeps the steps, the
    tokens and the final summary.
 
+`ai.status` with the same `key` reads the app's latest attempt without starting anything:
+`unknown`, `queued`, `running`, `done`, `failed` or `over_budget`, with its `summary`, `detail`,
+`provider`, `model` and times. An app that polls or shows how its runs ended uses it instead of
+asking `ai.run` again, which would start a new attempt after a failure. Declare it in `uses`.
+
 | Variable | Meaning |
 |---|---|
 | `OPENARGA_SEARXNG_URL` | A SearXNG instance with the JSON format enabled. |

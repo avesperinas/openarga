@@ -8,6 +8,7 @@ Role = Literal["fast", "smart"]
 
 EXTRACT = "ai.extract"
 RUN = "ai.run"
+STATUS = "ai.status"
 
 
 class ExtractRequest(BaseModel):
@@ -43,3 +44,18 @@ class RunResponse(BaseModel):
     summary: str | None = None
     provider: str | None = None
     model: str | None = None
+
+
+class StatusRequest(BaseModel):
+    key: str = Field(min_length=1, max_length=120)
+
+
+class StatusResponse(BaseModel):
+    status: Literal["unknown", "queued", "running", "done", "failed", "over_budget"]
+    run_id: str | None = None
+    summary: str | None = None
+    detail: str | None = None
+    provider: str | None = None
+    model: str | None = None
+    started_at: str | None = None
+    finished_at: str | None = None

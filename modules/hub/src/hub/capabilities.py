@@ -1000,6 +1000,7 @@ async def notes_push(module: str, body: dict[str, Any]) -> dict[str, Any]:
 CAPABILITIES: dict[str, Handler] = {
     "ai.extract": ai.extract,
     "ai.run": ai.run,
+    "ai.status": ai.status,
     "bitvavo.handoff": handoff("bitvavo"),
     "enable_banking.handoff": handoff("enable_banking"),
     "claude.handoff": handoff("claude"),
