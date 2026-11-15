@@ -62,9 +62,14 @@ language. "Today", the schedules and the badge follow the person's time zone.
 
 ## Chat
 
-Each message to the adviser is a run of the model with arga's read tools; the answer comes back
+Each message to the adviser is an `ai.run` with OpenArga's read tools; the answer comes back
 through the `reply` tool. A thread waits while the run is going on and shows the problem if it
 fails. Starting from a piece of advice gives the model that advice and its figures.
+
+Every pass, pill and message is an `ai.run` keyed by what it is (`morning:<day>`,
+`pill:<day>`, `thread:<message>`), so asking twice starts one run. The worker reads how pending
+runs ended with `ai.status` and keeps it in `insights_ended`; a run that failed is asked again up
+to three times.
 
 ## Tools
 
@@ -76,7 +81,7 @@ Read (`insights:read`): `get_profile`, `get_insights`, `get_signals`, `get_serie
 
 ## What it shares with other apps
 
-- **Uses**: `claude.run` (the passes, pills and chat), `notify.sync`, and the catalogues
+- **Uses**: `ai.run` and `ai.status` (the passes, pills and chat), `notify.sync`, and the catalogues
   `books.search`, `books.cover`, `books.want`, `podcasts.search` and `films.search`.
 - **Receives**: `metric` (the signals) and `record`.
 - **Publishes**: `insights.record` (`record` contract): a card per Sunday summary (`Week summary`

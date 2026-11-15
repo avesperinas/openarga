@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-import json
 import random
 from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-import httpx
 import pytest
+from insights_hub import FakeHub, install
 from insights_taste_world import facts, pill
 from sqlalchemy import text
 
 from arga_widgets import validate
-from insights import craft, passes, pills, records, tastes, worker
+from insights import craft, pills, records, tastes, worker
 from insights.main import as_role
 
 MADRID = ZoneInfo("Europe/Madrid")
@@ -21,21 +20,9 @@ WRITE = {"x-arga-scopes": "insights:read insights:write"}
 TUESDAY = datetime(2026, 11, 10, 8, 40, tzinfo=MADRID)
 
 
-class Hub:
-    def __init__(self) -> None:
-        self.asked: list[dict] = []
-
-    def __call__(self, request: httpx.Request) -> httpx.Response:
-        assert request.url.path == "/internal/capabilities/claude.run"
-        self.asked.append(json.loads(request.content))
-        return httpx.Response(200, json={"outcome": "queued", "run": "r", "repeated": False})
-
-
 @pytest.fixture
-def hub(monkeypatch) -> Hub:
-    fake = Hub()
-    monkeypatch.setattr(passes, "transport", lambda: httpx.MockTransport(fake))
-    return fake
+def hub(monkeypatch) -> FakeHub:
+    return install(monkeypatch, FakeHub())
 
 
 async def tool(api, name: str, arguments: dict, headers: dict = WRITE) -> dict:
@@ -79,8 +66,8 @@ async def test_the_daily_pass_asks_for_a_pill_with_substance_and_web_reading(api
     assert (outcome, again) == ("queued", None)
     asked = hub.asked[0]
     assert asked["key"] == "pill:2026-11-10"
-    assert set(asked["tools"]) == {"WebFetch", "WebSearch"}
-    prompt = asked["prompt"]
+    assert asked["web"] is True
+    prompt = asked["task"]
     assert "Always with substance" in prompt and "never about the person or their figures" in prompt
     assert "insights_publish_pill" in prompt and "insights_publish_facts" in prompt
     assert 'run_key` "pill:2026-11-10"' in prompt
@@ -103,8 +90,8 @@ async def test_in_the_language_you_learn_once_a_week(api, hub) -> None:
 
     await run("pill", "pill:2026-11-14", saturday)
 
-    assert "Today it is in German" in hub.asked[0]["prompt"]
-    assert "at level B1" in hub.asked[0]["prompt"]
+    assert "Today it is in German" in hub.asked[0]["task"]
+    assert "at level B1" in hub.asked[0]["task"]
 
 
 async def test_a_published_pill_is_today_and_goes_to_the_notes(api, hub) -> None:
@@ -185,7 +172,7 @@ async def test_surprise_me_and_a_branch_arrive_linked_with_a_daily_cap(api, hub)
         )
     ).json()
     assert asked["state"] == "waiting" and asked["kind"] == "more"
-    prompt = hub.asked[-1]["prompt"]
+    prompt = hub.asked[-1]["task"]
     assert 'It is a branch of the pill "The column that broke Sparta"' in prompt
 
     child = await tool(

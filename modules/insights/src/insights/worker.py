@@ -17,7 +17,7 @@ from arga_contracts import notify
 from arga_contracts.records import Every
 from arga_module import preferences
 from arga_tenancy import as_user, kernel_url, users
-from insights import clock, craft, insights, passes, picks, pills, tastes, voice
+from insights import clock, craft, insights, passes, picks, pills, runs, tastes, voice
 from insights.db import engine
 from insights.words import say
 
@@ -156,6 +156,9 @@ async def run_once(client: httpx.AsyncClient, now: datetime | None = None) -> di
 async def _person(
     client: httpx.AsyncClient, user: object, now: datetime, counts: dict[str, int]
 ) -> None:
+    async with engine().begin() as connection:
+        await connection.execute(text(f'set local role "{ROLE}"'))
+        await runs.settle(connection)
     for kind, key in passes.due(now):
         if not looking(user, key):
             continue

@@ -5,8 +5,8 @@ import random
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-import httpx
 import pytest
+from insights_hub import FakeHub, install, settle
 from insights_world import insight
 from sqlalchemy import text
 
@@ -108,23 +108,9 @@ async def goal_behind(engine) -> None:
     await emit(engine, "record", {"record": record}, "goal:1:v1", datetime.now(UTC))
 
 
-class FakeHub:
-    def __init__(self, answer: dict | None = None) -> None:
-        self.asked: list[dict] = []
-        self.answer = answer or {"outcome": "queued", "run": "r", "repeated": False}
-
-    def __call__(self, request: httpx.Request) -> httpx.Response:
-        assert request.url.path == "/internal/capabilities/claude.run"
-        assert request.headers["x-arga-module"] == "insights"
-        self.asked.append(json.loads(request.content))
-        return httpx.Response(200, json=self.answer)
-
-
 @pytest.fixture
 def hub(monkeypatch) -> FakeHub:
-    fake = FakeHub()
-    monkeypatch.setattr(passes, "transport", lambda: httpx.MockTransport(fake))
-    return fake
+    return install(monkeypatch, FakeHub())
 
 
 async def run(kind: str, key: str, now: datetime):
@@ -188,42 +174,24 @@ async def test_a_morning_with_something_new_asks_your_claude_once(meter, api, hu
     assert (first, again) == ("queued", None)
     (asked,) = hub.asked
     assert asked["key"] == "morning:2026-10-13"
-    assert asked["wait_for_room"] is True
+    assert (asked["role"], asked["web"]) == ("smart", False)
     assert "tools" not in asked
-    prompt = asked["prompt"]
+    prompt = asked["task"]
     assert "You are Txuri" in prompt and "I want to get to 78 kg." in prompt
     assert f"[deviation:{METER}.weight] Weight: 82 kg" in prompt
     assert "at most two pieces of advice" in prompt
     assert "Do not use insights_reply" in prompt
 
 
-async def ended(engine, key: str, outcome: str, code: str | None = None, **extra) -> None:
-    payload = {"key": f"insights:{key}", "outcome": outcome, "code": code, "detail": "…", **extra}
-    async with engine.begin() as connection:
-        await connection.execute(
-            text(
-                "insert into kernel.events (ts, module, source, type, payload, dedup_hash, "
-                "user_id) values (now(), 'hub', 'hub', 'hub.run', "
-                "cast(:payload as jsonb), :dedup, "
-                "nullif(current_setting('arga.user_id', true), '')::uuid)"
-            ),
-            {"payload": json.dumps(payload), "dedup": f"run:insights:{key}"},
-        )
+async def ended(fake: FakeHub, key: str, status: str, detail: str | None = "…", **extra) -> None:
+    fake.end(key, status, detail, **extra)
+    await settle()
 
 
-@pytest.fixture
-async def hub_runs(schema):
-    yield schema
-    async with schema.begin() as connection:
-        await connection.execute(text("delete from kernel.events where module = 'hub'"))
-
-
-async def test_the_same_signals_the_next_morning_do_not_wake_your_claude(
-    meter, api, hub, hub_runs
-) -> None:
+async def test_the_same_signals_the_next_morning_do_not_wake_your_claude(meter, api, hub) -> None:
     await weights(meter, MORNING, last=82.0)
     await run("morning", "morning:2026-10-13", MORNING)
-    await ended(hub_runs, "morning:2026-10-13", "ok")
+    await ended(hub, "morning:2026-10-13", "done")
 
     tomorrow = MORNING + timedelta(days=1)
     quiet = await run("morning", "morning:2026-10-14", tomorrow)
@@ -232,58 +200,54 @@ async def test_the_same_signals_the_next_morning_do_not_wake_your_claude(
     assert len(hub.asked) == 1
 
 
-async def test_signals_of_a_morning_that_did_not_end_well_are_still_new(
-    meter, api, hub, hub_runs
-) -> None:
+async def test_signals_of_a_morning_that_did_not_end_well_are_still_new(meter, api, hub) -> None:
     await weights(meter, MORNING, last=82.0)
     await run("morning", "morning:2026-10-13", MORNING)
-    await ended(hub_runs, "morning:2026-10-13", "skipped", "no_room")
+    await ended(hub, "morning:2026-10-13", "failed")
 
     tomorrow = MORNING + timedelta(days=1)
     assert await run("morning", "morning:2026-10-14", tomorrow) == "queued"
     assert [one["key"] for one in hub.asked] == ["morning:2026-10-13", "morning:2026-10-14"]
 
 
-async def test_a_pass_that_ended_badly_is_asked_again_up_to_three_times(
-    meter, api, hub, hub_runs
-) -> None:
+async def test_a_pass_that_ended_badly_is_asked_again_up_to_three_times(meter, api, hub) -> None:
     await weights(meter, MORNING, last=82.0)
     key = "morning:2026-10-13"
 
     assert await run("morning", key, MORNING) == "queued"
     assert await run("morning", key, MORNING + timedelta(hours=1)) is None
-    await ended(hub_runs, key, "error")
+    await ended(hub, key, "failed")
     assert await run("morning", key, MORNING + timedelta(hours=2)) == "queued"
-    await ended(hub_runs, f"{key}#2", "rate_limited")
+    await ended(hub, f"{key}#2", "over_budget")
     assert await run("morning", key, MORNING + timedelta(hours=3)) == "queued"
-    await ended(hub_runs, f"{key}#3", "error")
+    await ended(hub, f"{key}#3", "failed")
     assert await run("morning", key, MORNING + timedelta(hours=4)) is None
 
     assert [one["key"] for one in hub.asked] == [key, f"{key}#2", f"{key}#3"]
     [last] = (await api.get("/runs")).json()
-    assert (last["state"], last["attempt"]) == ("error", 3)
+    assert (last["state"], last["attempt"]) == ("failed", 3)
     assert last["fix"] == "It was tried three times: the next one is tomorrow."
 
 
-async def test_a_pass_that_went_well_is_not_asked_again(meter, api, hub, hub_runs) -> None:
+async def test_a_pass_that_went_well_is_not_asked_again(meter, api, hub) -> None:
     await weights(meter, MORNING, last=82.0)
     await run("morning", "morning:2026-10-13", MORNING)
-    await ended(hub_runs, "morning:2026-10-13", "ok", ran_with="Otra")
+    await ended(hub, "morning:2026-10-13", "done", provider="other", model="a model")
 
     assert await run("morning", "morning:2026-10-13", MORNING + timedelta(hours=1)) is None
     [last] = (await api.get("/runs")).json()
-    assert (last["state"], last["ran_with"]) == ("ok", "Otra")
+    assert (last["state"], last["ran_with"]) == ("ok", "other · a model")
 
 
-async def test_the_runs_say_why_insights_is_quiet_to_claude(meter, api, hub, hub_runs) -> None:
+async def test_the_runs_say_why_insights_is_quiet_to_claude(meter, api, hub) -> None:
     await weights(meter, MORNING, last=82.0)
     await run("morning", "morning:2026-10-13", MORNING)
-    await ended(hub_runs, "morning:2026-10-13", "skipped", "no_room")
+    await ended(hub, "morning:2026-10-13", "over_budget")
 
     answer = (await api.post("/tools/get_runs", json={}, headers=READ)).json()["content"]
     [one] = answer["runs"]
-    assert (one["key"], one["state"]) == ("morning:2026-10-13", "skipped")
-    assert one["fix"] == "Your AI has no room right now: it will be asked again on its own."
+    assert (one["key"], one["state"]) == ("morning:2026-10-13", "rate_limited")
+    assert one["fix"] == "Your AI ran out of usage halfway: it will be asked again on its own."
 
 
 async def test_a_morning_with_nothing_stays_quiet(meter, api, hub) -> None:
@@ -296,8 +260,7 @@ async def test_a_morning_with_nothing_stays_quiet(meter, api, hub) -> None:
 
 
 async def test_without_permission_it_says_how_and_tries_again(meter, api, monkeypatch) -> None:
-    refused = FakeHub({"outcome": "skipped", "code": "not_granted", "detail": "…"})
-    monkeypatch.setattr(passes, "transport", lambda: httpx.MockTransport(refused))
+    install(monkeypatch, FakeHub(refuse=403))
     await weights(meter, MORNING, last=82.0)
 
     first = await run("morning", "morning:2026-10-13", MORNING)
@@ -309,46 +272,28 @@ async def test_without_permission_it_says_how_and_tries_again(meter, api, monkey
     assert "allow it in Hub" in last["detail"]
 
 
-async def test_the_run_tells_how_it_ended_in_hub(meter, api, hub, schema) -> None:
+async def test_the_run_tells_how_it_ended_in_hub(meter, api, hub) -> None:
     await weights(meter, MORNING, last=82.0)
     await run("morning", "morning:2026-10-13", MORNING)
     waiting = (await api.get("/runs")).json()[0]["state"]
 
-    async with schema.begin() as connection:
-        await connection.execute(
-            text(
-                "insert into kernel.events (ts, module, source, type, payload, dedup_hash, "
-                "user_id) values (now(), 'hub', 'hub', 'hub.run', "
-                "cast(:payload as jsonb), :dedup, "
-                "nullif(current_setting('arga.user_id', true), '')::uuid)"
-            ),
-            {
-                "payload": json.dumps(
-                    {"key": "insights:morning:2026-10-13", "outcome": "ok", "detail": "Hecho"}
-                ),
-                "dedup": "run:insights:morning:2026-10-13",
-            },
-        )
-    ended = (await api.get("/runs")).json()[0]
+    await ended(hub, "morning:2026-10-13", "done", "Done")
+    done = (await api.get("/runs")).json()[0]
 
     assert waiting == "waiting"
-    assert (ended["state"], ended["detail"]) == ("ok", "Hecho")
-    async with schema.begin() as connection:
-        await connection.execute(text("delete from kernel.events where module = 'hub'"))
+    assert (done["state"], done["detail"]) == ("ok", "Done")
 
 
-async def test_the_summary_asked_again_on_monday_is_the_week_before(
-    meter, api, hub, hub_runs
-) -> None:
+async def test_the_summary_asked_again_on_monday_is_the_week_before(meter, api, hub) -> None:
     await weights(meter, SUNDAY)
     await run("weekly", "weekly:2026-W42", SUNDAY)
-    await ended(hub_runs, "weekly:2026-W42", "skipped", "no_room")
+    await ended(hub, "weekly:2026-W42", "failed")
 
     monday = SUNDAY + timedelta(days=1, hours=-10)
     assert await run("weekly", "weekly:2026-W42", monday) == "queued"
     asked = hub.asked[-1]
     assert asked["key"] == "weekly:2026-W42#2"
-    assert "from Monday 12/10 to Sunday 18/10" in asked["prompt"]
+    assert "from Monday 12/10 to Sunday 18/10" in asked["task"]
 
 
 async def test_sunday_always_asks_for_the_week(meter, api, hub) -> None:
@@ -358,7 +303,7 @@ async def test_sunday_always_asks_for_the_week(meter, api, hub) -> None:
 
     (asked,) = hub.asked
     assert asked["key"] == "weekly:2026-W42"
-    prompt = asked["prompt"]
+    prompt = asked["task"]
     assert "from Monday 12/10 to Sunday 18/10" in prompt
     assert 'topic "week:2026-w42"' in prompt
     assert 'kind "weekly"' in prompt

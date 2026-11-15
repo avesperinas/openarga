@@ -21,7 +21,7 @@ AWAKE = (time(8, 0), time(22, 30))
 LANGUAGE_DAY = 5
 MORE_PER_DAY = 3
 MAX_ATTEMPTS = passes.MAX_ATTEMPTS
-WEB = ("WebFetch", "WebSearch")
+WEB = True
 
 LANGUAGE_NAMES = {
     "es": "Spanish from Spain",
@@ -432,10 +432,10 @@ async def _send(
     key: str,
     attempt: int,
     prompt: str,
-    tools: tuple[str, ...],
+    web: bool,
     **extra: Any,
 ) -> str:
-    answer = await passes.ask(passes.attempt_key(key, attempt), prompt, tools)
+    answer = await passes.ask(passes.attempt_key(key, attempt), prompt, web)
     problem = passes.refused_detail(answer)
     if problem:
         await save(connection, kind, key, "refused", detail=problem, attempt=attempt, **extra)
@@ -472,10 +472,10 @@ async def run(
         )
     elif kind == "picks":
         prompt = picks_brief(profile, today, context)
-        outcome = await _send(connection, kind, key, attempt, prompt, ())
+        outcome = await _send(connection, kind, key, attempt, prompt, False)
     else:
         prompt = profile_brief(profile, today, context)
-        outcome = await _send(connection, kind, key, attempt, prompt, ())
+        outcome = await _send(connection, kind, key, attempt, prompt, False)
     if outcome == "queued" and context["answers"]:
         await tastes.mark_seen(connection, [one.id for one in context["answers"] if one.id])
     return outcome
