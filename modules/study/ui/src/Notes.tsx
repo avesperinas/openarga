@@ -8,6 +8,7 @@ import { ScreenHeader } from "./Header";
 import { NoteEditor } from "./LazyEditor";
 import { byName, codeColumn, neighbours, resolver, splitCode } from "./order";
 import { dateShort, isoDate, plural } from "./words";
+import { t } from "./lang";
 
 export function NoteList({ notes, showCourse = true }: { notes: (NoteBrief | Hit)[]; showCourse?: boolean }) {
   const navigate = useNavigate();
@@ -20,13 +21,13 @@ export function NoteList({ notes, showCourse = true }: { notes: (NoteBrief | Hit
         const fragment = "fragment" in note ? note.fragment : null;
         const code = codes[index];
         const name = code ? `${code} ${splitCode(note.title)!.name}` : note.title;
-        const where = [showCourse ? (note.subject ?? note.course) : null, note.session_start ? `clase del ${when}` : null]
+        const where = [showCourse ? (note.subject ?? note.course) : null, note.session_start ? t("note.session_of_lower", { date: when }) : null]
           .filter(Boolean)
           .join(" · ");
         return (
           <ListRow
             key={note.id}
-            title={name || (note.session_start ? `Clase del ${when}` : "Sin título")}
+            title={name || (note.session_start ? t("note.session_of", { date: when }) : t("note.untitled"))}
             subtitle={fragment ?? ([where, note.excerpt].filter(Boolean).join(" · ") || undefined)}
             detail={fragment ? where || undefined : undefined}
             onClick={() => navigate(note.session_id ? { tab: "session", id: note.session_id } : { tab: "note", id: note.id })}
@@ -91,24 +92,24 @@ export function NotesScreen() {
 
   return (
     <Screen>
-      <ScreenHeader title="Apuntes" />
+      <ScreenHeader title={t("notes.title")} />
       <OfflineNotice />
       <SearchField
-        label="Buscar en todos tus apuntes"
+        label={t("notes.search")}
         value={query}
         onChange={setQuery}
-        placeholder="derivadas, «regresión lineal», -examen"
+        placeholder={t("notes.search_placeholder")}
       />
-      {data && data.courses.length > 0 && <CreateButton label="Apuntes" onClick={() => setCreating(true)} />}
+      {data && data.courses.length > 0 && <CreateButton label={t("notes.title")} onClick={() => setCreating(true)} />}
       <Problem text={problem} />
       {data === null && <Pending found={found} />}
 
       {hits !== null && (
-        <Section title={hits.length ? `${plural(hits.length, "resultado", "resultados")}` : "Nada encontrado"}>
+        <Section title={hits.length ? plural(hits.length, "notes.results") : t("notes.nothing_found")}>
           {hits.length > 0 ? (
             <NoteList notes={hits} />
           ) : (
-            <Hint>Prueba con otra palabra: se busca en castellano, con plurales y formas del verbo.</Hint>
+            <Hint>{t("notes.search_hint")}</Hint>
           )}
         </Section>
       )}
@@ -116,10 +117,10 @@ export function NotesScreen() {
       {hits === null && data && data.notes.length === 0 && (
         <EmptyState
           icon="edit"
-          title="Sin apuntes todavía"
-          action={data.courses.length > 0 ? { label: "Nuevos apuntes", icon: "plus", onClick: () => setCreating(true) } : undefined}
+          title={t("notes.empty")}
+          action={data.courses.length > 0 ? { label: t("notes.new"), icon: "plus", onClick: () => setCreating(true) } : undefined}
         >
-          <p>Los de cada clase se escriben en la propia clase. Los sueltos de una asignatura, aquí.</p>
+          <p>{t("notes.empty_detail")}</p>
         </EmptyState>
       )}
 
@@ -163,13 +164,17 @@ function NewNoteSheet({ courses, onClose, onError }: { courses: Course[]; onClos
   };
 
   return (
-    <Sheet title="Nuevos apuntes" onClose={onClose} action={{ label: "Empezar a escribir", onClick: () => void create(), disabled: !course }}>
+    <Sheet
+      title={t("notes.new")}
+      onClose={onClose}
+      action={{ label: t("notes.start_writing"), onClick: () => void create(), disabled: !course }}
+    >
       <div className="study-form">
-        <SelectField label="Estudio" options={list.map((c) => ({ value: c.id, label: c.name }))} value={course} onChange={setCourse} />
+        <SelectField label={t("field.course")} options={list.map((c) => ({ value: c.id, label: c.name }))} value={course} onChange={setCourse} />
         {subjects.length > 0 && (
           <SelectField
-            label="Asignatura"
-            options={[{ value: "__none__", label: "Del estudio entero" }, ...subjects.map((s) => ({ value: s.id, label: s.name }))]}
+            label={t("field.subject")}
+            options={[{ value: "__none__", label: t("field.whole_course") }, ...subjects.map((s) => ({ value: s.id, label: s.name }))]}
             value={subject}
             onChange={setSubject}
           />
@@ -191,7 +196,7 @@ export function NoteScreen({ id }: { id: string }) {
   if (!data) {
     return (
       <Screen>
-        <ScreenHeader back={{ label: "Apuntes", onClick: () => navigate({ tab: "notes" }) }} />
+        <ScreenHeader back={{ label: t("notes.title"), onClick: () => navigate({ tab: "notes" }) }} />
         <OfflineNotice />
         <Problem text={problem} />
         <Pending found={found} />
@@ -201,7 +206,7 @@ export function NoteScreen({ id }: { id: string }) {
 
   const { note } = data;
   const back = note.subject_id
-    ? { label: note.subject ?? "Asignatura", onClick: () => navigate({ tab: "subject", id: note.subject_id! }) }
+    ? { label: note.subject ?? t("field.subject"), onClick: () => navigate({ tab: "subject", id: note.subject_id! }) }
     : { label: note.course, onClick: () => navigate({ tab: "course", id: note.course_id, section: "notes" }) };
   const { previous, next } = neighbours(data.siblings, note);
   const resolve = resolver(data.siblings);
@@ -222,26 +227,26 @@ export function NoteScreen({ id }: { id: string }) {
       />
       {(previous || next) && (
         <List>
-          {previous && <PagerLink note={previous} label="Anterior" />}
-          {next && <PagerLink note={next} label="Siguiente" />}
+          {previous && <PagerLink note={previous} label="previous" />}
+          {next && <PagerLink note={next} label="next" />}
         </List>
       )}
       <footer className="study-footer-actions">
         {note.session_id && (
           <Button variant="secondary" onClick={() => navigate({ tab: "session", id: note.session_id! })}>
-            Ir a la clase
+            {t("note.go_to_session")}
           </Button>
         )}
         <Button variant="plain" onClick={() => setDeleting(true)}>
-          Borrar apuntes
+          {t("note.delete")}
         </Button>
       </footer>
       {deleting && (
         <ConfirmDelete
-          title="¿Borrar estos apuntes?"
-          subject={note.title || "Sin título"}
-          consequence="Se borran también las imágenes que tengan pegadas."
-          action="Borrar apuntes"
+          title={t("note.delete_title")}
+          subject={note.title || t("note.untitled")}
+          consequence={t("note.delete_consequence")}
+          action={t("note.delete")}
           onCancel={() => setDeleting(false)}
           onConfirm={async () => {
             await api.deleteNote(note.id);
@@ -254,14 +259,15 @@ export function NoteScreen({ id }: { id: string }) {
   );
 }
 
-function PagerLink({ note, label }: { note: NoteBrief; label: string }) {
+function PagerLink({ note, label }: { note: NoteBrief; label: "previous" | "next" }) {
   const navigate = useNavigate();
   const code = splitCode(note.title);
+  const name = t(`pager.${label}`);
   return (
     <ListRow
-      title={code ? code.name : note.title || "Sin título"}
-      subtitle={code ? `${label} · ${code.number}` : label}
-      icon={label === "Anterior" ? "chevron-left" : "chevron-right"}
+      title={code ? code.name : note.title || t("note.untitled")}
+      subtitle={code ? `${name} · ${code.number}` : name}
+      icon={label === "previous" ? "chevron-left" : "chevron-right"}
       onClick={() => navigate({ tab: "note", id: note.id })}
     />
   );

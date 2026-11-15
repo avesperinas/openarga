@@ -14,12 +14,13 @@ import {
 import { useState } from "react";
 
 import { type Course, type CourseDetail, type CourseIn, type Tone, type Track, api } from "./api";
-import { KINDS, MODALITIES, parseNumber } from "./words";
+import { KINDS, MODALITIES, decimal, parseNumber } from "./words";
+import { t } from "./lang";
 
 export function ToneField({ value, onChange }: { value: Tone; onChange: (tone: Tone) => void }) {
   return (
     <fieldset className="study-tones">
-      <legend className="text-field-label">Color</legend>
+      <legend className="text-field-label">{t("field.colour")}</legend>
       <div className="study-tones-row">
         {TONES.map(({ tone, name }) => (
           <button
@@ -43,11 +44,12 @@ interface SubjectRow {
   credits: string;
 }
 
-const TRACKS: { value: Track; label: string }[] = [
-  { value: "grades", label: "Notas" },
-  { value: "progress", label: "Progreso" },
-  { value: "attendance", label: "Asistencia" },
-];
+const TRACKS: { value: Track; readonly label: string }[] = (["grades", "progress", "attendance"] as const).map((value) => ({
+  value,
+  get label() {
+    return t(`track.${value}`);
+  },
+}));
 
 export function defaultTracks(kind: CourseIn["kind"]): Track[] {
   return kind === "language" || kind === "other" ? [] : ["grades", "progress", "attendance"];
@@ -71,11 +73,11 @@ export function CourseSheet({
   const [startsOn, setStartsOn] = useState(course?.starts_on ?? "");
   const [endsOn, setEndsOn] = useState(course?.ends_on ?? "");
   const [tone, setTone] = useState<Tone>(course?.tone ?? 1);
-  const [credits, setCredits] = useState(course?.credits?.toString().replace(".", ",") ?? "");
-  const [hours, setHours] = useState(course?.hours?.toString().replace(".", ",") ?? "");
+  const [credits, setCredits] = useState(course ? decimal(course.credits?.toString() ?? "") : "");
+  const [hours, setHours] = useState(course ? decimal(course.hours?.toString() ?? "") : "");
   const [scale, setScale] = useState<"10" | "100">(course?.scale_max === 100 ? "100" : "10");
-  const [passMark, setPassMark] = useState(course ? String(course.pass_mark).replace(".", ",") : "");
-  const [target, setTarget] = useState(course?.target_grade?.toString().replace(".", ",") ?? "");
+  const [passMark, setPassMark] = useState(course ? decimal(String(course.pass_mark)) : "");
+  const [target, setTarget] = useState(course ? decimal(course.target_grade?.toString() ?? "") : "");
   const [campus, setCampus] = useState(course?.campus_url ?? "");
   const [planned, setPlanned] = useState<"active" | "planned">(course?.status === "planned" ? "planned" : "active");
   const [subjects, setSubjects] = useState<SubjectRow[]>(course ? [] : [{ key: 1, name: "", credits: "" }]);
@@ -88,7 +90,7 @@ export function CourseSheet({
 
   const save = async () => {
     if (!name.trim()) {
-      setProblem("Ponle un nombre.");
+      setProblem(t("course.needs_name"));
       return;
     }
     const body: CourseIn = {
@@ -122,7 +124,7 @@ export function CourseSheet({
           });
       onSaved(saved);
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : "No se pudo guardar.");
+      setProblem(error instanceof Error ? error.message : t("error.save"));
       onError(error);
     } finally {
       setSaving(false);
@@ -135,45 +137,45 @@ export function CourseSheet({
 
   return (
     <Sheet
-      title={course ? "Editar estudio" : "Nuevo estudio"}
+      title={course ? t("course.edit") : t("home.new_course")}
       onClose={onClose}
-      action={{ label: course ? "Guardar" : "Crear estudio", onClick: () => void save(), disabled: saving }}
+      action={{ label: course ? t("action.save") : t("course.create"), onClick: () => void save(), disabled: saving }}
     >
       <div className="study-form">
-        <TextField label="Nombre" value={name} onChange={setName} placeholder="Máster en Ciencia de Datos" autoFocus={!course} />
-        <ChoiceChips label="Qué es" options={KINDS} value={kind} onChange={setKind} />
-        <TextField label="Centro" value={institution} onChange={setInstitution} placeholder="Universidad, escuela, plataforma" />
+        <TextField label={t("field.name")} value={name} onChange={setName} placeholder={t("course.name_placeholder")} autoFocus={!course} />
+        <ChoiceChips label={t("add.what")} options={KINDS} value={kind} onChange={setKind} />
+        <TextField label={t("field.institution")} value={institution} onChange={setInstitution} placeholder={t("course.institution_placeholder")} />
         <div className="study-pair">
-          <DateField label="Empieza" value={startsOn} onChange={setStartsOn} />
-          <DateField label="Termina" value={endsOn} onChange={setEndsOn} />
+          <DateField label={t("field.starts")} value={startsOn} onChange={setStartsOn} />
+          <DateField label={t("field.ends")} value={endsOn} onChange={setEndsOn} />
         </div>
         <ToneField value={tone} onChange={setTone} />
-        <CheckChips label="Qué se sigue" options={TRACKS} values={followed} onChange={setTracks} />
+        <CheckChips label={t("course.tracked")} options={TRACKS} values={followed} onChange={setTracks} />
         <p className="study-muted">
           {followed.length === 0
-            ? "Nada: solo su horario, sus clases y sus apuntes. Para lo que se estudia sin un final fijo."
-            : "Lo que no marques no se enseña en el estudio ni en el escritorio."}
+            ? t("course.tracked_none")
+            : t("course.tracked_hint")}
         </p>
         <div className="study-pair">
-          <TextField label="Créditos" value={credits} onChange={setCredits} inputMode="decimal" placeholder="60" hint="ECTS del total" />
-          <TextField label="Horas" value={hours} onChange={setHours} inputMode="decimal" placeholder="—" hint="Si se mide en horas" />
+          <TextField label={t("field.credits")} value={credits} onChange={setCredits} inputMode="decimal" placeholder="60" hint={t("course.credits_hint")} />
+          <TextField label={t("field.hours")} value={hours} onChange={setHours} inputMode="decimal" placeholder="—" hint={t("course.hours_hint")} />
         </div>
 
         {!course && (
           <fieldset className="study-subject-rows">
-            <legend className="text-field-label">Asignaturas</legend>
-            <p className="study-muted">Las que tenga. Un curso corto puede no tener ninguna.</p>
+            <legend className="text-field-label">{t("subjects.title")}</legend>
+            <p className="study-muted">{t("course.subjects_hint")}</p>
             {subjects.map((row, index) => (
               <div key={row.key} className="study-subject-row">
                 <TextField
-                  label={`Asignatura ${index + 1}`}
+                  label={t("course.subject_n", { n: index + 1 })}
                   value={row.name}
                   onChange={(value) => setRow(row.key, { name: value })}
-                  placeholder="Estadística"
+                  placeholder={t("course.subject_placeholder")}
                   onSubmit={addRow}
                 />
                 <TextField
-                  label="Créditos"
+                  label={t("field.credits")}
                   value={row.credits}
                   onChange={(value) => setRow(row.key, { credits: value })}
                   inputMode="decimal"
@@ -181,7 +183,7 @@ export function CourseSheet({
                 />
                 <IconButton
                   icon="minus"
-                  label={`Quitar asignatura ${index + 1}`}
+                  label={t("course.remove_subject", { n: index + 1 })}
                   variant="plain"
                   size="small"
                   onClick={() => setSubjects((rows) => rows.filter((one) => one.key !== row.key))}
@@ -189,47 +191,47 @@ export function CourseSheet({
               </div>
             ))}
             <Button variant="plain" size="small" icon="plus" onClick={addRow}>
-              Otra asignatura
+              {t("course.another_subject")}
             </Button>
           </fieldset>
         )}
 
-        <Collapsible title="Nota, modalidad y campus" subtitle={`Escala de 0 a ${scaleMax}`}>
+        <Collapsible title={t("course.grade_section")} subtitle={t("course.scale_0_to", { max: scaleMax })}>
           <div className="study-form">
             <SegmentedControl
-              label="Escala"
+              label={t("field.scale")}
               options={[
-                { value: "10", label: "De 0 a 10" },
-                { value: "100", label: "De 0 a 100" },
+                { value: "10", label: t("course.scale_10") },
+                { value: "100", label: t("course.scale_100") },
               ]}
               value={scale}
               onChange={setScale}
             />
             <div className="study-pair">
               <TextField
-                label="Aprobado"
+                label={t("field.pass_mark")}
                 value={passMark}
                 onChange={setPassMark}
                 inputMode="decimal"
                 placeholder={scale === "100" ? "50" : "5"}
               />
               <TextField
-                label="Tu objetivo"
+                label={t("field.target")}
                 value={target}
                 onChange={setTarget}
                 inputMode="decimal"
                 placeholder="—"
-                hint="Te dice qué necesitas para llegar"
+                hint={t("course.target_hint")}
               />
             </div>
-            <SegmentedControl label="Modalidad" options={MODALITIES} value={modality} onChange={setModality} />
-            <TextField label="Enlace al campus" value={campus} onChange={setCampus} placeholder="campus.universidad.es" />
+            <SegmentedControl label={t("field.modality")} options={MODALITIES} value={modality} onChange={setModality} />
+            <TextField label={t("field.campus")} value={campus} onChange={setCampus} placeholder="campus.university.edu" />
             {(!course || course.status === "planned" || course.status === "active") && (
               <SegmentedControl
-                label="Estado"
+                label={t("field.status")}
                 options={[
-                  { value: "active", label: "En curso" },
-                  { value: "planned", label: "Planeado" },
+                  { value: "active", label: t("status.active") },
+                  { value: "planned", label: t("status.planned") },
                 ]}
                 value={planned}
                 onChange={setPlanned}

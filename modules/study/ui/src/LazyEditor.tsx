@@ -2,6 +2,7 @@ import { ErrorState, Skeleton } from "@openarga/ui";
 import { Component, type ComponentProps, type ReactNode, Suspense, lazy, useState } from "react";
 
 import type { NoteEditor as Editor } from "./NoteEditor";
+import { t } from "./lang";
 
 const load = () => lazy(() => import("./NoteEditor").then((found) => ({ default: found.NoteEditor })));
 
@@ -16,8 +17,8 @@ class Caught extends Component<{ onRetry: () => void; children: ReactNode }, { f
     if (!this.state.failed) return this.props.children;
     return (
       <ErrorState
-        title="El editor no ha llegado"
-        detail="Sin conexión, o hay una versión nueva de Study."
+        title={t("editor.missing")}
+        detail={t("editor.missing_detail")}
         onRetry={() => {
           this.setState({ failed: false });
           this.props.onRetry();

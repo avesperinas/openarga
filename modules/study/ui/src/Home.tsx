@@ -9,15 +9,18 @@ import { AddSheet } from "./AddSheet";
 import { CourseSheet } from "./CourseSheet";
 import { ScreenHeader } from "./Header";
 import {
+  ASSESSMENT_KINDS,
   countdown,
   dateShort,
   dayTitle,
   grade,
   hhmm,
   isoDate,
+  labelOf,
   sessionMoment,
   todayIso,
 } from "./words";
+import { t } from "./lang";
 
 const hueOf = (tone: number) => (((tone - 1) % 8) + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
@@ -26,13 +29,20 @@ const ICON: Record<string, IconName> = { master: "bookmark", degree: "bookmark",
 export function courseFace(course: Course, today: string): { figure?: string; caption?: string; detail?: string } {
   if (course.tracks.includes("grades")) {
     const average = course.average.average ?? course.grade?.current ?? null;
-    return { figure: grade(average, course.scale_max), caption: "media", detail: course.progress?.label };
+    return { figure: grade(average, course.scale_max), caption: t("home.average"), detail: course.progress?.label };
   }
   if (course.ends_on && course.ends_on >= today) {
     const left = Math.round((new Date(`${course.ends_on}T12:00:00`).getTime() - new Date(`${today}T12:00:00`).getTime()) / 86_400_000);
-    return { figure: left === 0 ? "hoy" : `${left} ${left === 1 ? "día" : "días"}`, caption: `hasta el ${dateShort(course.ends_on)}`, detail: course.institution ?? undefined };
+    return {
+      figure: left === 0 ? t("home.today") : t(left === 1 ? "home.days.one" : "home.days.other", { count: left }),
+      caption: t("home.until", { date: dateShort(course.ends_on) }),
+      detail: course.institution ?? undefined,
+    };
   }
-  return { detail: [course.institution, course.next_session ? `próxima: ${dateShort(isoDate(new Date(course.next_session.starts_at)))}` : null].filter(Boolean).join(" · ") || undefined };
+  const next = course.next_session
+    ? t("home.next", { date: dateShort(isoDate(new Date(course.next_session.starts_at))) })
+    : null;
+  return { detail: [course.institution, next].filter(Boolean).join(" · ") || undefined };
 }
 
 export function HomeScreen() {
@@ -49,7 +59,10 @@ export function HomeScreen() {
       .then(() => {
         void refresh();
         if (status === "submitted")
-          toast({ message: `Entregado · ${item.title}`, action: { label: "Deshacer", run: () => done(item, "pending") } });
+          toast({
+            message: t("home.submitted_toast", { title: item.title }),
+            action: { label: t("action.undo"), run: () => done(item, "pending") },
+          });
       })
       .catch(fail);
 
@@ -58,8 +71,8 @@ export function HomeScreen() {
 
   const main = data && (
     <>
-      <Section title="Tus estudios" count={data.courses.length}>
-        <Tiles label="Tus estudios">
+      <Section title={t("home.your_courses")} count={data.courses.length}>
+        <Tiles label={t("home.your_courses")}>
           {data.courses.map((course) => (
             <Tile
               key={course.id}
@@ -73,7 +86,7 @@ export function HomeScreen() {
         </Tiles>
       </Section>
       {tasks.length > 0 && (
-        <Section title="Lo que tienes que hacer" count={tasks.length}>
+        <Section title={t("home.to_do")} count={tasks.length}>
           <List>
             {tasks.map((item) => (
               <ListRow
@@ -83,7 +96,7 @@ export function HomeScreen() {
                 detail={countdown(item.days_left ?? 0)}
                 tone={dueTone(item.days_left ?? 0)}
                 onClick={() => navigate({ tab: "assessment", id: item.id })}
-                action={{ icon: "done", kind: "check", label: `Hecho: ${item.title}`, onClick: () => done(item, "submitted") }}
+                action={{ icon: "done", kind: "check", label: t("home.done_label", { title: item.title }), onClick: () => done(item, "submitted") }}
               />
             ))}
           </List>
@@ -92,7 +105,7 @@ export function HomeScreen() {
       {data.archived > 0 && (
         <List>
           <ListRow
-            title={`Terminados (${data.archived})`}
+            title={t("home.archived", { count: data.archived })}
             icon="box"
             accessory="chevron-right"
             onClick={() => navigate({ tab: "archive" })}
@@ -100,19 +113,19 @@ export function HomeScreen() {
         </List>
       )}
       <Button variant="plain" icon="plus" onClick={() => setCreating(true)}>
-        Nuevo estudio
+        {t("home.new_course")}
       </Button>
     </>
   );
 
   const aside = data && (
-    <Section title="Esta semana">
+    <Section title={t("home.this_week")}>
       {days.length === 0 ? (
-        <Hint>Nada en los próximos días.</Hint>
+        <Hint>{t("home.nothing_soon")}</Hint>
       ) : (
         days.map((day) => (
           <div key={day.date} className="study-agenda">
-            <GroupLabel>{day.today ? `Hoy · ${dayTitle(day.date)}` : dayTitle(day.date)}</GroupLabel>
+            <GroupLabel>{day.today ? t("home.today_is", { day: dayTitle(day.date) }) : dayTitle(day.date)}</GroupLabel>
             <List>
               {day.assessments.map((item) => (
                 <AgendaDeadline key={item.id} item={item} onOpen={() => navigate({ tab: "assessment", id: item.id })} />
@@ -125,14 +138,14 @@ export function HomeScreen() {
         ))
       )}
       <Button variant="plain" icon="calendar" onClick={() => window.location.assign("/planner/")}>
-        Ver en el calendario
+        {t("home.see_in_calendar")}
       </Button>
     </Section>
   );
 
   return (
     <Screen wide>
-      <ScreenHeader eyebrow={dayTitle(today)} title="Study" />
+      <ScreenHeader eyebrow={dayTitle(today)} title={t("app.name")} />
       <OfflineNotice />
       <Problem text={problem} />
       {data === null && <Pending found={found} />}
@@ -141,16 +154,16 @@ export function HomeScreen() {
         <EmptyState
           icon="book"
           hue={5}
-          title="Lo que estudias, en un sitio"
-          action={{ label: "Crear un estudio", icon: "plus", onClick: () => setCreating(true) }}
+          title={t("home.empty")}
+          action={{ label: t("home.create"), icon: "plus", onClick: () => setCreating(true) }}
         >
-          <p>Crea tu máster, tu curso o tu idioma. Después apunta sus clases, tareas y exámenes: salen en tu calendario.</p>
-          <p>También puedes pasarle a Claude la guía docente y que lo monte entero.</p>
+          <p>{t("home.empty_detail")}</p>
+          <p>{t("home.empty_claude")}</p>
         </EmptyState>
       )}
 
-      {data && data.courses.length > 0 && <Panes main={main} aside={aside} asideLabel="Esta semana" />}
-      {data && data.courses.length > 0 && <CreateButton label="Apuntar" onClick={() => setAdding(true)} />}
+      {data && data.courses.length > 0 && <Panes main={main} aside={aside} asideLabel={t("home.this_week")} />}
+      {data && data.courses.length > 0 && <CreateButton label={t("home.add")} onClick={() => setAdding(true)} />}
 
       <AppVersion />
 
@@ -190,19 +203,19 @@ function AgendaSession({ session, onOpen }: { session: Session; onOpen: () => vo
     <ListRow
       title={session.title}
       subtitle={[
-        cancelled ? "Cancelada" : `hasta ${hhmm(new Date(session.ends_at).toTimeString())}`,
+        cancelled ? t("session.cancelled") : t("session.until", { time: hhmm(new Date(session.ends_at).toTimeString()) }),
         cancelled ? null : where,
-        session.has_notes ? "con apuntes" : null,
+        session.has_notes ? t("session.with_notes") : null,
       ]
         .filter(Boolean)
         .join(" · ")}
       detail={
         moment === "now" && !cancelled
-          ? "Ahora"
+          ? t("session.now")
           : session.attendance === "present"
-            ? "Fui"
+            ? t("session.went")
             : session.attendance === "absent"
-              ? "No fui"
+              ? t("session.missed")
               : undefined
       }
       value={hhmm(new Date(session.starts_at).toTimeString())}
@@ -215,10 +228,10 @@ function AgendaSession({ session, onOpen }: { session: Session; onOpen: () => vo
 function AgendaDeadline({ item, onOpen }: { item: Assessment; onOpen: () => void }) {
   return (
     <ListRow
-      title={`${labelOfKind(item)}: ${item.title}`}
+      title={`${labelOf(ASSESSMENT_KINDS, item.kind)}: ${item.title}`}
       subtitle={item.subject ?? item.course}
-      detail={item.status === "submitted" ? "Entregado" : item.status === "graded" ? grade(item.grade, item.scale_max) : undefined}
-      value={item.due_time ? hhmm(item.due_time) : "Día"}
+      detail={item.status === "submitted" ? t("assessment.submitted") : item.status === "graded" ? grade(item.grade, item.scale_max) : undefined}
+      value={item.due_time ? hhmm(item.due_time) : t("assessment.all_day")}
       tone={
         item.status === "submitted"
           ? "positive"
@@ -235,8 +248,4 @@ function AgendaDeadline({ item, onOpen }: { item: Assessment; onOpen: () => void
   );
 }
 
-const labelOfKind = (item: Assessment) =>
-  ({ assignment: "Entrega", exam: "Examen", practical: "Práctica", participation: "Participación", other: "Evaluable" })[
-    item.kind
-  ];
 

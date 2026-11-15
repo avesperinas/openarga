@@ -4,10 +4,13 @@ import { type CSSProperties, type ReactNode, useCallback, useEffect, useRef, use
 
 import { type Grade, type Tone, Unauthorised, signIn } from "./api";
 import { grade as gradeText, needed, percent, verdictLabel, verdictTone } from "./words";
+import { t } from "./lang";
 
 export const changed = () => invalidate("");
 
-const gone = (error: Error | null) => Boolean(error?.message.startsWith("no existe"));
+const GONE = ["no existe", "does not exist"];
+
+const gone = (error: Error | null) => GONE.some((one) => error?.message.startsWith(one));
 
 function useOwnRead<T>(active: boolean, load: () => Promise<T>) {
   const [data, setData] = useState<T | null>(null);
@@ -21,7 +24,7 @@ function useOwnRead<T>(active: boolean, load: () => Promise<T>) {
       setError(null);
     } catch (reason) {
       if (reason instanceof Unauthorised) return signIn();
-      setError(reason instanceof Error ? reason : new Error("Algo no ha ido bien."));
+      setError(reason instanceof Error ? reason : new Error(t("error.something")));
     }
   }, []);
 
@@ -39,7 +42,7 @@ export function useLoad<T>(key: string, load: () => Promise<T>, { fresh = false 
 
   const fail = useCallback((error: unknown) => {
     if (error instanceof Unauthorised) return signIn();
-    setProblem(error instanceof Error ? error.message : "Algo no ha ido bien.");
+    setProblem(error instanceof Error ? error.message : t("error.something"));
   }, []);
 
   const setOwn = own.setData;
@@ -73,12 +76,12 @@ export function Pending({ found, what = "Study" }: { found: { error: Error | nul
   if (!found.error) return <Skeleton rows={4} />;
   if (gone(found.error)) {
     return (
-      <EmptyState icon="search" title="Ya no está">
-        <p>Se borró o no es tuyo.</p>
+      <EmptyState icon="search" title={t("gone.title")}>
+        <p>{t("gone.detail")}</p>
       </EmptyState>
     );
   }
-  return <ErrorState title={`${what} no contesta`} detail={found.error.message} onRetry={() => void found.refresh()} />;
+  return <ErrorState title={t("error.no_answer", { what })} detail={found.error.message} onRetry={() => void found.refresh()} />;
 }
 
 export function Problem({ text }: { text: string }) {
@@ -125,12 +128,12 @@ export function GradeMeter({
   const big = final ?? grade.current;
   const label =
     grade.final_source === "record"
-      ? "Nota de acta"
+      ? t("meter.record")
       : grade.final_source === "computed"
-        ? "Nota final"
+        ? t("meter.final")
         : grade.current !== null
-          ? `Media de lo calificado · ${percent(grade.graded_weight)}`
-          : "Sin notas todavía";
+          ? t("meter.so_far", { percent: percent(grade.graded_weight) })
+          : t("meter.no_grades");
   return (
     <div className="study-meter" data-tone={tone} data-verdict={verdictTone(grade.verdict)}>
       <div className="study-meter-head">
@@ -146,7 +149,7 @@ export function GradeMeter({
       <div
         className="study-meter-bar"
         role="img"
-        aria-label={`Asegurado ${gradeText(secured, scale)} de ${gradeText(scale, 100)}`}
+        aria-label={t("meter.secured_of", { secured: gradeText(secured, scale), scale: gradeText(scale, 100) })}
         style={{ "--secured": pct(secured), "--ceiling": pct(ceiling), "--pass": pct(passMark), "--target": pct(grade.target ?? 0) } as CSSProperties}
       >
         <span className="study-meter-open" />
@@ -156,22 +159,21 @@ export function GradeMeter({
       </div>
       <div className="study-meter-legend">
         <span>
-          <span className="study-key" data-key="fill" /> Asegurado {gradeText(grade.secured ?? 0, scale)}
+          <span className="study-key" data-key="fill" /> {t("meter.secured")} {gradeText(grade.secured ?? 0, scale)}
         </span>
         {grade.remaining_weight > 0 && (
           <span>
-            <span className="study-key" data-key="open" /> En juego {percent(grade.remaining_weight)}
+            <span className="study-key" data-key="open" /> {t("meter.in_play")} {percent(grade.remaining_weight)}
           </span>
         )}
         <span>
-          <span className="study-key" data-key="pass" /> Aprobado {gradeText(passMark, scale)}
+          <span className="study-key" data-key="pass" /> {t("meter.pass_mark")} {gradeText(passMark, scale)}
         </span>
       </div>
       <p className="study-meter-sentence">{grade.sentence}</p>
       {grade.unweighted > 0 && (
         <p className="study-muted">
-          {grade.unweighted === 1 ? "Un evaluable no tiene peso" : `${grade.unweighted} evaluables no tienen peso`} y
-          no cuenta en la nota.
+          {t(grade.unweighted === 1 ? "meter.unweighted.one" : "meter.unweighted.other", { count: grade.unweighted })}
         </p>
       )}
     </div>
@@ -181,7 +183,7 @@ export function GradeMeter({
 export function neededLine(g: Grade, scale: number): string | null {
   if (g.verdict !== "in_progress") return null;
   if (g.needed_to_pass === null) return null;
-  return `Necesitas ${needed(g.needed_to_pass, scale)} en lo que queda`;
+  return t("grade.needed_left", { grade: needed(g.needed_to_pass, scale) });
 }
 
 export function ProgressBar({ ratio, tone, label }: { ratio: number; tone: Tone; label: string }) {

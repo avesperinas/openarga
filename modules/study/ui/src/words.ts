@@ -1,38 +1,45 @@
 import type { RecurrenceRule, Weekday } from "@openarga/ui";
 
 import type { AssessmentKind, Kind, Modality, ServerRule, Session, Verdict } from "./api";
+import { currentLocale, intl, t } from "./lang";
 
-export const KINDS: { value: Kind; label: string }[] = [
-  { value: "master", label: "Máster" },
-  { value: "degree", label: "Grado" },
-  { value: "course", label: "Curso" },
-  { value: "certification", label: "Certificación" },
-  { value: "language", label: "Idioma" },
-  { value: "other", label: "Otro" },
-];
+export const KINDS: { value: Kind; readonly label: string }[] = (
+  ["master", "degree", "course", "certification", "language", "other"] as const
+).map((value) => ({
+  value,
+  get label() {
+    return t(`kind.${value}`);
+  },
+}));
 
-export const MODALITIES: { value: Modality; label: string }[] = [
-  { value: "in_person", label: "Presencial" },
-  { value: "online", label: "En línea" },
-  { value: "hybrid", label: "Mixta" },
-];
+export const MODALITIES: { value: Modality; readonly label: string }[] = (["in_person", "online", "hybrid"] as const).map(
+  (value) => ({
+    value,
+    get label() {
+      return t(`modality.${value}`);
+    },
+  }),
+);
 
-export const ASSESSMENT_KINDS: { value: AssessmentKind; label: string }[] = [
-  { value: "assignment", label: "Entrega" },
-  { value: "exam", label: "Examen" },
-  { value: "practical", label: "Práctica" },
-  { value: "participation", label: "Participación" },
-  { value: "other", label: "Otro" },
-];
+export const ASSESSMENT_KINDS: { value: AssessmentKind; readonly label: string }[] = (
+  ["assignment", "exam", "practical", "participation", "other"] as const
+).map((value) => ({
+  value,
+  get label() {
+    return t(`assessment.${value}`);
+  },
+}));
 
 export const labelOf = <T extends string>(list: { value: T; label: string }[], value: T): string =>
   list.find((item) => item.value === value)?.label ?? value;
 
+export const decimal = (text: string) => (currentLocale() === "es" ? text.replace(".", ",") : text);
+
 export function grade(value: number | null | undefined, scale = 10): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
   const places = scale >= 100 ? 0 : 1;
-  const text = value.toFixed(places).replace(".", ",");
-  return text.endsWith(",0") ? text.slice(0, -2) : text;
+  const text = value.toFixed(places);
+  return decimal(text.endsWith(".0") ? text.slice(0, -2) : text);
 }
 
 export function needed(value: number, scale = 10): string {
@@ -41,8 +48,8 @@ export function needed(value: number, scale = 10): string {
 }
 
 export function percent(value: number): string {
-  const text = value.toFixed(1).replace(".", ",");
-  return (text.endsWith(",0") ? text.slice(0, -2) : text) + " %";
+  const text = value.toFixed(1);
+  return decimal(text.endsWith(".0") ? text.slice(0, -2) : text) + " %";
 }
 
 export function parseNumber(text: string): number | null {
@@ -52,33 +59,17 @@ export function parseNumber(text: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-export function plural(count: number, one: string, many: string): string {
-  return `${count} ${count === 1 ? one : many}`;
-}
+export const plural = (count: number, key: string): string =>
+  t(`${key}.${count === 1 ? "one" : "other"}`, { count });
 
 export function fileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
+  return `${decimal((bytes / 1024 / 1024).toFixed(1))} MB`;
 }
 
-const WEEKDAYS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
-const WEEKDAY_SHORT = ["D", "L", "M", "X", "J", "V", "S"];
-const MONTHS = [
-  "enero",
-  "febrero",
-  "marzo",
-  "abril",
-  "mayo",
-  "junio",
-  "julio",
-  "agosto",
-  "septiembre",
-  "octubre",
-  "noviembre",
-  "diciembre",
-];
-const MONTHS_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic"];
+const formatted = (iso: string, options: Intl.DateTimeFormatOptions) =>
+  new Intl.DateTimeFormat(intl(), options).format(day(iso));
 
 export function day(iso: string): Date {
   const [y, m, d] = iso.slice(0, 10).split("-").map(Number) as [number, number, number];
@@ -95,20 +86,16 @@ export function todayIso(now = new Date()): string {
   return isoDate(now);
 }
 
-export const weekdayShort = (iso: string) => WEEKDAY_SHORT[day(iso).getDay()]!;
-export const weekdayName = (iso: string) => WEEKDAYS[day(iso).getDay()]!;
+export const weekdayShort = (iso: string) => formatted(iso, { weekday: "narrow" });
+export const weekdayName = (iso: string) => formatted(iso, { weekday: "long" });
 
-export function dateLong(iso: string, now = new Date()): string {
-  const date = day(iso);
-  const base = `${date.getDate()} de ${MONTHS[date.getMonth()]}`;
-  return date.getFullYear() === now.getFullYear() ? base : `${base} de ${date.getFullYear()}`;
-}
+const thisYear = (iso: string, now: Date) => day(iso).getFullYear() === now.getFullYear();
 
-export function dateShort(iso: string, now = new Date()): string {
-  const date = day(iso);
-  const base = `${date.getDate()} ${MONTHS_SHORT[date.getMonth()]}`;
-  return date.getFullYear() === now.getFullYear() ? base : `${base} ${date.getFullYear()}`;
-}
+export const dateLong = (iso: string, now = new Date()): string =>
+  formatted(iso, { day: "numeric", month: "long", ...(thisYear(iso, now) ? {} : { year: "numeric" }) });
+
+export const dateShort = (iso: string, now = new Date()): string =>
+  formatted(iso, { day: "numeric", month: "short", ...(thisYear(iso, now) ? {} : { year: "numeric" }) });
 
 export function dayTitle(iso: string, now = new Date()): string {
   const name = weekdayName(iso);
@@ -117,18 +104,17 @@ export function dayTitle(iso: string, now = new Date()): string {
 
 export function period(from: string | null, to: string | null): string | null {
   const one = (iso: string) => {
-    const date = day(iso);
-    return `${MONTHS_SHORT[date.getMonth()]} ${date.getFullYear()}`;
+    return formatted(iso, { month: "short", year: "numeric" });
   };
   if (from && to) return `${one(from)} – ${one(to)}`;
-  if (from) return `desde ${one(from)}`;
-  if (to) return `hasta ${one(to)}`;
+  if (from) return t("period.from", { date: one(from) });
+  if (to) return t("period.until", { date: one(to) });
   return null;
 }
 
 export function clock(value: string | Date): string {
   const date = typeof value === "string" ? new Date(value) : value;
-  return date.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleTimeString(intl(), { hour: "2-digit", minute: "2-digit" });
 }
 
 export function span(start: string, end: string): string {
@@ -144,13 +130,12 @@ export function daysUntil(iso: string, now = new Date()): number {
 }
 
 export function countdown(daysLeft: number): string {
-  if (daysLeft === 0) return "Hoy";
-  if (daysLeft === 1) return "Mañana";
-  if (daysLeft === -1) return "Venció ayer";
-  if (daysLeft < 0) return `Venció hace ${-daysLeft} días`;
-  if (daysLeft < 14) return `En ${daysLeft} días`;
-  const weeks = Math.round(daysLeft / 7);
-  return `En ${weeks} semanas`;
+  if (daysLeft === 0) return t("countdown.today");
+  if (daysLeft === 1) return t("countdown.tomorrow");
+  if (daysLeft === -1) return t("countdown.yesterday");
+  if (daysLeft < 0) return t("countdown.overdue", { days: -daysLeft });
+  if (daysLeft < 14) return t("countdown.days", { days: daysLeft });
+  return t("countdown.weeks", { weeks: Math.round(daysLeft / 7) });
 }
 
 export function urgency(daysLeft: number): "overdue" | "soon" | "week" | "later" {
@@ -205,16 +190,7 @@ export function verdictTone(verdict: Verdict): StatusTone {
 }
 
 export function verdictLabel(verdict: Verdict): string {
-  return {
-    empty: "Sin evaluables",
-    not_started: "Sin notas",
-    in_progress: "En juego",
-    secured: "Asegurada",
-    impossible: "Imposible",
-    passed: "Aprobada",
-    failed: "Suspensa",
-    below_minimum: "Bajo el mínimo",
-  }[verdict];
+  return t(`verdict.${verdict}`);
 }
 
 export function ruleToServer(rule: RecurrenceRule): ServerRule {

@@ -10,6 +10,7 @@ import { HomeScreen } from "./Home";
 import { NoteScreen, NotesScreen } from "./Notes";
 import { SessionScreen } from "./SessionScreen";
 import { SubjectScreen } from "./SubjectScreen";
+import { t } from "./lang";
 
 const ROOT = "/study";
 const ID = "([0-9a-f-]{36})";
@@ -136,12 +137,12 @@ export function App() {
   return (
     <NavContext.Provider value={navigate}>
       <AppShell
-        label="Secciones"
+        label={t("nav.sections")}
         active={tab}
         onSelect={(next) => navigate({ tab: next as "home" | "notes" | "settings" })}
         tabs={[
-          { id: "home", label: "Study", icon: "today" },
-          { id: "notes", label: "Apuntes", icon: "edit" },
+          { id: "home", label: t("app.name"), icon: "today" },
+          { id: "notes", label: t("notes.title"), icon: "edit" },
           SETTINGS_TAB,
         ]}
       >

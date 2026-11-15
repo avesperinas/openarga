@@ -34,6 +34,7 @@ import {
   ruleToServer,
   todayIso,
 } from "./words";
+import { t } from "./lang";
 
 function useSaving(onError: (error: unknown) => void) {
   const [saving, setSaving] = useState(false);
@@ -44,7 +45,7 @@ function useSaving(onError: (error: unknown) => void) {
     try {
       await action();
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : "No se pudo guardar.");
+      setProblem(error instanceof Error ? error.message : t("error.save"));
       onError(error);
     } finally {
       setSaving(false);
@@ -63,7 +64,7 @@ function SheetProblem({ text }: { text: string }) {
 
 const NONE = "__none__";
 
-function subjectOptions(subjects: Pick<Subject, "id" | "name">[], none = "Del estudio entero") {
+function subjectOptions(subjects: Pick<Subject, "id" | "name">[], none = t("field.whole_course")) {
   return [{ value: NONE, label: none }, ...subjects.map((s) => ({ value: s.id, label: s.name }))];
 }
 
@@ -88,7 +89,7 @@ export function SubjectSheet({
 
   const save = () =>
     run(async () => {
-      if (!name.trim()) return setProblem("Ponle un nombre.");
+      if (!name.trim()) return setProblem(t("course.needs_name"));
       const body = {
         name: name.trim(),
         teacher: teacher.trim() || null,
@@ -104,15 +105,15 @@ export function SubjectSheet({
     <Sheet
       title={subject ? "Editar asignatura" : "Nueva asignatura"}
       onClose={onClose}
-      action={{ label: subject ? "Guardar" : "Añadir asignatura", onClick: () => void save(), disabled: saving }}
+      action={{ label: subject ? t("action.save") : t("subject.add"), onClick: () => void save(), disabled: saving }}
     >
       <div className="study-form">
-        <TextField label="Nombre" value={name} onChange={setName} autoFocus={!subject} onSubmit={() => void save()} />
+        <TextField label={t("field.name")} value={name} onChange={setName} autoFocus={!subject} onSubmit={() => void save()} />
         <div className="study-pair">
-          <TextField label="Créditos" value={credits} onChange={setCredits} inputMode="decimal" placeholder="6" />
-          <TextField label="Periodo" value={period} onChange={setPeriod} placeholder="1.er cuatrimestre" />
+          <TextField label={t("field.credits")} value={credits} onChange={setCredits} inputMode="decimal" placeholder="6" />
+          <TextField label={t("field.period")} value={period} onChange={setPeriod} placeholder={t("subject.period_placeholder")} />
         </div>
-        <TextField label="Profesor o profesora" value={teacher} onChange={setTeacher} />
+        <TextField label={t("field.teacher")} value={teacher} onChange={setTeacher} />
         <SheetProblem text={problem} />
       </div>
     </Sheet>
@@ -152,9 +153,9 @@ export function AssessmentSheet({
 
   const save = () =>
     run(async () => {
-      if (!title.trim()) return setProblem("Ponle un título.");
+      if (!title.trim()) return setProblem(t("error.needs_title"));
       const given = parseNumber(mark);
-      if (status === "graded" && given === null) return setProblem("Calificado es con nota.");
+      if (status === "graded" && given === null) return setProblem(t("assessment.graded_needs_grade"));
       const body: AssessmentIn = {
         title: title.trim(),
         kind,
@@ -176,42 +177,42 @@ export function AssessmentSheet({
     <Sheet
       title={assessment ? assessment.title : "Nuevo evaluable"}
       onClose={onClose}
-      action={{ label: assessment ? "Guardar" : "Añadir", onClick: () => void save(), disabled: saving }}
+      action={{ label: assessment ? t("action.save") : t("action.add"), onClick: () => void save(), disabled: saving }}
     >
       <div className="study-form">
-        <TextField label="Título" value={title} onChange={setTitle} autoFocus={!assessment} placeholder="Práctica 1" />
-        <ChoiceChips label="Tipo" options={ASSESSMENT_KINDS} value={kind} onChange={setKind} />
+        <TextField label={t("field.title")} value={title} onChange={setTitle} autoFocus={!assessment} placeholder={t("add.ph.task")} />
+        <ChoiceChips label={t("field.type")} options={ASSESSMENT_KINDS} value={kind} onChange={setKind} />
         {subjects.length > 0 && (
-          <SelectField label="Asignatura" options={subjectOptions(subjects)} value={subject} onChange={setSubject} />
+          <SelectField label={t("field.subject")} options={subjectOptions(subjects)} value={subject} onChange={setSubject} />
         )}
         <div className="study-pair">
-          <DateField label="Fecha" value={dueOn} onChange={setDueOn} />
-          <TextField label="Hora" type="time" value={dueTime} onChange={setDueTime} hint="Sin hora, todo el día" />
+          <DateField label={t("field.date")} value={dueOn} onChange={setDueOn} />
+          <TextField label={t("field.time")} type="time" value={dueTime} onChange={setDueTime} hint={t("add.no_time_hint")} />
         </div>
         <div className="study-pair">
-          <TextField label="Peso" value={weight} onChange={setWeight} inputMode="decimal" placeholder="%" hint="De la nota de la asignatura" />
-          <TextField label="Nota mínima" value={minimum} onChange={setMinimum} inputMode="decimal" placeholder="—" hint="Para hacer media" />
+          <TextField label={t("field.weight")} value={weight} onChange={setWeight} inputMode="decimal" placeholder="%" hint={t("add.weight_hint")} />
+          <TextField label={t("field.min_grade")} value={minimum} onChange={setMinimum} inputMode="decimal" placeholder="—" hint={t("assessment.min_hint")} />
         </div>
         <SegmentedControl
-          label="Estado"
+          label={t("field.status")}
           options={[
-            { value: "pending", label: "Pendiente" },
-            { value: "submitted", label: "Entregado" },
-            { value: "graded", label: "Calificado" },
+            { value: "pending", label: t("status.pending") },
+            { value: "submitted", label: t("assessment.submitted") },
+            { value: "graded", label: t("status.graded") },
           ]}
           value={status}
           onChange={setStatus}
         />
         {status === "graded" && (
           <TextField
-            label={`Nota, de 0 a ${grade(course.scale_max, 100)}`}
+            label={t("assessment.grade_0_to", { max: grade(course.scale_max, 100) })}
             value={mark}
             onChange={setMark}
             inputMode="decimal"
             autoFocus
           />
         )}
-        <TextField label="Nota para ti" value={note} onChange={setNote} placeholder="Enunciado, formato, lo que pidió" />
+        <TextField label={t("assessment.remark")} value={note} onChange={setNote} placeholder={t("assessment.remark_placeholder")} />
         <SheetProblem text={problem} />
         {assessment && onDelete && (
           <Button variant="destructive" size="small" icon="trash" onClick={onDelete}>
@@ -242,16 +243,16 @@ export function GradeSheet({
       onSaved();
     });
   return (
-    <Sheet title={`Nota de ${assessment.title}`} onClose={onClose} action={{ label: "Guardar nota", onClick: () => void save(), disabled: saving }}>
+    <Sheet title={t("assessment.grade_of", { title: assessment.title })} onClose={onClose} action={{ label: t("assessment.save_grade"), onClick: () => void save(), disabled: saving }}>
       <div className="study-form">
         <TextField
-          label={`De 0 a ${grade(assessment.scale_max, 100)}`}
+          label={t("assessment.from_0_to", { max: grade(assessment.scale_max, 100) })}
           value={mark}
           onChange={setMark}
           inputMode="decimal"
           autoFocus
           onSubmit={() => void save()}
-          hint={assessment.min_grade !== null ? `Mínimo para hacer media: ${grade(assessment.min_grade, assessment.scale_max)}` : "Vacía, la quita"}
+          hint={assessment.min_grade !== null ? t("assessment.min_is", { grade: grade(assessment.min_grade, assessment.scale_max) }) : t("assessment.empty_removes")}
         />
         <SheetProblem text={problem} />
       </div>
@@ -280,13 +281,12 @@ export function RecordSheet({
       onSaved();
     });
   return (
-    <Sheet title="Nota de acta" onClose={onClose} action={{ label: "Guardar", onClick: () => void save(), disabled: saving }}>
+    <Sheet title={t("meter.record")} onClose={onClose} action={{ label: t("action.save"), onClick: () => void save(), disabled: saving }}>
       <div className="study-form">
         <p className="study-muted">
-          La oficial, la que sale en el expediente. Manda sobre la que calcula Study con tus evaluables. Vacía, vuelve a mandar
-          la calculada.
+          {t("record.hint")}
         </p>
-        <TextField label={`De 0 a ${grade(scale, 100)}`} value={mark} onChange={setMark} inputMode="decimal" autoFocus onSubmit={() => void save()} />
+        <TextField label={t("assessment.from_0_to", { max: grade(scale, 100) })} value={mark} onChange={setMark} inputMode="decimal" autoFocus onSubmit={() => void save()} />
         <SheetProblem text={problem} />
       </div>
     </Sheet>
@@ -328,8 +328,8 @@ export function ScheduleSheet({
 
   const save = () =>
     run(async () => {
-      if (!rule) return setProblem("Un horario se repite: elige cada cuánto.");
-      if (!startsOn) return setProblem("Di desde qué día.");
+      if (!rule) return setProblem(t("schedule.needs_rule"));
+      if (!startsOn) return setProblem(t("schedule.needs_start"));
       const body = {
         subject_id: subject === NONE ? null : subject,
         rule: ruleToServer(rule),
@@ -345,27 +345,27 @@ export function ScheduleSheet({
 
   return (
     <Sheet
-      title={schedule ? "Cambiar el horario" : "Añadir al horario"}
+      title={schedule ? t("schedule.edit") : t("schedule.add")}
       onClose={onClose}
-      action={{ label: schedule ? "Guardar y mover las clases" : "Añadir y crear las clases", onClick: () => void save(), disabled: saving }}
+      action={{ label: schedule ? t("schedule.save_move") : t("schedule.add_create"), onClick: () => void save(), disabled: saving }}
     >
       <div className="study-form">
         {subjects.length > 0 && (
-          <SelectField label="Asignatura" options={subjectOptions(subjects, "Del estudio")} value={subject} onChange={setSubject} />
+          <SelectField label={t("field.subject")} options={subjectOptions(subjects, t("field.whole_course"))} value={subject} onChange={setSubject} />
         )}
         <div className="study-pair">
-          <TextField label="De" type="time" value={start} onChange={setStart} />
-          <TextField label="A" type="time" value={end} onChange={setEnd} />
+          <TextField label={t("field.from")} type="time" value={start} onChange={setStart} />
+          <TextField label={t("field.to")} type="time" value={end} onChange={setEnd} />
         </div>
-        <DateField label="Desde" value={startsOn} onChange={setStartsOn} />
-        <RecurrencePicker date={startsOn || todayIso()} value={rule} onChange={setRule} label="Se repite" />
+        <DateField label={t("schedule.from_day")} value={startsOn} onChange={setStartsOn} />
+        <RecurrencePicker date={startsOn || todayIso()} value={rule} onChange={setRule} label={t("add.repeats")} />
         <div className="study-pair">
-          <TextField label="Study" value={place} onChange={setPlace} placeholder="Study 2.3" />
-          <TextField label="Enlace" value={url} onChange={setUrl} placeholder="Si es en línea" />
+          <TextField label={t("field.place")} value={place} onChange={setPlace} placeholder="Room 2.3" />
+          <TextField label={t("field.link")} value={url} onChange={setUrl} placeholder={t("add.link_placeholder")} />
         </div>
         {schedule && (
           <p className="study-muted">
-            Las clases que ya pasaron y las que tienen apuntes, asistencia o se movieron a mano se quedan como están.
+            {t("schedule.touched_stay")}
           </p>
         )}
         <SheetProblem text={problem} />
@@ -408,7 +408,7 @@ export function SessionSheet({
 
   const save = () =>
     run(async () => {
-      if (kind !== "class" && !title.trim()) return setProblem("Ponle un título.");
+      if (kind !== "class" && !title.trim()) return setProblem(t("error.needs_title"));
       const detail = await api.addSession(course.id, {
         kind,
         title: title.trim() || null,
@@ -422,30 +422,30 @@ export function SessionSheet({
     });
 
   return (
-    <Sheet title="Nueva sesión" onClose={onClose} action={{ label: "Añadir", onClick: () => void save(), disabled: saving }}>
+    <Sheet title={t("sessions.new")} onClose={onClose} action={{ label: t("action.add"), onClick: () => void save(), disabled: saving }}>
       <div className="study-form">
         <SegmentedControl
-          label="Qué es"
+          label={t("add.what")}
           options={[
-            { value: "tutorial", label: "Tutoría" },
-            { value: "event", label: "Jornada o evento" },
-            { value: "class", label: "Clase extra" },
+            { value: "tutorial", label: t("session.kind.tutorial") },
+            { value: "event", label: t("sessions.event") },
+            { value: "class", label: t("sessions.extra_class") },
           ]}
           value={kind}
           onChange={setKind}
         />
-        <TextField label="Título" value={title} onChange={setTitle} placeholder={kind === "class" ? "La de la asignatura" : "Defensa del TFM"} />
+        <TextField label={t("field.title")} value={title} onChange={setTitle} placeholder={t(kind === "class" ? "sessions.class_placeholder" : "sessions.event_placeholder")} />
         {subjects.length > 0 && (
-          <SelectField label="Asignatura" options={subjectOptions(subjects)} value={subject} onChange={setSubject} />
+          <SelectField label={t("field.subject")} options={subjectOptions(subjects)} value={subject} onChange={setSubject} />
         )}
-        <DateField label="Día" value={date} onChange={setDate} />
+        <DateField label={t("field.day")} value={date} onChange={setDate} />
         <div className="study-pair">
-          <TextField label="De" type="time" value={start} onChange={setStart} />
-          <TextField label="A" type="time" value={end} onChange={setEnd} />
+          <TextField label={t("field.from")} type="time" value={start} onChange={setStart} />
+          <TextField label={t("field.to")} type="time" value={end} onChange={setEnd} />
         </div>
         <div className="study-pair">
-          <TextField label="Lugar" value={place} onChange={setPlace} />
-          <TextField label="Enlace" value={url} onChange={setUrl} />
+          <TextField label={t("field.place")} value={place} onChange={setPlace} />
+          <TextField label={t("field.link")} value={url} onChange={setUrl} />
         </div>
         <SheetProblem text={problem} />
       </div>
@@ -490,19 +490,19 @@ export function MoveSheet({
 
   const cancelled = session.status === "cancelled";
   return (
-    <Sheet title={session.kind === "class" ? "Mover la clase" : "Cambiar la sesión"} onClose={onClose} action={{ label: "Guardar", onClick: () => void save("scheduled"), disabled: saving }}>
+    <Sheet title={session.kind === "class" ? t("move.session") : t("move.change")} onClose={onClose} action={{ label: t("action.save"), onClick: () => void save("scheduled"), disabled: saving }}>
       <div className="study-form">
-        {session.kind !== "class" && <TextField label="Título" value={title} onChange={setTitle} />}
-        <DateField label="Día" value={date} onChange={setDate} />
+        {session.kind !== "class" && <TextField label={t("field.title")} value={title} onChange={setTitle} />}
+        <DateField label={t("field.day")} value={date} onChange={setDate} />
         <div className="study-pair">
-          <TextField label="De" type="time" value={start} onChange={setStart} />
-          <TextField label="A" type="time" value={end} onChange={setEnd} />
+          <TextField label={t("field.from")} type="time" value={start} onChange={setStart} />
+          <TextField label={t("field.to")} type="time" value={end} onChange={setEnd} />
         </div>
         <div className="study-pair">
-          <TextField label="Lugar" value={place} onChange={setPlace} />
-          <TextField label="Enlace" value={url} onChange={setUrl} />
+          <TextField label={t("field.place")} value={place} onChange={setPlace} />
+          <TextField label={t("field.link")} value={url} onChange={setUrl} />
         </div>
-        <p className="study-muted">Solo cambia esta. El horario y las demás clases siguen igual.</p>
+        <p className="study-muted">{t("move.only_this")}</p>
         <SheetProblem text={problem} />
         <div className="study-row-actions">
           {cancelled ? (
@@ -511,12 +511,12 @@ export function MoveSheet({
             </Button>
           ) : (
             <Button variant="secondary" size="small" onClick={() => void save("cancelled")}>
-              Cancelar esta clase
+              {t("move.cancel_this")}
             </Button>
           )}
           {onDelete && (
             <Button variant="destructive" size="small" icon="trash" onClick={onDelete}>
-              Borrar sesión
+              {t("session.delete")}
             </Button>
           )}
         </div>
@@ -551,41 +551,41 @@ export function MaterialSheet({
     run(async () => {
       const owner = subject === NONE ? null : subject;
       if (kind === "link") {
-        if (!url.trim()) return setProblem("Pega el enlace.");
+        if (!url.trim()) return setProblem(t("material.paste_link"));
         await api.addLink(courseId, { title: title.trim() || url.trim(), url: url.trim(), subject_id: owner });
       } else {
-        if (!file) return setProblem("Elige un fichero.");
+        if (!file) return setProblem(t("material.choose_file"));
         await api.addFile(courseId, file, owner);
       }
       onSaved();
     });
 
   return (
-    <Sheet title="Nuevo material" onClose={onClose} action={{ label: "Añadir", onClick: () => void save(), disabled: saving }}>
+    <Sheet title={t("material.new")} onClose={onClose} action={{ label: t("action.add"), onClick: () => void save(), disabled: saving }}>
       <div className="study-form">
         <SegmentedControl
-          label="Qué es"
+          label={t("add.what")}
           options={[
-            { value: "link", label: "Enlace" },
-            { value: "file", label: "Fichero" },
+            { value: "link", label: t("field.link") },
+            { value: "file", label: t("material.file") },
           ]}
           value={kind}
           onChange={setKind}
         />
         {kind === "link" ? (
           <>
-            <TextField label="Enlace" value={url} onChange={setUrl} placeholder="https://" autoFocus />
-            <TextField label="Nombre" value={title} onChange={setTitle} placeholder="Guía docente" />
+            <TextField label={t("field.link")} value={url} onChange={setUrl} placeholder="https://" autoFocus />
+            <TextField label={t("field.name")} value={title} onChange={setTitle} placeholder={t("material.name_placeholder")} />
           </>
         ) : (
           <label className="study-file-pick">
-            <span className="text-field-label">Fichero</span>
+            <span className="text-field-label">{t("material.file")}</span>
             <input type="file" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
-            <span className="study-muted">Hasta 20 MB: un PDF, unas diapositivas, un libro.</span>
+            <span className="study-muted">{t("material.file_hint")}</span>
           </label>
         )}
         {subjects.length > 0 && (
-          <SelectField label="De" options={subjectOptions(subjects)} value={subject} onChange={setSubject} />
+          <SelectField label={t("material.of")} options={subjectOptions(subjects)} value={subject} onChange={setSubject} />
         )}
         <SheetProblem text={problem} />
       </div>
@@ -626,38 +626,38 @@ export function CloseSheet({
 
   return (
     <Sheet
-      title="Terminar el estudio"
+      title={t("close.title")}
       onClose={onClose}
-      action={{ label: status === "finished" ? "Terminar y archivar" : "Abandonar y archivar", onClick: () => void save(), disabled: saving }}
+      action={{ label: status === "finished" ? t("close.finish") : t("close.abandon"), onClick: () => void save(), disabled: saving }}
     >
       <div className="study-form">
         <SegmentedControl
-          label="Cómo acaba"
+          label={t("close.how")}
           options={[
-            { value: "finished", label: "Terminado" },
-            { value: "abandoned", label: "Abandonado" },
+            { value: "finished", label: t("archive.finished") },
+            { value: "abandoned", label: t("archive.abandoned") },
           ]}
           value={status}
           onChange={setStatus}
         />
-        <DateField label="Fecha" value={closedOn} onChange={setClosedOn} />
+        <DateField label={t("field.date")} value={closedOn} onChange={setClosedOn} />
         {status === "finished" && (
           <>
             <TextField
-              label="Nota final"
+              label={t("close.final_grade")}
               value={mark}
               onChange={setMark}
               inputMode="decimal"
-              hint={suggested !== null ? `La media de tus asignaturas es ${grade(suggested, course.scale_max)}` : "La del título, si la tiene"}
+              hint={suggested !== null ? t("close.average_is", { grade: grade(suggested, course.scale_max) }) : t("close.certificate_grade")}
             />
-            <Collapsible title="Título o certificado" subtitle="Un PDF o una foto">
+            <Collapsible title={t("close.certificate")} subtitle={t("close.certificate_hint")}>
               <label className="study-file-pick">
                 <input type="file" accept="application/pdf,image/*" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
               </label>
             </Collapsible>
           </>
         )}
-        <p className="study-muted">Pasa al Archivo con su nota. Sus clases y apuntes se quedan, y se puede reabrir.</p>
+        <p className="study-muted">{t("close.detail")}</p>
         <SheetProblem text={problem} />
       </div>
     </Sheet>

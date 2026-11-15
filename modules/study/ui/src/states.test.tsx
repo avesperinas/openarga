@@ -6,6 +6,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "./App";
+import { setLocale } from "./lang";
 import { Pending, useLoad, changed } from "./Bits";
 
 const COURSE = "0a0a0a0a-0000-4000-8000-00000000a0a0";
@@ -37,6 +38,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   void reset();
+  setLocale("en");
   replies = {
     "GET /api/study/home": () => EMPTY_HOME,
     "GET /api/study/courses": () => [],
@@ -72,6 +74,8 @@ const settle = () =>
     for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setTimeout(resolve, 0));
   });
 
+const RETRY = "Reintentar";
+
 const button = (name: string) =>
   Array.from(host.querySelectorAll<HTMLButtonElement>("button")).find((one) => one.textContent?.includes(name));
 
@@ -88,70 +92,70 @@ async function serious(): Promise<string[]> {
     .map((one) => `${one.id}: ${one.nodes.map((node) => node.target.join(" ")).join(", ")}`);
 }
 
-describe("la portada", () => {
-  it("mientras llega, el esqueleto", async () => {
+describe("the home screen", () => {
+  it("the skeleton while it loads", async () => {
     replies["GET /api/study/home"] = () => new Promise(() => undefined);
     await open();
     expect(host.querySelector(".skeleton")).not.toBeNull();
   });
 
-  it("sin estudios, el botón crea el primero", async () => {
+  it("with no courses, the button creates the first", async () => {
     await open();
-    expect(host.textContent).toContain("Lo que estudias, en un sitio");
-    expect(button("Crear un estudio")).toBeDefined();
+    expect(host.textContent).toContain("What you study, in one place");
+    expect(button("Create a course")).toBeDefined();
   });
 
-  it("si falla, lo dice y reintentar la trae", async () => {
-    replies["GET /api/study/home"] = () => json({ detail: "la base no contesta" }, 503);
+  it("on failure it says so and retry brings it back", async () => {
+    replies["GET /api/study/home"] = () => json({ detail: "the server is down" }, 503);
     await open();
-    expect(host.textContent).toContain("Study no contesta");
-    expect(host.textContent).toContain("la base no contesta");
+    expect(host.textContent).toContain("Study does not answer");
+    expect(host.textContent).toContain("the server is down");
 
     replies["GET /api/study/home"] = () => EMPTY_HOME;
-    act(() => button("Reintentar")!.click());
+    act(() => button(RETRY)!.click());
     await settle();
-    expect(host.textContent).toContain("Lo que estudias, en un sitio");
+    expect(host.textContent).toContain("What you study, in one place");
   });
 
-  it("sin red, lo dice arriba", async () => {
+  it("offline, it says so at the top", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     await open();
-    expect(host.textContent).toContain("Sin conexión");
+    expect(host.querySelector('.notice[data-tone="warning"]')).not.toBeNull();
   });
 });
 
-describe("un estudio", () => {
-  it("si no existe lo dice; otro fallo se reintenta", async () => {
+describe("a course", () => {
+  it("if it does not exist it says so; another failure retries", async () => {
     await open(`/study/estudio/${COURSE}`);
-    expect(host.textContent).toContain("Ya no está");
-    expect(button("Reintentar")).toBeUndefined();
+    expect(host.textContent).toContain("It is no longer there");
+    expect(button(RETRY)).toBeUndefined();
 
     act(() => root.unmount());
     root = createRoot(host);
     void reset();
     for (const part of ["schedules", "sessions", "materials"]) replies[`GET /api/study/courses/${COURSE}/${part}`] = () => [];
-    replies[`GET /api/study/courses/${COURSE}`] = () => json({ detail: "la base no contesta" }, 503);
+    replies[`GET /api/study/courses/${COURSE}`] = () => json({ detail: "the server is down" }, 503);
     await open(`/study/estudio/${COURSE}`);
-    expect(host.textContent).toContain("la base no contesta");
-    expect(button("Reintentar")).toBeDefined();
+    expect(host.textContent).toContain("the server is down");
+    expect(button(RETRY)).toBeDefined();
   });
 });
 
-describe("los apuntes", () => {
-  it("sin apuntes ni estudios, dice cómo empezar", async () => {
+describe("the notes", () => {
+  it("with no notes or courses, it says how to start", async () => {
     replies["GET /api/study/notes"] = () => [];
     await open("/study/apuntes");
-    expect(host.textContent).toContain("Sin apuntes todavía");
+    expect(host.textContent).toContain("No notes yet");
   });
 
-  it("unos apuntes no se enseñan con lo guardado: esperan a leerlos", async () => {
+  it("a note is not shown from the cache: it waits to be read", async () => {
     replies[`GET /api/study/notes/${NOTE}`] = () => new Promise(() => undefined);
     await open(`/study/apuntes/${NOTE}`);
     expect(host.querySelector(".skeleton")).not.toBeNull();
   });
 });
 
-describe("axe-core sin errores graves", () => {
+describe("axe-core with no serious errors", () => {
   it.each(["/study/", "/study/semana", "/study/apuntes", "/study/archivo", "/study/ajustes"])("%s", async (path) => {
     await open(path);
     expect(await serious()).toEqual([]);
@@ -163,31 +167,31 @@ function Probe({ load, fresh = false }: { load: () => Promise<string>; fresh?: b
   return <div>{data ?? <Pending found={found} />}</div>;
 }
 
-describe("lo leído", () => {
-  it("lo que se borró no se enseña aunque quede su copia", async () => {
-    let answer: () => Promise<string> = async () => "el estudio";
+describe("what is read", () => {
+  it("what was deleted is not shown even if its copy remains", async () => {
+    let answer: () => Promise<string> = async () => "the course";
     act(() => root.render(<Probe load={() => answer()} />));
     await settle();
-    expect(host.textContent).toContain("el estudio");
+    expect(host.textContent).toContain("the course");
 
     answer = async () => {
-      throw new Error("no existe: el estudio");
+      throw new Error("does not exist: the course");
     };
     act(() => changed());
     await settle();
-    expect(host.textContent).not.toContain("el estudio");
-    expect(host.textContent).toContain("Ya no está");
+    expect(host.textContent).not.toContain("the course");
+    expect(host.textContent).toContain("It is no longer there");
   });
 
-  it("con editor, no arranca de lo que había: espera a leerlo", async () => {
-    act(() => root.render(<Probe load={async () => "lo de antes"} />));
+  it("in fresh mode it does not start from the cache: it waits to be read", async () => {
+    act(() => root.render(<Probe load={async () => "the earlier text"} />));
     await settle();
     act(() => root.unmount());
     root = createRoot(host);
 
     act(() => root.render(<Probe fresh load={() => new Promise(() => undefined)} />));
     await settle();
-    expect(host.textContent).not.toContain("lo de antes");
+    expect(host.textContent).not.toContain("the earlier text");
     expect(host.querySelector(".skeleton")).not.toBeNull();
   });
 });
