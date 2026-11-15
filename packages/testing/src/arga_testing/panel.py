@@ -27,23 +27,25 @@ SAMPLES: dict[str, dict[str, Any]] = {
         "series": [75.8, 75.4, 75.0, 74.8, 74.5, 74.2],
     },
     "chart": {"series": [12, 18, 9, 22, 15, 30, 18], "value": 18},
-    "bars": {"series": [4, 8, 6, 11, 7, 0, 0], "labels": list("LMXJVSD"), "highlight": 4},
+    "bars": {"series": [4, 8, 6, 11, 7, 0, 0], "labels": list("MTWTFSS"), "highlight": 4},
     "heatmap": {"values": [0, 1, 2, 3, 4, 0, 2] * 4, "columns": 4},
-    "progress": {"value": 62, "target": 100, "unit": "%", "label": "del objetivo", "expected": 70},
-    "ring": {"value": 7, "target": 10, "label": "de 10", "expected": 8},
+    "progress": {"value": 62, "target": 100, "unit": "%", "label": "of the goal", "expected": 70},
+    "ring": {"value": 7, "target": 10, "label": "of 10", "expected": 8},
     "streak": {"current": 5, "best": 12},
-    "stats": {"stats": [{"label": "Uno", "value": "12"}, {"label": "Dos", "value": "4,5"}]},
-    "list": {"rows": [{"label": f"Cosa {i}", "value": f"{i * 3} días"} for i in range(1, 6)]},
+    "stats": {"stats": [{"label": "One", "value": "12"}, {"label": "Two", "value": "4.5"}]},
+    "list": {"rows": [{"label": f"Thing {i}", "value": f"{i * 3} days"} for i in range(1, 6)]},
     "calendar": {"marked": [3, 6, 8], "today": 6},
-    "upnext": {"events": [{"at": _at(i, 9 + i), "title": f"Evento {i}"} for i in range(3)]},
-    "shortcuts": {"actions": [{"label": "Desayuno", "href": "/macros/apuntar", "icon": "food"}]},
+    "upnext": {"events": [{"at": _at(i, 9 + i), "title": f"Event {i}"} for i in range(3)]},
+    "shortcuts": {"actions": [{"label": "Breakfast", "href": "/macros/log", "icon": "food"}]},
     "agenda": {
         "entries": [
             {"start": _at(0, 9), "end": _at(0, 10), "title": "Daily", "tone": 1},
-            {"start": DAY, "all_day": True, "title": "Cumpleaños", "tone": 7},
+            {"start": DAY, "all_day": True, "title": "Birthday", "tone": 7},
         ]
     },
-    "week": {"entries": [{"start": _at(i, 10), "title": f"Cosa {i}", "tone": 1} for i in range(4)]},
+    "week": {
+        "entries": [{"start": _at(i, 10), "title": f"Thing {i}", "tone": 1} for i in range(4)]
+    },
     "tasks": {
         "tasks": [
             {"id": "00000000-0000-4000-8000-000000000001", "title": "Vencida", "due": "2026-11-04"},

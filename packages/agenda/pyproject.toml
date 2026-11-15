@@ -1,7 +1,7 @@
 [project]
 name = "arga-agenda"
 version = "0.1.0"
-description = "La forma común de algo con fecha (docs/planner.md §10, T-X06)"
+description = "The common shape of something dated"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "pydantic>=2.9",

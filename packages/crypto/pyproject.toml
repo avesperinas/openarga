@@ -1,7 +1,7 @@
 [project]
 name = "arga-crypto"
 version = "0.1.0"
-description = "Las credenciales de cada persona, cifradas en la aplicación (ADR-0030)"
+description = "Each person's credentials, encrypted in the application"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "cryptography>=43",

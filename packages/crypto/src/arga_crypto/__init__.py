@@ -35,7 +35,7 @@ def decode_key(raw: str, variable: str) -> bytes:
     for key in candidates:
         if len(key) == 32:
             return key
-    raise NotConfigured(f"{variable} no es una clave de 32 bytes en base64 o hexadecimal")
+    raise NotConfigured(f"{variable} is not a 32-byte key in base64 or hex")
 
 
 def key_id(key: bytes) -> bytes:
@@ -73,9 +73,9 @@ class Vault:
             try:
                 plain = AESGCM(key).decrypt(nonce, sealed, self._associated(person, name))
             except InvalidTag as error:
-                raise Undecipherable("no corresponde a esta fila, o está alterado") from error
+                raise Undecipherable("it does not belong to this row, or it was altered") from error
             return plain.decode()
-        raise Undecipherable("cifrado con una clave que ya no está")
+        raise Undecipherable("encrypted with a key that is gone")
 
     def stale(self, blob: bytes) -> bool:
         return bytes(blob)[1 : 1 + KEY_ID_BYTES] != key_id(self.key)
@@ -86,7 +86,7 @@ def from_environment(module: str) -> Vault:
     raw = os.environ.get(variable, "").strip()
     if not raw:
         raise NotConfigured(
-            f"falta {variable}: sin ella no se puede guardar ni usar la credencial de nadie"
+            f"{variable} is missing: without it no credential can be stored or used"
         )
     previous_raw = os.environ.get(f"{variable}_PREVIOUS", "").strip()
     previous = (decode_key(previous_raw, f"{variable}_PREVIOUS"),) if previous_raw else ()

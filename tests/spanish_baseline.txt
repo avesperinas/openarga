@@ -117,7 +117,6 @@ modules/hub/tests/test_hub_places.py
 modules/hub/tests/test_hub_portfolio.py
 modules/hub/tests/test_hub_prices.py
 modules/hub/tests/test_hub_recommended.py
-modules/hub/tests/test_hub_service.py
 modules/hub/tests/test_hub_sources.py
 modules/hub/tests/test_hub_statements.py
 modules/hub/tests/test_hub_wikimedia.py
@@ -244,8 +243,6 @@ modules/travel/ui/src/tripApp.ts
 modules/travel/ui/src/weather.test.ts
 modules/travel/ui/src/words.test.ts
 modules/travel/ui/src/words.ts
-packages/agenda/pyproject.toml
-packages/agenda/src/arga_agenda/__init__.py
 packages/agenda/tests/test_dated.py
 packages/app/src/api.ts
 packages/app/src/offline.ts
@@ -260,20 +257,9 @@ packages/contracts/src/arga_contracts/records.py
 packages/contracts/tests/test_contracts.py
 packages/contracts/tests/test_records.py
 packages/contracts/tests/test_sources.py
-packages/crypto/pyproject.toml
-packages/crypto/src/arga_crypto/__init__.py
-packages/crypto/tests/test_crypto.py
-packages/module/pyproject.toml
-packages/module/src/arga_module/__init__.py
-packages/module/src/arga_module/db.py
-packages/module/src/arga_module/service.py
 packages/module/tests/test_service.py
 packages/nutrients/src/arga_nutrients/__init__.py
 packages/recurrence/phrases.json
-packages/tenancy/pyproject.toml
-packages/testing/pyproject.toml
-packages/testing/src/arga_testing/contract.py
-packages/testing/src/arga_testing/panel.py
 packages/ui/.storybook/preview.tsx
 packages/ui/README.md
 packages/ui/src/speech.tsx
@@ -371,9 +357,6 @@ packages/ui/tests/widget-sizes.test.tsx
 packages/ui/tests/widget.test.tsx
 packages/ui/tests/world-map.test.tsx
 packages/ui/tests/year.test.tsx
-packages/widgets/pyproject.toml
-packages/widgets/src/arga_widgets/__init__.py
-packages/widgets/src/arga_widgets/panel.py
 packages/widgets/tests/test_bodies.py
 packages/widgets/tests/test_panel.py
 scripts/apple-health-steps.py

@@ -65,7 +65,7 @@ def test_rotating_the_key_keeps_opening_the_old_ones_and_marks_them_stale() -> N
     assert rotated.open(ana, "k", blob) == TOKEN
     assert rotated.stale(blob)
     assert not rotated.stale(rotated.seal(ana, "k", TOKEN))
-    with pytest.raises(Undecipherable, match="ya no está"):
+    with pytest.raises(Undecipherable, match="is gone"):
         vault().open(ana, "k", blob)
 
 
@@ -80,7 +80,7 @@ def test_without_a_key_the_module_does_not_start(monkeypatch) -> None:
         from_environment("hub")
 
     monkeypatch.setenv("HUB_CREDENTIALS_KEY", "corta")
-    with pytest.raises(NotConfigured, match="32 bytes"):
+    with pytest.raises(NotConfigured, match="32-byte"):
         from_environment("hub")
 
 

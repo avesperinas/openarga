@@ -29,7 +29,7 @@ class Registration:
 def _read_manifest(path: Path) -> dict:
     manifest = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(manifest, dict) or not manifest.get("id"):
-        raise RegistrationFailed(f"{path} no es un manifiesto con id")
+        raise RegistrationFailed(f"{path} is not a manifest with an id")
     return manifest
 
 
@@ -83,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if not token:
         print(
-            "falta MODULE_REGISTRATION_TOKEN: sin él el kernel no acepta el registro",
+            "MODULE_REGISTRATION_TOKEN is missing: without it the kernel refuses the registration",
             file=sys.stderr,
         )
         return 1
@@ -103,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"registro fallido (intento {attempt}): {last}", file=sys.stderr)
         time.sleep(attempt * 2)
 
-    print(f"no se pudo registrar en {kernel_url}: {last}", file=sys.stderr)
+    print(f"could not register with {kernel_url}: {last}", file=sys.stderr)
     return 1
 
 

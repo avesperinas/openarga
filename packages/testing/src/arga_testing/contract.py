@@ -61,7 +61,7 @@ def contract(service: Any, manifest_path: Path) -> dict[str, Callable]:
 
     async def test_a_tool_without_a_scope_of_the_module_is_a_403() -> None:
         if not service.tools:
-            pytest.skip("este módulo no tiene tools")
+            pytest.skip("this module has no tools")
         name = next(iter(service.tools))
         async with client() as bare:
             response = await bare.post(
@@ -80,7 +80,7 @@ def contract(service: Any, manifest_path: Path) -> dict[str, Callable]:
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         if not service.ui:
-            pytest.skip("este módulo no tiene app")
+            pytest.skip("this module has no app")
         (tmp_path / "index.html").write_text("<div id=root></div>")
         (tmp_path / "assets").mkdir()
         (tmp_path / "assets" / "index-abc123.js").write_text("export {}")
@@ -104,7 +104,7 @@ def contract(service: Any, manifest_path: Path) -> dict[str, Callable]:
         schema, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         if service.publisher is None:
-            pytest.skip("este módulo no publica")
+            pytest.skip("this module does not publish")
         import httpx
 
         from arga_module import publisher as kit

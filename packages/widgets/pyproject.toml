@@ -1,7 +1,7 @@
 [project]
 name = "arga-widgets"
 version = "0.1.0"
-description = "La forma del body de cada kind de widget, del lado del módulo (T-D09)"
+description = "The body shape of each widget kind, on the module side"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "pydantic>=2.9",

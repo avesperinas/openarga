@@ -65,9 +65,7 @@ class Service:
         self.publisher = publisher
         self.ui = ui
         if ui and ui_dist is None:
-            raise ValueError(
-                f"{module_id}: una app que se sirve necesita saber dónde está construida"
-            )
+            raise ValueError(f"{module_id}: a served app needs to know where it is built")
         self._ui_dist = ui_dist
 
         self.app = FastAPI(
@@ -100,7 +98,7 @@ class Service:
     def client(self) -> httpx.AsyncClient:
         client = getattr(self.app.state, "client", None)
         if client is None:
-            raise HTTPException(status_code=503, detail="el cliente del kernel no está listo")
+            raise HTTPException(status_code=503, detail="the kernel client is not ready")
         return client
 
     def ui_dist(self) -> Path:
@@ -167,19 +165,17 @@ class Service:
                         ),
                         {"schema": self.schema},
                     )
-            except Exception as error:  # noqa: BLE001 -- cualquier fallo de conexión es "no listo"
-                raise HTTPException(
-                    status_code=503, detail=f"sin base de datos: {error}"
-                ) from error
+            except Exception as error:  # noqa: BLE001 -- any connection failure means "not ready"
+                raise HTTPException(status_code=503, detail=f"no database: {error}") from error
             if not found:
                 raise HTTPException(
                     status_code=503,
-                    detail=f"el schema '{self.schema}' no existe todavía; lo aprovisiona el kernel "
-                    f"al registrar el manifiesto",
+                    detail=f"schema '{self.schema}' does not exist yet; the kernel provisions it "
+                    f"when the manifest registers",
                 )
             if self.ui and not (self.ui_dist() / "index.html").is_file():
                 raise HTTPException(
-                    status_code=503, detail=f"la app no está construida en {self.ui_dist()}"
+                    status_code=503, detail=f"the app is not built in {self.ui_dist()}"
                 )
             return {"status": "ready", "module": module_id, "schema": self.schema}
 
@@ -196,7 +192,7 @@ class Service:
             renderer = self.widgets.get(widget_id)
             if renderer is None:
                 raise HTTPException(
-                    status_code=404, detail=f"{module_id} no tiene el widget '{widget_id}'"
+                    status_code=404, detail=f"{module_id} has no widget '{widget_id}'"
                 )
             async with self.as_reader() as connection:
                 return await renderer(connection)
@@ -204,7 +200,7 @@ class Service:
         @app.get("/panel")
         async def panel() -> dict:
             if self.panel is None:
-                raise HTTPException(status_code=404, detail=f"{module_id} no tiene panel")
+                raise HTTPException(status_code=404, detail=f"{module_id} has no panel")
             async with self.as_reader() as connection:
                 return await self.panel(connection)
 
@@ -212,17 +208,17 @@ class Service:
         async def widget_act(widget_id: str, request: Act) -> dict:
             action = self.actions.get(widget_id)
             if action is None:
-                raise HTTPException(status_code=404, detail=f"en '{widget_id}' no se tacha nada")
+                raise HTTPException(status_code=404, detail=f"nothing is ticked in '{widget_id}'")
             if request.verb == "add":
                 item_id = request.id.strip()
                 if not item_id:
-                    raise HTTPException(status_code=422, detail="no hay nada que añadir")
+                    raise HTTPException(status_code=422, detail="nothing to add")
             else:
                 try:
                     item_id = str(UUID(request.id))
                 except ValueError as error:
                     raise HTTPException(
-                        status_code=422, detail="no es algo de la tarjeta"
+                        status_code=422, detail="not an item of the card"
                     ) from error
             await self.edit(action, request.verb, item_id)
             return await widget(widget_id)
@@ -240,16 +236,12 @@ class Service:
         ) -> dict:
             tool = self.tools.get(name)
             if tool is None:
-                raise HTTPException(
-                    status_code=404, detail=f"{module_id} no tiene la tool '{name}'"
-                )
+                raise HTTPException(status_code=404, detail=f"{module_id} has no tool '{name}'")
             role = (
                 self.role_for_scopes(set(x_arga_scopes.split())) if self.role_for_scopes else None
             )
             if role is None:
-                raise HTTPException(
-                    status_code=403, detail=f"ningún scope de {module_id} en la llamada"
-                )
+                raise HTTPException(status_code=403, detail=f"no {module_id} scope in the call")
             try:
                 arguments = tool.arguments.model_validate(await request.json())
             except (ValidationError, ValueError) as error:
@@ -283,7 +275,7 @@ class Service:
                 raise HTTPException(status_code=404, detail=f"no existe: {path}")
             index = root / "index.html"
             if not index.is_file():
-                raise HTTPException(status_code=503, detail="la app no está construida")
+                raise HTTPException(status_code=503, detail="the app is not built")
             return FileResponse(index, headers={"cache-control": REVALIDATE})
 
         self.app.get(self.ui_root)(ui)

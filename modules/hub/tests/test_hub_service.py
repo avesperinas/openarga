@@ -50,7 +50,7 @@ async def test_without_its_app_built_it_is_not_ready(api, tmp_path, monkeypatch)
     response = await api.get("/readyz")
 
     assert response.status_code == 503
-    assert "no está construida" in response.json()["detail"]
+    assert "is not built" in response.json()["detail"]
 
 
 async def test_the_app_opens_at_its_view_and_any_screen_is_the_app(built) -> None:

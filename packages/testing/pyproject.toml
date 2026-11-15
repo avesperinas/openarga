@@ -1,7 +1,7 @@
 [project]
 name = "arga-testing"
 version = "0.1.0"
-description = "Lo que comparten las pruebas: el schema de un módulo recién aplicado, sin aplicarlo en cada una"
+description = "What tests share: a module's schema applied once, not in each test"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "kernel",

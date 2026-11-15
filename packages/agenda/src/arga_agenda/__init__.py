@@ -22,7 +22,7 @@ class BadDated(ValueError):
 def uid(module: str, kind: str, id: object) -> str:
     value = f"{module}:{kind}:{id}"
     if not _UID.match(value):
-        raise BadDated(f"uid inválido: {value!r} (se espera <módulo>:<clase>:<id>)")
+        raise BadDated(f"invalid uid: {value!r} (expected <module>:<class>:<id>)")
     return value
 
 
@@ -32,7 +32,7 @@ def _parse(value: Any, all_day: bool) -> Any:
     try:
         return date.fromisoformat(value) if all_day else datetime.fromisoformat(value)
     except ValueError as error:
-        raise ValueError(f"{value!r} no es {'una fecha' if all_day else 'una hora'}") from error
+        raise ValueError(f"{value!r} is not {'a date' if all_day else 'a time'}") from error
 
 
 class Dated(BaseModel):
@@ -63,7 +63,7 @@ class Dated(BaseModel):
     @classmethod
     def _uid(cls, value: str) -> str:
         if not _UID.match(value):
-            raise ValueError("se espera <módulo>:<clase>:<id>, como study:session:42")
+            raise ValueError("expected <module>:<class>:<id>, like study:session:42")
         return value
 
     @field_validator("title")
@@ -71,7 +71,7 @@ class Dated(BaseModel):
     def _title(cls, value: str) -> str:
         value = value.strip()
         if not value:
-            raise ValueError("el título no puede ir vacío")
+            raise ValueError("the title cannot be empty")
         return value
 
     @field_validator("tz")
@@ -80,7 +80,7 @@ class Dated(BaseModel):
         try:
             ZoneInfo(value)
         except (ZoneInfoNotFoundError, ValueError) as error:
-            raise ValueError(f"{value!r} no es una zona IANA, como Europe/Madrid") from error
+            raise ValueError(f"{value!r} is not an IANA time zone, like Europe/Madrid") from error
         return value
 
     @model_validator(mode="after")
@@ -88,25 +88,25 @@ class Dated(BaseModel):
         if self.all_day:
             for name in ("start", "end"):
                 if type(getattr(self, name)) is not date:
-                    raise ValueError(f"todo el día: {name} es una fecha, sin hora")
+                    raise ValueError(f"all day: {name} is a date, without a time")
             if self.end <= self.start:
-                raise ValueError("todo el día: el fin es exclusivo, un día acaba al siguiente")
+                raise ValueError("all day: the end is exclusive, a day ends on the next one")
         else:
             for name in ("start", "end"):
                 value = getattr(self, name)
                 if not isinstance(value, datetime):
-                    raise ValueError(f"con hora: {name} lleva hora")
+                    raise ValueError(f"timed: {name} carries a time")
                 if value.utcoffset() is None:
-                    raise ValueError(f"con hora: {name} lleva zona (+02:00), no una hora suelta")
+                    raise ValueError(f"timed: {name} carries a zone (+02:00), not a bare time")
             if self.end < self.start:
-                raise ValueError("el fin no puede ir antes del inicio")
+                raise ValueError("the end cannot be before the start")
 
         module = self.uid.split(":", 1)[0]
         if not _HREF.match(self.href) or not (
             self.href == f"/{module}"
             or self.href.startswith((f"/{module}/", f"/{module}?", f"/{module}#"))
         ):
-            raise ValueError(f"href es una ruta de la app de {module}, como /{module}/…")
+            raise ValueError(f"href is a path of the {module} app, like /{module}/…")
         return self
 
 
@@ -122,7 +122,7 @@ def validate(payload: dict[str, Any]) -> dict[str, Any]:
     try:
         return Dated.model_validate(payload).model_dump(mode="json")
     except ValidationError as error:
-        raise BadDated(f"no casa con la forma común: {_explain(error)}") from None
+        raise BadDated(f"does not match the common shape: {_explain(error)}") from None
 
 
 def dated(**fields: Any) -> dict[str, Any]:
@@ -131,7 +131,7 @@ def dated(**fields: Any) -> dict[str, Any]:
 
 def check_event(payload: dict[str, Any]) -> dict[str, Any]:
     if KEY not in payload:
-        raise BadDated(f"el payload no lleva la clave {KEY!r}")
+        raise BadDated(f"the payload has no {KEY!r} key")
     return validate(payload[KEY])
 
 

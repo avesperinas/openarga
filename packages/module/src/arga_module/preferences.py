@@ -7,6 +7,7 @@ from dataclasses import dataclass, replace
 from zoneinfo import ZoneInfo
 
 from arga_module.i18n import LOCALES, SOURCE
+from arga_widgets.panel import language_from
 
 HEADERS = {
     "locale": "x-arga-locale",
@@ -71,3 +72,6 @@ def use(preferences: Preferences) -> Token[Preferences | None]:
 
 def reset(token: Token[Preferences | None]) -> None:
     _current.reset(token)
+
+
+language_from(lambda: current().locale)

@@ -136,7 +136,7 @@ def test_the_tasks_of_a_widget_become_ticks_with_a_readable_date():
         },
     }
     (block,) = blocks_of("tasks", envelope, label="Hoy", widget="today")
-    assert [item.get("due") for item in block["items"]] == ["4 nov", "a las 10:00", None]
+    assert [item.get("due") for item in block["items"]] == ["4 Nov", "a las 10:00", None]
     assert block["items"][0]["overdue"] is True
     panel("day", tabs=[{"id": "t", "label": "T", "blocks": [block]}])
 
@@ -158,7 +158,7 @@ def test_an_agenda_keeps_its_first_day_apart_from_what_comes_later():
     timeline, today, later = blocks_of("agenda", envelope, label="Hoy")
     assert [item["title"] for item in timeline["items"]] == ["Daily"]
     assert today["rows"] == [{"label": "Daily", "value": "09:00"}]
-    assert later["rows"] == [{"label": "Dentista", "value": "7 nov · 08:00"}]
+    assert later["rows"] == [{"label": "Dentista", "value": "7 Nov · 08:00"}]
 
 
 def test_an_agenda_with_nothing_today_does_not_call_tomorrow_today():
@@ -174,7 +174,7 @@ def test_an_agenda_with_nothing_today_does_not_call_tomorrow_today():
         },
     }
     (later,) = blocks_of("agenda", envelope, label="Hoy", today=date(2026, 11, 11))
-    assert later["label"] == "Después"
+    assert later["label"] == "Later"
     assert [row["label"] for row in later["rows"]] == ["Clase", "Cena"]
     timeline, today = blocks_of("agenda", envelope, label="Hoy", today=date(2026, 11, 12))
     assert len(timeline["items"]) == 2
@@ -210,3 +210,21 @@ async def test_a_widget_that_breaks_does_not_take_the_ones_after_it():
     found = await gather(connection, {"a": broken, "b": fine}, ["a", "b", "missing"])
     assert list(found) == ["b"]
     assert (connection.savepoints, connection.rolled_back) == (2, 1)
+
+
+def test_panel_words_follow_the_language() -> None:
+    from datetime import date
+
+    from arga_widgets.panel import language_from
+
+    envelope = {
+        "state": "ready",
+        "body": {"entries": [{"start": "2026-11-12T18:30:00+01:00", "title": "Class"}]},
+    }
+    try:
+        language_from(lambda: "es")
+        (later,) = blocks_of("agenda", envelope, label="Today", today=date(2026, 11, 11))
+        assert later["label"] != "Later"
+        assert later["rows"][0]["value"].startswith("12 nov")
+    finally:
+        language_from(lambda: "en")

@@ -80,7 +80,7 @@ async def test_without_tools_or_widgets_they_are_404(client) -> None:
 
 
 def test_an_app_that_is_served_says_where_it_is_built() -> None:
-    with pytest.raises(ValueError, match="construida"):
+    with pytest.raises(ValueError, match="where it is built"):
         Service("demo", "Demo")
     assert Service("demo", "Demo", ui=False).ui is False
 
