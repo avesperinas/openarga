@@ -9,7 +9,7 @@ import httpx
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from arga_contracts.ai import RunRequest, RunResponse
+from arga_contracts.ai import RunRequest, RunResponse, StatusRequest, StatusResponse
 from arga_tenancy import as_user, format_spaces, kernel_url
 from hub.ai import ledger, settings
 from hub.ai.providers import Fake, Provider, ProviderError, ToolResult, Usage
@@ -37,6 +37,13 @@ ENQUEUE = text("""
                                 web, max_steps)
     values (:app, 'run', :role, :provider, :model, :key, :status, :task, :web, :max_steps)
     returning id
+""")
+
+LATEST = text("""
+    select id, status, summary, detail, provider, model, started_at, finished_at
+    from hub.ai_attempt
+    where capability = 'run' and app = :app and run_key = :key
+    order by started_at desc limit 1
 """)
 
 QUEUED = text("""
@@ -106,6 +113,24 @@ async def enqueue(module: str, body: dict) -> dict:
         ).model_dump()
     return RunResponse(
         status="queued", run_id=str(attempt), provider=found.provider, model=model
+    ).model_dump()
+
+
+async def status(module: str, body: dict) -> dict:
+    request = StatusRequest.model_validate(body)
+    async with as_module() as connection:
+        found = (await connection.execute(LATEST, {"app": module, "key": request.key})).first()
+    if found is None:
+        return StatusResponse(status="unknown").model_dump()
+    return StatusResponse(
+        status=found.status,
+        run_id=str(found.id),
+        summary=found.summary,
+        detail=found.detail,
+        provider=found.provider,
+        model=found.model,
+        started_at=found.started_at.isoformat() if found.started_at else None,
+        finished_at=found.finished_at.isoformat() if found.finished_at else None,
     ).model_dump()
 
 

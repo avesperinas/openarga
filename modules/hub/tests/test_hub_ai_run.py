@@ -214,3 +214,25 @@ async def test_web_fetch_reads_a_page_as_text() -> None:
     web = Web(httpx.AsyncClient(transport=httpx.MockTransport(reply)))
     shown = await web.fetch("http://93.184.216.34/agenda")
     assert "Jazz" in shown and "Friday & Saturday" in shown and "p{}" not in shown
+
+
+async def test_the_status_of_a_run_is_read_without_starting_it(clean) -> None:
+    assert (await ai.status("outings", {"key": ASK["key"]}))["status"] == "unknown"
+    queued = await ai.run("outings", ASK)
+
+    seen = await ai.status("outings", {"key": ASK["key"]})
+    assert (seen["status"], seen["run_id"], seen["model"]) == (
+        "queued",
+        queued["run_id"],
+        "scripted",
+    )
+    assert (await ai.status("insights", {"key": ASK["key"]}))["status"] == "unknown"
+
+    async with as_module() as connection:
+        await connection.execute(
+            text("update hub.ai_attempt set status = 'failed', detail = 'the model refused'")
+        )
+    for _ in range(3):
+        failed = await ai.status("outings", {"key": ASK["key"]})
+        assert (failed["status"], failed["detail"]) == ("failed", "the model refused")
+    assert len(await attempts()) == 1
