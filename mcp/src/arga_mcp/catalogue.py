@@ -52,7 +52,7 @@ class Catalogue:
 
     def module_url(self, module: str) -> str:
         if not MODULE_ID.match(module):
-            raise ValueError(f"id de módulo inválido en el catálogo: {module!r}")
+            raise ValueError(f"invalid module id in the catalogue: {module!r}")
         return self.module_url_template.format(module=module).rstrip("/")
 
     async def _schemas(self, module: str) -> dict[str, dict[str, Any]]:

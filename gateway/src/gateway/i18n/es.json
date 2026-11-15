@@ -1,0 +1,11 @@
+{
+  "login.again": "Volver a entrar",
+  "login.expired": "El inicio de sesión caducó o empezó en otra ventana.",
+  "login.failed": "No se pudo terminar de entrar",
+  "login.mismatch": "Esta respuesta no corresponde a tu inicio de sesión.",
+  "login.refused": "El servidor de autorización no aceptó este inicio de sesión.",
+  "login.unreachable": "El servidor de autorización no contesta. Prueba en un momento.",
+  "logout.body": "Tu sesión está cerrada y lo guardado en este dispositivo, borrado.",
+  "logout.enter": "Entrar",
+  "logout.title": "Has salido de arga"
+}

@@ -1,0 +1,11 @@
+{
+  "login.again": "Sign in again",
+  "login.expired": "The sign-in expired or started in another window.",
+  "login.failed": "Could not finish signing in",
+  "login.mismatch": "This answer does not belong to your sign-in.",
+  "login.refused": "The authorisation server did not accept this sign-in.",
+  "login.unreachable": "The authorisation server does not answer. Try again in a moment.",
+  "logout.body": "Your session is closed and what was stored on this device, erased.",
+  "logout.enter": "Sign in",
+  "logout.title": "You have left OpenArga"
+}
