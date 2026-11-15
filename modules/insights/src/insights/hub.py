@@ -16,6 +16,12 @@ class Unavailable(Exception):
     pass
 
 
+class Refused(Unavailable):
+    def __init__(self, detail: str, status: int) -> None:
+        super().__init__(detail)
+        self.status = status
+
+
 def timeout() -> float:
     return float(os.environ.get("HUB_TIMEOUT_SECONDS", "30"))
 
@@ -34,13 +40,16 @@ async def ask(capability: str, body: dict[str, Any]) -> dict[str, Any]:
                 timeout=timeout(),
             )
     except httpx.HTTPError as error:
-        raise Unavailable(f"el kernel no contesta ({type(error).__name__})") from error
+        raise Unavailable(f"the kernel does not answer ({type(error).__name__})") from error
     if response.status_code != 200:
         try:
             detail = response.json().get("detail")
         except ValueError:
             detail = None
-        raise Unavailable(str(detail or f"{capability} contesta {response.status_code}"))
+        problem = str(detail or f"{capability} answers {response.status_code}")
+        if response.status_code in (403, 429, 503):
+            raise Refused(problem, response.status_code)
+        raise Unavailable(problem)
     return response.json()
 
 

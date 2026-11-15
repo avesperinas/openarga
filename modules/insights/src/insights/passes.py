@@ -1,21 +1,17 @@
 from __future__ import annotations
 
 import json
-import os
 from datetime import date, datetime, timedelta
 from typing import Any, Literal
 
-import httpx
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_tenancy import kernel_url, user_headers
-from insights import clock, insights, signals, talk
+from insights import clock, insights, runs, signals, talk
 from insights.words import say
 
 MODULE = "insights"
-CAPABILITY = "claude.run"
 MORNING_FROM, MORNING_UNTIL = 7, 21
 WEEKLY_FROM = 18
 WEEKLY_UNTIL_MONDAY = 12
@@ -52,11 +48,7 @@ ASKED_AS = "'insights:' || r.key || case when r.attempt > 1 then '#' || r.attemp
 RUN = text("select outcome, attempt from insights.insights_run where key = :key")
 
 FINISHED = text("""
-    select payload->>'outcome' as outcome, payload->>'detail' as detail,
-           payload->>'code' as code, payload->>'ran_with' as ran_with
-    from insights.events
-    where type = 'hub.run' and payload->>'key' = :key
-    order by ts desc limit 1
+    select outcome, detail, code, ran_with from insights.insights_ended where key = :key
 """)
 
 SEEN = text(f"""
@@ -64,9 +56,8 @@ SEEN = text(f"""
     where r.kind = 'morning' and r.outcome = 'queued' and r.key <> :key
       and r.asked_at > now() - make_interval(days => :days)
       and exists (
-          select 1 from insights.events e
-          where e.type = 'hub.run' and e.payload->>'key' = {ASKED_AS}
-            and e.payload->>'outcome' = 'ok'
+          select 1 from insights.insights_ended e
+          where e.key = {ASKED_AS} and e.outcome = 'ok'
       )
 """)
 
@@ -271,38 +262,15 @@ def weekly_brief(
     return "\n".join(lines)
 
 
-def timeout() -> float:
-    return float(os.environ.get("HUB_TIMEOUT_SECONDS", "30"))
-
-
-def transport() -> httpx.AsyncBaseTransport | None:
-    return None
-
-
-async def ask(key: str, prompt: str, tools: tuple[str, ...] = ()) -> dict[str, Any]:
-    body: dict[str, Any] = {"key": key, "prompt": prompt, "wait_for_room": True}
-    if tools:
-        body["tools"] = list(tools)
-    try:
-        async with httpx.AsyncClient(transport=transport()) as client:
-            response = await client.post(
-                f"{kernel_url()}/internal/capabilities/{CAPABILITY}",
-                json=body,
-                headers={**user_headers(), "x-arga-module": MODULE},
-                timeout=timeout(),
-            )
-    except httpx.HTTPError as error:
-        return {"outcome": "error", "detail": f"Hub does not answer ({type(error).__name__})"}
-    if response.status_code != 200:
-        return {"outcome": "error", "detail": f"Hub answers {response.status_code}"}
-    return response.json()
+async def ask(key: str, prompt: str, web: bool = False) -> dict[str, Any]:
+    return await runs.start(key, prompt, web)
 
 
 NOT_GRANTED = "Insights is not allowed to use your AI: allow it in Hub."
 
 
 def refused_detail(answer: dict[str, Any]) -> str | None:
-    if answer.get("outcome") in ("queued", "running") or answer.get("repeated"):
+    if answer.get("outcome") == "queued":
         return None
     if answer.get("code") == "not_granted":
         return NOT_GRANTED

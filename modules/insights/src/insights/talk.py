@@ -1,20 +1,16 @@
 from __future__ import annotations
 
-import os
 from datetime import datetime
 from typing import Literal
 
-import httpx
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_tenancy import kernel_url, user_headers
 from insights import insights
 from insights.words import say
 
 MODULE = "insights"
-CAPABILITY = "claude.run"
 HISTORY = 30
 
 
@@ -144,12 +140,9 @@ async def remove(connection: AsyncConnection, thread_id: str) -> None:
 
 
 LAST_RUN = text("""
-    select payload->>'outcome' as outcome, payload->>'code' as code,
-           payload->>'detail' as detail
-    from insights.events
-    where type = 'hub.run' and payload->>'key' like :key
-      and ts >= :since
-    order by ts desc limit 1
+    select outcome, code, detail from insights.insights_ended
+    where key like :key and ended_at >= :since
+    order by ended_at desc limit 1
 """)
 
 
@@ -275,30 +268,14 @@ def said_day(moment: datetime) -> str:
     return f"{moment:%A} {moment.day} {moment:%B} {moment.year}"
 
 
-def timeout() -> float:
-    return float(os.environ.get("HUB_TIMEOUT_SECONDS", "30"))
-
-
-def transport() -> httpx.AsyncBaseTransport | None:
-    return None
-
-
 async def ask(key: str, prompt: str) -> str | None:
-    try:
-        async with httpx.AsyncClient(transport=transport()) as client:
-            response = await client.post(
-                f"{kernel_url()}/internal/capabilities/{CAPABILITY}",
-                json={"key": key, "prompt": prompt},
-                headers={**user_headers(), "x-arga-module": MODULE},
-                timeout=timeout(),
-            )
-    except httpx.HTTPError as error:
-        return say("chat.hub_silent", error=type(error).__name__)
-    if response.status_code != 200:
-        return say("chat.hub_refused", status=response.status_code)
-    answer = response.json()
-    if answer.get("outcome") in ("queued", "running") or answer.get("repeated"):
+    from insights import runs
+
+    answer = await runs.start(key, prompt)
+    if answer.get("outcome") == "queued":
         return None
     if answer.get("code") == "not_granted":
         return say("chat.not_granted")
+    if answer.get("code") == "rate_limited":
+        return say("chat.rate_limited")
     return answer.get("detail") or say("chat.not_noted")

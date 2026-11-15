@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import json
-
-import httpx
 import pytest
+from insights_hub import FakeHub, install, settle
 from insights_world import insight
 
 from insights import talk
@@ -11,24 +9,9 @@ from insights import talk
 WRITE = {"x-arga-scopes": "insights:read insights:write"}
 
 
-class FakeHub:
-    def __init__(self, answer: dict | None = None, status: int = 200) -> None:
-        self.asked: list[dict] = []
-        self.answer = answer or {"outcome": "queued", "run": "r", "repeated": False}
-        self.status = status
-
-    def __call__(self, request: httpx.Request) -> httpx.Response:
-        assert request.url.path == "/internal/capabilities/claude.run"
-        assert request.headers["x-arga-module"] == "insights"
-        self.asked.append(json.loads(request.content))
-        return httpx.Response(self.status, json=self.answer)
-
-
 @pytest.fixture
 def hub(monkeypatch) -> FakeHub:
-    fake = FakeHub()
-    monkeypatch.setattr(talk, "transport", lambda: httpx.MockTransport(fake))
-    return fake
+    return install(monkeypatch, FakeHub())
 
 
 async def test_saying_something_asks_your_claude_with_the_whole_thread(api, hub) -> None:
@@ -40,8 +23,8 @@ async def test_saying_something_asks_your_claude_with_the_whole_thread(api, hub)
     assert [m["author"] for m in started["messages"]] == ["person"]
     (asked,) = hub.asked
     assert asked["key"] == f"thread:{started['messages'][0]['id']}"
-    assert "tools" not in asked or asked["tools"] == []
-    prompt = asked["prompt"]
+    assert asked["web"] is False
+    prompt = asked["task"]
     assert "You are Txuri" in prompt
     assert f'thread_id "{started["id"]}"' in prompt
     assert "I want to lower my cholesterol." in prompt
@@ -74,7 +57,7 @@ async def test_following_up_sends_what_was_said_before(api, hub) -> None:
 
     await api.post(f"/threads/{started['id']}/messages", json={"text": "Second"})
 
-    prompt = hub.asked[-1]["prompt"]
+    prompt = hub.asked[-1]["task"]
     assert "[Person] First\n[Insights] Answer\n[Person] Second" in prompt
 
 
@@ -87,12 +70,11 @@ async def test_answering_an_insight_carries_it(api, hub) -> None:
     ).json()
 
     assert started["title"] == "Restaurants, 60 % above your usual"
-    assert "412 € against 258 (your 12-month average)" in hub.asked[-1]["prompt"]
+    assert "412 € against 258 (your 12-month average)" in hub.asked[-1]["task"]
 
 
 async def test_without_permission_the_thread_says_where_to_give_it(api, monkeypatch) -> None:
-    fake = FakeHub({"outcome": "skipped", "code": "not_granted"})
-    monkeypatch.setattr(talk, "transport", lambda: httpx.MockTransport(fake))
+    install(monkeypatch, FakeHub(refuse=403))
 
     started = (await api.post("/threads", json={"text": "Hola"})).json()
 
@@ -101,10 +83,9 @@ async def test_without_permission_the_thread_says_where_to_give_it(api, monkeypa
 
 
 async def test_asking_again_uses_a_new_key(api, monkeypatch) -> None:
-    fake = FakeHub({"outcome": "skipped", "code": "not_granted"})
-    monkeypatch.setattr(talk, "transport", lambda: httpx.MockTransport(fake))
+    fake = install(monkeypatch, FakeHub(refuse=403))
     started = (await api.post("/threads", json={"text": "Hola"})).json()
-    fake.answer = {"outcome": "queued"}
+    fake.refuse = None
 
     again = (await api.post(f"/threads/{started['id']}/retry")).json()
 
@@ -126,20 +107,9 @@ def test_the_day_is_written_out() -> None:
     assert talk.said_day(datetime(2026, 10, 8)) == "Thursday 8 October 2026"
 
 
-async def ran(schema, key: str, outcome: str, code: str | None = None, detail: str | None = None):
-    from datetime import UTC, datetime
-
-    from sqlalchemy import text
-
-    payload = {"operation": "run", "outcome": outcome, "code": code, "detail": detail, "key": key}
-    async with schema.begin() as connection:
-        await connection.execute(
-            text(
-                "insert into kernel.events (ts, module, source, type, payload, dedup_hash) "
-                "values (:ts, 'hub', 'claude', 'hub.run', cast(:p as jsonb), :d)"
-            ),
-            {"ts": datetime.now(UTC), "p": json.dumps(payload), "d": f"run:{key}"},
-        )
+async def ran(hub: FakeHub, key: str, status: str, detail: str | None = None) -> None:
+    hub.end(key, status, detail)
+    await settle()
 
 
 async def asked(api, hub) -> tuple[str, str]:
@@ -147,9 +117,9 @@ async def asked(api, hub) -> tuple[str, str]:
     return started["id"], hub.asked[-1]["key"]
 
 
-async def test_a_pass_that_failed_stops_the_wait_and_says_why(api, hub, schema) -> None:
+async def test_a_pass_that_failed_stops_the_wait_and_says_why(api, hub) -> None:
     thread_id, key = await asked(api, hub)
-    await ran(schema, f"insights:{key}", "error", detail="the MCP did not answer")
+    await ran(hub, key, "failed", detail="the MCP did not answer")
 
     thread = (await api.get(f"/threads/{thread_id}")).json()
 
@@ -157,18 +127,18 @@ async def test_a_pass_that_failed_stops_the_wait_and_says_why(api, hub, schema) 
     assert thread["problem"] == "It could not answer: the MCP did not answer"
 
 
-async def test_the_usage_limit_is_said_as_such(api, hub, schema) -> None:
+async def test_the_usage_limit_is_said_as_such(api, hub) -> None:
     thread_id, key = await asked(api, hub)
-    await ran(schema, f"insights:{key}", "rate_limited")
+    await ran(hub, key, "over_budget")
 
     listed = (await api.get("/threads")).json()
 
     assert listed[0]["problem"].startswith("You reached your AI usage limit")
 
 
-async def test_a_pass_that_ended_without_replying_says_so(api, hub, schema) -> None:
+async def test_a_pass_that_ended_without_replying_says_so(api, hub) -> None:
     thread_id, key = await asked(api, hub)
-    await ran(schema, f"insights:{key}", "ok")
+    await ran(hub, key, "done")
 
     thread = (await api.get(f"/threads/{thread_id}")).json()
 
@@ -178,18 +148,16 @@ async def test_a_pass_that_ended_without_replying_says_so(api, hub, schema) -> N
 async def test_a_pass_that_replied_leaves_nothing_to_say(api, hub, schema) -> None:
     thread_id, key = await asked(api, hub)
     await api.post("/tools/reply", json={"thread_id": thread_id, "text": "Bien."}, headers=WRITE)
-    await ran(schema, f"insights:{key}", "ok")
+    await ran(hub, key, "done")
 
     thread = (await api.get(f"/threads/{thread_id}")).json()
 
     assert thread["problem"] is None and thread["waiting_since"] is None
 
 
-async def test_another_questions_pass_does_not_count(api, hub, schema) -> None:
+async def test_another_questions_pass_does_not_count(api, hub) -> None:
     thread_id, _ = await asked(api, hub)
-    await ran(
-        schema, "insights:thread:00000000-0000-4000-8000-000000000000", "error", detail="another"
-    )
+    await ran(hub, "thread:00000000-0000-4000-8000-000000000000", "failed", detail="another")
 
     thread = (await api.get(f"/threads/{thread_id}")).json()
 

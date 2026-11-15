@@ -227,11 +227,7 @@ ASK_COLUMNS = (
 )
 
 FINISHED = text("""
-    select payload->>'outcome' as outcome, payload->>'detail' as detail,
-           payload->>'code' as code
-    from insights.events
-    where type = 'hub.run' and payload->>'key' = :key
-    order by ts desc limit 1
+    select outcome, detail, code from insights.insights_ended where key = :key
 """)
 
 

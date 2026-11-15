@@ -15,8 +15,7 @@ database:
 
 connectors: []
 
-uses: [claude.run, notify.sync, books.search, books.cover, podcasts.search, films.search, books.want]
-consumes: [hub.run]
+uses: [ai.run, ai.status, notify.sync, books.search, books.cover, podcasts.search, films.search, books.want]
 receives: [metric, record]
 publishes:
   - type: insights.record

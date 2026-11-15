@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-import json
 import random
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
-import httpx
 import pytest
+from insights_hub import FakeHub, install
 from insights_taste_world import pill
 
 from arga_tenancy import as_user
-from insights import craft, passes, voice
+from insights import craft, voice
 from insights.main import as_role
 
 MADRID = ZoneInfo("Europe/Madrid")
@@ -91,13 +90,8 @@ def test_without_the_voice_on_disk_there_is_none(tmp_path, monkeypatch) -> None:
 
 
 @pytest.fixture
-def hub(monkeypatch) -> None:
-
-    def answer(request: httpx.Request) -> httpx.Response:
-        json.loads(request.content)
-        return httpx.Response(200, json={"outcome": "queued", "run": "r", "repeated": False})
-
-    monkeypatch.setattr(passes, "transport", lambda: httpx.MockTransport(answer))
+def hub(monkeypatch) -> FakeHub:
+    return install(monkeypatch, FakeHub())
 
 
 async def publish(api, key: str, **overrides) -> str:
