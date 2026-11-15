@@ -11,8 +11,7 @@ from pydantic import BaseModel, Field, ValidationError, model_validator
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_recurrence import Rule
-from study import class_notes, notes, studies, timetable
-from study.studies import LOCAL
+from study import class_notes, clock, notes, studies, timetable
 
 MODULE = "study"
 WRITE_ROLE = f"mod_{MODULE}"
@@ -78,8 +77,8 @@ def _session(one: studies.SessionBrief) -> dict[str, Any]:
         "course": one.course,
         "title": one.title,
         "kind": one.kind,
-        "starts_at": one.starts_at.astimezone(LOCAL).isoformat(),
-        "ends_at": one.ends_at.astimezone(LOCAL).isoformat(),
+        "starts_at": one.starts_at.astimezone(clock.zone()).isoformat(),
+        "ends_at": one.ends_at.astimezone(clock.zone()).isoformat(),
         "place": one.place,
         "url": one.url,
         "status": one.status,
@@ -149,8 +148,8 @@ async def get_week(connection: AsyncConnection, arguments: GetWeek) -> dict[str,
     last = arguments.until or first + timedelta(days=6)
     if last < first:
         raise studies.Conflict("the last day goes after the first")
-    start = datetime.combine(first, time(0), tzinfo=LOCAL)
-    end = datetime.combine(last + timedelta(days=1), time(0), tzinfo=LOCAL)
+    start = datetime.combine(first, time(0), tzinfo=clock.zone())
+    end = datetime.combine(last + timedelta(days=1), time(0), tzinfo=clock.zone())
     found = await timetable.sessions(connection, start, end)
     due = await studies.assessments(connection, since=first, until=last + timedelta(days=1))
     return {
@@ -212,7 +211,7 @@ async def find_notes(
                 "title": hit.title,
                 "course": hit.course,
                 "subject": hit.subject,
-                "session_start": hit.session_start.astimezone(LOCAL).isoformat()
+                "session_start": hit.session_start.astimezone(clock.zone()).isoformat()
                 if hit.session_start
                 else None,
                 "fragment": hit.fragment,
@@ -467,7 +466,7 @@ def _note(one: notes.NoteBrief) -> dict[str, Any]:
         "note_id": one.id,
         "title": one.title,
         "subject": one.subject,
-        "session_start": one.session_start.astimezone(LOCAL).isoformat()
+        "session_start": one.session_start.astimezone(clock.zone()).isoformat()
         if one.session_start
         else None,
         "excerpt": one.excerpt,
@@ -842,7 +841,7 @@ async def delete_schedule(connection: AsyncConnection, arguments: DeleteSchedule
 
 
 def _local(moment: datetime) -> datetime:
-    return moment if moment.tzinfo else moment.replace(tzinfo=LOCAL)
+    return moment if moment.tzinfo else moment.replace(tzinfo=clock.zone())
 
 
 class AddSession(BaseModel):

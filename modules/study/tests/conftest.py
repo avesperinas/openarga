@@ -101,3 +101,8 @@ async def notebook(schema, database_url, monkeypatch):
         cached.cache_clear()
     async with schema.begin() as connection:
         await connection.execute(text("delete from kernel.modules where id = 'notebook'"))
+
+
+@pytest.fixture(autouse=True)
+def madrid(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENARGA_TIMEZONE", "Europe/Madrid")

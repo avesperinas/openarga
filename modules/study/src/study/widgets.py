@@ -5,8 +5,7 @@ from datetime import datetime, time, timedelta
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets import envelope
-from study import grades, outbox, studies, timetable
-from study.studies import LOCAL
+from study import clock, grades, outbox, studies, timetable
 from study.words import say
 
 KINDS = {"upnext": "upnext", "progress": "progress", "average": "kpi"}
@@ -21,7 +20,7 @@ async def _current(connection: AsyncConnection, track: studies.Track) -> studies
 
 
 async def upnext(connection: AsyncConnection) -> dict:
-    now = datetime.now(LOCAL)
+    now = clock.now()
     found = await timetable.sessions(connection, now, now + timedelta(days=14))
     events = [
         (
@@ -39,7 +38,7 @@ async def upnext(connection: AsyncConnection) -> dict:
             or item.due_on > now.date() + timedelta(days=14)
         ):
             continue
-        at = datetime.combine(item.due_on, item.due_time or time(23, 59), tzinfo=LOCAL)
+        at = datetime.combine(item.due_on, item.due_time or time(23, 59), tzinfo=clock.zone())
         events.append(
             (at, f"{outbox.kind_label(item.kind)}: {item.title}", item.subject or item.course)
         )

@@ -8,10 +8,12 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from study import grades, outbox
+from study import clock, grades, outbox
 from study.words import say
 
-LOCAL = ZoneInfo("Europe/Madrid")
+now = clock.now
+today = clock.today
+
 
 Kind = Literal["master", "degree", "course", "certification", "language", "other"]
 Modality = Literal["in_person", "online", "hybrid"]
@@ -27,14 +29,6 @@ class NotFound(Exception):
 
 class Conflict(Exception):
     pass
-
-
-def now() -> datetime:
-    return datetime.now(LOCAL)
-
-
-def today() -> date:
-    return now().date()
 
 
 def _clean(value: str | None) -> str | None:
@@ -92,7 +86,7 @@ class CourseIn(BaseModel):
     target_grade: float | None = Field(default=None, gt=0)
     tone: int = Field(default=1, ge=1, le=10)
     campus_url: str | None = Field(default=None, max_length=500)
-    tz: str = "Europe/Madrid"
+    tz: str | None = None
     note: str | None = Field(default=None, max_length=4000)
     tracks: list[Track] | None = Field(default=None, max_length=3)
     subjects: list[SubjectIn] = Field(default_factory=list, max_length=60)
@@ -117,7 +111,9 @@ class CourseIn(BaseModel):
 
     @field_validator("tz")
     @classmethod
-    def _tz(cls, value: str) -> str:
+    def _tz(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         try:
             ZoneInfo(value)
         except (ZoneInfoNotFoundError, ValueError) as error:
@@ -620,7 +616,7 @@ def _course_params(course: CourseIn) -> dict:
         "target_grade": course.target_grade,
         "tone": course.tone,
         "campus_url": course.campus_url,
-        "tz": course.tz,
+        "tz": course.tz or clock.zone().key,
         "note": course.note,
     }
 
@@ -1169,7 +1165,7 @@ class Home(BaseModel):
 async def home(connection: AsyncConnection, week_of: date | None = None) -> Home:
     day = week_of or today()
     monday = day - timedelta(days=day.weekday())
-    start = datetime.combine(monday, time(0), tzinfo=LOCAL)
+    start = datetime.combine(monday, time(0), tzinfo=clock.zone())
     end = start + timedelta(days=7)
     rows = (
         await connection.execute(
@@ -1194,7 +1190,9 @@ async def home(connection: AsyncConnection, week_of: date | None = None) -> Home
             Day(
                 date=current,
                 today=current == today(),
-                sessions=[s for s in sessions if s.starts_at.astimezone(LOCAL).date() == current],
+                sessions=[
+                    s for s in sessions if s.starts_at.astimezone(clock.zone()).date() == current
+                ],
                 assessments=[a for a in dated if a.due_on == current],
             )
         )
