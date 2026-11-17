@@ -15,16 +15,14 @@ def test_a_field_from_another_kind_is_rejected() -> None:
 
 def test_a_ready_body_without_its_data_is_rejected() -> None:
     with pytest.raises(BadBody) as error:
-        validate("chart", {"value": 7, "detail": "esta semana"})
+        validate("chart", {"value": 7, "detail": "this week"})
 
     assert "series" in str(error.value)
     assert "empty" in str(error.value)
 
 
 def test_the_other_states_may_carry_only_the_reason() -> None:
-    assert validate("chart", {"detail": "sin datos todavía"}, state="empty") == {
-        "detail": "sin datos todavía"
-    }
+    assert validate("chart", {"detail": "no data yet"}, state="empty") == {"detail": "no data yet"}
     assert validate("upnext", {"detail": "Google Calendar no contesta"}, state="disconnected")
 
 

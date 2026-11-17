@@ -93,7 +93,7 @@ async def test_registering_a_module_leaves_its_schema_and_role_in_place(register
             text("select 1 from pg_roles where rolname = :name"), {"name": ROLE}
         )
 
-    assert schema, "el módulo quedó registrado sin schema: registrar no significaba nada"
+    assert schema, "the module was registered without a schema: registering meant nothing"
     assert role
 
 

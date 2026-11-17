@@ -34,8 +34,8 @@ async function queueWith(...replies: Reply[]) {
   return { ...net, queue };
 }
 
-describe("lo que se puede repetir", () => {
-  it("ediciones y borrados sí; una creación, solo con su id", () => {
+describe("what can be replayed", () => {
+  it("edits and deletions yes; a creation, only with its id", () => {
     expect(repeatable("PUT", { in_cart: true })).toBe(true);
     expect(repeatable("DELETE", undefined)).toBe(true);
     expect(repeatable("POST", { name: "Leche" })).toBe(false);
@@ -46,15 +46,15 @@ describe("lo que se puede repetir", () => {
   });
 });
 
-describe("la cola sin conexión", () => {
-  it("con red, manda y contesta", async () => {
+describe("the offline queue", () => {
+  it("online, it sends and answers", async () => {
     const { queue, asked } = await queueWith(ok());
     expect(await queue.send("/api/prueba/a", "PUT", { x: 1 })).toEqual({ ok: true });
     expect(asked).toEqual(["PUT /api/prueba/a"]);
     expect(queue.state().pending).toBe(0);
   });
 
-  it("sin red guarda lo repetible y lo manda en orden al volver", async () => {
+  it("offline it keeps what is replayable and sends it in order when back", async () => {
     const { queue, asked } = await queueWith(down(), down());
     await expect(queue.send("/api/prueba/a", "PUT", { x: 1 }, { what: "a" })).rejects.toBeInstanceOf(Queued);
     await expect(queue.send("/api/prueba/b", "POST", { id: "b" }, { what: "b" })).rejects.toBeInstanceOf(Queued);
@@ -69,13 +69,13 @@ describe("la cola sin conexión", () => {
     expect(sent).toHaveBeenCalledOnce();
   });
 
-  it("lo que no se puede repetir dice que necesita red", async () => {
+  it("what cannot be replayed says it needs the network", async () => {
     const { queue } = await queueWith(down());
     await expect(queue.send("/api/prueba/a", "POST", { name: "Leche" })).rejects.toBeInstanceOf(NeedsNetwork);
     expect(queue.state().pending).toBe(0);
   });
 
-  it("sin sesión o con el servidor caído para y lo guarda todo", async () => {
+  it("without a session or with the server down it stops and keeps everything", async () => {
     const { queue } = await queueWith(down(), new Response(null, { status: 401 }), new Response(null, { status: 503 }));
     await queue.send("/api/prueba/a", "PUT", {}).catch(() => undefined);
 
@@ -85,21 +85,21 @@ describe("la cola sin conexión", () => {
     expect(queue.state().pending).toBe(1);
   });
 
-  it("lo rechazado se aparta con su motivo, sigue lo demás, y se puede reintentar u olvidar", async () => {
-    const refusal = new Response(JSON.stringify({ detail: "ya no está en la lista" }), { status: 404 });
+  it("what is refused is set aside with its reason, the rest goes on, and it can be retried or forgotten", async () => {
+    const refusal = new Response(JSON.stringify({ detail: "it is no longer on the list" }), { status: 404 });
     const { queue } = await queueWith(down(), down(), refusal, ok(), ok());
-    await queue.send("/api/prueba/a", "PUT", {}, { what: "marcar el pan" }).catch(() => undefined);
+    await queue.send("/api/prueba/a", "PUT", {}, { what: "tick the bread" }).catch(() => undefined);
     await queue.send("/api/prueba/b", "PUT", {}, { what: "marcar la leche" }).catch(() => undefined);
 
     expect(await queue.flush(true)).toEqual({ sent: 1, signedOut: false, offline: false });
     const [refused] = queue.state().refused;
-    expect(refused).toMatchObject({ what: "marcar el pan", problem: "ya no está en la lista" });
+    expect(refused).toMatchObject({ what: "tick the bread", problem: "it is no longer on the list" });
 
     await queue.retry(refused!.key!);
     expect(queue.state()).toMatchObject({ pending: 0, refused: [] });
   });
 
-  it("si entra otra persona, lo de la anterior se tira", async () => {
+  it("if another person signs in, the previous one's queue is dropped", async () => {
     const { queue } = await queueWith(down());
     await queue.send("/api/prueba/a", "PUT", {}).catch(() => undefined);
     expect(queue.state().pending).toBe(1);
@@ -108,7 +108,7 @@ describe("la cola sin conexión", () => {
     expect(queue.state().pending).toBe(0);
   });
 
-  it("no manda nada hasta saber quién mira, ni con la sesión de otra persona", async () => {
+  it("it sends nothing until it knows who is looking, nor with another person's session", async () => {
     const net = network(down());
     const queue = createOfflineQueue({ app: "prueba", store: memoryStore(), fetcher: net.fetcher });
     await expect(queue.send("/api/prueba/a", "PUT", {})).rejects.toBeInstanceOf(NeedsNetwork);

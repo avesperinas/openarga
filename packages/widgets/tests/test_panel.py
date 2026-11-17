@@ -5,7 +5,7 @@ from arga_widgets.panel import blocks_of
 
 
 def tab(blocks, **extra):
-    return {"id": "resumen", "label": "Resumen", "blocks": blocks, **extra}
+    return {"id": "summary", "label": "Summary", "blocks": blocks, **extra}
 
 
 def test_a_panel_with_every_block_seals_and_says_when():
@@ -42,11 +42,11 @@ def test_a_panel_with_every_block_seals_and_says_when():
                     },
                     {
                         "type": "tiles",
-                        "items": [{"label": "Colchón", "value": "1,5 meses", "series": [1, 2]}],
+                        "items": [{"label": "Cushion", "value": "1.5 months", "series": [1, 2]}],
                     },
                     {
                         "type": "rings",
-                        "items": [{"label": "Sueño", "value": "82", "share": 0.82, "hue": 1}],
+                        "items": [{"label": "Sleep", "value": "82", "share": 0.82, "hue": 1}],
                     },
                     {
                         "type": "timeline",
@@ -62,7 +62,7 @@ def test_a_panel_with_every_block_seals_and_says_when():
                         "type": "tasks",
                         "widget": "today",
                         "items": [{"id": "t1", "title": "Pagar la comunidad"}],
-                        "add": "Añadir una tarea",
+                        "add": "Add a task",
                     },
                     {
                         "type": "list",
@@ -92,7 +92,13 @@ def test_a_panel_with_every_block_seals_and_says_when():
                 actions=[{"label": "Abrir Money", "href": "/money/", "primary": True}],
             )
         ],
-        questions=[{"text": "¿Llego a fin de mes?", "words": ["fin de mes"], "tab": "resumen"}],
+        questions=[
+            {
+                "text": "Do I make it to the end of the month?",
+                "words": ["end of the month"],
+                "tab": "summary",
+            }
+        ],
     )
     assert found["area"] == "money"
     assert "updated_at" in found
@@ -116,7 +122,7 @@ def test_an_area_that_does_not_exist_a_link_off_site_or_a_question_to_nowhere_is
     with pytest.raises(BadPanel):
         panel("money", tabs=[tab([{"type": "alert", "text": "x", "href": "https://example.com"}])])
     with pytest.raises(BadPanel):
-        panel("money", tabs=[tab([])], questions=[{"text": "¿?", "words": ["x"], "tab": "otra"}])
+        panel("money", tabs=[tab([])], questions=[{"text": "?", "words": ["x"], "tab": "other"}])
 
 
 def test_adding_from_the_panel_is_a_verb():
@@ -128,15 +134,15 @@ def test_the_tasks_of_a_widget_become_ticks_with_a_readable_date():
         "state": "ready",
         "body": {
             "tasks": [
-                {"id": "a", "title": "Renovar el DNI", "due": "2026-11-04", "overdue": True},
-                {"id": "b", "title": "Llamar", "detail": "a las 10:00"},
-                {"id": "c", "title": "Sin fecha"},
+                {"id": "a", "title": "Renew the ID card", "due": "2026-11-04", "overdue": True},
+                {"id": "b", "title": "Call", "detail": "at 10:00"},
+                {"id": "c", "title": "Undated"},
             ],
             "checkable": True,
         },
     }
-    (block,) = blocks_of("tasks", envelope, label="Hoy", widget="today")
-    assert [item.get("due") for item in block["items"]] == ["4 Nov", "a las 10:00", None]
+    (block,) = blocks_of("tasks", envelope, label="Today", widget="today")
+    assert [item.get("due") for item in block["items"]] == ["4 Nov", "at 10:00", None]
     assert block["items"][0]["overdue"] is True
     panel("day", tabs=[{"id": "t", "label": "T", "blocks": [block]}])
 
@@ -151,14 +157,14 @@ def test_an_agenda_keeps_its_first_day_apart_from_what_comes_later():
                     "end": "2026-11-06T10:00:00+01:00",
                     "title": "Daily",
                 },
-                {"start": "2026-11-07T08:00:00+01:00", "title": "Dentista"},
+                {"start": "2026-11-07T08:00:00+01:00", "title": "Dentist"},
             ]
         },
     }
-    timeline, today, later = blocks_of("agenda", envelope, label="Hoy")
+    timeline, today, later = blocks_of("agenda", envelope, label="Today")
     assert [item["title"] for item in timeline["items"]] == ["Daily"]
     assert today["rows"] == [{"label": "Daily", "value": "09:00"}]
-    assert later["rows"] == [{"label": "Dentista", "value": "7 Nov · 08:00"}]
+    assert later["rows"] == [{"label": "Dentist", "value": "7 Nov · 08:00"}]
 
 
 def test_an_agenda_with_nothing_today_does_not_call_tomorrow_today():
@@ -173,10 +179,10 @@ def test_an_agenda_with_nothing_today_does_not_call_tomorrow_today():
             ]
         },
     }
-    (later,) = blocks_of("agenda", envelope, label="Hoy", today=date(2026, 11, 11))
+    (later,) = blocks_of("agenda", envelope, label="Today", today=date(2026, 11, 11))
     assert later["label"] == "Later"
     assert [row["label"] for row in later["rows"]] == ["Clase", "Cena"]
-    timeline, today = blocks_of("agenda", envelope, label="Hoy", today=date(2026, 11, 12))
+    timeline, today = blocks_of("agenda", envelope, label="Today", today=date(2026, 11, 12))
     assert len(timeline["items"]) == 2
     assert today["rows"][0] == {"label": "Clase", "value": "18:30"}
 

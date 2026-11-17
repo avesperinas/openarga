@@ -39,7 +39,7 @@ const reduced = (matches: boolean) => {
 };
 
 describe("useRoute", () => {
-  it("cambia de pantalla dentro de una transición de vista, ya pintada al acabar el callback", () => {
+  it("changes screen inside a view transition, already rendered when the callback ends", () => {
     reduced(false);
     const seen: string[] = [];
     (document as { startViewTransition?: unknown }).startViewTransition = vi.fn((update: () => void) => {
@@ -52,7 +52,7 @@ describe("useRoute", () => {
     expect(window.location.pathname).toBe("/demo/libro");
   });
 
-  it("con movimiento reducido o sin la API, cambia sin transición", () => {
+  it("with reduced motion or without the API, it changes without a transition", () => {
     reduced(true);
     const start = vi.fn();
     (document as { startViewTransition?: unknown }).startViewTransition = start;

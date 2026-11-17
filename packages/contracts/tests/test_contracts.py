@@ -72,10 +72,10 @@ def test_a_body_weight_that_does_not_fit_fails_where_it_is_written(fields) -> No
 def test_an_activity_is_a_name_a_start_with_its_zone_and_minutes() -> None:
     start = datetime(2026, 9, 29, 19, 0, tzinfo=ZoneInfo("Europe/Madrid"))
     assert contracts.activity(
-        id="i1:2026-09-29", name="Natación", start=start, minutes=60, tz="Europe/Madrid"
+        id="i1:2026-09-29", name="Swimming", start=start, minutes=60, tz="Europe/Madrid"
     ) == {
         "id": "i1:2026-09-29",
-        "name": "Natación",
+        "name": "Swimming",
         "start": "2026-09-29T19:00:00+02:00",
         "minutes": 60,
         "tz": "Europe/Madrid",
@@ -86,7 +86,7 @@ def test_an_activity_is_a_name_a_start_with_its_zone_and_minutes() -> None:
 @pytest.mark.parametrize(
     "fields",
     [
-        {"id": "a", "name": "Natación", "start": "2026-09-29T19:00:00", "tz": "Europe/Madrid"},
+        {"id": "a", "name": "Swimming", "start": "2026-09-29T19:00:00", "tz": "Europe/Madrid"},
         {"id": "a", "name": "", "start": "2026-09-29T19:00:00+02:00", "tz": "Europe/Madrid"},
         {"id": "a", "name": "N", "start": "2026-09-29T19:00:00+02:00", "tz": "X", "minutes": -1},
     ],
@@ -101,7 +101,7 @@ def test_a_workout_is_a_kind_a_name_and_its_exact_hours() -> None:
     found = contracts.workout(
         id="training:activity:a1",
         kind="activity",
-        name="Pádel",
+        name="Padel",
         start=datetime(2026, 10, 13, 19, 4, tzinfo=madrid),
         end=datetime(2026, 10, 13, 20, 31, tzinfo=madrid),
         tz="Europe/Madrid",
@@ -219,7 +219,7 @@ def test_a_metric_with_another_apps_key_fails_in_whoever_publishes_it() -> None:
 def test_a_metric_that_does_not_fit_fails_where_it_is_written(fields) -> None:
     good = {
         "key": "macros.protein",
-        "label": "Proteína",
+        "label": "Protein",
         "unit": "g",
         "kind": "amount",
         "day": "2026-09-29",
@@ -263,7 +263,7 @@ def test_something_in_custody_names_its_class_and_where_it_opens() -> None:
 
 
 def test_a_trip_says_its_phase_where_it_opens_and_maybe_its_days() -> None:
-    idea = contracts.trip(id="i1", title="Japón en sakura", phase="idea", href="/travel/ideas/i1")
+    idea = contracts.trip(id="i1", title="Japan in sakura", phase="idea", href="/travel/ideas/i1")
     plan = contracts.trip(
         id="t1",
         title="Budapest",
@@ -272,7 +272,7 @@ def test_a_trip_says_its_phase_where_it_opens_and_maybe_its_days() -> None:
         starts_on="2027-11-11",
         ends_on="2027-11-14",
         image="/api/travel/trips/t1/cover?size=thumb&v=1",
-        detail="4 días · 2 viajeros",
+        detail="4 days · 2 travellers",
     )
 
     assert idea["starts_on"] is None and idea["removed"] is False

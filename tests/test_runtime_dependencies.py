@@ -52,7 +52,7 @@ def source_files() -> list[tuple[str, Path]]:
         for service, root in SERVICES.items()
         for path in sorted((root / "src" / service).rglob("*.py"))
     ]
-    assert files, "no hay fuentes de servicio que comprobar"
+    assert files, "there are no service sources to check"
     return files
 
 
@@ -72,7 +72,7 @@ def test_a_service_only_imports_what_ships_with_it(service: str, path: Path) -> 
             offenders[module] = sorted(distributions)
 
     assert not offenders, (
-        f"{path.relative_to(ROOT)} importa {offenders}, que solo está en el grupo `dev`. "
-        f"En la imagen no existe: el comando falla al ejecutarse, no al construirse. "
-        f"O se declara en {service}/pyproject.toml, o no se usa desde {service}/src."
+        f"{path.relative_to(ROOT)} imports {offenders}, which is only in the `dev` group. "
+        f"It does not exist in the image: the command fails when it runs, not when it builds. "
+        f"Either declare it in {service}/pyproject.toml or do not use it from {service}/src."
     )

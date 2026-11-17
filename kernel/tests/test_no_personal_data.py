@@ -50,8 +50,8 @@ def test_no_real_email_addresses_are_committed(path: Path) -> None:
     found = personal_addresses(text)
 
     assert not found, (
-        f"{path.relative_to(ROOT)} lleva {sorted(found)}. Principio 10: los fixtures son "
-        f"sintéticos. Usa un dominio de ejemplo ({', '.join(sorted(ALLOWED_DOMAINS))})."
+        f"{path.relative_to(ROOT)} carries {sorted(found)}. Principle 10: fixtures are "
+        f"synthetic. Use an example domain ({', '.join(sorted(ALLOWED_DOMAINS))})."
     )
 
 
@@ -70,15 +70,15 @@ def test_no_credential_is_committed(path: Path) -> None:
     except (UnicodeDecodeError, FileNotFoundError):
         return
 
-    assert not PRIVATE_KEY.search(text), f"{path.relative_to(ROOT)} lleva una clave privada"
+    assert not PRIVATE_KEY.search(text), f"{path.relative_to(ROOT)} carries a private key"
     assigned = [
         found.group(0)
         for found in ASSIGNED_SECRET.finditer(text)
         if not SYNTHETIC.search(found.group(0))
     ]
     assert not assigned, (
-        f"{path.relative_to(ROOT)} asigna en claro un secreto: {assigned[0][:24]}…. Si es de "
-        f"prueba, que lo diga el valor (`prueba`, `sintetico`), o genéralo al ejecutar."
+        f"{path.relative_to(ROOT)} assigns a secret in clear: {assigned[0][:24]}…. If it is a "
+        f"test one, say so in the value (`fake`, `synthetic`), or generate it at run time."
     )
 
 
@@ -88,4 +88,4 @@ def test_the_credential_guard_catches_what_it_is_meant_to_catch() -> None:
     assert not PRIVATE_KEY.search("-----BEGIN PRIVATE KEY-----AAAA-----END PRIVATE KEY-----")
     assert ASSIGNED_SECRET.search("MONEY_CREDENTIALS_KEY=" + "ab12" * 16)
     assert not ASSIGNED_SECRET.search("MONEY_CREDENTIALS_KEY=$(openssl rand -hex 32)")
-    assert SYNTHETIC.search('SESSION_SECRET = "secreto-de-sesion-de-prueba-bastante-largo"')
+    assert SYNTHETIC.search('SESSION_SECRET = "fake-session-secret-long-enough-to-pass"')

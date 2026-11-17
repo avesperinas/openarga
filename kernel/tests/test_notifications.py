@@ -18,8 +18,8 @@ MANIFEST = {
     "name": "Avisa",
     "uses": ["notify.schedule", "notify.cancel", "notify.sync"],
     "notifications": [
-        {"kind": "due", "label": "Algo que vence", "default": True},
-        {"kind": "nudge", "label": "Un empujón", "default": False},
+        {"kind": "due", "label": "Something due", "default": True},
+        {"kind": "nudge", "label": "A nudge", "default": False},
     ],
 }
 REGISTER = text("""
@@ -89,7 +89,7 @@ def pushed(monkeypatch) -> Pushed:
 
 def device(n: int) -> dict:
     return {
-        "endpoint": f"https://push.ejemplo.com/{n}",
+        "endpoint": f"https://push.example.com/{n}",
         "keys": {"p256dh": f"clave-{n}", "auth": f"auth-{n}"},
         "name": f"Dispositivo {n}",
     }
@@ -130,8 +130,8 @@ async def test_a_scheduled_notification_reaches_every_device_of_its_person_once(
     }
     assert (await send("2026-10-06T07:00:00+00:00"))["sent"] == 1
     assert sorted(endpoint for endpoint, _ in pushed) == [
-        "https://push.ejemplo.com/1",
-        "https://push.ejemplo.com/2",
+        "https://push.example.com/1",
+        "https://push.example.com/2",
     ]
     assert pushed[0][1] == {"title": "Vence el seguro", "body": "", "href": "/arca/1"}
     assert (await send("2026-10-06T08:00:00+00:00"))["sent"] == 0
@@ -177,7 +177,7 @@ async def test_what_is_off_does_not_go_and_quiet_hours_wait(kernel, people, push
 async def test_a_dead_device_is_forgotten(kernel, people, pushed) -> None:
     ana, _ = people
     await kernel.post("/notifications/devices", json=device(1), headers=ana)
-    pushed.refuse["https://push.ejemplo.com/1"] = 410
+    pushed.refuse["https://push.example.com/1"] = 410
     await ask(kernel, ana, "notify.schedule", due())
     await send("2026-10-06T07:00:00+00:00")
     settings = (await kernel.get("/notifications", headers=ana)).json()
@@ -259,7 +259,7 @@ def test_the_same_seed_is_the_same_key_and_signs() -> None:
     again, same = notifications.keypair("semilla-sintetica")
     assert public == same
     assert notifications.keypair("otra")[1] != public
-    headers = signer.sign({"aud": "https://push.ejemplo.com", "sub": "https://arga.ejemplo.com"})
+    headers = signer.sign({"aud": "https://push.example.com", "sub": "https://arga.ejemplo.com"})
     assert headers["Authorization"].startswith("vapid t=")
 
 
@@ -342,18 +342,18 @@ async def test_a_push_service_that_does_not_answer_is_tried_again_and_stops_no_o
     ana, luis = people
     await kernel.post("/notifications/devices", json=device(1), headers=ana)
     await kernel.post("/notifications/devices", json=device(2), headers=luis)
-    pushed.refuse["https://push.ejemplo.com/1"] = None
+    pushed.refuse["https://push.example.com/1"] = None
     await ask(kernel, ana, "notify.schedule", due("de-ana"))
     await ask(kernel, luis, "notify.schedule", due("de-luis"))
 
     found = await send("2026-10-06T07:00:00+00:00")
     assert found["sent"] == 1 and found["retrying"] == 1
-    assert [endpoint for endpoint, _ in pushed] == ["https://push.ejemplo.com/2"]
+    assert [endpoint for endpoint, _ in pushed] == ["https://push.example.com/2"]
     why, gone, attempts = await outcome_of("de-ana")
     assert not gone and attempts == 1 and "sin respuesta" in why
 
     assert (await send("2026-10-06T07:04:00+00:00"))["retrying"] == 0
-    del pushed.refuse["https://push.ejemplo.com/1"]
+    del pushed.refuse["https://push.example.com/1"]
     assert (await send("2026-10-06T07:05:00+00:00"))["sent"] == 1
     why, gone, _ = await outcome_of("de-ana")
     assert gone and why == "sent to 1 of 1"
@@ -362,7 +362,7 @@ async def test_a_push_service_that_does_not_answer_is_tried_again_and_stops_no_o
 async def test_what_keeps_failing_ends_and_says_why(kernel, people, pushed) -> None:
     ana, _ = people
     await kernel.post("/notifications/devices", json=device(1), headers=ana)
-    pushed.refuse["https://push.ejemplo.com/1"] = 503
+    pushed.refuse["https://push.example.com/1"] = 503
     await ask(kernel, ana, "notify.schedule", due())
     for minute in ("07:00", "07:05", "07:20", "08:00"):
         await send(f"2026-10-06T{minute}:00+00:00")
@@ -373,7 +373,7 @@ async def test_what_keeps_failing_ends_and_says_why(kernel, people, pushed) -> N
 async def test_a_refusal_is_not_retried_and_the_device_says_it(kernel, people, pushed) -> None:
     ana, _ = people
     await kernel.post("/notifications/devices", json=device(1), headers=ana)
-    pushed.refuse["https://push.ejemplo.com/1"] = 403
+    pushed.refuse["https://push.example.com/1"] = 403
     await ask(kernel, ana, "notify.schedule", due())
     found = await send("2026-10-06T07:00:00+00:00")
     assert found["sent"] == 1 and found["retrying"] == 0
@@ -406,7 +406,7 @@ def test_each_push_has_a_time_limit_and_a_network_error_is_said(monkeypatch) -> 
     monkeypatch.setattr(pywebpush, "webpush", hanging)
 
     class Subscription:
-        endpoint, p256dh, auth = "https://push.ejemplo.com/1", "clave", "auth"
+        endpoint, p256dh, auth = "https://push.example.com/1", "clave", "auth"
 
     keys = (notifications.keypair("semilla-sintetica")[0], "", "https://arga.ejemplo.com")
     refused = notifications._push(Subscription(), {"title": "t"}, keys)
@@ -418,7 +418,7 @@ def protein(missing: int, at: str = "2099-10-06T17:00:00+00:00") -> dict:
     return {
         "kind": "due",
         "key": "protein:2099-10-06",
-        "title": f"Te faltan {missing} g de proteína",
+        "title": f"{missing} g of protein to go",
         "body": f"Llevas {120 - missing} g de 120 g hoy.",
         "href": "/macros/",
         "at": at,
@@ -433,7 +433,7 @@ async def test_the_text_of_what_went_out_is_what_stays_after_two_passes_the_same
     await ask(kernel, ana, "notify.sync", {"items": [protein(60)]})
     await ask(kernel, ana, "notify.sync", {"items": [protein(40)]})
     assert (await send("2099-10-06T17:00:00+00:00"))["sent"] == 1
-    assert pushed[0][1]["title"] == "Te faltan 40 g de proteína"
+    assert pushed[0][1]["title"] == "40 g of protein to go"
 
     await ask(kernel, ana, "notify.sync", {"items": [protein(15)]})
     await ask(kernel, ana, "notify.sync", {"items": []})
@@ -441,7 +441,7 @@ async def test_the_text_of_what_went_out_is_what_stays_after_two_passes_the_same
 
     [notice] = (await kernel.get("/notifications/inbox", headers=ana)).json()
     assert (notice["title"], notice["body"]) == (
-        "Te faltan 40 g de proteína",
+        "40 g of protein to go",
         "Llevas 80 g de 120 g hoy.",
     )
     assert len(pushed) == 1

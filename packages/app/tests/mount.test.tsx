@@ -31,11 +31,11 @@ async function asked(id: string, api?: string): Promise<string[]> {
   return urls;
 }
 
-it("por defecto, la API se llama como la app", async () => {
+it("by default, the API is named like the app", async () => {
   expect(await asked("library")).toContain("/api/library/me");
 });
 
-it("con `api`, la de la app aunque viva en otra dirección", async () => {
+it("with `api`, the app's own even if it lives at another address", async () => {
   const urls = await asked("kpis", "goals");
   expect(urls).toContain("/api/goals/me");
   expect(urls).not.toContain("/api/kpis/me");

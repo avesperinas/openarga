@@ -120,7 +120,7 @@ async def test_the_matcher_sees_the_seed_the_way_it_should(api) -> None:
         entity = queue[alias]["candidate"]["id"]
         matches = (await api.get(f"/entities/{entity}/matches")).json()
         mergeable = [item["name"] for item in matches["candidates"] if item["would_merge"]]
-        assert mergeable, f"{alias} debería tener con qué fusionarse"
+        assert mergeable, f"{alias} should have something to merge with"
         assert set(mergeable) <= set(seed.SPELLINGS) - {alias}
 
     for alias in seed.LONERS:

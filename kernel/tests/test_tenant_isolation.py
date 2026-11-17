@@ -168,8 +168,8 @@ async def test_two_people_can_have_the_same_day(two_people) -> None:
 
 
 SHARED = "espacio"
-CASA = UUID("0c0c0c0c-0000-4000-8000-00000000c0c0")
-OTRO = UUID("0d0d0d0d-0000-4000-8000-00000000d0d0")
+HOME = UUID("0c0c0c0c-0000-4000-8000-00000000c0c0")
+OTHER = UUID("0d0d0d0d-0000-4000-8000-00000000d0d0")
 EVA = UUID("0e0e0e0e-0000-4000-8000-00000000e0e0")
 
 
@@ -189,33 +189,35 @@ async def a_shared_space(database_url: str):
         await connection.execute(text(f'set local role "mod_{SHARED}"'))
         await connection.execute(
             text(f"""
-                create table {SHARED}.{SHARED}_gasto (
+                create table {SHARED}.{SHARED}_expense (
                     concept  text not null,
                     user_id  uuid not null default {CURRENT_USER_SQL},
                     space_id uuid
                 )
             """)
         )
-        await connection.execute(text(f"comment on table {SHARED}.{SHARED}_gasto is 'arga:shared'"))
+        await connection.execute(
+            text(f"comment on table {SHARED}.{SHARED}_expense is 'arga:shared'")
+        )
         await connection.execute(text("reset role"))
         await grant_to_reader(connection, SHARED)
         await connection.execute(text("reset role"))
         touched = await enforce(connection, SHARED)
-    assert touched == [f"{SHARED}.{SHARED}_gasto"]
+    assert touched == [f"{SHARED}.{SHARED}_expense"]
 
     rows = [
-        (ANA, (CASA,), "súper de casa", CASA),
-        (LUIS, (CASA,), "luz de casa", CASA),
-        (ANA, (CASA,), "cena de Ana", None),
-        (LUIS, (CASA,), "libro de Luis", None),
-        (EVA, (OTRO,), "alquiler de Eva", OTRO),
+        (ANA, (HOME,), "home groceries", HOME),
+        (LUIS, (HOME,), "home electricity", HOME),
+        (ANA, (HOME,), "Ana dinner", None),
+        (LUIS, (HOME,), "Luis book", None),
+        (EVA, (OTHER,), "Eva rent", OTHER),
     ]
     for person, spaces, concept, space in rows:
         await in_space(
             f"mod_{SHARED}",
             person,
             spaces,
-            f"insert into {SHARED}.{SHARED}_gasto (concept, space_id) values (:c, :s)",
+            f"insert into {SHARED}.{SHARED}_expense (concept, space_id) values (:c, :s)",
             c=concept,
             s=space,
         )
@@ -233,26 +235,26 @@ def concepts(rows) -> list[str]:
 async def test_a_member_sees_the_space_and_what_is_theirs_and_nothing_else(
     a_shared_space, role: str
 ) -> None:
-    ana = await in_space(role, ANA, (CASA,), f"select concept from {SHARED}.{SHARED}_gasto")
-    luis = await in_space(role, LUIS, (CASA,), f"select concept from {SHARED}.{SHARED}_gasto")
+    ana = await in_space(role, ANA, (HOME,), f"select concept from {SHARED}.{SHARED}_expense")
+    luis = await in_space(role, LUIS, (HOME,), f"select concept from {SHARED}.{SHARED}_expense")
 
-    assert concepts(ana) == ["cena de Ana", "luz de casa", "súper de casa"]
-    assert concepts(luis) == ["libro de Luis", "luz de casa", "súper de casa"]
+    assert concepts(ana) == ["Ana dinner", "home electricity", "home groceries"]
+    assert concepts(luis) == ["Luis book", "home electricity", "home groceries"]
 
 
 @pytest.mark.parametrize("role", [f"mod_{SHARED}", f"mod_{SHARED}_read"])
 async def test_someone_outside_the_space_does_not_see_it(a_shared_space, role: str) -> None:
-    eva = await in_space(role, EVA, (OTRO,), f"select concept from {SHARED}.{SHARED}_gasto")
+    eva = await in_space(role, EVA, (OTHER,), f"select concept from {SHARED}.{SHARED}_expense")
 
-    assert concepts(eva) == ["alquiler de Eva"]
+    assert concepts(eva) == ["Eva rent"]
 
 
 @pytest.mark.parametrize("role", [f"mod_{SHARED}", f"mod_{SHARED}_read"])
 async def test_without_the_guc_only_what_is_yours_is_seen(a_shared_space, role: str) -> None:
-    ana = await in_space(role, ANA, (), f"select concept from {SHARED}.{SHARED}_gasto")
-    nobody = await in_space(role, None, (), f"select concept from {SHARED}.{SHARED}_gasto")
+    ana = await in_space(role, ANA, (), f"select concept from {SHARED}.{SHARED}_expense")
+    nobody = await in_space(role, None, (), f"select concept from {SHARED}.{SHARED}_expense")
 
-    assert concepts(ana) == ["cena de Ana", "súper de casa"]
+    assert concepts(ana) == ["Ana dinner", "home groceries"]
     assert nobody == []
 
 
@@ -264,25 +266,25 @@ async def test_after_leaving_what_you_put_stays_with_everyone_but_you_no_longer_
             f"mod_{SHARED}",
             ANA,
             (),
-            f"update {SHARED}.{SHARED}_gasto set concept = 'súper, cambiado' "
-            "where concept = 'súper de casa'",
+            f"update {SHARED}.{SHARED}_expense set concept = 'groceries, changed' "
+            "where concept = 'home groceries'",
         )
     luis = await in_space(
-        f"mod_{SHARED}", LUIS, (CASA,), f"select concept from {SHARED}.{SHARED}_gasto"
+        f"mod_{SHARED}", LUIS, (HOME,), f"select concept from {SHARED}.{SHARED}_expense"
     )
     taken = await in_space(
         f"mod_{SHARED}",
         ANA,
         (),
-        f"update {SHARED}.{SHARED}_gasto set space_id = null where concept = 'súper de casa'",
+        f"update {SHARED}.{SHARED}_expense set space_id = null where concept = 'home groceries'",
     )
     after = await in_space(
-        f"mod_{SHARED}", LUIS, (CASA,), f"select concept from {SHARED}.{SHARED}_gasto"
+        f"mod_{SHARED}", LUIS, (HOME,), f"select concept from {SHARED}.{SHARED}_expense"
     )
 
-    assert concepts(luis) == ["libro de Luis", "luz de casa", "súper de casa"]
+    assert concepts(luis) == ["Luis book", "home electricity", "home groceries"]
     assert taken == 1
-    assert concepts(after) == ["libro de Luis", "luz de casa"]
+    assert concepts(after) == ["Luis book", "home electricity"]
 
 
 async def test_someone_with_no_spaces_cannot_put_a_row_of_theirs_in_a_space(a_shared_space) -> None:
@@ -291,21 +293,21 @@ async def test_someone_with_no_spaces_cannot_put_a_row_of_theirs_in_a_space(a_sh
             f"mod_{SHARED}",
             ANA,
             (),
-            f"insert into {SHARED}.{SHARED}_gasto (concept, space_id) values ('colada', :s)",
-            s=OTRO,
+            f"insert into {SHARED}.{SHARED}_expense (concept, space_id) values ('colada', :s)",
+            s=OTHER,
         )
     with pytest.raises(DBAPIError, match="row-level security"):
         await in_space(
             f"mod_{SHARED}",
             ANA,
             (),
-            f"update {SHARED}.{SHARED}_gasto set space_id = :s where concept = 'cena de Ana'",
-            s=OTRO,
+            f"update {SHARED}.{SHARED}_expense set space_id = :s where concept = 'Ana dinner'",
+            s=OTHER,
         )
 
 
 async def test_a_policy_with_an_old_rule_is_rewritten_on_the_next_boot(a_shared_space) -> None:
-    name = f"{SHARED}.{SHARED}_gasto"
+    name = f"{SHARED}.{SHARED}_expense"
     async with engine().begin() as connection:
         await connection.execute(text(f'set local role "mod_{SHARED}"'))
         await connection.execute(
@@ -320,10 +322,10 @@ async def test_a_policy_with_an_old_rule_is_rewritten_on_the_next_boot(a_shared_
         again = await enforce(connection, SHARED)
     after = await in_space(f"mod_{SHARED}", ANA, (), f"select concept from {name}")
 
-    assert concepts(before) == ["cena de Ana"]
+    assert concepts(before) == ["Ana dinner"]
     assert rewritten == [name]
     assert again == []
-    assert concepts(after) == ["cena de Ana", "súper de casa"]
+    assert concepts(after) == ["Ana dinner", "home groceries"]
 
 
 async def test_writing_into_a_space_you_are_not_in_is_refused_by_postgres(a_shared_space) -> None:
@@ -331,9 +333,9 @@ async def test_writing_into_a_space_you_are_not_in_is_refused_by_postgres(a_shar
         await in_space(
             f"mod_{SHARED}",
             EVA,
-            (OTRO,),
-            f"insert into {SHARED}.{SHARED}_gasto (concept, space_id) values ('intruso', :s)",
-            s=CASA,
+            (OTHER,),
+            f"insert into {SHARED}.{SHARED}_expense (concept, space_id) values ('intruso', :s)",
+            s=HOME,
         )
 
 
@@ -343,21 +345,21 @@ async def test_a_member_can_change_what_is_the_spaces_but_not_what_is_the_others
     shared = await in_space(
         f"mod_{SHARED}",
         ANA,
-        (CASA,),
-        f"update {SHARED}.{SHARED}_gasto set concept = 'luz de casa, revisada' "
-        "where concept = 'luz de casa'",
+        (HOME,),
+        f"update {SHARED}.{SHARED}_expense set concept = 'home electricity, revisada' "
+        "where concept = 'home electricity'",
     )
     private = await in_space(
         f"mod_{SHARED}",
         ANA,
-        (CASA,),
-        f"delete from {SHARED}.{SHARED}_gasto where concept = 'libro de Luis'",
+        (HOME,),
+        f"delete from {SHARED}.{SHARED}_expense where concept = 'Luis book'",
     )
     outside = await in_space(
         f"mod_{SHARED}",
         ANA,
-        (CASA,),
-        f"delete from {SHARED}.{SHARED}_gasto where concept = 'alquiler de Eva'",
+        (HOME,),
+        f"delete from {SHARED}.{SHARED}_expense where concept = 'Eva rent'",
     )
 
     assert (shared, private, outside) == (1, 0, 0)
@@ -385,9 +387,9 @@ async def a_shared_catalog(a_shared_space):
         touched = await enforce(connection, SHARED)
     assert touched == [name]
     for person, spaces, food, space in [
-        (ANA, (CASA,), "sofrito de Ana", None),
-        (ANA, (CASA,), "caldo de casa", CASA),
-        (EVA, (OTRO,), "masa de Eva", OTRO),
+        (ANA, (HOME,), "sofrito de Ana", None),
+        (ANA, (HOME,), "caldo de casa", HOME),
+        (EVA, (OTHER,), "masa de Eva", OTHER),
     ]:
         await in_space(
             f"mod_{SHARED}",
@@ -406,8 +408,8 @@ def foods(rows) -> list[str]:
 
 @pytest.mark.parametrize("role", [f"mod_{SHARED}", f"mod_{SHARED}_read"])
 async def test_a_catalog_with_a_space_is_seen_by_all_its_members(a_shared_catalog, role) -> None:
-    luis = await in_space(role, LUIS, (CASA,), f"select food from {a_shared_catalog}")
-    eva = await in_space(role, EVA, (OTRO,), f"select food from {a_shared_catalog}")
+    luis = await in_space(role, LUIS, (HOME,), f"select food from {a_shared_catalog}")
+    eva = await in_space(role, EVA, (OTHER,), f"select food from {a_shared_catalog}")
     ana_gone = await in_space(role, ANA, (), f"select food from {a_shared_catalog}")
 
     assert foods(luis) == ["caldo de casa", "sal"]
@@ -421,17 +423,17 @@ async def test_a_member_edits_the_spaces_food_but_not_everyones_nor_anothers(
     def update(food: str) -> str:
         return f"update {a_shared_catalog} set food = food || '!' where food = '{food}'"
 
-    shared = await in_space(f"mod_{SHARED}", LUIS, (CASA,), update("caldo de casa"))
-    private = await in_space(f"mod_{SHARED}", LUIS, (CASA,), update("sofrito de Ana"))
+    shared = await in_space(f"mod_{SHARED}", LUIS, (HOME,), update("caldo de casa"))
+    private = await in_space(f"mod_{SHARED}", LUIS, (HOME,), update("sofrito de Ana"))
     with pytest.raises(DBAPIError, match="row-level security"):
-        await in_space(f"mod_{SHARED}", LUIS, (CASA,), update("sal"))
+        await in_space(f"mod_{SHARED}", LUIS, (HOME,), update("sal"))
     with pytest.raises(DBAPIError, match="row-level security"):
         await in_space(
             f"mod_{SHARED}",
             ANA,
-            (CASA,),
+            (HOME,),
             f"insert into {a_shared_catalog} (food, space_id) values ('intruso', :s)",
-            s=OTRO,
+            s=OTHER,
         )
 
     assert (shared, private) == (1, 0)

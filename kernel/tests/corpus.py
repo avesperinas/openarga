@@ -190,33 +190,33 @@ def main(argv: list[str] | None = None) -> int:
     pairs = labelled_pairs()
     positives = sum(1 for *_, same in pairs if same)
 
-    print(f"corpus · {len(MERCHANTS)} comercios · {len(pairs)} pares · {positives} del mismo")
-    print(f"{'umbral':>7}  {'precisión':>10}  {'cobertura':>10}  {'de más':>7}  {'de menos':>9}")
+    print(f"corpus · {len(MERCHANTS)} merchants · {len(pairs)} pairs · {positives} the same")
+    print(f"{'threshold':>9}  {'precision':>10}  {'recall':>10}  {'extra':>7}  {'missed':>9}")
     for threshold in THRESHOLDS:
         result = measure(threshold, pairs)
         print(
-            f"{threshold:>7.2f}  {result.precision:>10.1%}  {result.recall:>10.1%}"
+            f"{threshold:>9.2f}  {result.precision:>10.1%}  {result.recall:>10.1%}"
             f"  {result.false_positives:>7}  {result.false_negatives:>9}"
         )
 
     print()
-    print(f"{'umbral':>7}  {'en 1 entidad':>13}  {'atribución':>11}  {'mezclados':>10}  partidos")
+    print(f"{'threshold':>9}  {'in 1 entity':>13}  {'attribution':>11}  {'mixed':>10}  split")
     for threshold in THRESHOLDS:
         report = cluster_report(threshold)
         split = ", ".join(f"{name}:{count}" for name, count in report.split.items()) or "-"
         print(
-            f"{threshold:>7.2f}  {f'{len(report.united)}/{len(MERCHANTS)}':>13}"
+            f"{threshold:>9.2f}  {f'{len(report.united)}/{len(MERCHANTS)}':>13}"
             f"  {report.attribution:>11.1%}  {len(report.contaminated):>10}  {split}"
         )
 
     if arguments == ["--mistakes"]:
         for threshold in THRESHOLDS:
             wrong, missed = mistakes(threshold)
-            print(f"\n=== umbral {threshold:.2f} ===")
+            print(f"\n=== threshold {threshold:.2f} ===")
             for left, right, verdict in wrong:
-                print(f"  DE MÁS   {left!r} · {right!r} · {verdict.rule} {verdict.confidence}")
+                print(f"  EXTRA    {left!r} · {right!r} · {verdict.rule} {verdict.confidence}")
             for left, right in sorted({tuple(sorted(pair)) for pair in missed}):
-                print(f"  DE MENOS {left!r} · {right!r}")
+                print(f"  MISSED   {left!r} · {right!r}")
     elif arguments:
         print("uso: python -m kernel.corpus [--mistakes]", file=sys.stderr)
         return 2

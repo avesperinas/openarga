@@ -55,7 +55,7 @@ async def schemas(database_url: str) -> list[str]:
 async def test_every_foreign_key_has_its_index(schemas: list[str]) -> None:
     async with engine().connect() as connection:
         missing = (await connection.execute(FOREIGN_KEYS, {"schemas": schemas})).all()
-    assert not missing, "claves foráneas sin índice:\n" + "\n".join(
+    assert not missing, "foreign keys without an index:\n" + "\n".join(
         f"  {row.table_} ({row.columns})  [{row.name}]" for row in missing
     )
 
@@ -65,7 +65,7 @@ async def test_every_owned_table_has_an_index_by_its_owner(schemas: list[str]) -
         missing = [
             row.table_ for row in (await connection.execute(OWNERS, {"schemas": schemas})).all()
         ]
-    assert not missing, "tablas con user_id y sin índice que empiece por él:\n  " + "\n  ".join(
+    assert not missing, "tables with user_id and no index starting with it:\n  " + "\n  ".join(
         missing
     )
 
