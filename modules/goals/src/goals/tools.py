@@ -60,14 +60,14 @@ async def get_categories(connection: AsyncConnection, arguments: GetCategories) 
 
 class FindTasks(BaseModel):
     state: Literal["pending", "done"] = "pending"
-    category: str | None = Field(default=None, max_length=40, description="Por su nombre.")
+    category: str | None = Field(default=None, max_length=40, description="By its name.")
     query: str | None = Field(
-        default=None, max_length=80, description="Texto a buscar en el título y las notas."
+        default=None, max_length=80, description="Text to search in the title and notes."
     )
     due_until: dt.date | None = Field(
         default=None,
-        description="Solo las pendientes con fecha hasta este día, incluido. Hoy, para lo de hoy "
-        "y lo vencido.",
+        description="Only pending tasks dated up to this day, included. Today, for today's and "
+        "the overdue ones.",
     )
     limit: int = Field(default=100, ge=1, le=300)
 
@@ -89,15 +89,15 @@ async def find_tasks(connection: AsyncConnection, arguments: FindTasks) -> dict[
 class AddTask(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     category: str = Field(
-        min_length=1, max_length=40, description="El nombre de una categoría que ya existe."
+        min_length=1, max_length=40, description="The name of an existing category."
     )
-    due_on: dt.date | None = Field(default=None, description="Sin fecha si no se dice.")
-    due_time: dt.time | None = Field(default=None, description="Solo si se dice una hora.")
+    due_on: dt.date | None = Field(default=None, description="No date unless said.")
+    due_time: dt.time | None = Field(default=None, description="Only if a time is said.")
     notes: str | None = Field(default=None, max_length=4000)
     repeat: Rule | None = Field(
         default=None,
-        description="Si se repite. Necesita due_on, que es la primera vez. Al marcarla hecha nace "
-        "la siguiente.",
+        description="If it repeats. Needs due_on, the first time. Completing it creates the "
+        "next one.",
     )
 
 
@@ -130,7 +130,7 @@ class UpdateTask(BaseModel):
     @model_validator(mode="after")
     def _uuid(self) -> UpdateTask:
         if not is_uuid(self.task_id):
-            raise ValueError("task_id es el id que devuelven find_tasks o add_task")
+            raise ValueError("task_id is the id returned by find_tasks or add_task")
         return self
 
 
@@ -156,7 +156,7 @@ class CompleteTask(BaseModel):
     @model_validator(mode="after")
     def _uuid(self) -> CompleteTask:
         if not is_uuid(self.task_id):
-            raise ValueError("task_id es el id que devuelven find_tasks o add_task")
+            raise ValueError("task_id is the id returned by find_tasks or add_task")
         return self
 
 
@@ -171,7 +171,7 @@ class AddCategory(BaseModel):
         default=None,
         ge=1,
         le=8,
-        description="Uno de los ocho tonos de arga. Sin él, el siguiente libre.",
+        description="One of the eight arga hues. Without it, the next free one.",
     )
 
 
@@ -234,7 +234,7 @@ def _goal(goal: goals.Goal) -> dict[str, Any]:
 
 def _goal_id(value: str) -> str:
     if not is_uuid(value):
-        raise ValueError("goal_id es el id que devuelven get_goals o create_goal")
+        raise ValueError("goal_id is the id returned by get_goals or create_goal")
     return value
 
 
@@ -246,7 +246,7 @@ async def _category_id(connection: AsyncConnection, name: str | None) -> str | N
 
 class GetGoals(BaseModel):
     state: Literal["active", "closed"] = "active"
-    category: str | None = Field(default=None, max_length=40, description="Por su nombre.")
+    category: str | None = Field(default=None, max_length=40, description="By its name.")
 
 
 async def get_goals(connection: AsyncConnection, arguments: GetGoals) -> dict[str, Any]:
@@ -284,7 +284,7 @@ async def get_goal(connection: AsyncConnection, arguments: GetGoal) -> dict[str,
 
 class ListMetrics(BaseModel):
     query: str | None = Field(
-        default=None, max_length=60, description="Texto a buscar en el nombre o la clave."
+        default=None, max_length=60, description="Text to search in the name or the key."
     )
 
 
@@ -311,38 +311,38 @@ async def list_metrics(connection: AsyncConnection, arguments: ListMetrics) -> d
 class CreateGoal(BaseModel):
     title: str = Field(min_length=1, max_length=120)
     kind: Literal["periodic", "dated"] = Field(
-        description="periodic: se cumple cada día o cada semana. dated: llegar a algo en una fecha."
+        description="periodic: met every day or every week. dated: reach something by a date."
     )
-    category: str | None = Field(default=None, max_length=40, description="Por su nombre.")
+    category: str | None = Field(default=None, max_length=40, description="By its name.")
     metric_key: str | None = Field(
         default=None,
         max_length=160,
-        description="La clave de una cifra de list_metrics. Sin ella, se apunta a mano.",
+        description="The key of a metric from list_metrics. Without it, it is logged by hand.",
     )
     direction: Literal["at_least", "at_most"] = "at_least"
     target: float | None = Field(
         default=None,
-        description="Periódica: la condición de cada día («8000» pasos) o el total semanal. Con "
-        "fecha: la cifra a la que llegar. Nulo en una periódica que solo se marca o en un hito.",
+        description="Periodic: the daily condition ('8000' steps) or the weekly total. Dated: "
+        "the figure to reach. Null in a periodic goal that is only ticked, or in a milestone.",
     )
     period: Literal["day", "week"] | None = Field(
-        default=None, description="Solo periódicas: day (días por semana) o week (total semanal)."
+        default=None, description="Periodic only: day (days per week) or week (weekly total)."
     )
-    days_per_week: int | None = Field(default=None, ge=1, le=7, description="7 es diaria.")
+    days_per_week: int | None = Field(default=None, ge=1, le=7, description="7 is daily.")
     start_value: float | None = Field(
         default=None,
-        description="Solo con fecha y a mano. Con cifra no se dice: es lo que valía la cifra el "
-        "día que empieza, y lo pone KPIs.",
+        description="Dated and by hand only. With a metric it is not said: it is the metric's "
+        "value on the start day, and Goals sets it.",
     )
-    start_on: dt.date | None = Field(default=None, description="Por defecto, hoy.")
-    due_on: dt.date | None = Field(default=None, description="Solo con fecha: la fecha límite.")
+    start_on: dt.date | None = Field(default=None, description="Today by default.")
+    due_on: dt.date | None = Field(default=None, description="Dated only: the due date.")
     note: str | None = Field(default=None, max_length=2000)
-    featured: bool = Field(default=False, description="Sale en el widget «Meta destacada».")
+    featured: bool = Field(default=False, description="Shown in the 'Featured goal' widget.")
 
 
 STARTS_ITSELF = (
-    "con cifra, el punto de partida no se dice: es lo que valía la cifra el día que empieza la "
-    "meta (start_on), y lo pone KPIs. Quita start_value"
+    "with a metric the starting point is not said: it is the metric's value on the day the goal "
+    "starts (start_on), and Goals sets it. Drop start_value"
 )
 
 
@@ -395,15 +395,15 @@ async def update_goal(connection: AsyncConnection, arguments: UpdateGoal) -> dic
 
 class CheckGoal(BaseModel):
     goal_id: str
-    day: dt.date | None = Field(default=None, description="Por defecto, hoy.")
+    day: dt.date | None = Field(default=None, description="Today by default.")
     done: bool | None = Field(
         default=None,
-        description="Periódica diaria: hecho o no ese día. Hito: true lo da por cumplido.",
+        description="Daily periodic: done or not that day. Milestone: true marks it achieved.",
     )
     value: float | None = Field(
         default=None,
-        description="La cifra de ese día: dónde vas en una con fecha, o cuánto en un total "
-        "semanal.",
+        description="That day's figure: where you are in a dated goal, or how much in a weekly "
+        "total.",
     )
     note: str | None = Field(default=None, max_length=500)
 
@@ -424,8 +424,7 @@ async def check_goal(connection: AsyncConnection, arguments: CheckGoal) -> dict[
 class CloseGoal(BaseModel):
     goal_id: str
     outcome: Literal["achieved", "abandoned", "reopen"] = Field(
-        description="achieved: cumplida antes de tiempo. abandoned: se deja. reopen: vuelve a "
-        "estar activa."
+        description="achieved: met ahead of time. abandoned: dropped. reopen: active again."
     )
 
     _check = field_validator("goal_id")(_goal_id)
@@ -439,14 +438,14 @@ async def close_goal(connection: AsyncConnection, arguments: CloseGoal) -> dict[
 
 class RecordPastGoal(BaseModel):
     title: str = Field(min_length=1, max_length=120)
-    category: str | None = Field(default=None, description="El nombre de una categoría.")
-    start_on: dt.date = Field(description="Cuándo te lo propusiste.")
-    due_on: dt.date = Field(description="Para cuándo era.")
+    category: str | None = Field(default=None, description="The name of a category.")
+    start_on: dt.date = Field(description="When you set it.")
+    due_on: dt.date = Field(description="When it was due.")
     outcome: Literal["achieved", "missed", "abandoned"]
-    closed_on: dt.date | None = Field(default=None, description="Por defecto, su fecha límite.")
-    target: float | None = Field(default=None, description="La cifra a la que había que llegar.")
+    closed_on: dt.date | None = Field(default=None, description="Its due date by default.")
+    target: float | None = Field(default=None, description="The figure to reach.")
     start_value: float | None = None
-    closed_value: float | None = Field(default=None, description="La cifra en la que se quedó.")
+    closed_value: float | None = Field(default=None, description="The figure it ended at.")
     direction: Literal["at_least", "at_most"] = "at_least"
     note: str | None = Field(default=None, max_length=2000)
 
@@ -462,7 +461,7 @@ async def record_past_goal(
 class DeleteGoal(BaseModel):
     goal_id: str
     title: str = Field(
-        min_length=1, max_length=120, description="El título exacto de la meta, para confirmar."
+        min_length=1, max_length=120, description="The exact title of the goal, to confirm."
     )
 
     _check = field_validator("goal_id")(_goal_id)
@@ -472,7 +471,7 @@ async def delete_goal(connection: AsyncConnection, arguments: DeleteGoal) -> dic
     goal = await goals.one(connection, arguments.goal_id)
     if goal.title != arguments.title.strip():
         raise Conflict(
-            f"el título no coincide: la meta se llama '{goal.title}'. No se ha borrado nada"
+            f"the title does not match: the goal is called '{goal.title}'. Nothing was deleted"
         )
     await goals.remove(connection, arguments.goal_id)
     return {"deleted": goal.title}

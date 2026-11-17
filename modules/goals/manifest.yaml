@@ -28,7 +28,7 @@ receives: [metric]
 uses: [notify.sync]
 notifications:
   - kind: goals_at_risk
-    label: Metas de la semana en riesgo
+    label: Weekly goals at risk
     default: false
 
 api:
@@ -38,136 +38,135 @@ tools:
   - name: get_categories
     scope: goals:read
     description: >
-      Las categorías de tareas (Trabajo, Casa, Personal y las que haya creado), con cuántas tareas
-      le quedan a cada una y cuántas vencidas. Una categoría compartida es de un espacio: sus
-      tareas las ven y las tachan todos sus miembros.
+      The task categories (Work, Home, Personal and the ones created), with how many tasks each
+      has left and how many are overdue. A shared category belongs to a space: all its members see
+      and tick its tasks.
   - name: find_tasks
     scope: goals:read
     description: >
-      Las tareas pendientes, por fecha y con las que no tienen fecha al final, o las ya hechas, lo
-      último primero. Se filtran por categoría (por su nombre), por texto y por fecha límite: con
-      due_until = hoy salen lo de hoy y lo vencido. Vencida es que su día pasó, o que es hoy y ya
-      pasó su hora.
+      Pending tasks, by date with the undated ones last, or the ones already done, latest first.
+      Filtered by category (by its name), by text and by due date: due_until = today gives today's
+      and the overdue ones. Overdue means its day has passed, or it is today and its time has
+      passed.
   - name: add_task
     scope: goals:write
     description: >
-      Apunta una tarea en una categoría que ya existe, con fecha límite, hora y notas solo si se
-      dicen. Si se repite ("sacar la basura cada martes"), la regla va como objeto y la fecha es la
-      primera vez; al tacharla nace la siguiente.
+      Adds a task to an existing category, with due date, time and notes only if said. If it
+      repeats ("take the bins out every Tuesday"), the rule goes as an object and the date is the
+      first time; ticking it creates the next one.
   - name: update_task
     scope: goals:write
     description: >
-      Cambia una tarea: título, categoría, fecha, hora, notas o repetición. Lo que no se dice se
-      queda; null en la fecha, la hora, las notas o la repetición lo quita.
+      Changes a task: title, category, date, time, notes or repetition. What is not said stays;
+      null in the date, time, notes or repetition removes it.
   - name: complete_task
     scope: goals:write
     description: >
-      Tacha una tarea como hecha. Si se repite, devuelve también la siguiente, que nace con la fecha
-      que le toca.
+      Ticks a task as done. If it repeats, it also returns the next one, created with its date.
   - name: add_category
     scope: goals:write
     description: >
-      Crea una categoría nueva, como "Recados" o "Universidad", con uno de los ocho tonos de arga
-      si se pide uno.
+      Creates a new category, such as "Errands" or "University", with one of the eight arga hues
+      if one is asked for.
   - name: get_goals
     scope: goals:read
     description: >
-      Las metas activas con cómo van, calculado por KPIs: en las periódicas, si hoy está cumplida,
-      la semana, la racha y la constancia de las últimas cuatro semanas; en las de fecha, la cifra
-      de ahora, por dónde tocaría ir hoy, el ritmo (ahead, on_track, behind) y dónde llega en la
-      fecha si sigue así. Por categoría si se pide, o las cerradas con state = closed. Es lo que
-      contesta «¿cómo voy?»: no hace falta calcular nada.
+      Active goals with how they are going: for periodic ones, whether today is met, the week, the
+      streak and the consistency of the last four weeks; for dated ones, the current figure, where
+      it should be today, the pace (ahead, on_track, behind) and where it lands by the date at this
+      rate. By category if asked, or the closed ones with state = closed. It answers "how am I
+      doing?": nothing needs computing.
   - name: get_goal
     scope: goals:read
     description: >
-      Una meta por su id con su historia: el valor de cada día, si se cumplió, lo apuntado a mano
-      y sus notas.
+      One goal by its id with its history: each day's value, whether it was met, what was logged by
+      hand and its notes.
   - name: list_metrics
     scope: goals:read
     description: >
-      Las cifras que publican las demás apps de arga (pasos, peso, patrimonio, libros, media de un
-      estudio…) con su clave, unidad, clase y último valor. Búscala aquí antes de crear una meta
-      que se pueda cumplir sola: amount se suma por día, level vale lo último.
+      The figures the other arga apps publish (steps, weight, net worth, books, a study's
+      average...) with their key, unit, kind and last value. Look one up here before creating a
+      goal that can be met on its own: amount adds up per day, level takes the latest.
   - name: create_goal
     scope: goals:write
     description: >
-      Crea una meta en un solo objeto. Periódica («leer 20 minutos, 5 días por semana», «8.000
-      pasos cada día», «40 km a la semana») o con fecha («bajar a 80 kg para Navidad», «el B2 en
-      junio»: un hito sin target). Con metric_key de list_metrics se cumple sola, y parte de lo
-      que valía la cifra el día que empieza (start_on), que pone KPIs; sin ella, se apunta a mano.
-      La categoría, por su nombre.
+      Creates a goal in a single object. Periodic ("read 20 minutes, 5 days a week", "8,000 steps
+      every day", "40 km a week") or dated ("down to 80 kg by Christmas", "the B2 in June": a
+      milestone without target). With a metric_key from list_metrics it is met on its own, starting
+      from the metric's value on its start day (start_on), which Goals sets; without one, it is
+      logged by hand. The category, by its name.
   - name: update_goal
     scope: goals:write
     description: >
-      Cambia una meta: título, categoría, cifra, condición u objetivo, frecuencia, punto de
-      partida, fecha límite, nota o si sale destacada. Lo que no se dice se queda. Con cifra, el
-      punto de partida sigue al día en que empieza: cambiar start_on lo vuelve a tomar de la cifra.
+      Changes a goal: title, category, metric, condition or target, frequency, starting point, due
+      date, note or whether it is featured. What is not said stays. With a metric, the starting
+      point follows the start day: changing start_on takes it again from the metric.
   - name: check_goal
     scope: goals:write
     description: >
-      Apunta un día a mano, hoy si no se dice: «hoy he leído» es done true en su periódica; en una
-      con fecha o de total semanal, la cifra (value). En un hito, done true lo da por cumplido. Lo
-      apuntado a mano manda sobre la cifra de ese día.
+      Logs a day by hand, today unless said: "I read today" is done true on its periodic goal; on a
+      dated or weekly total goal, the figure (value). On a milestone, done true marks it achieved.
+      What is logged by hand overrides the metric for that day.
   - name: close_goal
     scope: goals:write
     description: >
-      Da una meta por cumplida antes de tiempo, la abandona (se queda en el histórico) o la reabre.
+      Marks a goal achieved ahead of time, abandons it (it stays in the history) or reopens it.
   - name: record_past_goal
     scope: goals:write
     description: >
-      Apunta una meta ya terminada, de antes de usar KPIs (las de otros años, las de otra
-      herramienta): título, cuándo se propuso, para cuándo era y cómo acabó (achieved, missed,
-      abandoned), con su cifra objetivo y la cifra final si las tuvo. Entra cerrada en el
-      Histórico, en el año de su cierre. Para una meta que sigue abierta, create_goal.
+      Records a goal already finished, from before using Goals (other years, another tool): title,
+      when it was set, when it was due and how it ended (achieved, missed, abandoned), with its
+      target and final figure if it had them. It enters the History closed, in the year it closed.
+      For a goal still open, create_goal.
   - name: delete_goal
     scope: goals:write
     description: >
-      Borra una meta con todo lo apuntado. Pide su título exacto; si no coincide, no borra nada.
-      Si solo se deja, mejor close_goal con abandoned.
+      Deletes a goal with everything logged. Asks for its exact title; if it does not match,
+      nothing is deleted. To just drop it, close_goal with abandoned is better.
 ui:
   widgets:
     - id: today
-      title: Para hoy
+      title: For today
       kind: tasks
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/goals/widgets/today
       refresh: 300
-      link: /goals/tareas
+      link: /goals/
     - id: upcoming
-      title: Próximos días
+      title: Next days
       kind: tasks
       sizes: ["2x4", "2x2", "4x2", "4x4"]
       endpoint: /api/goals/widgets/upcoming
       refresh: 600
-      link: /goals/tareas
+      link: /goals/
     - id: overdue
-      title: Vencidas
+      title: Overdue
       kind: tasks
       sizes: ["1x1", "2x1", "4x1", "2x2", "4x2"]
       endpoint: /api/goals/widgets/overdue
       refresh: 600
-      link: /goals/tareas
+      link: /goals/
     - id: goals_today
-      title: Metas de hoy
+      title: Goals for today
       kind: tasks
       sizes: ["2x2", "1x1", "2x1", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/goals/widgets/goals_today
       refresh: 600
-      link: /goals/metas
+      link: /goals/goals
     - id: goals
-      title: Metas
+      title: Goals
       kind: list
       sizes: ["2x2", "4x2", "2x4", "4x4"]
       endpoint: /api/goals/widgets/goals
       refresh: 1800
-      link: /goals/metas
+      link: /goals/goals
     - id: goal
-      title: Meta destacada
+      title: Featured goal
       kind: progress
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/goals/widgets/goal
       refresh: 1800
-      link: /goals/metas
+      link: /goals/goals
   view: /goals
   hue: 3
   family: goals

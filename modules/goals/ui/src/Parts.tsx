@@ -1,4 +1,4 @@
-import { Hint, ListRow } from "@openarga/ui";
+import { Hint, ListRow, useT } from "@openarga/ui";
 import { createContext, useCallback, useContext, useState } from "react";
 
 import type { Category, Task } from "./api";
@@ -25,11 +25,12 @@ export function TaskRow({
   showCategory?: boolean;
   showDay?: boolean;
 }) {
+  const t = useT();
   const subtitle = [
     showCategory ? task.category : null,
-    showDay ? whenLabel(task, today) : task.due_time ? clock(task.due_time) : null,
+    showDay ? whenLabel(t, task, today) : task.due_time ? clock(task.due_time) : null,
     task.repeats,
-    task.space_id ? "compartida" : null,
+    task.space_id ? t("task.shared") : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -40,7 +41,7 @@ export function TaskRow({
       hue={task.hue}
       tone={task.status === "overdue" ? "warning" : undefined}
       onClick={onOpen}
-      action={{ icon: "done", label: `Hecha: ${task.title}`, kind: "check", onClick: onDone }}
+      action={{ icon: "done", label: t("task.done_label", { title: task.title }), kind: "check", onClick: onDone }}
     />
   );
 }

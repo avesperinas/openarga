@@ -8,19 +8,19 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_contracts import METRIC, metric
-from goals.common import TZ, me
+from goals.common import me, zone_name
 
 KEY = "goals.tasks_done"
-LABEL = "Tareas hechas"
+LABEL = "Tasks done"
 
-DONE_ON = text(f"""
+DONE_ON = text("""
     select count(*) from goals.goals_task
     where done_by = cast(:me as uuid)
-      and (done_at at time zone '{TZ}')::date = :day
+      and (done_at at time zone :tz)::date = :day
 """)
 
-ALL_DAYS = text(f"""
-    select (done_at at time zone '{TZ}')::date as day, count(*) as n
+ALL_DAYS = text("""
+    select (done_at at time zone :tz)::date as day, count(*) as n
     from goals.goals_task
     where done_by = cast(:me as uuid)
     group by 1
@@ -45,7 +45,7 @@ async def publish_day(connection: AsyncConnection, day: date) -> None:
     person = me()
     if person is None:
         return
-    value = await connection.scalar(DONE_ON, {"me": person, "day": day})
+    value = await connection.scalar(DONE_ON, {"me": person, "day": day, "tz": zone_name()})
     await connection.execute(
         ENQUEUE,
         {
@@ -59,7 +59,7 @@ async def backfill(connection: AsyncConnection) -> int:
     person = me()
     if person is None:
         return 0
-    rows = (await connection.execute(ALL_DAYS, {"me": person})).all()
+    rows = (await connection.execute(ALL_DAYS, {"me": person, "tz": zone_name()})).all()
     for row in rows:
         await connection.execute(
             ENQUEUE,

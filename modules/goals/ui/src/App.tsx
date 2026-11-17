@@ -1,5 +1,5 @@
 import { useResource, withTransition } from "@openarga/app";
-import { AppSettings, AppShell, List, ListRow, SETTINGS_TAB, Section, ToastHost } from "@openarga/ui";
+import { AppSettings, AppShell, List, ListRow, SETTINGS_TAB, Section, ToastHost, useT } from "@openarga/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { changed, readCategories } from "./api";
@@ -25,28 +25,29 @@ const UUID = "[0-9a-f-]{36}";
 
 export function route(pathname: string): Route {
   const path = pathname.replace(/\/+$/, "");
-  const task = new RegExp(`^${ROOT}/tarea/(${UUID})$`).exec(path);
+  const task = new RegExp(`^${ROOT}/task/(${UUID})$`).exec(path);
   if (task) return { tab: "home", task: task[1]! };
-  const goal = new RegExp(`^${ROOT}/meta/(${UUID})$`).exec(path);
+  const goal = new RegExp(`^${ROOT}/goal/(${UUID})$`).exec(path);
   if (goal) return { tab: "goals", goal: goal[1]! };
-  if (path === `${ROOT}/metas`) return { tab: "goals" };
-  if (path === `${ROOT}/hechas`) return { tab: "done" };
-  if (path === `${ROOT}/categorias`) return { tab: "categories" };
-  if (path === `${ROOT}/ajustes`) return { tab: "settings" };
+  if (path === `${ROOT}/goals`) return { tab: "goals" };
+  if (path === `${ROOT}/done`) return { tab: "done" };
+  if (path === `${ROOT}/categories`) return { tab: "categories" };
+  if (path === `${ROOT}/settings`) return { tab: "settings" };
   return { tab: "home" };
 }
 
 export function pathOf(to: Route): string {
-  if (to.tab === "goals" && to.goal) return `${ROOT}/meta/${to.goal}`;
-  if (to.tab === "home" && to.task) return `${ROOT}/tarea/${to.task}`;
-  if (to.tab === "goals") return `${ROOT}/metas`;
-  if (to.tab === "done") return `${ROOT}/hechas`;
-  if (to.tab === "categories") return `${ROOT}/categorias`;
-  if (to.tab === "settings") return `${ROOT}/ajustes`;
+  if (to.tab === "goals" && to.goal) return `${ROOT}/goal/${to.goal}`;
+  if (to.tab === "home" && to.task) return `${ROOT}/task/${to.task}`;
+  if (to.tab === "goals") return `${ROOT}/goals`;
+  if (to.tab === "done") return `${ROOT}/done`;
+  if (to.tab === "categories") return `${ROOT}/categories`;
+  if (to.tab === "settings") return `${ROOT}/settings`;
   return `${ROOT}/`;
 }
 
 export function App() {
+  const t = useT();
   const [path, setPath] = useState(() => window.location.pathname);
   const read = useResource("categories", readCategories, { persist: true });
   const categories = useMemo(() => read.data ?? [], [read.data]);
@@ -80,13 +81,13 @@ export function App() {
     <CategoriesContext.Provider value={context}>
       <ToastHost>
         <AppShell
-          label="Secciones"
+          label={t("app.sections")}
           active={current.tab === "categories" ? "settings" : current.tab}
           onSelect={(id) => go({ tab: id } as Route)}
           tabs={[
-            { id: "home", label: "Tareas", icon: "list" },
-            { id: "goals", label: "KPIs", icon: "target" },
-            { id: "done", label: "Histórico", icon: "done" },
+            { id: "home", label: t("tab.tasks"), icon: "list" },
+            { id: "goals", label: t("tab.goals"), icon: "target" },
+            { id: "done", label: t("tab.history"), icon: "done" },
             SETTINGS_TAB,
           ]}
         >
@@ -100,11 +101,11 @@ export function App() {
           {current.tab === "done" && <HistoryScreen onOpenGoal={openGoal} />}
           {current.tab === "settings" && (
             <AppSettings app={APP}>
-              <Section title="Categorías">
+              <Section title={t("settings.categories")}>
                 <List>
                   <ListRow
-                    title="Categorías"
-                    subtitle="Las mismas para los KPIs y las tareas: nombre, color, orden y compartir"
+                    title={t("settings.categories")}
+                    subtitle={t("settings.categories_detail")}
                     icon="layers"
                     accessory="chevron-right"
                     onClick={() => go({ tab: "categories" })}

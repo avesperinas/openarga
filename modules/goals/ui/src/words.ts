@@ -1,12 +1,6 @@
-import type { Task } from "./api";
+import { type Translate, dates, todayIso as zonedToday } from "@openarga/ui";
 
-const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-const LONG_MONTHS = [
-  "enero", "febrero", "marzo", "abril", "mayo", "junio",
-  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
-];
-const WEEKDAYS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
-const SHORT_WEEKDAYS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+import type { Task } from "./api";
 
 function parts(iso: string): [number, number, number] {
   const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
@@ -24,9 +18,11 @@ function weekday(iso: string): number {
 
 export const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
-export function todayIso(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(now);
-}
+export const todayIso = (now: Date = new Date()): string => zonedToday(now);
+
+const utcDay = (iso: string) => new Date(`${iso.slice(0, 10)}T00:00:00Z`);
+const said = (options: Intl.DateTimeFormatOptions, iso: string) =>
+  dates({ ...options, timeZone: "UTC" }).format(utcDay(iso)).replace(".", "");
 
 export function addDays(iso: string, days: number): string {
   return new Date(utc(iso) + days * 86_400_000).toISOString().slice(0, 10);
@@ -37,36 +33,33 @@ export function daysBetween(from: string, to: string): number {
 }
 
 export function longDate(iso: string): string {
-  const [, m, d] = parts(iso);
-  return `${WEEKDAYS[weekday(iso)]}, ${d} de ${LONG_MONTHS[m - 1]}`;
+  return said({ weekday: "long", day: "numeric", month: "long" }, iso);
 }
 
 export const clock = (time: string) => time.slice(0, 5);
 
-export function whenLabel(task: Pick<Task, "due_on" | "due_time">, today: string): string | null {
+export function whenLabel(
+  t: Translate,
+  task: Pick<Task, "due_on" | "due_time">,
+  today: string,
+): string | null {
   if (!task.due_on) return null;
   const days = daysBetween(today, task.due_on);
-  const [y, m, d] = parts(task.due_on);
-  let said: string;
-  if (days === 0) said = "hoy";
-  else if (days === 1) said = "mañana";
-  else if (days === -1) said = "ayer";
-  else if (days < 0 && days >= -14) said = `hace ${-days} días`;
-  else if (days > 1 && days <= 6) said = `${SHORT_WEEKDAYS[weekday(task.due_on)]} ${d}`;
-  else said = y === parts(today)[0] ? `${d} ${MONTHS[m - 1]}` : `${d} ${MONTHS[m - 1]} ${y}`;
-  return task.due_time ? `${said} · ${clock(task.due_time)}` : said;
+  const [y] = parts(task.due_on);
+  let when: string;
+  if (days === 0) when = t("when.today");
+  else if (days === 1) when = t("when.tomorrow");
+  else if (days === -1) when = t("when.yesterday");
+  else if (days < 0 && days >= -14) when = t("when.days_ago", { count: -days });
+  else if (days > 1 && days <= 6) when = said({ weekday: "short", day: "numeric" }, task.due_on);
+  else if (y === parts(today)[0]) when = said({ day: "numeric", month: "short" }, task.due_on);
+  else when = said({ day: "numeric", month: "short", year: "numeric" }, task.due_on);
+  return task.due_time ? `${when} · ${clock(task.due_time)}` : when;
 }
 
 export type Group = "overdue" | "today" | "tomorrow" | "week" | "later" | "someday";
 
-export const GROUPS: { id: Group; label: string }[] = [
-  { id: "overdue", label: "Vencidas" },
-  { id: "today", label: "Hoy" },
-  { id: "tomorrow", label: "Mañana" },
-  { id: "week", label: "Próximos 7 días" },
-  { id: "later", label: "Más adelante" },
-  { id: "someday", label: "Sin fecha" },
-];
+export const GROUPS: Group[] = ["overdue", "today", "tomorrow", "week", "later", "someday"];
 
 export function groupOf(task: Pick<Task, "status" | "due_on">, today: string): Group {
   if (task.status === "overdue") return "overdue";
@@ -79,39 +72,51 @@ export function groupOf(task: Pick<Task, "status" | "due_on">, today: string): G
 }
 
 export function grouped<T extends Pick<Task, "status" | "due_on">>(
+  t: Translate,
   tasks: T[],
   today: string,
 ): { id: Group; label: string; tasks: T[] }[] {
-  return GROUPS.map((group) => ({
-    ...group,
-    tasks: tasks.filter((task) => groupOf(task, today) === group.id),
+  return GROUPS.map((id) => ({
+    id,
+    label: t(`group.${id}`),
+    tasks: tasks.filter((task) => groupOf(task, today) === id),
   })).filter((group) => group.tasks.length > 0);
 }
 
-export function quickDates(today: string): { key: string; label: string; value: string | null }[] {
+export function quickDates(
+  t: Translate,
+  today: string,
+): { key: string; label: string; value: string | null }[] {
   const day = weekday(today);
   const saturday = addDays(today, ((6 - day + 7) % 7) || 7);
   const monday = addDays(today, ((1 - day + 7) % 7) || 7);
   return [
-    { key: "none", label: "Sin fecha", value: null },
-    { key: "today", label: "Hoy", value: today },
-    { key: "tomorrow", label: "Mañana", value: addDays(today, 1) },
-    { key: "saturday", label: "El sábado", value: saturday },
-    { key: "monday", label: "El lunes", value: monday },
+    { key: "none", label: t("quick.none"), value: null },
+    { key: "today", label: t("quick.today"), value: today },
+    { key: "tomorrow", label: t("quick.tomorrow"), value: addDays(today, 1) },
+    { key: "saturday", label: t("quick.saturday"), value: saturday },
+    { key: "monday", label: t("quick.monday"), value: monday },
   ];
 }
 
-export function count(n: number, one: string, many: string): string {
-  return `${n} ${n === 1 ? one : many}`;
+export function count(t: Translate, key: string, n: number): string {
+  return n === 1 ? t(`${key}_one`) : t(`${key}_many`, { count: n });
 }
 
-export const HUES: { value: number; label: string }[] = [
-  { value: 1, label: "Azul" },
-  { value: 2, label: "Verde" },
-  { value: 3, label: "Ámbar" },
-  { value: 4, label: "Rojo" },
-  { value: 5, label: "Violeta" },
-  { value: 6, label: "Turquesa" },
-  { value: 7, label: "Rosa" },
-  { value: 8, label: "Gris" },
-];
+export const HUES = [1, 2, 3, 4, 5, 6, 7, 8];
+
+export function todayRing(t: Translate, pending: Task[], done: Task[], today: string) {
+  const doneToday = done.filter((task) => task.done_at !== null && todayIso(new Date(task.done_at)) === today).length;
+  const due = pending.filter((task) => task.status === "today" || task.status === "overdue").length;
+  const overdue = pending.filter((task) => task.status === "overdue").length;
+  const total = doneToday + due;
+  const left = [count(t, "ring.pending", pending.length)];
+  if (overdue > 0) left.unshift(count(t, "ring.overdue", overdue));
+  return {
+    share: total > 0 ? doneToday / total : null,
+    value: total > 0 ? `${doneToday}/${total}` : "0",
+    label: total > 0 ? t("ring.done_today") : t("ring.nothing_today"),
+    detail: left.join(" · "),
+    tone: overdue > 0 ? ("warning" as const) : undefined,
+  };
+}

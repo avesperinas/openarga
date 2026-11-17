@@ -1,21 +1,22 @@
 import { useResource } from "@openarga/app";
-import { EmptyState, ErrorState, GroupLabel, List, ListRow, Screen, Skeleton, useToast } from "@openarga/ui";
+import { EmptyState, ErrorState, GroupLabel, List, ListRow, Screen, Skeleton, type Translate, useT, useToast } from "@openarga/ui";
 
 import { type Task, changed, readDone, undoTask } from "./api";
 import { ScreenHeader } from "./Header";
 import { capital, daysBetween, longDate, todayIso } from "./words";
 
-function dayLabel(iso: string, today: string): string {
+function dayLabel(t: Translate, iso: string, today: string): string {
   const days = daysBetween(iso, today);
-  if (days === 0) return "Hoy";
-  if (days === 1) return "Ayer";
+  if (days === 0) return t("done.today");
+  if (days === 1) return t("done.yesterday");
   return capital(longDate(iso));
 }
 
 export function DoneScreen() {
+  const t = useT();
   return (
     <Screen>
-      <ScreenHeader title="Hechas" />
+      <ScreenHeader title={t("done.title")} />
       <DoneTasks />
     </Screen>
   );
@@ -25,6 +26,7 @@ export function DoneTasks() {
   const found = useResource("tasks:done", readDone, { persist: true });
   const tasks = found.data ?? null;
   const toast = useToast();
+  const t = useT();
   const today = todayIso();
   const load = changed;
 
@@ -32,10 +34,10 @@ export function DoneTasks() {
     undoTask(task.id)
       .then(() => {
         load();
-        toast({ message: `Pendiente otra vez · ${task.title}` });
+        toast({ message: t("done.pending_again", { title: task.title }) });
       })
       .catch((reason: unknown) =>
-        toast({ message: reason instanceof Error ? reason.message : "No se ha podido deshacer", tone: "error" }),
+        toast({ message: reason instanceof Error ? reason.message : t("done.undo_failed"), tone: "error" }),
       );
 
   const days: { day: string; tasks: Task[] }[] = [];
@@ -49,27 +51,27 @@ export function DoneTasks() {
   return (
     <>
       {!tasks && found.error ? (
-        <ErrorState title="KPIs no contesta" detail={found.error.message} onRetry={found.refresh} />
+        <ErrorState title={t("app.not_answering")} detail={found.error.message} onRetry={found.refresh} />
       ) : !tasks ? (
         <Skeleton rows={4} />
       ) : tasks.length === 0 ? (
-        <EmptyState icon="done" hue={2} title="Aún no has tachado nada">
-          <p>Lo que taches sale aquí, por el día en que lo hiciste.</p>
+        <EmptyState icon="done" hue={2} title={t("done.empty")}>
+          <p>{t("done.empty_detail")}</p>
         </EmptyState>
       ) : (
         days.map(({ day, tasks: ofDay }) => (
-          <section key={day} className="goals-group" aria-label={dayLabel(day, today)}>
-            <GroupLabel count={ofDay.length}>{dayLabel(day, today)}</GroupLabel>
+          <section key={day} className="goals-group" aria-label={dayLabel(t, day, today)}>
+            <GroupLabel count={ofDay.length}>{dayLabel(t, day, today)}</GroupLabel>
             <List>
               {ofDay.map((task) => (
                 <ListRow
                   key={task.id}
                   title={task.title}
-                  subtitle={[task.category, task.done_by_me === false ? "la tachó otra persona" : null]
+                  subtitle={[task.category, task.done_by_me === false ? t("done.by_someone") : null]
                     .filter(Boolean)
                     .join(" · ")}
                   hue={task.hue}
-                  action={{ icon: "undo", label: `Devolver a pendiente: ${task.title}`, onClick: () => void undo(task) }}
+                  action={{ icon: "undo", label: t("done.undo_label", { title: task.title }), onClick: () => void undo(task) }}
                 />
               ))}
             </List>

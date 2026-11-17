@@ -35,9 +35,9 @@ TASK = (
 @pytest.fixture
 async def two_people(schema):
     await as_role(schema, WRITE, ANA, CATEGORY, name="De Ana")
-    await as_role(schema, WRITE, ANA, TASK, title="Tarea de Ana")
+    await as_role(schema, WRITE, ANA, TASK, title="Ana's task")
     await as_role(schema, WRITE, LUIS, CATEGORY, name="De Luis")
-    await as_role(schema, WRITE, LUIS, TASK, title="Tarea de Luis")
+    await as_role(schema, WRITE, LUIS, TASK, title="Luis's task")
     return schema
 
 
@@ -45,7 +45,7 @@ async def two_people(schema):
 async def test_each_one_reads_only_their_own(two_people, role: str) -> None:
     ana = await as_role(two_people, role, ANA, "select title from goals.goals_task")
     luis = await as_role(two_people, role, LUIS, "select name from goals.goals_category")
-    assert [row.title for row in ana] == ["Tarea de Ana"]
+    assert [row.title for row in ana] == ["Ana's task"]
     assert [row.name for row in luis] == ["De Luis"]
 
 
@@ -80,7 +80,7 @@ async def test_nobody_puts_a_row_in_a_space_they_are_not_in(two_people) -> None:
 
 async def test_the_reader_role_cannot_write(two_people) -> None:
     with pytest.raises(DBAPIError) as refused:
-        await as_role(two_people, READ, ANA, CATEGORY, name="Otra")
+        await as_role(two_people, READ, ANA, CATEGORY, name="Another")
     assert "permission denied" in str(refused.value).lower()
 
 
@@ -133,7 +133,7 @@ async def couple(api, schema):
     kernel = AsyncClient(transport=ASGITransport(app=kernel_app), base_url="http://kernel")
     app.state.client = kernel
     try:
-        created = await api.post("/spaces", json={"name": "Casa de Goals"})
+        created = await api.post("/spaces", json={"name": "Goals home"})
         assert created.status_code == 201, created.text
         space = created.json()["id"]
         code = (await api.post(f"/spaces/{space}/invites")).json()["code"]
@@ -145,7 +145,7 @@ async def couple(api, schema):
     finally:
         await kernel.aclose()
         async with schema.begin() as connection:
-            await connection.execute(text("delete from kernel.spaces where name = 'Casa de Goals'"))
+            await connection.execute(text("delete from kernel.spaces where name = 'Goals home'"))
             await connection.execute(
                 text("delete from kernel.users where subject like :s"), {"s": f"{tag}-%"}
             )
@@ -155,9 +155,9 @@ async def couple(api, schema):
 
 async def test_a_shared_category_is_seen_and_tended_by_its_members_only(api, couple) -> None:
     space = couple
-    home = next(one for one in (await api.get("/categories")).json() if one["name"] == "Casa")
+    home = next(one for one in (await api.get("/categories")).json() if one["name"] == "Home")
     before = (
-        await api.post("/tasks", json={"category_id": home["id"], "title": "Llamar al fontanero"})
+        await api.post("/tasks", json={"category_id": home["id"], "title": "Call the plumber"})
     ).json()
 
     shared = await api.put(f"/categories/{home['id']}/space", json={"space_id": space})
@@ -168,7 +168,7 @@ async def test_a_shared_category_is_seen_and_tended_by_its_members_only(api, cou
     after = (
         await api.post(
             "/tasks",
-            json={"category_id": home["id"], "title": "Pagar la derrama"},
+            json={"category_id": home["id"], "title": "Pay the levy"},
             headers=mine,
         )
     ).json()
@@ -178,7 +178,7 @@ async def test_a_shared_category_is_seen_and_tended_by_its_members_only(api, cou
     )
 
     theirs = (await api.get("/tasks", headers=with_space(space, OTHER))).json()
-    assert {one["title"] for one in theirs} == {"Llamar al fontanero", "Pagar la derrama"}
+    assert {one["title"] for one in theirs} == {"Call the plumber", "Pay the levy"}
     done = await api.post(f"/tasks/{before['id']}/done", headers=with_space(space, OTHER))
     assert done.status_code == 200, done.text
     seen = (await api.get(f"/tasks/{before['id']}", headers=with_space(space, PERSON))).json()
@@ -190,8 +190,8 @@ async def test_a_shared_category_is_seen_and_tended_by_its_members_only(api, cou
 
 async def test_back_to_being_only_yours(api, couple) -> None:
     space = couple
-    work = next(one for one in (await api.get("/categories")).json() if one["name"] == "Trabajo")
-    task = (await api.post("/tasks", json={"category_id": work["id"], "title": "Informe"})).json()
+    work = next(one for one in (await api.get("/categories")).json() if one["name"] == "Work")
+    task = (await api.post("/tasks", json={"category_id": work["id"], "title": "Report"})).json()
     await api.put(f"/categories/{work['id']}/space", json={"space_id": space})
     back = await api.put(f"/categories/{work['id']}/space", json={"space_id": None})
     assert back.json()["space_id"] is None
@@ -200,6 +200,6 @@ async def test_back_to_being_only_yours(api, couple) -> None:
 
 
 async def test_a_space_you_are_not_in_is_refused(api, couple) -> None:
-    work = next(one for one in (await api.get("/categories")).json() if one["name"] == "Trabajo")
+    work = next(one for one in (await api.get("/categories")).json() if one["name"] == "Work")
     refused = await api.put(f"/categories/{work['id']}/space", json={"space_id": str(uuid4())})
     assert refused.status_code == 404

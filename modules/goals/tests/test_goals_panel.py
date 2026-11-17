@@ -5,7 +5,7 @@ from arga_widgets.panel import served
 from goals import panel as home_panel
 
 
-async def test_panel_sin_datos_no_revienta(api):
+async def test_the_panel_without_data_does_not_break(api):
     response = await api.get("/panel")
     assert response.status_code in (200, 404), response.text
     if response.status_code == 200:
@@ -13,8 +13,8 @@ async def test_panel_sin_datos_no_revienta(api):
             assert item["area"] == "day"
 
 
-async def test_lo_apuntado_desde_el_panel_sale_para_hoy_y_manda_en_la_frase(api):
-    added = await api.post("/widgets/today/act", json={"verb": "add", "id": "  Llamar al banco "})
+async def test_what_is_added_from_the_panel_is_for_today_and_leads_the_headline(api):
+    added = await api.post("/widgets/today/act", json={"verb": "add", "id": "  Call the bank "})
     assert added.status_code == 200, added.text
     empty = await api.post("/widgets/today/act", json={"verb": "add", "id": "   "})
     assert empty.status_code == 422
@@ -22,20 +22,20 @@ async def test_lo_apuntado_desde_el_panel_sale_para_hoy_y_manda_en_la_frase(api)
     (item,) = served((await api.get("/panel")).json())
     tasks = item["tabs"][0]["blocks"][0]
     assert tasks["type"] == "tasks" and tasks["widget"] == "today" and tasks["add"]
-    assert [one["title"] for one in tasks["items"]] == ["Llamar al banco"]
-    assert item["headlines"][0]["text"] == "1 tarea para hoy"
+    assert [one["title"] for one in tasks["items"]] == ["Call the bank"]
+    assert item["headlines"][0]["text"] == "1 task for today"
 
     ticked = await api.post(
         "/widgets/today/act", json={"verb": "complete", "id": tasks["items"][0]["id"]}
     )
     assert ticked.status_code == 200, ticked.text
     (item,) = served((await api.get("/panel")).json())
-    assert item["headlines"][0]["text"] == "Nada pendiente para hoy"
+    assert item["headlines"][0]["text"] == "Nothing pending for today"
     assert item["tabs"][0]["blocks"][0]["items"] == []
 
 
-async def test_con_todos_sus_widgets_llenos_el_panel_sella(monkeypatch):
+async def test_with_all_its_widgets_full_the_panel_seals(monkeypatch):
     (item,) = await full_panel(home_panel, Path(__file__).parents[1] / "manifest.yaml", monkeypatch)
     assert item["area"] == "day"
     assert item["tabs"]
-    assert [tab["id"] for tab in item["tabs"]] == ["tareas"]
+    assert [tab["id"] for tab in item["tabs"]] == ["tasks"]

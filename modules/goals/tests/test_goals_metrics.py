@@ -95,7 +95,7 @@ async def test_a_net_worth_goal_moves_with_its_pace_and_projection(meter, api) -
         await api.post(
             "/goals",
             json={
-                "title": "60.000 € de patrimonio",
+                "title": "60,000 € of net worth",
                 "kind": "dated",
                 "target": 60000,
                 "metric_key": f"{METER}.net_worth",
@@ -115,7 +115,7 @@ async def test_reaching_the_figure_closes_it(meter, api) -> None:
         await api.post(
             "/goals",
             json={
-                "title": "Aprobar el máster",
+                "title": "Pass the master's",
                 "kind": "dated",
                 "target": 1,
                 "metric_key": f"{METER}.degree",
@@ -126,7 +126,7 @@ async def test_reaching_the_figure_closes_it(meter, api) -> None:
     assert goal["status"] == "active"
     await publish(meter, f"{METER}.degree", "level", "count", 0, 1)
     closed = (await api.get("/goals?state=closed")).json()
-    assert [(one["title"], one["status"]) for one in closed] == [("Aprobar el máster", "achieved")]
+    assert [(one["title"], one["status"]) for one in closed] == [("Pass the master's", "achieved")]
 
 
 async def test_kpis_publishes_its_own_figure_when_a_task_is_ticked(api) -> None:
@@ -134,7 +134,9 @@ async def test_kpis_publishes_its_own_figure_when_a_task_is_ticked(api) -> None:
 
     categories = {one["name"]: one["id"] for one in (await api.get("/categories")).json()}
     task = (
-        await api.post("/tasks", json={"category_id": categories["Casa"], "title": "Regar"})
+        await api.post(
+            "/tasks", json={"category_id": categories["Home"], "title": "Water the plants"}
+        )
     ).json()
     await api.post(f"/tasks/{task['id']}/done")
     await api.post(f"/tasks/{task['id']}/undo")
@@ -154,9 +156,9 @@ async def test_the_history_of_the_figure_is_queued_once(api) -> None:
     from goals.db import engine
 
     categories = {one["name"]: one["id"] for one in (await api.get("/categories")).json()}
-    for title in ("Uno", "Dos"):
+    for title in ("One", "Two"):
         task = (
-            await api.post("/tasks", json={"category_id": categories["Casa"], "title": title})
+            await api.post("/tasks", json={"category_id": categories["Home"], "title": title})
         ).json()
         await api.post(f"/tasks/{task['id']}/done")
     for _ in range(2):
@@ -213,17 +215,17 @@ async def test_a_goal_set_up_later_starts_where_the_figure_was_on_its_first_day(
     refused = await _tool(
         api,
         "create_goal",
-        {"title": "Patrimonio", "metric_key": f"{METER}.net_worth", "start_value": 30000, **shape},
+        {"title": "Net worth", "metric_key": f"{METER}.net_worth", "start_value": 30000, **shape},
     )
-    assert "Quita start_value" in refused["error"]
+    assert "Drop start_value" in refused["error"]
 
     created = await _tool(
-        api, "create_goal", {"title": "Patrimonio", "metric_key": f"{METER}.net_worth", **shape}
+        api, "create_goal", {"title": "Net worth", "metric_key": f"{METER}.net_worth", **shape}
     )
     assert created["start"] == 18000
 
     refused = await _tool(api, "update_goal", {"goal_id": created["goal_id"], "start_value": 30000})
-    assert "Quita start_value" in refused["error"]
+    assert "Drop start_value" in refused["error"]
     by_hand = await _tool(api, "create_goal", {"title": "A mano", "start_value": 30000, **shape})
     tied = await _tool(
         api,
@@ -240,7 +242,7 @@ async def test_moving_the_first_day_moves_the_start(meter, api) -> None:
         await api.post(
             "/goals",
             json={
-                "title": "Peso",
+                "title": "Weight",
                 "kind": "dated",
                 "direction": "at_most",
                 "target": 90,
@@ -266,7 +268,7 @@ async def test_a_start_that_has_not_come_is_not_today(meter, api) -> None:
         await api.post(
             "/goals",
             json={
-                "title": "Patrimonio el año que viene",
+                "title": "Net worth next year",
                 "kind": "dated",
                 "target": 60000,
                 "metric_key": f"{METER}.net_worth",
@@ -285,7 +287,7 @@ async def test_a_figure_that_starts_after_the_goal_does_not_lend_today(meter, ap
         await api.post(
             "/goals",
             json={
-                "title": "Peso",
+                "title": "Weight",
                 "kind": "dated",
                 "direction": "at_most",
                 "target": 90,
@@ -328,7 +330,7 @@ async def test_every_goal_figure_comes_in_one_query(meter, api, monkeypatch) -> 
         return await real(connection, since_by_key)
 
     async def one_by_one(*_args, **_kwargs):
-        raise AssertionError("una consulta por cifra")
+        raise AssertionError("one query per metric")
 
     monkeypatch.setattr(metrics, "series_many", counted)
     monkeypatch.setattr(metrics, "series", one_by_one)

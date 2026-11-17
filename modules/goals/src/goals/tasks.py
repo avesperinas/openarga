@@ -8,11 +8,10 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_agenda import KEY, dated, uid
+from arga_module import preferences
 from arga_recurrence import describe, next_occurrence, parse, to_rrule
 from goals import figures
 from goals.common import (
-    MADRID,
-    TZ,
     Conflict,
     NotFound,
     enqueue,
@@ -20,12 +19,15 @@ from goals.common import (
     is_uuid,
     me,
     now,
+    t,
     today,
+    zone,
+    zone_name,
 )
 
 Status = Literal["overdue", "today", "upcoming", "someday", "done"]
 
-SEEDED: tuple[tuple[str, int], ...] = (("Trabajo", 1), ("Casa", 2), ("Personal", 5))
+SEEDED: tuple[tuple[str, int], ...] = (("work", 1), ("home", 2), ("personal", 5))
 
 
 class Category(BaseModel):
@@ -59,7 +61,7 @@ class Task(BaseModel):
 def _name(value: str) -> str:
     value = " ".join(value.split())
     if not value:
-        raise ValueError("el nombre no puede ir vacío")
+        raise ValueError("the name cannot be empty")
     return value
 
 
@@ -110,13 +112,13 @@ async def seed(connection: AsyncConnection) -> None:
     )
     if first is None:
         return
-    for position, (name, hue) in enumerate(SEEDED, start=1):
+    for position, (key, hue) in enumerate(SEEDED, start=1):
         await connection.execute(
             text(
                 "insert into goals.goals_category (name, hue, position) "
                 "values (:name, :hue, :position)"
             ),
-            {"name": name, "hue": hue, "position": position},
+            {"name": t(f"category.{key}"), "hue": hue, "position": position},
         )
 
 
@@ -129,7 +131,7 @@ async def category(connection: AsyncConnection, category_id: str) -> Category:
     for one in await categories(connection):
         if one.id == category_id:
             return one
-    raise NotFound(f"categoría {category_id}")
+    raise NotFound(f"category {category_id}")
 
 
 async def find_category(connection: AsyncConnection, name: str) -> Category:
@@ -139,13 +141,13 @@ async def find_category(connection: AsyncConnection, name: str) -> Category:
         if fold(one.name) == wanted:
             return one
     known = ", ".join(one.name for one in all_of_them) or "ninguna"
-    raise NotFound(f"no hay una categoría '{name}'. Las que hay: {known}")
+    raise NotFound(f"there is no category '{name}'. The ones there are: {known}")
 
 
 async def create_category(connection: AsyncConnection, body: CategoryIn) -> Category:
     taken = {fold(one.name) for one in await categories(connection)}
     if fold(body.name) in taken:
-        raise Conflict(f"ya tienes una categoría '{body.name}'")
+        raise Conflict(f"you already have a category '{body.name}'")
     new = await connection.scalar(
         text("""
             insert into goals.goals_category (name, hue, position)
@@ -165,7 +167,7 @@ async def update_category(
     if body.name is not None and fold(body.name) != fold(current.name):
         taken = {fold(one.name) for one in await categories(connection) if one.id != category_id}
         if fold(body.name) in taken:
-            raise Conflict(f"ya tienes una categoría '{body.name}'")
+            raise Conflict(f"you already have a category '{body.name}'")
     await connection.execute(
         text(
             "update goals.goals_category set name = :name, hue = :hue where id = cast(:id as uuid)"
@@ -188,7 +190,7 @@ async def update_category(
 async def order(connection: AsyncConnection, body: OrderIn) -> list[Category]:
     known = {one.id for one in await categories(connection)}
     if set(body.ids) != known or len(body.ids) != len(known):
-        raise Conflict("el orden tiene que llevar todas tus categorías, una vez cada una")
+        raise Conflict("the order must list all your categories, each one once")
     for position, category_id in enumerate(body.ids, start=1):
         await connection.execute(
             text(
@@ -248,7 +250,7 @@ def status(
 
 
 def repeats(rule: str | None) -> str | None:
-    return describe(parse(rule)) if rule else None
+    return describe(parse(rule), preferences.current().locale) if rule else None
 
 
 SELECT = """
@@ -356,7 +358,7 @@ async def publish(
         return
     cancelled = gone or task.done_at is not None or task.due_on is None
     if task.due_time is not None and task.due_on is not None:
-        start: str = datetime.combine(task.due_on, task.due_time, MADRID).isoformat()
+        start: str = datetime.combine(task.due_on, task.due_time, zone()).isoformat()
         end, all_day = start, False
     else:
         start, end, all_day = day.isoformat(), (day + timedelta(days=1)).isoformat(), True
@@ -366,9 +368,9 @@ async def publish(
         start=start,
         end=end,
         all_day=all_day,
-        tz=TZ,
+        tz=zone_name(),
         status="cancelled" if cancelled else "confirmed",
-        href=f"/goals/tarea/{task.id}",
+        href=f"/goals/task/{task.id}",
     )
     await enqueue(
         connection,
@@ -405,7 +407,7 @@ class TaskPatch(BaseModel):
 def _clean_title(value: str) -> str:
     value = " ".join(value.split())
     if not value:
-        raise Conflict("la tarea necesita un título")
+        raise Conflict("the task needs a title")
     return value
 
 
@@ -415,19 +417,19 @@ def _normal_rule(rule: str | None) -> str | None:
     try:
         return to_rrule(parse(rule))
     except ValueError as error:
-        raise Conflict(f"esa repetición no se entiende: {error}") from error
+        raise Conflict(f"that repetition is not understood: {error}") from error
 
 
 def _check_shape(due_on: date | None, due_time: time | None, rule: str | None) -> None:
     if due_time is not None and due_on is None:
-        raise Conflict("una hora va con su día: pon también la fecha")
+        raise Conflict("a time goes with its day: set the date too")
     if rule is not None and due_on is None:
-        raise Conflict("una tarea que se repite necesita la fecha de la primera vez")
+        raise Conflict("a repeating task needs the date of its first time")
 
 
 async def _space_of(connection: AsyncConnection, category_id: str) -> str | None:
     if not is_uuid(category_id):
-        raise NotFound(f"categoría {category_id!r}")
+        raise NotFound(f"category {category_id!r}")
     found = (
         await connection.execute(
             text(
@@ -438,7 +440,7 @@ async def _space_of(connection: AsyncConnection, category_id: str) -> str | None
         )
     ).first()
     if found is None:
-        raise NotFound(f"categoría {category_id}")
+        raise NotFound(f"category {category_id}")
     return found.space_id
 
 
@@ -532,7 +534,7 @@ class Completed(BaseModel):
 async def complete(connection: AsyncConnection, task_id: str) -> Completed:
     current = await one(connection, task_id)
     if current.done_at is not None:
-        raise Conflict("esta tarea ya está hecha")
+        raise Conflict("this task is already done")
     await connection.execute(
         text("""
             update goals.goals_task
@@ -577,7 +579,7 @@ async def complete(connection: AsyncConnection, task_id: str) -> Completed:
 async def undo(connection: AsyncConnection, task_id: str) -> Task:
     current = await one(connection, task_id)
     if current.done_at is None:
-        raise Conflict("esta tarea no está hecha: no hay nada que deshacer")
+        raise Conflict("this task is not done: there is nothing to undo")
     following = (
         await connection.execute(
             text(SELECT + " where t.previous_id = cast(:id as uuid)"), {"id": task_id}
@@ -585,7 +587,7 @@ async def undo(connection: AsyncConnection, task_id: str) -> Task:
     ).first()
     if following is not None:
         if following.done_at is not None:
-            raise Conflict("la siguiente de esta serie ya está hecha: deshaz esa primero")
+            raise Conflict("the next one in this series is already done: undo that one first")
         await publish(connection, _task(following, now()), gone=True)
         await connection.execute(
             text("delete from goals.goals_task where id = cast(:id as uuid)"),
@@ -601,5 +603,5 @@ async def undo(connection: AsyncConnection, task_id: str) -> Task:
     back = await one(connection, task_id)
     await publish(connection, back)
     if current.done_at is not None and current.done_by_me:
-        await figures.publish_day(connection, current.done_at.astimezone(MADRID).date())
+        await figures.publish_day(connection, current.done_at.astimezone(zone()).date())
     return back
