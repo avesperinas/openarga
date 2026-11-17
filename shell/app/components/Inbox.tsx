@@ -6,6 +6,7 @@ import * as React from "react";
 import { type Notice, byDay, markRead, readInbox, timeOf } from "../lib/inbox";
 import { appNameOf } from "../lib/preferences";
 import { useDesktop } from "./Desktop";
+import { say } from "../words";
 
 type Loaded = { state: "loading" } | { state: "error" } | { state: "ready"; notices: Notice[] };
 
@@ -24,14 +25,14 @@ export function InboxBody({
   onOpen: (notice: Notice) => void;
   onSettings: () => void;
 }) {
-  if (loaded.state === "loading") return <Skeleton rows={4} label="Cargando los avisos" />;
+  if (loaded.state === "loading") return <Skeleton rows={4} label={say("inbox.loading")} />;
   if (loaded.state === "error") {
     return online ? (
-      <ErrorState title="No se han podido traer los avisos" onRetry={onRetry} />
+      <ErrorState title={say("inbox.failed")} onRetry={onRetry} />
     ) : (
       <>
         <OfflineNotice offline />
-        <ErrorState title="Sin conexión no se ven los avisos" onRetry={onRetry} />
+        <ErrorState title={say("inbox.offline")} onRetry={onRetry} />
       </>
     );
   }
@@ -39,10 +40,10 @@ export function InboxBody({
     return (
       <EmptyState
         icon="bell"
-        title="Ningún aviso en 30 días"
-        action={{ label: "Elegir qué avisos llegan", icon: "settings", onClick: onSettings }}
+        title={say("inbox.empty")}
+        action={{ label: say("inbox.choose"), icon: "settings", onClick: onSettings }}
       >
-        Lo que te avisen las apps se queda aquí un mes, aunque no llegue al teléfono.
+        {say("inbox.empty.hint")}
       </EmptyState>
     );
   }
@@ -68,7 +69,7 @@ export function InboxBody({
                   </span>
                   <span className="inbox-item-title">
                     {notice.title}
-                    {!notice.read && <span className="visually-hidden"> (sin abrir)</span>}
+                    {!notice.read && <span className="visually-hidden"> {say("inbox.unread")}</span>}
                   </span>
                   {notice.body && <span className="inbox-item-body">{notice.body}</span>}
                 </a>
@@ -111,9 +112,9 @@ export function Inbox() {
 
   return (
     <>
-      <IconButton icon="bell" label="Avisos" variant="plain" onClick={() => setOpen(true)} />
+      <IconButton icon="bell" label={say("notifications.title")} variant="plain" onClick={() => setOpen(true)} />
       {open && (
-        <Sheet title="Avisos" onClose={() => setOpen(false)}>
+        <Sheet title={say("notifications.title")} onClose={() => setOpen(false)}>
           <InboxBody
             loaded={loaded}
             online={online}
@@ -122,7 +123,7 @@ export function Inbox() {
             onOpen={opened}
             onSettings={() => {
               setOpen(false);
-              window.location.hash = "ajustes";
+              window.location.hash = "settings";
             }}
           />
         </Sheet>

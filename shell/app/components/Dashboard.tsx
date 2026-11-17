@@ -49,6 +49,7 @@ import {
 import { Pages } from "./Pages";
 import { DeletePageDialog } from "./Screens";
 import { WidgetCard } from "./WidgetCard";
+import { say } from "../words";
 
 export function Dashboard({
   desks,
@@ -186,7 +187,7 @@ function DeviceDashboard({
   const placed = new Set(everything.filter((item) => !item.option).map((item) => `${item.source}/${item.widget}`));
   const dragged = everything.find((item) => item.instance_id === grid.dragging);
 
-  const quitar = (instanceId: string, label: string) => {
+  const drop = (instanceId: string, label: string) => {
     setUndo({ desk, label });
     apply((current) => remove(current, instanceId));
   };
@@ -307,7 +308,7 @@ function DeviceDashboard({
     [arrived, setFetched, touch],
   );
 
-  const anadir = (entry: CatalogueEntry, option?: string) => {
+  const place = (entry: CatalogueEntry, option?: string) => {
     setAdding(false);
     const instance = crypto.randomUUID();
     const page = current;
@@ -332,7 +333,7 @@ function DeviceDashboard({
     );
   };
 
-  const borrar = (index: number) => {
+  const deletePage = (index: number) => {
     if (pages[index]?.items.length) return setDeleting(index);
     apply((now) => removePage(now, index, false));
   };
@@ -387,14 +388,14 @@ function DeviceDashboard({
                 <div className="page-tools">
                   <IconButton
                     icon="chevron-left"
-                    label="Mover la pantalla a la izquierda"
+                    label={say("dashboard.page.left")}
                     size="small"
                     disabled={pageIndex === 0}
                     onClick={() => apply((now) => movePage(now, pageIndex, pageIndex - 1))}
                   />
                   <IconButton
                     icon="chevron-right"
-                    label="Mover la pantalla a la derecha"
+                    label={say("dashboard.page.right")}
                     size="small"
                     disabled={pageIndex === pages.length - 1}
                     onClick={() => apply((now) => movePage(now, pageIndex, pageIndex + 1))}
@@ -402,18 +403,18 @@ function DeviceDashboard({
                   {isArrangedByHand(desk, breakpoint, page.id) && (
                     <IconButton
                       icon="modules"
-                      label="Colocar solos los widgets de esta pantalla"
+                      label={say("dashboard.page.arrange")}
                       size="small"
                       onClick={() => apply((now) => autoArrange(now, breakpoint, page.id))}
                     />
                   )}
                   <IconButton
                     icon="trash"
-                    label={`Borrar la pantalla ${pageIndex + 1}`}
+                    label={say("dashboard.page.delete", { n: pageIndex + 1 })}
                     size="small"
                     variant="destructive"
                     disabled={pages.length < 2}
-                    onClick={() => borrar(pageIndex)}
+                    onClick={() => deletePage(pageIndex)}
                   />
                 </div>
               )}
@@ -463,9 +464,9 @@ function DeviceDashboard({
                           <button
                             type="button"
                             className="grid-remove"
-                            aria-label={`Quitar ${title}`}
+                            aria-label={say("dashboard.widget.remove", { name: title })}
                             onPointerDown={(event) => event.stopPropagation()}
-                            onClick={() => quitar(item.instance_id, title)}
+                            onClick={() => drop(item.instance_id, title)}
                           >
                             <Icon name="close" />
                           </button>
@@ -474,7 +475,7 @@ function DeviceDashboard({
                               className="grid-grip"
                               role="slider"
                               tabIndex={0}
-                              aria-label={`Cambiar el tamaño de ${title}`}
+                              aria-label={say("dashboard.widget.resize", { name: title })}
                               aria-valuetext={item.size}
                               onPointerDown={grid.startResize(
                                 item.instance_id,
@@ -519,7 +520,7 @@ function DeviceDashboard({
                         <a
                           className="grid-open"
                           href={link}
-                          aria-label={`Abrir ${title}`}
+                          aria-label={say("dashboard.widget.open", { name: title })}
                           draggable={false}
                         />
                       )}
@@ -532,13 +533,13 @@ function DeviceDashboard({
           ...(editing
             ? [
                 <div
-                  key="fantasma"
+                  key="ghost"
                   className="grid grid-ghost"
                   data-page={pages.length}
                 >
                   <p className="grid-ghost-hint">
                     <Icon name="plus" />
-                    Suelta un widget aquí para crear otra pantalla
+                    {say("dashboard.ghost")}
                   </p>
                 </div>,
               ]
@@ -547,12 +548,12 @@ function DeviceDashboard({
       </Pages>
 
       {editing && (
-        <div className="glass editbar" role="toolbar" aria-label="Edición">
+        <div className="glass editbar" role="toolbar" aria-label={say("dashboard.editing")}>
           <Button variant="plain" icon="plus" onClick={() => setAdding(true)}>
-            Añadir
+            {say("dashboard.add")}
           </Button>
           <Button variant="primary" icon="done" onClick={() => onEditing(false)}>
-            Hecho
+            {say("dashboard.done")}
           </Button>
         </div>
       )}
@@ -561,7 +562,7 @@ function DeviceDashboard({
         <AddSheet
           catalogue={[...panelCatalogue, ...catalogue]}
           placed={placed}
-          onPick={anadir}
+          onPick={place}
           onClose={() => setAdding(false)}
         />
       )}
@@ -633,11 +634,11 @@ function tabsOf(pages: { id: string; items: DeskItem[] }[], editing: boolean): P
     const area = key ? AREAS.find((one) => one.key === key) : undefined;
     if (area) return { key: page.id, label: area.label, hue: area.hue, icon: <Icon name={area.icon as IconName} /> };
     plain += 1;
-    return { key: page.id, label: "Widgets" };
+    return { key: page.id, label: "" };
   });
-  if (plain > 1) {
-    let n = 0;
-    for (const tab of tabs) if (tab.label === "Widgets") tab.label = `Widgets ${++n}`;
+  let n = 0;
+  for (const tab of tabs) {
+    if (tab.label === "") tab.label = plain > 1 ? say("dashboard.widgets.n", { n: ++n }) : say("dashboard.widgets");
   }
-  return [...tabs, ...(editing ? [{ key: "nueva", label: "Nueva" }] : [])];
+  return [...tabs, ...(editing ? [{ key: "new", label: say("dashboard.page.new") }] : [])];
 }

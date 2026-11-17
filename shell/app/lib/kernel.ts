@@ -157,7 +157,7 @@ async function absolute<T>(url: string, limitMs?: number): Promise<T> {
     headers: identity(await headers()),
     ...(limitMs ? { signal: AbortSignal.timeout(limitMs) } : {}),
   });
-  if (!response.ok) throw new Error(`${url} respondió ${response.status}`);
+  if (!response.ok) throw new Error(`${url} answered ${response.status}`);
   return (await response.json()) as T;
 }
 
@@ -213,7 +213,7 @@ export const readDesktops = () => get<Record<Device, DesktopLayout>>("/ui/deskto
 export const readCatalogue = () => get<CatalogueEntry[]>("/ui/widgets");
 export function serviceUrl(endpoint: string): string {
   const match = /^\/api\/([a-z][a-z0-9_]{1,30})\/(.*)$/.exec(endpoint);
-  if (!match) throw new Error(`endpoint que no cuelga de /api/<módulo>: ${endpoint}`);
+  if (!match) throw new Error(`endpoint outside /api/<module>: ${endpoint}`);
   const [, source, rest] = match;
   const host = source === "kernel" ? base : `http://${source}:8000`;
   return `${host}/${rest}`;
