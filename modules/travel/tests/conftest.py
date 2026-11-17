@@ -197,3 +197,8 @@ async def hub(schema, database_url, monkeypatch):
     hub_credentials.masters.cache_clear()
     async with schema.begin() as connection:
         await connection.execute(text("delete from kernel.modules where id = 'hub'"))
+
+
+@pytest.fixture(autouse=True)
+def madrid(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENARGA_TIMEZONE", "Europe/Madrid")

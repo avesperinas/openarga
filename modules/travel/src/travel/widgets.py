@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
-
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets import envelope
@@ -83,7 +81,7 @@ async def by_year(connection: AsyncConnection) -> dict:
         return envelope(KINDS["by_year"], "empty", {"detail": say("widget.no_trips")})
     first = max(figures.by_year[0].year, figures.by_year[-1].year - YEARS + 1)
     per_year = {row.year: row.trips for row in figures.by_year}
-    years = list(range(first, max(figures.by_year[-1].year, date.today().year) + 1))[-YEARS:]
+    years = list(range(first, max(figures.by_year[-1].year, travel.today().year) + 1))[-YEARS:]
     series = [float(per_year.get(year, 0)) for year in years]
     return envelope(
         KINDS["by_year"],

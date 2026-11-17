@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets.panel import blocks_of, gather, panel, tile_of
-from travel import widgets
+from travel import travel, widgets
 from travel.words import say, words
 
 
@@ -33,7 +33,7 @@ async def build(connection: AsyncConnection) -> dict:
     days = None
     if nxt:
         try:
-            days = (datetime.fromisoformat(nxt[0]["at"]).date() - datetime.now().date()).days
+            days = (datetime.fromisoformat(nxt[0]["at"]).date() - travel.today()).days
         except ValueError:
             days = None
     blocks: list[dict] = []

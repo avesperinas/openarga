@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_contracts as contracts
 from arga_contracts import metrics as cifras
-from travel import travel
+from travel import clock, travel
 from travel.words import say
 
 APP = "travel"
-MADRID = ZoneInfo("Europe/Madrid")
 
 
 def _point(key: str, label: str, kind: str, day: date, value: float) -> dict[str, Any]:
@@ -57,7 +55,7 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
         _point("countries", say("metric.countries"), "level", day, n) for day, n in counted.items()
     ]
     if not trips and seen:
-        today = datetime.now(UTC).astimezone(MADRID).date()
+        today = clock.today()
         found += await cifras.steady(
             connection,
             APP,

@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_agenda import KEY, dated, uid
 from arga_tenancy import CURRENT_USER_SQL as ME
+from travel import clock
 from travel.travel.common import Conflict, NotFound
 from travel.travel.models import Leg, Trip
 from travel.travel.places import PLACE_COLUMNS, PlaceIn, save_place
@@ -169,7 +170,7 @@ def _agenda(trip_id: str, title: str, starts_on: date, ends_on: date, cancelled:
         start=starts_on,
         end=ends_on + timedelta(days=1),
         all_day=True,
-        tz="Europe/Madrid",
+        tz=clock.zone().key,
         status="cancelled" if cancelled else "confirmed",
         href=f"/travel/trips/{trip_id}",
     )
@@ -353,7 +354,7 @@ async def _sync_blocks(connection: AsyncConnection, found: Trip | None, trip_id:
             zone = (
                 zones.zone_of(place.country_code, place.lat, place.lon)
                 if place is not None
-                else "Europe/Madrid"
+                else clock.zone().key
             )
             timed.append((block, zone))
     for block, zone in timed:
