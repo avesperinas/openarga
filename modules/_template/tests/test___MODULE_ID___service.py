@@ -35,13 +35,13 @@ async def test_it_is_ready_once_the_kernel_provisions_it(api) -> None:
 async def test_the_widget_is_empty_until_something_is_written_and_then_counts_it(api) -> None:
     assert (await api.get("/widgets/main")).json()["state"] == "empty"
 
-    created = await api.post("/readings", json={"label": "peso", "value": 71.5})
+    created = await api.post("/readings", json={"label": "weight", "value": 71.5})
     assert created.status_code == 201, created.text
 
     widget = (await api.get("/widgets/main")).json()
     assert widget["state"] == "ready"
-    assert widget["body"] == {"value": 1, "detail": "última: peso"}
-    assert [one["label"] for one in (await api.get("/readings")).json()] == ["peso"]
+    assert widget["body"] == {"value": 1, "detail": "last: weight"}
+    assert [one["label"] for one in (await api.get("/readings")).json()] == ["weight"]
 
 
 async def test_a_reading_reaches_the_log_once_with_its_owner(api, schema, person) -> None:

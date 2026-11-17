@@ -16,9 +16,9 @@ class NotFound(Exception):
 
 
 class ReadingIn(BaseModel):
-    label: str = Field(min_length=1, max_length=40, description="La etiqueta, p. ej. `peso`.")
+    label: str = Field(min_length=1, max_length=40, description="The label, for example `weight`.")
     value: float = Field(description="El valor medido.")
-    ts: AwareDatetime | None = Field(default=None, description="Cuándo; ahora si no se dice.")
+    ts: AwareDatetime | None = Field(default=None, description="When; now if not given.")
 
 
 class Reading(BaseModel):
@@ -29,8 +29,8 @@ class Reading(BaseModel):
 
 
 class TargetIn(BaseModel):
-    label: str = Field(min_length=1, max_length=40, description="La etiqueta, p. ej. `peso`.")
-    value: float = Field(description="El valor al que se quiere llegar.")
+    label: str = Field(min_length=1, max_length=40, description="The label, for example `weight`.")
+    value: float = Field(description="The value to reach.")
 
 
 class Target(BaseModel):
