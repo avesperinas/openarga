@@ -88,9 +88,9 @@ describe("what was paid in against what it is worth", () => {
 describe("the treemap", () => {
   const items = [
     { key: "casa", label: "Casa", value: 6, detail: "6 €", hue: 3 as const },
-    { key: "super", label: "Súper", value: 3, detail: "3 €", hue: 2 as const },
+    { key: "super", label: "Groceries", value: 3, detail: "3 €", hue: 2 as const },
     { key: "ocio", label: "Ocio", value: 1, detail: "1 €", hue: 7 as const },
-    { key: "nada", label: "Nada", value: 0, detail: "0 €", hue: 8 as const },
+    { key: "none", label: "None", value: 0, detail: "0 €", hue: 8 as const },
   ];
 
   it("each block is sized by its weight, within the rectangle, and what adds nothing is left out", () => {
@@ -118,7 +118,7 @@ describe("against the average", () => {
       <DivergingBars
         label="Contra tu media"
         rows={[
-          { key: "a", label: "Súper", value: 0.18, text: "+18 %", tone: "negative" },
+          { key: "a", label: "Groceries", value: 0.18, text: "+18 %", tone: "negative" },
           { key: "b", label: "Viajes", value: -0.09, text: "−9 %", tone: "positive" },
         ]}
       />,
@@ -136,7 +136,7 @@ describe("the vertical flow", () => {
         vertical
         label="Flujo"
         nodes={[
-          { id: "n", name: "Nómina", column: 0, kind: "income" },
+          { id: "n", name: "Salary", column: 0, kind: "income" },
           { id: "c", name: "Casa", column: 1, kind: "expense" },
           { id: "a", name: "Ahorro", column: 1, kind: "saving" },
         ]}

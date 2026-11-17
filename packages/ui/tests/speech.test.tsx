@@ -79,13 +79,13 @@ describe("splitting what is read", () => {
   });
 
   it("a sentence without full stops longer than a piece splits by words", () => {
-    const chunks = chunksOf(["palabra ".repeat(80)]);
+    const chunks = chunksOf(["word ".repeat(80)]);
     expect(chunks.length).toBeGreaterThan(1);
     expect(chunks.every((one) => one.text.length <= 220)).toBe(true);
   });
 
   it("minutes at 160 words per minute, and fewer at higher speed", () => {
-    const chunks = chunksOf(["palabra ".repeat(320)]);
+    const chunks = chunksOf(["word ".repeat(320)]);
     expect(listeningMinutes(chunks)).toBe(2);
     expect(listeningMinutes(chunks, 2)).toBe(1);
   });
@@ -93,20 +93,20 @@ describe("splitting what is read", () => {
   it("what is heard of an article goes in reading order", () => {
     expect(
       spokenParts({
-        headline: "Titular",
-        lead: "Entradilla",
-        sections: [{ title: "Ladillo", text: "Uno.\n\nDos." }],
-        highlight: { label: "Para contar", text: "Dato." },
-        coda: { label: "Para pensar:", text: "¿Y?" },
+        headline: "Headline",
+        lead: "Lead",
+        sections: [{ title: "Subhead", text: "One.\n\nTwo." }],
+        highlight: { label: "To tell", text: "Fact." },
+        coda: { label: "To think about:", text: "So?" },
       }),
-    ).toEqual(["Titular", "Entradilla", "Ladillo", "Uno.", "Dos.", "Para contar. Dato.", "Para pensar: ¿Y?"]);
+    ).toEqual(["Headline", "Lead", "Subhead", "One.", "Two.", "To tell. Fact.", "To think about: So?"]);
   });
 });
 
 describe("the voice", () => {
   it("the locale's own country voice before another of the language, and a quality one before any", () => {
-    const voices = [voice("Paulina", "es-MX"), voice("Jorge", "es-ES"), voice("Mónica (mejorada)", "es-ES"), voice("Anna", "de-DE")];
-    expect(pickVoice(voices, "es-ES")?.name).toBe("Mónica (mejorada)");
+    const voices = [voice("Paulina", "es-MX"), voice("Jorge", "es-ES"), voice("M\u00f3nica (mejorada)", "es-ES"), voice("Anna", "de-DE")];
+    expect(pickVoice(voices, "es-ES")?.name).toBe("M\u00f3nica (mejorada)");
     expect(pickVoice(voices, "de-DE")?.name).toBe("Anna");
     expect(pickVoice(voices, "fr-FR")).toBeNull();
   });

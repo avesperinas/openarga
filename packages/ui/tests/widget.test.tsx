@@ -55,10 +55,10 @@ describe("the four states", () => {
   });
 
   it("disconnected says which source does not answer when the module knows", () => {
-    const html = render(<Widget {...base} state="disconnected" note="Sin conexión con Anthropic" />);
+    const html = render(<Widget {...base} state="disconnected" note="No connection to Anthropic" />);
 
-    expect(html).toContain("Sin conexión con Anthropic");
-    expect(html).not.toContain("Ningún conector");
+    expect(html).toContain("No connection to Anthropic");
+    expect(html).not.toContain("No connector");
   });
 });
 
@@ -147,9 +147,9 @@ describe("the body", () => {
 
 describe("what the module says shows", () => {
   it("empty, with the module's reason and not the generic sentence", () => {
-    const html = render(<Widget {...base} state="empty" note="nada conectado todavía" />);
+    const html = render(<Widget {...base} state="empty" note="nothing connected yet" />);
 
-    expect(html).toContain("nada conectado todavía");
+    expect(html).toContain("nothing connected yet");
     expect(html).not.toContain("Nothing to show yet");
   });
 });
@@ -159,7 +159,7 @@ describe("the lists", () => {
     const html = render(
       <WidgetRows>
         <WidgetRow label="BBVA" value="Caducada" tone="negative" />
-        <WidgetRow label="Bitvavo" value="Al día" />
+        <WidgetRow label="Bitvavo" value="Up to date" />
       </WidgetRows>,
     );
 

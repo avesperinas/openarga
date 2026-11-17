@@ -106,7 +106,7 @@ describe("the small line", () => {
 describe("the 24 hours", () => {
   it("five levels, and what has not arrived yet, empty", () => {
     expect([0, 3, 10, 20, 45].map(hourLevel)).toEqual([0, 1, 2, 3, 4]);
-    const html = renderToStaticMarkup(<HourStrip values={Array(24).fill(10)} label="Tensión" format={(v) => `${v} min`} now={12} />);
+    const html = renderToStaticMarkup(<HourStrip values={Array(24).fill(10)} label="Tension" format={(v) => `${v} min`} now={12} />);
     expect((html.match(/data-future/g) ?? []).length).toBe(11);
     expect((html.match(/<tr>/g) ?? []).length).toBe(24);
   });

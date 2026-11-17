@@ -169,10 +169,10 @@ describe("List", () => {
 
   it("with a second line and a figure, the name and what it is stack and the amount sits apart", () => {
     const html = render(
-      <ListRow title="Supermercado Alba" subtitle="Sin categoría" value="−60,00 €" tone="warning" onClick={noop} />,
+      <ListRow title="Alba Supermarket" subtitle="Uncategorised" value="−60,00 €" tone="warning" onClick={noop} />,
     );
     expect(html).toContain('class="list-row-text"');
-    expect(html).toContain('<span class="list-row-subtitle">Sin categoría</span>');
+    expect(html).toContain('<span class="list-row-subtitle">Uncategorised</span>');
     expect(html).toContain('<span class="list-row-value">−60,00 €</span>');
     expect(html).toContain('data-tone="warning"');
   });
@@ -308,7 +308,7 @@ describe("AppBar", () => {
     const html = render(
       <AppBar
         title="Pull"
-        subtitle="Rotación 3"
+        subtitle="Rotation 3"
         back={{ icon: "chevron-left", label: "Back", onClick: noop }}
         action={{ label: "Terminar", onClick: noop }}
       />,
@@ -401,18 +401,18 @@ describe("TabBar, Sheet and TextField", () => {
 
   it("the sheet is a named dialog with its action", () => {
     const html = render(
-      <Sheet title="Añadir ejercicio" onClose={noop} action={{ label: "Añadir", onClick: noop }}>
+      <Sheet title="Add exercise" onClose={noop} action={{ label: "Add", onClick: noop }}>
         <p>contenido</p>
       </Sheet>,
     );
     expect(html).toContain('role="dialog"');
-    expect(html).toContain('aria-label="Añadir ejercicio"');
-    expect(html).toContain("Añadir</span></button>");
+    expect(html).toContain('aria-label="Add exercise"');
+    expect(html).toContain("Add</span></button>");
   });
 
   it("without an action, the body is last and leaves room for the phone's home bar", () => {
     const html = render(
-      <Sheet title="¿Empezar Pull?" onClose={noop}>
+      <Sheet title="Start Pull?" onClose={noop}>
         <button type="button">Empezar</button>
       </Sheet>,
     );
@@ -434,8 +434,8 @@ describe("TabBar, Sheet and TextField", () => {
 
 describe("LevelChips", () => {
   const LEVELS = [
-    { value: "primary", label: "principal" },
-    { value: "secondary", label: "secundario" },
+    { value: "primary", label: "primary" },
+    { value: "secondary", label: "secondary" },
   ] as const;
 
   it("tapping cycles primary, secondary and unchosen", () => {
@@ -448,21 +448,21 @@ describe("LevelChips", () => {
   it("the level is announced and visible, not only coloured", () => {
     const html = render(
       <LevelChips
-        label="Músculos"
+        label="Muscles"
         levels={[...LEVELS]}
         value={{ chest: "primary", triceps: "secondary" }}
         onChange={noop}
         options={[
-          { value: "chest", label: "Pecho" },
-          { value: "triceps", label: "Tríceps" },
-          { value: "lats", label: "Dorsal" },
+          { value: "chest", label: "Chest" },
+          { value: "triceps", label: "Triceps" },
+          { value: "lats", label: "Lats" },
         ]}
       />,
     );
-    expect(html).toContain('aria-label="Pecho: principal"');
-    expect(html).toContain('aria-label="Tríceps: secundario"');
-    expect(html).toMatch(/aria-pressed="false" aria-label="Dorsal"/);
-    expect(html).toContain("secundario</span>");
+    expect(html).toContain('aria-label="Chest: primary"');
+    expect(html).toContain('aria-label="Triceps: secondary"');
+    expect(html).toMatch(/aria-pressed="false" aria-label="Lats"/);
+    expect(html).toContain("secondary</span>");
   });
 });
 
@@ -491,11 +491,11 @@ describe("WallpaperPicker", () => {
 
 describe("Switch", () => {
   it("is a named switch that says whether it is on", () => {
-    const on = render(<Switch label="Programación" checked onChange={noop} />);
-    const off = render(<Switch label="Programación" checked={false} onChange={noop} />);
+    const on = render(<Switch label="Programming" checked onChange={noop} />);
+    const off = render(<Switch label="Programming" checked={false} onChange={noop} />);
 
     expect(on).toContain('role="switch"');
-    expect(on).toContain('aria-label="Programación"');
+    expect(on).toContain('aria-label="Programming"');
     expect(on).toContain('aria-checked="true"');
     expect(off).toContain('aria-checked="false"');
     expect(on).toContain('type="button"');
@@ -514,7 +514,7 @@ describe("CopyField", () => {
   });
 
   it("the label names the field", () => {
-    const html = renderToStaticMarkup(<CopyField label="URL del servidor" value="https://x/mcp" />);
+    const html = renderToStaticMarkup(<CopyField label="Server URL" value="https://x/mcp" />);
     const id = /<input id="([^"]+)"/.exec(html)?.[1];
 
     expect(id).toBeTruthy();

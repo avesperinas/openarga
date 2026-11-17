@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { VIEWS, bilingual, maxBoundsOf, pointFeatures, zoneOf } from "../src/area-map";
 
 describe("the area map", () => {
-  it("says the names in both languages where OpenStreetMap has them: “Pamplona / Iruña”", () => {
+  it("says the names in both languages where OpenStreetMap has them: “Pamplona / Iru\u00f1a”", () => {
     const expression = JSON.stringify(bilingual("gris"));
 
     expect(expression).toContain('"index-of"," / "');
@@ -35,7 +35,7 @@ describe("the area map", () => {
   });
 
   it("each point travels with its id to be grouped", () => {
-    const features = pointFeatures([{ id: "a", lon: -1.64, lat: 42.81, kind: "pill", hue: 5, title: "x", label: "Sáb 3" }]);
+    const features = pointFeatures([{ id: "a", lon: -1.64, lat: 42.81, kind: "pill", hue: 5, title: "x", label: "Sat 3" }]);
 
     expect(features.features[0]).toEqual({
       type: "Feature",

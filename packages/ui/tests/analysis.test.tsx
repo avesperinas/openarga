@@ -32,7 +32,7 @@ describe("the series", () => {
 describe("the chart", () => {
   const html = renderToStaticMarkup(
     <SeriesChart
-      label="Gasto por categoría"
+      label="Spending by category"
       labels={["jul", "ago", "sep"]}
       series={[series("super", [300, 280, 310]), series("ocio", [120, 90, 60])]}
       kind="stacked"

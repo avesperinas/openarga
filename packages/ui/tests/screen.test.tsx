@@ -30,7 +30,7 @@ describe("a section", () => {
   });
 
   it("the small-caps grey belongs only to the row group", () => {
-    expect(renderToStaticMarkup(<GroupLabel>Lácteos</GroupLabel>)).toContain('<h2 class="group-label"');
+    expect(renderToStaticMarkup(<GroupLabel>Dairy</GroupLabel>)).toContain('<h2 class="group-label"');
     expect(css).toMatch(/\.group-label \{[^}]*text-transform: uppercase/);
     expect(css).not.toMatch(/\.section-title \{[^}]*text-transform/);
   });
@@ -47,20 +47,20 @@ describe("a card", () => {
 describe("the empty state", () => {
   it("says what is missing, why, and offers the action", () => {
     const html = renderToStaticMarkup(
-      <EmptyState icon="book" title="Todavía no hay libros" action={{ label: "Añadir libro", onClick: () => undefined }}>
-        Busca el que estás leyendo.
+      <EmptyState icon="book" title="No books yet" action={{ label: "Add book", onClick: () => undefined }}>
+        Look for the one you are reading.
       </EmptyState>,
     );
     expect(html).toContain("icon-badge");
-    expect(html).toContain('<p class="empty-state-title">Todavía no hay libros</p>');
-    expect(html).toContain("Añadir libro");
+    expect(html).toContain('<p class="empty-state-title">No books yet</p>');
+    expect(html).toContain("Add book");
   });
 });
 
 describe("the helper line", () => {
   it("with `lines`, hand-written text keeps its line breaks", () => {
     expect(renderToStaticMarkup(<Hint lines>{"Primera\nSegunda"}</Hint>)).toContain('data-lines="true"');
-    expect(renderToStaticMarkup(<Hint>Sin más</Hint>)).not.toContain("data-lines");
+    expect(renderToStaticMarkup(<Hint>Nothing else</Hint>)).not.toContain("data-lines");
     expect(css).toMatch(/\.hint\[data-lines\] \{ white-space: pre-line; \}/);
   });
 });
@@ -71,7 +71,7 @@ describe("create and notify", () => {
   });
 
   it("an error notice is announced; a normal one does not interrupt", () => {
-    expect(renderToStaticMarkup(<Notice tone="negative">Sin conexión</Notice>)).toContain('role="alert"');
+    expect(renderToStaticMarkup(<Notice tone="negative">Offline</Notice>)).toContain('role="alert"');
     expect(renderToStaticMarkup(<Notice tone="warning">Caduca</Notice>)).toContain('role="status"');
   });
 });
@@ -79,12 +79,12 @@ describe("create and notify", () => {
 describe("a block with its actions behind a button", () => {
   it("puts the menu in the header, with its name, and without a title too", () => {
     const html = renderToStaticMarkup(
-      <Section title="07:45 · 400 kcal" menu={{ label: "Acciones de las 07:45", items: [{ label: "Borrar", onSelect: () => undefined }] }}>
+      <Section title="07:45 · 400 kcal" menu={{ label: "Actions for 07:45", items: [{ label: "Delete", onSelect: () => undefined }] }}>
         dentro
       </Section>,
     );
     expect(html).toContain('class="section-head"');
-    expect(html).toContain("Acciones de las 07:45");
+    expect(html).toContain("Actions for 07:45");
     const bare = renderToStaticMarkup(
       <Section menu={{ label: "Acciones", items: [{ label: "Borrar", onSelect: () => undefined }] }}>dentro</Section>,
     );

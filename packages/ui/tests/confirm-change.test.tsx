@@ -22,7 +22,7 @@ function mount(node: React.ReactNode): void {
 
 async function press(name: string): Promise<void> {
   const found = Array.from(document.querySelectorAll("button")).find((b) => b.textContent === name);
-  if (!found) throw new Error(`no hay botón "${name}"`);
+  if (!found) throw new Error(`no button "${name}"`);
   await act(async () => found.click());
 }
 
@@ -32,28 +32,28 @@ describe("confirming a change", () => {
     const onCancel = vi.fn();
     mount(
       <ConfirmPanel
-        title="¿Guardar?"
-        changes={[{ label: "Categoría", from: "Ocio", to: "Salud" }]}
-        action="Guardar cambios"
+        title="Save?"
+        changes={[{ label: "Category", from: "Leisure", to: "Health" }]}
+        action="Save changes"
         onCancel={onCancel}
         onConfirm={onConfirm}
       />,
     );
-    expect(document.body.textContent).toContain("Ocio");
-    expect(document.body.textContent).toContain("Salud");
+    expect(document.body.textContent).toContain("Leisure");
+    expect(document.body.textContent).toContain("Health");
     expect(onConfirm).not.toHaveBeenCalled();
     await press("Back");
     expect(onCancel).toHaveBeenCalledOnce();
-    await press("Guardar cambios");
+    await press("Save changes");
     expect(onConfirm).toHaveBeenCalledOnce();
   });
 
   it("if it fails, it says so and allows retrying", async () => {
     mount(
-      <ConfirmChange title="¿Liquidar?" action="Marcar como liquidado" onCancel={() => undefined} onConfirm={() => Promise.reject(new Error("Offline"))} />,
+      <ConfirmChange title="Settle?" action="Mark as settled" onCancel={() => undefined} onConfirm={() => Promise.reject(new Error("Offline"))} />,
     );
-    await press("Marcar como liquidado");
+    await press("Mark as settled");
     expect(document.querySelector('[role="alert"]')?.textContent).toBe("Offline");
-    expect(Array.from(document.querySelectorAll("button")).some((b) => b.textContent === "Marcar como liquidado")).toBe(true);
+    expect(Array.from(document.querySelectorAll("button")).some((b) => b.textContent === "Mark as settled")).toBe(true);
   });
 });

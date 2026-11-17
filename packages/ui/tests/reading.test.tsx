@@ -57,7 +57,7 @@ describe("the compact table", () => {
 
   it("the CSV follows the locale's separators, as a spreadsheet in that locale opens it", () => {
     expect(csvCell(1234.567)).toBe("1234,57");
-    expect(csvCell('dice "hola"; adiós')).toBe('"dice ""hola""; adiós"');
+    expect(csvCell('says "hello"; bye')).toBe('"says ""hello""; bye"');
     expect(toCsv(["a", "b"], [[1.5, null]])).toBe("a;b\n1,5;");
     expect(tableCsv(columns, rows)).toBe('Cuenta;Saldo\n"Corriente; la de siempre";1234,5\nSavings;10');
   });
@@ -66,7 +66,7 @@ describe("the compact table", () => {
 describe("the pie", () => {
   it("joins what does not fit into Others and leaves out negatives", () => {
     const items = ["a", "b", "c", "d", "e", "f", "g"].map((key, index) => ({ key, name: key, value: 10 - index }));
-    const folded = foldShares([...items, { key: "loan", name: "Préstamo", value: -50 }]);
+    const folded = foldShares([...items, { key: "loan", name: "Loan", value: -50 }]);
     expect(folded).toHaveLength(6);
     expect(folded.at(-1)).toMatchObject({ name: "Others", value: 9 });
     expect(percentOf(0.5, 100)).toBe("<1 %");
@@ -78,7 +78,7 @@ describe("the pie", () => {
         label="Reparto"
         items={[
           { key: "a", name: "Liquidez", value: 25 },
-          { key: "b", name: "Inversión", value: 75 },
+          { key: "b", name: "Investment", value: 75 },
         ]}
       />,
     );
@@ -101,12 +101,12 @@ describe("the figures at the top", () => {
     expect(html).toContain("width:60%");
     const explained = renderToStaticMarkup(<StatTile label="Savings" value="12 %" info={<p>How</p>} />);
     expect(explained).toContain('aria-label="How savings is calculated"');
-    expect(explained).not.toContain("Cómo</p>");
+    expect(explained).not.toContain("How</p>");
   });
 
   it("a folded section keeps its content", () => {
     const html = renderToStaticMarkup(
-      <Collapsible title="Cuentas" subtitle="3 productos">
+      <Collapsible title="Accounts" subtitle="3 products">
         <p>dentro</p>
       </Collapsible>,
     );
@@ -127,9 +127,9 @@ describe("the boxes with arrows", () => {
       inflow: 0,
       outflow: 2000,
     },
-    { id: "a", name: "Nómina", kind: "account", group: "i1", group_name: "Banco Uno", inflow: 2000, outflow: 1600 },
-    { id: "b", name: "Casa", kind: "common", group: "i1", group_name: "Banco Uno", inflow: 600, outflow: 80 },
-    { id: "c", name: "Savings", kind: "account", group: "i2", group_name: "Banco Dos", inflow: 1000, outflow: 0 },
+    { id: "a", name: "Salary", kind: "account", group: "i1", group_name: "Bank One", inflow: 2000, outflow: 1600 },
+    { id: "b", name: "Home", kind: "common", group: "i1", group_name: "Bank One", inflow: 600, outflow: 80 },
+    { id: "c", name: "Savings", kind: "account", group: "i2", group_name: "Bank Two", inflow: 1000, outflow: 0 },
     { id: "spent", name: "Gastos", kind: "expense", group: "spent", group_name: "Gastos", inflow: 80, outflow: 0 },
   ];
   const links = [
@@ -153,9 +153,9 @@ describe("the boxes with arrows", () => {
     const html = renderToStaticMarkup(
       <FlowMap label="Flujos" nodes={nodes} links={links} format={(value) => `${value} €`} />,
     );
-    expect(html).toContain("Nómina → Casa: 600 €");
+    expect(html).toContain("Salary → Home: 600 €");
     expect(html).toContain("See as a table");
-    expect(html).toContain("Banco Dos");
+    expect(html).toContain("Bank Two");
   });
 
   it("with onSelect, each arrow and box is tapped like a button; without it, no", () => {
@@ -163,7 +163,7 @@ describe("the boxes with arrows", () => {
       <FlowMap label="Flujos" nodes={nodes} links={links} onSelect={() => undefined} />,
     );
     expect(pickable).toContain('role="button"');
-    expect(pickable).toContain('aria-label="Nómina → Casa: 600"');
+    expect(pickable).toContain('aria-label="Salary → Home: 600"');
     const still = renderToStaticMarkup(<FlowMap label="Flujos" nodes={nodes} links={links} />);
     expect(still).not.toContain('role="button"');
   });

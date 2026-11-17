@@ -15,9 +15,9 @@ afterEach(() => {
 });
 
 const OPTIONS = [
-  { value: "cash", label: "Efectivo" },
+  { value: "cash", label: "Cash" },
   { value: "funds", label: "Fondos" },
-  { value: "pension", label: "Pensión" },
+  { value: "pension", label: "Pension" },
 ];
 
 function Harness({ start = [] as string[], seen }: { start?: string[]; seen: string[][] }) {
@@ -25,7 +25,7 @@ function Harness({ start = [] as string[], seen }: { start?: string[]; seen: str
   return (
     <MultiSelectField
       label="Tipo de producto"
-      all="Todos los tipos"
+      all="All kinds"
       options={OPTIONS}
       values={values}
       onChange={(next) => {
@@ -50,7 +50,7 @@ function mount(start: string[] = []) {
 describe("the multi-select dropdown", () => {
   it("with nothing checked it says “all”, and closed it does not show the list", () => {
     const { host, button } = mount();
-    expect(button().textContent).toBe("Todos los tipos");
+    expect(button().textContent).toBe("All kinds");
     expect(button().getAttribute("aria-expanded")).toBe("false");
     expect(host.querySelector('[role="listbox"]')).toBeNull();
   });
@@ -58,14 +58,14 @@ describe("the multi-select dropdown", () => {
   it("checks in the order of the options, says what is checked and unchecks", () => {
     const { seen, button, option } = mount();
     act(() => button().click());
-    act(() => option("Pensión").click());
-    act(() => option("Efectivo").click());
+    act(() => option("Pension").click());
+    act(() => option("Cash").click());
     expect(seen.at(-1)).toEqual(["cash", "pension"]);
-    expect(button().textContent).toBe("Efectivo, Pensión");
-    expect(option("Efectivo").getAttribute("aria-selected")).toBe("true");
+    expect(button().textContent).toBe("Cash, Pension");
+    expect(option("Cash").getAttribute("aria-selected")).toBe("true");
     act(() => option("Fondos").click());
     expect(button().textContent).toBe("3 elegidas");
-    act(() => option("Efectivo").click());
+    act(() => option("Cash").click());
     expect(seen.at(-1)).toEqual(["funds", "pension"]);
   });
 

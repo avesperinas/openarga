@@ -57,7 +57,7 @@ describe("the shape of each size (ADR-0086)", () => {
 });
 
 const ROWS = [
-  { label: "Pasar la ITV del coche", value: "hace 3 días", tone: "warning" as const },
+  { label: "Take the car for inspection", value: "3 days ago", tone: "warning" as const },
   { label: "Llamar al fontanero", value: "10:00" },
   { label: "Devolver el libro", value: "today" },
 ];
@@ -76,7 +76,7 @@ describe("a list by the space available", () => {
 
   it("in a strip, the first and how many are left", () => {
     const html = card("4x1", <WidgetList rows={ROWS} />);
-    expect(html).toContain("Pasar la ITV del coche");
+    expect(html).toContain("Take the car for inspection");
     expect(html).not.toContain("Llamar al fontanero");
     expect(html).toContain("+2");
   });

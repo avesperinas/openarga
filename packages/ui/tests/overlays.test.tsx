@@ -59,7 +59,7 @@ describe("Sheet", () => {
         <>
           <button onClick={() => setOpen(true)}>Abrir</button>
           {open && (
-            <Sheet title="Añadir" onClose={() => setOpen(false)}>
+            <Sheet title="Add" onClose={() => setOpen(false)}>
               <input aria-label="Nombre" />
             </Sheet>
           )}
@@ -79,7 +79,7 @@ describe("Sheet", () => {
 
   it("tab does not leave the sheet", () => {
     render(
-      <Sheet title="Añadir" onClose={() => undefined}>
+      <Sheet title="Add" onClose={() => undefined}>
         <input aria-label="Nombre" />
       </Sheet>,
     );
@@ -96,7 +96,7 @@ describe("Sheet", () => {
   it("dragged down more than a quarter it closes; a little, it does not", () => {
     const onClose = vi.fn();
     render(
-      <Sheet title="Añadir" onClose={onClose}>
+      <Sheet title="Add" onClose={onClose}>
         <p>Algo</p>
       </Sheet>,
     );
@@ -127,7 +127,7 @@ describe("Sheet, what the review found", () => {
     window.matchMedia = (() => ({ matches: false })) as never;
     try {
       render(
-        <Sheet title="¿Borrar?" onClose={() => undefined}>
+        <Sheet title="Delete?" onClose={() => undefined}>
           <p>Borrando…</p>
         </Sheet>,
       );
@@ -150,7 +150,7 @@ describe("Sheet, what the review found", () => {
         <>
           <button onClick={() => setOpen(true)}>Abrir</button>
           {open && (
-            <Sheet title="Añadir" onClose={() => setOpen(false)}>
+            <Sheet title="Add" onClose={() => setOpen(false)}>
               <input aria-label="Nombre" autoFocus />
             </Sheet>
           )}
@@ -173,7 +173,7 @@ describe("Dialog", () => {
     const dialog = vi.fn();
     render(
       <Sheet title="Hoja" onClose={sheet}>
-        <Dialog title="¿Salir sin guardar?" onClose={dialog}>
+        <Dialog title="Leave without saving?" onClose={dialog}>
           Se pierde lo escrito.
         </Dialog>
       </Sheet>,
@@ -186,7 +186,7 @@ describe("Dialog", () => {
   it("an alert does not close on outside tap", () => {
     const onClose = vi.fn();
     render(
-      <Dialog title="¿Borrar?" kind="alert" onClose={onClose} actions={[{ label: "Borrar", onClick: () => undefined, tone: "danger" }]}>
+      <Dialog title="Delete?" kind="alert" onClose={onClose} actions={[{ label: "Delete", onClick: () => undefined, tone: "danger" }]}>
         No se puede deshacer.
       </Dialog>,
     );
@@ -202,14 +202,14 @@ describe("Menu", () => {
     const remove = vi.fn();
     render(
       <Menu
-        label="Acciones del libro"
+        label="Book actions"
         items={[
           { label: "Editar", icon: "edit", onSelect: edit },
           { label: "Borrar", icon: "trash", onSelect: remove, tone: "danger" },
         ]}
       />,
     );
-    const trigger = button("Acciones del libro");
+    const trigger = button("Book actions");
     trigger.focus();
     act(() => trigger.click());
     expect(trigger.getAttribute("aria-expanded")).toBe("true");
@@ -227,39 +227,39 @@ describe("Menu", () => {
 
 describe("Combobox", () => {
   const options = [
-    { value: "es", label: "España" },
+    { value: "es", label: "Spain" },
     { value: "fr", label: "Francia" },
-    { value: "jp", label: "Japón" },
+    { value: "jp", label: "Japan" },
   ];
 
   it("filters ignoring accents and chooses with the arrows and Enter", () => {
     const onChange = vi.fn();
-    render(<Combobox label="País" options={options} value={null} onChange={onChange} />);
+    render(<Combobox label="Country" options={options} value={null} onChange={onChange} />);
     const input = document.querySelector<HTMLInputElement>("input")!;
     act(() => input.focus());
     act(() => {
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
-      setter.call(input, "japon");
+      setter.call(input, "japan");
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    expect(Array.from(document.querySelectorAll("[role=option]")).map((one) => one.textContent)).toEqual(["Japón"]);
+    expect(Array.from(document.querySelectorAll("[role=option]")).map((one) => one.textContent)).toEqual(["Japan"]);
     key(input, "Enter");
     expect(onChange).toHaveBeenCalledWith("jp");
   });
 
   it("with `create`, typed text that is not listed can also be chosen", () => {
     const onChange = vi.fn();
-    render(<Combobox label="País" options={options} value={null} onChange={onChange} create={(text) => `Añadir «${text}»`} />);
+    render(<Combobox label="Country" options={options} value={null} onChange={onChange} create={(text) => `Add “${text}”`} />);
     const input = document.querySelector<HTMLInputElement>("input")!;
     act(() => input.focus());
     act(() => {
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
-      setter.call(input, "Islandia");
+      setter.call(input, "Iceland");
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    expect(document.querySelector("[role=option]")?.textContent).toBe("Añadir «Islandia»");
+    expect(document.querySelector("[role=option]")?.textContent).toBe("Add “Iceland”");
     key(input, "Enter");
-    expect(onChange).toHaveBeenCalledWith("Islandia");
+    expect(onChange).toHaveBeenCalledWith("Iceland");
   });
 });
 
@@ -269,11 +269,11 @@ describe("Combobox, what was created", () => {
       const [value, setValue] = React.useState<string | null>("es");
       return (
         <Combobox
-          label="País"
-          options={[{ value: "es", label: "España" }]}
+          label="Country"
+          options={[{ value: "es", label: "Spain" }]}
           value={value}
           onChange={setValue}
-          create={(text) => `Añadir «${text}»`}
+          create={(text) => `Add “${text}”`}
         />
       );
     }
@@ -282,11 +282,11 @@ describe("Combobox, what was created", () => {
     act(() => input.focus());
     act(() => {
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
-      setter.call(input, "Islandia");
+      setter.call(input, "Iceland");
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
     key(input, "Enter");
-    expect(input.value).toBe("Islandia");
+    expect(input.value).toBe("Iceland");
   });
 });
 
@@ -322,7 +322,7 @@ describe("CommandPalette", () => {
     render(
       <CommandPalette
         label="Comandos"
-        placeholder="Qué quieres hacer"
+        placeholder="What do you want to do"
         query=""
         onQuery={() => undefined}
         onClose={onClose}
@@ -348,7 +348,7 @@ describe("CommandPalette", () => {
   });
 
   it("commands match ignoring accents, and ⌘K opens", () => {
-    expect(matching([{ label: "Ir a hoy" }, { label: "Nueva canción" }], "cancion")).toEqual([{ label: "Nueva canción" }]);
+    expect(matching([{ label: "Go to today" }, { label: "New can\u00e7\u00f3n" }], "cancon")).toEqual([{ label: "New can\u00e7\u00f3n" }]);
     const open = vi.fn();
     function Page() {
       useShortcut("k", open);
@@ -410,7 +410,7 @@ describe("the rest", () => {
   });
 
   it("the initials, each person's tone and an invalid range", () => {
-    expect(initials("Ana María López")).toBe("AL");
+    expect(initials("Ana Mar\u00eda L\u00f3pez")).toBe("AL");
     expect(initials("  ")).toBe("?");
     expect(toneOf("Ana")).toBe(toneOf("Ana"));
     expect(toneOf("Ana")).toBeGreaterThanOrEqual(1);

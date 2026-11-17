@@ -243,8 +243,8 @@ describe("the next thing and the shortcuts", () => {
   });
 
   it("an unreadable date does not break the row", () => {
-    const html = render(<WidgetUpNext events={[{ at: "no es una fecha", title: "Algo" }]} />);
-    expect(html).toContain("Algo");
+    const html = render(<WidgetUpNext events={[{ at: "not a date", title: "Something" }]} />);
+    expect(html).toContain("Something");
     expect(html).toContain("—");
   });
 
@@ -279,7 +279,7 @@ describe("the next thing and the shortcuts", () => {
 
 describe("the card with a symbol", () => {
   it("renders the symbol in the tone asked, and not a colour of its own", () => {
-    const html = render(<WidgetKpi value="Pull" detail="rotación 7" icon="pull" hue={2} />);
+    const html = render(<WidgetKpi value="Pull" detail="rotation 7" icon="pull" hue={2} />);
 
     expect(html).toContain("kpi-icon");
     expect(html).toContain('data-hue="2"');
@@ -373,7 +373,7 @@ describe("tres cifras", () => {
     const items = [
       { label: "Bancos", value: 2 },
       { label: "Cuentas", value: 5 },
-      { label: "Última sincronización", value: "hace 2 h" },
+      { label: "Last sync", value: "2 h ago" },
     ];
     const ancha = render(
       <Widget title="Bancos" hue={2} size="4x2" shape="number" state="ready">

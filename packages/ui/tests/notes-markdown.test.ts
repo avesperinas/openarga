@@ -16,7 +16,7 @@ describe("Obsidian's Markdown", () => {
       embed: false,
     });
     expect(wikilink("Dativ\\|el dativo")?.alias).toBe("el dativo");
-    expect(linkText(wikilink("B1/Nota#Parte")!)).toBe("Nota › Parte");
+    expect(linkText(wikilink("B1/Note#Part")!)).toBe("Note › Part");
   });
 
   it("renders a resolved link as a link to its note and a missing one as missing", () => {
@@ -41,11 +41,11 @@ describe("Obsidian's Markdown", () => {
   });
 
   it("a tag is a link to search for it; a number or a heading is not", () => {
-    const html = render("# Título\n\nHola #deutsch/b1 y #42");
+    const html = render("# T\u00edtulo\n\nHello #deutsch/b1 and #42");
 
     expect(html).toContain('data-tag="deutsch/b1">#deutsch/b1</a>');
     expect(html).not.toContain('data-tag="42"');
-    expect(html).toContain('<h1 data-line="0" id="título">Título</h1>');
+    expect(html).toContain('<h1 data-line="0" id="t\u00edtulo">T\u00edtulo</h1>');
   });
 
   it("callouts carry their type and title", () => {
@@ -77,7 +77,7 @@ describe("Obsidian's Markdown", () => {
   });
 
   it("Obsidian comments are hidden", () => {
-    expect(render("Sí %%no%% sí")).toBe("<p data-line=\"0\">Sí  sí</p>\n");
+    expect(render("Yes %%no%% yes")).toBe("<p data-line=\"0\">Yes  yes</p>\n");
   });
 
   it("an external link opens outside", () => {
@@ -89,11 +89,11 @@ describe("Obsidian's Markdown", () => {
   });
 
   it("with checkable boxes, each says which it is, and ticking it changes its own", () => {
-    const text = "- [ ] uno\n```\n- [ ] código\n```\n- [x] dos";
+    const text = "- [ ] one\n```\n- [ ] code\n```\n- [x] two";
 
     expect(render(text, { tasks: true })).toContain('data-task="1" checked>');
-    expect(toggleTask(text, 0)).toBe("- [x] uno\n```\n- [ ] código\n```\n- [x] dos");
-    expect(toggleTask(text, 1)).toBe("- [ ] uno\n```\n- [ ] código\n```\n- [ ] dos");
+    expect(toggleTask(text, 0)).toBe("- [x] one\n```\n- [ ] code\n```\n- [x] two");
+    expect(toggleTask(text, 1)).toBe("- [ ] one\n```\n- [ ] code\n```\n- [ ] two");
   });
 
   it("a link to another app goes to its place with its name, and if unknown stays as text", () => {
@@ -111,11 +111,11 @@ describe("Obsidian's Markdown", () => {
   });
 
   it("finds the arga block outside the frontmatter", () => {
-    const text = "---\narga: library:1\n---\n%% arga %%\n**Autor**\n\n## Lectura\n%% /arga %%\n\nMío.";
+    const text = "---\narga: library:1\n---\n%% arga %%\n**Author**\n\n## Reading\n%% /arga %%\n\nMine.";
     const found = argaBlock(text);
-    expect(found?.inner).toBe("**Autor**\n\n## Lectura");
-    expect(text.slice(found!.end)).toBe("\nMío.");
-    expect(argaBlock("Sin bloque %% arga %% en línea")).toBeNull();
+    expect(found?.inner).toBe("**Author**\n\n## Reading");
+    expect(text.slice(found!.end)).toBe("\nMine.");
+    expect(argaBlock("No block %% arga %% inline")).toBeNull();
   });
 
   it("a link to another app's item with a page goes to the page", () => {

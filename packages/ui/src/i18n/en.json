@@ -257,6 +257,7 @@
   "recurrence.yearly.date": "on {day} {month}",
   "recurrence.yearly.in": "in {months}",
   "recurrence.yearly.of": "{what} of {months}",
+  "resource.saved": "{title}: saved",
   "search.clear": "Clear the search",
   "select.all": "All",
   "select.clear": "Clear the selection",

@@ -43,9 +43,9 @@ describe("the time bar", () => {
 
 describe("the figures", () => {
   it("each one is a term with its value", () => {
-    const html = renderToStaticMarkup(<MapFigures figures={[{ label: "Países", value: "12" }]} />);
+    const html = renderToStaticMarkup(<MapFigures figures={[{ label: "Countries", value: "12" }]} />);
 
-    expect(html).toContain("<dt>Países</dt><dd>12</dd>");
+    expect(html).toContain("<dt>Countries</dt><dd>12</dd>");
   });
 });
 
