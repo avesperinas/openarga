@@ -26,7 +26,7 @@ VALID = {
         {
             "name": "get_body_metrics",
             "scope": "health:read",
-            "description": "Peso y composición corporal en un rango de fechas.",
+            "description": "Weight and body composition over a date range.",
         },
     ],
     "ui": {
@@ -735,7 +735,7 @@ def test_every_app_that_reads_a_source_takes_it_through_an_inlet() -> None:
     for manifest in load_all(root):
         taken = {contract for inlet in manifest.inlets for contract in inlet.contracts}
         loose = sorted(set(manifest.consumes) & SOURCE_CONTRACTS - taken)
-        assert not loose, f"{manifest.id} lee {loose} sin una toma"
+        assert not loose, f"{manifest.id} reads {loose} without an inlet"
 
 
 async def test_the_registry_lists_each_app_inlet_for_the_hub(api, tmp_path: Path) -> None:

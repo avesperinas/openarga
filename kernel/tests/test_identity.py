@@ -11,10 +11,10 @@ SEED_SPELLINGS = ["ALBA MARKET 221", "SUPERM. ALBA 0221", "ALBA MARKET SA"]
     ("alias", "text", "numeric", "distinctive"),
     [
         ("MERCADITO SA", "mercadito", (), {"mercadito"}),
-        ("COMPRA EN PANADERÍA LOS TILOS", "panaderia los tilos", (), {"tilos"}),
+        ("COMPRA EN PANADER\u00cdA LOS TILOS", "panaderia los tilos", (), {"tilos"}),
         ("ALBA MARKET 0221", "alba market", ("221",), {"alba"}),
         ("E.S. KM-42 NORTE", "km norte", ("42",), {"norte"}),
-        ("Casa Pérez, S.L.", "casa perez", (), {"casa", "perez"}),
+        ("Casa P\u00e9rez, S.L.", "casa perez", (), {"casa", "perez"}),
     ],
 )
 def test_normalisation_keeps_only_what_identifies(
@@ -33,7 +33,7 @@ def test_a_store_number_loses_its_leading_zeros() -> None:
 
 def test_a_glued_token_is_split_into_letters_and_digits() -> None:
     assert normalise("ES KM42").alpha == ("es", "km")
-    assert normalise("Casa Pérez, S.L.").text == "casa perez"
+    assert normalise("Casa P\u00e9rez, S.L.").text == "casa perez"
     assert normalise("ES KM42").numeric == ("42",)
 
 
@@ -49,7 +49,7 @@ def test_a_glued_token_is_split_into_letters_and_digits() -> None:
 def test_the_rules_fire_where_they_should(left: str, right: str, rule: str) -> None:
     verdict = compare(left, right)
 
-    assert verdict is not None, f"{left!r} y {right!r} deberían casar"
+    assert verdict is not None, f"{left!r} and {right!r} should match"
     assert verdict.rule == rule
 
 

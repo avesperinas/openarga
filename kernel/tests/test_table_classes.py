@@ -61,11 +61,11 @@ async def test_every_table_says_whose_it_is(every_table) -> None:
 
     unclassified = [f"{row.schema}.{row.name}" for row in rows if row.class_ not in CLASSES]
 
-    assert {row.schema for row in rows} >= {"kernel", *modules}, "no se registraron los módulos"
+    assert {row.schema for row in rows} >= {"kernel", *modules}, "the modules were not registered"
     assert not unclassified, (
-        f"estas tablas no dicen de qué clase son: {unclassified}. Cada tabla lleva "
-        f"`comment on table ... is 'arga:person'` (o `arga:catalog`, `arga:shared`, "
-        f"`arga:system`). Ver ADR-0028 y ADR-0038."
+        f"these tables do not say their class: {unclassified}. Every table carries "
+        f"`comment on table ... is 'arga:person'` (or `arga:catalog`, `arga:shared`, "
+        f"`arga:system`). See ADR-0028 and ADR-0038."
     )
 
 
@@ -139,8 +139,8 @@ async def test_postgres_separates_what_belongs_to_someone(every_table) -> None:
         f"{row.schema}.{row.name}" for row in rows if row.class_ == "arga:system" and row.rls
     ]
 
-    assert not open_tables, f"sin RLS forzada con su política: {open_tables}"
-    assert not system_with_rls, f"del sistema y con RLS: {system_with_rls}"
+    assert not open_tables, f"without forced RLS and its policy: {open_tables}"
+    assert not system_with_rls, f"system tables with RLS: {system_with_rls}"
 
 
 async def test_the_system_has_no_owner(every_table) -> None:

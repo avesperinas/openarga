@@ -341,7 +341,7 @@ async def test_a_code_cannot_be_used_twice(browser) -> None:
 @pytest.mark.parametrize(
     "overrides",
     [
-        {"nonce": "de-otra-peticion"},
+        {"nonce": "from-another-request"},
         {"aud": "otro-cliente"},
         {"iss": "https://otro.emisor/realms/arga"},
         {"exp": 1},
@@ -368,7 +368,7 @@ async def test_a_tampered_cookie_is_no_session(browser) -> None:
 
 
 async def test_a_cookie_sealed_with_another_secret_is_no_session(browser) -> None:
-    forged = session_cookie(secret="otro-secreto-que-no-es-el-del-gateway-ni-de-lejos")
+    forged = session_cookie(secret="another-secret-that-is-not-the-gateway-one-at-all")
 
     response = await browser.get("/api/kernel/x", headers={"cookie": f"{COOKIE}={forged}"})
 
@@ -553,7 +553,7 @@ def test_the_gateway_starts_without_cloudflare_access(monkeypatch: pytest.Monkey
             except httpx.HTTPError:
                 time.sleep(0.1)
         else:
-            pytest.fail("el gateway no llegó a contestar /healthz sin Access")
+            pytest.fail("the gateway never answered /healthz without Access")
         assert server.poll() is None
     finally:
         server.terminate()

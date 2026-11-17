@@ -49,7 +49,7 @@ async def test_home_panels_keep_their_order_and_refuse_what_is_not_an_area(api) 
     prefs = (await api.get("/ui/preferences")).json()
     assert prefs["home_panels"] == {"order": ["money", "day"], "hidden": ["mind"], "placed": []}
 
-    wrong = await api.put("/ui/preferences", json={"home_panels": {"order": ["nada"]}})
+    wrong = await api.put("/ui/preferences", json={"home_panels": {"order": ["nothing"]}})
     assert wrong.status_code == 422
 
 
@@ -182,7 +182,7 @@ async def test_a_name_set_that_does_not_exist_or_a_bad_custom_name_is_rejected(a
         {"custom_app_names": {"../x": "Agenda"}},
         {"custom_app_names": {"planner": ""}},
         {"custom_app_names": {"planner": "x" * 25}},
-        {"custom_app_names": {"planner": "dos\nlíneas"}},
+        {"custom_app_names": {"planner": "two\nlines"}},
     ):
         response = await api.put("/ui/preferences", json=bad)
         assert response.status_code == 422, bad

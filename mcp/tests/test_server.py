@@ -61,7 +61,7 @@ def test_the_server_code_does_not_know_any_module_by_name() -> None:
     for path in SOURCE.glob("*.py"):
         source = path.read_text()
         assert "training" not in source and "shopping" not in source, (
-            f"{path.name} nombra un módulo"
+            f"{path.name} names a module"
         )
 
 
@@ -97,7 +97,7 @@ async def test_a_read_tool_returns_real_data(settings, stack, mode: str) -> None
 
     assert not result.is_error, result.content
     variants = json.loads(result.content[0].text)["variants"]
-    assert variants, "el catálogo sembrado trae presses"
+    assert variants, "the seeded catalogue has presses"
     assert all("press" in f"{v['exercise']} {v['variant']}".lower() for v in variants)
 
 

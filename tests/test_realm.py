@@ -112,8 +112,8 @@ def test_the_sync_grants_the_same_scopes_the_realm_declares() -> None:
     (claude,) = [c for c in REALM["clients"] if c["clientId"] == "claude"]
     module_scopes = {scope for scope in claude["defaultClientScopes"] if ":" in scope}
 
-    assert module_scopes, "el cliente no declara ningún scope de módulo"
-    assert "*:read ]]" not in sync, "el sync concede menos de lo que el realm declara"
+    assert module_scopes, "the client declares no module scope"
+    assert "*:read ]]" not in sync, "sync grants less than the realm declares"
     assert '"$name" == *:*' in sync
 
 

@@ -9,7 +9,7 @@ import { keep } from "../src/persist";
 import { peek, remember } from "../src/index";
 
 describe("remember", () => {
-  it("lo deja a mano y lo guarda en el dispositivo", () => {
+  it("keeps it at hand and stores it on the device", () => {
     remember("today", { next: "Push" });
 
     expect(peek("today")).toEqual({ next: "Push" });

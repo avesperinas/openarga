@@ -44,7 +44,7 @@ def test_a_movement_without_what_an_app_needs_is_refused(missing: str, field: st
                 "country": "ES",
                 "from": "2026-01-01",
                 "to": "2027-12-31",
-                "days": {"1 de enero": "Año Nuevo"},
+                "days": {"1 January": "New Year's Day"},
             },
         ),
     ],
@@ -133,7 +133,7 @@ def test_an_exercise_may_carry_its_heart_every_few_seconds() -> None:
     exercise = {
         "id": "x1",
         "kind": "STATIONARY_BIKE",
-        "name": "Bici estática",
+        "name": "Exercise bike",
         "start": "2026-10-13T12:00:00+02:00",
         "end": "2026-10-13T12:30:00+02:00",
         "heart": [{"s": 0, "bpm": 92}, {"s": 5, "bpm": 95.5}],

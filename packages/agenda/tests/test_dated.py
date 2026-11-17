@@ -12,7 +12,7 @@ MADRID_SUMMER = timezone(timedelta(hours=2))
 def a_class(**changes: object) -> dict:
     fields = {
         "uid": "study:session:42",
-        "title": "Estadística II",
+        "title": "Statistics II",
         "start": "2026-10-06T18:00:00+02:00",
         "end": "2026-10-06T20:00:00+02:00",
         "tz": "Europe/Madrid",
@@ -27,7 +27,7 @@ def test_a_timed_object_comes_back_normalised_for_json() -> None:
 
     assert payload == {
         "uid": "study:session:42",
-        "title": "Estadística II",
+        "title": "Statistics II",
         "start": "2026-10-06T18:00:00+02:00",
         "end": "2026-10-06T20:00:00+02:00",
         "all_day": False,
@@ -64,7 +64,7 @@ def test_the_end_cannot_go_before_the_start() -> None:
 def test_all_day_is_dates_with_an_exclusive_end() -> None:
     payload = dated(
         uid="planner:reminder:3",
-        title="ITV del coche",
+        title="Car inspection",
         start=date(2026, 11, 3),
         end=date(2026, 11, 4),
         all_day=True,

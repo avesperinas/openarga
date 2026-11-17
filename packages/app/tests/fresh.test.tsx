@@ -36,7 +36,7 @@ function Reads({ read }: { read: () => void }) {
 }
 
 describe("useTick", () => {
-  it("repite la lectura cada cinco minutos mientras se ve", () => {
+  it("repeats the read every five minutes while visible", () => {
     const read = vi.fn();
     act(() => root.render(<Reads read={read} />));
     expect(read).toHaveBeenCalledTimes(1);
@@ -48,7 +48,7 @@ describe("useTick", () => {
     expect(read).toHaveBeenCalledTimes(2);
   });
 
-  it("escondida no lee; al volver, si ha pasado el rato, sí", () => {
+  it("hidden it does not read; when back, if enough time passed, it does", () => {
     const read = vi.fn();
     act(() => root.render(<Reads read={read} />));
     visibility = "hidden";

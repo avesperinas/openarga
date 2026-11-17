@@ -48,7 +48,7 @@ function Shows({ name, fetcher, staleMs }: { name: string; fetcher: () => Promis
 const text = (name: string) => host.querySelector(`[data-name=${name}]`)?.textContent;
 
 describe("useResource", () => {
-  it("dos pantallas con la misma clave hacen una sola petición", async () => {
+  it("two screens with the same key make a single request", async () => {
     const fetcher = vi.fn(async () => ["a"]);
     act(() =>
       root.render(
@@ -64,7 +64,7 @@ describe("useResource", () => {
     expect(text("two")).toBe("a");
   });
 
-  it("volver a una pestaña no pide nada ni enseña el esqueleto", async () => {
+  it("going back to a tab requests nothing and shows no skeleton", async () => {
     const fetcher = vi.fn(async () => ["a"]);
     function Tabs() {
       const [tab, setTab] = useState("shelf");
@@ -85,7 +85,7 @@ describe("useResource", () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
-  it("lo viejo se enseña mientras se relee, y al volver a la app se relee", async () => {
+  it("the old data shows while it rereads, and coming back to the app rereads", async () => {
     let round = 0;
     const fetcher = vi.fn(async () => [`v${++round}`]);
     act(() => root.render(<Shows name="one" fetcher={fetcher} staleMs={0} />));
@@ -100,7 +100,7 @@ describe("useResource", () => {
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
-  it("tras reset, una lectura que se quedó colgada no hace esperar a la siguiente", async () => {
+  it("after reset, a hung read does not make the next one wait", async () => {
     const hung = vi.fn(() => new Promise<string[]>(() => undefined));
     act(() => root.render(<Shows name="one" fetcher={hung} />));
     act(() => root.unmount());
@@ -112,25 +112,25 @@ describe("useResource", () => {
     expect(text("one")).toBe("otra persona");
   });
 
-  it("tras reset, lo que está en pantalla se pide otra vez, sin esperar a volver a la app", async () => {
-    let who = "una";
+  it("after reset, what is on screen is requested again, without waiting to come back to the app", async () => {
+    let who = "first";
     act(() => root.render(<Shows name="one" fetcher={async () => [who]} />));
     await flush();
-    who = "otra";
+    who = "second";
     await act(async () => {
       await reset();
     });
     await flush();
-    expect(text("one")).toBe("otra");
+    expect(text("one")).toBe("second");
   });
 
-  it("en el servidor pinta sin tocar nada", () => {
+  it("on the server it renders without touching anything", () => {
     const fetcher = vi.fn(async () => ["a"]);
     expect(renderToString(<Shows name="ssr" fetcher={fetcher} />)).toContain("cargando");
     expect(fetcher).not.toHaveBeenCalled();
   });
 
-  it("enseña lo que se sabe de otra clave mientras llega lo suyo", async () => {
+  it("shows what is known under another key while its own arrives", async () => {
     prime("books", [{ id: "1", title: "Kasus" }]);
     const reply = later<{ id: string; title: string; pages: number }>();
     function Book() {
@@ -148,26 +148,26 @@ describe("useResource", () => {
 });
 
 describe("invalidate", () => {
-  it("una lectura que salió antes del cambio, sin nadie mirando, llega y se tira", async () => {
+  it("a read that left before the change, with nobody looking, arrives and is dropped", async () => {
     const old = later<string[]>();
     let calls = 0;
-    const fetcher = () => (++calls === 1 ? old.promise : Promise.resolve(["después"]));
+    const fetcher = () => (++calls === 1 ? old.promise : Promise.resolve(["after"]));
     act(() => root.render(<Shows name="one" fetcher={fetcher} />));
     act(() => root.unmount());
     invalidate("");
-    old.resolve(["antes"]);
+    old.resolve(["before"]);
     await flush();
     expect(peek<string[]>("books")).toBeUndefined();
 
     root = createRoot(host);
     act(() => root.render(<Shows name="one" fetcher={fetcher} />));
     await flush();
-    expect(text("one")).toBe("después");
+    expect(text("one")).toBe("after");
   });
 });
 
 describe("mutate", () => {
-  it("pinta antes de que conteste y vuelve a lo de antes si falla", async () => {
+  it("renders before the answer and goes back to the previous state if it fails", async () => {
     act(() => root.render(<Shows name="one" fetcher={async () => ["a"]} />));
     await flush();
 
@@ -185,18 +185,18 @@ describe("mutate", () => {
     expect((failed as Error).message).toBe("no");
   });
 
-  it("una lectura que salió antes de escribir llega vieja y se tira", async () => {
+  it("a read that left before the write arrives stale and is dropped", async () => {
     const read = later<string[]>();
     act(() => root.render(<Shows name="one" fetcher={() => read.promise} />));
     await act(async () => {
       await mutate("books", ["escrito"]);
     });
-    read.resolve(["leído antes"]);
+    read.resolve(["read before"]);
     await flush();
     expect(text("one")).toBe("escrito");
   });
 
-  it("las escrituras van en fila y dos toques seguidos quedan los dos", async () => {
+  it("writes queue up and two taps in a row both stay", async () => {
     act(() => root.render(<Shows name="one" fetcher={async () => []} />));
     await flush();
 
@@ -235,7 +235,7 @@ describe("mutate", () => {
     expect(text("one")).toBe("a,b");
   });
 
-  it("una respuesta que llega después de otra escritura no la pisa, y se relee", async () => {
+  it("an answer arriving after another write does not overwrite it, and it rereads", async () => {
     let server = ["a"];
     act(() => root.render(<Shows name="one" fetcher={async () => server} />));
     await flush();
@@ -255,7 +255,7 @@ describe("mutate", () => {
     expect(text("one")).toBe("a,tachado,leche");
   });
 
-  it("invalidate no se conforma con una lectura que salió antes del cambio", async () => {
+  it("invalidate does not settle for a read that left before the change", async () => {
     const first = later<string[]>();
     const fetcher = vi.fn().mockReturnValueOnce(first.promise).mockResolvedValue(["nuevo"]);
     act(() => root.render(<Shows name="one" fetcher={fetcher} />));
@@ -266,7 +266,7 @@ describe("mutate", () => {
     expect(text("one")).toBe("nuevo");
   });
 
-  it("invalidate relee lo que está en pantalla", async () => {
+  it("invalidate rereads what is on screen", async () => {
     let round = 0;
     const fetcher = vi.fn(async () => [`v${++round}`]);
     act(() => root.render(<Shows name="one" fetcher={fetcher} />));
@@ -278,11 +278,11 @@ describe("mutate", () => {
   });
 });
 
-describe("lo que se ve mientras se mira", () => {
+describe("what is seen while looking", () => {
   beforeEach(() => vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] }));
   afterEach(() => vi.useRealTimers());
 
-  it("se vuelve a pedir cada cinco minutos sin tocar nada, y no antes", async () => {
+  it("it is requested again every five minutes without touching anything, and not before", async () => {
     let round = 0;
     const fetcher = vi.fn(async () => [`vuelta ${++round}`]);
     act(() => root.render(<Shows name="one" fetcher={fetcher} />));
@@ -299,7 +299,7 @@ describe("lo que se ve mientras se mira", () => {
     expect(text("one")).toBe("vuelta 2");
   });
 
-  it("escondida no pide nada, y lo que dura más de cinco minutos espera lo suyo", async () => {
+  it("hidden it requests nothing, and what lasts longer than five minutes waits its turn", async () => {
     const hidden = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
     const books = vi.fn(async () => ["a"]);
     const catalogue = vi.fn(async () => ["b"]);
@@ -323,7 +323,7 @@ describe("lo que se ve mientras se mira", () => {
     hidden.mockRestore();
   });
 
-  it("lo que no está en pantalla no se pide", async () => {
+  it("what is not on screen is not requested", async () => {
     const fetcher = vi.fn(async () => ["a"]);
     act(() => root.render(<Shows name="one" fetcher={fetcher} />));
     await flush();

@@ -151,7 +151,7 @@ async def test_an_app_that_is_switched_off_serves_nothing(declared, served) -> N
 
 async def test_when_the_app_is_down_the_answer_says_which(declared, served, monkeypatch) -> None:
     def down(request: httpx.Request) -> httpx.Response:
-        raise httpx.ConnectError("no está")
+        raise httpx.ConnectError("not there")
 
     monkeypatch.setattr(capabilities, "module_transport", lambda: httpx.MockTransport(down))
 

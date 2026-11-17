@@ -30,19 +30,19 @@ const { pick, stale } = load(async () => undefined);
 const ORIGIN = "https://arga.example";
 const at = (path: string, mode = "cors") => pick(new URL(path, ORIGIN), mode, ORIGIN);
 
-describe("el service worker de una app", () => {
-  it("trata como página cualquier pantalla de la app", () => {
+describe("an app's service worker", () => {
+  it("treats any screen of the app as a page", () => {
     expect(at("/library/", "navigate")).toBe("page");
     expect(at("/library/libro/1", "navigate")).toBe("page");
     expect(at("/library", "navigate")).toBe("page");
   });
 
-  it("guarda los trozos y los ficheros de la app", () => {
+  it("caches the app's chunks and files", () => {
     expect(at("/library/assets/index-a1.js")).toBe("asset");
     expect(at("/library/icon.svg?v=1")).toBe("file");
   });
 
-  it("no toca la API, otras apps, el worker de los avisos ni otros orígenes", () => {
+  it("does not touch the API, other apps, the notifications worker or other origins", () => {
     expect(at("/api/library/books")).toBe("pass");
     expect(at("/shopping/", "navigate")).toBe("pass");
     expect(at("/sw.js")).toBe("pass");
@@ -51,24 +51,24 @@ describe("el service worker de una app", () => {
   });
 });
 
-describe("la página", () => {
+describe("the page", () => {
   const fresh = { status: 200, body: "de la red" };
 
-  it("sale de la red, aunque haya una guardada: la guardada es la versión de la última visita", async () => {
+  it("comes from the network even if one is cached: the cached one is the last visit's version", async () => {
     expect(await load(async () => fresh).page("/library/")).toBe(fresh);
   });
 
-  it("sin red, o con el servidor caído, sale la guardada", async () => {
+  it("offline, or with the server down, the cached one is served", async () => {
     expect(await load(async () => Promise.reject(new TypeError("offline"))).page("/library/")).toBe("guardada");
     expect(await load(async () => ({ status: 502 })).page("/library/")).toBe("guardada");
   });
 
-  it("una redirección al login no se cambia por la guardada", async () => {
+  it("a redirect to the login is not swapped for the cached one", async () => {
     const login = { status: 0, type: "opaqueredirect" };
     expect(await load(async () => login).page("/library/")).toBe(login);
   });
 
-  it("si la red no contesta a tiempo, sale la guardada", async () => {
+  it("if the network does not answer in time, the cached one is served", async () => {
     vi.useFakeTimers();
     try {
       const opened = load(() => new Promise(() => undefined)).page("/library/");
@@ -79,26 +79,26 @@ describe("la página", () => {
     }
   });
 
-  it("sin red y sin nada guardado, el error de la red", async () => {
+  it("offline and with nothing cached, the network error", async () => {
     await expect(load(async () => Promise.reject(new TypeError("offline")), null).page("/library/")).rejects.toThrow(
       "offline",
     );
   });
 });
 
-describe("al activarse una versión nueva", () => {
-  it("borra las cachés de las otras versiones de la app y no las de otras apps", () => {
+describe("when a new version activates", () => {
+  it("deletes the caches of the app's other versions and not those of other apps", () => {
     expect(stale(["library-app-2-old", "library-app-2-abc", "shopping-app-2-x"]).old).toEqual(["library-app-2-old"]);
   });
 
-  it("recarga lo abierto solo si venía de un worker que abría la página guardada", () => {
+  it("reloads open tabs only if they came from a worker that served the cached page", () => {
     expect(stale(["library-app-2-old"]).servedOld).toBe(false);
     expect(stale(["library-app-1f2e3d4c5b6a"]).servedOld).toBe(true);
   });
 });
 
-describe("lo que se guarda al instalar", () => {
-  it("la página, los trozos de arranque con sus estilos y los ficheros sueltos; no los perezosos", () => {
+describe("what is cached on install", () => {
+  it("the page, the startup chunks with their styles and the loose files; not the lazy ones", () => {
     const chunk = (fileName: string, imports: string[], css: string[] = [], isEntry = false) => ({
       type: "chunk" as const,
       fileName,
