@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ID="${1:?uso: new-module.sh <id> <nombre>}"
+ID="${1:?usage: new-module.sh <id> <name>}"
 NAME="${2:-$ID}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="$ROOT/modules/$ID"
 
-[[ "$ID" =~ ^[a-z][a-z0-9_]*$ ]] || { echo "id inválido: solo minúsculas, dígitos y _"; exit 1; }
-[[ -d "$DEST" ]] && { echo "el módulo $ID ya existe"; exit 1; }
-[[ "$ID" == "kernel" ]] && { echo "'kernel' está reservado por el sistema"; exit 1; }
+[[ "$ID" =~ ^[a-z][a-z0-9_]*$ ]] || { echo "invalid id: lowercase letters, digits and _ only"; exit 1; }
+[[ -d "$DEST" ]] && { echo "module $ID already exists"; exit 1; }
+[[ "$ID" == "kernel" ]] && { echo "'kernel' is reserved by the system"; exit 1; }
 
 cp -r "$ROOT/modules/_template" "$DEST"
 
@@ -52,6 +52,6 @@ PY
 
 ( cd "$ROOT" && uv lock --quiet )
 
-echo "modules/$ID creado y enganchado al workspace."
-echo "Compruébalo: uv run pytest modules/$ID"
-echo "Después: lo que dice modules/$ID/README.md, «Lo siguiente»."
+echo "modules/$ID created and added to the workspace."
+echo "Check it: uv run pytest modules/$ID"
+echo "Then: docs/platform/ explains manifests, tools, widgets and the demo seed."

@@ -24,9 +24,9 @@ def role_for_scopes(scopes: set[str]) -> str | None:
 
 class GetReadings(BaseModel):
     label: str | None = Field(
-        default=None, description="Solo las lecturas de esta etiqueta. Sin ella, todas."
+        default=None, description="Only the readings with this label. Without it, all of them."
     )
-    limit: int = Field(default=30, ge=1, le=500, description="Cuántas lecturas, como mucho.")
+    limit: int = Field(default=30, ge=1, le=500, description="How many readings, at most.")
 
 
 async def get_readings(connection: AsyncConnection, arguments: GetReadings) -> dict[str, Any]:

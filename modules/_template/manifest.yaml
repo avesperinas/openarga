@@ -1,5 +1,11 @@
 id: __MODULE_ID__
 name: __MODULE_NAME__
+names:
+  en: __MODULE_NAME__
+  es: __MODULE_NAME__
+summary:
+  en: "Readings with a label and a target."
+  es: "Lecturas con una etiqueta y un objetivo."
 version: 0.1.0
 
 database:
@@ -14,19 +20,19 @@ tools:
   - name: get_readings
     scope: __MODULE_ID__:read
     description: >
-      Las lecturas registradas, de la más reciente a la más antigua, con el objetivo de cada
-      etiqueta si lo hay. Una lectura es un valor medido en un momento con una etiqueta (peso,
-      sueño, pasos, ánimo). Úsala para contestar cómo va algo o si se acerca a su objetivo.
+      The recorded readings, newest first, with each label's target if there is one. A reading is
+      a value measured at a moment with a label (weight, sleep, steps, mood). Use it to answer how
+      something is going or whether it is getting close to its target.
   - name: add_reading
     scope: __MODULE_ID__:write
     description: >
-      Apunta una lectura: un valor con su etiqueta, ahora si no se dice cuándo. No cambia ninguna
-      de las que ya hay.
+      Records a reading: a value with its label, now if no time is given. It changes none of the
+      existing ones.
   - name: set_target
     scope: __MODULE_ID__:write
     description: >
-      Fija el objetivo de una etiqueta, sustituyendo el anterior. Un objetivo es el valor al que
-      se quiere llegar; no es una lectura y no cambia ninguna.
+      Sets the target of a label, replacing the previous one. A target is the value to reach; it
+      is not a reading and changes none.
 
 ui:
   widgets:

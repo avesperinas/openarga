@@ -1,7 +1,7 @@
 [project]
 name = "__MODULE_ID__"
 version = "0.1.0"
-description = "Módulo __MODULE_NAME__ de OpenArga"
+description = "The __MODULE_NAME__ module of OpenArga"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "arga-tenancy",
