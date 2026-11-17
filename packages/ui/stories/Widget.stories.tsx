@@ -22,7 +22,7 @@ export const Ready: Story = {
   render: (args) => (
     <Widget {...args}>
       <WidgetValue>1.284</WidgetValue>
-      <WidgetDetail>12 hoy</WidgetDetail>
+      <WidgetDetail>12 today</WidgetDetail>
     </Widget>
   ),
 };
@@ -47,7 +47,7 @@ export const Error: Story = {
 };
 
 export const Disconnected: Story = {
-  args: { ...base, title: "Sincronía", hue: 3, state: "disconnected" },
+  args: { ...base, title: "Sync", hue: 3, state: "disconnected" },
   render: (args) => <Widget {...args} onConnect={() => {}} />,
 };
 
@@ -56,7 +56,7 @@ export const ConDuda: Story = {
     ...base,
     title: "Alba Market",
     state: "ready",
-    uncertainty: { summary: "puede faltar: 2 eventos en 1 entidad sin unir" },
+    uncertainty: { summary: "may be missing: 2 events in 1 unlinked entity" },
   },
   render: (args) => (
     <div style={{ display: "flex", gap: "var(--grid-gap)", alignItems: "flex-start" }}>
@@ -66,7 +66,7 @@ export const ConDuda: Story = {
       </Widget>
       <Widget
         {...args}
-        title="Entidades por volumen"
+        title="Entities by volume"
         size="4x2"
         shape="list"
         onExamineUncertainty={() => {}}

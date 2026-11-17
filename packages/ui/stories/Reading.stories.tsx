@@ -14,23 +14,23 @@ import {
   StatTile,
 } from "../src/index";
 
-const meta: Meta = { title: "Gráficas/Leer con calma" };
+const meta: Meta = { title: "Charts/Read calmly" };
 export default meta;
 
-const euros = (value: number) => `${Math.round(value).toLocaleString("es-ES")} €`;
+const euros = (value: number) => `${Math.round(value).toLocaleString("en-GB")} €`;
 
 export const Cifras: StoryObj = {
   render: () => (
-    <StatRow label="Cómo vas">
+    <StatRow label="How you are doing">
       <StatTile
-        label="Fondo de contingencia"
+        label="Emergency fund"
         value="3.000 €"
-        foot="50 % de 6.000 € (6 meses)"
+        foot="50 % of €6,000 (6 months)"
         tone="warning"
         progress={0.5}
       />
-      <StatTile label="Patrimonio en 365 días" value="+6.500 €" foot="+32,5 % en un año" tone="positive" />
-      <StatTile label="Tasa de ahorro" value="12 %" foot="60 % de la meta del 20 %" tone="warning" progress={0.6} />
+      <StatTile label="Net worth over 365 days" value="+6.500 €" foot="+32.5 % in a year" tone="positive" />
+      <StatTile label="Savings rate" value="12 %" foot="60 % of the 20 % goal" tone="warning" progress={0.6} />
     </StatRow>
   ),
 };
@@ -63,12 +63,12 @@ export const Tabla: StoryObj = {
 export const Quesito: StoryObj = {
   render: () => (
     <ShareChart
-      label="Cómo se reparte"
+      label="How it is split"
       format={euros}
       items={[
         { key: "liquidity", name: "Liquidez", value: 9200 },
-        { key: "investment", name: "Productos de inversión", value: 15000 },
-        { key: "pension", name: "Plan de pensiones", value: 5000 },
+        { key: "investment", name: "Investment products", value: 15000 },
+        { key: "pension", name: "Pension plan", value: 5000 },
       ]}
     />
   ),
@@ -77,12 +77,12 @@ export const Quesito: StoryObj = {
 export const CajasYFlechas: StoryObj = {
   render: () => (
     <FlowMap
-      label="Flujos del mes"
+      label="The month's flows"
       format={euros}
       nodes={[
         {
           id: "out",
-          name: "Entra de fuera",
+          name: "Comes in from outside",
           kind: "income",
           group: "out",
           group_name: "Fuera",
@@ -100,7 +100,7 @@ export const CajasYFlechas: StoryObj = {
         },
         {
           id: "pay",
-          name: "Nómina",
+          name: "Salary",
           kind: "account",
           group: "b1",
           group_name: "Banco Uno",
@@ -109,7 +109,7 @@ export const CajasYFlechas: StoryObj = {
         },
         {
           id: "home",
-          name: "Cuenta de casa",
+          name: "Household account",
           kind: "common",
           group: "b1",
           group_name: "Banco Uno",
@@ -145,15 +145,15 @@ export const MenuPlegable: StoryObj = {
     return (
       <div style={{ display: "grid", gap: "12px" }}>
         <SelectField
-          label="Agrupar por"
+          label="Group by"
           options={[
             { value: "total", label: "Total" },
-            { value: "bucket", label: "Liquidez, inversión, pensión" },
+            { value: "bucket", label: "Cash, investment, pension" },
           ]}
           value={level}
           onChange={setLevel}
         />
-        <Collapsible title="Cuentas y productos" subtitle="12 productos, sus fuentes y los bancos" defaultOpen>
+        <Collapsible title="Accounts and products" subtitle="12 products, their sources and the banks" defaultOpen>
           <List>
             <ListRow
               title="Corriente"
@@ -163,7 +163,7 @@ export const MenuPlegable: StoryObj = {
             />
           </List>
         </Collapsible>
-        <Collapsible title="Objetivos" subtitle="Fondo de contingencia, tasa de ahorro">
+        <Collapsible title="Objetivos" subtitle="Emergency fund, savings rate">
           <p>Dentro</p>
         </Collapsible>
       </div>
@@ -178,23 +178,23 @@ export const VariasALaVez: StoryObj = {
     return (
       <div style={{ display: "flex", gap: "8px", maxWidth: "28rem" }}>
         <MultiSelectField
-          label="Tipo de producto"
-          all="Todos los tipos"
+          label="Product kind"
+          all="All kinds"
           options={[
             { value: "cash", label: "Efectivo" },
             { value: "funds", label: "Fondos" },
-            { value: "pension", label: "Pensión" },
+            { value: "pension", label: "Pension" },
           ]}
           values={types}
           onChange={setTypes}
         />
         <MultiSelectField
           label="Cuenta"
-          all="Todas las cuentas"
+          all="All accounts"
           options={[
             { value: "a", label: "Corriente" },
             { value: "b", label: "Indexado" },
-            { value: "c", label: "Plan de empleo" },
+            { value: "c", label: "Workplace pension" },
           ]}
           values={accounts}
           onChange={setAccounts}

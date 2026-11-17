@@ -3,7 +3,7 @@ import * as React from "react";
 
 import { GoalRow, type WeekDayState, WeekDots } from "../src/index";
 
-const meta: Meta = { title: "Metas/Fila de meta" };
+const meta: Meta = { title: "Goals/Goal row" };
 export default meta;
 
 const WEEK: { day: string; state: WeekDayState }[] = [
@@ -17,7 +17,7 @@ const WEEK: { day: string; state: WeekDayState }[] = [
 ];
 
 export const Semana: StoryObj = {
-  render: () => <WeekDots days={WEEK} label="2 de 5 esta semana" />,
+  render: () => <WeekDots days={WEEK} label="2 of 5 this week" />,
 };
 
 function Periodic() {
@@ -25,13 +25,13 @@ function Periodic() {
   return (
     <GoalRow
       title="Leer 20 minutos"
-      subtitle="Aprender · 5 días por semana"
+      subtitle="Learn · 5 days a week"
       hue={7}
       tone={done ? "positive" : "neutral"}
-      status="Racha de 3 semanas"
+      status="3-week streak"
       week={WEEK.map((one) => (one.state === "today" && done ? { ...one, state: "met" } : one))}
-      weekLabel="2 de 5 esta semana"
-      check={{ checked: done, label: "Hecho hoy: Leer 20 minutos", onClick: () => setDone(!done) }}
+      weekLabel="2 of 5 this week"
+      check={{ checked: done, label: "Done today: Read 20 minutes", onClick: () => setDone(!done) }}
       onOpen={() => undefined}
     />
   );
@@ -46,26 +46,26 @@ export const Metas: StoryObj = {
         subtitle="Salud · peso · 31 dic"
         hue={6}
         tone="positive"
-        status="Por delante"
+        status="Ahead"
         figure="82,0 kg"
-        against="de 85 a 80 kg · llegas a 79,5"
+        against="from 85 to 80 kg · you reach 79.5"
         progress={0.6}
         expected={0.5}
         onOpen={() => undefined}
       />
       <GoalRow
-        title="60.000 € de patrimonio"
+        title="€60,000 net worth"
         subtitle="Dinero · 31 dic"
         hue={4}
         tone="negative"
-        status="Por detrás"
+        status="Behind"
         figure="54.300 €"
-        against="de 60.000 € · llegas a 57.100 €"
+        against="of €60,000 · you reach €57,100"
         progress={0.41}
         expected={0.62}
         onOpen={() => undefined}
       />
-      <GoalRow title="El B2 de alemán" subtitle="Aprender · hito · jun 2027" hue={7} status="Sin empezar" />
+      <GoalRow title="The German B2" subtitle="Aprender · hito · jun 2027" hue={7} status="Not started" />
     </div>
   ),
 };

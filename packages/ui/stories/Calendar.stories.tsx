@@ -37,45 +37,45 @@ const ev = (day: number, from: string, to: string, title: string, tone: Calendar
 });
 
 export const WEEK: CalendarEvent[] = [
-  ev(0, "08:00", "08:45", "Correr por el río", 2, { recurring: true }),
-  ev(0, "09:30", "10:00", "Planificación semanal", 1, { recurring: true }),
-  ev(0, "10:00", "12:00", "Bloque de concentración", 8),
-  ev(0, "11:00", "11:30", "Llamada con el taller", 9, { subtitle: "Por teléfono" }),
-  ev(0, "13:30", "14:30", "Comida con Ane", 7, { subtitle: "Café Iruña" }),
-  ev(0, "19:00", "20:00", "Inglés", 5, { recurring: true, subtitle: "Study 3" }),
-  ev(1, "09:00", "10:00", "Revisión de diseño", 1),
+  ev(0, "08:00", "08:45", "Run by the river", 2, { recurring: true }),
+  ev(0, "09:30", "10:00", "Weekly planning", 1, { recurring: true }),
+  ev(0, "10:00", "12:00", "Focus block", 8),
+  ev(0, "11:00", "11:30", "Call with the garage", 9, { subtitle: "By phone" }),
+  ev(0, "13:30", "14:30", "Lunch with Ane", 7, { subtitle: "Cafe Central" }),
+  ev(0, "19:00", "20:00", "English", 5, { recurring: true, subtitle: "Study 3" }),
+  ev(1, "09:00", "10:00", "Design review", 1),
   ev(1, "09:00", "09:30", "Standup", 6, { recurring: true }),
   ev(1, "09:15", "10:30", "Entrevista", 4),
-  ev(1, "12:00", "12:15", "Pagar el seguro", 3),
+  ev(1, "12:00", "12:15", "Pay the insurance", 3),
   ev(1, "16:00", "17:30", "Dentista", 4, { subtitle: "Calle Mayor 12" }),
-  ev(1, "22:00", "23:59", "Final de Champions", 2, { subscribed: true }),
+  ev(1, "22:00", "23:59", "Champions League final", 2, { subscribed: true }),
   ev(2, "07:30", "08:15", "Gimnasio", 2, { recurring: true }),
-  ev(2, "10:00", "11:00", "Tutoría", 5, { status: "cancelled" }),
-  ev(2, "11:00", "12:30", "Taller de escritura", 10),
-  ev(2, "12:00", "13:00", "Reunión de equipo", 1),
-  ev(2, "12:15", "12:45", "Café con Iñaki", 7),
+  ev(2, "10:00", "11:00", "Tutorial", 5, { status: "cancelled" }),
+  ev(2, "11:00", "12:30", "Writing workshop", 10),
+  ev(2, "12:00", "13:00", "Team meeting", 1),
+  ev(2, "12:15", "12:45", "Coffee with Iker", 7),
   ev(2, "15:00", "16:00", "Recoger paquete", 3, { status: "tentative" }),
-  ev(2, "18:30", "20:00", "Pádel", 6),
-  ev(3, "08:00", "08:45", "Correr por el río", 2, { recurring: true }),
-  ev(3, "09:00", "13:00", "Examen de estadística", 4, { subtitle: "Edificio Las Encinas" }),
-  ev(3, "19:00", "20:00", "Inglés", 5, { recurring: true, subtitle: "Study 3" }),
-  ev(3, "21:30", "23:00", "Cena de cumpleaños", 7),
+  ev(2, "18:30", "20:00", "Padel", 6),
+  ev(3, "08:00", "08:45", "Run by the river", 2, { recurring: true }),
+  ev(3, "09:00", "13:00", "Statistics exam", 4, { subtitle: "Las Encinas building" }),
+  ev(3, "19:00", "20:00", "English", 5, { recurring: true, subtitle: "Study 3" }),
+  ev(3, "21:30", "23:00", "Birthday dinner", 7),
   ev(4, "09:00", "09:30", "Standup", 6, { recurring: true }),
-  ev(4, "10:00", "10:10", "Tomar la pastilla", 8),
-  ev(4, "10:10", "10:20", "Regar las plantas", 2),
-  ev(4, "15:00", "18:00", "Mudanza de Leire", 9),
+  ev(4, "10:00", "10:10", "Take the pill", 8),
+  ev(4, "10:10", "10:20", "Water the plants", 2),
+  ev(4, "15:00", "18:00", "Leire's move", 9),
   ev(4, "23:00", "23:59", "Tren nocturno", 6),
   ev(5, "00:00", "07:40", "Tren nocturno", 6, { subtitle: "Llega a Madrid" }),
-  ev(5, "11:00", "13:00", "Shopping de la Plaza", 3),
-  ev(5, "14:00", "16:00", "GP de Singapur · carrera", 4, { subscribed: true }),
+  ev(5, "11:00", "13:00", "Plaza Shopping", 3),
+  ev(5, "14:00", "16:00", "Singapore GP · race", 4, { subscribed: true }),
   ev(6, "10:00", "11:30", "Monte: Ezkaba", 2),
   ev(6, "17:00", "19:00", "Osasuna – Betis", 4, { subscribed: true }),
   { id: "h1", title: "Fiesta local", start: "2026-09-29", end: "2026-09-30", allDay: true, tone: 4, subscribed: true },
   { id: "v1", title: "Viaje a Lisboa", start: "2026-10-01", end: "2026-10-05", allDay: true, tone: 6 },
   { id: "c1", title: "Congreso", start: "2026-09-26", end: "2026-09-30", allDay: true, tone: 5 },
-  { id: "b1", title: "Cumpleaños de Ama", start: "2026-10-02", end: "2026-10-03", allDay: true, tone: 7, recurring: true },
-  { id: "d1", title: "Declaración trimestral", start: "2026-09-30", end: "2026-10-01", allDay: true, tone: 3 },
-  { id: "x1", title: "Semana de la movilidad", start: "2026-09-28", end: "2026-10-04", allDay: true, tone: 8, subscribed: true },
+  { id: "b1", title: "Mum's birthday", start: "2026-10-02", end: "2026-10-03", allDay: true, tone: 7, recurring: true },
+  { id: "d1", title: "Quarterly return", start: "2026-09-30", end: "2026-10-01", allDay: true, tone: 3 },
+  { id: "x1", title: "Mobility week", start: "2026-09-28", end: "2026-10-04", allDay: true, tone: 8, subscribed: true },
 ];
 
 function useEvents(initial: CalendarEvent[]) {
@@ -121,7 +121,7 @@ function Grid({ days, count }: { days?: string[]; count: number }) {
   return (
     <Frame>
       <TimeGrid
-        label="Semana de prueba"
+        label="Test week"
         days={days ?? dayRange(first, count)}
         events={events}
         now={NOW}
@@ -143,20 +143,20 @@ function Grid({ days, count }: { days?: string[]; count: number }) {
 export const Semana: StoryObj = { render: () => <Grid count={7} /> };
 
 export const TresDias: StoryObj = {
-  name: "Tres días (móvil)",
+  name: "Three days (phone)",
   render: () => <Grid count={3} />,
 };
 
-export const Dia: StoryObj = { name: "Día", render: () => <Grid count={1} /> };
+export const Dia: StoryObj = { name: "Day", render: () => <Grid count={1} /> };
 
 export const Horario: StoryObj = {
-  name: "Horario de lunes a viernes, sin fechas",
+  name: "Monday to Friday schedule, without dates",
   render: () => {
     const lessons: CalendarEvent[] = [
-      ev(0, "09:00", "11:00", "Estadística", 1, { subtitle: "A-12", readOnly: true, recurring: true }),
-      ev(1, "11:30", "13:30", "Aprendizaje automático", 5, { subtitle: "Lab 2", readOnly: true }),
-      ev(2, "09:00", "11:00", "Estadística", 1, { subtitle: "A-12", readOnly: true, status: "cancelled" }),
-      ev(3, "16:00", "18:00", "Bases de datos", 6, { subtitle: "A-03", readOnly: true }),
+      ev(0, "09:00", "11:00", "Statistics", 1, { subtitle: "A-12", readOnly: true, recurring: true }),
+      ev(1, "11:30", "13:30", "Machine learning", 5, { subtitle: "Lab 2", readOnly: true }),
+      ev(2, "09:00", "11:00", "Statistics", 1, { subtitle: "A-12", readOnly: true, status: "cancelled" }),
+      ev(3, "16:00", "18:00", "Databases", 6, { subtitle: "A-03", readOnly: true }),
     ];
     return (
       <Frame>
@@ -210,7 +210,7 @@ export const Mes: StoryObj = {
 };
 
 export const MesPequeno: StoryObj = {
-  name: "Mes pequeño",
+  name: "Small month",
   render: () => {
     const [month, setMonth] = React.useState("2026-09-01");
     const [first, setFirst] = React.useState(MONDAY);

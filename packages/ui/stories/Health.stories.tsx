@@ -7,7 +7,7 @@ import "../health.css";
 import { HealthRing, Hypnogram, QualityMonth, SleepSchedule, StageBreakdown, WorkoutHeart, ZoneBar } from "../src/index";
 import type { Quality, StageSegment } from "../src/index";
 
-const meta: Meta = { title: "Gráficas/Salud" };
+const meta: Meta = { title: "Charts/Health" };
 export default meta;
 
 const local = (day: number, hour: number, minute = 0) => new Date(2026, 9, day, hour, minute).toISOString();
@@ -38,8 +38,8 @@ const QUALITIES: Quality[] = ["excellent", "good", "good", "fair", "poor", "good
 export const LaNoche: StoryObj = {
   render: () => (
     <div style={{ display: "grid", gap: 24, maxWidth: 560 }}>
-      <HealthRing value={84} target={100} display="84" caption="Buena" quality="good" label="La nota de la noche" size="l" />
-      <Hypnogram segments={segments()} start={START} end={END} pulse={pulse()} label="La noche por fases" />
+      <HealthRing value={84} target={100} display="84" caption="Buena" quality="good" label="The night's score" size="l" />
+      <Hypnogram segments={segments()} start={START} end={END} pulse={pulse()} label="The night by stages" />
       <StageBreakdown
         stages={[
           { stage: "awake", minutes: 10, usual: 22 },
@@ -75,7 +75,7 @@ export const ElHorario: StoryObj = {
   render: () => (
     <div style={{ maxWidth: 560 }}>
       <SleepSchedule
-        label="Horario de las últimas noches"
+        label="Schedule of the last nights"
         nights={Array.from({ length: 14 }, (_, index) => ({
           day: `2026-10-${String(index + 1).padStart(2, "0")}`,
           start: local(index, 23, (index * 17) % 60),

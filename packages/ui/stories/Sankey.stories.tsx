@@ -3,22 +3,22 @@ import * as React from "react";
 
 import { Sankey } from "../src/index";
 
-const meta: Meta<typeof Sankey> = { title: "Gráficas/Diagrama de flujo", component: Sankey };
+const meta: Meta<typeof Sankey> = { title: "Charts/Flow diagram", component: Sankey };
 export default meta;
 
-const euros = (value: number) => `${value.toLocaleString("es-ES")} €`;
+const euros = (value: number) => `${value.toLocaleString("en-GB")} €`;
 
 export const TuYLoComun: StoryObj = {
   render: () => (
     <Sankey
-      label="Tú y lo común"
+      label="You and the shared"
       format={euros}
       nodes={[
         { id: "salary", name: "Salario", column: 0, kind: "income" },
         { id: "bonus", name: "Extra", column: 0, kind: "income" },
-        { id: "me", name: "Tú", column: 1, kind: "you" },
+        { id: "me", name: "You", column: 1, kind: "you" },
         { id: "other", name: "Alguien", column: 1, kind: "member" },
-        { id: "common", name: "Común", column: 2, kind: "common" },
+        { id: "common", name: "Shared", column: 2, kind: "common" },
         { id: "fun", name: "Ocio", column: 3, kind: "expense" },
         { id: "transport", name: "Transporte", column: 3, kind: "expense" },
         { id: "saved", name: "Ahorro", column: 3, kind: "saving" },

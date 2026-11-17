@@ -41,7 +41,7 @@ import vitalsIcon from "../../../modules/vitals/ui/public/icon.svg?url";
 import trainingIcon from "../../../modules/training/ui/public/icon.svg?url";
 
 const meta = {
-  title: "Galería",
+  title: "Gallery",
   parameters: { layout: "fullscreen" },
   excludeStories: ["APPS"],
 } satisfies Meta;
@@ -88,21 +88,21 @@ const CARDS: Card[] = [
     title: "Entreno",
     shape: "number",
     sizes: ["2x2", "1x1"],
-    body: () => <WidgetRing value={3} target={4} label="de 4 esta semana" />,
+    body: () => <WidgetRing value={3} target={4} label="of 4 this week" />,
   },
   {
     app: APPS.training,
-    title: "Siguiente sesión",
+    title: "Next session",
     shape: "number",
     sizes: ["2x2"],
-    body: () => <WidgetKpi value="Pierna" icon="leg" hue={1} detail="Rotación 12" />,
+    body: () => <WidgetKpi value="Pierna" icon="leg" hue={1} detail="Rotation 12" />,
   },
   {
     app: APPS.vitals,
-    title: "Pasos hoy",
+    title: "Steps today",
     shape: "number",
     sizes: ["2x2", "1x1"],
-    body: () => <WidgetRing value={6480} target={8000} label="de 8.000" />,
+    body: () => <WidgetRing value={6480} target={8000} label="of 8,000" />,
   },
   {
     app: APPS.vitals,
@@ -110,7 +110,7 @@ const CARDS: Card[] = [
     shape: "number",
     sizes: ["2x2", "1x1"],
     body: () => (
-      <WidgetKpiDelta value={74.2} previous={75.1} unit="kg" since="hace 30 días" goodWhen="down" />
+      <WidgetKpiDelta value={74.2} previous={75.1} unit="kg" since="30 days ago" goodWhen="down" />
     ),
   },
   {
@@ -119,19 +119,19 @@ const CARDS: Card[] = [
     shape: "number",
     sizes: ["2x2", "1x1"],
     body: () => (
-      <WidgetKpiDelta value={112} previous={128} unit="mg/dL" since="análisis anterior" goodWhen="down" />
+      <WidgetKpiDelta value={112} previous={128} unit="mg/dL" since="previous test" goodWhen="down" />
     ),
   },
   {
     app: APPS.vitals,
-    title: "Pasos del año",
+    title: "The year's steps",
     shape: "number",
     sizes: ["4x2", "2x2"],
     body: () => (
       <WidgetHeatmap
         values={Array.from({ length: 140 }, (_, i) => ((i * 37) % 11) / 10)}
         columns={20}
-        detail="Media de 7.412 al día"
+        detail="Average of 7,412 a day"
       />
     ),
   },
@@ -141,7 +141,7 @@ const CARDS: Card[] = [
     shape: "number",
     sizes: ["4x2", "2x2"],
     body: () => (
-      <WidgetKpiDelta value={48210} previous={46890} unit="€" since="el mes pasado" goodWhen="up" />
+      <WidgetKpiDelta value={48210} previous={46890} unit="€" since="last month" goodWhen="up" />
     ),
   },
   {
@@ -155,10 +155,10 @@ const CARDS: Card[] = [
           items={[
             { label: "Bancos", value: 2 },
             { label: "Cuentas", value: 5 },
-            { label: "Última sincronización", value: "2 h" },
+            { label: "Last sync", value: "2 h" },
           ]}
         />
-        <WidgetFootnote>El acceso a Banco Norte caduca en 5 días.</WidgetFootnote>
+        <WidgetFootnote>Access to North Bank expires in 5 days.</WidgetFootnote>
       </>
     ),
   },
@@ -173,14 +173,14 @@ const CARDS: Card[] = [
         labels={["abr", "may", "jun", "jul", "ago", "sep"]}
         value="+610"
         unit="€"
-        detail="Lo que te queda este mes"
+        detail="What you have left this month"
         highlight={5}
       />
     ),
   },
   {
     app: APPS.money,
-    title: "En qué gastas",
+    title: "What you spend on",
     shape: "list",
     sizes: ["2x2", "4x2"],
     body: () => (
@@ -199,26 +199,26 @@ const CARDS: Card[] = [
     shape: "number",
     sizes: ["2x2", "4x2"],
     body: () => (
-      <WidgetKpiDelta value={12840} previous={12310} unit="€" since="hace 30 días" goodWhen="up" />
+      <WidgetKpiDelta value={12840} previous={12310} unit="€" since="30 days ago" goodWhen="up" />
     ),
   },
   {
     app: APPS.money,
-    title: "Lo común",
+    title: "Shared",
     shape: "number",
     sizes: ["2x2"],
     body: () => <WidgetKpi value="−23,40" unit="€" detail="Debes a Casa" />,
   },
   {
     app: APPS.money,
-    title: "Ahorro del mes",
+    title: "Month's savings",
     shape: "number",
     sizes: ["2x2"],
-    body: () => <WidgetRing value={22} target={100} unit="%" label="de lo que entra" show="percent" />,
+    body: () => <WidgetRing value={22} target={100} unit="%" label="of income" show="percent" />,
   },
   {
     app: APPS.money,
-    title: "Lo que viene",
+    title: "What is coming",
     shape: "list",
     sizes: ["2x2", "4x2"],
     body: () => (
@@ -233,7 +233,7 @@ const CARDS: Card[] = [
   },
   {
     app: APPS.money,
-    title: "Tendencia del gasto",
+    title: "Spending trend",
     shape: "number",
     sizes: ["4x2", "2x2"],
     body: () => (
@@ -241,49 +241,49 @@ const CARDS: Card[] = [
         series={[1320, 1410, 1280, 1500, 1390, 1210, 1290, 1180]}
         value="1.180"
         unit="€"
-        detail="Gasto medio de los últimos 3 meses"
+        detail="Average spending over the last 3 months"
       />
     ),
   },
   {
     app: APPS.money,
-    title: "Colchón",
+    title: "Cushion",
     shape: "number",
     sizes: ["2x2", "4x2"],
-    body: () => <WidgetProgress value={7400} target={9000} unit="€" label="de 6 meses de gastos" />,
+    body: () => <WidgetProgress value={7400} target={9000} unit="€" label="of 6 months of spending" />,
   },
   {
     app: APPS.planner,
-    title: "Próximo",
+    title: "Next",
     shape: "list",
     sizes: ["2x2", "2x4", "4x2"],
     body: () => (
       <WidgetUpNext
         events={[
-          { at: inHours(1.5), title: "Dentista", detail: "Clínica Sur" },
-          { at: inHours(5), title: "Cena con Irati" },
-          { at: inHours(26), title: "Revisión del coche", detail: "Taller" },
+          { at: inHours(1.5), title: "Dentista", detail: "South Clinic" },
+          { at: inHours(5), title: "Dinner with Irati" },
+          { at: inHours(26), title: "Car service", detail: "Taller" },
         ]}
       />
     ),
   },
   {
     app: APPS.planner,
-    title: "Este mes",
+    title: "This month",
     shape: "number",
     sizes: ["2x2"],
     body: () => <WidgetCalendar marked={[2, 5, 9, 14, 21, 28, 30]} today={28} />,
   },
   {
     app: APPS.study,
-    title: "Próximo en Study",
+    title: "Next in Study",
     shape: "list",
     sizes: ["2x2", "4x2"],
     body: () => (
       <WidgetUpNext
         events={[
-          { at: inHours(16), title: "Estadística II", detail: "Study 2.04" },
-          { at: inHours(40), title: "Entrega práctica 3", detail: "Bases de datos" },
+          { at: inHours(16), title: "Statistics II", detail: "Study 2.04" },
+          { at: inHours(40), title: "Lab 3 hand-in", detail: "Databases" },
         ]}
       />
     ),
@@ -293,26 +293,26 @@ const CARDS: Card[] = [
     title: "Progreso",
     shape: "number",
     sizes: ["2x2", "4x2"],
-    body: () => <WidgetProgress value={132} target={240} unit="ECTS" label="del grado" />,
+    body: () => <WidgetProgress value={132} target={240} unit="ECTS" label="of the degree" />,
   },
   {
     app: APPS.study,
     title: "Media",
     shape: "number",
     sizes: ["2x2"],
-    body: () => <WidgetKpi value="7,8" detail="Ponderada por créditos" />,
+    body: () => <WidgetKpi value="7,8" detail="Weighted by credits" />,
   },
   {
     app: APPS.arca,
-    title: "Próximo en Arca",
+    title: "Next in Arca",
     shape: "list",
     sizes: ["2x2", "2x4", "4x2"],
     body: () => (
       <WidgetRows>
-        <WidgetRow label="ITV del coche" value="en 12 días" tone="warning" />
-        <WidgetRow label="Revisión caldera" value="en 30 días" tone="neutral" />
-        <WidgetRow label="Seguro hogar" value="en 2 meses" tone="neutral" />
-        <WidgetRow label="Pasaporte" value="en 7 meses" tone="neutral" />
+        <WidgetRow label="Car inspection" value="in 12 days" tone="warning" />
+        <WidgetRow label="Boiler service" value="in 30 days" tone="neutral" />
+        <WidgetRow label="Seguro hogar" value="in 2 months" tone="neutral" />
+        <WidgetRow label="Pasaporte" value="in 7 months" tone="neutral" />
       </WidgetRows>
     ),
   },
@@ -323,7 +323,7 @@ const CARDS: Card[] = [
     sizes: ["2x2", "4x2"],
     body: () => (
       <WidgetRows>
-        <WidgetRow label="Filtro del agua" value="hace 3 días" tone="negative" />
+        <WidgetRow label="Water filter" value="3 days ago" tone="negative" />
       </WidgetRows>
     ),
   },
@@ -336,37 +336,37 @@ const CARDS: Card[] = [
       <WidgetStats
         items={[
           { label: "Recetas", value: 48 },
-          { label: "Categorías", value: 9 },
+          { label: "Categories", value: 9 },
         ]}
       />
     ),
   },
   {
     app: APPS.recipes,
-    title: "En media hora",
+    title: "In half an hour",
     shape: "list",
     sizes: ["2x2", "2x4", "4x2"],
     body: () => (
       <WidgetRows>
-        <WidgetRow label="Tortilla de patatas" value="25 min" />
-        <WidgetRow label="Crema de calabaza" value="30 min" />
-        <WidgetRow label="Salteado de gambas" value="15 min" />
+        <WidgetRow label="Potato omelette" value="25 min" />
+        <WidgetRow label="Pumpkin soup" value="30 min" />
+        <WidgetRow label="Prawn stir-fry" value="15 min" />
       </WidgetRows>
     ),
   },
   {
     app: APPS.chuping,
-    title: "Ventana de Claude",
+    title: "Claude window",
     shape: "list",
     sizes: ["2x2", "4x2"],
     body: () => (
       <>
         <WidgetRows>
-          <WidgetRow label="Se abre" value="08:30" tone="positive" />
-          <WidgetRow label="Se renueva" value="13:30" />
+          <WidgetRow label="It opens" value="08:30" tone="positive" />
+          <WidgetRow label="Renews" value="13:30" />
           <WidgetRow label="Usado" value="42 %" />
         </WidgetRows>
-        <WidgetFootnote>Próximo ping mañana a las 08:30</WidgetFootnote>
+        <WidgetFootnote>Next ping tomorrow at 08:30</WidgetFootnote>
       </>
     ),
   },
@@ -380,24 +380,24 @@ const CARDS: Card[] = [
         <WidgetRows>
           <WidgetRow label="Banco Norte" value="Caducada" tone="negative" />
           <WidgetRow label="Caja Sur" value="A medias" tone="warning" />
-          <WidgetRow label="Exchange" value="Al día" tone="positive" />
-          <WidgetRow label="Correo" value="Al día" tone="positive" />
-          <WidgetRow label="Claude" value="En pausa" tone="neutral" />
+          <WidgetRow label="Exchange" value="Up to date" tone="positive" />
+          <WidgetRow label="Correo" value="Up to date" tone="positive" />
+          <WidgetRow label="Claude" value="Paused" tone="neutral" />
         </WidgetRows>
-        <WidgetFootnote>El acceso a Banco Norte caducó; hay que reconectarlo.</WidgetFootnote>
+        <WidgetFootnote>Access to North Bank expired; it needs reconnecting.</WidgetFootnote>
       </>
     ),
   },
   {
     app: APPS.travel,
-    title: "Países",
+    title: "Countries",
     shape: "number",
     sizes: ["2x2", "1x1"],
-    body: () => <WidgetKpi value={23} detail="4 este año" />,
+    body: () => <WidgetKpi value={23} detail="4 this year" />,
   },
   {
     app: APPS.travel,
-    title: "Último viaje",
+    title: "Last trip",
     shape: "list",
     sizes: ["2x2", "4x2"],
     body: () => (
@@ -406,7 +406,7 @@ const CARDS: Card[] = [
   },
   {
     app: APPS.travel,
-    title: "Viajes por año",
+    title: "Trips per year",
     shape: "number",
     sizes: ["2x2", "4x2"],
     body: () => (
@@ -414,7 +414,7 @@ const CARDS: Card[] = [
         series={[3, 5, 2, 6, 4]}
         labels={["2022", "2023", "2024", "2025", "2026"]}
         value={4}
-        detail="viajes este año"
+        detail="trips this year"
         highlight={4}
       />
     ),
@@ -426,21 +426,21 @@ const CARDS: Card[] = [
     sizes: ["2x2", "4x2"],
     body: () => (
       <WidgetRows>
-        <WidgetRow label="La montaña mágica" value="38 %" />
+        <WidgetRow label="The Magic Mountain" value="38 %" />
         <WidgetRow label="Patria" value="71 %" />
       </WidgetRows>
     ),
   },
   {
     app: APPS.library,
-    title: "Objetivo del año",
+    title: "Year goal",
     shape: "number",
     sizes: ["2x2"],
-    body: () => <WidgetRing value={14} target={20} label="libros de 20" />,
+    body: () => <WidgetRing value={14} target={20} label="books of 20" />,
   },
   {
     app: APPS.library,
-    title: "Páginas por mes",
+    title: "Pages per month",
     shape: "number",
     sizes: ["2x2", "4x2"],
     body: () => (
@@ -448,14 +448,14 @@ const CARDS: Card[] = [
         series={[320, 410, 280, 520, 190, 460, 380, 300, 440]}
         labels={["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep"]}
         value={440}
-        detail="páginas en septiembre"
+        detail="pages in September"
         highlight={8}
       />
     ),
   },
   {
     app: APPS.shopping,
-    title: "La compra",
+    title: "Shopping",
     shape: "list",
     sizes: ["2x2", "2x4", "4x2"],
     body: () => (
@@ -465,9 +465,9 @@ const CARDS: Card[] = [
           <WidgetRow label="Tomates" value="1 kg" />
           <WidgetRow label="Pan" value="1" />
           <WidgetRow label="Huevos" value="12" />
-          <WidgetRow label="Café" value="1" />
+          <WidgetRow label="Coffee" value="1" />
         </WidgetRows>
-        <WidgetFootnote>5 cosas en la lista</WidgetFootnote>
+        <WidgetFootnote>5 items on the list</WidgetFootnote>
       </>
     ),
   },
@@ -496,7 +496,7 @@ const CARDS: Card[] = [
     shape: "list",
     sizes: ["2x2"],
     state: "empty",
-    note: "no estás leyendo nada ahora",
+    note: "you are not reading anything now",
     body: () => null,
   },
 ];

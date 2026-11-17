@@ -4,7 +4,7 @@ import * as React from "react";
 import "../controls.css";
 import { CrashBoundary } from "../src/index";
 
-const meta = { title: "Estados/Una pantalla que falla", parameters: { layout: "fullscreen" } } satisfies Meta;
+const meta = { title: "States/A failing screen", parameters: { layout: "fullscreen" } } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 

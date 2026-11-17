@@ -4,7 +4,7 @@ import * as React from "react";
 
 import { Banner, Figures, Icon, Photo, PhotoTile, SplitBar, StepItem, StepList, Tile, Tiles } from "../src/index";
 
-const meta: Meta = { title: "Piezas/Portadas y repartos" };
+const meta: Meta = { title: "Pieces/Covers and splits" };
 export default meta;
 
 export const Recetario: StoryObj = {
@@ -12,18 +12,18 @@ export const Recetario: StoryObj = {
     <div style={{ maxWidth: 400 }}>
       <Tiles label="Recetas">
         <Tile
-          title="Porrusalda de ejemplo"
+          title="Sample leek soup"
           hue={2}
           figure="15 min"
-          caption="tú delante"
+          caption="you in front"
           glyph={<Icon name="flame" />}
-          detail="Para 4 · 55 min"
+          detail="Serves 4 · 55 min"
           tags={["invierno", "olla"]}
           onOpen={() => undefined}
         />
-        <Tile title="Tostada sintética" hue={3} figure="5 min" caption="en total" glyph={<Icon name="sun" />} detail="Para 1" tags={["desayuno"]} onOpen={() => undefined} />
-        <Tile title="Guiso largo de prueba con un nombre que no cabe en dos líneas" hue={6} figure="sin faena" caption="2 h en total" detail="Para 8" onOpen={() => undefined} />
-        <Tile title="Cena de ejemplo" hue={5} figure="20 min" caption="en total" glyph={<Icon name="moon" />} detail="Para 2" tags={["cena"]} onOpen={() => undefined} />
+        <Tile title="Synthetic toast" hue={3} figure="5 min" caption="in total" glyph={<Icon name="sun" />} detail="Serves 1" tags={["desayuno"]} onOpen={() => undefined} />
+        <Tile title="Long test stew with a name that does not fit on two lines" hue={6} figure="no work" caption="2 h in total" detail="Serves 8" onOpen={() => undefined} />
+        <Tile title="Sample dinner" hue={5} figure="20 min" caption="in total" glyph={<Icon name="moon" />} detail="Serves 2" tags={["cena"]} onOpen={() => undefined} />
       </Tiles>
     </div>
   ),
@@ -33,9 +33,9 @@ export const Reparto: StoryObj = {
   render: () => (
     <div style={{ maxWidth: 360 }}>
       <SplitBar
-        label="De dónde salen las kcal"
+        label="Where the kcal come from"
         parts={[
-          { label: "Proteína", value: "17 %", share: 130, hue: 1 },
+          { label: "Protein", value: "17 %", share: 130, hue: 1 },
           { label: "Grasa", value: "45 %", share: 355, hue: 3 },
           { label: "Hidratos", value: "38 %", share: 298, hue: 2 },
         ]}
@@ -50,8 +50,8 @@ export const Portada: StoryObj = {
       <Banner hue={2} glyph={<Icon name="flame" />}>
         <Figures
           items={[
-            { label: "De principio a fin", value: "55 min" },
-            { label: "Tú delante", value: "15 min", lit: true },
+            { label: "From start to end", value: "55 min" },
+            { label: "You in front", value: "15 min", lit: true },
           ]}
         />
       </Banner>
@@ -60,7 +60,7 @@ export const Portada: StoryObj = {
 };
 
 function Cooking() {
-  const steps = ["Picar el puerro de ejemplo.", "Rehogar a fuego medio hasta que esté blando.", "Cocer con agua y patata."];
+  const steps = ["Chop the sample leek.", "Fry gently over medium heat until soft.", "Cook with water and potato."];
   const [done, setDone] = React.useState<number[]>([1]);
   const next = steps.findIndex((_, index) => !done.includes(index + 1)) + 1;
   return (
@@ -87,11 +87,11 @@ export const Fotos: StoryObj = {
   render: () => (
     <div style={{ maxWidth: 400, display: "grid", gap: 16 }}>
       <Tiles label="Escapadas">
-        <PhotoTile title="Mirador de ejemplo" detail="Navarra · escapada" hue={3} icon="mountain" onOpen={() => undefined} />
-        <PhotoTile title="Viaje inventado" detail="En mayo" hue={5} icon="plane" badge="Planeando" href="#" />
+        <PhotoTile title="Sample viewpoint" detail="Navarra · getaway" hue={3} icon="mountain" onOpen={() => undefined} />
+        <PhotoTile title="Viaje inventado" detail="In May" hue={5} icon="plane" badge="Planeando" href="#" />
       </Tiles>
       <Photo hue={2} icon="food" shape="hero" />
-      <Photo hue={1} icon="camera" shape="banner" action={{ label: "Añadir foto", onClick: () => undefined }} />
+      <Photo hue={1} icon="camera" shape="banner" action={{ label: "Add photo", onClick: () => undefined }} />
     </div>
   ),
 };

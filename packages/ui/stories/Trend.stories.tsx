@@ -5,10 +5,10 @@ import "../library.css";
 
 import { TrendChart } from "../src/index";
 
-const meta: Meta = { title: "Gráficas/Tendencia" };
+const meta: Meta = { title: "Charts/Trend" };
 export default meta;
 
-const kg = (value: number) => `${value.toLocaleString("es-ES", { maximumFractionDigits: 1 })} kg`;
+const kg = (value: number) => `${value.toLocaleString("en-GB", { maximumFractionDigits: 1 })} kg`;
 
 function weights() {
   const out: { day: string; value: number; average: number }[] = [];
@@ -31,7 +31,7 @@ export const Peso: StoryObj = {
       points={weights()}
       band={{ low: 76, high: 80 }}
       valueName="Pesada"
-      averageName="Media de 7 días"
+      averageName="7-day average"
       format={kg}
     />
   ),
@@ -49,21 +49,21 @@ export const Analito: StoryObj = {
         { day: "2026-05-11", value: 109 },
       ]}
       band={{ high: 130 }}
-      bandName="Rango de referencia"
+      bandName="Reference range"
       valueName="LDL"
       format={(value) => `${Math.round(value)} mg/dL`}
     />
   ),
 };
 
-export const Récords: StoryObj = {
+export const Records: StoryObj = {
   render: () => (
     <div style={{ "--trend-tone": "var(--kind-push)" } as React.CSSProperties}>
       <TrendChart
-        label="Máximo estimado por sesión"
-        valueName="Máximo estimado"
-        bandName="Tu rango normal"
-        highlightName="Récord"
+        label="Estimated max per session"
+        valueName="Estimated max"
+        bandName="Your normal range"
+        highlightName="Record"
         format={kg}
         band={{ low: 110, high: 116 }}
         points={[109, 110, 108, 111, 112, 111, 110, 113, 114, 113, 115, 116, 115, 117, 119].map((value, index) => ({

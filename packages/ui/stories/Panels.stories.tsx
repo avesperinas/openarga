@@ -17,25 +17,25 @@ const money: PanelTab[] = [
     id: "money.resumen",
     label: "Resumen",
     blocks: [
-      { type: "figure", label: "Patrimonio", value: "48.320 €", delta: "+23 % en 12 meses", tone: "positive" },
+      { type: "figure", label: "Patrimonio", value: "48.320 €", delta: "+23 % in 12 months", tone: "positive" },
       { type: "trend", unit: "money", points: months.map((label, index) => ({ label, value: worth[index]! })) },
-      { type: "split", label: "Noviembre, hasta hoy", total: "entran 2.940 €", parts: [{ label: "Gastas", value: "1.410 €", share: 1410, hue: 4 }, { label: "Inviertes", value: "600 €", share: 600, hue: 5 }, { label: "Queda", value: "930 €", share: 930, hue: 2 }] },
-      { type: "tiles", items: [{ label: "Colchón", value: "1,5 meses", foot: "de 3" }, { label: "Ahorras", value: "28 %", foot: "tu media, 21 %" }, { label: "Sam te debe", value: "86 €", foot: "Liquidar", href: "/money/compartido" }, { label: "Renta 2026", value: "a pagar 1.380 €", tone: "warning" }] },
-      { type: "alert", text: "3 movimientos por etiquetar", href: "/money/movimientos" },
+      { type: "split", label: "November, to date", total: "entran 2.940 €", parts: [{ label: "Gastas", value: "1.410 €", share: 1410, hue: 4 }, { label: "Inviertes", value: "600 €", share: 600, hue: 5 }, { label: "Queda", value: "930 €", share: 930, hue: 2 }] },
+      { type: "tiles", items: [{ label: "Cushion", value: "1,5 meses", foot: "of 3" }, { label: "Ahorras", value: "28 %", foot: "your average, 21 %" }, { label: "Sam te debe", value: "86 €", foot: "Liquidar", href: "/money/compartido" }, { label: "Renta 2026", value: "a pagar 1.380 €", tone: "warning" }] },
+      { type: "alert", text: "3 movements to label", href: "/money/movimientos" },
     ],
     actions: [{ label: "Etiquetar", href: "/money/movimientos", primary: true }, { label: "Abrir Money", href: "/money/" }],
   },
-  { id: "money.gasto", label: "Gasto", blocks: [{ type: "treemap", items: [{ label: "Casa", value: 620, hue: 1 }, { label: "Súper", value: 410, hue: 2 }, { label: "Ocio", value: 260, hue: 7 }] }] },
+  { id: "money.gasto", label: "Gasto", blocks: [{ type: "treemap", items: [{ label: "Casa", value: 620, hue: 1 }, { label: "Groceries", value: 410, hue: 2 }, { label: "Ocio", value: 260, hue: 7 }] }] },
 ];
 
 const health: PanelTab[] = [
   {
     id: "vitals.hoy",
-    label: "Hoy",
+    label: "Today",
     blocks: [
-      { type: "rings", items: [{ label: "Disposición", value: "78", share: 0.78, hue: 5 }, { label: "Sueño", value: "82", share: 0.82, hue: 1 }, { label: "Pasos", value: "74 %", share: 0.74, hue: 2 }, { label: "Comida", value: "68 %", share: 0.68, hue: 4 }, { label: "Entreno", value: "3/4", share: 0.75, hue: 3 }] },
-      { type: "feature", eyebrow: "Siguiente sesión · Training", title: "Pierna, hoy", text: "6 ejercicios · 9 días sin pierna", body: ["legs"], action: "Empezar", href: "/training/" },
-      { type: "tiles", items: [{ label: "Peso", value: "74,2 kg", foot: "−1,6 kg en 12 semanas", tone: "positive", series: [75.8, 75.4, 75.0, 74.7, 74.4, 74.2] }, { label: "FC en reposo", value: "52 ppm", series: [56, 55, 54, 53, 52] }] },
+      { type: "rings", items: [{ label: "Layout", value: "78", share: 0.78, hue: 5 }, { label: "Sleep", value: "82", share: 0.82, hue: 1 }, { label: "Pasos", value: "74 %", share: 0.74, hue: 2 }, { label: "Comida", value: "68 %", share: 0.68, hue: 4 }, { label: "Entreno", value: "3/4", share: 0.75, hue: 3 }] },
+      { type: "feature", eyebrow: "Next session · Training", title: "Legs, today", text: "6 exercises · 9 days without legs", body: ["legs"], action: "Empezar", href: "/training/" },
+      { type: "tiles", items: [{ label: "Peso", value: "74,2 kg", foot: "−1.6 kg in 12 weeks", tone: "positive", series: [75.8, 75.4, 75.0, 74.7, 74.4, 74.2] }, { label: "Resting HR", value: "52 ppm", series: [56, 55, 54, 53, 52] }] },
     ],
   },
 ];
@@ -43,7 +43,7 @@ const health: PanelTab[] = [
 export const Dinero: Story = {
   render: () => (
     <div style={{ maxWidth: 390 }}>
-      <AreaPanel area={{ key: "money", label: "Dinero", apps: "Money · Carrera", hue: 2, icon: "€" }} headline={{ text: "Llegas a fin de mes con unos 420 € de margen", emphasis: "unos 420 €", tone: "positive", status: "Vas bien" }} tabs={money} onExpand={() => undefined} />
+      <AreaPanel area={{ key: "money", label: "Dinero", apps: "Money · Carrera", hue: 2, icon: "€" }} headline={{ text: "You reach the end of the month with about €420 to spare", emphasis: "unos 420 €", tone: "positive", status: "Vas bien" }} tabs={money} onExpand={() => undefined} />
     </div>
   ),
 };
@@ -51,16 +51,16 @@ export const Dinero: Story = {
 export const DineroAncho: Story = {
   render: () => (
     <div style={{ maxWidth: 900 }}>
-      <AreaPanel wide area={{ key: "money", label: "Dinero", apps: "Money · Carrera", hue: 2, icon: "€" }} headline={{ text: "Llegas a fin de mes con unos 420 € de margen", emphasis: "unos 420 €", tone: "positive", status: "Vas bien" }} tabs={money} />
+      <AreaPanel wide area={{ key: "money", label: "Dinero", apps: "Money · Carrera", hue: 2, icon: "€" }} headline={{ text: "You reach the end of the month with about €420 to spare", emphasis: "unos 420 €", tone: "positive", status: "Vas bien" }} tabs={money} />
     </div>
   ),
 };
 
 export const DineroTablero: Story = {
-  name: "Dinero, página del ordenador",
+  name: "Money, computer page",
   render: () => (
     <div style={{ maxWidth: 1200 }}>
-      <AreaPanel board area={{ key: "money", label: "Dinero", apps: "Money · Carrera", hue: 2, icon: "€" }} headline={{ text: "Llegas a fin de mes con unos 420 € de margen", emphasis: "unos 420 €", tone: "positive", status: "Vas bien" }} tabs={money} />
+      <AreaPanel board area={{ key: "money", label: "Dinero", apps: "Money · Carrera", hue: 2, icon: "€" }} headline={{ text: "You reach the end of the month with about €420 to spare", emphasis: "unos 420 €", tone: "positive", status: "Vas bien" }} tabs={money} />
     </div>
   ),
 };
@@ -75,14 +75,14 @@ export const Llegando: Story = {
 };
 
 export const Pestanas: Story = {
-  name: "Pestañas de las páginas",
+  name: "Page tabs",
   render: () => {
     const [current, setCurrent] = React.useState(1);
     return (
       <div style={{ maxWidth: 390 }}>
         <PageTabs
           items={[
-            { key: "day", label: "Día", hue: 6, icon: "◷" },
+            { key: "day", label: "Day", hue: 6, icon: "◷" },
             { key: "money", label: "Dinero", hue: 2, icon: "€" },
             { key: "health", label: "Salud", hue: 5, icon: "♥" },
             { key: "widgets", label: "Widgets" },
@@ -98,7 +98,7 @@ export const Pestanas: Story = {
 export const Salud: Story = {
   render: () => (
     <div style={{ maxWidth: 390 }}>
-      <AreaPanel area={{ key: "health", label: "Salud", apps: "Vitals · Training · Macros", hue: 5, icon: "♥" }} headline={{ text: "Has dormido bien: buen día para pierna", emphasis: "buen día para pierna", tone: "positive", status: "Listo" }} tabs={health} />
+      <AreaPanel area={{ key: "health", label: "Salud", apps: "Vitals · Training · Macros", hue: 5, icon: "♥" }} headline={{ text: "You slept well: a good day for legs", emphasis: "good day for legs", tone: "positive", status: "Listo" }} tabs={health} />
     </div>
   ),
 };
@@ -106,7 +106,7 @@ export const Salud: Story = {
 export const Bolas: Story = {
   render: () => (
     <div style={{ background: "#7fa3d8", padding: 16 }}>
-      <AreaOrbs items={[{ key: "day", label: "Día", status: "2 citas", tone: "positive", hue: 6, icon: "◷" }, { key: "money", label: "Dinero", status: "bien", tone: "positive", hue: 2, icon: "€" }, { key: "work", label: "Trabajo", status: "TFM", tone: "warning", hue: 4, icon: "▣" }]} />
+      <AreaOrbs items={[{ key: "day", label: "Day", status: "2 citas", tone: "positive", hue: 6, icon: "◷" }, { key: "money", label: "Dinero", status: "bien", tone: "positive", hue: 2, icon: "€" }, { key: "work", label: "Trabajo", status: "TFM", tone: "warning", hue: 4, icon: "▣" }]} />
     </div>
   ),
 };
@@ -121,10 +121,10 @@ export const Mes: Story = {
           today: 9,
           marked: [3, 9, 12, 13, 20],
           entries: [
-            { start: "2026-11-03T18:00:00+01:00", end: "2026-11-03T19:30:00+01:00", title: "Pádel", tone: 4 },
+            { start: "2026-11-03T18:00:00+01:00", end: "2026-11-03T19:30:00+01:00", title: "Padel", tone: 4 },
             { start: "2026-11-09T09:00:00+01:00", end: "2026-11-09T09:15:00+01:00", title: "Daily", tone: 1 },
             { start: "2026-11-12", end: "2026-11-14", all_day: true, title: "Viaje a Lisboa", tone: 7 },
-            { start: "2026-11-20T17:00:00+01:00", end: "2026-11-20T19:00:00+01:00", title: "Clase del máster", tone: 3 },
+            { start: "2026-11-20T17:00:00+01:00", end: "2026-11-20T19:00:00+01:00", title: "Master's class", tone: 3 },
           ],
         }}
       />

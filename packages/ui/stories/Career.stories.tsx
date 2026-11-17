@@ -12,7 +12,7 @@ type Story = StoryObj<typeof meta>;
 
 const euros = (value: number) => `${plain(Math.round(value))} €`;
 const spans: PeriodSpan[] = [
-  { key: "vision", name: "Visión Labs", hue: 5, from: "2023-01", to: "2024-04" },
+  { key: "vision", name: "Vision Labs", hue: 5, from: "2023-01", to: "2024-04" },
   { key: "ribera", name: "Datos Ribera", hue: 1, from: "2024-05", to: "2026-02" },
   { key: "qubit", name: "Qubit Works", hue: 7, from: "2026-03", to: "2026-06" },
   { key: "paro", name: "Paro", hue: 8, from: "2026-07", to: "2026-07", muted: true },
@@ -36,9 +36,9 @@ export const Carrera: Story = {
     const [chosen, setChosen] = React.useState<string | null>(null);
     return (
       <div style={{ maxWidth: 960 }}>
-        <Card title="Tu carrera, mes a mes">
+        <Card title="Your career, month by month">
           <PeriodBars
-            label="Neto de cada mes por empresa, con los 12 que vienen"
+            label="Each month's net by employer, with the next 12"
             periods={periods}
             groups={spans.map(({ key, name, hue }) => ({ key, name, hue }))}
             spans={spans}
@@ -65,7 +65,7 @@ export const Cuadre: Story = {
   render: () => (
     <div style={{ maxWidth: 390 }}>
       <MonthDots
-        label="Nóminas de 2026"
+        label="2026 payslips"
         onSelect={() => undefined}
         items={["e", "f", "m", "a", "m", "j", "j", "a", "s", "o", "n", "d"].map((label, index) => ({
           key: String(index),
@@ -82,13 +82,13 @@ export const Cascada: Story = {
   render: () => (
     <div style={{ maxWidth: 390 }}>
       <Waterfall
-        label="De la cuota al resultado"
+        label="From tax due to the result"
         format={euros}
         steps={[
-          { key: "due", label: "Cuota íntegra", value: 9420, kind: "total" },
-          { key: "min", label: "Mínimo personal", value: -1084, kind: "change", tone: "positive" },
-          { key: "work", label: "Por trabajo", value: -400, kind: "change", tone: "positive" },
-          { key: "net", label: "Cuota líquida", value: 7936, kind: "total" },
+          { key: "due", label: "Gross tax due", value: 9420, kind: "total" },
+          { key: "min", label: "Personal minimum", value: -1084, kind: "change", tone: "positive" },
+          { key: "work", label: "For work", value: -400, kind: "change", tone: "positive" },
+          { key: "net", label: "Net tax due", value: 7936, kind: "total" },
           { key: "held", label: "Retenido", value: -6556, kind: "change", tone: "positive" },
           { key: "result", label: "A pagar", value: 1380, kind: "result", tone: "warning" },
         ]}
@@ -105,7 +105,7 @@ export const Escalones: Story = {
     );
     return (
       <div style={{ maxWidth: 390 }}>
-        <SeriesChart kind="step" label="Bruto anual de cada contrato" labels={labels} series={[{ key: "gross", name: "Bruto anual", values: gross }]} format={euros} />
+        <SeriesChart kind="step" label="Annual gross of each contract" labels={labels} series={[{ key: "gross", name: "Bruto anual", values: gross }]} format={euros} />
       </div>
     );
   },

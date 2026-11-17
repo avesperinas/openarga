@@ -31,7 +31,7 @@ function Demo({ level, highlight }: { level: MapLevel; highlight: string | null 
       <WorldMap
         geoBase="/geo/"
         level={level}
-        label="Mapa de viajes"
+        label="Travel map"
         areas={
           level === "country"
             ? [
@@ -65,7 +65,7 @@ function Demo({ level, highlight }: { level: MapLevel; highlight: string | null 
       <div style={{ position: "absolute", inset: "var(--space-4) var(--space-4) auto" }}>
         <MapFigures
           figures={[
-            { label: "Países", value: "4" },
+            { label: "Countries", value: "4" },
             { label: "Regiones", value: "7" },
             { label: "Viajes", value: "4" },
             { label: "Noches", value: "31" },

@@ -14,17 +14,17 @@ type Story = StoryObj<typeof meta>;
 
 export const Bizcocho: Story = {
   args: {
-    label: "Cómo se monta el bizcocho",
+    label: "How the sponge cake is put together",
     columns: 5,
     bands: [
-      { id: "molde", label: "Untar y enharinar el molde" },
-      { id: "horno", label: "Precalentar el horno a 170°", note: "10 min" },
+      { id: "molde", label: "Grease and flour the tin" },
+      { id: "horno", label: "Preheat the oven to 170°", note: "10 min" },
     ],
     rows: [
       { id: 1, amount: "115 g", label: "Mantequilla" },
-      { id: 2, amount: "200 g", label: "Azúcar" },
+      { id: 2, amount: "200 g", label: "Sugar" },
       { id: 3, amount: "1 cdta", label: "Vainilla" },
-      { id: 4, amount: "60 ml", label: "Café" },
+      { id: 4, amount: "60 ml", label: "Coffee" },
       { id: 5, amount: "2", label: "Huevos" },
       { id: 6, amount: "80 g", label: "Harina" },
       { id: 7, amount: "80 g", label: "Cacao" },
@@ -39,7 +39,7 @@ export const Bizcocho: Story = {
       {
         id: 7,
         label: "Hornear",
-        detail: "170°, hasta que el palillo salga limpio",
+        detail: "170°, until the skewer comes out clean",
         note: "35 min · corre solo",
         column: 5,
         row: 1,
@@ -52,17 +52,17 @@ export const Bizcocho: Story = {
 
 export const DosCadenas: Story = {
   args: {
-    label: "Cómo se monta la porrusalda",
+    label: "How the leek soup is put together",
     columns: 3,
     rows: [
       { id: 1, amount: "400 g", label: "Puerro" },
-      { id: 2, amount: "30 ml", label: "Aceite de oliva" },
+      { id: 2, amount: "30 ml", label: "Olive oil" },
       { id: 3, amount: "600 g", label: "Patata" },
       { id: 4, amount: "200 g", label: "Bacalao", unused: true },
     ],
     cells: [
-      { id: 1, label: "Picar", detail: "El puerro en rodajas", column: 1, row: 1, span: 1 },
-      { id: 2, label: "Pelar", detail: "Cascar las patatas", column: 1, row: 3, span: 1 },
+      { id: 1, label: "Picar", detail: "The leek, sliced", column: 1, row: 1, span: 1 },
+      { id: 2, label: "Pelar", detail: "Break the potatoes", column: 1, row: 3, span: 1 },
       { id: 3, label: "Pochar", note: "10 min", column: 2, row: 1, span: 2 },
       {
         id: 4,
