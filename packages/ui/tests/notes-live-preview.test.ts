@@ -40,7 +40,7 @@ describe("the live view", () => {
     expect(shown("> [!tip] Trick\n> Text")).toEqual(["> [!tip] Trick", "> Text"]);
   });
 
-  it("no toca lo que está en código", () => {
+  it("does not touch what is in code", () => {
     expect(shown("`[[no]]` y **sí**")).toEqual(["[[no]] y sí"]);
   });
 });

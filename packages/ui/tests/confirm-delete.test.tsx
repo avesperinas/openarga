@@ -35,7 +35,7 @@ async function press(name: string): Promise<void> {
 }
 
 describe("ConfirmDelete", () => {
-  it("dice qué se borra y qué se pierde, y el botón dice lo que hace", () => {
+  it("says what is deleted and what is lost, and the button says what it does", () => {
     mount(
       <ConfirmDelete
         title="¿Borrar esta receta?"
@@ -54,13 +54,13 @@ describe("ConfirmDelete", () => {
     expect(button("Borrar receta").dataset.variant).toBe("destructive");
   });
 
-  it("sin consecuencia, avisa de que no se puede deshacer", () => {
+  it("without a consequence, it warns that it cannot be undone", () => {
     mount(<ConfirmDelete title="¿Borrar?" action="Borrar" onCancel={() => undefined} onConfirm={() => undefined} />);
 
     expect(document.body.textContent).toContain(CANNOT_UNDO);
   });
 
-  it("cancelar no borra", async () => {
+  it("cancelling does not delete", async () => {
     const onConfirm = vi.fn();
     const onCancel = vi.fn();
     mount(<ConfirmDelete title="¿Borrar?" action="Borrar" onCancel={onCancel} onConfirm={onConfirm} />);
@@ -72,7 +72,7 @@ describe("ConfirmDelete", () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  it("si el borrado falla, lo dice en la hoja y deja reintentar", async () => {
+  it("if the deletion fails, it says so in the sheet and allows retrying", async () => {
     const onConfirm = vi.fn().mockRejectedValueOnce(new Error("Offline")).mockResolvedValueOnce(undefined);
     mount(<ConfirmDelete title="¿Borrar?" action="Borrar" onCancel={() => undefined} onConfirm={onConfirm} />);
 
@@ -85,8 +85,8 @@ describe("ConfirmDelete", () => {
   });
 });
 
-describe("CredentialField, al quitarla", () => {
-  it("pregunta antes, y solo la quita al confirmarlo", async () => {
+describe("CredentialField, when removing it", () => {
+  it("asks first, and removes it only when confirmed", async () => {
     const onRemove = vi.fn();
     mount(
       <CredentialField

@@ -5,12 +5,12 @@ import { AppBackdrop, AppSettings, ARGA_SETTINGS, SETTINGS_TAB } from "../src/in
 
 const APP = { id: "training", name: "Training", icon: "/training/icon.svg?v=1" };
 
-describe("los ajustes de una app", () => {
-  it("son la última pestaña, con el mismo nombre y el mismo icono en todas", () => {
+describe("an app's settings", () => {
+  it("they are the last tab, with the same name and icon in all", () => {
     expect(SETTINGS_TAB).toMatchObject({ id: "settings", label: "Settings", icon: "settings" });
   });
 
-  it("llevan lo de la app arriba y debajo, en el mismo orden, el fondo y la versión", () => {
+  it("carry the app's own above and below, in the same order, the background and the version", () => {
     const html = renderToStaticMarkup(
       <AppBackdrop app="training">
         <AppSettings app={APP}>
@@ -30,13 +30,13 @@ describe("los ajustes de una app", () => {
     expect(html).toContain("OpenArga settings");
   });
 
-  it("el fondo se elige solo si hay fondo de app que elegir", () => {
+  it("the background is chosen only if there is an app background to choose", () => {
     const html = renderToStaticMarkup(<AppSettings app={APP} />);
     expect(html).not.toContain("Fondo de Training");
     expect(html).toContain("About");
   });
 
-  it("los de arga se abren desde su escritorio", () => {
+  it("arga's open from its desktop", () => {
     expect(ARGA_SETTINGS).toBe("/#settings");
   });
 });

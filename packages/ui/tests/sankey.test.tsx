@@ -16,41 +16,41 @@ const links = [
   { source: "me", target: "food", value: 500 },
 ];
 
-describe("el diagrama de flujo", () => {
+describe("the flow diagram", () => {
   const { placed, bands } = sankeyLayout(nodes, links);
   const at = (id: string) => placed.find((node) => node.id === id)!;
 
-  it("con menos alto por nudo, el diagrama entero es más bajo", () => {
+  it("with less height per node, the whole diagram is shorter", () => {
     const crowded = Array.from({ length: 12 }, (_, i) => ({ id: `x${i}`, name: `X${i}`, column: 2, kind: "expense" as const }));
     const many = [...nodes, ...crowded];
     const out = [...links, ...crowded.map((n) => ({ source: "me", target: n.id, value: 10 }))];
     expect(sankeyLayout(many, out, 28).height).toBeLessThan(sankeyLayout(many, out).height);
   });
 
-  it("una cantidad mide lo mismo en cualquier columna", () => {
+  it("an amount has the same width in any column", () => {
     expect(at("salary").height).toBeCloseTo(at("me").height);
     expect(at("rent").height / at("food").height).toBeCloseTo(3);
   });
 
-  it("las bandas que salen de un nudo van una bajo otra, sin pisarse", () => {
+  it("the bands leaving a node stack one under another, without overlapping", () => {
     const out = bands.filter((band) => band.source.id === "me").sort((a, b) => a.from - b.from);
     expect(out[1]!.from - out[0]!.from).toBeCloseTo((out[0]!.width + out[1]!.width) / 2);
   });
 
-  it("cada banda dice de dónde a dónde y cuánto, y hay tabla", () => {
+  it("each band says from where to where and how much, and there is a table", () => {
     const html = renderToStaticMarkup(<Sankey label="Flujo" nodes={nodes} links={links} format={(v) => `${v} €`} />);
     expect(html).toContain("<title>Tú → Alquiler: 1500 €</title>");
     expect(html).toContain("<summary>Ver como tabla</summary>");
     expect(html).toContain('data-kind="income"');
   });
 
-  it("sin nada que enseñar lo dice", () => {
+  it("with nothing to show it says so", () => {
     expect(renderToStaticMarkup(<Sankey label="x" nodes={[]} links={[]} />)).toContain("No movements in this range");
   });
 });
 
-describe("las ramas", () => {
-  it("las hojas van junto a su rama, y dentro de ella por importe", () => {
+describe("the branches", () => {
+  it("leaves go next to their branch, and inside it by amount", () => {
     const tree = [
       { id: "me", name: "Tú", column: 0, kind: "you" as const },
       { id: "spent", name: "Gasto", column: 1, kind: "expense" as const },

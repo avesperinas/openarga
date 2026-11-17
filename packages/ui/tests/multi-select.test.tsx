@@ -47,15 +47,15 @@ function mount(start: string[] = []) {
   return { host, seen, button, option };
 }
 
-describe("el desplegable de varias", () => {
-  it("sin nada marcado dice «todos», y cerrado no enseña la lista", () => {
+describe("the multi-select dropdown", () => {
+  it("with nothing checked it says “all”, and closed it does not show the list", () => {
     const { host, button } = mount();
     expect(button().textContent).toBe("Todos los tipos");
     expect(button().getAttribute("aria-expanded")).toBe("false");
     expect(host.querySelector('[role="listbox"]')).toBeNull();
   });
 
-  it("marca en el orden de las opciones, dice lo marcado y desmarca", () => {
+  it("checks in the order of the options, says what is checked and unchecks", () => {
     const { seen, button, option } = mount();
     act(() => button().click());
     act(() => option("Pensión").click());
@@ -69,7 +69,7 @@ describe("el desplegable de varias", () => {
     expect(seen.at(-1)).toEqual(["funds", "pension"]);
   });
 
-  it("«Quitar la selección» vuelve a todos, y tocar fuera la cierra", () => {
+  it("“Clear selection” goes back to all, and tapping outside closes it", () => {
     const { host, seen, button } = mount(["funds"]);
     act(() => button().click());
     const clear = host.querySelector<HTMLButtonElement>(".multi-select-clear")!;

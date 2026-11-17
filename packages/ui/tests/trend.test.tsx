@@ -10,8 +10,8 @@ const weights = [
   { day: "2026-09-11", value: 79.0, average: 79.0 },
 ];
 
-describe("la tendencia", () => {
-  it("ajusta el eje a los datos y a la banda, no desde cero", () => {
+describe("the trend", () => {
+  it("fits the axis to the data and the band, not from zero", () => {
     const { min, max } = trendDomain(weights, { low: 72, high: 76 });
 
     expect(min).toBeGreaterThan(70);
@@ -20,16 +20,16 @@ describe("la tendencia", () => {
     expect(max).toBeLessThan(82);
   });
 
-  it("un solo valor tiene un eje a su alrededor", () => {
+  it("a single value has an axis around it", () => {
     expect(trendDomain([{ day: "2026-09-01", value: 120 }])).toEqual({ min: 119, max: 121 });
   });
 
-  it("pone cada punto en su fecha, con los huecos como huecos", () => {
+  it("puts each point at its date, with gaps as gaps", () => {
     expect(trendX(weights)).toEqual([0, 0.1, 1]);
     expect(trendX([{ day: "2026-09-01", value: 1 }])).toEqual([0.5]);
   });
 
-  it("dibuja la media, lo medido, la banda y marca lo que queda fuera de ella", () => {
+  it("draws the average, the measured values, the band and marks what falls outside it", () => {
     const html = renderToStaticMarkup(
       <TrendChart label="Weight" points={weights} band={{ low: 72, high: 76 }} valueName="Pesada" averageName="Media 7 días" />,
     );
@@ -41,7 +41,7 @@ describe("la tendencia", () => {
     expect(html.match(/data-out/g)).toHaveLength(3);
   });
 
-  it("sin media, lo medido es la línea principal, y con muchos puntos no se marca cada uno", () => {
+  it("without an average, the measured values are the main line, and with many points each one is not marked", () => {
     const many = Array.from({ length: 90 }, (_, index) => ({
       day: `2026-0${1 + Math.floor(index / 30)}-${String(1 + (index % 28)).padStart(2, "0")}`,
       value: 100 + index,
@@ -54,11 +54,11 @@ describe("la tendencia", () => {
     expect(html).not.toContain("trend-chart-dot");
   });
 
-  it("sin puntos lo dice", () => {
+  it("without points it says so", () => {
     expect(renderToStaticMarkup(<TrendChart label="Weight" points={[]} />)).toContain("No data in this range");
   });
 
-  it("marca el día del cambio con su línea y su nombre, solo si cae dentro", () => {
+  it("marks the day of the change with its line and name, only if it falls inside", () => {
     const marked = renderToStaticMarkup(
       <TrendChart label="VFC" points={weights} marker={{ day: "2026-09-02", label: "Cambio a la pulsera" }} />,
     );
@@ -71,7 +71,7 @@ describe("la tendencia", () => {
     expect(outside).not.toContain("trend-chart-marker");
   });
 
-  it("marca aparte los puntos destacados, con su nombre en la leyenda", () => {
+  it("marks the highlighted points apart, with their name in the legend", () => {
     const html = renderToStaticMarkup(
       <TrendChart
         label="e1RM"
@@ -88,7 +88,7 @@ describe("la tendencia", () => {
     expect(html).toContain("Récord");
   });
 
-  it("sin marcar fuera, la banda es solo una referencia", () => {
+  it("without marking outliers, the band is only a reference", () => {
     const html = renderToStaticMarkup(
       <TrendChart
         label="e1RM"

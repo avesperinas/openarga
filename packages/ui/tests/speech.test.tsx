@@ -68,8 +68,8 @@ const button = (label: string) =>
     (one) => one.textContent?.includes(label) || one.getAttribute("aria-label") === label,
   )!;
 
-describe("partir lo que se lee", () => {
-  it("en frases enteras de unos 220 caracteres, recordando de qué parte sale cada trozo", () => {
+describe("splitting what is read", () => {
+  it("in whole sentences of about 220 characters, remembering which part each piece comes from", () => {
     const long = "Una frase corta. ".repeat(30);
     const chunks = chunksOf(["Titular", long, ""]);
     expect(chunks[0]).toEqual({ text: "Titular", part: 0 });
@@ -78,19 +78,19 @@ describe("partir lo que se lee", () => {
     expect(chunks.map((one) => one.text).join(" ")).toContain("Una frase corta.");
   });
 
-  it("una frase sin puntos más larga que un trozo se parte por palabras", () => {
+  it("a sentence without full stops longer than a piece splits by words", () => {
     const chunks = chunksOf(["palabra ".repeat(80)]);
     expect(chunks.length).toBeGreaterThan(1);
     expect(chunks.every((one) => one.text.length <= 220)).toBe(true);
   });
 
-  it("los minutos a 160 palabras por minuto, y menos a más velocidad", () => {
+  it("minutes at 160 words per minute, and fewer at higher speed", () => {
     const chunks = chunksOf(["palabra ".repeat(320)]);
     expect(listeningMinutes(chunks)).toBe(2);
     expect(listeningMinutes(chunks, 2)).toBe(1);
   });
 
-  it("lo que se oye de un artículo va en el orden en que se lee", () => {
+  it("what is heard of an article goes in reading order", () => {
     expect(
       spokenParts({
         headline: "Titular",
@@ -103,8 +103,8 @@ describe("partir lo que se lee", () => {
   });
 });
 
-describe("la voz", () => {
-  it("la de España antes que otra del idioma, y una de calidad antes que una cualquiera", () => {
+describe("the voice", () => {
+  it("the locale's own country voice before another of the language, and a quality one before any", () => {
     const voices = [voice("Paulina", "es-MX"), voice("Jorge", "es-ES"), voice("Mónica (mejorada)", "es-ES"), voice("Anna", "de-DE")];
     expect(pickVoice(voices, "es-ES")?.name).toBe("Mónica (mejorada)");
     expect(pickVoice(voices, "de-DE")?.name).toBe("Anna");
@@ -113,13 +113,13 @@ describe("la voz", () => {
 });
 
 describe("escuchar", () => {
-  it("sin voz en el navegador, no sale", () => {
+  it("without a voice in the browser, it does not show", () => {
     Object.defineProperty(window, "speechSynthesis", { value: undefined, configurable: true });
     delete (window as { speechSynthesis?: unknown }).speechSynthesis;
     expect(renderToStaticMarkup(<ReadAloud parts={["Hello"]} title="Something" />)).toBe("");
   });
 
-  it("lee trozo a trozo, dice por dónde va, pausa, sigue donde estaba y para", () => {
+  it("reads piece by piece, says where it is, pauses, resumes where it was and stops", () => {
     const parts: (number | null)[] = [];
     act(() => root.render(<ReadAloud parts={["First.", "Second.", "Third."]} title="A pill" onPart={(part) => parts.push(part)} />));
     expect(button("Listen").textContent).toContain("1 min");
@@ -148,7 +148,7 @@ describe("escuchar", () => {
     expect(parts.at(-1)).toBeNull();
   });
 
-  it("la velocidad cambia lo que suena y se recuerda", () => {
+  it("the speed changes what plays and is remembered", () => {
     act(() => root.render(<ReadAloud parts={["First.", "Second."]} title="Something" />));
     act(() => button("Listen").click());
     act(() => button("Speed 1×").click());
@@ -156,7 +156,7 @@ describe("escuchar", () => {
     expect(window.localStorage.getItem("arga.speech.rate")).toBe("1.15");
   });
 
-  it("al acabar, vuelve al principio", () => {
+  it("when done, it goes back to the start", () => {
     act(() => root.render(<ReadAloud parts={["Only."]} title="Something" />));
     act(() => button("Listen").click());
     act(() => synth.finish());
@@ -164,7 +164,7 @@ describe("escuchar", () => {
     expect(button("Listen")).toBeTruthy();
   });
 
-  it("el artículo resalta lo que suena", () => {
+  it("the article highlights what is being read aloud", () => {
     act(() =>
       root.render(
         <ArticleReader headline="Titular" lead="Entradilla" sections={[{ title: "Ladillo", text: "Uno." }]} listen={{ lang: "de-DE" }} />,
@@ -179,8 +179,8 @@ describe("escuchar", () => {
   });
 });
 
-describe("que no se corte", () => {
-  it("con la voz del dispositivo, la pantalla no se apaga mientras suena", async () => {
+describe("so that it is not cut", () => {
+  it("with the device voice, the screen stays on while it speaks", async () => {
     const taken: { released: boolean }[] = [];
     const wakeLock = {
       request: async () => {
@@ -200,7 +200,7 @@ describe("que no se corte", () => {
   });
 });
 
-describe("con un audio de verdad", () => {
+describe("with real audio", () => {
   const audio = { src: "/insights/api/pills/p1/audio", duration: 90, timeline: [0, 4, 30] };
   let session: { metadata: unknown; playbackState: string; handlers: Map<string, unknown>; setActionHandler: (a: string, h: unknown) => void };
 
@@ -231,7 +231,7 @@ describe("con un audio de verdad", () => {
     delete (navigator as { mediaSession?: unknown }).mediaSession;
   });
 
-  it("suena el audio y no la voz, y la pantalla de bloqueo lo sabe", () => {
+  it("the audio plays and not the voice, and the lock screen knows", () => {
     act(() => root.render(<ReadAloud parts={["Headline", "Lead", "Body"]} title="La columna" audio={audio} />));
     expect(button("Listen").textContent).toContain("2 min");
     act(() => button("Listen").click());
@@ -243,7 +243,7 @@ describe("con un audio de verdad", () => {
     expect(session.handlers.has("nexttrack")).toBe(true);
   });
 
-  it("resalta la parte que suena y adelante salta a la siguiente", () => {
+  it("highlights the part being read and forward skips to the next", () => {
     const parts: (number | null)[] = [];
     act(() => root.render(<ReadAloud parts={["Headline", "Lead", "Body"]} title="Something" audio={audio} onPart={(part) => parts.push(part)} />));
     act(() => button("Listen").click());
@@ -257,7 +257,7 @@ describe("con un audio de verdad", () => {
     expect(element.currentTime).toBe(30);
   });
 
-  it("si el audio no carga, lee la voz del dispositivo", () => {
+  it("if the audio does not load, the device voice reads", () => {
     act(() => root.render(<ReadAloud parts={["First."]} title="Something" audio={audio} />));
     act(() => {
       host.querySelector("audio")!.dispatchEvent(new Event("error"));

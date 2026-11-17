@@ -4,21 +4,21 @@ import { describe, expect, it } from "vitest";
 
 import { ICON_STYLES, PreviewChoices, styledIcon } from "../src/index";
 
-describe("el acabado de los iconos", () => {
-  it("cambia el fichero del icono y conserva su versión", () => {
+describe("icon finish", () => {
+  it("changes the icon file and keeps its version", () => {
     expect(styledIcon("/vitals/icon.svg?v=abc", "ink")).toBe("/vitals/icon-ink.svg?v=abc");
     expect(styledIcon("/vitals/icon.svg", "paper")).toBe("/vitals/icon-paper.svg");
     expect(styledIcon("/vitals/icon.svg?v=abc", undefined)).toBe("/vitals/icon.svg?v=abc");
     expect(styledIcon("/favicon.svg", "ink")).toBe("/favicon.svg");
   });
 
-  it("hay tres, y el primero es el de siempre", () => {
+  it("there are three, and the first is the usual one", () => {
     expect(ICON_STYLES.map((style) => style.value)).toEqual(["solid", "ink", "paper"]);
   });
 });
 
-describe("elegir viendo cómo queda", () => {
-  it("es un grupo de radios con la elegida marcada y su vista previa", () => {
+describe("choosing while seeing how it looks", () => {
+  it("is a radio group with the chosen one checked and its preview", () => {
     const html = renderToStaticMarkup(
       <PreviewChoices
         label="Iconos"

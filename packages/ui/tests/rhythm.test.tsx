@@ -20,8 +20,8 @@ import {
 const render = (element: React.ReactElement) => renderToStaticMarkup(element);
 const noop = () => {};
 
-describe("el anillo con su cifra", () => {
-  it("llena su parte, con la cifra dentro y su nombre y su línea", () => {
+describe("the ring with its figure", () => {
+  it("fills its share, with the figure inside and its name and line", () => {
     const html = render(<RingFigure share={0.42} value="42 %" label="Ventana" detail="acaba a las 18:30" />);
     expect(html).toContain('stroke-dasharray="42 100"');
     expect(html).toContain('<span class="share-ring-value">42 %</span>');
@@ -29,7 +29,7 @@ describe("el anillo con su cifra", () => {
     expect(html).toContain("acaba a las 18:30");
   });
 
-  it("sin dato, el anillo vacío; y lo que pasa de uno se queda en lleno", () => {
+  it("without data, the ring is empty; and what goes past one stays full", () => {
     expect(render(<RingFigure share={null} value="–" label="Semana" />)).not.toContain("share-ring-fill");
     expect(render(<RingFigure share={1.4} value="140 %" label="Semana" />)).toContain('stroke-dasharray="100 100"');
     expect(render(<RingFigure share={0.7} value="70 %" label="Semana" tone="warning" size="medium" />)).toContain(
@@ -37,15 +37,15 @@ describe("el anillo con su cifra", () => {
     );
   });
 
-  it("el anillo toma el color de cómo va: de sobra, a ritmo, ojo o al límite", () => {
+  it("the ring takes the colour of how it goes: ahead, on pace, careful or at the limit", () => {
     for (const tone of ["positive", "info", "warning", "negative"] as const) {
       expect(render(<RingFigure share={0.5} value="50 %" label="Semana" tone={tone} />)).toContain(`data-tone="${tone}"`);
     }
   });
 });
 
-describe("cada cuánto", () => {
-  it("hasta la marca es lo normal", () => {
+describe("how often", () => {
+  it("up to the mark is normal", () => {
     const html = render(<FrequencyBar since={7} every={14} label="cada 2 semanas, hace 7 días" />);
     expect(html).toContain('aria-label="cada 2 semanas, hace 7 días"');
     expect(html).toContain("width:50%");
@@ -53,14 +53,14 @@ describe("cada cuánto", () => {
     expect(html).not.toContain("data-over");
   });
 
-  it("pasada la marca, se dice, y la marca queda donde tocaba", () => {
+  it("past the mark, it says so, and the mark stays where it was due", () => {
     const html = render(<FrequencyBar since={16} every={8} label="cada 8 días, hace 16" />);
     expect(html).toContain('data-over="true"');
     expect(html).toContain("width:100%");
     expect(html).toContain("left:50%");
   });
 
-  it("en su fila, con su nombre y su cifra, y tocarla la abre", () => {
+  it("in its row, with its name and figure, and tapping it opens it", () => {
     const html = render(
       <FrequencyRows label="Lo que compras">
         <FrequencyRow title="Tomate" since={15} every={8} label="cada 8 días, hace 15" value="15 / 8 d" onClick={noop} />
@@ -71,13 +71,13 @@ describe("cada cuánto", () => {
     expect(html).toContain('class="frequency-row-value" data-over="true">15 / 8 d');
   });
 
-  it("sin costumbre todavía, la barra sin marca", () => {
+  it("with no habit yet, the bar without a mark", () => {
     expect(render(<FrequencyBar since={3} every={null} label="hace 3 días" />)).not.toContain("frequency-bar-mark");
   });
 });
 
-describe("el día en 24 horas", () => {
-  it("pone cada marca y cada tramo a su hora, y ahora en rojo", () => {
+describe("the day in 24 hours", () => {
+  it("puts each mark and span at its time, and now in red", () => {
     const html = render(<DayTimeline label="Today" marks={[6]} spans={[{ from: 6, to: 11 }]} now={12} name="J" state="today" />);
     expect(html).toContain('class="day-timeline-mark" style="left:25%"');
     expect(html).toContain("left:25%;width:calc(45.83333333333333% - 25%)");
@@ -86,16 +86,16 @@ describe("el día en 24 horas", () => {
     expect(html).toContain(">J</span>");
   });
 
-  it("discreta, lo marca para pintarse en gris; sin pedirlo, no", () => {
+  it("discreet, it marks it to render in grey; unasked, it does not", () => {
     expect(render(<DayTimeline label="Today" spans={[{ from: 6, to: 11 }]} quiet />)).toContain('data-quiet="true"');
     expect(render(<DayTimeline label="Today" spans={[{ from: 6, to: 11 }]} />)).not.toContain("data-quiet");
   });
 
-  it("un tramo que pasa de medianoche se corta en las 24", () => {
+  it("a span past midnight is cut at 24", () => {
     expect(render(<DayTimeline label="Today" spans={[{ from: 22, to: 27 }]} />)).toContain("calc(100% - 91.66666666666666%)");
   });
 
-  it("con algo que hacer al tocarlo es un botón, y las horas van al pie", () => {
+  it("with something to do on tap it is a button, and the hours go at the foot", () => {
     const html = render(
       <DayTimelines>
         <DayTimeline label="Lunes" name="L" onClick={noop} />
@@ -106,15 +106,15 @@ describe("el día en 24 horas", () => {
   });
 });
 
-describe("barra de abajo y portadas", () => {
-  it("la barra de abajo lleva su texto y su acción", () => {
+describe("bottom bar and covers", () => {
+  it("the bottom bar carries its text and its action", () => {
     const html = render(<DockBar title="4 en el carro" detail="Pan y 3 más" action={{ label: "Terminar", onClick: noop }} />);
     expect(html).toContain('aria-label="4 en el carro"');
     expect(html).toContain("Pan y 3 más");
     expect(html).toContain(">Terminar</button>");
   });
 
-  it("una portada sin imagen es su título; el muro las abre por su id", () => {
+  it("a cover without an image is its title; the wall opens them by id", () => {
     expect(render(<Cover title="A book" subtitle="Someone" />)).toContain('<span class="cover-title">A book</span>');
     expect(render(<Cover title="A book" src="/x.jpg" />)).toContain('alt="Cover of A book"');
     const wall = render(<CoverWall items={[{ id: "b1", title: "Uno", note: "★★★", muted: true }]} onOpen={noop} />);
@@ -124,12 +124,12 @@ describe("barra de abajo y portadas", () => {
   });
 });
 
-describe("colocar y destacar", () => {
-  it("las columnas dicen cuántas son", () => {
+describe("place and highlight", () => {
+  it("the columns say how many there are", () => {
     expect(render(<Columns count={3}><span>a</span></Columns>)).toBe('<div class="columns" data-count="3"><span>a</span></div>');
   });
 
-  it("la tarjeta de lo que tienes entre manos se abre al tocarla y lleva su acción aparte", () => {
+  it("the card of what you have on opens on tap and carries its action apart", () => {
     const html = render(
       <MediaCard
         media={<Cover title="A book" />}
@@ -144,7 +144,7 @@ describe("colocar y destacar", () => {
     expect(html).toContain("Terminado hoy");
   });
 
-  it("la imagen grande va centrada con lo suyo debajo", () => {
+  it("the large image is centred with its content below", () => {
     const html = render(<MediaHero media={<Cover title="A book" size="hero" />}><p>Someone</p></MediaHero>);
     expect(html).toContain('<section class="media-hero">');
     expect(html).toContain('<div class="media-hero-text"><p>Someone</p></div>');

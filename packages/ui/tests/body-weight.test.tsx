@@ -10,7 +10,7 @@ const days = [
   { day: "2026-09-24", kg: 80.4 },
 ];
 
-describe("el peso corporal", () => {
+describe("body weight", () => {
   it("says when the last weighing was, as one would say it", () => {
     expect(weighedOn("2026-09-24", "2026-09-24")).toBe("today");
     expect(weighedOn("2026-09-23", "2026-09-24")).toBe("yesterday");

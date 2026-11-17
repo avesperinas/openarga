@@ -20,8 +20,8 @@ const square = (code: string, lon: number, lat: number, side = 2): Feature<Polyg
   },
 });
 
-describe("el mapa pequeño de un viaje", () => {
-  it("encaja sus puntos dentro de la caja, con margen", () => {
+describe("a trip's small map", () => {
+  it("fits its points inside the box, with a margin", () => {
     const view = localView(
       [
         [3.23, 51.21],
@@ -44,14 +44,14 @@ describe("el mapa pequeño de un viaje", () => {
     }
   });
 
-  it("un sitio solo queda en el centro, sin acercarse hasta la calle", () => {
+  it("a single place stays in the centre, without zooming to street level", () => {
     const view = localView([[2.35, 48.86]], 120, 80, 10)!;
     expect(view.project([2.35, 48.86])).toEqual([60, 40]);
     const [x] = view.project([2.85, 48.86])!;
     expect(x - 60).toBeLessThan(100);
   });
 
-  it("dibuja los países de alrededor y deja fuera los del otro lado del mundo", () => {
+  it("draws the surrounding countries and leaves out those on the other side of the world", () => {
     const view = localView([[3.23, 51.21]], 120, 80, 10)!;
     const belgium = square("BE", 2.5, 49.5);
     const chile = square("CL", -72, -35);
@@ -61,7 +61,7 @@ describe("el mapa pequeño de un viaje", () => {
     expect(view.path(belgium)).toMatch(/^M/);
   });
 
-  it("al lado del antimeridiano ve lo de los dos lados", () => {
+  it("next to the antimeridian it sees both sides", () => {
     const view = localView([[179.5, -17.8]], 120, 80, 10)!;
     const east = square("A", 178.5, -18.5);
     const west = square("B", -180, -18.5);

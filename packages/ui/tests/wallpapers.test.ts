@@ -18,24 +18,24 @@ const tints = [...css.matchAll(/--glass-tint:\s*(\d+) (\d+) (\d+)/g)].map(
 const over = (source: number[], backdrop: number[], alpha: number) =>
   backdrop.map((value, index) => source[index]! * alpha + value * (1 - alpha));
 
-describe("el velo lo calcula el sistema", () => {
-  it("los colores que mide son los que declara tokens.css", () => {
+describe("the system computes the scrim", () => {
+  it("the colours measured are the ones tokens.css declares", () => {
     expect(foregrounds[0]).toBe(THEMES.light.fg);
     expect(foregrounds.slice(1)).toContain(THEMES.dark.fg);
     expect(foregrounds.slice(1).every((value) => value === THEMES.dark.fg)).toBe(true);
   });
 
-  it("el texto secundario que mide es el que declara tokens.css", () => {
+  it("the secondary text measured is the one tokens.css declares", () => {
     expect(secondaries[0]).toBe(THEMES.light.muted);
     expect(secondaries.slice(1).every((value) => value === THEMES.dark.muted)).toBe(true);
   });
 
-  it("el cristal que mide es el que declara tokens.css", () => {
+  it("the glass measured is the one tokens.css declares", () => {
     expect(tints[0]).toBe(THEMES.light.glass);
     expect(tints.slice(1).every((value) => value === THEMES.dark.glass)).toBe(true);
   });
 
-  it("el manifiesto guardado es lo que sale de medir la colección hoy", () => {
+  it("the saved manifest is what measuring the collection gives today", () => {
     for (const wallpaper of COLLECTION) {
       const stored = manifest.find((entry: { id: string }) => entry.id === wallpaper.id);
       const { image, blurred, ...measured } = { ...stored };
@@ -45,18 +45,18 @@ describe("el velo lo calcula el sistema", () => {
     }
   });
 
-  it("cada fondo viene con su pareja pre-desenfocada", () => {
+  it("each wallpaper comes with its pre-blurred pair", () => {
     for (const entry of manifest) {
       expect(entry.blurred).toBe(`/wallpapers/${entry.id}-blur.svg`);
     }
   });
 });
 
-describe.each(["light", "dark"] as const)("contraste real en tema %s", (theme) => {
+describe.each(["light", "dark"] as const)("real contrast in the %s theme", (theme) => {
   const fg = rgb(THEMES[theme].fg);
   const veil = rgb(THEMES[theme].scrim);
 
-  it.each(ids)("%s se lee en todos sus puntos, no solo de media", (id: string) => {
+  it.each(ids)("%s reads at every point, not just on average", (id: string) => {
       const wallpaper = COLLECTION.find((w: { id: string }) => w.id === id)!;
       const alpha = manifest.find((entry: { id: string }) => entry.id === id)!.scrim[theme];
 
@@ -68,13 +68,13 @@ describe.each(["light", "dark"] as const)("contraste real en tema %s", (theme) =
     expect(worst).toBeGreaterThanOrEqual(FLOOR);
   });
 
-  it.each(ids)("%s deja ver la foto en el centro del escritorio", (id: string) => {
+  it.each(ids)("%s lets the photo show in the centre of the desktop", (id: string) => {
     const entry = manifest.find((candidate: { id: string }) => candidate.id === id)!;
     expect(entry.veil[theme]).toBeLessThanOrEqual(VEIL_MAX);
     expect(entry.veil[theme]).toBeLessThanOrEqual(entry.scrim[theme]);
   });
 
-  it.each(ids)("%s se lee a través del cristal con su suelo, también lo secundario", (id: string) => {
+  it.each(ids)("%s reads through the glass with its floor, the secondary text too", (id: string) => {
     const wallpaper = COLLECTION.find((w: { id: string }) => w.id === id)!;
     const alpha = manifest.find((entry: { id: string }) => entry.id === id)!.glass[theme];
     const tint = rgb(THEMES[theme].glass);
@@ -96,8 +96,8 @@ const HARD = [
   ["noche cerrada", { id: "d", name: "Noche", base: "#000000", blobs: [] }],
 ] as const;
 
-describe("ninguna foto se rechaza por su color", () => {
-  it.each(HARD)("%s entra, con lo que hace falta para leer encima", (_name, wallpaper) => {
+describe("no photo is rejected for its colour", () => {
+  it.each(HARD)("%s gets in, with what is needed to read on top", (_name, wallpaper) => {
     const measured = measure(wallpaper);
 
     expect(measured).not.toHaveProperty("rejected");

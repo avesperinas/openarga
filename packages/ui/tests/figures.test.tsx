@@ -19,15 +19,15 @@ import {
 const render = (element: React.ReactElement) => renderToStaticMarkup(element);
 const noop = () => {};
 
-describe("las cifras", () => {
-  it("un cambio dice su dirección, y con nombre se lee entero", () => {
+describe("the figures", () => {
+  it("a change says its direction, and with a name it reads in full", () => {
     expect(render(<Delta text="+2,5 kg" direction="up" />)).toBe('<span class="delta" data-direction="up">+2,5 kg</span>');
     expect(render(<Delta text="+2,5 kg" direction="up" label="Mejor serie: +2,5 kg" />)).toContain(
       'aria-label="Mejor serie: +2,5 kg"',
     );
   });
 
-  it("las cifras en fila, con su nombre y lo que merece fijarse marcado", () => {
+  it("the figures in a row, with their name and what deserves attention marked", () => {
     const html = render(
       <Figures
         items={[
@@ -41,7 +41,7 @@ describe("las cifras", () => {
     expect(render(<Figures items={[{ label: "11+ reps", value: "80 kg", muted: true }]} />)).toContain('data-muted=""');
   });
 
-  it("la cifra destacada lleva su unidad y lo que cambió", () => {
+  it("the highlighted figure carries its unit and what changed", () => {
     const html = render(
       <HeadlineFigure label="Máximo estimado" value={119} unit="kg" change={{ text: "+6 kg", direction: "up" }} />,
     );
@@ -50,7 +50,7 @@ describe("las cifras", () => {
     expect(html).toContain('data-direction="up">+6 kg');
   });
 
-  it("el anillo cuenta hasta completarse, y completo lleva su ✓", () => {
+  it("the ring counts until complete, and complete carries its ✓", () => {
     expect(render(<ProgressRing done={2} target={4} />)).toContain('stroke-dasharray="50 100"');
     expect(render(<ProgressRing done={2} target={4} />)).toContain(">2</span>");
     expect(render(<ProgressRing done={4} target={4} />)).toContain('data-complete="true"');
@@ -58,8 +58,8 @@ describe("las cifras", () => {
   });
 });
 
-describe("las filas", () => {
-  it("una fila plegada no enseña su cuerpo; abierta, sí, con su etiqueta", () => {
+describe("the rows", () => {
+  it("a folded row does not show its body; open, it does, with its label", () => {
     const closed = render(
       <DisclosureList label="Ejercicios">
         <DisclosureRow title="Sentadilla" subtitle="3 × 6–10" open={false} onToggle={noop}>
@@ -80,7 +80,7 @@ describe("las filas", () => {
     expect(open).toContain('class="disclosure-tag"> · superserie');
   });
 
-  it("los pasos dicen su estado, y uno hecho se toca para corregirlo", () => {
+  it("the steps say their state, and a done one is tapped to correct it", () => {
     const html = render(
       <Sequence>
         <li>
@@ -95,14 +95,14 @@ describe("las filas", () => {
     expect(html).toMatch(/<div class="sequence-row" data-state="todo">/);
   });
 
-  it("colocar no necesita CSS de la app", () => {
+  it("placement needs no app CSS", () => {
     expect(render(<Stack gap="section">a</Stack>)).toBe('<div class="stack" data-gap="section">a</div>');
     expect(render(<Inline label="Actividades">a</Inline>)).toContain('role="group"');
   });
 });
 
-describe("la semana, grande y por tipo", () => {
-  it("cada día cumplido lleva el color de lo que se hizo y su ✓; hoy, su anillo", () => {
+describe("the week, large and by kind", () => {
+  it("each met day carries the colour of what was done and its ✓; today, its ring", () => {
     const html = render(
       <WeekDots
         size="large"

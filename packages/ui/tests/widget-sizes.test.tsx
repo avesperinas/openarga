@@ -25,13 +25,13 @@ const card = (size: WidgetSize, body: React.ReactNode) =>
     </Widget>,
   );
 
-describe("la forma de cada tamaño (ADR-0086)", () => {
-  it("las tiras son de una fila de alto", () => {
+describe("the shape of each size (ADR-0086)", () => {
+  it("strips are one row tall", () => {
     expect(layoutOf("2x1")).toBe("strip");
     expect(layoutOf("4x1")).toBe("strip");
   });
 
-  it("cada tamaño tiene su forma, y una desconocida cae a la de un 2x2", () => {
+  it("each size has its shape, and an unknown one falls back to a 2x2", () => {
     expect(SIZES.map(layoutOf)).toEqual([
       "tiny",
       "strip",
@@ -46,11 +46,11 @@ describe("la forma de cada tamaño (ADR-0086)", () => {
     expect(layoutOf("9x9")).toBe("square");
   });
 
-  it("la tarjeta dice su forma, que es lo que lee el CSS", () => {
+  it("the card says its shape, which is what the CSS reads", () => {
     expect(card("4x1", null)).toContain('data-layout="strip"');
   });
 
-  it("una tira no tiene alto para la línea que cuantifica la duda", () => {
+  it("a strip has no height for the line that quantifies doubt", () => {
     expect(fitsUncertaintyLine("4x1")).toBe(false);
     expect(fitsUncertaintyLine("4x2")).toBe(true);
   });
@@ -62,26 +62,26 @@ const ROWS = [
   { label: "Devolver el libro", value: "today" },
 ];
 
-describe("una lista según el hueco", () => {
-  it("en media tarjeta, con un valor largo, cada fila va en dos líneas en vez de cortarse", () => {
+describe("a list by the space available", () => {
+  it("in a half card, with a long value, each row takes two lines instead of being cut", () => {
     expect(card("2x2", <WidgetList rows={ROWS} />)).toContain("data-stacked");
     expect(card("2x2", <WidgetList rows={ROWS.slice(1)} />)).not.toContain("data-stacked");
   });
 
-  it("en un 1x1 dice cuántas hay y avisa si alguna pide algo", () => {
+  it("in a 1x1 it says how many there are and warns if one needs something", () => {
     const html = card("1x1", <WidgetList rows={ROWS} />);
     expect(html).toContain(">3<");
     expect(html).toContain('data-tone="warning"');
   });
 
-  it("en una tira, la primera y cuántas quedan", () => {
+  it("in a strip, the first and how many are left", () => {
     const html = card("4x1", <WidgetList rows={ROWS} />);
     expect(html).toContain("Pasar la ITV del coche");
     expect(html).not.toContain("Llamar al fontanero");
     expect(html).toContain("+2");
   });
 
-  it("en una ancha con muchas filas, dos columnas", () => {
+  it("in a wide one with many rows, two columns", () => {
     const many = Array.from({ length: 6 }, (_, index) => ({ label: `Fila ${index}`, value: "1" }));
     expect(card("4x2", <WidgetList rows={many} />)).toContain("data-columns");
   });
@@ -90,33 +90,33 @@ describe("una lista según el hueco", () => {
 const NOW = new Date(2026, 8, 29, 10, 0);
 const at = (days: number, hour: number) => new Date(2026, 8, 29 + days, hour, 0);
 
-describe("lo siguiente según el hueco", () => {
+describe("the next thing by the space available", () => {
   const events = [
     { at: at(0, 12), title: "Dentista" },
     { at: at(0, 18), title: "Cena" },
     { at: at(1, 10), title: "Taller" },
   ];
 
-  it("en alto agrupa por día y dice el día una sola vez", () => {
+  it("tall, it groups by day and says the day once", () => {
     const html = card("2x4", <WidgetUpNext events={events} />);
     expect(html.match(/upnext-day-label/g)).toHaveLength(2);
   });
 
-  it("en una tira es una sola línea", () => {
+  it("in a strip it is a single line", () => {
     const html = card("4x1", <WidgetUpNext events={events} />);
     expect(html).toContain("Dentista");
     expect(html).not.toContain("Cena");
   });
 
-  it("el día se dice como se dice", () => {
+  it("the day is said as one says it", () => {
     expect(dayLabel(at(0, 9), NOW)).toBe("Today");
     expect(dayLabel(at(1, 9), NOW)).toBe("Tomorrow");
     expect(dayLabel(at(2, 9), NOW)).toBe("Thursday");
   });
 });
 
-describe("el resto de cuerpos en sus tamaños nuevos", () => {
-  it("una variación con serie dibuja su forma", () => {
+describe("the other type sizes at their new values", () => {
+  it("a change with a series draws its shape", () => {
     const html = card(
       "4x2",
       <WidgetKpiDelta value={74} previous={75} series={[76, 75, 74]} />,
@@ -124,23 +124,23 @@ describe("el resto de cuerpos en sus tamaños nuevos", () => {
     expect(html).toContain("sparkline");
   });
 
-  it("la barra marca por dónde tocaría ir", () => {
+  it("the bar marks where one should be", () => {
     const html = card("2x2", <WidgetProgress value={600} target={900} expected={450} />);
     expect(html).toContain("progress-pace");
     expect(html).toContain("--pace:0.5");
   });
 
-  it("el mapa de constancia en una tira son los últimos días en fila", () => {
+  it("the consistency map in a strip is the last days in a row", () => {
     const html = card("4x1", <WidgetHeatmap values={Array.from({ length: 100 }, () => 1)} />);
     expect(html.match(/heatmap-cell/g)).toHaveLength(21);
   });
 
-  it("el calendario en una tira es la semana, y en un 1x1 el día de hoy", () => {
+  it("the calendar in a strip is the week, and in a 1x1 today", () => {
     expect(card("4x1", <WidgetCalendar marked={[1]} />).match(/calendar-week-day/g)).toHaveLength(7);
     expect(card("1x1", <WidgetCalendar marked={[1]} />)).toContain("calendar-today-date");
   });
 
-  it("el mes con lo que hay no pinta nada en los días: lo cuenta en la columna de al lado", () => {
+  it("the month with entries draws nothing in the days: it tells them in the side column", () => {
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const entries = [{ title: "Dentista", start: today, allDay: true, tone: 2 }];
@@ -157,7 +157,7 @@ describe("el resto de cuerpos en sus tamaños nuevos", () => {
     expect(square).not.toContain("week-dot");
   });
 
-  it("las cifras en un 1x1 se quedan en la primera", () => {
+  it("the figures in a 1x1 keep the first one", () => {
     const html = card(
       "1x1",
       <WidgetStats items={[{ label: "A", value: 1 }, { label: "B", value: 2 }]} />,
@@ -166,15 +166,15 @@ describe("el resto de cuerpos en sus tamaños nuevos", () => {
   });
 });
 
-describe("una barra con techo (ADR-0086)", () => {
-  it("pasarse de un presupuesto no es cumplirlo: se dice cuánto de más", () => {
+describe("a bar with a ceiling (ADR-0086)", () => {
+  it("going over a budget is not meeting it: it says how much over", () => {
     const html = card("2x2", <WidgetProgress value={1000} target={900} unit="€" goodWhen="down" />);
     expect(html).not.toContain("Goal met");
     expect(html).toContain('data-standing="over"');
     expect(html).toContain("100 € over");
   });
 
-  it("ir por delante del ritmo se avisa antes de pasarse", () => {
+  it("being ahead of pace is flagged before overshooting", () => {
     const html = card(
       "2x2",
       <WidgetProgress value={600} target={900} expected={450} goodWhen="down" />,

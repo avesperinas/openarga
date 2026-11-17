@@ -31,8 +31,8 @@ function openFromACard(): HTMLElement {
   return card;
 }
 
-describe("dónde acaba una hoja abierta desde dentro de una tarjeta", () => {
-  it("cuelga del body y no de la tarjeta", () => {
+describe("where a sheet opened from inside a card ends up", () => {
+  it("hangs from the body and not from the card", () => {
     const card = openFromACard();
     const dialog = document.querySelector('[role="dialog"]');
 
@@ -41,7 +41,7 @@ describe("dónde acaba una hoja abierta desde dentro de una tarjeta", () => {
     expect(document.body.contains(dialog)).toBe(true);
   });
 
-  it("el velo es hijo directo del body, así que nadie de en medio puede atraparlo", () => {
+  it("the scrim is a direct child of the body, so nothing in between can trap it", () => {
     openFromACard();
     const backdrop = document.querySelector(".bottom-sheet-backdrop");
 

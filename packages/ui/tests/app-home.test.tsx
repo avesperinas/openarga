@@ -20,8 +20,8 @@ function mount(className?: string, always?: boolean): void {
   act(() => createRoot(host).render(<AppHome app="travel" className={className} always={always} />));
 }
 
-describe("la vuelta a arga sin cabecera", () => {
-  it("habiendo venido de arga, lleva al escritorio con la clase de la pantalla", () => {
+describe("the way back to arga without a header", () => {
+  it("having come from arga, it leads to the desktop with the screen's class", () => {
     window.sessionStorage.setItem("travel:desde-arga", "1");
     mount("travel-map-home glass");
     const link = document.querySelector("a");
@@ -30,12 +30,12 @@ describe("la vuelta a arga sin cabecera", () => {
     expect(link?.className).toBe("app-home travel-map-home glass");
   });
 
-  it("sin haber venido de arga sale igual: en todas las apps, siempre en el mismo sitio", () => {
+  it("even without coming from arga it shows: in every app, always in the same place", () => {
     mount();
     expect(document.querySelector("a")?.getAttribute("href")).toBe("/");
   });
 
-  it("con `always={false}` vuelve a lo de antes: sin haber venido de arga no sale", () => {
+  it("with `always={false}` it goes back to before: without coming from arga it does not show", () => {
     mount(undefined, false);
     expect(document.querySelector("a")).toBeNull();
   });

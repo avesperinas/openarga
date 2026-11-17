@@ -15,16 +15,16 @@ import {
 
 const render = (node: React.ReactElement) => renderToStaticMarkup(node);
 
-describe("los meses", () => {
-  it("van de un mes a otro, los dos incluidos, cruzando de año", () => {
+describe("the months", () => {
+  it("they run from one month to another, both included, across the year", () => {
     expect(monthRange("2025-11", "2026-02")).toEqual(["2025-11", "2025-12", "2026-01", "2026-02"]);
     expect(monthRange("2026-03", "2026-02")).toEqual([]);
   });
 });
 
-describe("la cinta de contratos", () => {
+describe("the contracts ribbon", () => {
   const months = monthRange("2025-01", "2025-12");
-  it("cada tramo cae en sus meses; uno que sigue llega al final y uno de fuera no sale", () => {
+  it("each span falls on its months; an ongoing one reaches the end and one outside is left out", () => {
     const places = spanPlaces(
       [
         { key: "a", name: "Antigua", hue: 1, from: "2024-06", to: "2025-03" },
@@ -40,7 +40,7 @@ describe("la cinta de contratos", () => {
     expect(places[1]!.width).toBeCloseTo(6 / 12);
   });
 
-  it("un tramo estrecho no enseña su nombre, pero lo dice", () => {
+  it("a narrow span does not show its name, but says it", () => {
     const html = render(
       <SpanRibbon months={months} label="Contracts" spans={[{ key: "p", name: "Unemployed", hue: 8, from: "2025-05", to: "2025-05", muted: true }]} />,
     );
@@ -50,12 +50,12 @@ describe("la cinta de contratos", () => {
   });
 });
 
-describe("las barras de cada mes", () => {
+describe("each month's bars", () => {
   const groups = [
     { key: "old", name: "Antigua", hue: 1 as const },
     { key: "new", name: "Today", hue: 2 as const },
   ];
-  it("parte cada mes por quien pagó, con trama lo reconstruido, claro lo previsto y una línea en hoy", () => {
+  it("splits each month by who paid, rebuilt data hatched, forecast light and a line at today", () => {
     const html = render(
       <PeriodBars
         label="Neto de cada mes"
@@ -78,13 +78,13 @@ describe("las barras de cada mes", () => {
     expect(html).toContain("Previsto");
   });
 
-  it("sin meses, lo dice", () => {
+  it("without months, it says so", () => {
     expect(render(<PeriodBars label="Nada" groups={groups} periods={[]} />)).toContain("No data yet");
   });
 });
 
-describe("el cuadre de cada mes", () => {
-  it("un punto por mes con su estado; lo previsto no se toca", () => {
+describe("each month's balance", () => {
+  it("one dot per month with its state; forecast ones are not tappable", () => {
     const html = render(
       <MonthDots
         label="Nóminas de 2026"
@@ -102,8 +102,8 @@ describe("el cuadre de cada mes", () => {
   });
 });
 
-describe("la cascada", () => {
-  it("cada paso sale de donde se quedó el anterior y los totales desde cero", () => {
+describe("the waterfall", () => {
+  it("each step starts where the previous one ended and totals start from zero", () => {
     const bars = waterfallBars([
       { key: "due", label: "Cuota", value: 9420, kind: "total" },
       { key: "min", label: "Mínimo", value: -1084, kind: "change" },
@@ -122,7 +122,7 @@ describe("la cascada", () => {
     ]);
   });
 
-  it("cada barra dice su cifra, con signo en los pasos; un resultado negativo pinta el cero", () => {
+  it("each bar says its figure, signed for the steps; a negative result draws zero", () => {
     const html = render(
       <Waterfall
         label="De la cuota al resultado"
@@ -140,13 +140,13 @@ describe("la cascada", () => {
   });
 });
 
-describe("los escalones", () => {
-  it("cada valor es un tramo plano, unido al anterior; un hueco corta", () => {
+describe("the steps", () => {
+  it("each value is a flat stretch joined to the previous one; a gap cuts it", () => {
     const path = stepPath([10, 10, 20, Number.NaN, 30], 10, (value) => 100 - value);
     expect(path).toBe("M0,90 H10 V90 H20 V80 H30 M40,70 H50");
   });
 
-  it("la gráfica en escalones dice una raya en los huecos", () => {
+  it("the step chart says a dash in the gaps", () => {
     const html = render(
       <SeriesChart
         kind="step"

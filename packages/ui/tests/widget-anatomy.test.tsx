@@ -7,8 +7,8 @@ const NOW = new Date(2026, 8, 28, 10, 0);
 const at = (days: number, hour = 9, minute = 30) =>
   new Date(2026, 8, 28 + days, hour, minute);
 
-describe("cuándo es lo siguiente", () => {
-  it("dice el día y no solo la hora", () => {
+describe("when the next one is", () => {
+  it("says the day and not just the time", () => {
     expect(whenLabel(at(0), NOW)).toBe("09:30");
     expect(whenLabel(at(1), NOW)).toBe("Tomorrow, 09:30");
     expect(whenLabel(at(3), NOW)).toBe("Thursday, 09:30");
@@ -16,17 +16,17 @@ describe("cuándo es lo siguiente", () => {
     expect(whenLabel(at(9), NOW)).toMatch(/^7 Oct/);
   });
 
-  it("un día entero no lleva hora, y otro año lleva el año", () => {
+  it("an all-day item has no time, and another year shows the year", () => {
     expect(whenLabel(at(1, 0, 0), NOW)).toBe("Tomorrow");
     expect(whenLabel(new Date(2027, 1, 3, 0, 0), NOW)).toMatch(/2027/);
   });
 });
 
-describe("las etiquetas de unas barras", () => {
+describe("the labels of some bars", () => {
   const months = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep"];
   const series = months.map((_, index) => index + 1);
 
-  it("en una tarjeta estrecha se quedan en la primera, la última y la resaltada", () => {
+  it("in a narrow card they keep the first, the last and the highlighted one", () => {
     const html = renderToStaticMarkup(
       <Widget title="Pages" hue={5} size="2x2" shape="number" state="ready">
         <WidgetBars series={series} labels={months} highlight={4} />
@@ -38,7 +38,7 @@ describe("las etiquetas de unas barras", () => {
     expect(html).not.toContain(">feb<");
   });
 
-  it("fuera de una tarjeta van todas: la pantalla de una app tiene el ancho que tiene", () => {
+  it("outside a card all of them go: an app's screen has the width it has", () => {
     const html = renderToStaticMarkup(<WidgetBars series={series} labels={months} />);
     for (const month of months) expect(html).toContain(`>${month}<`);
   });

@@ -17,36 +17,36 @@ const render = (node: React.ReactElement) => renderToStaticMarkup(node);
 describe("TimeGrid", () => {
   const html = render(<TimeGrid label="Week" days={dayRange("2026-09-28", 7)} events={events} now={NOW} weekNumber onEventChange={() => {}} />);
 
-  it("pinta cada evento con su tono, su hora y lo que dice el lector de pantalla", () => {
+  it("renders each event with its tone, its time and what the screen reader says", () => {
     expect(html).toContain('data-tone="1"');
     expect(html).toContain("10:00 – 12:00");
     expect(html).toContain('aria-label="Review. Wednesday 30 September, 10:00 – 12:00. Room 2"');
   });
 
-  it("uno corto va en una línea, y uno que empieza cuando otro ya lleva un rato va encima", () => {
+  it("a short one goes on one line, and one starting while another is running goes on top", () => {
     expect(html).toMatch(/data-event-id="b"[^>]*data-one-line="true"[^>]*data-nested="true"/);
   });
 
-  it("lo pasado se atenúa y lo suscrito se distingue", () => {
+  it("past items dim and subscribed ones stand out", () => {
     expect(html).toMatch(/data-event-id="c"[^>]*data-subscribed="true"[^>]*data-past="true"/);
   });
 
-  it("lo de todo el día va a la franja, y lo cancelado lo dice", () => {
+  it("all-day items go to the strip, and cancelled ones say so", () => {
     expect(html).toMatch(/class="tg-bar"[^>]*data-tone="4"/);
     expect(html).toContain("Tutorial. Friday 2 October, 09:00 – 10:00, cancelled");
   });
 
-  it("la línea de ahora cae en hoy, a su minuto, y la semana dice su número", () => {
+  it("the now line falls on today, at its minute, and the week says its number", () => {
     expect(html).toContain('class="tg-now" style="--at:680"');
     expect(html).toContain("S40");
     expect(html.match(/data-today="true"/g)).toHaveLength(2);
   });
 
-  it("solo lo editable lleva el asa para estirar", () => {
+  it("only editable items carry the stretch handle", () => {
     expect(html.match(/data-handle/g)).toHaveLength(3);
   });
 
-  it("un horario sin fechas no marca hoy ni pinta la línea", () => {
+  it("a schedule without dates neither marks today nor draws the line", () => {
     const plain = render(<TimeGrid label="Horario" days={dayRange("2026-09-28", 5)} events={[]} now={NOW} showDates={false} />);
     expect(plain).not.toContain("tg-now");
     expect(plain).not.toContain("tg-day-number");
@@ -61,45 +61,45 @@ describe("El fondo", () => {
   ];
   const html = render(<TimeGrid label="Week" days={dayRange("2026-09-28", 7)} events={frame} now={NOW} onEventChange={() => {}} />);
 
-  it("tiñe su tramo y lleva su nombre, que no ocupa el hueco de un evento", () => {
+  it("tints its span and carries its name, which does not take an event's slot", () => {
     expect(html).toMatch(/class="tg-backdrop" data-tone="2" style="--top:480;--bottom:1020"/);
     expect(html).toContain('aria-label="Workday, in the background. Wednesday 30 September, 08:00 – 17:00"');
     expect(html).not.toMatch(/class="tg-event"[^>]*data-event-id="work"/);
   });
 
-  it("se mueve por su nombre y se estira por su borde de abajo, como un evento", () => {
+  it("moves by its name and stretches by its bottom edge, like an event", () => {
     expect(html).toMatch(/class="tg-backdrop-label"[^>]*data-event-id="work"[^>]*data-editable="true"/);
     expect(html).toMatch(/class="tg-backdrop-handle" data-event-id="work" data-handle="true"/);
   });
 
-  it("lo que no se puede cambiar desde aquí, ni se mueve ni se estira", () => {
+  it("what cannot be changed from here neither moves nor stretches", () => {
     const locked = frame.map((event) => ({ ...event, readOnly: true }));
     const grid = render(<TimeGrid label="Week" days={dayRange("2026-09-28", 7)} events={locked} now={NOW} onEventChange={() => {}} />);
     expect(grid).not.toContain("data-editable");
     expect(grid).not.toContain("tg-backdrop-handle");
   });
 
-  it("el evento de encima ocupa todo el ancho, como si el fondo no estuviera", () => {
+  it("the event on top takes the full width, as if the background were not there", () => {
     expect(html).toMatch(/data-event-id="meet"[^>]*style="--top:600;--bottom:660;--left:0;--width:1/);
   });
 
-  it("uno de días enteros tiñe cada día que dura y lleva el nombre en la franja", () => {
+  it("an all-day one tints each day it lasts and carries its name in the strip", () => {
     expect(html.match(/class="tg-backdrop" data-tone="6"/g)).toHaveLength(2);
     expect(html.match(/class="tg-backdrop" data-whole="true" data-tone="6"/g)).toHaveLength(2);
     expect(html).toMatch(/class="tg-bar"[^>]*data-tone="6"[^>]*data-background="true"/);
   });
 
-  it("su nombre no va debajo de un evento: baja al primer hueco", () => {
+  it("its name does not go under an event: it drops to the first gap", () => {
     const early = [...frame, { id: "early", title: "Standup", start: new Date(2026, 8, 30, 8, 0), end: new Date(2026, 8, 30, 8, 30), tone: 1 as const }];
     const grid = render(<TimeGrid label="Week" days={dayRange("2026-09-28", 7)} events={early} now={NOW} />);
     expect(grid).toMatch(/class="tg-backdrop-label"[^>]*style="--label-at:30"/);
   });
 
-  it("lo pasado se atenúa sin dejar ver el fondo", () => {
+  it("past items dim without revealing the background", () => {
     expect(html).toMatch(/data-event-id="meet"[^>]*data-past="true"/);
   });
 
-  it("en el mes, lo de días enteros tiñe y lo que tiene hora no sale", () => {
+  it("in the month, all-day items tint and timed ones do not show", () => {
     const month = render(<MonthGrid month="2026-09-01" events={frame} now={NOW} />);
     expect(month).toMatch(/class="mg-backdrop" data-tone="6" style="--column:3;--span:2"/);
     expect(month).not.toContain("Workday");
@@ -107,15 +107,15 @@ describe("El fondo", () => {
   });
 });
 
-describe("MonthGrid y MiniMonth", () => {
-  it("el mes son seis semanas y marca hoy", () => {
+describe("MonthGrid and MiniMonth", () => {
+  it("the month is six weeks and marks today", () => {
     const html = render(<MonthGrid month="2026-09-01" events={events} now={NOW} />);
     expect(html.match(/class="mg-week"/g)).toHaveLength(6);
     expect(html).toMatch(/data-today="true"/);
     expect(html).toContain("1 Sept");
   });
 
-  it("el mes puede empezar en cualquier semana y atenúa lo que no es de su mes", () => {
+  it("the month can start on any week and dims what is not in its month", () => {
     const html = render(<MonthGrid month="2026-10-01" from="2026-09-14" events={events} now={NOW} onScroll={() => {}} />);
     expect(html.match(/class="mg-week"/g)).toHaveLength(6);
     expect(html).toMatch(/aria-label="Monday 14 September"/);
@@ -125,7 +125,7 @@ describe("MonthGrid y MiniMonth", () => {
     expect(html.match(/data-outside="true"/g)).toHaveLength(17);
   });
 
-  it("el mes pequeño marca la banda que se está viendo", () => {
+  it("the small month marks the band being viewed", () => {
     const html = render(
       <MiniMonth month="2026-09-01" range={dayRange("2026-09-28", 7)} now={NOW} onSelect={() => {}} onMonthChange={() => {}} />,
     );

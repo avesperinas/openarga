@@ -33,14 +33,14 @@ const card = (size: WidgetSize, body: React.ReactNode) =>
     </Widget>,
   );
 
-describe("las entradas del calendario", () => {
-  it("una fecha sola es un día local, no medianoche en UTC", () => {
+describe("the calendar entries", () => {
+  it("a bare date is a local day, not midnight UTC", () => {
     const [birthday] = parseEntries([{ start: "2026-09-29", title: "Cumpleaños" }]);
     expect(birthday!.from.getDate()).toBe(29);
     expect(birthday!.allDay).toBe(true);
   });
 
-  it("algo de varios días está en cada uno, y el día de fin no cuenta", () => {
+  it("a multi-day item is on each day, and the end day does not count", () => {
     const all = parseEntries(ENTRIES);
     const titles = (day: number) => onDay(all, new Date(2026, 9, day)).map((e) => e.title);
     expect(titles(3)).toContain("Lisboa");
@@ -48,11 +48,11 @@ describe("las entradas del calendario", () => {
     expect(titles(5)).not.toContain("Lisboa");
   });
 
-  it("lo de todo el día va delante de lo que tiene hora", () => {
+  it("all-day items go before timed ones", () => {
     expect(onDay(parseEntries(ENTRIES), NOW)[0]!.title).toBe("Cumpleaños");
   });
 
-  it("cuánto falta se dice como se dice", () => {
+  it("how long is left is said as one says it", () => {
     const soon = new Date(2026, 8, 29, 10, 25);
     expect(untilLabel(soon, new Date(2026, 8, 29, 11), NOW)).toBe("In 25 min");
     expect(untilLabel(new Date(2026, 8, 29, 13), new Date(2026, 8, 29, 14), NOW)).toBe("In 3 h");
@@ -60,52 +60,52 @@ describe("las entradas del calendario", () => {
   });
 });
 
-describe("hoy según el hueco", () => {
-  it("en un 1x1 es cuánto falta para lo siguiente con hora", () => {
+describe("today by the space available", () => {
+  it("in a 1x1 it is how long until the next timed item", () => {
     const html = card("1x1", <WidgetAgenda entries={ENTRIES} now={NOW} />);
     expect(html).toContain("In 25 min");
     expect(html).toContain("Dentista");
   });
 
-  it("en una tira dice además cuántas cosas quedan hoy", () => {
+  it("in a strip it also says how many items are left today", () => {
     expect(card("4x1", <WidgetAgenda entries={ENTRIES} now={NOW} />)).toContain("+2 hoy");
   });
 
-  it("en un 2x2 no enseña lo que ya pasó", () => {
+  it("in a 2x2 it does not show what is past", () => {
     const html = card("2x2", <WidgetAgenda entries={ENTRIES} now={NOW} />);
     expect(html).not.toContain("Desayuno");
     expect(html).toContain("Pádel");
   });
 
-  it("en un 4x2 hoy y mañana lado a lado", () => {
+  it("in a 4x2 today and tomorrow side by side", () => {
     const html = card("4x2", <WidgetAgenda entries={ENTRIES} now={NOW} />);
     expect(html).toContain("Banco");
     expect(html).toContain("Tomorrow");
   });
 
-  it("en un 4x4 hoy es una línea de tiempo con la raya de ahora", () => {
+  it("in a 4x4 today is a timeline with the now line", () => {
     const html = card("4x4", <WidgetAgenda entries={ENTRIES} now={NOW} />);
     expect(html).toContain("timeline-now");
     expect(html.match(/timeline-block/g)).toHaveLength(3);
   });
 
-  it("cada cosa lleva el tono de su capa", () => {
+  it("each item carries its layer's tone", () => {
     expect(card("2x2", <WidgetAgenda entries={ENTRIES} now={NOW} />)).toContain('data-tone="4"');
   });
 });
 
-describe("la semana y el mes", () => {
-  it("la semana empieza hoy y tiene siete días", () => {
+describe("the week and the month", () => {
+  it("the week starts today and has seven days", () => {
     const html = card("4x2", <WidgetWeek entries={ENTRIES} now={NOW} />);
     expect(html.match(/class="week-day"/g)).toHaveLength(7);
     expect(html).toContain("Lisboa");
   });
 
-  it("en un 1x1, cuántas cosas hay en siete días", () => {
+  it("in a 1x1, how many items there are in seven days", () => {
     expect(card("1x1", <WidgetWeek entries={ENTRIES} now={NOW} />)).toContain(">7<");
   });
 
-  it("el mes grande no escribe nada en los días: lo de hoy va en la columna de al lado", () => {
+  it("the large month writes nothing in the days: today's items go in the side column", () => {
     const html = card(
       "4x4",
       <WidgetCalendar month={new Date(2026, 8, 1)} entries={ENTRIES} />,
@@ -116,7 +116,7 @@ describe("la semana y el mes", () => {
     expect(html).toContain("agenda-day");
   });
 
-  it("en un 1x2 el mes es hoy y la semana, de arriba abajo", () => {
+  it("in a 1x2 the month is today and the week, top to bottom", () => {
     expect(card("1x2", <WidgetCalendar entries={ENTRIES} />)).toContain("data-vertical");
   });
 });

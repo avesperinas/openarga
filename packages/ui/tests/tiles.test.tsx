@@ -4,8 +4,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { Banner, Photo, PhotoTile, SplitBar, StepItem, StepList, Tile, Tiles } from "../src/index";
 
-describe("la foto y su tarjeta", () => {
-  it("sin foto, la placa de su tipo sobre su tono; con ella, la foto", () => {
+describe("the photo and its card", () => {
+  it("without a photo, its kind's badge on its tone; with one, the photo", () => {
     const without = renderToStaticMarkup(<Photo hue={3} icon="pin" />);
     expect(without).toContain('class="photo" data-shape="card" data-hue="3"');
     expect(without).toContain("icon-badge");
@@ -15,7 +15,7 @@ describe("la foto y su tarjeta", () => {
     expect(photo).not.toContain("icon-badge");
   });
 
-  it("con acción es un botón que dice qué hace", () => {
+  it("with an action it is a button that says what it does", () => {
     const html = renderToStaticMarkup(
       <Photo hue={1} icon="pin" shape="banner" action={{ label: "Añadir foto", onClick: () => undefined }} />,
     );
@@ -23,7 +23,7 @@ describe("la foto y su tarjeta", () => {
     expect(html).toContain("Añadir foto");
   });
 
-  it("la tarjeta lleva su etiqueta, su título y su línea, y con enlace es un enlace", () => {
+  it("the card carries its label, title and line, and with a link it is a link", () => {
     const html = renderToStaticMarkup(
       <PhotoTile title="Viaje de ejemplo" detail="En mayo" hue={5} icon="plane" badge="Planeando" href="/travel/1" />,
     );
@@ -34,8 +34,8 @@ describe("la foto y su tarjeta", () => {
   });
 });
 
-describe("la tarjeta con portada", () => {
-  it("con enlace es un enlace de verdad, con su portada del tono de su grupo", () => {
+describe("the card with a cover", () => {
+  it("with a link it is a real link, with a cover in its group's tone", () => {
     const html = renderToStaticMarkup(
       <Tiles label="Recetas">
         <Tile title="Porrusalda" hue={2} figure="15 min" caption="tú delante" detail="Para 4" tags={["olla"]} href="/receta/1" />
@@ -49,15 +49,15 @@ describe("la tarjeta con portada", () => {
     expect(html).toContain("olla");
   });
 
-  it("sin enlace es un botón, y sin cifra no pinta su hueco", () => {
+  it("without a link it is a button, and without a figure it draws no gap", () => {
     const html = renderToStaticMarkup(<Tile title="Sin cifra" hue={1} onOpen={() => undefined} />);
     expect(html).toContain('<button type="button" class="surface tile"');
     expect(html).not.toContain("tile-figure");
   });
 });
 
-describe("el total repartido", () => {
-  it("parte la barra en proporción y lo dice a quien no ve los colores", () => {
+describe("the total broken down", () => {
+  it("splits the bar in proportion and tells whoever cannot see the colours", () => {
     const html = renderToStaticMarkup(
       <SplitBar
         label="kcal"
@@ -72,14 +72,14 @@ describe("el total repartido", () => {
     expect(html).toContain("flex-grow:0.75");
   });
 
-  it("sin nada que repartir no pinta trozos", () => {
+  it("with nothing to split it draws no slices", () => {
     const html = renderToStaticMarkup(<SplitBar label="kcal" parts={[{ label: "Proteína", value: "0 %", share: 0, hue: 1 }]} />);
     expect(html).not.toContain("split-bar-part");
   });
 });
 
-describe("la portada de una ficha", () => {
-  it("lleva el tono y su dibujo, que no se lee", () => {
+describe("a record's cover", () => {
+  it("carries the tone and its drawing, which is not read", () => {
     const html = renderToStaticMarkup(<Banner hue={5} glyph={<span>☀</span>}>dentro</Banner>);
     expect(html).toContain('class="surface banner" data-hue="5"');
     expect(html).toContain('aria-hidden="true"');
@@ -87,8 +87,8 @@ describe("la portada de una ficha", () => {
   });
 });
 
-describe("los pasos", () => {
-  it("dice cuál está hecho y cuál toca, con su número o su marca", () => {
+describe("the steps", () => {
+  it("says which is done and which is due, with its number or mark", () => {
     const html = renderToStaticMarkup(
       <StepList label="Pasos">
         <StepItem number={1} text="Picar" done onToggle={() => undefined} />

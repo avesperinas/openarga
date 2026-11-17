@@ -17,7 +17,7 @@ import {
   toneFor,
 } from "../src/index";
 
-describe("la tabla compacta", () => {
+describe("the compact table", () => {
   const columns = [
     { key: "name", label: "Cuenta", cell: (row: { name: string; value: number }) => row.name },
     {
@@ -33,7 +33,7 @@ describe("la tabla compacta", () => {
     { name: "Savings", value: 10 },
   ];
 
-  it("pinta una fila por dato y el total, y las filas que se abren se alcanzan con el teclado", () => {
+  it("renders one row per item and the total, and expandable rows are reachable by keyboard", () => {
     const html = renderToStaticMarkup(
       <DataTable
         label="Saldos"
@@ -49,13 +49,13 @@ describe("la tabla compacta", () => {
     expect(html).toContain("<tfoot>");
   });
 
-  it("sin filas lo dice", () => {
+  it("without rows it says so", () => {
     expect(
       renderToStaticMarkup(<DataTable label="x" columns={columns} rows={[]} rowKey={(row) => row.name} empty="Nada" />),
     ).toContain("Nada");
   });
 
-  it("el CSV va con punto y coma y coma decimal, como lo abre una hoja en español", () => {
+  it("the CSV follows the locale's separators, as a spreadsheet in that locale opens it", () => {
     expect(csvCell(1234.567)).toBe("1234,57");
     expect(csvCell('dice "hola"; adiós')).toBe('"dice ""hola""; adiós"');
     expect(toCsv(["a", "b"], [[1.5, null]])).toBe("a;b\n1,5;");
@@ -63,8 +63,8 @@ describe("la tabla compacta", () => {
   });
 });
 
-describe("el quesito", () => {
-  it("junta lo que no cabe en Otros y deja fuera lo negativo", () => {
+describe("the pie", () => {
+  it("joins what does not fit into Others and leaves out negatives", () => {
     const items = ["a", "b", "c", "d", "e", "f", "g"].map((key, index) => ({ key, name: key, value: 10 - index }));
     const folded = foldShares([...items, { key: "loan", name: "Préstamo", value: -50 }]);
     expect(folded).toHaveLength(6);
@@ -72,7 +72,7 @@ describe("el quesito", () => {
     expect(percentOf(0.5, 100)).toBe("<1 %");
   });
 
-  it("dice cada parte con su peso", () => {
+  it("says each part with its weight", () => {
     const html = renderToStaticMarkup(
       <ShareChart
         label="Reparto"
@@ -88,8 +88,8 @@ describe("el quesito", () => {
   });
 });
 
-describe("las cifras de arriba", () => {
-  it("verde si llega, ámbar si pasa de la mitad, rojo si no", () => {
+describe("the figures at the top", () => {
+  it("green if it gets there, amber past half, red otherwise", () => {
     expect(toneFor(120)).toBe("positive");
     expect(toneFor(60)).toBe("warning");
     expect(toneFor(20)).toBe("negative");
@@ -104,7 +104,7 @@ describe("las cifras de arriba", () => {
     expect(explained).not.toContain("Cómo</p>");
   });
 
-  it("una sección plegada guarda su contenido", () => {
+  it("a folded section keeps its content", () => {
     const html = renderToStaticMarkup(
       <Collapsible title="Cuentas" subtitle="3 productos">
         <p>dentro</p>
@@ -116,7 +116,7 @@ describe("las cifras de arriba", () => {
   });
 });
 
-describe("las cajas con flechas", () => {
+describe("the boxes with arrows", () => {
   const nodes = [
     {
       id: "out",
@@ -139,7 +139,7 @@ describe("las cajas con flechas", () => {
     { source: "b", target: "spent", value: 80 },
   ];
 
-  it("lo que entra de fuera a la izquierda, los gastos a la derecha, y las cuentas por el orden del dinero", () => {
+  it("income on the left, spending on the right, and accounts in the order of the money", () => {
     const { placed } = placeBoxes(nodes, links);
     const column = Object.fromEntries(placed.map((one) => [one.id, one.column]));
     expect(column.out).toBe(0);
@@ -149,7 +149,7 @@ describe("las cajas con flechas", () => {
     expect(column.spent).toBe(3);
   });
 
-  it("cada flecha dice su importe y hay tabla para leerlo sin ver el dibujo", () => {
+  it("each arrow says its amount and there is a table to read it without the drawing", () => {
     const html = renderToStaticMarkup(
       <FlowMap label="Flujos" nodes={nodes} links={links} format={(value) => `${value} €`} />,
     );
@@ -158,7 +158,7 @@ describe("las cajas con flechas", () => {
     expect(html).toContain("Banco Dos");
   });
 
-  it("con onSelect, cada flecha y cada caja se tocan como un botón; sin él, no", () => {
+  it("with onSelect, each arrow and box is tapped like a button; without it, no", () => {
     const pickable = renderToStaticMarkup(
       <FlowMap label="Flujos" nodes={nodes} links={links} onSelect={() => undefined} />,
     );
@@ -168,7 +168,7 @@ describe("las cajas con flechas", () => {
     expect(still).not.toContain('role="button"');
   });
 
-  it("si cada caja trae su columna, manda ella, y las de un mismo grupo van juntas", () => {
+  it("if each box brings its column, that rules, and those of one group go together", () => {
     const given = [
       { ...nodes[0]!, column: 0 },
       { ...nodes[1]!, column: 1 },

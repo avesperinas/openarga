@@ -26,8 +26,8 @@ async function press(name: string): Promise<void> {
   await act(async () => found.click());
 }
 
-describe("confirmar un cambio", () => {
-  it("dice qué cambia y no guarda hasta que se pulsa su botón", async () => {
+describe("confirming a change", () => {
+  it("says what changes and saves nothing until its button is pressed", async () => {
     const onConfirm = vi.fn();
     const onCancel = vi.fn();
     mount(
@@ -48,7 +48,7 @@ describe("confirmar un cambio", () => {
     expect(onConfirm).toHaveBeenCalledOnce();
   });
 
-  it("si falla, lo dice y deja reintentar", async () => {
+  it("if it fails, it says so and allows retrying", async () => {
     mount(
       <ConfirmChange title="¿Liquidar?" action="Marcar como liquidado" onCancel={() => undefined} onConfirm={() => Promise.reject(new Error("Offline"))} />,
     );

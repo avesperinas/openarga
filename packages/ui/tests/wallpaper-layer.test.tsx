@@ -17,8 +17,8 @@ const uploaded: Wallpaper = {
   aspect: 1.5,
 };
 
-describe("la capa del fondo", () => {
-  it("con variantes, pinta <picture> con srcset y el JPEG de último recurso", () => {
+describe("the background layer", () => {
+  it("with variants, it renders <picture> with srcset and the JPEG as a last resort", () => {
     const html = renderToStaticMarkup(<WallpaperLayer wallpaper={uploaded} />);
 
     expect(html).toContain('<source type="image/avif" srcSet="/a-720 720w, /a-1280 1280w"');
@@ -27,7 +27,7 @@ describe("la capa del fondo", () => {
     expect(wallpaperStyle(uploaded)).toMatchObject({ "--wallpaper-image": "none" });
   });
 
-  it("sin variantes, la foto va por el fondo CSS y no hay <picture>", () => {
+  it("without variants, the photo goes through the CSS background and there is no <picture>", () => {
     const html = renderToStaticMarkup(<WallpaperLayer wallpaper={WALLPAPERS[0]!} />);
 
     expect(html).toBe('<div class="wallpaper" aria-hidden="true"></div>');

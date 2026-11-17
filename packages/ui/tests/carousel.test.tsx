@@ -5,7 +5,7 @@ import { expect, it, vi } from "vitest";
 
 import { Carousel } from "../src/index";
 
-it("las flechas y el teclado mueven el carril una tarjeta, y en el borde su flecha se esconde", () => {
+it("the arrows and the keyboard move the track one card, and at the edge its arrow hides", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement("div");
   document.body.append(host);
