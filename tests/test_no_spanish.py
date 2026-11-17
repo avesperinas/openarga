@@ -11,7 +11,7 @@ BASELINE = ROOT / "tests" / "spanish_baseline.txt"
 ALLOWED = (
     "*/i18n/es.json",
     "modules/outings/areas/*.yaml",
-    "modules/hub/src/hub/catalogs/institutions.toml",
+    "modules/hub/src/hub/catalogs/*.toml",
     "packages/ui/src/app-names.ts",
     "packages/ui/geo/*",
     "tests/test_no_spanish.py",

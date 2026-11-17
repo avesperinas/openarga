@@ -9,7 +9,7 @@ from email.message import EmailMessage
 from email.utils import parsedate_to_datetime
 from typing import Any
 
-from hub import extractors
+from hub import extractors, words
 
 FACTS = ("balance", "deposit", "withdrawal")
 MAX_RULES = 30
@@ -36,36 +36,36 @@ def text_field(raw: dict[str, Any], key: str, label: str, low: int, high: int) -
     value = re.sub(r"\s+", " ", str(raw.get(key) or "")).strip()
     if not low <= len(value) <= high:
         if low and not value:
-            raise Invalid(f"falta {label}")
-        raise Invalid(f"{label} va de {low} a {high} caracteres")
+            raise Invalid(f"{label} is missing")
+        raise Invalid(f"{label} takes {low} to {high} characters")
     return value
 
 
 def clean(raw: dict[str, Any]) -> dict[str, str]:
     fact = str(raw.get("fact") or "")
     if fact not in FACTS:
-        raise Invalid("el importe es el valor, una aportación o una retirada")
+        raise Invalid("the amount is the value, a deposit or a withdrawal")
     rule_id = str(raw.get("id") or "")
     if not re.fullmatch(r"[a-f0-9]{8,32}", rule_id):
         rule_id = secrets.token_hex(6)
     return {
         "id": rule_id,
-        "entity": text_field(raw, "entity", "la entidad", 1, 80),
-        "product": text_field(raw, "product", "el producto", 1, 80),
-        "sender": text_field(raw, "sender", "el remitente", 3, 200),
-        "subject": text_field(raw, "subject", "el asunto", 0, 200),
-        "anchor": text_field(raw, "anchor", "el texto de antes del importe", 2, 120),
+        "entity": text_field(raw, "entity", "the entity", 1, 80),
+        "product": text_field(raw, "product", "the product", 1, 80),
+        "sender": text_field(raw, "sender", "the sender", 3, 200),
+        "subject": text_field(raw, "subject", "the subject", 0, 200),
+        "anchor": text_field(raw, "anchor", "the text before the amount", 2, 120),
         "fact": fact,
     }
 
 
 def clean_all(raw: list[Any]) -> list[dict[str, str]]:
     if len(raw) > MAX_RULES:
-        raise Invalid(f"como mucho {MAX_RULES} reglas en un buzón")
+        raise Invalid(f"at most {MAX_RULES} rules in a mailbox")
     cleaned = [clean(item if isinstance(item, dict) else {}) for item in raw]
     ids = [rule["id"] for rule in cleaned]
     if len(set(ids)) != len(ids):
-        raise Invalid("dos reglas con el mismo id")
+        raise Invalid("two rules with the same id")
     return cleaned
 
 
@@ -77,17 +77,17 @@ def day_of(message: EmailMessage) -> date:
     try:
         return parsedate_to_datetime(str(message["date"])).date()
     except (TypeError, ValueError) as error:
-        raise extractors.ExtractorError("el correo no dice de qué día es") from error
+        raise extractors.ExtractorError("the email does not say which day it is from") from error
 
 
 def amount_after(body: str, anchor: str) -> Decimal:
     found = re.search(re.escape(flat(anchor)), flat(body), re.IGNORECASE)
     if found is None:
-        raise extractors.ExtractorError(f"no aparece '{anchor}'")
+        raise extractors.ExtractorError(f"'{anchor}' does not appear")
     tail = flat(body)[found.end() : found.end() + 60]
     matched = AMOUNT.match(tail)
     if matched is None:
-        raise extractors.ExtractorError(f"detrás de '{anchor}' no hay un importe: '{tail[:30]}'")
+        raise extractors.ExtractorError(f"there is no amount after '{anchor}': '{tail[:30]}'")
     raw = re.sub(r"[\s ]", "", matched["amount"]).replace("−", "-").replace("+", "")
     return extractors.euros(raw)
 
@@ -104,7 +104,7 @@ def facts_of(rule: dict[str, str], message: EmailMessage) -> list[extractors.Fac
             account=account,
             booked_on=on,
             amount=signed,
-            description="Aportación" if signed > 0 else "Retirada",
+            description=words.say("rule.deposit") if signed > 0 else words.say("rule.withdrawal"),
             kind=rule["fact"],
             nature="contribution",
         )

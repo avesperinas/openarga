@@ -3,12 +3,14 @@ from __future__ import annotations
 import hashlib
 import html
 import re
+import tomllib
 import unicodedata
 from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 from typing import Any
 
 from hub import finance
@@ -22,6 +24,11 @@ HOLDING = "finance.holding"
 CENT = Decimal("0.01")
 SOURCE = "statement"
 DEDUP_LIMIT = 200
+PAGES = tomllib.loads(
+    (Path(__file__).resolve().parent / "catalogs" / "statements.toml").read_text()
+)
+RENAULT_PAGE = PAGES["renault"]
+FINIZENS_PAGE = PAGES["finizens"]
 
 
 class StatementError(ValueError):
@@ -92,11 +99,11 @@ DAY = re.compile(r"^(\d{2})/(\d{2})/(\d{4})$")
 def euros(raw: str) -> Decimal:
     match = AMOUNT.match(raw.strip())
     if not match:
-        raise StatementError(f"«{raw}» no es un importe")
+        raise StatementError(f"'{raw}' is not an amount")
     try:
         value = Decimal(match.group(2).replace(".", "").replace(",", "."))
     except InvalidOperation as error:
-        raise StatementError(f"«{raw}» no es un importe") from error
+        raise StatementError(f"'{raw}' is not an amount") from error
     return -value if match.group(1) in ("-", "−") else value
 
 
@@ -107,7 +114,7 @@ PERCENT = re.compile(r"^(\d{1,3}(?:,\d+)?)\s*%$")
 def number(raw: str) -> Decimal:
     match = NUMBER.match(raw.strip())
     if not match:
-        raise StatementError(f"«{raw}» no es un número")
+        raise StatementError(f"'{raw}' is not a number")
     return Decimal(match.group(1).replace(".", "").replace(",", "."))
 
 
@@ -123,7 +130,7 @@ def is_amount(raw: str) -> bool:
 def day(raw: str) -> date:
     match = DAY.match(raw.strip())
     if not match:
-        raise StatementError(f"«{raw}» no es una fecha")
+        raise StatementError(f"'{raw}' is not a date")
     return date(int(match.group(3)), int(match.group(2)), int(match.group(1)))
 
 
@@ -145,15 +152,15 @@ def renault(page: str, today: date) -> Read:
     text = lines(page)
     iban = next((IBAN.search(line) for line in text if IBAN.search(line)), None)
     if iban is None:
-        raise StatementError("no aparece el IBAN de la cuenta")
+        raise StatementError("the account IBAN does not appear")
     number = iban.group(1).replace(" ", "")
     key = f"statement:renault:{number}"
-    read = Read(RENAULT, [Account(key, RENAULT, "Cuenta Contigo", "savings", number)])
+    read = Read(RENAULT, [Account(key, RENAULT, RENAULT_PAGE["product"], "savings", number)])
 
     try:
-        start = text.index("Saldo") + 1
+        start = text.index(RENAULT_PAGE["balance"]) + 1
     except ValueError as error:
-        raise StatementError("no aparece la tabla de movimientos") from error
+        raise StatementError("the movements table does not appear") from error
     rows: list[tuple[date, str, Decimal, Decimal, date | None, str]] = []
     index = start
     while index + 4 < len(text):
@@ -168,15 +175,15 @@ def renault(page: str, today: date) -> Read:
             index += 1
             continue
         value_on, concept, step = None, kind, 4
-        if text[index + 4 : index + 5] == ["Fecha Valor:"] and index + 5 < len(text):
+        if text[index + 4 : index + 5] == [RENAULT_PAGE["value_date"]] and index + 5 < len(text):
             value_on = day(text[index + 5]) if is_day(text[index + 5]) else None
             step = 6
-            if text[index + 6 : index + 7] == ["Concepto:"] and index + 7 < len(text):
+            if text[index + 6 : index + 7] == [RENAULT_PAGE["concept"]] and index + 7 < len(text):
                 concept, step = text[index + 7], 8
         rows.append((day(text[index]), kind, euros(amount), euros(after), value_on, concept))
         index += step
     if not rows:
-        raise StatementError("la tabla de movimientos está vacía")
+        raise StatementError("the movements table is empty")
 
     ends: dict[date, Decimal] = {}
     for on, _, _, after, _, _ in rows:
@@ -187,13 +194,13 @@ def renault(page: str, today: date) -> Read:
     for position, (on, kind, amount, after, value_on, concept) in enumerate(rows):
         if position + 1 == len(rows):
             read.skipped.append(
-                f"el apunte más antiguo ({on:%d/%m/%Y}, {amount} €) no dice si entra o sale"
+                f"the oldest entry ({on:%d/%m/%Y}, {amount} €) does not say whether it is in or out"
             )
             continue
         change = after - rows[position + 1][3]
         if abs(change) != amount:
             raise StatementError(
-                f"el saldo del {on:%d/%m/%Y} no cuadra con su importe: falta un apunte"
+                f"the balance of {on:%d/%m/%Y} does not match its amount: an entry is missing"
             )
         identity = f"{on.isoformat()}:{change}:{after}"
         seen[identity] += 1
@@ -211,56 +218,47 @@ def renault(page: str, today: date) -> Read:
 
 
 FINIZENS = "Finizens"
-CAPITAL = {
-    "Transferencia entrante",
-    "Aportación mensual",
-    "Aportación puntual",
-    "Aportación periódica",
-    "Aportación extraordinaria",
-    "Traspaso de Plan de Pensiones",
-    "Retirada",
-    "Reembolso",
-}
-IN_VALUE = {"Comisión de gestión", "Comisión de custodia", "Abono por redondeos"}
-WITHOUT_AMOUNT = {"Operación de inversión"}
+CAPITAL = set(FINIZENS_PAGE["capital"])
+IN_VALUE = set(FINIZENS_PAGE["in_value"])
+WITHOUT_AMOUNT = set(FINIZENS_PAGE["without_amount"])
 
 
 def finizens_account(name: str) -> Account:
-    kind = "pension" if "pensiones" in name.lower() else "roboadvisor"
+    kind = "pension" if FINIZENS_PAGE["pension"] in name.lower() else "roboadvisor"
     return Account(f"statement:finizens:{slug(name)}", FINIZENS, name, kind)
 
 
 def finizens(page: str, today: date) -> Read:
     text = lines(page)
-    if "Últimos movimientos" in text and "Producto seleccionado" in text:
+    if FINIZENS_PAGE["latest"] in text and FINIZENS_PAGE["selected"] in text:
         return finizens_movements(text)
-    if "Composición de la Cartera" in text and "Producto seleccionado" in text:
+    if FINIZENS_PAGE["portfolio"] in text and FINIZENS_PAGE["selected"] in text:
         return finizens_plan(text)
-    if "Posición global" in text and "Mis planes" in text:
+    if FINIZENS_PAGE["overview"] in text and FINIZENS_PAGE["plans"] in text:
         return finizens_position(text, today)
-    raise StatementError("no es ni la posición global ni los movimientos de un plan")
+    raise StatementError("it is neither the overall position nor the movements of a plan")
 
 
 def finizens_position(text: list[str], today: date) -> Read:
     read = Read(FINIZENS)
-    start = text.index("Mis planes")
+    start = text.index(FINIZENS_PAGE["plans"])
     values: dict[str, tuple[Decimal, Decimal]] = {}
     index = start
     while index < len(text):
-        if text[index] != "Aportado neto":
+        if text[index] != FINIZENS_PAGE["contributed"]:
             index += 1
             continue
         value, name = text[index - 1], text[index - 2]
         contributed = next((line for line in text[index + 1 : index + 4] if is_amount(line)), None)
         if not is_amount(value) or contributed is None:
-            raise StatementError(f"el plan «{name}» no trae su valor y lo aportado")
+            raise StatementError(f"plan '{name}' lacks its value and what was paid in")
         before = values.get(name, (Decimal(0), Decimal(0)))
         values[name] = (before[0] + euros(value), before[1] + euros(contributed))
         index += 1
-        if text[index : index + 1] == ["Ver este plan"]:
+        if text[index : index + 1] == [FINIZENS_PAGE["see_plan"]]:
             break
     if not values:
-        raise StatementError("la posición global no trae ningún plan")
+        raise StatementError("the overall position has no plan")
     for name, (value, contributed) in values.items():
         account = finizens_account(name)
         read.accounts.append(account)
@@ -274,20 +272,20 @@ ROUNDING = Decimal("0.005")
 
 
 def finizens_plan(text: list[str]) -> Read:
-    name = text[text.index("Producto seleccionado") + 1]
+    name = text[text.index(FINIZENS_PAGE["selected"]) + 1]
     on = next((day(m.group(1)) for line in text if (m := PLAN_DAY.match(line))), None)
     if on is None:
-        raise StatementError(f"la cartera de «{name}» no dice de qué día es")
-    end = text.index("Composición de la Cartera")
-    summary = max((i for i in range(end) if text[i] == "Aportado neto"), default=None)
+        raise StatementError(f"the portfolio of '{name}' does not say which day it is from")
+    end = text.index(FINIZENS_PAGE["portfolio"])
+    summary = max((i for i in range(end) if text[i] == FINIZENS_PAGE["contributed"]), default=None)
     if summary is None or not is_amount(text[summary - 1]) or not is_amount(text[summary + 1]):
-        raise StatementError(f"la cartera de «{name}» no trae su valor y lo aportado")
+        raise StatementError(f"the portfolio of '{name}' lacks its value and what was paid in")
     total, contributed = euros(text[summary - 1]), euros(text[summary + 1])
 
-    if "V. Liqd." in text:
+    if FINIZENS_PAGE["net_asset_value"] in text:
         funds = [
             Shown(row[0], value=number(row[1]), quantity=number(row[7]), price=euros(row[8]))
-            for row in fund_rows(text, text.index("V. Liqd.") + 1)
+            for row in fund_rows(text, text.index(FINIZENS_PAGE["net_asset_value"]) + 1)
         ]
     else:
         funds = [Shown(fund, weight=weight) for fund, weight in weights(text)]
@@ -321,7 +319,7 @@ def portfolio(
             f"statement:{slug(entity)}:{slug(name)}",
             entity,
             name,
-            "pension" if "pensiones" in name.lower() else "roboadvisor",
+            "pension" if FINIZENS_PAGE["pension"] in name.lower() else "roboadvisor",
         )
     )
     read = Read(account.entity, [account])
@@ -333,14 +331,14 @@ def portfolio(
         elif fund.weight is not None:
             value = (total * fund.weight).quantize(CENT)
         else:
-            raise StatementError(f"«{fund.name}» no dice lo que vale ni su peso")
+            raise StatementError(f"'{fund.name}' gives neither its value nor its weight")
         held += value
         symbol = fund.line.symbol if fund.line else fund.symbol or symbol_of(fund.name)
         if symbol is not None and any(h.symbol == symbol for h in read.holdings):
-            raise StatementError(f"«{fund.name}» está dos veces en la cartera de «{name}»")
+            raise StatementError(f"'{fund.name}' is twice in the portfolio of '{name}'")
         if symbol is None:
-            why = fund.unpriced or "no se sabe su precio"
-            read.skipped.append(f"«{fund.name}»: {why}, se queda en el valor de hoy")
+            why = fund.unpriced or "its price is unknown"
+            read.skipped.append(f"'{fund.name}': {why}, it stays in today's value")
         cash = symbol == CASH
         read.holdings.append(
             Holding(
@@ -355,19 +353,21 @@ def portfolio(
             )
         )
     if not funds:
-        raise StatementError(f"la cartera de «{name}» no trae sus fondos")
+        raise StatementError(f"the portfolio of '{name}' lacks its funds")
     if abs(held - total) > max(total * ROUNDING, Decimal(1)):
-        raise StatementError(f"los fondos de «{name}» suman {held} y el producto vale {total}")
+        raise StatementError(
+            f"the funds of '{name}' add up to {held} and the product is worth {total}"
+        )
     return read
 
 
 def fund_rows(text: list[str], start: int) -> list[list[str]]:
     rows = []
     index = start
-    while index + FUND_ROW <= len(text) and not text[index].startswith("Los Folletos"):
+    while index + FUND_ROW <= len(text) and not text[index].startswith(FINIZENS_PAGE["prospectus"]):
         row = text[index : index + FUND_ROW]
         if not is_amount(row[8]) or not NUMBER.match(row[1]):
-            raise StatementError(f"el fondo «{row[0]}» no trae su valor y su liquidativo")
+            raise StatementError(f"fund '{row[0]}' lacks its value and its net asset value")
         rows.append(row)
         index += FUND_ROW
     return rows
@@ -375,7 +375,11 @@ def fund_rows(text: list[str], start: int) -> list[list[str]]:
 
 def weights(text: list[str]) -> list[tuple[str, Decimal]]:
     start = next(
-        (i + 2 for i in range(len(text) - 1) if text[i : i + 2] == ["Fondo", "Distribución"]),
+        (
+            i + 2
+            for i in range(len(text) - 1)
+            if text[i : i + 2] == [FINIZENS_PAGE["fund"], FINIZENS_PAGE["distribution"]]
+        ),
         None,
     )
     found = []
@@ -387,16 +391,16 @@ def weights(text: list[str]) -> list[tuple[str, Decimal]]:
 
 
 def finizens_movements(text: list[str]) -> Read:
-    chosen = text.index("Producto seleccionado")
+    chosen = text.index(FINIZENS_PAGE["selected"])
     name, profile = text[chosen + 1], text[chosen + 2]
     account = finizens_account(name)
     read = Read(FINIZENS, [account])
-    start = text.index("Últimos movimientos") + 1
+    start = text.index(FINIZENS_PAGE["latest"]) + 1
     seen: Counter[str] = Counter()
     index = start
     while index < len(text):
         label = text[index]
-        if label in ("Tu cartera", "Nuevo producto"):
+        if label in (FINIZENS_PAGE["own_portfolio"], FINIZENS_PAGE["new_product"]):
             break
         if label in WITHOUT_AMOUNT:
             index += 1
@@ -405,7 +409,7 @@ def finizens_movements(text: list[str]) -> Read:
             amount, on = euros(text[index + 1]), day(text[index + 2])
             description = text[index + 3] if index + 3 < len(text) else label
             if label in IN_VALUE:
-                read.skipped.append(f"{label} del {on:%d/%m/%Y}: ya está en el valor del plan")
+                read.skipped.append(f"{label} of {on:%d/%m/%Y}: already in the plan's value")
             elif label in CAPITAL:
                 identity = f"{slug(profile)}:{on.isoformat()}:{slug(label)}:{amount}"
                 seen[identity] += 1
@@ -420,7 +424,7 @@ def finizens_movements(text: list[str]) -> Read:
                     )
                 )
             else:
-                read.skipped.append(f"«{label}» del {on:%d/%m/%Y}: no se sabe qué es")
+                read.skipped.append(f"'{label}' of {on:%d/%m/%Y}: unknown kind")
             index += 3
             continue
         index += 1
@@ -435,7 +439,9 @@ class Reader:
 
 
 READERS = (
-    Reader(RENAULT, lambda page: "Renault Bank" in page and "Cuenta Contigo" in page, renault),
+    Reader(
+        RENAULT, lambda page: "Renault Bank" in page and RENAULT_PAGE["product"] in page, renault
+    ),
     Reader(
         FINIZENS, lambda page: "app.finizens.com" in page or "<title>Finizens" in page, finizens
     ),
@@ -446,7 +452,7 @@ def read(page: str, today: date) -> Read:
     for reader in READERS:
         if reader.recognises(page):
             return reader.read(page, today)
-    raise StatementError("no es una página que se sepa leer: Renault Bank o Finizens")
+    raise StatementError("not a page arga can read: Renault Bank or Finizens")
 
 
 def midnight(on: date) -> str:

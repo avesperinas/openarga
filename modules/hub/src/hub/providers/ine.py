@@ -56,20 +56,22 @@ async def fetch(client: httpx.AsyncClient) -> list[tuple[str, float]]:
             f"{base_url()}/DATOS_SERIE/{SERIES}", params={"nult": MONTHS}, timeout=30.0
         )
     except httpx.HTTPError as error:
-        raise SourceError(f"el INE no contesta ({type(error).__name__})", transient=True) from error
+        raise SourceError(
+            f"INE is not answering ({type(error).__name__})", transient=True
+        ) from error
     if response.status_code == 429:
-        raise SourceError("el INE pide esperar", rate_limited=True)
+        raise SourceError("INE asks to wait", rate_limited=True)
     if response.status_code >= 500:
-        raise SourceError(f"el INE falla ({response.status_code})", transient=True)
+        raise SourceError(f"INE fails ({response.status_code})", transient=True)
     if response.status_code >= 400:
-        raise SourceError(f"el INE contesta {response.status_code}")
+        raise SourceError(f"INE answers {response.status_code}")
     try:
         body = response.json()
     except ValueError as error:
-        raise SourceError("el INE no contesta con datos") from error
+        raise SourceError("INE does not answer with data") from error
     found = points(body if isinstance(body, dict) else {})
     if not found:
-        raise SourceError(f"el INE no da ningún mes de la serie {SERIES}")
+        raise SourceError(f"INE gives no month of series {SERIES}")
     return found
 
 
@@ -82,8 +84,9 @@ SOURCES = (
         id="ine",
         name="INE",
         category="economy",
-        description="El IPC del INE, mes a mes: el índice general nacional, que Carrera usa para "
-        "enseñar tu sueldo en euros de hoy. Público y sin clave; se trae una vez al día.",
+        description="The INE consumer price index, month by month: the national general "
+        "index, which Career uses to show your salary in today's euros. Public and keyless; "
+        "fetched once a day.",
         capabilities=("sync",),
         emits=("economy.cpi",),
         available=True,

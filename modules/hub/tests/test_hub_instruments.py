@@ -48,12 +48,12 @@ async def test_another_line_is_chosen_by_saying_it() -> None:
     pence = await resolve(markets(), name="x", isin=QUANTUM, mic="XLON", currency="GBp")
     assert pence.symbol == f"{QUANTUM}:XLON:GBP"
 
-    with pytest.raises(Unresolved, match="no cotiza en XPAR"):
+    with pytest.raises(Unresolved, match="is not listed on XPAR"):
         await resolve(markets(), name="x", isin=QUANTUM, mic="XPAR")
 
 
 async def test_a_mistyped_isin_or_an_unknown_name_asks_for_the_isin() -> None:
-    with pytest.raises(Unresolved, match="no es un ISIN"):
+    with pytest.raises(Unresolved, match="is not an ISIN"):
         await resolve(markets(), name="x", isin="IE000W8WMSL3")
     with pytest.raises(Unresolved, match="dime su ISIN"):
         await resolve(markets(), name="Un ETF que nadie conoce")

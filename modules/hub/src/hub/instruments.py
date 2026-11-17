@@ -35,9 +35,9 @@ class Venue:
 VENUES = (
     Venue("XETR", "Xetra", "_GER", ("GY", "GR"), ".DE", "EUR"),
     Venue("XMIL", "Borsa Italiana", "_MIL", ("IM",), ".MI", "EUR"),
-    Venue("XPAR", "Euronext París", "_PAR", ("FP",), ".PA", "EUR"),
-    Venue("XAMS", "Euronext Ámsterdam", "_AMS", ("NA",), ".AS", "EUR"),
-    Venue("XLON", "Bolsa de Londres", "_LSE", ("LN",), ".L", "USD"),
+    Venue("XPAR", "Euronext Paris", "_PAR", ("FP",), ".PA", "EUR"),
+    Venue("XAMS", "Euronext Amsterdam", "_AMS", ("NA",), ".AS", "EUR"),
+    Venue("XLON", "London Stock Exchange", "_LSE", ("LN",), ".L", "USD"),
     Venue("XSWX", "SIX Swiss Exchange", "_SWX", ("SW", "SE"), ".SW", "CHF"),
     Venue("XNAS", "Nasdaq", "_NMS", ("UW", "US"), "", "USD"),
     Venue("XNYS", "NYSE", "_NYS", ("UN", "US"), "", "USD"),
@@ -136,8 +136,8 @@ async def isin_of(client: httpx.AsyncClient, name: str) -> str:
     if len(found) == 1:
         return found.pop()
     raise Unresolved(
-        f"no sé qué valor es «{name}»"
-        + (f" (puede ser {len(found)})" if found else "")
+        f"which security is '{name}'?"
+        + (f" (it could be {len(found)})" if found else "")
         + ": dime su ISIN"
     )
 
@@ -254,10 +254,10 @@ async def resolve(
     account: str = "EUR",
 ) -> Line:
     if mic is not None and mic not in BY_MIC:
-        raise Unresolved(f"no conozco la bolsa {mic}: {', '.join(BY_MIC)}")
+        raise Unresolved(f"unknown exchange {mic}: {', '.join(BY_MIC)}")
     isin = (isin or await isin_of(client, name)).strip().upper()
     if not valid_isin(isin):
-        raise Unresolved(f"«{isin}» no es un ISIN")
+        raise Unresolved(f"'{isin}' is not an ISIN")
     found = await onvista_quotes(client, isin)
     if found is not None:
         entity, kind, label, quotes = found
@@ -269,8 +269,8 @@ async def resolve(
                 sorted({f"{q.venue.mic} {q.currency}" for q in quotes if q.venue is not None})
             )
             raise Unresolved(
-                f"{isin} no cotiza en {mic or ''} {currency or account}".replace("  ", " ")
-                + (f"; cotiza en {where}" if where else "")
+                f"{isin} is not listed on {mic or ''} {currency or account}".replace("  ", " ")
+                + (f"; it is listed on {where}" if where else "")
             )
         line = Line(
             isin,
@@ -300,7 +300,7 @@ async def fund_line(
     nav = next((quote for quote in navs if quote.currency == account), navs[0] if navs else None)
     yahoo = await yahoo_symbol(client, isin, None, account)
     if nav is None and yahoo is None:
-        raise Unresolved(f"no encuentro el valor liquidativo de {isin}")
+        raise Unresolved(f"no net asset value found for {isin}")
     return Line(
         isin,
         "fund",
@@ -325,11 +325,11 @@ async def figi_line(
 ) -> Line:
     known = await figi(client, isin)
     if not known:
-        raise Unresolved(f"no encuentro {isin} en onvista ni en OpenFIGI")
+        raise Unresolved(f"{isin} is neither on onvista nor on OpenFIGI")
     if all(found.get("securityType") == "Open-End Fund" for found in known):
         yahoo = await yahoo_symbol(client, isin, None, account)
         if yahoo is None:
-            raise Unresolved(f"no encuentro el valor liquidativo de {isin}")
+            raise Unresolved(f"no net asset value found for {isin}")
         return Line(isin, "fund", known[0].get("name") or name, account, since, None, yahoo)
     codes = {found.get("exchCode"): found.get("ticker") for found in known}
     first = ORDER.get(currency or account, ())
@@ -348,7 +348,7 @@ async def figi_line(
             venue.mic,
             f"{ticker}{venue.yahoo}",
         )
-    raise Unresolved(f"{isin} no cotiza en {mic or 'ninguna bolsa que conozca'}")
+    raise Unresolved(f"{isin} is not listed on {mic or 'any known exchange'}")
 
 
 PRICES = "prices"

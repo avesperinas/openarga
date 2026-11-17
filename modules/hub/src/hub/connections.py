@@ -185,7 +185,7 @@ def clean_secret(provider: catalogue.Provider, key: str, raw: str) -> str:
     )
     value = raw.strip()
     if not value:
-        raise Refused(f"Falta {secret.label.lower()}")
+        raise Refused(f"{secret.label} is missing")
     if len(value) > credentials.MAX_LENGTH:
         raise Refused(f"{secret.label}: too long")
     client = CLIENTS.get(provider.id)
