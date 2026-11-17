@@ -5,7 +5,7 @@ import * as React from "react";
 import { Icon } from "./icons";
 import { StatRow, StatTile } from "./reading";
 import { Hint } from "./screen";
-import { dates, locale } from "./regional";
+import { dates, locale, weekdayLetters } from "./regional";
 import { say } from "./words";
 
 const MINUTE = 60_000;
@@ -491,7 +491,7 @@ export function SleepSchedule({ nights, label, formatDay = (day) => day.slice(8)
                 <span className="sleep-schedule-day" aria-hidden="true">
                   {formatDay(one.day)}
                 </span>
-                <span className="visually-hidden">{`${formatDay(one.day)}: de ${clockOf(one.start)} a ${clockOf(one.end)}`}</span>
+                <span className="visually-hidden">{say("sleep.span", { day: formatDay(one.day), start: clockOf(one.start), end: clockOf(one.end) })}</span>
               </li>
             );
           })}
@@ -547,8 +547,8 @@ export function QualityMonth({ month, days, selected, onSelect, onPrevious, onNe
         </button>
       </div>
       <ol className="quality-month-weekdays" aria-hidden="true">
-        {["L", "M", "X", "J", "V", "S", "D"].map((one) => (
-          <li key={one}>{one}</li>
+        {weekdayLetters().map((one, index) => (
+          <li key={index}>{one}</li>
         ))}
       </ol>
       <div className="quality-month-grid" role="grid">

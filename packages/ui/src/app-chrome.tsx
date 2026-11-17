@@ -113,18 +113,20 @@ export function AppHeader({
   );
 }
 
-export const SETTINGS_TAB = { id: "settings", label: "Ajustes", icon: "settings" } as const satisfies {
-  id: "settings";
-  label: string;
-  icon: IconName;
+export const SETTINGS_TAB: { readonly id: "settings"; readonly label: string; readonly icon: IconName } = {
+  id: "settings",
+  get label() {
+    return say("chrome.settings_tab");
+  },
+  icon: "settings",
 };
 
-export const ARGA_SETTINGS = "/#ajustes";
+export const ARGA_SETTINGS = "/#settings";
 
 export function AppSettings({ app, children }: { app: AppIdentity; children?: React.ReactNode }) {
   return (
     <Screen>
-      <AppHeader app={app} title="Ajustes" />
+      <AppHeader app={app} title={say("chrome.settings_tab")} />
       {children}
       <AppBackgroundPicker app={app} />
       <AppAbout app={app} />
@@ -142,7 +144,7 @@ export function AppSettingsSheet({
   children?: React.ReactNode;
 }) {
   return (
-    <Sheet title="Ajustes" onClose={onClose}>
+    <Sheet title={say("chrome.settings_tab")} onClose={onClose}>
       <div className="app-settings-sheet">
         {children}
         <AppBackgroundPicker app={app} />

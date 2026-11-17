@@ -84,7 +84,7 @@ describe("Sheet", () => {
       </Sheet>,
     );
     const sheet = document.querySelector<HTMLElement>(".bottom-sheet")!;
-    const close = button("Cerrar");
+    const close = button("Close");
     const field = document.querySelector<HTMLInputElement>("input")!;
     field.focus();
     key(sheet, "Tab");
@@ -365,11 +365,11 @@ describe("SwipeRow", () => {
   it("las acciones están para el teclado sin deslizar nada", () => {
     const remove = vi.fn();
     render(
-      <SwipeRow label="Leche" actions={[{ label: "Quitar", icon: "trash", tone: "danger", onAction: remove }]}>
+      <SwipeRow label="Leche" actions={[{ label: "Remove", icon: "trash", tone: "danger", onAction: remove }]}>
         <p>Leche</p>
       </SwipeRow>,
     );
-    const action = button("Quitar");
+    const action = button("Remove");
     act(() => action.focus());
     expect(document.querySelector(".swipe-row")?.hasAttribute("data-open")).toBe(true);
     act(() => action.click());
@@ -395,11 +395,11 @@ describe("lo demás", () => {
   it("sin red lo dice; con red no ocupa nada", () => {
     const online = vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     render(<OfflineNotice pending={2} />);
-    expect(document.body.textContent).toContain("Sin conexión");
-    expect(document.body.textContent).toContain("2 cambios por enviar.");
+    expect(document.body.textContent).toContain("Offline");
+    expect(document.body.textContent).toContain("2 changes waiting to be sent.");
     online.mockReturnValue(true);
     act(() => window.dispatchEvent(new Event("online")));
-    expect(document.body.textContent).not.toContain("Sin conexión");
+    expect(document.body.textContent).not.toContain("Offline");
     online.mockRestore();
   });
 
@@ -414,7 +414,7 @@ describe("lo demás", () => {
     expect(initials("  ")).toBe("?");
     expect(toneOf("Ana")).toBe(toneOf("Ana"));
     expect(toneOf("Ana")).toBeGreaterThanOrEqual(1);
-    expect(rangeProblem({ from: "2026-10-10", to: "2026-10-01" })).toBe("El final va antes del principio.");
+    expect(rangeProblem({ from: "2026-10-10", to: "2026-10-01" })).toBe("The end comes before the start.");
     expect(rangeProblem({ from: "", to: "2026-10-01" })).toBeNull();
   });
 });

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { locale } from "./regional";
+import { say } from "./words";
 
 export interface TrendPoint {
   day: string;
@@ -85,7 +86,7 @@ export function TrendChart({
   const plot = React.useRef<HTMLDivElement>(null);
 
   if (points.length === 0) {
-    return <p className="widget-note">Sin datos en este rango</p>;
+    return <p className="widget-note">{say("range.no_data")}</p>;
   }
 
   const { min, max } = trendDomain(points, band);

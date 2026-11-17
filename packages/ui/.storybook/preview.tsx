@@ -28,21 +28,21 @@ const preview: Preview = {
   decorators: [onTheWash],
   globalTypes: {
     theme: {
-      description: "Tema explícito, el que pone data-theme",
+      description: "Explicit theme, the one data-theme sets",
       defaultValue: "light",
       toolbar: {
-        title: "Tema",
+        title: "Theme",
         items: [
-          { value: "light", title: "Claro" },
-          { value: "dark", title: "Oscuro" },
+          { value: "light", title: "Light" },
+          { value: "dark", title: "Dark" },
         ],
       },
     },
     glassOpacity: {
-      description: "El ajuste de Transparencia. En 1,00 es el suelo de legibilidad.",
+      description: "The Transparency setting. At 1.00 it is the legibility floor.",
       defaultValue: "0.55",
       toolbar: {
-        title: "Transparencia",
+        title: "Transparency",
         items: ["0.35", "0.55", "0.75", "1"],
       },
     },

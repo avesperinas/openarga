@@ -20,7 +20,7 @@ import {
 
 const card = (size: WidgetSize, body: React.ReactNode) =>
   renderToStaticMarkup(
-    <Widget title="Prueba" hue={1} size={size} shape="list" state="ready">
+    <Widget title="Test" hue={1} size={size} shape="list" state="ready">
       {body}
     </Widget>,
   );
@@ -59,7 +59,7 @@ describe("la forma de cada tamaño (ADR-0086)", () => {
 const ROWS = [
   { label: "Pasar la ITV del coche", value: "hace 3 días", tone: "warning" as const },
   { label: "Llamar al fontanero", value: "10:00" },
-  { label: "Devolver el libro", value: "hoy" },
+  { label: "Devolver el libro", value: "today" },
 ];
 
 describe("una lista según el hueco", () => {
@@ -109,9 +109,9 @@ describe("lo siguiente según el hueco", () => {
   });
 
   it("el día se dice como se dice", () => {
-    expect(dayLabel(at(0, 9), NOW)).toBe("Hoy");
-    expect(dayLabel(at(1, 9), NOW)).toBe("Mañana");
-    expect(dayLabel(at(2, 9), NOW)).toBe("Jueves");
+    expect(dayLabel(at(0, 9), NOW)).toBe("Today");
+    expect(dayLabel(at(1, 9), NOW)).toBe("Tomorrow");
+    expect(dayLabel(at(2, 9), NOW)).toBe("Thursday");
   });
 });
 
@@ -169,9 +169,9 @@ describe("el resto de cuerpos en sus tamaños nuevos", () => {
 describe("una barra con techo (ADR-0086)", () => {
   it("pasarse de un presupuesto no es cumplirlo: se dice cuánto de más", () => {
     const html = card("2x2", <WidgetProgress value={1000} target={900} unit="€" goodWhen="down" />);
-    expect(html).not.toContain("Objetivo cumplido");
+    expect(html).not.toContain("Goal met");
     expect(html).toContain('data-standing="over"');
-    expect(html).toContain("100 € de más");
+    expect(html).toContain("100 € over");
   });
 
   it("ir por delante del ritmo se avisa antes de pasarse", () => {

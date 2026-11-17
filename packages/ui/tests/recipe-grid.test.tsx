@@ -97,7 +97,7 @@ describe("ampliar", () => {
     );
 
     expect(html).toContain("--grid-scale:1");
-    expect(html).toContain("Ver más grande");
-    expect(html).toContain("Ampliar a pantalla completa");
+    expect(html).toContain("See bigger");
+    expect(html).toContain("Full screen");
   });
 });

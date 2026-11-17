@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { Icon } from "./icons";
+import { weekdayLetters } from "./regional";
 
 export type WeekDayState = "met" | "missed" | "today" | "future" | "before";
 
@@ -11,8 +12,6 @@ export interface WeekDotsProps {
   label: string;
   size?: "regular" | "large";
 }
-
-const LETTERS = ["L", "M", "X", "J", "V", "S", "D"];
 
 export function WeekDots({ days, label, size = "regular" }: WeekDotsProps) {
   const large = size === "large";
@@ -27,7 +26,7 @@ export function WeekDots({ days, label, size = "regular" }: WeekDotsProps) {
           data-today={today || state === "today" || undefined}
         >
           <span className="goal-week-letter" aria-hidden="true">
-            {LETTERS[index] ?? ""}
+            {weekdayLetters()[index] ?? ""}
           </span>
           <span className="goal-week-mark" aria-hidden="true">
             {large && state === "met" ? "✓" : null}

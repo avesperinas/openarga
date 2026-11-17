@@ -35,8 +35,8 @@ const kilos = (value: number): string =>
 
 export function weighedOn(day: string, today: string): string {
   const ago = Math.round((stamp(today) - stamp(day)) / DAY_MS);
-  if (ago === 0) return "hoy";
-  if (ago === 1) return "ayer";
+  if (ago === 0) return say("weighed.today");
+  if (ago === 1) return say("weighed.yesterday");
   return new Date(stamp(day)).toLocaleDateString(locale(), {
     day: "numeric",
     month: "short",

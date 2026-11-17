@@ -4,7 +4,7 @@ import * as React from "react";
 
 import { dayLabel, isoDay } from "./calendar";
 import { useWidgetLayout } from "./Widget";
-import { dates } from "./regional";
+import { dates, weekdayLetters } from "./regional";
 import { say } from "./words";
 
 const DAY_MS = 86_400_000;
@@ -356,7 +356,6 @@ export function WidgetWeek({ entries, now: given }: { entries: AgendaEntry[]; no
   );
 }
 
-const WEEK_LETTERS = ["L", "M", "X", "J", "V", "S", "D"];
 
 export function MonthWithEntries({
   entries,
@@ -382,8 +381,8 @@ export function MonthWithEntries({
     <div className="month-entries">
       <p className="calendar-month">{title}</p>
       <div className="month-entries-grid" style={{ "--weeks": weeks } as React.CSSProperties}>
-        {WEEK_LETTERS.map((letter) => (
-          <span key={letter} className="calendar-weekday">
+        {weekdayLetters().map((letter, index) => (
+          <span key={index} className="calendar-weekday">
             {letter}
           </span>
         ))}

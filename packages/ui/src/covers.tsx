@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { Button } from "./controls";
 import { Icon, IconBadge, type IconName } from "./icons";
+import { say } from "./words";
 
 export interface CoverProps {
   title: string;
@@ -14,7 +15,7 @@ export function Cover({ title, subtitle, src, size = "regular" }: CoverProps) {
   return (
     <span className="cover" data-size={size}>
       {src ? (
-        <img src={src} alt={`Portada de ${title}`} loading="lazy" decoding="async" />
+        <img src={src} alt={say("cover.alt", { title })} loading="lazy" decoding="async" />
       ) : (
         <span className="cover-blank" aria-label={title}>
           <span className="cover-title">{title}</span>

@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { MonthCalendar, isoDay } from "./calendar";
 import { IconButton } from "./controls";
+import { say } from "./words";
 
 export interface DateFieldProps {
   label: string;
@@ -85,7 +86,7 @@ export function DateField({ label, value, onChange, hint, invalid = false, min, 
         />
         <IconButton
           icon="calendar"
-          label={open ? "Cerrar el calendario" : "Elegir en el calendario"}
+          label={open ? say("date_field.close") : say("date_field.open")}
           variant="plain"
           onClick={toggle}
         />

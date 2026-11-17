@@ -512,6 +512,7 @@ export {
   onRegionalChange,
   regional,
   regionalFrom,
+  weekdayLetters,
   zonedDates,
 } from "./regional";
 export { say as platformSay } from "./words";

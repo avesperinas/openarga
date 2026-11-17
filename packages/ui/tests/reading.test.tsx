@@ -30,7 +30,7 @@ describe("la tabla compacta", () => {
   ];
   const rows = [
     { name: "Corriente; la de siempre", value: 1234.5 },
-    { name: "Ahorro", value: 10 },
+    { name: "Savings", value: 10 },
   ];
 
   it("pinta una fila por dato y el total, y las filas que se abren se alcanzan con el teclado", () => {
@@ -59,7 +59,7 @@ describe("la tabla compacta", () => {
     expect(csvCell(1234.567)).toBe("1234,57");
     expect(csvCell('dice "hola"; adiós')).toBe('"dice ""hola""; adiós"');
     expect(toCsv(["a", "b"], [[1.5, null]])).toBe("a;b\n1,5;");
-    expect(tableCsv(columns, rows)).toBe('Cuenta;Saldo\n"Corriente; la de siempre";1234,5\nAhorro;10');
+    expect(tableCsv(columns, rows)).toBe('Cuenta;Saldo\n"Corriente; la de siempre";1234,5\nSavings;10');
   });
 });
 
@@ -68,7 +68,7 @@ describe("el quesito", () => {
     const items = ["a", "b", "c", "d", "e", "f", "g"].map((key, index) => ({ key, name: key, value: 10 - index }));
     const folded = foldShares([...items, { key: "loan", name: "Préstamo", value: -50 }]);
     expect(folded).toHaveLength(6);
-    expect(folded.at(-1)).toMatchObject({ name: "Otros", value: 9 });
+    expect(folded.at(-1)).toMatchObject({ name: "Others", value: 9 });
     expect(percentOf(0.5, 100)).toBe("<1 %");
   });
 
@@ -95,12 +95,12 @@ describe("las cifras de arriba", () => {
     expect(toneFor(20)).toBe("negative");
     expect(toneFor(null)).toBe("neutral");
     const html = renderToStaticMarkup(
-      <StatTile label="Ahorro" value="12 %" foot="60 % de la meta" tone="warning" progress={0.6} />,
+      <StatTile label="Savings" value="12 %" foot="60 % of the goal" tone="warning" progress={0.6} />,
     );
     expect(html).toContain('data-tone="warning"');
     expect(html).toContain("width:60%");
-    const explained = renderToStaticMarkup(<StatTile label="Ahorro" value="12 %" info={<p>Cómo</p>} />);
-    expect(explained).toContain('aria-label="Cómo se calcula ahorro"');
+    const explained = renderToStaticMarkup(<StatTile label="Savings" value="12 %" info={<p>How</p>} />);
+    expect(explained).toContain('aria-label="How savings is calculated"');
     expect(explained).not.toContain("Cómo</p>");
   });
 
@@ -129,7 +129,7 @@ describe("las cajas con flechas", () => {
     },
     { id: "a", name: "Nómina", kind: "account", group: "i1", group_name: "Banco Uno", inflow: 2000, outflow: 1600 },
     { id: "b", name: "Casa", kind: "common", group: "i1", group_name: "Banco Uno", inflow: 600, outflow: 80 },
-    { id: "c", name: "Ahorro", kind: "account", group: "i2", group_name: "Banco Dos", inflow: 1000, outflow: 0 },
+    { id: "c", name: "Savings", kind: "account", group: "i2", group_name: "Banco Dos", inflow: 1000, outflow: 0 },
     { id: "spent", name: "Gastos", kind: "expense", group: "spent", group_name: "Gastos", inflow: 80, outflow: 0 },
   ];
   const links = [
@@ -154,7 +154,7 @@ describe("las cajas con flechas", () => {
       <FlowMap label="Flujos" nodes={nodes} links={links} format={(value) => `${value} €`} />,
     );
     expect(html).toContain("Nómina → Casa: 600 €");
-    expect(html).toContain("Ver como tabla");
+    expect(html).toContain("See as a table");
     expect(html).toContain("Banco Dos");
   });
 

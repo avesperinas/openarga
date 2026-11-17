@@ -45,7 +45,7 @@ describe("el diagrama de flujo", () => {
   });
 
   it("sin nada que enseñar lo dice", () => {
-    expect(renderToStaticMarkup(<Sankey label="x" nodes={[]} links={[]} />)).toContain("Sin movimientos");
+    expect(renderToStaticMarkup(<Sankey label="x" nodes={[]} links={[]} />)).toContain("No movements in this range");
   });
 });
 
@@ -56,7 +56,7 @@ describe("las ramas", () => {
       { id: "spent", name: "Gasto", column: 1, kind: "expense" as const },
       { id: "saved", name: "Ahorro", column: 1, kind: "saving" as const },
       { id: "fun", name: "Ocio", column: 2, kind: "expense" as const },
-      { id: "fund", name: "Fondo", column: 2, kind: "saving" as const },
+      { id: "fund", name: "Background", column: 2, kind: "saving" as const },
       { id: "food", name: "Súper", column: 2, kind: "expense" as const },
     ];
     const edges = [

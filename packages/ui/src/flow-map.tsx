@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { SERIES_COLORS } from "./analysis";
 import { locale } from "./regional";
+import { say } from "./words";
 
 export interface MapNode {
   id: string;
@@ -273,7 +274,7 @@ export function FlowMap({
         </ul>
       )}
       <details className="series-chart-table">
-        <summary>Ver como tabla</summary>
+        <summary>{say("table.show")}</summary>
         <div className="series-chart-scroll">
           <table>
             <thead>

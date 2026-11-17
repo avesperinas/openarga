@@ -1,3 +1,3 @@
 import { configureRegional } from "../src/regional";
 
-configureRegional({ locale: "es-ES", timeZone: "Europe/Madrid", currency: "EUR" });
+configureRegional({ locale: "en-GB", timeZone: "Europe/Madrid", currency: "EUR" });

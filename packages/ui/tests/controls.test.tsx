@@ -63,8 +63,8 @@ describe("Button", () => {
 
 describe("IconButton", () => {
   it("se anuncia con su etiqueta y el icono queda como decoración", () => {
-    const html = render(<IconButton icon="close" label="Cerrar" onClick={noop} />);
-    expect(html).toContain('aria-label="Cerrar"');
+    const html = render(<IconButton icon="close" label="Close" onClick={noop} />);
+    expect(html).toContain('aria-label="Close"');
     expect(html).toContain('aria-hidden="true"');
   });
 });
@@ -235,23 +235,23 @@ describe("Stepper", () => {
     expect(parseDecimal("abc")).toBeNull();
   });
 
-  it("escribe 60 y 62,5, sin decimales de relleno", () => {
+  it("writes 60 and 62.5, without padding decimals", () => {
     expect(formatDecimal(60)).toBe("60");
-    expect(formatDecimal(62.5)).toBe("62,5");
+    expect(formatDecimal(62.5)).toBe("62.5");
     expect(formatDecimal(null)).toBe("—");
   });
 
   it("es un grupo con nombre, y sus botones dicen qué cambian", () => {
-    const html = render(<Stepper label="Peso" value={60} step={2.5} unit="kg" onChange={noop} />);
+    const html = render(<Stepper label="Weight" value={60} step={2.5} unit="kg" onChange={noop} />);
     expect(html).toContain('role="group"');
-    expect(html).toContain('aria-label="Menos peso"');
-    expect(html).toContain('aria-label="Más peso"');
+    expect(html).toContain('aria-label="Less weight"');
+    expect(html).toContain('aria-label="More weight"');
     expect(html).not.toContain("<input");
   });
 
   it("en el mínimo el botón de bajar se apaga", () => {
     const html = render(<Stepper label="Reps" value={0} step={1} onChange={noop} />);
-    expect(html).toMatch(/aria-label="Menos reps" disabled/);
+    expect(html).toMatch(/aria-label="Less reps" disabled/);
   });
 });
 
@@ -292,8 +292,8 @@ describe("Elapsed", () => {
 
 describe("SyncMark y ConfirmButton", () => {
   it("el estado de envío se anuncia, no solo se colorea", () => {
-    expect(render(<SyncMark state="pending" />)).toContain('aria-label="Pendiente de enviar"');
-    expect(render(<SyncMark state="saved" />)).toContain('aria-label="Guardada"');
+    expect(render(<SyncMark state="pending" />)).toContain('aria-label="Waiting to be sent"');
+    expect(render(<SyncMark state="saved" />)).toContain('aria-label="Saved"');
   });
 
   it("confirmar dice si ya está confirmada", () => {
@@ -309,12 +309,12 @@ describe("AppBar", () => {
       <AppBar
         title="Pull"
         subtitle="Rotación 3"
-        back={{ icon: "chevron-left", label: "Volver", onClick: noop }}
+        back={{ icon: "chevron-left", label: "Back", onClick: noop }}
         action={{ label: "Terminar", onClick: noop }}
       />,
     );
     expect(html).toContain("Pull");
-    expect(html).toContain('aria-label="Volver"');
+    expect(html).toContain('aria-label="Back"');
     expect(html).toContain("Terminar");
   });
 });
@@ -350,9 +350,9 @@ describe("MonthCalendar", () => {
     const html = render(
       <MonthCalendar year={2026} month={8} marks={{}} today="2026-09-16" onPrevious={noop} onNext={noop} />,
     );
-    expect(html).toContain("Septiembre de 2026");
+    expect(html).toContain("September 2026");
     expect(html.match(/role="gridcell"/g)).toHaveLength(30);
-    expect(html).toMatch(/data-today="true"[^>]*aria-label="miércoles, 16 de septiembre"/);
+    expect(html).toMatch(/data-today="true"[^>]*aria-label="Wednesday 16 September"/);
   });
 
   it("un día con entreno lleva su tipo y lo dice", () => {
@@ -366,7 +366,7 @@ describe("MonthCalendar", () => {
         onNext={noop}
       />,
     );
-    expect(html).toMatch(/data-marked="true" data-kind="pull"[^>]*aria-label="lunes, 14 de septiembre: Pull, 52 min"/);
+    expect(html).toMatch(/data-marked="true" data-kind="pull"[^>]*aria-label="Monday 14 September: Pull, 52 min"/);
   });
 
   it("el día local no se corre por el huso", () => {
@@ -390,7 +390,7 @@ describe("TabBar, Sheet y TextField", () => {
         active="plan"
         onSelect={noop}
         items={[
-          { id: "hoy", label: "Hoy", icon: "today" },
+          { id: "today", label: "Today", icon: "today" },
           { id: "plan", label: "Plan", icon: "edit" },
         ]}
       />,
@@ -472,13 +472,13 @@ describe("WallpaperPicker", () => {
       { id: "marea", name: "Marea", image: "/wallpapers/marea.svg" },
       { id: "duna", name: "Duna", image: "/wallpapers/duna.svg" },
     ];
-    const own = render(<WallpaperPicker label="Fondo" options={options} value="duna" onChange={noop} />);
+    const own = render(<WallpaperPicker label="Background" options={options} value="duna" onChange={noop} />);
     expect(own.match(/aria-pressed="true"/g)).toHaveLength(1);
     expect(own).toMatch(/aria-pressed="true"[^>]*url\(\/wallpapers\/duna.svg\)/);
 
     const inherited = render(
       <WallpaperPicker
-        label="Fondo"
+        label="Background"
         options={options}
         value={null}
         onChange={noop}
@@ -504,13 +504,13 @@ describe("Switch", () => {
 
 describe("CopyField", () => {
   it("enseña el valor sin dejar editarlo, y el botón copia sin enviar nada", () => {
-    const html = renderToStaticMarkup(<CopyField label="ID de cliente" value="claude" />);
+    const html = renderToStaticMarkup(<CopyField label="Client ID" value="claude" />);
 
     expect(html).toContain('readOnly=""');
     expect(html).toContain('value="claude"');
     expect(html).toContain('type="button"');
-    expect(html).toContain('aria-label="Copiar ID de cliente"');
-    expect(html).toContain(">Copiar<");
+    expect(html).toContain('aria-label="Copy Client ID"');
+    expect(html).toContain(">Copy<");
   });
 
   it("la etiqueta nombra el campo", () => {
@@ -537,7 +537,7 @@ describe("CredentialField", () => {
 
     expect(html).toContain('type="password"');
     expect(html).toContain("…a3f9");
-    expect(html).toContain("Quitar");
+    expect(html).toContain("Remove");
     expect(html).toContain('value=""');
   });
 
@@ -545,16 +545,16 @@ describe("CredentialField", () => {
     const html = renderToStaticMarkup(<CredentialField {...props} onRemove={undefined} configured hint="…a3f9" />);
 
     expect(html).toContain("…a3f9");
-    expect(html).toContain("Guardar");
-    expect(html).not.toContain("Quitar");
+    expect(html).toContain("Save");
+    expect(html).not.toContain("Remove");
   });
 
   it("sin poner: pide pegarla, dice dónde se consigue y no ofrece quitar", () => {
     const html = renderToStaticMarkup(<CredentialField {...props} configured={false} />);
 
-    expect(html).toContain("Pégala aquí");
+    expect(html).toContain("Paste it here");
     expect(html).toContain("Lo generas con claude setup-token.");
-    expect(html).not.toContain("Quitar");
+    expect(html).not.toContain("Remove");
   });
 
   it("lo que falla se dice en el propio campo", () => {

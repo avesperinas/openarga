@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { locale } from "./regional";
+import { say } from "./words";
 
 export const SERIES_COLORS = 5;
 export const OTHERS = "__others__";
@@ -136,7 +137,7 @@ export function SeriesChart({
   );
 
   if (count === 0 || shown.length === 0) {
-    return <p className="widget-note">Sin datos en este rango</p>;
+    return <p className="widget-note">{say("range.no_data")}</p>;
   }
 
   return (
@@ -306,7 +307,7 @@ export function SeriesChart({
         </ul>
       )}
       <details className="series-chart-table">
-        <summary>Ver como tabla</summary>
+        <summary>{say("table.show")}</summary>
         <div className="series-chart-scroll">
           <table>
             <thead>

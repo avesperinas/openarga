@@ -49,29 +49,29 @@ describe("la gráfica", () => {
 
   it("cada punto se lee con el teclado y en la tabla, no solo al pasar el ratón", () => {
     expect(html).toContain('aria-label="ago: super 280 €, ocio 90 €"');
-    expect(html).toContain("<summary>Ver como tabla</summary>");
+    expect(html).toContain("<summary>See as a table</summary>");
     expect(html).toContain("<td>310 €</td>");
   });
 
   it("sin datos lo dice en vez de pintar un eje vacío", () => {
-    expect(renderToStaticMarkup(<SeriesChart label="x" labels={[]} series={[]} />)).toContain("Sin datos");
+    expect(renderToStaticMarkup(<SeriesChart label="x" labels={[]} series={[]} />)).toContain("No data in this range");
   });
 });
 
 describe("la línea de referencia", () => {
   const html = renderToStaticMarkup(
     <SeriesChart
-      label="Patrimonio"
+      label="Net worth"
       kind="stacked"
-      labels={["ene", "feb"]}
+      labels={["Jan", "Feb"]}
       series={[series("cash", [100, 200]), series("fund", [300, 400])]}
-      overlay={{ key: "put", name: "Aportado", values: [350, 500] }}
+      overlay={{ key: "put", name: "Put in", values: [350, 500] }}
     />,
   );
 
   it("se dibuja encima, discontinua, y entra en la leyenda y en la tabla", () => {
     expect(html).toContain("series-chart-overlay");
-    expect(html.match(/Aportado/g)?.length).toBeGreaterThanOrEqual(2);
+    expect(html.match(/Put in/g)?.length).toBeGreaterThanOrEqual(2);
     expect(html).toContain("<td>500</td>");
   });
 
@@ -84,6 +84,6 @@ describe("la línea de referencia", () => {
         overlay={{ key: "r", name: "Ref", values: [900] }}
       />,
     );
-    expect(tall).toContain("1000");
+    expect(tall).toContain("1,000");
   });
 });

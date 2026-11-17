@@ -21,8 +21,8 @@ describe("la barra de tiempo", () => {
   });
 
   it("el botón dice lo que va a hacer", () => {
-    expect(markup([2016, 2026])).toContain("Reproducir los viajes en orden");
-    expect(markup([2016, 2026], true)).toContain('aria-label="Pausar"');
+    expect(markup([2016, 2026])).toContain("Play the trips in order");
+    expect(markup([2016, 2026], true)).toContain('aria-label="Pause"');
   });
 
   it("sin reproducir que ofrecer no hay botón: la barra solo filtra", () => {

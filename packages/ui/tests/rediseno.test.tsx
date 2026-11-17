@@ -67,9 +67,9 @@ describe("las filas que se ven o no", () => {
 describe("de un vistazo", () => {
   it("con acción, la tarjeta es un botón con su nombre y su veredicto, y la «i» va fuera", () => {
     const html = renderToStaticMarkup(
-      <VitalCard label="Sueño" icon="moon" ring={{ value: 81, target: 100, display: "81" }} verdict="Buena" tone="good" info="qué es" onOpen={() => undefined} />,
+      <VitalCard label="Sleep" icon="moon" ring={{ value: 81, target: 100, display: "81" }} verdict="Good" tone="good" info="what it is" onOpen={() => undefined} />,
     );
-    expect(html).toContain('aria-label="Sueño: Buena"');
+    expect(html).toContain('aria-label="Sleep: Good"');
     expect(html).toContain('data-tone="good"');
     expect(html.indexOf("info-button")).toBeGreaterThan(html.indexOf("</button>"));
   });
@@ -130,6 +130,6 @@ describe("variantes de lo que ya había", () => {
   });
 
   it("los miles llevan punto también en cuatro cifras", () => {
-    expect(plain(1560)).toBe("1.560");
+    expect(plain(1560)).toBe("1,560");
   });
 });

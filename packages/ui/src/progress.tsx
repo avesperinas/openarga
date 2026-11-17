@@ -91,7 +91,7 @@ export function WidgetRing({ value, target, unit, label, show = "value", expecte
   const size = useWidgetSize();
   const pace = paceOf(expected, target);
   const done = value >= target && target > 0;
-  const tally = `${plain(value)} de ${plain(target)}`;
+  const tally = say("progress.tally", { value: plain(value), target: plain(target) });
 
   return (
     <div className="ring" data-done={done || undefined}>
@@ -99,7 +99,7 @@ export function WidgetRing({ value, target, unit, label, show = "value", expecte
         <svg
           viewBox="0 0 100 100"
           role="img"
-          aria-label={`${label ?? "Avance"}: ${tally}${done ? ", objetivo cumplido" : ""}`}
+          aria-label={`${label ?? say("progress.label")}: ${tally}${done ? say("progress.met") : ""}`}
         >
           <circle className="ring-track" cx="50" cy="50" r={R} />
           <circle

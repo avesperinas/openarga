@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { locale } from "./regional";
+import { say } from "./words";
 
 export interface FlowNode {
   id: string;
@@ -126,7 +127,7 @@ export function Sankey({
   share,
 }: SankeyProps) {
   const [focus, setFocus] = React.useState<string | null>(null);
-  if (links.length === 0) return <p className="widget-note">Sin movimientos en este rango</p>;
+  if (links.length === 0) return <p className="widget-note">{say("range.no_movements")}</p>;
   const { placed, bands, height } = layout(nodes, links, rowHeight);
   const touches = (band: Band) => focus === null || band.source.id === focus || band.target.id === focus;
   if (vertical) {

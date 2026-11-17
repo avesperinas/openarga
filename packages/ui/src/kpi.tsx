@@ -8,6 +8,7 @@ import { IconBadge, type IconName } from "./icons";
 import { useAnimatedNumber } from "./motion";
 import { spanOf } from "./sizes";
 import { type Hue, useWidgetLayout, useWidgetSize } from "./Widget";
+import { say } from "./words";
 
 function Figure({ value, unit }: { value: number | string; unit?: string }) {
   const numeric = typeof value === "number" ? value : Number.NaN;
@@ -73,8 +74,8 @@ export function WidgetKpiDelta({
   const label =
     variation === null
       ? previous === 0 && Number.isFinite(current) && current !== 0
-        ? "sin dato anterior"
-        : "sin cambio"
+        ? say("kpi.no_previous")
+        : say("kpi.no_change")
       : percent(variation);
 
   const tone =

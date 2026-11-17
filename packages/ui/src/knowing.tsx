@@ -115,12 +115,12 @@ export function QuestionCard({
         )}
         {kind === "many" && (
           <Button variant="primary" icon="arrow-right" disabled={busy || chosen.length === 0} onClick={() => onAnswer({ values: chosen })}>
-            Seguir
+            {say("question.continue")}
           </Button>
         )}
         {kind === "free" && (
           <Button variant="primary" icon="arrow-right" disabled={busy || !free.trim()} onClick={() => onAnswer({ text: free.trim() })}>
-            Seguir
+            {say("question.continue")}
           </Button>
         )}
       </div>

@@ -10,14 +10,14 @@ const at = (days: number, hour = 9, minute = 30) =>
 describe("cuándo es lo siguiente", () => {
   it("dice el día y no solo la hora", () => {
     expect(whenLabel(at(0), NOW)).toBe("09:30");
-    expect(whenLabel(at(1), NOW)).toBe("Mañana, 09:30");
-    expect(whenLabel(at(3), NOW)).toBe("Jueves, 09:30");
-    expect(whenLabel(at(-1), NOW)).toBe("Ayer, 09:30");
-    expect(whenLabel(at(9), NOW)).toMatch(/^7 oct/);
+    expect(whenLabel(at(1), NOW)).toBe("Tomorrow, 09:30");
+    expect(whenLabel(at(3), NOW)).toBe("Thursday, 09:30");
+    expect(whenLabel(at(-1), NOW)).toBe("Yesterday, 09:30");
+    expect(whenLabel(at(9), NOW)).toMatch(/^7 Oct/);
   });
 
   it("un día entero no lleva hora, y otro año lleva el año", () => {
-    expect(whenLabel(at(1, 0, 0), NOW)).toBe("Mañana");
+    expect(whenLabel(at(1, 0, 0), NOW)).toBe("Tomorrow");
     expect(whenLabel(new Date(2027, 1, 3, 0, 0), NOW)).toMatch(/2027/);
   });
 });
@@ -28,7 +28,7 @@ describe("las etiquetas de unas barras", () => {
 
   it("en una tarjeta estrecha se quedan en la primera, la última y la resaltada", () => {
     const html = renderToStaticMarkup(
-      <Widget title="Páginas" hue={5} size="2x2" shape="number" state="ready">
+      <Widget title="Pages" hue={5} size="2x2" shape="number" state="ready">
         <WidgetBars series={series} labels={months} highlight={4} />
       </Widget>,
     );

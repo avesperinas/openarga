@@ -42,7 +42,7 @@ describe("el año", () => {
   it("pinta los días con dato, los huecos y la leyenda", () => {
     const html = renderToStaticMarkup(
       <YearCalendar
-        label="Pasos"
+        label="Steps"
         days={[
           { day: "2026-09-24", value: 9000 },
           { day: "2026-09-25", value: 0 },
@@ -55,11 +55,11 @@ describe("el año", () => {
     expect(html).toContain('data-day="2026-09-24" data-level="4"');
     expect(html).toContain('data-day="2026-09-25" data-level="0"');
     expect(html).toContain('data-day="2026-09-23" data-level="none"');
-    expect(html).toContain("2 de 369 días con dato");
-    expect(html).toContain("objetivo");
+    expect(html).toContain("2 of 369 days with data");
+    expect(html).toContain("target");
   });
 
   it("sin días lo dice", () => {
-    expect(renderToStaticMarkup(<YearCalendar label="Pasos" days={[]} />)).toContain("Sin datos");
+    expect(renderToStaticMarkup(<YearCalendar label="Steps" days={[]} />)).toContain("No data this year");
   });
 });

@@ -116,52 +116,52 @@ describe("escuchar", () => {
   it("sin voz en el navegador, no sale", () => {
     Object.defineProperty(window, "speechSynthesis", { value: undefined, configurable: true });
     delete (window as { speechSynthesis?: unknown }).speechSynthesis;
-    expect(renderToStaticMarkup(<ReadAloud parts={["Hola"]} title="Algo" />)).toBe("");
+    expect(renderToStaticMarkup(<ReadAloud parts={["Hello"]} title="Something" />)).toBe("");
   });
 
   it("lee trozo a trozo, dice por dónde va, pausa, sigue donde estaba y para", () => {
     const parts: (number | null)[] = [];
-    act(() => root.render(<ReadAloud parts={["Primero.", "Segundo.", "Tercero."]} title="Una píldora" onPart={(part) => parts.push(part)} />));
-    expect(button("Escuchar").textContent).toContain("1 min");
+    act(() => root.render(<ReadAloud parts={["First.", "Second.", "Third."]} title="A pill" onPart={(part) => parts.push(part)} />));
+    expect(button("Listen").textContent).toContain("1 min");
 
-    act(() => button("Escuchar").click());
-    expect(synth.spoken.map((one) => one.text)).toEqual(["Primero."]);
-    expect(synth.spoken[0]!.lang).toBe("es-ES");
+    act(() => button("Listen").click());
+    expect(synth.spoken.map((one) => one.text)).toEqual(["First."]);
+    expect(synth.spoken[0]!.lang).toBe("en-GB");
     expect(document.documentElement.dataset.speaking).toBe("playing");
-    expect(host.querySelector('[aria-label="Reproductor"]')?.textContent).toContain("Una píldora");
+    expect(host.querySelector('[aria-label="Player"]')?.textContent).toContain("A pill");
 
     act(() => synth.finish());
-    expect(synth.spoken.at(-1)!.text).toBe("Segundo.");
+    expect(synth.spoken.at(-1)!.text).toBe("Second.");
 
-    act(() => button("Pausar").click());
+    act(() => button("Pause").click());
     expect(document.documentElement.dataset.speaking).toBe("paused");
     act(() => synth.finish());
-    expect(synth.spoken.at(-1)!.text).toBe("Segundo.");
+    expect(synth.spoken.at(-1)!.text).toBe("Second.");
 
-    act(() => button("Seguir escuchando").click());
-    expect(synth.spoken.at(-1)!.text).toBe("Segundo.");
+    act(() => button("Keep listening").click());
+    expect(synth.spoken.at(-1)!.text).toBe("Second.");
 
-    act(() => button("Parar").click());
+    act(() => button("Stop").click());
     expect(document.documentElement.dataset.speaking).toBeUndefined();
-    expect(host.querySelector('[aria-label="Reproductor"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Player"]')).toBeNull();
     expect(parts).toContain(1);
     expect(parts.at(-1)).toBeNull();
   });
 
   it("la velocidad cambia lo que suena y se recuerda", () => {
-    act(() => root.render(<ReadAloud parts={["Primero.", "Segundo."]} title="Algo" />));
-    act(() => button("Escuchar").click());
-    act(() => button("Velocidad 1×").click());
+    act(() => root.render(<ReadAloud parts={["First.", "Second."]} title="Something" />));
+    act(() => button("Listen").click());
+    act(() => button("Speed 1×").click());
     expect(synth.spoken.at(-1)!.rate).toBe(1.15);
     expect(window.localStorage.getItem("arga.speech.rate")).toBe("1.15");
   });
 
   it("al acabar, vuelve al principio", () => {
-    act(() => root.render(<ReadAloud parts={["Único."]} title="Algo" />));
-    act(() => button("Escuchar").click());
+    act(() => root.render(<ReadAloud parts={["Only."]} title="Something" />));
+    act(() => button("Listen").click());
     act(() => synth.finish());
     expect(document.documentElement.dataset.speaking).toBeUndefined();
-    expect(button("Escuchar")).toBeTruthy();
+    expect(button("Listen")).toBeTruthy();
   });
 
   it("el artículo resalta lo que suena", () => {
@@ -170,7 +170,7 @@ describe("escuchar", () => {
         <ArticleReader headline="Titular" lead="Entradilla" sections={[{ title: "Ladillo", text: "Uno." }]} listen={{ lang: "de-DE" }} />,
       ),
     );
-    act(() => button("Escuchar").click());
+    act(() => button("Listen").click());
     expect(synth.spoken[0]!.lang).toBe("de-DE");
     expect(host.querySelector("h1")?.hasAttribute("data-speaking")).toBe(true);
     act(() => synth.finish());
@@ -190,11 +190,11 @@ describe("que no se corte", () => {
       },
     };
     Object.defineProperty(navigator, "wakeLock", { value: wakeLock, configurable: true });
-    act(() => root.render(<ReadAloud parts={["Primero.", "Segundo."]} title="Algo" />));
-    await act(async () => button("Escuchar").click());
+    act(() => root.render(<ReadAloud parts={["First.", "Second."]} title="Something" />));
+    await act(async () => button("Listen").click());
     expect(taken).toHaveLength(1);
     expect(taken[0]!.released).toBe(false);
-    await act(async () => button("Pausar").click());
+    await act(async () => button("Pause").click());
     expect(taken[0]!.released).toBe(true);
     delete (navigator as { wakeLock?: unknown }).wakeLock;
   });
@@ -232,9 +232,9 @@ describe("con un audio de verdad", () => {
   });
 
   it("suena el audio y no la voz, y la pantalla de bloqueo lo sabe", () => {
-    act(() => root.render(<ReadAloud parts={["Titular", "Entradilla", "Cuerpo"]} title="La columna" audio={audio} />));
-    expect(button("Escuchar").textContent).toContain("2 min");
-    act(() => button("Escuchar").click());
+    act(() => root.render(<ReadAloud parts={["Headline", "Lead", "Body"]} title="La columna" audio={audio} />));
+    expect(button("Listen").textContent).toContain("2 min");
+    act(() => button("Listen").click());
     expect(synth.spoken).toHaveLength(0);
     expect(host.querySelector("audio")?.getAttribute("src")).toBe(audio.src);
     expect(document.documentElement.dataset.speaking).toBe("playing");
@@ -245,25 +245,25 @@ describe("con un audio de verdad", () => {
 
   it("resalta la parte que suena y adelante salta a la siguiente", () => {
     const parts: (number | null)[] = [];
-    act(() => root.render(<ReadAloud parts={["Titular", "Entradilla", "Cuerpo"]} title="Algo" audio={audio} onPart={(part) => parts.push(part)} />));
-    act(() => button("Escuchar").click());
+    act(() => root.render(<ReadAloud parts={["Headline", "Lead", "Body"]} title="Something" audio={audio} onPart={(part) => parts.push(part)} />));
+    act(() => button("Listen").click());
     const element = host.querySelector("audio")!;
     act(() => {
       element.currentTime = 10;
       element.dispatchEvent(new Event("timeupdate"));
     });
     expect(parts.at(-1)).toBe(1);
-    act(() => button("Adelante").click());
+    act(() => button("Forward").click());
     expect(element.currentTime).toBe(30);
   });
 
   it("si el audio no carga, lee la voz del dispositivo", () => {
-    act(() => root.render(<ReadAloud parts={["Primero."]} title="Algo" audio={audio} />));
+    act(() => root.render(<ReadAloud parts={["First."]} title="Something" audio={audio} />));
     act(() => {
       host.querySelector("audio")!.dispatchEvent(new Event("error"));
     });
     expect(host.querySelector("audio")).toBeNull();
-    act(() => button("Escuchar").click());
-    expect(synth.spoken.map((one) => one.text)).toEqual(["Primero."]);
+    act(() => button("Listen").click());
+    expect(synth.spoken.map((one) => one.text)).toEqual(["First."]);
   });
 });

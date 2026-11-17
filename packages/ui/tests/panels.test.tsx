@@ -5,7 +5,7 @@ import { AreaOrbs, AreaPanel, AreaPanelSkeleton, PageTabs, PanelBlockView, panel
 import type { PanelTab } from "../src/index";
 
 const render = (node: React.ReactElement) => renderToStaticMarkup(node);
-const area = { key: "money", label: "Dinero", apps: "Money · Carrera", hue: 2 as const, icon: "€" };
+const area = { key: "money", label: "Money", apps: "Money · Carrera", hue: 2 as const, icon: "€" };
 
 describe("el panel de un área", () => {
   const tabs: PanelTab[] = [
@@ -13,7 +13,7 @@ describe("el panel de un área", () => {
       id: "money.resumen",
       label: "Resumen",
       blocks: [
-        { type: "figure", label: "Patrimonio", value: "48.320 €", delta: "+23 %", tone: "positive" },
+        { type: "figure", label: "Net worth", value: "48.320 €", delta: "+23 %", tone: "positive" },
         { type: "alert", text: "3 movimientos por etiquetar", href: "/money/movimientos" },
         { type: "list", rows: [{ label: "Fondos", value: "21.000 €" }], detail: true },
       ],
@@ -24,26 +24,26 @@ describe("el panel de un área", () => {
 
   it("dice cómo va, la frase con su trozo destacado, las pestañas, sus bloques y sus botones", () => {
     const html = render(
-      <AreaPanel area={area} headline={{ text: "Llegas a fin de mes con unos 420 €", emphasis: "unos 420 €", tone: "positive", status: "Vas bien" }} tabs={tabs} onExpand={() => undefined} />,
+      <AreaPanel area={area} headline={{ text: "Llegas a fin de mes con unos 420 €", emphasis: "unos 420 €", tone: "positive", status: "On track" }} tabs={tabs} onExpand={() => undefined} />,
     );
-    expect(html).toContain("Vas bien");
+    expect(html).toContain("On track");
     expect(html).toContain("<em>unos 420 €</em>");
     expect(html.match(/role="tab"/g)).toHaveLength(2);
     expect(html).toContain("48.320 €");
     expect(html).toContain('href="/money/movimientos"');
     expect(html).toContain("Abrir Money");
-    expect(html).toContain("Abrir Dinero en grande");
+    expect(html).toContain("Open Money large");
     expect(html).not.toContain("Fondos");
   });
 
   it("a pantalla completa enseña también lo de detalle y se cierra", () => {
     const html = render(<AreaPanel area={area} tabs={tabs} focus onExpand={() => undefined} />);
     expect(html).toContain("Fondos");
-    expect(html).toContain("Cerrar Dinero");
+    expect(html).toContain("Close Money");
   });
 
   it("una pestaña vacía lo dice", () => {
-    expect(render(<AreaPanel area={area} tabs={[tabs[1]!]} />)).toContain("Aún no hay nada que contar");
+    expect(render(<AreaPanel area={area} tabs={[tabs[1]!]} />)).toContain("Nothing to tell here yet");
   });
 });
 
@@ -60,7 +60,7 @@ describe("los bloques", () => {
 
   it("la línea dice de dónde a dónde va y se recorre con el teclado", () => {
     const html = render(<PanelBlockView block={{ type: "trend", unit: "money", points: [{ label: "dic", value: 39180 }, { label: "nov", value: 48320 }] }} />);
-    expect(html).toContain("de 39.180 € a 48.320 €");
+    expect(html).toContain("from €39,180 to €48,320");
     expect(html).toContain('role="slider"');
   });
 
@@ -74,23 +74,23 @@ describe("los bloques", () => {
   });
 
   it("cada unidad se escribe como se lee", () => {
-    expect(panelValue(48320, "money")).toBe("48.320 €");
-    expect(panelValue(74.2, "kg")).toBe("74,2 kg");
+    expect(panelValue(48320, "money")).toBe("€48,320");
+    expect(panelValue(74.2, "kg")).toBe("74.2 kg");
     expect(panelValue(7.2, "hours")).toBe("7 h 12 min");
   });
 });
 
 describe("las bolas", () => {
   it("cada área con su estado, para el lector de pantalla", () => {
-    const html = render(<AreaOrbs items={[{ key: "money", label: "Dinero", status: "Vas bien", tone: "positive", hue: 2, icon: "€" }]} />);
-    expect(html).toContain('aria-label="Dinero: Vas bien"');
+    const html = render(<AreaOrbs items={[{ key: "money", label: "Money", status: "On track", tone: "positive", hue: 2, icon: "€" }]} />);
+    expect(html).toContain('aria-label="Money: On track"');
     expect(html).toContain('data-tone="positive"');
   });
 });
 
 describe("el panel como página del ordenador", () => {
   const tabs: PanelTab[] = [
-    { id: "resumen", label: "Resumen", blocks: [{ type: "figure", label: "Patrimonio", value: "48.320 €" }], actions: [{ label: "Abrir Money", href: "/money/" }] },
+    { id: "summary", label: "Summary", blocks: [{ type: "figure", label: "Net worth", value: "48.320 €" }], actions: [{ label: "Abrir Money", href: "/money/" }] },
     { id: "gasto", label: "Gasto", blocks: [{ type: "list", rows: [{ label: "Casa", value: "640 €" }], detail: true }] },
   ];
 
@@ -106,7 +106,7 @@ describe("el panel como página del ordenador", () => {
 
   it("mientras llega, su cabecera de verdad y el cuerpo en reposo", () => {
     const html = render(<AreaPanelSkeleton area={area} />);
-    expect(html).toContain("Dinero");
+    expect(html).toContain("Money");
     expect(html).toContain('aria-busy="true"');
   });
 });
@@ -114,11 +114,11 @@ describe("el panel como página del ordenador", () => {
 describe("las pestañas de las páginas", () => {
   it("una por página, la que se mira encendida", () => {
     const html = render(
-      <PageTabs items={[{ key: "money", label: "Dinero", hue: 2 }, { key: "widgets", label: "Widgets" }]} current={1} onSelect={() => undefined} />,
+      <PageTabs items={[{ key: "money", label: "Money", hue: 2 }, { key: "widgets", label: "Widgets" }]} current={1} onSelect={() => undefined} />,
     );
     expect(html).toContain('role="tablist"');
     expect(html).toMatch(/aria-selected="true"[^>]*>Widgets/);
-    expect(html).toMatch(/aria-selected="false"[^>]*>Dinero/);
+    expect(html).toMatch(/aria-selected="false"[^>]*>Money/);
   });
 });
 

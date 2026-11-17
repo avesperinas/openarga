@@ -1,11 +1,11 @@
 # packages/ui
 
-Design system de OpenArga. Obligatorio para todos los módulos.
+OpenArga's design system. Every module must use it.
 
-- `tokens.css` es la única fuente de color, tipografía, espacio, radio, material y movimiento.
-- Primitivas headless (Radix o Base UI) con estilo propio. Nada de librerías de componentes.
-- Exporta `<Widget>` completo, con cabecera, menú y los estados `loading`, `error`, `empty` y
-  `disconnected`. Un módulo que pinta su propia cabecera no pasa revisión.
-- Storybook desde el primer commit. Si no se puede ver, no se usa.
+- `tokens.css` is the only source of colour, type, spacing, radius, material and motion.
+- Headless primitives (Radix or Base UI) with our own styling. No component libraries.
+- It exports a complete `<Widget>`, with header, menu and the `loading`, `error`, `empty` and
+  `disconnected` states. A module that draws its own header does not pass review.
+- Storybook from the first commit. If it cannot be seen, it is not used.
 
-CI rechaza fuera de este paquete: valores hex, `style={{}}` y clases arbitrarias de Tailwind.
+CI rejects, outside this package: hex values, `style={{}}` and arbitrary Tailwind classes.
