@@ -1,5 +1,5 @@
 import { useResource } from "@openarga/app";
-import { EmptyState, ErrorState, GroupLabel, OfflineNotice, Screen, SegmentedControl, Skeleton } from "@openarga/ui";
+import { EmptyState, ErrorState, GroupLabel, OfflineNotice, Screen, SegmentedControl, Skeleton, useT } from "@openarga/ui";
 import { useState } from "react";
 
 import { type Goal, readClosedGoals } from "./api";
@@ -22,16 +22,17 @@ function rememberedPart(): Part {
 function ClosedGoals({ onOpen }: { onOpen: (id: string) => void }) {
   const found = useResource("goals:closed", readClosedGoals, { persist: true });
   const goals = found.data ?? null;
+  const t = useT();
   const today = todayIso();
 
   if (!goals && found.error) {
-    return <ErrorState title="KPIs no contesta" detail={found.error.message} onRetry={found.refresh} />;
+    return <ErrorState title={t("app.not_answering")} detail={found.error.message} onRetry={found.refresh} />;
   }
   if (!goals) return <Skeleton rows={3} />;
   if (goals.length === 0) {
     return (
-      <EmptyState icon="target" hue={2} title="Aún no has cerrado ninguna meta">
-        <p>Las que cumplas, las que se pasen de fecha y las que abandones salen aquí, por año.</p>
+      <EmptyState icon="target" hue={2} title={t("history.empty")}>
+        <p>{t("history.empty_detail")}</p>
       </EmptyState>
     );
   }
@@ -48,7 +49,7 @@ function ClosedGoals({ onOpen }: { onOpen: (id: string) => void }) {
         const achieved = ofYear.filter((goal) => goal.status === "achieved").length;
         return (
           <section key={year} className="goals-group" aria-label={year}>
-            <GroupLabel count={ofYear.length}>{`${year} · ${achieved} cumplidas`}</GroupLabel>
+            <GroupLabel count={ofYear.length}>{t("history.year", { year, count: achieved })}</GroupLabel>
             <div className="goals-goals">
               {ofYear.map((goal) => (
                 <GoalItem key={goal.id} goal={goal} today={today} withCategory onOpen={() => onOpen(goal.id)} />
@@ -62,6 +63,7 @@ function ClosedGoals({ onOpen }: { onOpen: (id: string) => void }) {
 }
 
 export function HistoryScreen({ onOpenGoal }: { onOpenGoal: (id: string) => void }) {
+  const t = useT();
   const [part, setPart] = useState<Part>(rememberedPart);
   const change = (next: Part) => {
     setPart(next);
@@ -72,13 +74,13 @@ export function HistoryScreen({ onOpenGoal }: { onOpenGoal: (id: string) => void
   };
   return (
     <Screen>
-      <ScreenHeader title="Histórico" />
+      <ScreenHeader title={t("history.title")} />
       <OfflineNotice />
       <SegmentedControl<Part>
-        label="Qué"
+        label={t("history.what")}
         options={[
-          { value: "goals", label: "KPIs cerrados" },
-          { value: "tasks", label: "Tareas hechas" },
+          { value: "goals", label: t("history.closed_goals") },
+          { value: "tasks", label: t("history.done_tasks") },
         ]}
         value={part}
         onChange={change}

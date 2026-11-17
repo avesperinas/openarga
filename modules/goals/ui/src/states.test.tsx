@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import { reset } from "@openarga/app";
 import axe from "axe-core";
+import { configureRegional, platformSay, regional } from "@openarga/ui";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "./App";
+import { english, inLocale } from "./i18n/testing";
 
 const GOAL = "0a0a0a0a-0000-4000-8000-00000000a0a0";
 
@@ -31,7 +33,11 @@ beforeAll(() => {
     }) as never;
 });
 
+const instance = regional();
+const retry = () => platformSay("error_state.retry");
+
 beforeEach(() => {
+  configureRegional({ locale: "en-US" });
   void reset();
   replies = {
     "GET /api/goals/categories": () => [],
@@ -45,7 +51,7 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (url: string, init?: RequestInit) => {
       const reply = replies[`${init?.method ?? "GET"} ${url}`];
-      if (!reply) return json({ detail: "no existe" }, 404);
+      if (!reply) return json({ detail: "not found" }, 404);
       const body = await reply();
       return body instanceof Response ? body : json(body);
     }),
@@ -60,6 +66,7 @@ afterEach(() => {
   host.remove();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  configureRegional(instance);
 });
 
 const settle = () =>
@@ -70,9 +77,9 @@ const settle = () =>
 const button = (name: string) =>
   Array.from(host.querySelectorAll<HTMLButtonElement>("button")).find((one) => one.textContent?.includes(name));
 
-async function open(path = "/goals/metas") {
+async function open(path = "/goals/goals") {
   window.history.replaceState(null, "", path);
-  act(() => root.render(<App />));
+  act(() => root.render(inLocale(<App />)));
   await settle();
 }
 
@@ -83,80 +90,81 @@ async function serious(): Promise<string[]> {
     .map((one) => `${one.id}: ${one.nodes.map((node) => node.target.join(" ")).join(", ")}`);
 }
 
-describe("los KPIs", () => {
-  it("mientras llegan, el esqueleto", async () => {
+describe("the goals", () => {
+  it("while they arrive, the skeleton", async () => {
     replies["GET /api/goals/goals"] = () => new Promise(() => undefined);
     await open();
     expect(host.querySelector(".skeleton")).not.toBeNull();
   });
 
-  it("sin metas, el botón pone la primera", async () => {
+  it("without goals, the button sets the first one", async () => {
     await open();
-    expect(host.textContent).toContain("Aún no te has propuesto nada");
-    expect(button("Ponerte una meta")).toBeDefined();
+    expect(host.textContent).toContain(english("goals.empty"));
+    expect(button(english("goals.set_one"))).toBeDefined();
   });
 
-  it("si fallan, lo dice y reintentar las trae", async () => {
-    replies["GET /api/goals/goals"] = () => json({ detail: "la base no contesta" }, 503);
+  it("if they fail, it says so and retrying brings them", async () => {
+    replies["GET /api/goals/goals"] = () => json({ detail: "the database is not answering" }, 503);
     await open();
-    expect(host.textContent).toContain("KPIs no contesta");
-    expect(host.textContent).toContain("la base no contesta");
+    expect(host.textContent).toContain(english("app.not_answering"));
+    expect(host.textContent).toContain("the database is not answering");
 
     replies["GET /api/goals/goals"] = () => [];
-    act(() => button("Reintentar")!.click());
+    act(() => button(retry())!.click());
     await settle();
-    expect(host.textContent).toContain("Aún no te has propuesto nada");
+    expect(host.textContent).toContain(english("goals.empty"));
   });
 
-  it("sin red, lo dice arriba", async () => {
+  it("offline, it says so at the top", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     await open();
-    expect(host.textContent).toContain("Sin conexión");
+    expect(host.textContent).toContain(platformSay("offline.title"));
   });
 
-  it("una meta que no existe lo dice y vuelve; otro fallo se reintenta", async () => {
-    await open(`/goals/meta/${GOAL}`);
-    expect(host.textContent).toContain("No se encuentra esta meta");
+  it("a goal that does not exist says so and goes back; any other failure is retried", async () => {
+    replies[`GET /api/goals/goals/${GOAL}`] = () => json({ detail: `not found: goal '${GOAL}'` }, 404);
+    await open(`/goals/goal/${GOAL}`);
+    expect(host.textContent).toContain(english("goal.missing"));
 
     act(() => root.unmount());
     root = createRoot(host);
     void reset();
-    replies[`GET /api/goals/goals/${GOAL}`] = () => json({ detail: "la base no contesta" }, 503);
-    await open(`/goals/meta/${GOAL}`);
-    expect(host.textContent).toContain("la base no contesta");
-    expect(button("Reintentar")).toBeDefined();
+    replies[`GET /api/goals/goals/${GOAL}`] = () => json({ detail: "the database is not answering" }, 503);
+    await open(`/goals/goal/${GOAL}`);
+    expect(host.textContent).toContain("the database is not answering");
+    expect(button(retry())).toBeDefined();
   });
 });
 
-describe("las tareas", () => {
-  it("son la portada y la primera pestaña; las metas, la segunda", async () => {
+describe("the tasks", () => {
+  it("are the front page and the first tab; the goals, the second", async () => {
     await open("/goals/");
-    expect(host.textContent).toContain("Nada pendiente");
+    expect(host.textContent).toContain(english("home.empty"));
     const tabs = Array.from(host.querySelectorAll("nav button, [role=tab]")).map((one) => one.textContent?.trim());
-    expect(tabs.indexOf("Tareas")).toBeLessThan(tabs.indexOf("KPIs"));
-    expect(tabs.indexOf("Tareas")).toBeGreaterThanOrEqual(0);
+    expect(tabs.indexOf(english("tab.tasks"))).toBeLessThan(tabs.indexOf(english("tab.goals")));
+    expect(tabs.indexOf(english("tab.tasks"))).toBeGreaterThanOrEqual(0);
   });
 
-  it("sin tareas, el botón apunta una", async () => {
-    await open("/goals/tareas");
-    expect(host.textContent).toContain("Nada pendiente");
-    expect(button("Apuntar una tarea")).toBeDefined();
+  it("without tasks, the button adds one", async () => {
+    await open("/goals/");
+    expect(host.textContent).toContain(english("home.empty"));
+    expect(button(english("home.add_task"))).toBeDefined();
   });
 
-  it("si fallan, reintentar", async () => {
-    replies["GET /api/goals/tasks"] = () => json({ detail: "no" }, 500);
-    await open("/goals/tareas");
+  it("if they fail, retry", async () => {
+    replies["GET /api/goals/tasks"] = () => json({ detail: "boom" }, 500);
+    await open("/goals/");
     expect(host.querySelector("[role=alert]")).not.toBeNull();
 
     replies["GET /api/goals/tasks"] = () => [];
-    act(() => button("Reintentar")!.click());
+    act(() => button(retry())!.click());
     await settle();
-    expect(host.textContent).toContain("Nada pendiente");
+    expect(host.textContent).toContain(english("home.empty"));
   });
 });
 
-describe("axe-core sin errores graves", () => {
-  it.each(["/goals/", "/goals/metas", "/goals/hechas", "/goals/ajustes"])("%s", async (path) => {
+describe("axe-core without serious errors", () => {
+  it.each(["/goals/", "/goals/goals", "/goals/done", "/goals/settings"])("%s", async (path) => {
     await open(path);
     expect(await serious()).toEqual([]);
   });

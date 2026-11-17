@@ -25,41 +25,44 @@ async def test_goals_what_is_pending_and_what_was_done_each_day(api) -> None:
     mine = await categories(api)
     goal = await new_goal(
         api,
-        title="Leer 20 minutos",
+        title="Read 20 minutes",
         kind="periodic",
         period="day",
         days_per_week=5,
-        category_id=mine["Aprender"],
+        category_id=mine["Learning"],
         start_on=day(-3),
     )
     await api.post(f"/goals/{goal['id']}/checks", json={"day": day(-1), "done": True})
     pending = (
         await api.post(
-            "/tasks", json={"category_id": mine["Casa"], "title": "Regar", "due_on": day(2)}
+            "/tasks",
+            json={"category_id": mine["Home"], "title": "Water the plants", "due_on": day(2)},
         )
     ).json()
-    done = (await api.post("/tasks", json={"category_id": mine["Casa"], "title": "Tender"})).json()
+    done = (
+        await api.post("/tasks", json={"category_id": mine["Home"], "title": "Hang the laundry"})
+    ).json()
     await api.post(f"/tasks/{done['id']}/done")
 
     found = await built()
 
-    ficha = found[f"goal:{goal['id']}"]
-    assert ficha["title"] == "Leer 20 minutos" and ficha["folder"] == "Metas"
-    assert ficha["href"] == f"/goals/meta/{goal['id']}"
-    assert ficha["properties"]["estado"] == "activa"
-    assert ficha["properties"]["clase"] == "periódica"
-    assert ficha["properties"]["categoria"] == "Aprender"
-    assert ficha["body"].startswith("5 días a la semana")
-    assert f"| {day(-1)} |  | sí |" in ficha["body"]
+    record = found[f"goal:{goal['id']}"]
+    assert record["title"] == "Read 20 minutes" and record["folder"] == "Goals"
+    assert record["href"] == f"/goals/goal/{goal['id']}"
+    assert record["properties"]["status"] == "active"
+    assert record["properties"]["kind"] == "periodic"
+    assert record["properties"]["category"] == "Learning"
+    assert record["body"].startswith("5 days a week")
+    assert f"| {day(-1)} |  | yes |" in record["body"]
 
     todo = found["pending"]
-    assert f"- [ ] Regar · {day(2)}" in todo["body"]
-    assert todo["properties"]["pendientes"] >= 1
+    assert f"- [ ] Water the plants · {day(2)}" in todo["body"]
+    assert todo["properties"]["pending"] >= 1
     assert pending["id"]
 
     today_ = found[f"day:{today().isoformat()}"]
-    assert today_["properties"] == {"tareas_hechas": 1}
-    assert today_["body"] == "- [x] Tender · Casa"
+    assert today_["properties"] == {"tasks_done": 1}
+    assert today_["body"] == "- [x] Hang the laundry · Home"
 
 
 async def test_the_worker_rebuilds_them_on_every_pass_not_only_the_first(
@@ -85,7 +88,7 @@ async def test_the_worker_rebuilds_them_on_every_pass_not_only_the_first(
 
     from arga_module import publisher as kit
 
-    monkeypatch.setattr(publisher, "fichas", SimpleNamespace(refresh=refresh))
+    monkeypatch.setattr(publisher, "kit", SimpleNamespace(refresh=refresh))
     monkeypatch.setattr(kit, "users", users)
     monkeypatch.setattr(publisher.PUBLISHER, "publish_pending", pending)
     async with httpx.AsyncClient() as client:
@@ -103,7 +106,7 @@ def test_a_goal_behind_says_so_and_what_was_expected() -> None:
         **{
             **base,
             "id": "g1",
-            "title": "Colesterol por debajo de 200",
+            "title": "Cholesterol under 200",
             "kind": "dated",
             "status": "active",
             "start_on": date(2026, 1, 1),
@@ -121,6 +124,6 @@ def test_a_goal_behind_says_so_and_what_was_expected() -> None:
 
     found = records.goal(goals_.GoalDetail.model_construct(goal=one, history=[]))
 
-    assert found["properties"]["ritmo"] == "por detrás"
-    assert found["properties"]["esperado"] == 221.46
-    assert found["properties"]["actual"] == 255.0
+    assert found["properties"]["pace"] == "behind"
+    assert found["properties"]["expected"] == 221.46
+    assert found["properties"]["current"] == 255.0

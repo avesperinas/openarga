@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_widgets.panel import blocks_of, gather, panel
 from goals import widgets
+from goals.common import plural, t
 
 
 def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
@@ -14,7 +15,7 @@ def ready(envelope: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def nothing() -> HTTPException:
-    return HTTPException(status_code=404, detail="KPIs aún no tiene nada que contar")
+    return HTTPException(status_code=404, detail=t("panel.empty"))
 
 
 async def build(connection: AsyncConnection) -> dict:
@@ -30,49 +31,49 @@ async def build(connection: AsyncConnection) -> dict:
     if late:
         headlines.append(
             {
-                "text": f"Tienes {len(late)} "
-                + ("tarea vencida" if len(late) == 1 else "tareas vencidas"),
+                "text": plural("panel.overdue", len(late)),
                 "emphasis": f"{len(late)}",
                 "tone": "warning",
-                "status": "1 vencida" if len(late) == 1 else f"{len(late)} vencidas",
+                "status": plural("panel.overdue_status", len(late)),
                 "priority": 60,
             }
         )
     elif pending:
         headlines.append(
             {
-                "text": f"{len(pending)} {'tarea' if len(pending) == 1 else 'tareas'} para hoy",
+                "text": plural("panel.today", len(pending)),
                 "emphasis": str(len(pending)),
-                "status": "1 tarea" if len(pending) == 1 else f"{len(pending)} tareas",
+                "status": plural("panel.today_status", len(pending)),
                 "priority": 45,
             }
         )
     else:
         headlines.append(
             {
-                "text": "Nada pendiente para hoy",
+                "text": t("panel.clear"),
                 "tone": "positive",
-                "status": "Al día",
+                "status": t("panel.clear_status"),
                 "priority": 20,
             }
         )
-    blocks = blocks_of("tasks", found.get("today") or {}, label="Para hoy", widget="today") or [
-        {"type": "tasks", "label": "Para hoy", "widget": "today", "items": []}
+    label = t("panel.for_today")
+    blocks = blocks_of("tasks", found.get("today") or {}, label=label, widget="today") or [
+        {"type": "tasks", "label": label, "widget": "today", "items": []}
     ]
-    blocks[0]["add"] = "Añadir una tarea para hoy"
+    blocks[0]["add"] = t("panel.add")
     tabs = [
         {
-            "id": "tareas",
-            "label": "Tareas",
+            "id": "tasks",
+            "label": t("panel.tasks"),
             "blocks": blocks,
-            "actions": [{"label": "Abrir tareas", "href": "/goals"}],
+            "actions": [{"label": t("panel.open"), "href": "/goals"}],
         }
     ]
     questions = [
         {
-            "text": "¿Qué tengo que hacer?",
-            "words": ["tareas", "pendiente", "hacer", "goals", "vencidas"],
-            "tab": "tareas",
+            "text": t("panel.question"),
+            "words": t("panel.words").split(","),
+            "tab": "tasks",
         }
     ]
     return panel("day", order=20, headlines=headlines, tabs=tabs, questions=questions)

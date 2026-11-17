@@ -34,14 +34,14 @@ async def test_reading_five_days_a_week_is_marked_and_shows_its_streak(api) -> N
     start = monday(today()) - timedelta(days=14)
     goal = await new_goal(
         api,
-        title="Leer 20 minutos",
+        title="Read 20 minutes",
         kind="periodic",
         period="day",
         days_per_week=5,
-        category_id=mine["Aprender"],
+        category_id=mine["Learning"],
         start_on=start.isoformat(),
     )
-    assert goal["category"] == "Aprender" and goal["streak_unit"] == "weeks"
+    assert goal["category"] == "Learning" and goal["streak_unit"] == "weeks"
 
     for week in (1, 2):
         first = monday(today()) - timedelta(days=7 * week)
@@ -61,14 +61,14 @@ async def test_reading_five_days_a_week_is_marked_and_shows_its_streak(api) -> N
     assert undone["today_met"] is False
 
     listed = (await api.get("/goals")).json()
-    assert [one["title"] for one in listed] == ["Leer 20 minutos"]
+    assert [one["title"] for one in listed] == ["Read 20 minutes"]
     assert (await api.get("/categories")).json()[5]["goals"] == 1
 
 
 async def test_a_dated_goal_that_ended_yesterday_is_missed_in_the_history(api) -> None:
     goal = await new_goal(
         api,
-        title="Correr 10 km en 50 minutos",
+        title="Run 10 km in 50 minutes",
         kind="dated",
         direction="at_most",
         start_value=58,
@@ -79,7 +79,7 @@ async def test_a_dated_goal_that_ended_yesterday_is_missed_in_the_history(api) -
     assert (await api.get("/goals")).json() == []
     closed = (await api.get("/goals?state=closed")).json()
     assert [(one["title"], one["status"], one["closed_on"]) for one in closed] == [
-        ("Correr 10 km en 50 minutos", "missed", day(-1))
+        ("Run 10 km in 50 minutes", "missed", day(-1))
     ]
     assert closed[0]["id"] == goal["id"]
 
@@ -116,9 +116,7 @@ async def test_a_manual_value_that_reaches_the_target_closes_it(api) -> None:
 
 
 async def test_a_milestone_is_ticked_done_and_can_be_reopened(api) -> None:
-    goal = await new_goal(
-        api, title="El B2 de alemán", kind="dated", start_on=day(-10), due_on=day(200)
-    )
+    goal = await new_goal(api, title="German B2", kind="dated", start_on=day(-10), due_on=day(200))
     assert goal["reached"] is False
     done = (await api.post(f"/goals/{goal['id']}/checks", json={"done": True})).json()
     assert done["status"] == "achieved"
@@ -130,19 +128,19 @@ async def test_a_milestone_is_ticked_done_and_can_be_reopened(api) -> None:
 
 async def test_the_shape_is_explained_when_wrong(api) -> None:
     periodic_with_date = await api.post(
-        "/goals", json={"title": "Algo", "kind": "periodic", "period": "day", "due_on": day(3)}
+        "/goals", json={"title": "Something", "kind": "periodic", "period": "day", "due_on": day(3)}
     )
     assert periodic_with_date.status_code == 409
-    dated_without_date = await api.post("/goals", json={"title": "Algo", "kind": "dated"})
-    assert "fecha límite" in dated_without_date.json()["detail"]
+    dated_without_date = await api.post("/goals", json={"title": "Something", "kind": "dated"})
+    assert "due date" in dated_without_date.json()["detail"]
     weekly_without_total = await api.post(
-        "/goals", json={"title": "Algo", "kind": "periodic", "period": "week"}
+        "/goals", json={"title": "Something", "kind": "periodic", "period": "week"}
     )
     assert weekly_without_total.status_code == 409
     unknown_metric = await api.post(
         "/goals",
         json={
-            "title": "Pasos",
+            "title": "Steps",
             "kind": "periodic",
             "period": "day",
             "target": 8000,
@@ -153,9 +151,9 @@ async def test_the_shape_is_explained_when_wrong(api) -> None:
 
 
 async def test_edit_order_feature_and_delete(api) -> None:
-    first = await new_goal(api, title="Meditar", kind="periodic", period="day")
+    first = await new_goal(api, title="Meditate", kind="periodic", period="day")
     second = await new_goal(
-        api, title="Gimnasio", kind="periodic", period="day", days_per_week=3, featured=True
+        api, title="Gym", kind="periodic", period="day", days_per_week=3, featured=True
     )
     assert first["days_per_week"] == 7
 
@@ -164,17 +162,17 @@ async def test_edit_order_feature_and_delete(api) -> None:
     )
     assert changed.json()["featured"] is True
     goals = {one["title"]: one for one in (await api.get("/goals")).json()}
-    assert goals["Gimnasio"]["featured"] is False
+    assert goals["Gym"]["featured"] is False
 
     ordered = await api.post("/goals/order", json={"ids": [second["id"], first["id"]]})
-    assert [one["title"] for one in ordered.json()] == ["Gimnasio", "Meditar 10 minutos"]
+    assert [one["title"] for one in ordered.json()] == ["Gym", "Meditar 10 minutos"]
 
     assert (await api.delete(f"/goals/{first['id']}")).status_code == 204
     assert (await api.get(f"/goals/{first['id']}")).status_code == 404
 
 
 async def test_the_detail_has_one_point_per_day_for_a_periodic(api) -> None:
-    goal = await new_goal(api, title="Beber agua", kind="periodic", period="day", start_on=day(-3))
+    goal = await new_goal(api, title="Drink water", kind="periodic", period="day", start_on=day(-3))
     await api.post(
         f"/goals/{goal['id']}/checks", json={"day": day(-2), "done": True, "note": "2 l"}
     )
@@ -191,11 +189,11 @@ async def test_the_detail_has_one_point_per_day_for_a_periodic(api) -> None:
 async def test_deleting_a_category_leaves_its_goals_without_one(api) -> None:
     mine = await categories(api)
     goal = await new_goal(
-        api, title="Estirar", kind="periodic", period="day", category_id=mine["Deporte"]
+        api, title="Stretch", kind="periodic", period="day", category_id=mine["Sport"]
     )
-    assert (await api.delete(f"/categories/{mine['Deporte']}")).status_code == 204
+    assert (await api.delete(f"/categories/{mine['Sport']}")).status_code == 204
     found = (await api.get(f"/goals/{goal['id']}")).json()["goal"]
-    assert found["category_id"] is None and found["title"] == "Estirar"
+    assert found["category_id"] is None and found["title"] == "Stretch"
 
 
 async def test_someone_who_used_goals_before_gets_the_goal_categories_once(schema, api) -> None:
@@ -204,10 +202,10 @@ async def test_someone_who_used_goals_before_gets_the_goal_categories_once(schem
             await connection.execute(text('set local role "mod_goals"'))
             await connection.execute(text("insert into goals.goals_person default values"))
             await connection.execute(
-                text("insert into goals.goals_category (name, hue) values ('Salud', 2)")
+                text("insert into goals.goals_category (name, hue) values ('Health', 2)")
             )
     names = list(await categories(api))
-    assert names == ["Salud", "Dinero", "Aprender", "Deporte"]
+    assert names == ["Health", "Money", "Learning", "Sport"]
     for category_id in (await categories(api)).values():
         await api.delete(f"/categories/{category_id}")
     assert await categories(api) == {}
@@ -223,7 +221,7 @@ async def test_a_goal_in_a_shared_category_is_only_its_owners(schema) -> None:
 
     await run(
         ANA,
-        "insert into goals.goals_category (name, hue, space_id) values ('Casa', 2, :s)",
+        "insert into goals.goals_category (name, hue, space_id) values ('Home', 2, :s)",
         s=SPACE,
     )
     shared = (await run(LUIS, "select id from goals.goals_category"))[0].id
@@ -231,11 +229,11 @@ async def test_a_goal_in_a_shared_category_is_only_its_owners(schema) -> None:
         ANA,
         "insert into goals.goals_goal "
         "(category_id, title, kind, period, days_per_week, start_on) "
-        "values (:c, 'Ordenar cada día', 'periodic', 'day', 7, current_date)",
+        "values (:c, 'Tidy up every day', 'periodic', 'day', 7, current_date)",
         c=shared,
     )
     assert [row.title for row in await run(ANA, "select title from goals.goals_goal")] == [
-        "Ordenar cada día"
+        "Tidy up every day"
     ]
     assert await run(LUIS, "select title from goals.goals_goal") == []
     goal_id = (await run(ANA, "select id from goals.goals_goal"))[0].id
@@ -262,11 +260,11 @@ async def test_the_old_date(api) -> None:
 async def test_goals_of_today_are_ticked_from_the_desktop(api) -> None:
     empty = (await api.get("/widgets/goals_today")).json()
     assert empty["state"] == "empty"
-    goal = await new_goal(api, title="Meditar", kind="periodic", period="day")
+    goal = await new_goal(api, title="Meditate", kind="periodic", period="day")
 
     card = (await api.get("/widgets/goals_today")).json()
     assert card["body"]["checkable"] is True
-    assert [(one["title"], one["done"]) for one in card["body"]["tasks"]] == [("Meditar", False)]
+    assert [(one["title"], one["done"]) for one in card["body"]["tasks"]] == [("Meditate", False)]
 
     ticked = await api.post("/widgets/goals_today/act", json={"verb": "complete", "id": goal["id"]})
     assert ticked.json()["body"]["tasks"][0]["done"] is True
@@ -292,7 +290,7 @@ async def test_dated_goals_and_the_featured_one_on_the_desktop(api) -> None:
     await api.post(f"/goals/{goal['id']}/checks", json={"value": 900})
     listed = (await api.get("/widgets/goals")).json()
     assert listed["body"]["rows"] == [
-        {"label": "Ahorrar 3.000 €", "value": "900 · por detrás", "tone": "negative"}
+        {"label": "Ahorrar 3.000 €", "value": "900 · behind", "tone": "negative"}
     ]
     shown = (await api.get("/widgets/goal")).json()
     assert shown["state"] == "ready"
@@ -304,7 +302,7 @@ async def test_a_goal_from_before_kpis_lands_closed_in_the_history(api) -> None:
     created = await api.post(
         "/goals/past",
         json={
-            "title": "Media maratón por debajo de 1:50",
+            "title": "Half marathon under 1:50",
             "start_on": "2024-01-01",
             "due_on": "2024-12-31",
             "outcome": "achieved",
@@ -312,7 +310,7 @@ async def test_a_goal_from_before_kpis_lands_closed_in_the_history(api) -> None:
             "target": 110,
             "closed_value": 108,
             "direction": "at_most",
-            "note": "De los objetivos de 2024.",
+            "note": "From the 2024 goals.",
         },
     )
     assert created.status_code == 201, created.text
@@ -331,11 +329,11 @@ async def test_a_goal_from_before_kpis_lands_closed_in_the_history(api) -> None:
     future = await api.post(
         "/goals/past",
         json={
-            "title": "Aún no ha pasado",
+            "title": "Not yet passed",
             "start_on": "2026-01-01",
             "due_on": "2999-12-31",
             "outcome": "missed",
         },
     )
     assert future.status_code == 409
-    assert "sigue abierta" in future.json()["detail"]
+    assert "still open" in future.json()["detail"]

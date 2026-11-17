@@ -41,7 +41,7 @@ def _acting(widget_id: str):
             await widgets.act(connection, widget_id, verb, item_id)
         except DBAPIError as error:
             if getattr(error.orig, "sqlstate", None) == INSUFFICIENT_PRIVILEGE:
-                raise HTTPException(status_code=403, detail="no puedes hacer esto aquí") from error
+                raise HTTPException(status_code=403, detail="you cannot do this here") from error
             raise
 
     return act
@@ -73,12 +73,12 @@ async def _edit(action, *args):
         async with as_app() as connection:
             return await action(connection, *args)
     except NotFound as error:
-        raise HTTPException(status_code=404, detail=f"no existe: {error}") from error
+        raise HTTPException(status_code=404, detail=f"not found: {error}") from error
     except Conflict as error:
         raise HTTPException(status_code=409, detail=str(error)) from error
     except DBAPIError as error:
         if getattr(error.orig, "sqlstate", None) == INSUFFICIENT_PRIVILEGE:
-            raise HTTPException(status_code=403, detail="no puedes hacer esto aquí") from error
+            raise HTTPException(status_code=403, detail="you cannot do this here") from error
         raise
 
 
@@ -238,11 +238,11 @@ async def ask_kernel(request: Request, method: str, path: str, body: dict | None
             method, f"{kernel_url()}{path}", json=body, headers=user_headers(), timeout=10.0
         )
     except httpx.HTTPError as error:
-        raise HTTPException(status_code=503, detail="el kernel no contesta") from error
+        raise HTTPException(status_code=503, detail="the kernel does not answer") from error
     if response.status_code >= 500:
         raise HTTPException(status_code=503, detail=f"el kernel contesta {response.status_code}")
     if response.status_code >= 400:
-        detail = response.json().get("detail", "no se puede") if response.content else "no se puede"
+        detail = response.json().get("detail", "not allowed") if response.content else "not allowed"
         raise HTTPException(status_code=response.status_code, detail=detail)
     return response.json() if response.content else None
 
@@ -302,7 +302,7 @@ async def share_category(
 ) -> tasks.Category:
     spaces = await fresh_spaces(request)
     if body.space_id is not None and body.space_id not in {s["id"] for s in spaces}:
-        raise HTTPException(status_code=404, detail="no estás en ese espacio")
+        raise HTTPException(status_code=404, detail="you are not in that space")
     return await _edit(tasks.share_category, str(category_id), body.space_id)
 
 

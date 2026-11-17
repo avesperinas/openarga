@@ -8,13 +8,16 @@ import { mountApp } from "@openarga/app";
 
 import { App } from "./App";
 import { Backdrop, applyRemembered } from "./Backdrop";
+import { Localized } from "./i18n/Localized";
 
 applyRemembered();
 
 void mountApp(
   "goals",
-  <Backdrop>
-    <App />
-  </Backdrop>,
+  <Localized>
+    <Backdrop>
+      <App />
+    </Backdrop>
+  </Localized>,
   { api: "goals" },
 );

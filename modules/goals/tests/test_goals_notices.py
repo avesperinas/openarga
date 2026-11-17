@@ -23,11 +23,11 @@ async def test_on_sunday_the_goals_that_do_not_make_it_are_said(api, schema, mon
     mine = await categories(api)
     await new_goal(
         api,
-        title="Leer 20 minutos",
+        title="Read 20 minutes",
         kind="periodic",
         period="day",
         days_per_week=7,
-        category_id=mine["Aprender"],
+        category_id=mine["Learning"],
         start_on=(today() - timedelta(days=today().weekday())).isoformat(),
     )
     monkeypatch.setattr(notices, "today", sunday)
@@ -37,8 +37,8 @@ async def test_on_sunday_the_goals_that_do_not_make_it_are_said(api, schema, mon
     year, week, _ = sunday().isocalendar()
     assert one["kind"] == "goals_at_risk"
     assert one["key"] == f"week:{year}-W{week:02d}"
-    assert one["title"] == "«Leer 20 minutos» no llega esta semana"
-    assert one["body"].startswith("Leer 20 minutos: 0 de 7")
+    assert one["title"] == '"Read 20 minutes" falls short this week'
+    assert one["body"].startswith("Read 20 minutes: 0 of 7")
     assert one["at"].startswith(f"{sunday().isoformat()}T18:00")
 
 

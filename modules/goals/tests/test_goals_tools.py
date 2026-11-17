@@ -46,14 +46,14 @@ async def test_claude_adds_a_weekly_task_told_in_words(api) -> None:
         api,
         "add_task",
         {
-            "title": "Sacar la basura",
-            "category": "casa",
+            "title": "Take the bins out",
+            "category": "home",
             "due_on": first.isoformat(),
             "repeat": {"freq": "weekly", "by_day": [{"weekday": "TU"}]},
         },
     )
-    assert created["category"] == "Casa"
-    assert created["repeats"] == "cada semana, el martes"
+    assert created["category"] == "Home"
+    assert created["repeats"] == "every week, on Tuesday"
 
     done = await call(api, "complete_task", {"task_id": created["task_id"]})
     assert done["done"]["status"] == "done"
@@ -61,7 +61,7 @@ async def test_claude_adds_a_weekly_task_told_in_words(api) -> None:
 
     listed = (await api.get("/tasks")).json()
     assert [(one["title"], one["due_on"]) for one in listed] == [
-        ("Sacar la basura", (first + timedelta(days=7)).isoformat())
+        ("Take the bins out", (first + timedelta(days=7)).isoformat())
     ]
 
 
@@ -70,25 +70,25 @@ async def test_reading_with_the_reader_role(api) -> None:
         api,
         "add_task",
         {
-            "title": "Enviar la factura",
-            "category": "Trabajo",
+            "title": "Send the invoice",
+            "category": "Work",
             "due_on": (today() - timedelta(days=1)).isoformat(),
         },
     )
-    await call(api, "add_task", {"title": "Leer sobre índices", "category": "Personal"})
+    await call(api, "add_task", {"title": "Read about indexes", "category": "Personal"})
 
     due = await call(api, "find_tasks", {"due_until": today().isoformat()}, READ)
     assert [(one["title"], one["status"]) for one in due["tasks"]] == [
-        ("Enviar la factura", "overdue")
+        ("Send the invoice", "overdue")
     ]
 
-    found = await call(api, "find_tasks", {"query": "indices"}, READ)
-    assert [one["title"] for one in found["tasks"]] == ["Leer sobre índices"]
+    found = await call(api, "find_tasks", {"query": "indexes"}, READ)
+    assert [one["title"] for one in found["tasks"]] == ["Read about indexes"]
 
     counted = await call(api, "get_categories", {}, READ)
     assert {one["name"]: one["overdue"] for one in counted["categories"]} == {
-        "Trabajo": 1,
-        "Casa": 0,
+        "Work": 1,
+        "Home": 0,
         "Personal": 0,
     }
 
@@ -96,25 +96,28 @@ async def test_reading_with_the_reader_role(api) -> None:
 async def test_the_reader_role_cannot_add(api) -> None:
     await call(api, "get_categories", {}, WRITE)
     refused = await api.post(
-        "/tools/add_task", json={"title": "X", "category": "Casa"}, headers=READ
+        "/tools/add_task", json={"title": "X", "category": "Home"}, headers=READ
     )
     assert refused.status_code == 403
 
 
 async def test_an_unknown_category_says_which_there_are(api) -> None:
-    answer = await call(api, "add_task", {"title": "X", "category": "Recados"})
-    assert answer["error"] == "no hay una categoría 'Recados'. Las que hay: Trabajo, Casa, Personal"
-    created = await call(api, "add_category", {"name": "Recados"})
-    assert created == {"name": "Recados", "hue": 3}
-    added = await call(api, "add_task", {"title": "Recoger el paquete", "category": "recados"})
-    assert added["category"] == "Recados"
+    answer = await call(api, "add_task", {"title": "X", "category": "Errands"})
+    assert (
+        answer["error"]
+        == "there is no category 'Errands'. The ones there are: Work, Home, Personal"
+    )
+    created = await call(api, "add_category", {"name": "Errands"})
+    assert created == {"name": "Errands", "hue": 3}
+    added = await call(api, "add_task", {"title": "Pick up the parcel", "category": "errands"})
+    assert added["category"] == "Errands"
 
 
 async def test_a_tool_that_fails_leaves_nothing_behind(api, schema) -> None:
     from sqlalchemy import text
 
-    answer = await call(api, "add_task", {"title": "X", "category": "Recados"})
-    assert "Recados" in answer["error"]
+    answer = await call(api, "add_task", {"title": "X", "category": "Errands"})
+    assert "Errands" in answer["error"]
     async with schema.begin() as connection:
         seeded = await connection.scalar(text("select count(*) from goals.goals_category"))
     assert seeded == 0
@@ -125,8 +128,8 @@ async def test_update_moves_and_clears(api) -> None:
         api,
         "add_task",
         {
-            "title": "Revisar el PR",
-            "category": "Trabajo",
+            "title": "Review the PR",
+            "category": "Work",
             "due_on": today().isoformat(),
             "due_time": "10:00",
         },
@@ -145,14 +148,14 @@ async def test_claude_sets_a_goal_marks_it_and_answers_how_it_goes(api) -> None:
         api,
         "create_goal",
         {
-            "title": "Leer 20 minutos",
+            "title": "Read 20 minutes",
             "kind": "periodic",
             "period": "day",
             "days_per_week": 5,
-            "category": "aprender",
+            "category": "learning",
         },
     )
-    assert created["category"] == "Aprender" and created["today_met"] is False
+    assert created["category"] == "Learning" and created["today_met"] is False
 
     marked = await call(api, "check_goal", {"goal_id": created["goal_id"], "done": True})
     assert marked["today_met"] is True and marked["today_marked_by_hand"] is True
@@ -191,8 +194,8 @@ async def test_a_dated_goal_by_hand_then_closed_and_deleted_by_title(api) -> Non
     gone = await call(api, "close_goal", {"goal_id": created["goal_id"], "outcome": "abandoned"})
     assert gone["status"] == "abandoned"
 
-    wrong = await call(api, "delete_goal", {"goal_id": created["goal_id"], "title": "Bajar"})
-    assert "no coincide" in wrong["error"]
+    wrong = await call(api, "delete_goal", {"goal_id": created["goal_id"], "title": "Go down"})
+    assert "does not match" in wrong["error"]
     done = await call(api, "delete_goal", {"goal_id": created["goal_id"], "title": "Bajar a 80 kg"})
     assert done == {"deleted": "Bajar a 80 kg"}
 
@@ -200,7 +203,7 @@ async def test_a_dated_goal_by_hand_then_closed_and_deleted_by_title(api) -> Non
 async def test_reading_cannot_write_goals(api) -> None:
     response = await api.post(
         "/tools/create_goal",
-        json={"title": "Algo", "kind": "periodic", "period": "day"},
+        json={"title": "Something", "kind": "periodic", "period": "day"},
         headers=READ,
     )
     assert response.status_code == 403

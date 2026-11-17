@@ -61,25 +61,27 @@ async def test_what_goals_writes_reaches_the_log_and_the_calendar(api, schema, m
             {"id": person, "s": subject},
         )
     try:
-        home = next(one for one in (await api.get("/categories")).json() if one["name"] == "Casa")
+        home = next(one for one in (await api.get("/categories")).json() if one["name"] == "Home")
         due = (today() + timedelta(days=4)).isoformat()
         timed = await api.post(
             "/tasks",
             json={
                 "category_id": home["id"],
-                "title": "Fontanero",
+                "title": "Plumber",
                 "due_on": due,
                 "due_time": "18:30",
             },
         )
-        undated = await api.post("/tasks", json={"category_id": home["id"], "title": "Trastero"})
+        undated = await api.post(
+            "/tasks", json={"category_id": home["id"], "title": "Storage room"}
+        )
         assert timed.status_code == undated.status_code == 201
         await api.post(f"/tasks/{timed.json()['id']}/done")
 
         def down(request: httpx.Request) -> httpx.Response:
             if request.url.path == "/internal/users":
                 return httpx.Response(200, json=[{"id": str(person)}])
-            raise httpx.ConnectError("el kernel no contesta", request=request)
+            raise httpx.ConnectError("the kernel does not answer", request=request)
 
         async with httpx.AsyncClient(transport=httpx.MockTransport(down)) as client:
             failed = await publisher.run_once(client)
@@ -106,9 +108,9 @@ async def test_what_goals_writes_reaches_the_log_and_the_calendar(api, schema, m
         figure = next(row.payload for row in events if row.type == "goals.metric")
         assert figure["metric"]["key"] == "goals.tasks_done" and figure["metric"]["value"] == 1
         created, finished = (check_event(row.payload) for row in events if row.type == "goals.task")
-        assert created["title"] == "Fontanero" and created["status"] == "confirmed"
+        assert created["title"] == "Plumber" and created["status"] == "confirmed"
         assert created["start"] == created["end"] and created["start"].startswith(f"{due}T18:30")
-        assert created["href"] == f"/goals/tarea/{timed.json()['id']}"
+        assert created["href"] == f"/goals/task/{timed.json()['id']}"
         assert finished["status"] == "cancelled" and finished["uid"] == created["uid"]
     finally:
         async with schema.begin() as connection:

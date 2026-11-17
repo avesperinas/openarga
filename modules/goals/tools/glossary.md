@@ -1,21 +1,27 @@
-# Glosario de Goals
+# Goals glossary
 
-**Tarea**: algo que hay que hacer, con su título y, si hace falta, una fecha límite, una hora y
-notas. Siempre va en una categoría.
+**Task**: something to do, with its title and, if needed, a due date, a time and notes. It always
+belongs to a category.
 
-**Categoría**: el cajón de la tarea. Cada persona nace con Trabajo, Casa y Personal, y crea,
-renombra, ordena o borra las suyas en la app. En las tools se dice por su nombre, sin importar
-mayúsculas ni tildes.
+**Category**: the task's drawer. Each person starts with Work, Home and Personal, and creates,
+renames, orders or deletes their own in the app. Tools name it by its name, ignoring case and
+accents.
 
-**Vencida** (`overdue`): su día pasó sin hacerse, o es hoy y ya pasó su hora. **De hoy** (`today`),
-**más adelante** (`upcoming`) y **sin fecha** (`someday`). Hecha (`done`) es tachada.
+**Overdue** (`overdue`): its day passed without being done, or it is today and its time has passed.
+**Today** (`today`), **upcoming** (`upcoming`) and **someday** (`someday`, no date). Done (`done`) is
+ticked.
 
-**Se repite**: una tarea con regla (cada martes, cada mes el día 1, cinco veces). La fecha es la
-primera vez. Al tacharla nace la siguiente con su fecha, y la hecha se queda en el historial. Una
-regla con final (hasta una fecha, o un número de veces) deja de dar siguientes cuando acaba.
+**Repeats**: a task with a rule (every Tuesday, every month on the 1st, five times). The date is the
+first time. Ticking it creates the next one with its date, and the done one stays in the history. A
+rule with an end (until a date, or a number of times) stops giving next ones when it ends.
 
-**Compartida**: una categoría de un espacio. Sus tareas las ven y las tachan todos los miembros, y
-cada una dice quién la tachó.
+**Shared**: a category of a space. All members see and tick its tasks, and each one says who ticked
+it.
 
-Goals no tiene prioridades, subtareas, etiquetas ni avisos. Lo que vence se ve al entrar en la app y
-en el widget "Para hoy". Lo que tiene fecha sale también en el calendario de Planner.
+**Goal**: periodic (met every day or every week) or dated (reach a figure by a date; a milestone
+has no figure). Tied to a metric another app publishes, it is met on its own; otherwise it is logged
+by hand. **Pace** (`ahead`, `on_track`, `behind`) compares the current figure with where it should
+be today.
+
+Goals has no priorities, subtasks, tags or reminders. What is overdue shows when opening the app and
+in the "For today" widget. What has a date also shows in the Planner calendar.

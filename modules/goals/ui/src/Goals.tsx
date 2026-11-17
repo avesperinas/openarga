@@ -11,6 +11,7 @@ import {
   Screen,
   SegmentedControl,
   Skeleton,
+  useT,
   useToast,
 } from "@openarga/ui";
 import { useState } from "react";
@@ -23,8 +24,10 @@ import {
   byCategory,
   byDate,
   current,
+  goalFigures,
   standing,
   subtitle,
+  tickable,
   weekLabel,
 } from "./goalWords";
 import { ScreenHeader } from "./Header";
@@ -41,7 +44,6 @@ function rememberedView(): GoalView {
   }
 }
 
-export const tickable = (goal: Goal) => goal.kind === "periodic" && goal.period === "day";
 
 export function GoalItem({
   goal,
@@ -56,17 +58,18 @@ export function GoalItem({
   onOpen: () => void;
   onTick?: () => void;
 }) {
-  const { tone, text } = standing(goal);
+  const t = useT();
+  const { tone, text } = standing(t, goal);
   const dated = goal.kind === "dated" && goal.target !== null;
   return (
     <GoalRow
       title={goal.title}
-      subtitle={subtitle(goal, today, withCategory)}
+      subtitle={subtitle(t, goal, today, withCategory)}
       hue={goal.hue}
       tone={tone}
       status={text}
-      figure={current(goal) ?? undefined}
-      against={against(goal, today) ?? undefined}
+      figure={current(t, goal) ?? undefined}
+      against={against(t, goal, today) ?? undefined}
       progress={dated ? goal.progress : undefined}
       expected={
         dated && goal.status === "active" && goal.expected !== null && goal.start !== null && goal.target !== goal.start
@@ -74,10 +77,10 @@ export function GoalItem({
           : undefined
       }
       week={goal.kind === "periodic" ? goal.week : undefined}
-      weekLabel={goal.kind === "periodic" ? weekLabel(goal) : undefined}
+      weekLabel={goal.kind === "periodic" ? weekLabel(t, goal) : undefined}
       check={
         onTick && tickable(goal) && goal.status === "active"
-          ? { checked: goal.today_met === true, label: `Hecho hoy: ${goal.title}`, onClick: onTick }
+          ? { checked: goal.today_met === true, label: t("goals.done_today_label", { title: goal.title }), onClick: onTick }
           : undefined
       }
       onOpen={onOpen}
@@ -87,22 +90,8 @@ export function GoalItem({
 
 export const GOALS = "goals";
 
-export function goalFigures(goals: Goal[]) {
-  const periodic = goals.filter((goal) => tickable(goal));
-  const done = periodic.filter((goal) => goal.today_met).length;
-  const behind = goals.filter((goal) => goal.pace === "behind").length;
-  const best = goals.reduce<Goal | null>((top, goal) => ((goal.streak ?? 0) > (top?.streak ?? 0) ? goal : top), null);
-  return [
-    { label: "hechas hoy", value: periodic.length ? `${done}/${periodic.length}` : "–", lit: periodic.length > 0 && done === periodic.length },
-    { label: "por detrás", value: behind, muted: behind === 0 },
-    {
-      label: best?.streak ? `racha (${best.streak_unit === "weeks" ? "semanas" : "días"})` : "racha",
-      value: best?.streak ?? 0,
-    },
-  ];
-}
-
 export function GoalsScreen({ onOpen }: { onOpen: (id: string) => void }) {
+  const t = useT();
   const { list: categories } = useCategories();
   const found = useResource(GOALS, readGoals, { persist: true });
   const goals = found.data ?? null;
@@ -130,49 +119,46 @@ export function GoalsScreen({ onOpen }: { onOpen: (id: string) => void }) {
         setGoals((list) => list?.map((one) => (one.id === goal.id ? saved : one)) ?? []);
         changed();
         if (done && saved.streak && saved.streak > 1) {
-          const unit = saved.streak_unit === "weeks" ? "semanas" : "días";
-          toast({ message: `${goal.title} · ${saved.streak} ${unit} seguidos` });
+          const unit = saved.streak_unit === "weeks" ? "weeks" : "days";
+          toast({ message: t(`goals.streak_toast_${unit}`, { title: goal.title, count: saved.streak ?? 0 }) });
         }
       })
       .catch((reason: unknown) => {
         load();
-        toast({ message: reason instanceof Error ? reason.message : "No se ha podido marcar", tone: "error" });
+        toast({ message: reason instanceof Error ? reason.message : t("goals.tick_failed"), tone: "error" });
       });
   };
 
-  const groups = goals ? (view === "date" ? byDate(goals) : byCategory(goals, categories)) : [];
+  const groups = goals ? (view === "date" ? byDate(t, goals) : byCategory(t, goals, categories)) : [];
 
   return (
     <Screen>
-      <ScreenHeader eyebrow={capital(longDate(today))} title="KPIs" />
+      <ScreenHeader eyebrow={capital(longDate(today))} title={t("goals.title")} />
       <OfflineNotice />
 
       {!goals && found.error ? (
-        <ErrorState title="KPIs no contesta" detail={found.error.message} onRetry={found.refresh} />
+        <ErrorState title={t("app.not_answering")} detail={found.error.message} onRetry={found.refresh} />
       ) : !goals ? (
         <Skeleton rows={4} />
       ) : goals.length === 0 ? (
         <EmptyState
           icon="target"
           hue={2}
-          title="Aún no te has propuesto nada"
-          action={{ label: "Ponerte una meta", icon: "plus", onClick: () => setCreating(true) }}
+          title={t("goals.empty")}
+          action={{ label: t("goals.set_one"), icon: "plus", onClick: () => setCreating(true) }}
         >
-          <p>
-            Algo de cada día, como leer o andar 8.000 pasos, o algo con fecha, como llegar a un peso o
-            a un ahorro. Si la cifra ya está en arga, se mueve sola.
-          </p>
+          <p>{t("goals.empty_detail")}</p>
         </EmptyState>
       ) : (
         <>
           <Card>
-            <Figures label="Cómo vas" items={goalFigures(goals)} />
+            <Figures label={t("goals.how")} items={goalFigures(t, goals)} />
           </Card>
           <SegmentedControl<GoalView>
-            label="Ordenar"
+            label={t("home.sort")}
             options={[
-              { value: "category", label: "Por categoría" },
-              { value: "date", label: "Por fecha" },
+              { value: "category", label: t("home.by_category") },
+              { value: "date", label: t("home.by_date") },
             ]}
             value={view}
             onChange={changeView}
@@ -197,7 +183,7 @@ export function GoalsScreen({ onOpen }: { onOpen: (id: string) => void }) {
         </>
       )}
 
-      <CreateButton label="Meta" onClick={() => setCreating(true)} />
+      <CreateButton label={t("goals.goal")} onClick={() => setCreating(true)} />
 
       {creating && (
         <GoalSheet

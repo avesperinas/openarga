@@ -13,6 +13,7 @@ import {
   Section,
   SegmentedControl,
   Skeleton,
+  useT,
   useToast,
 } from "@openarga/ui";
 import { useEffect, useState } from "react";
@@ -21,7 +22,7 @@ import { type Task, changed, completeTask, readDone, readPending, readTask, undo
 import { ScreenHeader } from "./Header";
 import { TaskRow, useCategories } from "./Parts";
 import { TaskSheet } from "./TaskSheet";
-import { capital, count, grouped, longDate, todayIso, whenLabel } from "./words";
+import { capital, grouped, longDate, todayIso, todayRing, whenLabel } from "./words";
 
 type View = "date" | "category";
 const VIEW_KEY = "goals.view";
@@ -37,23 +38,8 @@ function rememberedView(): View {
 
 export const TASKS = "tasks";
 
-export function todayRing(pending: Task[], done: Task[], today: string) {
-  const doneToday = done.filter((task) => task.done_at !== null && todayIso(new Date(task.done_at)) === today).length;
-  const due = pending.filter((task) => task.status === "today" || task.status === "overdue").length;
-  const overdue = pending.filter((task) => task.status === "overdue").length;
-  const total = doneToday + due;
-  const left = [`${count(pending.length, "pendiente", "pendientes")} en total`];
-  if (overdue > 0) left.unshift(count(overdue, "vencida", "vencidas"));
-  return {
-    share: total > 0 ? doneToday / total : null,
-    value: total > 0 ? `${doneToday}/${total}` : "0",
-    label: total > 0 ? "hechas hoy" : "Nada para hoy",
-    detail: left.join(" · "),
-    tone: overdue > 0 ? ("warning" as const) : undefined,
-  };
-}
-
 export function HomeScreen({ openTask, onClosed }: { openTask?: string; onClosed: () => void }) {
+  const t = useT();
   const { list: categories } = useCategories();
   const found = useResource(TASKS, readPending, { persist: true });
   const tasks = found.data ?? null;
@@ -87,15 +73,15 @@ export function HomeScreen({ openTask, onClosed }: { openTask?: string; onClosed
     completeTask(task.id)
       .then(({ next }) => {
         load();
-        const then = next ? `. La siguiente, ${whenLabel(next, today)}` : "";
+        const then = next ? t("home.next", { when: whenLabel(t, next, today) ?? "" }) : "";
         toast({
-          message: `Hecha · ${task.title}${then}`,
-          action: { label: "Deshacer", run: () => void undoTask(task.id).then(load) },
+          message: t("home.done", { title: task.title }) + then,
+          action: { label: t("home.undo"), run: () => void undoTask(task.id).then(load) },
         });
       })
       .catch((reason: unknown) => {
         load();
-        toast({ message: reason instanceof Error ? reason.message : "No se ha podido tachar", tone: "error" });
+        toast({ message: reason instanceof Error ? reason.message : t("home.tick_failed"), tone: "error" });
       });
   };
 
@@ -125,32 +111,32 @@ export function HomeScreen({ openTask, onClosed }: { openTask?: string; onClosed
 
   return (
     <Screen>
-      <ScreenHeader eyebrow={capital(longDate(today))} title="Tareas" />
+      <ScreenHeader eyebrow={capital(longDate(today))} title={t("home.title")} />
       <OfflineNotice />
 
       {!tasks && found.error ? (
-        <ErrorState title="KPIs no contesta" detail={found.error.message} onRetry={found.refresh} />
+        <ErrorState title={t("app.not_answering")} detail={found.error.message} onRetry={found.refresh} />
       ) : !tasks ? (
         <Skeleton rows={5} />
       ) : tasks.length === 0 ? (
         <EmptyState
           icon="list"
           hue={3}
-          title="Nada pendiente"
-          action={{ label: "Apuntar una tarea", icon: "plus", onClick: () => add() }}
+          title={t("home.empty")}
+          action={{ label: t("home.add_task"), icon: "plus", onClick: () => add() }}
         >
-          <p>Lo que apuntes sale aquí por fecha, con lo vencido arriba.</p>
+          <p>{t("home.empty_detail")}</p>
         </EmptyState>
       ) : (
         <>
           <Card>
-            <RingFigure size="medium" {...todayRing(tasks, finished, today)} />
+            <RingFigure size="medium" {...todayRing(t, tasks, finished, today)} />
           </Card>
           <SegmentedControl<View>
-            label="Ordenar"
+            label={t("home.sort")}
             options={[
-              { value: "date", label: "Por fecha" },
-              { value: "category", label: "Por categoría" },
+              { value: "date", label: t("home.by_date") },
+              { value: "category", label: t("home.by_category") },
             ]}
             value={view}
             onChange={changeView}
@@ -160,9 +146,9 @@ export function HomeScreen({ openTask, onClosed }: { openTask?: string; onClosed
             <>
               {categories.length > 1 && (
                 <ChoiceChips
-                  label="Categoría"
+                  label={t("home.category")}
                   options={[
-                    { value: ALL, label: "Todas" },
+                    { value: ALL, label: t("home.all") },
                     ...categories.map((one) => ({ value: one.id, label: one.name })),
                   ]}
                   value={filter}
@@ -170,9 +156,9 @@ export function HomeScreen({ openTask, onClosed }: { openTask?: string; onClosed
                 />
               )}
               {shown.length === 0 ? (
-                <EmptyState icon="done" hue={2} title="Nada pendiente aquí" />
+                <EmptyState icon="done" hue={2} title={t("home.empty_here")} />
               ) : (
-                grouped(shown, today).map((group) => (
+                grouped(t, shown, today).map((group) => (
                   <section key={group.id} className="goals-group" aria-label={group.label}>
                     <GroupLabel count={group.tasks.length} tone={group.id === "overdue" ? "warning" : undefined}>
                       {group.label}
@@ -194,7 +180,7 @@ export function HomeScreen({ openTask, onClosed }: { openTask?: string; onClosed
                   key={category.id}
                   title={category.name}
                   count={tasks.filter((task) => task.category_id === category.id).length}
-                  action={{ label: "Añadir", icon: "plus", onClick: () => add(category.id) }}
+                  action={{ label: t("home.add"), icon: "plus", onClick: () => add(category.id) }}
                 >
                   <List>{tasks.filter((task) => task.category_id === category.id).map((task) => row(task, false))}</List>
                 </Section>
@@ -203,7 +189,7 @@ export function HomeScreen({ openTask, onClosed }: { openTask?: string; onClosed
         </>
       )}
 
-      <CreateButton label="Tarea" onClick={() => add(view === "date" && filter !== ALL ? filter : undefined)} />
+      <CreateButton label={t("home.task")} onClick={() => add(view === "date" && filter !== ALL ? filter : undefined)} />
 
       {editing && (
         <TaskSheet

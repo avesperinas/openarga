@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from goals import metrics, tasks
-from goals.common import Conflict, NotFound, enqueue, fold, is_uuid, today
+from goals.common import Conflict, NotFound, enqueue, fold, is_uuid, t, today
 from goals.progress import Check, DayState, Evaluation, GoalShape, evaluate, monday
 
 Kind = Literal["periodic", "dated"]
@@ -17,10 +17,10 @@ Period = Literal["day", "week"]
 Status = Literal["active", "achieved", "missed", "abandoned"]
 
 SEEDED: tuple[tuple[str, int], ...] = (
-    ("Salud", 6),
-    ("Dinero", 4),
-    ("Aprender", 7),
-    ("Deporte", 8),
+    ("health", 6),
+    ("money", 4),
+    ("learning", 7),
+    ("sport", 8),
 )
 
 HISTORY_DAYS = 400
@@ -239,10 +239,10 @@ async def closed(connection: AsyncConnection) -> list[Goal]:
 
 async def one(connection: AsyncConnection, goal_id: str) -> Goal:
     if not is_uuid(goal_id):
-        raise NotFound(f"meta {goal_id!r}")
+        raise NotFound(f"goal {goal_id!r}")
     found = await _read(connection, "g.id = cast(:id as uuid)", {"id": goal_id})
     if not found:
-        raise NotFound(f"meta {goal_id}")
+        raise NotFound(f"goal {goal_id}")
     return found[0]
 
 
@@ -293,8 +293,8 @@ async def find(connection: AsyncConnection, title: str) -> Goal:
             return partial[0]
         if len(exact) > 1 or len(partial) > 1:
             names = ", ".join(goal.title for goal in (exact or partial))
-            raise Conflict(f"hay varias metas que se llaman así: {names}. Usa su id")
-    raise NotFound(f"no hay una meta '{title}'")
+            raise Conflict(f"several goals have that name: {names}. Use its id")
+    raise NotFound(f"there is no goal '{title}'")
 
 
 async def counts(connection: AsyncConnection) -> dict[str, int]:
@@ -323,7 +323,8 @@ async def seed(connection: AsyncConnection) -> None:
     existing = rows.all()
     taken = {fold(row.name) for row in existing}
     position = max((row.position for row in existing), default=0)
-    for name, hue in SEEDED:
+    for key, hue in SEEDED:
+        name = t(f"category.{key}")
         if fold(name) in taken:
             continue
         position += 1
@@ -339,7 +340,7 @@ async def seed(connection: AsyncConnection) -> None:
 def _title(value: str) -> str:
     value = " ".join(value.split())
     if not value:
-        raise ValueError("la meta necesita un título")
+        raise ValueError("the goal needs a title")
     return value
 
 
@@ -385,26 +386,26 @@ def _check_shape(fields: dict[str, Any]) -> None:
     kind = fields["kind"]
     if kind == "periodic":
         if fields["due_on"] is not None:
-            raise Conflict("una meta periódica no tiene fecha límite: se cumple cada día o semana")
+            raise Conflict("a periodic goal has no due date: it is met every day or week")
         if fields["period"] is None:
-            raise Conflict("una meta periódica es de cada día (period: day) o de la semana (week)")
+            raise Conflict("a periodic goal is daily (period: day) or weekly (week)")
         if fields["period"] == "day" and fields["days_per_week"] is None:
             fields["days_per_week"] = 7
         if fields["period"] == "week":
             fields["days_per_week"] = None
             if fields["target"] is None:
-                raise Conflict("una meta de total semanal necesita el total (target)")
+                raise Conflict("a weekly total goal needs the total (target)")
     else:
         if fields["due_on"] is None:
-            raise Conflict("una meta con fecha necesita su fecha límite (due_on)")
+            raise Conflict("a dated goal needs its due date (due_on)")
         if fields["period"] is not None or fields["days_per_week"] is not None:
-            raise Conflict("una meta con fecha no se repite: quita period y days_per_week")
+            raise Conflict("a dated goal does not repeat: drop period and days_per_week")
         if fields["due_on"] <= fields["start_on"]:
-            raise Conflict("la fecha límite tiene que ser después del punto de partida")
+            raise Conflict("the due date must come after the starting point")
     if fields["metric_key"] and fields["kind"] == "periodic" and fields["target"] is None:
         raise Conflict(
-            "una meta periódica atada a una cifra necesita la condición (target): "
-            "«8.000 pasos» es la cifra pasos con target 8000"
+            "a periodic goal tied to a metric needs the condition (target): "
+            "'8,000 steps' is the steps metric with target 8000"
         )
 
 
@@ -414,8 +415,8 @@ async def _metric(connection: AsyncConnection, key: str | None) -> metrics.Metri
     found = await metrics.find(connection, key)
     if found is None:
         raise NotFound(
-            f"no ha llegado nunca la cifra '{key}'. Las que hay salen en list_metrics o en el "
-            f"selector de la app"
+            f"the metric '{key}' has never arrived. The available ones are in list_metrics or in "
+            f"the app's picker"
         )
     return found
 
@@ -424,13 +425,13 @@ async def _category(connection: AsyncConnection, category_id: str | None) -> Non
     if category_id is None:
         return
     if not is_uuid(category_id):
-        raise NotFound(f"categoría {category_id!r}")
+        raise NotFound(f"category {category_id!r}")
     found = await connection.scalar(
         text("select 1 from goals.goals_category where id = cast(:id as uuid)"),
         {"id": category_id},
     )
     if not found:
-        raise NotFound(f"categoría {category_id}")
+        raise NotFound(f"category {category_id}")
 
 
 async def _starting_value(
@@ -532,12 +533,14 @@ async def record_past(connection: AsyncConnection, body: PastGoalIn) -> Goal:
     await seed(connection)
     fields = body.model_dump()
     if fields["due_on"] <= fields["start_on"]:
-        raise Conflict("la fecha límite tiene que ser después del punto de partida")
+        raise Conflict("the due date must come after the starting point")
     fields["closed_on"] = fields["closed_on"] or fields["due_on"]
     if fields["closed_on"] < fields["start_on"]:
-        raise Conflict("no pudo cerrarse antes de empezar")
+        raise Conflict("it cannot have closed before it started")
     if fields["closed_on"] > today():
-        raise Conflict("una meta pasada se cerró hoy o antes: si sigue abierta, créala normal")
+        raise Conflict(
+            "a past goal closed today or earlier: if it is still open, create it normally"
+        )
     fields["note"] = (fields["note"] or "").strip() or None
     await _category(connection, fields["category_id"])
     goal_id = await connection.scalar(INSERT_PAST, fields)
@@ -630,7 +633,7 @@ class OrderIn(BaseModel):
 async def order(connection: AsyncConnection, body: OrderIn) -> list[Goal]:
     known = {goal.id for goal in await active(connection)}
     if set(body.ids) != known or len(body.ids) != len(known):
-        raise Conflict("el orden tiene que llevar todas tus metas activas, una vez cada una")
+        raise Conflict("the order must list all your active goals, each one once")
     for position, goal_id in enumerate(body.ids, start=1):
         await connection.execute(
             text("update goals.goals_goal set position = :p where id = cast(:id as uuid)"),
@@ -655,20 +658,20 @@ class CheckIn(BaseModel):
 async def check(connection: AsyncConnection, goal_id: str, body: CheckIn) -> Goal:
     goal = await one(connection, goal_id)
     if goal.status != "active":
-        raise Conflict("esta meta está cerrada: reábrela para apuntar en ella")
+        raise Conflict("this goal is closed: reopen it to log on it")
     day = body.day or today()
     if day > today():
-        raise Conflict("no se apunta un día que todavía no ha llegado")
+        raise Conflict("a day that has not come yet cannot be logged")
     if day < goal.start_on:
-        raise Conflict(f"la meta empieza el {goal.start_on:%d/%m/%Y}")
+        raise Conflict(f"the goal starts on {goal.start_on.isoformat()}")
     if goal.kind == "dated" and goal.target is None:
         if body.done:
             return await close(connection, goal_id, "achieved")
-        raise Conflict("un hito se da por hecho con done: true")
+        raise Conflict("a milestone is marked done with done: true")
     if goal.kind == "dated" and body.value is None:
-        raise Conflict("en una meta con fecha se apunta la cifra en la que vas (value)")
+        raise Conflict("a dated goal logs the figure you are at (value)")
     if goal.period == "week" and body.value is None:
-        raise Conflict("en una meta de total semanal se apunta cuánto se hizo ese día (value)")
+        raise Conflict("a weekly total goal logs how much was done that day (value)")
     await connection.execute(
         text("""
             insert into goals.goals_goal_check (goal_id, day, done, value, note)
@@ -713,7 +716,7 @@ async def close(
 ) -> Goal:
     goal = await one(connection, goal_id)
     if goal.status != "active":
-        raise Conflict("esta meta ya está cerrada")
+        raise Conflict("this goal is already closed")
     await connection.execute(
         CLOSE, {"id": goal_id, "status": outcome, "on": today(), "value": goal.current}
     )
@@ -725,9 +728,9 @@ async def close(
 async def reopen(connection: AsyncConnection, goal_id: str) -> Goal:
     goal = await one(connection, goal_id)
     if goal.status == "active":
-        raise Conflict("esta meta no está cerrada")
+        raise Conflict("this goal is not closed")
     if goal.kind == "dated" and goal.due_on is not None and goal.due_on < today():
-        raise Conflict("su fecha ya pasó: cambia la fecha límite para reabrirla")
+        raise Conflict("its date has passed: change the due date to reopen it")
     await connection.execute(
         text("""
             update goals.goals_goal

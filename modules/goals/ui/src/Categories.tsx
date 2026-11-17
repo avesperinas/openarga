@@ -10,6 +10,7 @@ import {
   Screen,
   Sheet,
   TextField,
+  useT,
 } from "@openarga/ui";
 import { useEffect, useState } from "react";
 
@@ -31,6 +32,7 @@ import { Problem, useBusy, useCategories } from "./Parts";
 import { HUES, count } from "./words";
 
 export function CategoriesScreen() {
+  const t = useT();
   const { list, reload } = useCategories();
   const [editing, setEditing] = useState<Category | "new" | null>(null);
   const [sharing, setSharing] = useState<Category | null>(null);
@@ -41,15 +43,15 @@ export function CategoriesScreen() {
 
   return (
     <Screen>
-      <ScreenHeader title="Categorías" />
+      <ScreenHeader title={t("settings.categories")} />
       {list.length === 0 ? (
         <EmptyState
           icon="layers"
           hue={3}
-          title="Sin categorías"
-          action={{ label: "Crear una", icon: "plus", onClick: () => setEditing("new") }}
+          title={t("categories.empty")}
+          action={{ label: t("categories.create_one"), icon: "plus", onClick: () => setEditing("new") }}
         >
-          <p>Cada tarea va en una: Trabajo, Casa, lo que te sirva.</p>
+          <p>{t("categories.empty_detail")}</p>
         </EmptyState>
       ) : (
         <List>
@@ -59,9 +61,9 @@ export function CategoriesScreen() {
               title={one.name}
               subtitle={
                 [
-                  count(one.pending, "pendiente", "pendientes"),
-                  one.goals ? count(one.goals, "meta", "metas") : null,
-                  one.space_id ? "compartida" : null,
+                  count(t, "categories.pending", one.pending),
+                  one.goals ? count(t, "categories.goals", one.goals) : null,
+                  one.space_id ? t("task.shared") : null,
                 ]
                   .filter(Boolean)
                   .join(" · ")
@@ -73,7 +75,7 @@ export function CategoriesScreen() {
           ))}
         </List>
       )}
-      <CreateButton label="Categoría" onClick={() => setEditing("new")} />
+      <CreateButton label={t("home.category")} onClick={() => setEditing("new")} />
 
       {editing === "new" && (
         <CategorySheet
@@ -112,19 +114,20 @@ export function CategoriesScreen() {
 }
 
 function HuePicker({ value, onChange }: { value: number; onChange: (hue: number) => void }) {
+  const t = useT();
   return (
-    <div className="goals-hues" role="radiogroup" aria-label="Color">
+    <div className="goals-hues" role="radiogroup" aria-label={t("categories.colour")}>
       {HUES.map((hue) => (
         <button
-          key={hue.value}
+          key={hue}
           type="button"
           role="radio"
           className="goals-hue"
-          aria-checked={hue.value === value}
-          aria-label={hue.label}
-          onClick={() => onChange(hue.value)}
+          aria-checked={hue === value}
+          aria-label={t(`hue.${hue}`)}
+          onClick={() => onChange(hue)}
         >
-          <span className="list-row-dot" data-hue={hue.value} aria-hidden="true" />
+          <span className="list-row-dot" data-hue={hue} aria-hidden="true" />
         </button>
       ))}
     </div>
@@ -144,7 +147,8 @@ function CategorySheet({
   onChanged: (close?: boolean) => void;
   onShare?: () => void;
 }) {
-  const free = HUES.find((hue) => !all.some((one) => one.hue === hue.value))?.value ?? 1;
+  const t = useT();
+  const free = HUES.find((hue) => !all.some((one) => one.hue === hue)) ?? 1;
   const [name, setName] = useState(category?.name ?? "");
   const [hue, setHue] = useState(category?.hue ?? free);
   const [deleting, setDeleting] = useState(false);
@@ -155,7 +159,7 @@ function CategorySheet({
       if (category) await updateCategory(category.id, { name: name.trim(), hue });
       else await createCategory(name.trim(), hue);
       onChanged();
-    }, "No se ha podido guardar");
+    }, t("sheet.save_failed"));
 
   const move = (step: -1 | 1) =>
     void run(async () => {
@@ -166,19 +170,22 @@ function CategorySheet({
       [ids[at], ids[to]] = [ids[to]!, ids[at]!];
       await orderCategories(ids);
       onChanged(false);
-    }, "No se ha podido mover");
+    }, t("categories.move_failed"));
 
   if (deleting && category) {
     return (
       <ConfirmDelete
-        title="¿Borrar esta categoría?"
+        title={t("categories.delete_question")}
         subject={category.name}
         consequence={
           category.pending > 0
-            ? `Se borran también sus tareas: ${count(category.pending, "pendiente", "pendientes")} y las ya hechas.${category.goals ? " Sus metas se quedan, sin categoría." : ""} No se puede deshacer.`
-            : `Se borran también sus tareas hechas.${category.goals ? " Sus metas se quedan, sin categoría." : ""} No se puede deshacer.`
+            ? t("categories.delete_pending", {
+                pending: count(t, "categories.pending", category.pending),
+                goals: category.goals ? t("categories.goals_stay") : "",
+              })
+            : t("categories.delete_done", { goals: category.goals ? t("categories.goals_stay") : "" })
         }
-        action="Borrar categoría"
+        action={t("categories.delete")}
         onCancel={() => setDeleting(false)}
         onConfirm={async () => {
           await removeCategory(category.id);
@@ -192,28 +199,28 @@ function CategorySheet({
 
   return (
     <Sheet
-      title={category ? category.name : "Nueva categoría"}
+      title={category ? category.name : t("categories.new")}
       onClose={onClose}
-      action={{ label: category ? "Guardar" : "Crear", onClick: save, disabled: busy || !name.trim() }}
+      action={{ label: category ? t("sheet.save") : t("categories.create"), onClick: save, disabled: busy || !name.trim() }}
     >
       <div className="goals-form">
-        <TextField label="Nombre" value={name} placeholder="Universidad" autoFocus={!category} onChange={setName} />
+        <TextField label={t("categories.name")} value={name} placeholder={t("categories.name_placeholder")} autoFocus={!category} onChange={setName} />
         <HuePicker value={hue} onChange={setHue} />
         {category && (
           <>
             <div className="goals-row-actions">
               <Button icon="chevron-up" disabled={busy || position <= 0} onClick={() => move(-1)}>
-                Subir
+                {t("categories.up")}
               </Button>
               <Button icon="chevron-down" disabled={busy || position >= all.length - 1} onClick={() => move(1)}>
-                Bajar
+                {t("categories.down")}
               </Button>
               <Button icon="people" onClick={onShare}>
-                {category.space_id ? "Compartida" : "Compartir"}
+                {category.space_id ? t("categories.shared") : t("categories.share")}
               </Button>
             </div>
             <Button variant="destructive" icon="trash" block onClick={() => setDeleting(true)}>
-              Borrar categoría
+              {t("categories.delete")}
             </Button>
           </>
         )}
@@ -232,6 +239,7 @@ function ShareSheet({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const t = useT();
   const [spaces, setSpaces] = useState<Space[] | null>(null);
   const [mode, setMode] = useState<"pick" | "create" | "join">("pick");
   const [name, setName] = useState("");
@@ -248,13 +256,13 @@ function ShareSheet({
     void run(async () => {
       await shareCategory(category.id, space);
       onChanged();
-    }, "No se ha podido compartir");
+    }, t("categories.share_failed"));
 
   return (
-    <Sheet title={`Compartir ${category.name}`} onClose={onClose}>
+    <Sheet title={t("categories.share_title", { name: category.name })} onClose={onClose}>
       {mode === "pick" && (
         <div className="goals-form">
-          <Hint>Lo que compartes lo ven y lo tachan los del espacio: la categoría y todas sus tareas.</Hint>
+          <Hint>{t("categories.share_hint")}</Hint>
           <ul className="goals-options">
             <li>
               <button
@@ -266,7 +274,7 @@ function ShareSheet({
               >
                 <Icon name="done" />
                 <span>
-                  <strong>Solo tú</strong>
+                  <strong>{t("categories.only_you")}</strong>
                 </span>
               </button>
             </li>
@@ -283,7 +291,7 @@ function ShareSheet({
                   <span>
                     <strong>{space.name}</strong>
                     <span className="goals-option-detail">
-                      {space.members === 1 ? "Solo tú, de momento" : `${space.members} personas`}
+                      {space.members === 1 ? t("categories.only_you_yet") : t("categories.people", { count: space.members })}
                     </span>
                   </span>
                 </button>
@@ -294,10 +302,10 @@ function ShareSheet({
                       void run(async () => {
                         const made = await inviteToSpace(space.id);
                         setInvite({ space: space.name, code: made.code });
-                      }, "No se ha podido invitar")
+                      }, t("categories.invite_failed"))
                     }
                   >
-                    Invitar
+                    {t("categories.invite")}
                   </Button>
                 )}
               </li>
@@ -305,21 +313,21 @@ function ShareSheet({
           </ul>
           {invite && (
             <div className="goals-invite">
-              <span>Código para entrar en {invite.space}. Sirve una vez, durante 48 horas:</span>
+              <span>{t("categories.invite_code", { space: invite.space })}</span>
               <strong className="goals-code">{invite.code}</strong>
             </div>
           )}
           <div className="goals-row-actions">
             <Button icon="plus" onClick={() => setMode("create")}>
-              Nuevo espacio
+              {t("categories.new_space")}
             </Button>
-            <Button onClick={() => setMode("join")}>Tengo un código</Button>
+            <Button onClick={() => setMode("join")}>{t("categories.have_code")}</Button>
           </div>
         </div>
       )}
       {mode === "create" && (
         <div className="goals-form">
-          <TextField label="Nombre del espacio" value={name} placeholder="Casa" autoFocus onChange={setName} />
+          <TextField label={t("categories.space_name")} value={name} placeholder={t("categories.space_placeholder")} autoFocus onChange={setName} />
           <Button
             variant="primary"
             block
@@ -329,16 +337,16 @@ function ShareSheet({
                 await createSpace(name.trim());
                 await load();
                 setMode("pick");
-              }, "No se ha podido crear")
+              }, t("categories.create_failed"))
             }
           >
-            Crear
+            {t("categories.create")}
           </Button>
         </div>
       )}
       {mode === "join" && (
         <div className="goals-form">
-          <TextField label="Código" value={code} placeholder="ABCD-EFGH-JKMN" autoFocus onChange={setCode} />
+          <TextField label={t("categories.code")} value={code} placeholder="ABCD-EFGH-JKMN" autoFocus onChange={setCode} />
           <Button
             variant="primary"
             block
@@ -348,10 +356,10 @@ function ShareSheet({
                 await joinSpace(code.trim());
                 await load();
                 setMode("pick");
-              }, "Ese código no vale")
+              }, t("categories.bad_code"))
             }
           >
-            Entrar
+            {t("categories.join")}
           </Button>
         </div>
       )}

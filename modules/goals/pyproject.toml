@@ -1,7 +1,7 @@
 [project]
 name = "goals"
 version = "0.1.0"
-description = "Módulo Goals de OpenArga: tareas por categorías, con su fecha"
+description = "OpenArga Goals module: goals, habits and tasks by category"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "arga-tenancy",

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from datetime import date, datetime, time
+from zoneinfo import ZoneInfo
 
 import pytest
 
-from goals.common import MADRID
 from goals.tasks import status
 
+MADRID = ZoneInfo("Europe/Madrid")
 AT = datetime(2026, 9, 28, 17, 30, tzinfo=MADRID)
 
 

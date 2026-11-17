@@ -9,6 +9,7 @@ import {
   Sheet,
   TextField,
   toRRule,
+  useT,
 } from "@openarga/ui";
 import { useMemo, useState } from "react";
 
@@ -31,6 +32,7 @@ export function TaskSheet({
   onClose: () => void;
   onSaved: (task: Task | null) => void;
 }) {
+  const t = useT();
   const { list } = useCategories();
   const [title, setTitle] = useState(task?.title ?? "");
   const [categoryId, setCategoryId] = useState(task?.category_id ?? category ?? list[0]?.id ?? "");
@@ -42,7 +44,7 @@ export function TaskSheet({
   const [deleting, setDeleting] = useState(false);
   const { busy, error, run } = useBusy();
 
-  const quick = useMemo(() => quickDates(today), [today]);
+  const quick = useMemo(() => quickDates(t, today), [t, today]);
   const chosen = quick.find((one) => one.value === due);
   const dateKey = picking || (!chosen && due) ? OTHER : (chosen?.key ?? "none");
 
@@ -72,19 +74,19 @@ export function TaskSheet({
         rule: due && rule ? toRRule(rule) : null,
       };
       onSaved(task ? await updateTask(task.id, body) : await createTask(body));
-    }, "No se ha podido guardar");
+    }, t("sheet.save_failed"));
 
   if (deleting && task) {
     return (
       <ConfirmDelete
-        title="¿Borrar esta tarea?"
+        title={t("task.delete_question")}
         subject={task.title}
         consequence={
           task.repeats
-            ? "Se borra esta y deja de repetirse. Las ya hechas se quedan en Hechas."
+            ? t("task.delete_repeating")
             : undefined
         }
-        action="Borrar tarea"
+        action={t("task.delete")}
         onCancel={() => setDeleting(false)}
         onConfirm={async () => {
           await removeTask(task.id);
@@ -96,57 +98,57 @@ export function TaskSheet({
 
   return (
     <Sheet
-      title={task ? "Tarea" : "Nueva tarea"}
+      title={task ? t("task.title") : t("task.new")}
       onClose={onClose}
       action={{
-        label: busy ? "Guardando…" : task ? "Guardar" : "Añadir",
+        label: busy ? t("sheet.saving") : task ? t("sheet.save") : t("sheet.add"),
         onClick: save,
         disabled: busy || !title.trim() || !categoryId,
       }}
     >
       <div className="goals-form">
         <TextField
-          label="Qué hay que hacer"
+          label={t("task.what")}
           value={title}
-          placeholder="Pedir cita para la ITV"
+          placeholder={t("task.what_placeholder")}
           autoFocus={!task}
           onChange={setTitle}
           onSubmit={title.trim() && categoryId ? save : undefined}
         />
         <ChoiceChips
-          label="Categoría"
+          label={t("home.category")}
           options={list.map((one) => ({ value: one.id, label: one.name }))}
           value={categoryId || null}
           onChange={setCategoryId}
         />
         <ChoiceChips
-          label="Para cuándo"
+          label={t("task.when")}
           options={[
             ...quick.map((one) => ({ value: one.key, label: one.label })),
-            { value: OTHER, label: "Otro día" },
+            { value: OTHER, label: t("task.other_day") },
           ]}
           value={dateKey}
           onChange={choose}
         />
         {dateKey === OTHER && (
-          <DateField label="Día" value={due ?? ""} onChange={(value) => setDue(value || null)} />
+          <DateField label={t("task.day")} value={due ?? ""} onChange={(value) => setDue(value || null)} />
         )}
         {due && (
           <>
             <TextField
-              label="Hora"
+              label={t("task.time")}
               type="time"
               value={time}
-              hint={time ? undefined : "Sin hora, vence al acabar el día."}
+              hint={time ? undefined : t("task.time_hint")}
               onChange={setTime}
             />
             <RecurrencePicker date={due} value={rule} onChange={setRule} />
           </>
         )}
-        <TextField label="Notas" value={notes} placeholder="Opcional" onChange={setNotes} />
+        <TextField label={t("task.notes")} value={notes} placeholder={t("sheet.optional")} onChange={setNotes} />
         {task && (
           <Button variant="destructive" icon="trash" block onClick={() => setDeleting(true)}>
-            Borrar tarea
+            {t("task.delete")}
           </Button>
         )}
         <Problem error={error} />

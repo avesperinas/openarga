@@ -1,17 +1,21 @@
 from __future__ import annotations
 
-from datetime import time, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_contracts import notify
 from goals import goals
-from goals.common import today
+from goals.common import t
 
 KIND = "goals_at_risk"
 AT = time(18, 0)
 SUNDAY = 6
+
+
+def today() -> date:
+    return datetime.now(notify.zone()).date()
 
 
 def _count(value: float | None) -> str:
@@ -34,19 +38,25 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
     monday = day - timedelta(days=6)
     year, week, _ = monday.isocalendar()
     lines = [
-        f"{one.title}: {_count(one.week_count)} de {_count(one.week_target)}" for one in failing
+        t(
+            "notice.line",
+            title=one.title,
+            count=_count(one.week_count),
+            target=_count(one.week_target),
+        )
+        for one in failing
     ]
     title = (
-        f"«{failing[0].title}» no llega esta semana"
+        t("notice.one_short", title=failing[0].title)
         if len(failing) == 1
-        else f"{len(failing)} metas no llegan esta semana"
+        else t("notice.many_short", count=len(failing))
     )
     return [
         notify.notification(
             KIND,
             f"week:{year}-W{week:02d}",
             title,
-            "/goals/metas",
+            "/goals/goals",
             notify.at(day, AT),
             body=" · ".join(lines),
         )

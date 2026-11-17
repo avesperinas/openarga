@@ -13,6 +13,9 @@ import {
   Stepper,
   Switch,
   TextField,
+  numbers,
+  regional,
+  useT,
 } from "@openarga/ui";
 import { useEffect, useMemo, useState } from "react";
 
@@ -40,10 +43,10 @@ const fold = (text: string) =>
   text
     .normalize("NFKD")
     .replace(/[̀-ͯ]/g, "")
-    .toLocaleLowerCase("es-ES");
+    .toLocaleLowerCase(regional().locale);
 
 const asText = (value: number | null | undefined) =>
-  value === null || value === undefined ? "" : String(value).replace(".", ",");
+  value === null || value === undefined ? "" : numbers({ useGrouping: false, maximumFractionDigits: 6 }).format(value);
 
 export function GoalSheet({
   goal,
@@ -56,6 +59,7 @@ export function GoalSheet({
   onClose: () => void;
   onSaved: (goal: Goal | null) => void;
 }) {
+  const t = useT();
   const { list: categories } = useCategories();
   const [title, setTitle] = useState(goal?.title ?? "");
   const [categoryId, setCategoryId] = useState<string>(goal?.category_id ?? NONE);
@@ -90,7 +94,8 @@ export function GoalSheet({
     return (metrics ?? []).filter((one) => !wanted || fold(`${one.label} ${one.key}`).includes(wanted));
   }, [metrics, search]);
 
-  const unit = source === "metric" ? unitWord(metric?.unit) : "";
+  const unit = source === "metric" ? unitWord(t, metric?.unit) : "";
+  const withUnit = (label: string) => (unit ? `${label} (${unit})` : label);
   const milestone = kind === "dated" && shape === "milestone" && source === "manual";
   const needsTarget =
     (kind === "periodic" && (period === "week" || source === "metric")) || (kind === "dated" && !milestone);
@@ -127,15 +132,15 @@ export function GoalSheet({
         featured,
       };
       onSaved(goal ? await updateGoal(goal.id, body) : await createGoal(body));
-    }, "No se ha podido guardar");
+    }, t("sheet.save_failed"));
 
   if (deleting && goal) {
     return (
       <ConfirmDelete
-        title="¿Borrar esta meta?"
+        title={t("goal_sheet.delete_question")}
         subject={goal.title}
-        consequence="Se borra con todo lo apuntado. Si solo la dejas, mejor abandónala: se queda en el histórico."
-        action="Borrar meta"
+        consequence={t("goal_sheet.delete_consequence")}
+        action={t("goal_sheet.delete")}
         onCancel={() => setDeleting(false)}
         onConfirm={async () => {
           await removeGoal(goal.id);
@@ -147,33 +152,33 @@ export function GoalSheet({
 
   return (
     <Sheet
-      title={goal ? "Meta" : "Nueva meta"}
+      title={goal ? t("goals.goal") : t("goal_sheet.new")}
       onClose={onClose}
-      action={{ label: busy ? "Guardando…" : goal ? "Guardar" : "Añadir", onClick: save, disabled: busy || !ready }}
+      action={{ label: busy ? t("sheet.saving") : goal ? t("sheet.save") : t("sheet.add"), onClick: save, disabled: busy || !ready }}
     >
       <div className="goals-form">
         <TextField
-          label="Qué te propones"
+          label={t("goal_sheet.what")}
           value={title}
-          placeholder={kind === "periodic" ? "Leer 20 minutos" : "Bajar a 80 kg"}
+          placeholder={kind === "periodic" ? t("goal_sheet.what_periodic") : t("goal_sheet.what_dated")}
           autoFocus={!goal}
           onChange={setTitle}
         />
         <ChoiceChips
-          label="Categoría"
+          label={t("home.category")}
           options={[
             ...categories.map((one) => ({ value: one.id, label: one.name })),
-            { value: NONE, label: "Sin categoría" },
+            { value: NONE, label: t("group.no_category") },
           ]}
           value={categoryId}
           onChange={setCategoryId}
         />
         {!goal && (
           <SegmentedControl<GoalKind>
-            label="Clase"
+            label={t("goal_sheet.kind")}
             options={[
-              { value: "periodic", label: "Cada día o semana" },
-              { value: "dated", label: "Con fecha" },
+              { value: "periodic", label: t("goal_sheet.periodic") },
+              { value: "dated", label: t("group.dated") },
             ]}
             value={kind}
             onChange={setKind}
@@ -181,10 +186,10 @@ export function GoalSheet({
         )}
 
         <SegmentedControl<Source>
-          label="Cómo se sabe"
+          label={t("goal_sheet.source")}
           options={[
-            { value: "manual", label: "A mano" },
-            { value: "metric", label: "Una cifra de arga" },
+            { value: "manual", label: t("goal_sheet.manual") },
+            { value: "metric", label: t("goal_sheet.metric") },
           ]}
           value={source}
           onChange={setSource}
@@ -194,27 +199,24 @@ export function GoalSheet({
             <List>
               <ListRow
                 title={metric.label}
-                subtitle={`Último: ${figure(metric.last_value, metric.unit)} · ${shortDate(metric.last_day, today)}`}
-                action={{ icon: "close", label: "Cambiar de cifra", onClick: () => setMetric(null) }}
+                subtitle={t("goal_sheet.last", { value: figure(t, metric.last_value, metric.unit), day: shortDate(metric.last_day, today) })}
+                action={{ icon: "close", label: t("goal_sheet.change_metric"), onClick: () => setMetric(null) }}
               />
             </List>
           ) : metrics === null ? (
-            <Hint>Buscando las cifras que llegan…</Hint>
+            <Hint>{t("goal_sheet.searching")}</Hint>
           ) : metrics.length === 0 ? (
-            <Hint>
-              Todavía no llega ninguna cifra de otras apps. Cuando Vitals, Money o las demás las publiquen,
-              saldrán aquí. Mientras, apúntala a mano.
-            </Hint>
+            <Hint>{t("goal_sheet.no_metrics")}</Hint>
           ) : (
             <>
-              <SearchField label="Buscar una cifra" value={search} onChange={setSearch} placeholder="Pasos, peso, patrimonio…" />
+              <SearchField label={t("goal_sheet.search")} value={search} onChange={setSearch} placeholder={t("goal_sheet.search_placeholder")} />
               <List>
                 {found.slice(0, 30).map((one) => (
                   <ListRow
                     key={one.key}
                     title={one.label}
-                    value={figure(one.last_value, one.unit)}
-                    subtitle={`${one.kind === "amount" ? "Se suma" : "Vale lo último"} · ${shortDate(one.last_day, today)}`}
+                    value={figure(t, one.last_value, one.unit)}
+                    subtitle={`${one.kind === "amount" ? t("goal_sheet.amount") : t("goal_sheet.level")} · ${shortDate(one.last_day, today)}`}
                     onClick={() => pick(one)}
                   />
                 ))}
@@ -225,17 +227,17 @@ export function GoalSheet({
         {kind === "periodic" ? (
           <>
             <SegmentedControl<Period>
-              label="Cómo se cuenta"
+              label={t("goal_sheet.counted")}
               options={[
-                { value: "day", label: "Días por semana" },
-                { value: "week", label: "Total de la semana" },
+                { value: "day", label: t("goal_sheet.days_per_week") },
+                { value: "week", label: t("goal_sheet.week_total") },
               ]}
               value={period}
               onChange={setPeriod}
             />
             {period === "day" && (
               <Stepper
-                label="Días por semana"
+                label={t("goal_sheet.days_per_week")}
                 value={daysPerWeek}
                 step={1}
                 min={1}
@@ -249,21 +251,21 @@ export function GoalSheet({
           <>
             {source === "manual" && (
               <SegmentedControl<DatedShape>
-                label="Qué es"
+                label={t("goal_sheet.what_is")}
                 options={[
-                  { value: "figure", label: "Llegar a una cifra" },
-                  { value: "milestone", label: "Un hito" },
+                  { value: "figure", label: t("goal_sheet.reach_figure") },
+                  { value: "milestone", label: t("goal_sheet.a_milestone") },
                 ]}
                 value={shape}
                 onChange={setShape}
               />
             )}
             <DateField
-              label="Para cuándo"
+              label={t("task.when")}
               value={due}
               onChange={(value) => value && setDue(value)}
               invalid={!goal && due <= today}
-              hint={!goal && due <= today ? "Tiene que ser más adelante que hoy." : undefined}
+              hint={!goal && due <= today ? t("goal_sheet.later_than_today") : undefined}
             />
           </>
         )}
@@ -271,10 +273,10 @@ export function GoalSheet({
         {!milestone && (kind === "dated" || needsTarget || source === "manual") && (
           <>
             <ChoiceChips<Direction>
-              label="Sentido"
+              label={t("goal_sheet.direction")}
               options={[
-                { value: "at_least", label: "Al menos" },
-                { value: "at_most", label: "Como mucho" },
+                { value: "at_least", label: t("goal_sheet.at_least") },
+                { value: "at_most", label: t("goal_sheet.at_most") },
               ]}
               value={direction}
               onChange={setDirection}
@@ -282,17 +284,17 @@ export function GoalSheet({
             <TextField
               label={
                 kind === "dated"
-                  ? `Objetivo${unit ? ` (${unit})` : ""}`
+                  ? withUnit(t("goal.target"))
                   : period === "week"
-                    ? `Total de la semana${unit ? ` (${unit})` : ""}`
-                    : `Condición de cada día${unit ? ` (${unit})` : ""}`
+                    ? withUnit(t("goal_sheet.week_total"))
+                    : withUnit(t("goal_sheet.daily_condition"))
               }
               value={target}
               inputMode="decimal"
-              placeholder={kind === "periodic" && period === "day" && source === "manual" ? "Opcional" : ""}
+              placeholder={kind === "periodic" && period === "day" && source === "manual" ? t("sheet.optional") : ""}
               hint={
                 kind === "periodic" && period === "day" && source === "manual"
-                  ? "Sin condición, cada día se marca hecho o no."
+                  ? t("goal_sheet.no_condition")
                   : undefined
               }
               onChange={setTarget}
@@ -302,28 +304,28 @@ export function GoalSheet({
 
         {kind === "dated" && !milestone && (
           <TextField
-            label={`Punto de partida${unit ? ` (${unit})` : ""}`}
+            label={withUnit(t("goal_sheet.start"))}
             value={start}
             inputMode="decimal"
             placeholder={
-              metric?.kind === "amount" ? "0" : goal && source === "metric" ? "Lo que valía al empezar" : "El valor de hoy"
+              metric?.kind === "amount" ? "0" : goal && source === "metric" ? t("goal_sheet.start_was") : t("goal_sheet.start_today")
             }
             hint={
               metric?.kind === "amount"
-                ? "Cuenta lo sumado desde hoy: los libros terminados, los pasos."
+                ? t("goal_sheet.amount_hint")
                 : source === "manual"
-                  ? "Después apuntas dónde vas cuando quieras."
+                  ? t("goal_sheet.manual_hint")
                   : undefined
             }
             onChange={setStart}
           />
         )}
 
-        <TextField label="Nota" value={note} placeholder="Opcional" onChange={setNote} />
-        <Switch label="Destacada en el escritorio" checked={featured} onChange={setFeatured} />
+        <TextField label={t("goal.note")} value={note} placeholder={t("sheet.optional")} onChange={setNote} />
+        <Switch label={t("goal_sheet.featured")} checked={featured} onChange={setFeatured} />
         {goal && (
           <Button variant="destructive" icon="trash" block onClick={() => setDeleting(true)}>
-            Borrar meta
+            {t("goal_sheet.delete")}
           </Button>
         )}
         <Problem error={error} />
