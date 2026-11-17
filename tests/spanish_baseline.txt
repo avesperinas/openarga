@@ -106,7 +106,6 @@ packages/ui/tests/app-settings.test.tsx
 packages/ui/tests/app-shell.test.tsx
 packages/ui/tests/area-map.test.tsx
 packages/ui/tests/body-map.test.tsx
-packages/ui/tests/body-weight.test.tsx
 packages/ui/tests/calendar-layout.test.ts
 packages/ui/tests/career.test.tsx
 packages/ui/tests/confirm-change.test.tsx
@@ -115,7 +114,6 @@ packages/ui/tests/controls.test.tsx
 packages/ui/tests/crash.test.tsx
 packages/ui/tests/date-field.test.tsx
 packages/ui/tests/figures.test.tsx
-packages/ui/tests/format-dates.test.ts
 packages/ui/tests/globe.test.ts
 packages/ui/tests/goals.test.tsx
 packages/ui/tests/health.test.tsx
@@ -134,7 +132,6 @@ packages/ui/tests/panels.test.tsx
 packages/ui/tests/reader.test.tsx
 packages/ui/tests/reading.test.tsx
 packages/ui/tests/recipe-grid.test.tsx
-packages/ui/tests/recurrence.test.tsx
 packages/ui/tests/rediseno.test.tsx
 packages/ui/tests/rhythm.test.tsx
 packages/ui/tests/sankey.test.tsx

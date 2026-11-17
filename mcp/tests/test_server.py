@@ -60,9 +60,7 @@ def _names(listed: dict) -> set[str]:
 def test_the_server_code_does_not_know_any_module_by_name() -> None:
     for path in SOURCE.glob("*.py"):
         source = path.read_text()
-        assert "training" not in source and "shopping" not in source, (
-            f"{path.name} names a module"
-        )
+        assert "training" not in source and "shopping" not in source, f"{path.name} names a module"
 
 
 async def test_it_lists_the_tools_the_token_can_use(settings, stack) -> None:
