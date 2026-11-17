@@ -8,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from training import links, plan
+from training.text import shown, shown_names
 from training.training import Conflict, NotFound, local_day
 
 Name = Annotated[str, Field(min_length=1, max_length=80, pattern=r"\S")]
@@ -72,8 +73,10 @@ async def catalogue(connection: AsyncConnection) -> Catalogue:
         )
         for row in await connection.execute(
             text(
-                "select id, name, pattern, load_type from training.training_exercise order by name"
-            )
+                f"select id, {shown('exercise', 'x')} as name, pattern, load_type "
+                "from training.training_exercise x order by name"
+            ),
+            {"names": shown_names()},
         )
     }
     for row in await connection.execute(
@@ -82,9 +85,10 @@ async def catalogue(connection: AsyncConnection) -> Catalogue:
         exercises[str(row.exercise_id)].muscles[row.muscle_id] = float(row.contribution)
     for row in await connection.execute(
         text(
-            "select id, exercise_id, name, implement, gym_id, min_increment, index_weight "
-            "from training.training_variant where active order by name"
-        )
+            f"select id, exercise_id, {shown('variant', 'x')} as name, implement, gym_id, "
+            "min_increment, index_weight from training.training_variant x where active order by name"
+        ),
+        {"names": shown_names()},
     ):
         exercises[str(row.exercise_id)].variants.append(
             Variant(

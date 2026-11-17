@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_module import preferences
 from training import agenda, plan
+from training.text import shown, shown_names
 
 
 def zone() -> ZoneInfo:
@@ -852,14 +853,15 @@ async def read_session(connection: AsyncConnection, session_id: str) -> SessionV
     rows = (
         await connection.execute(
             text(
-                "select e.id, e.plan_slot_id, e.variant_id, v.name as variant, e.position, "
+                f"select e.id, e.plan_slot_id, e.variant_id, {shown('variant', 'v')} as variant, "
+                "e.position, "
                 "e.notes, l.number, l.reps, l.weight, l.added_load, l.completed, l.confirmed_at "
                 "from training.training_session_exercise e "
                 "join training.training_variant v on v.id = e.variant_id "
                 "left join training.training_set_log l on l.session_exercise_id = e.id "
                 "where e.session_id = :id order by e.position, l.number"
             ),
-            {"id": session_id},
+            {"id": session_id, "names": shown_names()},
         )
     ).all()
     exercises: dict[str, ExerciseView] = {}

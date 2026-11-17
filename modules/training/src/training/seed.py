@@ -12,6 +12,11 @@ from training.db import engine
 
 GYM = "Sample gym"
 
+
+def key_of(name: str) -> str:
+    return name.lower().replace(" ", "_").replace("-", "_")
+
+
 EXERCISES = [
     (
         "Bench press",
@@ -91,10 +96,17 @@ async def seed(connection: AsyncConnection) -> None:
     for name, pattern, load_type, factor, muscles in EXERCISES:
         exercises[name] = await connection.scalar(
             text(
-                "insert into training.training_exercise (name, pattern, load_type, bodyweight_factor) "
-                "values (:name, :pattern, :load_type, :factor) returning id"
+                "insert into training.training_exercise "
+                "(name, key, pattern, load_type, bodyweight_factor) "
+                "values (:name, :key, :pattern, :load_type, :factor) returning id"
             ),
-            {"name": name, "pattern": pattern, "load_type": load_type, "factor": factor},
+            {
+                "name": name,
+                "key": key_of(name),
+                "pattern": pattern,
+                "load_type": load_type,
+                "factor": factor,
+            },
         )
         for muscle, contribution in muscles.items():
             await connection.execute(
@@ -110,12 +122,13 @@ async def seed(connection: AsyncConnection) -> None:
         variants[name] = await connection.scalar(
             text(
                 "insert into training.training_variant "
-                "(exercise_id, name, implement, gym_id, min_increment, index_weight) "
-                "values (:e, :name, :implement, :gym, :increment, :weight) returning id"
+                "(exercise_id, name, key, implement, gym_id, min_increment, index_weight) "
+                "values (:e, :name, :key, :implement, :gym, :increment, :weight) returning id"
             ),
             {
                 "e": exercises[exercise],
                 "name": name,
+                "key": key_of(name),
                 "implement": implement,
                 "gym": gym,
                 "increment": increment,
