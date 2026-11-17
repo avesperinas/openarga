@@ -65,19 +65,19 @@ describe("ConfirmDelete", () => {
     const onCancel = vi.fn();
     mount(<ConfirmDelete title="¿Borrar?" action="Borrar" onCancel={onCancel} onConfirm={onConfirm} />);
 
-    await press("Cancelar");
-    await press("Cerrar");
+    await press("Cancel");
+    await press("Close");
 
     expect(onCancel).toHaveBeenCalledTimes(2);
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
   it("si el borrado falla, lo dice en la hoja y deja reintentar", async () => {
-    const onConfirm = vi.fn().mockRejectedValueOnce(new Error("Sin conexión")).mockResolvedValueOnce(undefined);
+    const onConfirm = vi.fn().mockRejectedValueOnce(new Error("Offline")).mockResolvedValueOnce(undefined);
     mount(<ConfirmDelete title="¿Borrar?" action="Borrar" onCancel={() => undefined} onConfirm={onConfirm} />);
 
     await press("Borrar");
-    expect(document.querySelector('[role="alert"]')?.textContent).toBe("Sin conexión");
+    expect(document.querySelector('[role="alert"]')?.textContent).toBe("Offline");
 
     await press("Borrar");
     expect(onConfirm).toHaveBeenCalledTimes(2);
@@ -90,7 +90,7 @@ describe("CredentialField, al quitarla", () => {
     const onRemove = vi.fn();
     mount(
       <CredentialField
-        label="Token de Claude Code"
+        label="Token for Claude Code"
         help="Lo generas con claude setup-token."
         configured
         hint="…a3f9"
@@ -101,13 +101,13 @@ describe("CredentialField, al quitarla", () => {
       />,
     );
 
-    await press("Quitar");
+    await press("Remove");
     const dialog = document.querySelector('[role="dialog"]');
     expect(onRemove).not.toHaveBeenCalled();
-    expect(dialog?.getAttribute("aria-label")).toBe("¿Quitar token de Claude Code?");
-    expect(dialog?.textContent).toContain("Termina en a3f9");
+    expect(dialog?.getAttribute("aria-label")).toBe("Remove token for Claude Code?");
+    expect(dialog?.textContent).toContain("Ends in a3f9");
 
-    const confirm = Array.from(dialog?.querySelectorAll("button") ?? []).find((one) => one.textContent === "Quitar");
+    const confirm = Array.from(dialog?.querySelectorAll("button") ?? []).find((one) => one.textContent === "Remove");
     await act(async () => confirm?.click());
 
     expect(onRemove).toHaveBeenCalledTimes(1);

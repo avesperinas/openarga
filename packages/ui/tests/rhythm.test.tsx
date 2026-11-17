@@ -78,7 +78,7 @@ describe("cada cuánto", () => {
 
 describe("el día en 24 horas", () => {
   it("pone cada marca y cada tramo a su hora, y ahora en rojo", () => {
-    const html = render(<DayTimeline label="Hoy" marks={[6]} spans={[{ from: 6, to: 11 }]} now={12} name="J" state="today" />);
+    const html = render(<DayTimeline label="Today" marks={[6]} spans={[{ from: 6, to: 11 }]} now={12} name="J" state="today" />);
     expect(html).toContain('class="day-timeline-mark" style="left:25%"');
     expect(html).toContain("left:25%;width:calc(45.83333333333333% - 25%)");
     expect(html).toContain('class="day-timeline-now" style="left:50%"');
@@ -87,12 +87,12 @@ describe("el día en 24 horas", () => {
   });
 
   it("discreta, lo marca para pintarse en gris; sin pedirlo, no", () => {
-    expect(render(<DayTimeline label="Hoy" spans={[{ from: 6, to: 11 }]} quiet />)).toContain('data-quiet="true"');
-    expect(render(<DayTimeline label="Hoy" spans={[{ from: 6, to: 11 }]} />)).not.toContain("data-quiet");
+    expect(render(<DayTimeline label="Today" spans={[{ from: 6, to: 11 }]} quiet />)).toContain('data-quiet="true"');
+    expect(render(<DayTimeline label="Today" spans={[{ from: 6, to: 11 }]} />)).not.toContain("data-quiet");
   });
 
   it("un tramo que pasa de medianoche se corta en las 24", () => {
-    expect(render(<DayTimeline label="Hoy" spans={[{ from: 22, to: 27 }]} />)).toContain("calc(100% - 91.66666666666666%)");
+    expect(render(<DayTimeline label="Today" spans={[{ from: 22, to: 27 }]} />)).toContain("calc(100% - 91.66666666666666%)");
   });
 
   it("con algo que hacer al tocarlo es un botón, y las horas van al pie", () => {
@@ -115,8 +115,8 @@ describe("barra de abajo y portadas", () => {
   });
 
   it("una portada sin imagen es su título; el muro las abre por su id", () => {
-    expect(render(<Cover title="Un libro" subtitle="Alguien" />)).toContain('<span class="cover-title">Un libro</span>');
-    expect(render(<Cover title="Un libro" src="/x.jpg" />)).toContain('alt="Portada de Un libro"');
+    expect(render(<Cover title="A book" subtitle="Someone" />)).toContain('<span class="cover-title">A book</span>');
+    expect(render(<Cover title="A book" src="/x.jpg" />)).toContain('alt="Cover of A book"');
     const wall = render(<CoverWall items={[{ id: "b1", title: "Uno", note: "★★★", muted: true }]} onOpen={noop} />);
     expect(wall).toContain('aria-label="Uno"');
     expect(wall).toContain('data-muted="true"');
@@ -132,8 +132,8 @@ describe("colocar y destacar", () => {
   it("la tarjeta de lo que tienes entre manos se abre al tocarla y lleva su acción aparte", () => {
     const html = render(
       <MediaCard
-        media={<Cover title="Un libro" />}
-        title="Un libro"
+        media={<Cover title="A book" />}
+        title="A book"
         lines={["Alguien", "Desde el 1 oct"]}
         onOpen={noop}
         action={{ label: "Terminado hoy", icon: "done", onClick: noop }}
@@ -145,9 +145,9 @@ describe("colocar y destacar", () => {
   });
 
   it("la imagen grande va centrada con lo suyo debajo", () => {
-    const html = render(<MediaHero media={<Cover title="Un libro" size="hero" />}><p>Alguien</p></MediaHero>);
+    const html = render(<MediaHero media={<Cover title="A book" size="hero" />}><p>Someone</p></MediaHero>);
     expect(html).toContain('<section class="media-hero">');
-    expect(html).toContain('<div class="media-hero-text"><p>Alguien</p></div>');
+    expect(html).toContain('<div class="media-hero-text"><p>Someone</p></div>');
   });
 });
 

@@ -31,7 +31,7 @@ describe("la tendencia", () => {
 
   it("dibuja la media, lo medido, la banda y marca lo que queda fuera de ella", () => {
     const html = renderToStaticMarkup(
-      <TrendChart label="Peso" points={weights} band={{ low: 72, high: 76 }} valueName="Pesada" averageName="Media 7 días" />,
+      <TrendChart label="Weight" points={weights} band={{ low: 72, high: 76 }} valueName="Pesada" averageName="Media 7 días" />,
     );
 
     expect(html).toContain("trend-chart-band");
@@ -55,7 +55,7 @@ describe("la tendencia", () => {
   });
 
   it("sin puntos lo dice", () => {
-    expect(renderToStaticMarkup(<TrendChart label="Peso" points={[]} />)).toContain("Sin datos");
+    expect(renderToStaticMarkup(<TrendChart label="Weight" points={[]} />)).toContain("No data in this range");
   });
 
   it("marca el día del cambio con su línea y su nombre, solo si cae dentro", () => {

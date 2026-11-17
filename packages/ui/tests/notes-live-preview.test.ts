@@ -23,21 +23,21 @@ function shown(doc: string, focusedLine: number | null = null): string[] {
   return out.split("\n");
 }
 
-describe("la vista viva", () => {
-  it("esconde las marcas de un encabezado, la negrita y un enlace", () => {
-    expect(shown("# Título\n\nEs **clave** y [[DE 1.1 Kasus|Kasus]] y [[Otra]] y ==esto==.")).toEqual([
-      "Título",
+describe("the live view", () => {
+  it("hides the marks of a heading, bold and a link", () => {
+    expect(shown("# Title\n\nIt is **key** and [[DE 1.1 Kasus|Kasus]] and [[Other]] and ==this==.")).toEqual([
+      "Title",
       "",
-      "Es clave y Kasus y Otra y esto.",
+      "It is key and Kasus and Other and this.",
     ]);
   });
 
-  it("en la línea del cursor, todo es texto", () => {
-    expect(shown("# Título\n\nEs **clave**.", 3)).toEqual(["Título", "", "Es **clave**."]);
+  it("on the cursor line, everything is text", () => {
+    expect(shown("# Title\n\nIt is **key**.", 3)).toEqual(["Title", "", "It is **key**."]);
   });
 
-  it("la cabecera de un callout no es un enlace", () => {
-    expect(shown("> [!tip] Truco\n> Texto")).toEqual(["> [!tip] Truco", "> Texto"]);
+  it("a callout header is not a link", () => {
+    expect(shown("> [!tip] Trick\n> Text")).toEqual(["> [!tip] Trick", "> Text"]);
   });
 
   it("no toca lo que está en código", () => {

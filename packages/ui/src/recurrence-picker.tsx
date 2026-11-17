@@ -59,7 +59,7 @@ export function RecurrencePicker({
   date,
   value,
   onChange,
-  label = "Repetir",
+  label = say("recurrence.picker.label"),
 }: RecurrencePickerProps) {
   const quick = React.useMemo(() => quickRules(date), [date]);
   const current = value ? toRRule(value) : NEVER;

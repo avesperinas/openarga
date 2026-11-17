@@ -4,7 +4,7 @@ import * as React from "react";
 
 import { Widget, WidgetDetail, WidgetRow, WidgetRows, WidgetValue } from "../src/index";
 
-const base = { title: "Eventos", hue: 1, size: "2x2", shape: "number" } as const;
+const base = { title: "Events", hue: 1, size: "2x2", shape: "number" } as const;
 
 const render = (element: React.ReactElement): string => renderToStaticMarkup(element);
 
@@ -12,7 +12,7 @@ describe("la cabecera es del sistema", () => {
   it("se pinta entera aunque no haya datos", () => {
     const html = render(<Widget {...base} state="loading" />);
 
-    expect(html).toContain("Eventos");
+    expect(html).toContain("Events");
     expect(html).toContain('class="widget-dot"');
   });
 
@@ -32,7 +32,7 @@ describe("los cuatro estados", () => {
   });
 
   it("empty dice una frase y no pinta un hueco", () => {
-    expect(render(<Widget {...base} state="empty" />)).toContain("Todavía no hay nada");
+    expect(render(<Widget {...base} state="empty" />)).toContain("Nothing to show yet");
   });
 
   it("error CONSERVA el último valor bueno, fechado", () => {
@@ -43,15 +43,15 @@ describe("los cuatro estados", () => {
     );
 
     expect(html).toContain("47");
-    expect(html).toContain("hace 2 h");
-    expect(html).toContain("No se pudo cargar");
+    expect(html).toContain("2 h ago");
+    expect(html).toContain("Could not load");
   });
 
   it("disconnected ofrece conectar, no reintentar", () => {
     const html = render(<Widget {...base} state="disconnected" onConnect={() => {}} />);
 
     expect(html).toContain("Conectar");
-    expect(html).not.toContain("Reintentar");
+    expect(html).not.toContain("Try again");
   });
 
   it("disconnected dice qué fuente no contesta cuando el módulo lo sabe", () => {
@@ -150,7 +150,7 @@ describe("lo que dice el módulo, se ve", () => {
     const html = render(<Widget {...base} state="empty" note="nada conectado todavía" />);
 
     expect(html).toContain("nada conectado todavía");
-    expect(html).not.toContain("Todavía no hay nada");
+    expect(html).not.toContain("Nothing to show yet");
   });
 });
 
@@ -190,6 +190,6 @@ describe("el 1x1", () => {
     const html = render(<Widget {...base} size="1x1" state="loading" />);
 
     expect(html).toContain('data-size="1x1"');
-    expect(html).toContain("Eventos");
+    expect(html).toContain("Events");
   });
 });

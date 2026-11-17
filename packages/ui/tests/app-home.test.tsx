@@ -26,7 +26,7 @@ describe("la vuelta a arga sin cabecera", () => {
     mount("travel-map-home glass");
     const link = document.querySelector("a");
     expect(link?.getAttribute("href")).toBe("/");
-    expect(link?.getAttribute("aria-label")).toBe("Ir al escritorio de arga");
+    expect(link?.getAttribute("aria-label")).toBe("Go to the OpenArga desktop");
     expect(link?.className).toBe("app-home travel-map-home glass");
   });
 

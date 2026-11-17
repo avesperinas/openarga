@@ -50,7 +50,7 @@ describe("leer y escribir un día", () => {
 describe("el campo", () => {
   it("escribe en ISO lo tecleado a la española", () => {
     const onChange = vi.fn();
-    mount(<DateField label="Desde" value="" onChange={onChange} />);
+    mount(<DateField label="From" value="" onChange={onChange} />);
     const input = document.querySelector("input")!;
     expect(input.placeholder).toBe("dd/mm/aaaa");
     typeInto(input, "05/10/2026");
@@ -59,26 +59,26 @@ describe("el campo", () => {
 
   it("abre el mes con el lunes primero y elige el día pulsado", async () => {
     const onChange = vi.fn();
-    mount(<DateField label="Desde" value="2026-10-02" onChange={onChange} />);
+    mount(<DateField label="From" value="2026-10-02" onChange={onChange} />);
     expect(document.querySelector("input")!.value).toBe("02/10/2026");
-    const open = document.querySelector<HTMLButtonElement>('button[aria-label="Elegir en el calendario"]')!;
+    const open = document.querySelector<HTMLButtonElement>('button[aria-label="Pick on the calendar"]')!;
     await act(async () => open.click());
 
     const heads = Array.from(document.querySelectorAll(".month-weekday")).map((cell) => cell.textContent);
-    expect(heads).toEqual(["L", "M", "X", "J", "V", "S", "D"]);
+    expect(heads).toEqual(["M", "T", "W", "T", "F", "S", "S"]);
     const firstRow = document.querySelectorAll(".month-grid .month-row")[1]!;
     expect(firstRow.querySelectorAll("[data-empty]")).toHaveLength(3);
 
-    const fifth = document.querySelector<HTMLButtonElement>('button[aria-label^="lunes, 5 de octubre"]')!;
+    const fifth = document.querySelector<HTMLButtonElement>('button[aria-label^="Monday 5 October"]')!;
     await act(async () => fifth.click());
     expect(onChange).toHaveBeenLastCalledWith("2026-10-05");
   });
 
   it("no deja elegir días pasado el máximo", async () => {
     mount(<DateField label="Hecho el" value="2026-10-02" max="2026-10-02" onChange={() => {}} />);
-    const open = document.querySelector<HTMLButtonElement>('button[aria-label="Elegir en el calendario"]')!;
+    const open = document.querySelector<HTMLButtonElement>('button[aria-label="Pick on the calendar"]')!;
     await act(async () => open.click());
-    const third = document.querySelector<HTMLButtonElement>('button[aria-label^="sábado, 3 de octubre"]')!;
+    const third = document.querySelector<HTMLButtonElement>('button[aria-label^="Saturday 3 October"]')!;
     expect(third.disabled).toBe(true);
   });
 });

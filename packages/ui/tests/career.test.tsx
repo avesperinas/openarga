@@ -28,7 +28,7 @@ describe("la cinta de contratos", () => {
     const places = spanPlaces(
       [
         { key: "a", name: "Antigua", hue: 1, from: "2024-06", to: "2025-03" },
-        { key: "b", name: "Hoy", hue: 2, from: "2025-07", to: null },
+        { key: "b", name: "Today", hue: 2, from: "2025-07", to: null },
         { key: "c", name: "Fuera", hue: 3, from: "2023-01", to: "2023-05" },
       ],
       months,
@@ -42,10 +42,10 @@ describe("la cinta de contratos", () => {
 
   it("un tramo estrecho no enseña su nombre, pero lo dice", () => {
     const html = render(
-      <SpanRibbon months={months} label="Contratos" spans={[{ key: "p", name: "Paro", hue: 8, from: "2025-05", to: "2025-05", muted: true }]} />,
+      <SpanRibbon months={months} label="Contracts" spans={[{ key: "p", name: "Unemployed", hue: 8, from: "2025-05", to: "2025-05", muted: true }]} />,
     );
     expect(html).toContain("data-hidden");
-    expect(html).toContain("Paro, de 2025-05 a 2025-05");
+    expect(html).toContain("Unemployed, from 2025-05 to 2025-05");
     expect(html).toContain("data-muted");
   });
 });
@@ -53,7 +53,7 @@ describe("la cinta de contratos", () => {
 describe("las barras de cada mes", () => {
   const groups = [
     { key: "old", name: "Antigua", hue: 1 as const },
-    { key: "new", name: "Hoy", hue: 2 as const },
+    { key: "new", name: "Today", hue: 2 as const },
   ];
   it("parte cada mes por quien pagó, con trama lo reconstruido, claro lo previsto y una línea en hoy", () => {
     const html = render(
@@ -79,7 +79,7 @@ describe("las barras de cada mes", () => {
   });
 
   it("sin meses, lo dice", () => {
-    expect(render(<PeriodBars label="Nada" groups={groups} periods={[]} />)).toContain("Sin datos todavía");
+    expect(render(<PeriodBars label="Nada" groups={groups} periods={[]} />)).toContain("No data yet");
   });
 });
 

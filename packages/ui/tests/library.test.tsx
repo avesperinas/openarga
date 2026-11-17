@@ -57,11 +57,11 @@ describe("el vocabulario de tamaños", () => {
 
 describe("la cifra", () => {
   it("el servidor pinta el número de verdad, no un cero que luego sube", () => {
-    expect(render(<WidgetKpi value={1240} />)).toContain("1.240");
+    expect(render(<WidgetKpi value={1240} />)).toContain("1,240");
   });
 
   it("abrevia solo cuando el ancho lo pide", () => {
-    expect(render(<WidgetKpi value={9870} />)).toContain("9.870");
+    expect(render(<WidgetKpi value={9870} />)).toContain("9,870");
     expect(render(<WidgetKpi value={124000} />)).toContain("124");
   });
 
@@ -114,15 +114,15 @@ describe("la comparación contra el periodo anterior", () => {
   it("de cero a cinco no es un 500% más", () => {
     const html = render(<WidgetKpiDelta value={5} previous={0} />);
 
-    expect(html).toContain("sin dato anterior");
+    expect(html).toContain("no previous value");
     expect(html).not.toContain("%");
   });
 });
 
 describe("las gráficas", () => {
   it("una serie vacía lo dice en vez de pintar un lienzo en blanco", () => {
-    expect(render(<WidgetChart series={[]} />)).toContain("Sin serie");
-    expect(render(<WidgetBars series={[]} />)).toContain("Sin serie");
+    expect(render(<WidgetChart series={[]} />)).toContain("No series");
+    expect(render(<WidgetBars series={[]} />)).toContain("No series");
   });
 
   it("un solo punto no rompe la proyección", () => {
@@ -170,7 +170,7 @@ describe("el avance", () => {
 
     expect(html).toContain("--filled:1");
     expect(html).toContain("data-done");
-    expect(html).toContain("Objetivo cumplido");
+    expect(html).toContain("Goal met");
   });
 
   it("sin objetivo no se inventa una fracción", () => {
@@ -198,8 +198,8 @@ describe("el avance", () => {
 
 describe("la racha", () => {
   it("concuerda el singular y el plural", () => {
-    expect(render(<WidgetStreak current={1} />)).toContain("día");
-    expect(render(<WidgetStreak current={4} />)).toContain("días");
+    expect(render(<WidgetStreak current={1} />)).toContain("day");
+    expect(render(<WidgetStreak current={4} />)).toContain("days");
   });
 
   it("los puntos cuentan tanto como el número", () => {
@@ -218,7 +218,7 @@ describe("el calendario", () => {
     const html = render(<WidgetCalendar month={new Date(2026, 8, 1)} />);
     const week = [...html.matchAll(/calendar-weekday"[^>]*>(\w)</g)].map((match) => match[1]);
 
-    expect(week).toEqual(["L", "M", "X", "J", "V", "S", "D"]);
+    expect(week).toEqual(["M", "T", "W", "T", "F", "S", "S"]);
   });
 
   it("el día 1 cae en su columna", () => {
@@ -239,7 +239,7 @@ describe("el calendario", () => {
 
 describe("lo siguiente y los accesos", () => {
   it("sin nada a la vista lo dice", () => {
-    expect(render(<WidgetUpNext events={[]} />)).toContain("Nada a la vista");
+    expect(render(<WidgetUpNext events={[]} />)).toContain("Nothing ahead");
   });
 
   it("una fecha ilegible no rompe la fila", () => {
@@ -313,36 +313,36 @@ describe("dónde se apoya una cifra", () => {
 
 describe("el objetivo cumplido se ve", () => {
   it("el anillo pasa a hecho: tick en el centro y la frase, sin la cifra", () => {
-    const html = render(<WidgetRing value={3} target={3} label="de 3 esta semana" />);
+    const html = render(<WidgetRing value={3} target={3} label="of 3 this week" />);
 
     expect(html).toContain("data-done");
     expect(html).toContain("ring-check");
-    expect(html).toContain("Cumplido · 3 de 3");
+    expect(html).toContain("Met · 3 of 3");
     expect(html).not.toContain("ring-figure");
-    expect(html).toContain("objetivo cumplido");
+    expect(html).toContain("goal met");
   });
 
   it("a medias sigue siendo la cifra y la etiqueta del módulo", () => {
-    const html = render(<WidgetRing value={2} target={3} label="de 3 esta semana" />);
+    const html = render(<WidgetRing value={2} target={3} label="of 3 this week" />);
 
     expect(html).not.toContain("data-done");
     expect(html).toContain("ring-figure");
-    expect(html).toContain("de 3 esta semana");
+    expect(html).toContain("of 3 this week");
   });
 
   it("donde hay sitio lo dice entero, y en un 1x1 solo queda el anillo", () => {
     const grande = render(
       <Widget title="Entreno" hue={4} size="4x2" shape="number" state="ready">
-        <WidgetRing value={5} target={4} label="de 4 esta semana" />
+        <WidgetRing value={5} target={4} label="of 4 this week" />
       </Widget>,
     );
     const pequeno = render(
       <Widget title="Entreno" hue={4} size="1x1" shape="number" state="ready">
-        <WidgetRing value={1} target={4} label="de 4 esta semana" />
+        <WidgetRing value={1} target={4} label="of 4 this week" />
       </Widget>,
     );
 
-    expect(grande).toContain("Objetivo cumplido · 5 de 4");
+    expect(grande).toContain("Goal met · 5 of 4");
     expect(pequeno).not.toContain("ring-label");
   });
 

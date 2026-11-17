@@ -7,7 +7,7 @@ import { InletSettings, SourceQuestions, inletValues, proposedSourceName, source
 const ask = (fields: Partial<SourceAsk>): SourceAsk => ({
   key: "x",
   kind: "pick",
-  label: "Algo",
+  label: "Something",
   source: null,
   depends_on: null,
   optional: false,
@@ -21,32 +21,32 @@ const ask = (fields: Partial<SourceAsk>): SourceAsk => ({
   ...fields,
 });
 
-const team = ask({ key: "team", kind: "lookup", label: "Equipo", carries: [["league", "league"], ["name", "team_name"]] });
+const team = ask({ key: "team", kind: "lookup", label: "Team", carries: [["league", "league"], ["name", "team_name"]] });
 const sessions = ask({
   key: "sessions",
   kind: "checks",
-  label: "Sesiones",
+  label: "Sessions",
   choices: [
     { value: "race", label: "Carrera" },
     { value: "practice", label: "Libres" },
   ],
   defaults: ["race"],
 });
-const url = ask({ key: "url", kind: "url", label: "Dirección" });
+const url = ask({ key: "url", kind: "url", label: "Address" });
 
 describe("las preguntas de una fuente", () => {
   it("manda cada respuesta bajo su clave, con lo que viaja con lo elegido", () => {
     const params = sourceParams([team, sessions, url], {
-      team: { choice: { code: "7", name: "Equipo de prueba", league: "liga.1" } },
+      team: { choice: { code: "7", name: "Test team", league: "liga.1" } },
       url: { text: "  https://example.org/a.ics " },
     });
-    expect(params).toEqual({ team: "7", league: "liga.1", team_name: "Equipo de prueba", sessions: ["race"], url: "https://example.org/a.ics" });
+    expect(params).toEqual({ team: "7", league: "liga.1", team_name: "Test team", sessions: ["race"], url: "https://example.org/a.ics" });
   });
 
   it("dice qué falta, con palabras", () => {
-    expect(sourceMissing([team], {})).toBe("Elige: equipo.");
-    expect(sourceMissing([sessions], { sessions: { values: [] } })).toBe("Elige al menos una: sesiones.");
-    expect(sourceMissing([url], { url: { text: " " } })).toBe("Falta: dirección.");
+    expect(sourceMissing([team], {})).toBe("Choose: team.");
+    expect(sourceMissing([sessions], { sessions: { values: [] } })).toBe("Choose at least one: sessions.");
+    expect(sourceMissing([url], { url: { text: " " } })).toBe("Missing: address.");
     expect(sourceMissing([ask({ optional: true })], {})).toBeNull();
   });
 
@@ -60,7 +60,7 @@ describe("las preguntas de una fuente", () => {
   it("pinta cada pregunta por su clase, y dice la que no sabe pintar", () => {
     const html = renderToStaticMarkup(
       <SourceQuestions
-        asks={[sessions, url, ask({ key: "odd", kind: "slider", label: "Raro" })]}
+        asks={[sessions, url, ask({ key: "odd", kind: "slider", label: "Odd" })]}
         answers={{}}
         onChange={() => undefined}
         search={async () => ({ results: [], failed: null })}
@@ -68,16 +68,16 @@ describe("las preguntas de una fuente", () => {
       />,
     );
     expect(html).toContain("Carrera");
-    expect(html).toContain("Dirección");
-    expect(html).toContain("«Raro» se elige en una versión más nueva.");
+    expect(html).toContain("Address");
+    expect(html).toContain("&#x27;Odd&#x27; is chosen in a newer version.");
   });
 });
 
 describe("los ajustes de una toma", () => {
   const settings = [
     { key: "name", kind: "text", label: "Nombre" },
-    { key: "tone", kind: "tone", label: "Color" },
-    { key: "mode", kind: "choice", label: "Cómo", choices: [{ value: "events", label: "Eventos" }], default: "events" },
+    { key: "tone", kind: "tone", label: "Colour" },
+    { key: "mode", kind: "choice", label: "How", choices: [{ value: "events", label: "Events" }], default: "events" },
   ];
 
   it("propone el nombre de la conexión y el tono de la fuente", () => {
@@ -90,8 +90,8 @@ describe("los ajustes de una toma", () => {
     expect(html).toContain("En Planner");
     expect(html).toContain('value="Osasuna"');
     expect(html.match(/class="source-tone"/g)?.length).toBe(10);
-    expect(html).toContain('aria-checked="true" aria-label="Verde"');
-    expect(html).toContain("Eventos");
+    expect(html).toContain('aria-checked="true" aria-label="Green"');
+    expect(html).toContain("Events");
   });
 
   it("no pinta nada si la toma no pregunta nada", () => {

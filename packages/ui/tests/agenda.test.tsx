@@ -28,7 +28,7 @@ const ENTRIES = [
 
 const card = (size: WidgetSize, body: React.ReactNode) =>
   renderToStaticMarkup(
-    <Widget title="Hoy" hue={6} size={size} shape="list" state="ready">
+    <Widget title="Today" hue={6} size={size} shape="list" state="ready">
       {body}
     </Widget>,
   );
@@ -54,16 +54,16 @@ describe("las entradas del calendario", () => {
 
   it("cuánto falta se dice como se dice", () => {
     const soon = new Date(2026, 8, 29, 10, 25);
-    expect(untilLabel(soon, new Date(2026, 8, 29, 11), NOW)).toBe("En 25 min");
-    expect(untilLabel(new Date(2026, 8, 29, 13), new Date(2026, 8, 29, 14), NOW)).toBe("En 3 h");
-    expect(untilLabel(new Date(2026, 8, 29, 9), new Date(2026, 8, 29, 11), NOW)).toBe("Ahora");
+    expect(untilLabel(soon, new Date(2026, 8, 29, 11), NOW)).toBe("In 25 min");
+    expect(untilLabel(new Date(2026, 8, 29, 13), new Date(2026, 8, 29, 14), NOW)).toBe("In 3 h");
+    expect(untilLabel(new Date(2026, 8, 29, 9), new Date(2026, 8, 29, 11), NOW)).toBe("Now");
   });
 });
 
 describe("hoy según el hueco", () => {
   it("en un 1x1 es cuánto falta para lo siguiente con hora", () => {
     const html = card("1x1", <WidgetAgenda entries={ENTRIES} now={NOW} />);
-    expect(html).toContain("En 25 min");
+    expect(html).toContain("In 25 min");
     expect(html).toContain("Dentista");
   });
 
@@ -80,7 +80,7 @@ describe("hoy según el hueco", () => {
   it("en un 4x2 hoy y mañana lado a lado", () => {
     const html = card("4x2", <WidgetAgenda entries={ENTRIES} now={NOW} />);
     expect(html).toContain("Banco");
-    expect(html).toContain("Mañana");
+    expect(html).toContain("Tomorrow");
   });
 
   it("en un 4x4 hoy es una línea de tiempo con la raya de ahora", () => {

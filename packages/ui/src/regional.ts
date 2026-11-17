@@ -105,3 +105,8 @@ export function dates(options: Intl.DateTimeFormatOptions = {}): Intl.DateTimeFo
 export function zonedDates(options: Intl.DateTimeFormatOptions = {}): Intl.DateTimeFormat {
   return dates({ ...options, timeZone: current.timeZone });
 }
+
+export function weekdayLetters(): string[] {
+  const narrow = dates({ weekday: "narrow", timeZone: "UTC" });
+  return Array.from({ length: 7 }, (_, index) => narrow.format(new Date(Date.UTC(2024, 0, 1 + index))));
+}

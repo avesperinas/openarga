@@ -124,7 +124,7 @@ export function YearCalendar({
                 data-day={cell.day}
                 data-level={yearLevel(cell.value, top, against)}
                 data-picked={picked?.day === cell.day ? "" : undefined}
-                title={`${formatDay(cell.day)}: ${cell.value === undefined ? "sin dato" : format(cell.value)}`}
+                title={`${formatDay(cell.day)}: ${cell.value === undefined ? say("year.no_value") : format(cell.value)}`}
                 style={{ gridColumn: cell.week + 1, gridRow: cell.weekday + 1 }}
               />
             ))}

@@ -48,7 +48,7 @@ describe("la tira de meses", () => {
   it("dice cada mes al lector y marca el elegido", () => {
     const html = render(
       <MonthStrip
-        label="Meses"
+        label="Months"
         selected="2026-11"
         onSelect={() => undefined}
         items={[
@@ -66,10 +66,10 @@ describe("la tira de meses", () => {
 describe("quién debe a quién", () => {
   it("con deuda, la flecha; en paz, sin ella", () => {
     const owed = render(<BalanceHero payer={{ name: "Sam", hue: 6 }} payee={{ name: "Alex", hue: 5 }} amount="312 €" />);
-    expect(owed).toContain('aria-label="Sam paga a Alex"');
+    expect(owed).toContain('aria-label="Sam pays Alex"');
     expect(owed).toContain("<path");
     const even = render(<BalanceHero payer={{ name: "Sam", hue: 6 }} payee={{ name: "Alex", hue: 5 }} amount="0 €" even />);
-    expect(even).toContain("Estáis en paz");
+    expect(even).toContain("You are even");
     expect(even).not.toContain("<path");
   });
 });
@@ -78,10 +78,10 @@ describe("lo aportado contra lo que vale", () => {
   it("sombrea la ganancia en verde si vale más, y en rojo si menos", () => {
     const up = render(<GainChart label="Fondos" labels={["ene", "feb"]} value={[100, 130]} contributed={[100, 110]} />);
     expect(up).toContain('class="gain-chart-gain" data-ahead="true"');
-    expect(up).toContain("Ganancia");
+    expect(up).toContain("Gain");
     const down = render(<GainChart label="Fondos" labels={["ene", "feb"]} value={[100, 90]} contributed={[100, 110]} />);
-    expect(down).toContain("Pérdida");
-    expect(render(<GainChart label="Nada" labels={[]} value={[]} contributed={[]} />)).toContain("Sin datos");
+    expect(down).toContain("Loss");
+    expect(render(<GainChart label="Nada" labels={[]} value={[]} contributed={[]} />)).toContain("No data in this range");
   });
 });
 

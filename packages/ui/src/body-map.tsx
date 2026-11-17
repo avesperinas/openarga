@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { BODY_BACK, BODY_FRONT, type BodyZone } from "./body-map-paths";
+import { say } from "./words";
 
 export type BodySide = "front" | "back";
 
@@ -129,7 +130,7 @@ export function BodyMaps({
           <BodyMap
             side={side}
             colors={colors}
-            label={`${label}, ${side === "front" ? "de frente" : "de espalda"}`}
+            label={`${label}, ${side === "front" ? say("body.front") : say("body.back")}`}
             names={names}
             onSelect={onSelect}
           />

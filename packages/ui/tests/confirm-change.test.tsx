@@ -42,7 +42,7 @@ describe("confirmar un cambio", () => {
     expect(document.body.textContent).toContain("Ocio");
     expect(document.body.textContent).toContain("Salud");
     expect(onConfirm).not.toHaveBeenCalled();
-    await press("Volver");
+    await press("Back");
     expect(onCancel).toHaveBeenCalledOnce();
     await press("Guardar cambios");
     expect(onConfirm).toHaveBeenCalledOnce();
@@ -50,10 +50,10 @@ describe("confirmar un cambio", () => {
 
   it("si falla, lo dice y deja reintentar", async () => {
     mount(
-      <ConfirmChange title="¿Liquidar?" action="Marcar como liquidado" onCancel={() => undefined} onConfirm={() => Promise.reject(new Error("Sin conexión"))} />,
+      <ConfirmChange title="¿Liquidar?" action="Marcar como liquidado" onCancel={() => undefined} onConfirm={() => Promise.reject(new Error("Offline"))} />,
     );
     await press("Marcar como liquidado");
-    expect(document.querySelector('[role="alert"]')?.textContent).toBe("Sin conexión");
+    expect(document.querySelector('[role="alert"]')?.textContent).toBe("Offline");
     expect(Array.from(document.querySelectorAll("button")).some((b) => b.textContent === "Marcar como liquidado")).toBe(true);
   });
 });

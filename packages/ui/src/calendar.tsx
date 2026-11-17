@@ -7,10 +7,9 @@ import { Icon, type IconName } from "./icons";
 import { type AgendaEntry, MonthWithEntries, onDay, parseEntries } from "./agenda";
 import type { Layout } from "./sizes";
 import { useWidgetLayout } from "./Widget";
-import { dates } from "./regional";
+import { dates, weekdayLetters } from "./regional";
 import { say } from "./words";
 
-const WEEK = ["L", "M", "X", "J", "V", "S", "D"];
 
 function monthGrid(reference: Date): { days: number; offset: number } {
   const year = reference.getFullYear();
@@ -105,7 +104,7 @@ function PlainCalendar({ month, marked = [], today }: WidgetCalendarProps) {
     <div className="calendar">
       <p className="calendar-month">{title}</p>
       <div className="calendar-grid" role="grid" aria-label={title}>
-        {WEEK.map((day, index) => (
+        {weekdayLetters().map((day, index) => (
           <span key={`head-${index}`} className="calendar-weekday" role="columnheader">
             {day}
           </span>
@@ -160,7 +159,7 @@ function WeekDays({
             data-today={day === highlighted || undefined}
             data-marked={(inMonth && flagged.has(day)) || undefined}
           >
-            <span className="calendar-weekday">{WEEK[index]}</span>
+            <span className="calendar-weekday">{weekdayLetters()[index]}</span>
             <span className="calendar-week-date">{date.getDate()}</span>
           </li>
         );
@@ -409,7 +408,7 @@ export function MonthCalendar({
       <div className="month-grid" role="grid" aria-label={title}>
         <div className="month-row" role="row">
           {weekLabel && <span className="month-week-label" aria-hidden="true" />}
-          {WEEK.map((day, index) => (
+          {weekdayLetters().map((day, index) => (
             <span key={index} className="month-weekday" role="columnheader">
               {day}
             </span>

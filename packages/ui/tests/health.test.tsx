@@ -2,7 +2,7 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import es from "../src/i18n/es.json";
+import en from "../src/i18n/en.json";
 
 import {
   HealthRing,
@@ -51,7 +51,7 @@ describe("la noche", () => {
   });
 
   it("sin fases lo dice, y con ellas pinta un rectángulo por tramo", () => {
-    expect(renderToStaticMarkup(<Hypnogram segments={[]} start={START} end={END} label="La noche" />)).toContain("sin fases");
+    expect(renderToStaticMarkup(<Hypnogram segments={[]} start={START} end={END} label="La noche" />)).toContain("without stages");
     const html = renderToStaticMarkup(
       <Hypnogram
         segments={[{ start: START, end: END, stage: "rem" }]}
@@ -84,7 +84,7 @@ describe("el horario", () => {
   it("pinta una barra por noche", () => {
     const html = renderToStaticMarkup(<SleepSchedule label="Horario" nights={[{ day: "2026-10-13", start: START, end: END, quality: "good" }]} />);
     expect(html).toContain('data-quality="good"');
-    expect(html).toContain("de 23:00 a 07:00");
+    expect(html).toContain("from 23:00 to 07:00");
   });
 });
 
@@ -97,9 +97,9 @@ describe("el mes", () => {
   });
 
   it("colorea cada noche por su calidad y deja sin tocar las que no hay", () => {
-    const html = renderToStaticMarkup(<QualityMonth label="Octubre" month="2026-10" days={[{ day: "2026-10-13", value: 84, quality: "good" }]} onSelect={() => {}} />);
-    expect(html).toContain('aria-label="13: 84, buena"');
-    expect(html).toContain('aria-label="14, sin noche"');
+    const html = renderToStaticMarkup(<QualityMonth label="October" month="2026-10" days={[{ day: "2026-10-13", value: 84, quality: "good" }]} onSelect={() => {}} />);
+    expect(html).toContain('aria-label="13: 84, good"');
+    expect(html).toContain('aria-label="14, no night"');
   });
 });
 
@@ -147,18 +147,18 @@ describe("el vitals", () => {
         }}
       />,
     );
-    expect(html).toContain(es["heart.from_band"]);
+    expect(html).toContain(en["heart.from_band"]);
     expect(html).toContain("−21 lpm");
     expect(html).toContain("562 kcal");
-    expect(html).toContain("84 % de tu máximo");
+    expect(html).toContain("84 % of your maximum");
   });
 });
 
 describe("el anillo", () => {
   it("dice su cifra y su calidad, y lleno de más no da otra vuelta", () => {
-    const html = renderToStaticMarkup(<HealthRing value={130} target={100} display="130" label="Nota" caption="Excelente" quality="excellent" />);
+    const html = renderToStaticMarkup(<HealthRing value={130} target={100} display="130" label="Score" caption="Excellent" quality="excellent" />);
     expect(html).toContain('stroke-dashoffset="0"');
-    expect(html).toContain("Nota: 130, Excelente");
+    expect(html).toContain("Score: 130, Excellent");
   });
 
   it("escribe los minutos como horas", () => {

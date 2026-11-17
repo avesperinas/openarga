@@ -37,13 +37,13 @@ describe("una pantalla que falla", () => {
       </CrashBoundary>,
     );
 
-    expect(document.body.textContent).toContain("Algo ha fallado en esta pantalla");
+    expect(document.body.textContent).toContain("Something went wrong on this screen");
     expect(document.body.textContent).toContain("TypeError: x.toFixed is not a function");
 
     broken = false;
     await act(async () => {
       Array.from(document.querySelectorAll("button"))
-        .find((button) => button.textContent === "Volver a intentarlo")!
+        .find((button) => button.textContent === "Try again")!
         .click();
     });
     expect(document.body.textContent).toBe("Stats");

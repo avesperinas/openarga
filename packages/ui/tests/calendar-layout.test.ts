@@ -140,13 +140,13 @@ describe("la franja", () => {
 
   it("lo largo arriba, y cada cosa en la primera fila donde cabe", () => {
     const { bars, rows, perDay } = layoutBars(
-      [allDay("lunes", "2026-09-28", "2026-09-29"), allDay("viaje", "2026-09-28", "2026-10-02"), allDay("jueves", "2026-10-01", "2026-10-02")],
+      [allDay("monday", "2026-09-28", "2026-09-29"), allDay("trip", "2026-09-28", "2026-10-02"), allDay("thursday", "2026-10-01", "2026-10-02")],
       week,
     );
     const byId = Object.fromEntries(bars.map((b) => [b.event.id, b]));
-    expect(byId.viaje).toMatchObject({ column: 0, span: 4, row: 0 });
-    expect(byId.lunes).toMatchObject({ column: 0, span: 1, row: 1 });
-    expect(byId.jueves).toMatchObject({ column: 3, span: 1, row: 1 });
+    expect(byId.trip).toMatchObject({ column: 0, span: 4, row: 0 });
+    expect(byId.monday).toMatchObject({ column: 0, span: 1, row: 1 });
+    expect(byId.thursday).toMatchObject({ column: 3, span: 1, row: 1 });
     expect(rows).toBe(2);
     expect(perDay).toEqual([2, 1, 1, 2, 0, 0, 0]);
   });

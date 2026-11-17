@@ -76,7 +76,7 @@ export function AreaTrend({ label, value, delta, points, aside, children, descri
       )}
       {line && (
         <figure className="area-trend-plot">
-          <svg viewBox={`0 0 ${AW} ${AH}`} preserveAspectRatio="none" role="img" aria-label={description ?? `${label}: de ${first} a ${end}`}>
+          <svg viewBox={`0 0 ${AW} ${AH}`} preserveAspectRatio="none" role="img" aria-label={description ?? say("panel.trend", { label, from: first ?? "", to: end ?? "" })}>
             <path className="area-trend-fill" d={fill} />
             <path className="area-trend-line" d={line} />
           </svg>

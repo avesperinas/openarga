@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { DateField } from "./date-field";
 import { Icon } from "./icons";
+import { say } from "./words";
 
 const fold = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLocaleLowerCase("es");
 
@@ -287,7 +288,7 @@ export interface DateRange {
 }
 
 export function rangeProblem({ from, to }: DateRange): string | null {
-  if (from && to && to < from) return "El final va antes del principio.";
+  if (from && to && to < from) return say("range.backwards");
   return null;
 }
 

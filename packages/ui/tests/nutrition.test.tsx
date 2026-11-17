@@ -14,8 +14,8 @@ describe("la barra con su zona objetivo", () => {
   });
 
   it("dice cómo va a quien no ve los colores, y lo que no se sabe no es cero", () => {
-    const html = renderToStaticMarkup(<RangeBar label="Fibra" value={12} unit="g" low={25} state="low" />);
-    expect(html).toContain('aria-label="Fibra: 12 g, por debajo"');
+    const html = renderToStaticMarkup(<RangeBar label="Fibre" value={12} unit="g" low={25} state="low" />);
+    expect(html).toContain('aria-label="Fibre: 12 g, below"');
     expect(html).toContain('data-state="low"');
     const unknown = renderToStaticMarkup(<RangeBar label="Vitamina D" value={null} unit="µg" low={15} />);
     expect(unknown).toContain("—");

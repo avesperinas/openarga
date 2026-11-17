@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 
 import { useBodyHost, useEscape, useFocusTrap } from "./focus";
 import { Icon, type IconName } from "./icons";
+import { say } from "./words";
 
 export interface PaletteItem {
   key: string;
@@ -32,7 +33,7 @@ export function CommandPalette({
   query,
   onQuery,
   groups,
-  empty = "Nada con eso.",
+  empty = say("palette.empty"),
   onClose,
 }: {
   label: string;

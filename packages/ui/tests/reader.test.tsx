@@ -88,8 +88,8 @@ describe("leer para aprender", () => {
         value="known"
         onChange={() => {}}
         options={[
-          { value: "interested", label: "Me interesa", icon: "heart" },
-          { value: "known", label: "Ya lo sabía", icon: "done" },
+          { value: "interested", label: "Interested", icon: "heart" },
+          { value: "known", label: "I knew it", icon: "done" },
         ]}
       />,
     );
@@ -162,25 +162,25 @@ describe("leer para aprender", () => {
     expect(html).toContain("<details");
     expect(html).toContain('href="https://example.org"');
     expect(html).toContain('<span class="fact-card-source-name">Fuente</span>');
-    expect(html).toContain('aria-label="Me interesa"');
+    expect(html).toContain('aria-label="Interested"');
     expect(html.match(/aria-pressed="true"/g)).toHaveLength(1);
   });
 
   it("la cabecera, la racha, lo que flota y la espera", () => {
     const html = render(
       <ReaderHero
-        eyebrow="martes, 10 de noviembre"
-        title="Tu píldora"
+        eyebrow="Tuesday 10 November"
+        title="Your pill"
         actions={
           <>
             <StreakBadge days={1} />
-            <FloatButton icon="spark" label="Sorpréndeme" tone="accent" onClick={() => {}} busy />
+            <FloatButton icon="spark" label="Surprise me" tone="accent" onClick={() => {}} busy />
           </>
         }
       />,
     );
-    expect(html).toContain("Racha: 1 día\"");
-    expect(html).toContain('aria-label="Sorpréndeme"');
+    expect(html).toContain("Streak: 1 day\"");
+    expect(html).toContain('aria-label="Surprise me"');
     expect(html).toContain('aria-busy="true"');
     expect(render(<Working>Escribiendo</Working>)).toContain('role="status"');
     expect(render(<MotifBackdrop glyph="atom" hue={5} />)).toContain('aria-hidden="true"');
@@ -207,36 +207,36 @@ describe("conocer a alguien", () => {
     expect(html).toContain("<h2");
     expect(html).toContain("Para avisarte");
     expect(html).toContain("3 de 12");
-    expect(html).toContain("Ahora no");
-    expect(html).not.toContain("Seguir");
+    expect(html).toContain("Not now");
+    expect(html).not.toContain("Continue");
   });
 
   it("las de varias marcan y llevan Seguir; la libre, su cuadro", () => {
     const many = render(
-      <QuestionCard kind="many" text="¿Qué temas?" options={[{ value: "a", label: "A" }]} onAnswer={() => {}} />,
+      <QuestionCard kind="many" text="Which topics?" options={[{ value: "a", label: "A" }]} onAnswer={() => {}} />,
     );
     expect(many).toContain('aria-pressed="false"');
-    expect(many).toContain("Seguir");
+    expect(many).toContain("Continue");
     const free = render(<QuestionCard kind="free" text="¿Qué te marcó?" options={[]} onAnswer={() => {}} />);
     expect(free).toContain("<textarea");
   });
 
   it("un rasgo propuesto se confirma o descarta; uno confirmado se olvida", () => {
     const proposed = render(
-      <TraitRow label="Fantasía épica" stance={2} source="Lo vio en tus lecturas" evidence="6 novelas" proposed onConfirm={() => {}} onReject={() => {}} />,
+      <TraitRow label="Epic fantasy" stance={2} source="Seen in your reading" evidence="6 novels" proposed onConfirm={() => {}} onReject={() => {}} />,
     );
-    expect(proposed).toContain("Sí: Fantasía épica");
-    expect(proposed).toContain("No: Fantasía épica");
-    expect(proposed).toContain("Lo vio en tus lecturas · 6 novelas");
-    const confirmed = render(<TraitRow label="Fútbol" stance={-2} source="Lo dijiste" proposed={false} onForget={() => {}} />);
-    expect(confirmed).toContain("Olvidar: Fútbol");
+    expect(proposed).toContain("Yes: Epic fantasy");
+    expect(proposed).toContain("No: Epic fantasy");
+    expect(proposed).toContain("Seen in your reading · 6 novels");
+    const confirmed = render(<TraitRow label="Football" stance={-2} source="You said it" proposed={false} onForget={() => {}} />);
+    expect(confirmed).toContain("Forget: Football");
     expect(confirmed).toContain('data-negative="true"');
   });
 
   it("la postura enciende los puntos de su lado", () => {
     expect(render(<StanceDots stance={2} />).match(/data-on/g)).toHaveLength(2);
     expect(render(<StanceDots stance={-1} />).match(/data-on/g)).toHaveLength(1);
-    expect(render(<StanceDots stance={0} />)).toContain('aria-label="Neutro"');
+    expect(render(<StanceDots stance={0} />)).toContain('aria-label="Neutral"');
   });
 
   it("una conversación: lo tuyo marcado, lo escrito tal cual, y el cuadro con su etiqueta", () => {

@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { Icon, type IconName } from "./icons";
+import { say } from "./words";
 
 export interface SwipeAction {
   label: string;
@@ -74,7 +75,7 @@ export function SwipeRow({ children, actions, label }: { children: React.ReactNo
         setDx(settled === "open" ? -reveal : 0);
       }}
     >
-      <div className="swipe-row-actions" role="group" aria-label={`Acciones de ${label}`}>
+      <div className="swipe-row-actions" role="group" aria-label={say("swipe.actions", { label })}>
         {actions.map((action) => (
           <button
             key={action.label}

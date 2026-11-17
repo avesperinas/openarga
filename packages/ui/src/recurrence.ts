@@ -52,7 +52,7 @@ function orderMonthDays(days: number[]): number[] {
 const untilText = (until: string) => until.replace(/[-:]/g, "");
 
 function parseUntil(text: string): string {
-  if (text.endsWith("Z")) throw new Error("UNTIL es hora de pared, sin zona");
+  if (text.endsWith("Z")) throw new Error("UNTIL is wall-clock time, without a zone");
   const date = `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}`;
   if (!text.includes("T")) return date;
   const t = text.slice(9);
@@ -77,7 +77,7 @@ export function fromRRule(text: string): RecurrenceRule {
   for (const part of text.trim().replace(/^RRULE:/, "").split(";")) {
     if (!part) continue;
     const [key, value] = part.split("=");
-    if (key === undefined || value === undefined) throw new Error(`parte sin valor: ${part}`);
+    if (key === undefined || value === undefined) throw new Error(`part without a value: ${part}`);
     fields.set(key.toUpperCase(), value);
   }
   const freq = fields.get("FREQ")?.toLowerCase();
