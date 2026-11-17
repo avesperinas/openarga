@@ -86,6 +86,8 @@ def instance_environment(config: dict[str, Any]) -> dict[str, str]:
                 environment[name] = str(values[key])
     environment["OPENARGA_AI_KEY"] = "${OPENARGA_AI_KEY:-}"
     environment["CONNECTIONS_MODE"] = str(config.get("connections", "live"))
+    if config.get("demo"):
+        environment["OPENARGA_DEMO"] = "true"
     return environment
 
 
@@ -239,6 +241,7 @@ def generate(config: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
             "environment": {
                 "KERNEL_URL": "http://kernel:8000",
                 "MCP_ALLOWED_SCOPES": "${MCP_ALLOWED_SCOPES:-}",
+                **{key: value for key, value in instance.items() if key == "OPENARGA_DEMO"},
             },
             "depends_on": {"kernel": HEALTHY},
             "restart": "unless-stopped",

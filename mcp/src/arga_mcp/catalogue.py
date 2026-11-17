@@ -101,7 +101,7 @@ class Catalogue:
     ) -> Outcome:
         tool = next((t for t in await self.tools() if t.exposed_name == exposed_name), None)
         if tool is None:
-            return Outcome(False, f"no existe la tool '{exposed_name}'", 404)
+            return Outcome(False, f"no tool named '{exposed_name}'", 404)
 
         response = await self.client.post(
             f"{self.module_url(tool.module)}/tools/{tool.name}",

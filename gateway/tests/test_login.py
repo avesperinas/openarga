@@ -568,3 +568,38 @@ async def test_the_logout_page_speaks_the_browsers_language(browser) -> None:
     assert '<html lang="en">' in english.text and "You have left OpenArga" in english.text
     assert '<html lang="es">' in spanish.text and "You have left" not in spanish.text
     assert '<html lang="en">' in german.text
+
+
+async def test_without_demo_mode_there_is_no_demo_login(browser) -> None:
+    assert (await browser.get("/login/demo")).status_code == 404
+    start = await browser.get("/login")
+    assert start.headers["location"].startswith(REALM_ISSUER)
+
+
+async def test_the_demo_signs_in_as_one_of_the_cast_without_the_realm(
+    browser, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OPENARGA_DEMO", "true")
+    start = await browser.get("/login", params={"next": "/money"})
+    assert start.headers["location"] == "/login/demo?next=%2Fmoney"
+
+    done = await browser.get("/login/demo", params={"as": "sam", "next": "/money"})
+    assert done.status_code == 302
+    assert done.headers["location"] == "/money"
+    assert cookie_value(done, COOKIE)
+
+    await browser.get("/api/kernel/ui/layouts")
+    assert realm.seen[-1]["headers"]["x-arga-subject"] == "demo-sam"
+
+
+async def test_the_demo_only_knows_its_cast_and_only_sends_home(
+    browser, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OPENARGA_DEMO", "true")
+    done = await browser.get(
+        "/login/demo", params={"as": "admin", "next": "https://elsewhere.test/"}
+    )
+    assert done.headers["location"] == "/"
+
+    await browser.get("/api/kernel/ui/layouts")
+    assert realm.seen[-1]["headers"]["x-arga-subject"] == "demo-alex"

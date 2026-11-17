@@ -26,3 +26,6 @@ ai:
   smart_model: ""
 
 connections: live
+
+# A public demo: anyone signs in as one of the synthetic cast, and MCP is read-only.
+demo: false

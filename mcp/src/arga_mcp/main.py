@@ -36,6 +36,7 @@ class Settings:
     kernel_url: str = "http://kernel:8000"
     module_url_template: str = "http://{module}:8000"
     version: str = "dev"
+    read_only: bool = False
 
     @classmethod
     def from_environment(cls) -> Settings:
@@ -43,12 +44,16 @@ class Settings:
             kernel_url=os.environ.get("KERNEL_URL", cls.kernel_url),
             module_url_template=os.environ.get("MODULE_URL_TEMPLATE", cls.module_url_template),
             version=os.environ.get("APP_VERSION", cls.version),
+            read_only=os.environ.get("OPENARGA_DEMO", "").lower() in ("1", "true", "yes"),
         )
 
 
-def caller(ctx) -> tuple[str, set[str]]:
+def caller(ctx, read_only: bool = False) -> tuple[str, set[str]]:
     headers = _headers(ctx)
-    return headers.get(SUBJECT_HEADER, ""), set(headers.get(SCOPES_HEADER, "").split())
+    scopes = set(headers.get(SCOPES_HEADER, "").split())
+    if read_only:
+        scopes = {f"{scope.rpartition(':')[0]}:read" for scope in scopes if ":" in scope}
+    return headers.get(SUBJECT_HEADER, ""), scopes
 
 
 def _headers(ctx):
@@ -64,9 +69,9 @@ def spaces_of(ctx) -> str:
     return _headers(ctx).get(SPACES_HEADER, "")
 
 
-def build_server(catalogue: Catalogue, version: str) -> Server:
+def build_server(catalogue: Catalogue, version: str, read_only: bool = False) -> Server:
     async def list_tools(ctx, params) -> types.ListToolsResult:
-        _, scopes = caller(ctx)
+        _, scopes = caller(ctx, read_only)
         return types.ListToolsResult(
             tools=[
                 types.Tool(
@@ -79,7 +84,7 @@ def build_server(catalogue: Catalogue, version: str) -> Server:
         )
 
     async def call_tool(ctx, params: types.CallToolRequestParams) -> types.CallToolResult:
-        subject, scopes = caller(ctx)
+        subject, scopes = caller(ctx, read_only)
         outcome = await catalogue.call(
             params.name,
             dict(params.arguments or {}),
@@ -117,7 +122,7 @@ def build_server(catalogue: Catalogue, version: str) -> Server:
 def create_app(settings: Settings, client: httpx.AsyncClient | None = None) -> Starlette:
     client = client or httpx.AsyncClient()
     catalogue = Catalogue(client, settings.kernel_url, settings.module_url_template)
-    server = build_server(catalogue, settings.version)
+    server = build_server(catalogue, settings.version, settings.read_only)
 
     async def healthz(request: Request) -> JSONResponse:
         return JSONResponse({"status": "ok"})
