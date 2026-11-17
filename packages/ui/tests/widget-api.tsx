@@ -1,51 +1,50 @@
 /**
- * La API de `<Widget>`, comprobada por el compilador.
+ * The `<Widget>` API, checked by the compiler.
  *
- * Este fichero **no se ejecuta**: lo verifica `tsc`, que es quien corre en `pnpm lint`. Cada
- * `@ts-expect-error` es una afirmación al revés: si algún día esa línea dejara de ser un
- * error, `tsc` falla y el PR se cae. Es la forma de escribir "un módulo no puede hacer
- * esto" sin depender de que alguien se acuerde.
+ * This file **does not run**: `tsc` checks it, as part of `pnpm lint`. Each `@ts-expect-error`
+ * is an inverted assertion: if that line ever stopped being an error, `tsc` fails and so does
+ * the PR. It is how "a module cannot do this" is written without relying on someone remembering.
  *
- * Lo que defiende, que es el criterio de T-025: **un módulo no puede pintar su propia
- * cabecera.** Si pudiera, veinte widgets escritos en veinte momentos distintos dejarían de
- * parecer del mismo sistema (ADR-0004).
+ * What it defends, the T-025 criterion: **a module cannot draw its own header.** If it could,
+ * twenty widgets written at twenty different moments would stop looking like one system
+ * (ADR-0004).
  */
 import * as React from "react";
 
 import { Widget, WidgetDetail, WidgetValue } from "../src/index";
 
-const valido = (
-  <Widget title="Eventos" hue={1} size="2x2" shape="number" state="ready">
+const valid = (
+  <Widget title="Events" hue={1} size="2x2" shape="number" state="ready">
     <WidgetValue>1.284</WidgetValue>
-    <WidgetDetail>12 hoy</WidgetDetail>
+    <WidgetDetail>12 today</WidgetDetail>
   </Widget>
 );
 
-// @ts-expect-error · no hay prop de cabecera: la cabecera es del sistema, no del módulo
-const conCabecera = <Widget title="Eventos" hue={1} size="2x2" shape="number" state="ready" header={<h2>Mía</h2>} />;
+// @ts-expect-error · there is no header prop: the header belongs to the system, not the module
+const withHeader = <Widget title="Events" hue={1} size="2x2" shape="number" state="ready" header={<h2>Mine</h2>} />;
 
-// @ts-expect-error · tampoco por partes: ni icono propio
-const conIcono = <Widget title="Eventos" hue={1} size="2x2" shape="number" state="ready" icon="📊" />;
+// @ts-expect-error · nor in parts: no icon of its own
+const withIcon = <Widget title="Events" hue={1} size="2x2" shape="number" state="ready" icon="📊" />;
 
-// @ts-expect-error · ni acciones propias en la cabecera
-const conAcciones = <Widget title="Eventos" hue={1} size="2x2" shape="number" state="ready" actions={[]} />;
+// @ts-expect-error · no actions of its own in the header
+const withActions = <Widget title="Events" hue={1} size="2x2" shape="number" state="ready" actions={[]} />;
 
-// @ts-expect-error · ni clases sueltas con las que colarse
-const conClase = <Widget title="Eventos" hue={1} size="2x2" shape="number" state="ready" className="mia" />;
+// @ts-expect-error · no loose classes to sneak in
+const withClass = <Widget title="Events" hue={1} size="2x2" shape="number" state="ready" className="mine" />;
 
-// @ts-expect-error · ni estilo inline, que es la puerta de atrás del principio 5
-const conEstilo = <Widget title="Eventos" hue={1} size="2x2" shape="number" state="ready" style={{ padding: 0 }} />;
+// @ts-expect-error · no inline style, the back door to principle 5
+const withStyle = <Widget title="Events" hue={1} size="2x2" shape="number" state="ready" style={{ padding: 0 }} />;
 
-// @ts-expect-error · el título no es opcional: sale del manifiesto y se pinta antes que los datos
-const sinTitulo = <Widget hue={1} size="2x2" shape="number" state="ready" />;
+// @ts-expect-error · the title is not optional: it comes from the manifest and renders before the data
+const untitled = <Widget hue={1} size="2x2" shape="number" state="ready" />;
 
-// @ts-expect-error · los tamaños son los tres del catálogo y ninguno más
-const tamanoInventado = <Widget title="Eventos" hue={1} size="3x1" shape="number" state="ready" />;
+// @ts-expect-error · sizes are the catalogue's and no others
+const madeUpSize = <Widget title="Events" hue={1} size="3x1" shape="number" state="ready" />;
 
-// @ts-expect-error · el tono sale de la paleta fija de ocho, no se inventa en el componente
-const tonoInventado = <Widget title="Eventos" hue={99} size="2x2" shape="number" state="ready" />;
+// @ts-expect-error · the tone comes from the fixed palette, it is not invented in the component
+const madeUpTone = <Widget title="Events" hue={99} size="2x2" shape="number" state="ready" />;
 
-// @ts-expect-error · `uncertain` no es un estado: es un modificador de `ready` (ADR-0016)
-const dudaComoEstado = <Widget title="Eventos" hue={1} size="2x2" shape="number" state="uncertain" />;
+// @ts-expect-error · `uncertain` is not a state: it is a modifier of `ready` (ADR-0016)
+const doubtAsState = <Widget title="Events" hue={1} size="2x2" shape="number" state="uncertain" />;
 
-export { valido, conCabecera, conIcono, conAcciones, conClase, conEstilo, sinTitulo, tamanoInventado, tonoInventado, dudaComoEstado };
+export { valid, withHeader, withIcon, withActions, withClass, withStyle, untitled, madeUpSize, madeUpTone, doubtAsState };

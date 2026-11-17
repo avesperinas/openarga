@@ -17,10 +17,10 @@ describe("the photo and its card", () => {
 
   it("with an action it is a button that says what it does", () => {
     const html = renderToStaticMarkup(
-      <Photo hue={1} icon="pin" shape="banner" action={{ label: "Añadir foto", onClick: () => undefined }} />,
+      <Photo hue={1} icon="pin" shape="banner" action={{ label: "Add photo", onClick: () => undefined }} />,
     );
     expect(html).toContain('<button type="button" class="photo" data-shape="banner"');
-    expect(html).toContain("Añadir foto");
+    expect(html).toContain("Add photo");
   });
 
   it("the card carries its label, title and line, and with a link it is a link", () => {
@@ -38,15 +38,15 @@ describe("the card with a cover", () => {
   it("with a link it is a real link, with a cover in its group's tone", () => {
     const html = renderToStaticMarkup(
       <Tiles label="Recetas">
-        <Tile title="Porrusalda" hue={2} figure="15 min" caption="tú delante" detail="Para 4" tags={["olla"]} href="/receta/1" />
+        <Tile title="Leek soup" hue={2} figure="15 min" caption="you in front" detail="Serves 4" tags={["pot"]} href="/receta/1" />
       </Tiles>,
     );
     expect(html).toContain('<ul class="tiles" aria-label="Recetas"><li>');
     expect(html).toContain('href="/receta/1"');
     expect(html).toContain('data-hue="2"');
     expect(html).toContain("15 min");
-    expect(html).toContain("tú delante");
-    expect(html).toContain("olla");
+    expect(html).toContain("you in front");
+    expect(html).toContain("pot");
   });
 
   it("without a link it is a button, and without a figure it draws no gap", () => {
@@ -62,18 +62,18 @@ describe("the total broken down", () => {
       <SplitBar
         label="kcal"
         parts={[
-          { label: "Proteína", value: "25 %", share: 1, hue: 1 },
-          { label: "Grasa", value: "75 %", share: 3, hue: 3 },
+          { label: "Protein", value: "25 %", share: 1, hue: 1 },
+          { label: "Fat", value: "75 %", share: 3, hue: 3 },
         ]}
       />,
     );
-    expect(html).toContain('aria-label="kcal: Proteína 25 %, Grasa 75 %"');
+    expect(html).toContain('aria-label="kcal: Protein 25 %, Fat 75 %"');
     expect(html).toContain("flex-grow:0.25");
     expect(html).toContain("flex-grow:0.75");
   });
 
   it("with nothing to split it draws no slices", () => {
-    const html = renderToStaticMarkup(<SplitBar label="kcal" parts={[{ label: "Proteína", value: "0 %", share: 0, hue: 1 }]} />);
+    const html = renderToStaticMarkup(<SplitBar label="kcal" parts={[{ label: "Protein", value: "0 %", share: 0, hue: 1 }]} />);
     expect(html).not.toContain("split-bar-part");
   });
 });

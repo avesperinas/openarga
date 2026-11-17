@@ -52,9 +52,9 @@ describe("a source's questions", () => {
 
   it("proposes the name with the source's template", () => {
     const source = { name: "{region|country}", title: "Festivos", asks: [ask({ key: "country" }), ask({ key: "region" })] };
-    expect(proposedSourceName(source, { country: { choice: { code: "ES", name: "España" } } })).toBe("España");
+    expect(proposedSourceName(source, { country: { choice: { code: "ES", name: "Spain" } } })).toBe("Spain");
     expect(proposedSourceName({ name: "{url}", title: "Otro", asks: [url] }, { url: { text: "webcal://www.example.org/x.ics" } })).toBe("example.org");
-    expect(proposedSourceName({ name: "", title: "Fórmula", asks: [] }, {})).toBe("Fórmula");
+    expect(proposedSourceName({ name: "", title: "Formula", asks: [] }, {})).toBe("Formula");
   });
 
   it("renders each question by its kind, and says which one it cannot render", () => {

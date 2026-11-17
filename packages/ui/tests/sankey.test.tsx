@@ -5,10 +5,10 @@ import { describe, expect, it } from "vitest";
 import { Sankey, sankeyLayout } from "../src/index";
 
 const nodes = [
-  { id: "salary", name: "Nómina", column: 0, kind: "income" as const },
-  { id: "me", name: "Tú", column: 1, kind: "you" as const },
-  { id: "rent", name: "Alquiler", column: 2, kind: "expense" as const },
-  { id: "food", name: "Súper", column: 2, kind: "expense" as const },
+  { id: "salary", name: "Salary", column: 0, kind: "income" as const },
+  { id: "me", name: "You", column: 1, kind: "you" as const },
+  { id: "rent", name: "Rent", column: 2, kind: "expense" as const },
+  { id: "food", name: "Groceries", column: 2, kind: "expense" as const },
 ];
 const links = [
   { source: "salary", target: "me", value: 2000 },
@@ -39,7 +39,7 @@ describe("the flow diagram", () => {
 
   it("each band says from where to where and how much, and there is a table", () => {
     const html = renderToStaticMarkup(<Sankey label="Flujo" nodes={nodes} links={links} format={(v) => `${v} €`} />);
-    expect(html).toContain("<title>Tú → Alquiler: 1500 €</title>");
+    expect(html).toContain("<title>You → Rent: 1500 €</title>");
     expect(html).toContain("<summary>Ver como tabla</summary>");
     expect(html).toContain('data-kind="income"');
   });
@@ -52,12 +52,12 @@ describe("the flow diagram", () => {
 describe("the branches", () => {
   it("leaves go next to their branch, and inside it by amount", () => {
     const tree = [
-      { id: "me", name: "Tú", column: 0, kind: "you" as const },
+      { id: "me", name: "You", column: 0, kind: "you" as const },
       { id: "spent", name: "Gasto", column: 1, kind: "expense" as const },
       { id: "saved", name: "Ahorro", column: 1, kind: "saving" as const },
       { id: "fun", name: "Ocio", column: 2, kind: "expense" as const },
       { id: "fund", name: "Background", column: 2, kind: "saving" as const },
-      { id: "food", name: "Súper", column: 2, kind: "expense" as const },
+      { id: "food", name: "Groceries", column: 2, kind: "expense" as const },
     ];
     const edges = [
       { source: "me", target: "spent", value: 700 },

@@ -31,12 +31,12 @@ describe("the trend", () => {
 
   it("draws the average, the measured values, the band and marks what falls outside it", () => {
     const html = renderToStaticMarkup(
-      <TrendChart label="Weight" points={weights} band={{ low: 72, high: 76 }} valueName="Pesada" averageName="Media 7 días" />,
+      <TrendChart label="Weight" points={weights} band={{ low: 72, high: 76 }} valueName="Weighing" averageName="7-day average" />,
     );
 
     expect(html).toContain("trend-chart-band");
     expect(html).toContain("trend-chart-raw");
-    expect(html).toContain("Media 7 días");
+    expect(html).toContain("7-day average");
     expect(html.match(/trend-chart-dot/g)).toHaveLength(3);
     expect(html.match(/data-out/g)).toHaveLength(3);
   });
@@ -75,7 +75,7 @@ describe("the trend", () => {
     const html = renderToStaticMarkup(
       <TrendChart
         label="e1RM"
-        highlightName="Récord"
+        highlightName="Record"
         points={[
           { day: "2026-09-01", value: 100 },
           { day: "2026-09-08", value: 104, highlight: true },
@@ -85,7 +85,7 @@ describe("the trend", () => {
 
     expect(html.match(/data-highlight=""/g)).toHaveLength(1);
     expect(html).toContain('data-key="highlight"');
-    expect(html).toContain("Récord");
+    expect(html).toContain("Record");
   });
 
   it("without marking outliers, the band is only a reference", () => {

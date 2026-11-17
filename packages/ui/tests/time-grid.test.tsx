@@ -7,7 +7,7 @@ import { type CalendarEvent, MiniMonth, MonthGrid, TimeGrid, dayRange } from "..
 const NOW = new Date(2026, 8, 30, 11, 20);
 const events: CalendarEvent[] = [
   { id: "a", title: "Review", start: new Date(2026, 8, 30, 10, 0), end: new Date(2026, 8, 30, 12, 0), tone: 1, subtitle: "Room 2" },
-  { id: "b", title: "Café", start: new Date(2026, 8, 30, 11, 0), end: new Date(2026, 8, 30, 11, 20), tone: 7 },
+  { id: "b", title: "Coffee", start: new Date(2026, 8, 30, 11, 0), end: new Date(2026, 8, 30, 11, 20), tone: 7 },
   { id: "c", title: "Yesterday", start: new Date(2026, 8, 29, 9, 0), end: new Date(2026, 8, 29, 10, 0), tone: 2, subscribed: true },
   { id: "d", title: "Fiesta", start: "2026-10-01", end: "2026-10-02", allDay: true, tone: 4, recurring: true },
   { id: "e", title: "Tutorial", start: new Date(2026, 9, 2, 9, 0), end: new Date(2026, 9, 2, 10, 0), tone: 5, status: "cancelled", readOnly: true },

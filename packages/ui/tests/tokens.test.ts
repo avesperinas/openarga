@@ -218,7 +218,7 @@ describe("tokens.css is the only source of design values", () => {
         const soft = hex(text, `--tone-${n}-soft`)!;
         const ink = hex(text, `--tone-${n}-ink`)!;
         expect(ratio(tone, card), `tono ${n} en ${theme}`).toBeGreaterThanOrEqual(3);
-        expect(ratio(ink, soft), `título ${n} en ${theme}`).toBeGreaterThanOrEqual(4.5);
+        expect(ratio(ink, soft), `heading ${n} in ${theme}`).toBeGreaterThanOrEqual(4.5);
       }
     }
   });
@@ -249,7 +249,7 @@ describe("tokens.css is the only source of design values", () => {
     "--grid-columns-tablet",
     "--grid-columns-desktop",
     "--tap-target",
-  ])("declara %s, que la pantalla necesita y no tenía", (token) => {
+  ])("declares %s, which the screen needs and did not have", (token) => {
     expect(css).toContain(`${token}:`);
   });
 

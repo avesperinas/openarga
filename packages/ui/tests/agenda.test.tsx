@@ -18,10 +18,10 @@ const at = (days: number, hour: number, minute = 0) =>
   new Date(2026, 8, 29 + days, hour, minute).toISOString();
 
 const ENTRIES = [
-  { start: "2026-09-29", allDay: true, title: "Cumpleaños", tone: 5 },
+  { start: "2026-09-29", allDay: true, title: "Birthday", tone: 5 },
   { start: at(0, 9), end: at(0, 9, 45), title: "Desayuno", tone: 1 },
   { start: at(0, 10, 25), end: at(0, 11), title: "Dentista", detail: "Sur", tone: 4 },
-  { start: at(0, 19), end: at(0, 20), title: "Pádel", tone: 2 },
+  { start: at(0, 19), end: at(0, 20), title: "Padel", tone: 2 },
   { start: at(1, 8), end: at(1, 9), title: "Banco", tone: 3 },
   { start: "2026-10-03", end: "2026-10-05", allDay: true, title: "Lisboa", tone: 8 },
 ];
@@ -35,7 +35,7 @@ const card = (size: WidgetSize, body: React.ReactNode) =>
 
 describe("the calendar entries", () => {
   it("a bare date is a local day, not midnight UTC", () => {
-    const [birthday] = parseEntries([{ start: "2026-09-29", title: "Cumpleaños" }]);
+    const [birthday] = parseEntries([{ start: "2026-09-29", title: "Birthday" }]);
     expect(birthday!.from.getDate()).toBe(29);
     expect(birthday!.allDay).toBe(true);
   });
@@ -49,7 +49,7 @@ describe("the calendar entries", () => {
   });
 
   it("all-day items go before timed ones", () => {
-    expect(onDay(parseEntries(ENTRIES), NOW)[0]!.title).toBe("Cumpleaños");
+    expect(onDay(parseEntries(ENTRIES), NOW)[0]!.title).toBe("Birthday");
   });
 
   it("how long is left is said as one says it", () => {
@@ -74,7 +74,7 @@ describe("today by the space available", () => {
   it("in a 2x2 it does not show what is past", () => {
     const html = card("2x2", <WidgetAgenda entries={ENTRIES} now={NOW} />);
     expect(html).not.toContain("Desayuno");
-    expect(html).toContain("Pádel");
+    expect(html).toContain("Padel");
   });
 
   it("in a 4x2 today and tomorrow side by side", () => {

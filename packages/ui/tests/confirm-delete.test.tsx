@@ -24,7 +24,7 @@ function button(name: string): HTMLButtonElement {
   const found = Array.from(document.querySelectorAll("button")).find(
     (candidate) => candidate.textContent === name || candidate.getAttribute("aria-label") === name,
   );
-  if (!found) throw new Error(`no hay botón "${name}"`);
+  if (!found) throw new Error(`no button "${name}"`);
   return found;
 }
 
@@ -38,24 +38,24 @@ describe("ConfirmDelete", () => {
   it("says what is deleted and what is lost, and the button says what it does", () => {
     mount(
       <ConfirmDelete
-        title="¿Borrar esta receta?"
+        title="Delete this recipe?"
         subject="Lentejas"
-        consequence="Se pierden sus 3 pasos."
-        action="Borrar receta"
+        consequence="Its 3 steps are lost."
+        action="Delete recipe"
         onCancel={() => undefined}
         onConfirm={() => undefined}
       />,
     );
     const dialog = document.querySelector('[role="dialog"]');
 
-    expect(dialog?.getAttribute("aria-label")).toBe("¿Borrar esta receta?");
+    expect(dialog?.getAttribute("aria-label")).toBe("Delete this recipe?");
     expect(dialog?.textContent).toContain("Lentejas");
-    expect(dialog?.textContent).toContain("Se pierden sus 3 pasos.");
-    expect(button("Borrar receta").dataset.variant).toBe("destructive");
+    expect(dialog?.textContent).toContain("Its 3 steps are lost.");
+    expect(button("Delete recipe").dataset.variant).toBe("destructive");
   });
 
   it("without a consequence, it warns that it cannot be undone", () => {
-    mount(<ConfirmDelete title="¿Borrar?" action="Borrar" onCancel={() => undefined} onConfirm={() => undefined} />);
+    mount(<ConfirmDelete title="Delete?" action="Delete" onCancel={() => undefined} onConfirm={() => undefined} />);
 
     expect(document.body.textContent).toContain(CANNOT_UNDO);
   });
@@ -63,7 +63,7 @@ describe("ConfirmDelete", () => {
   it("cancelling does not delete", async () => {
     const onConfirm = vi.fn();
     const onCancel = vi.fn();
-    mount(<ConfirmDelete title="¿Borrar?" action="Borrar" onCancel={onCancel} onConfirm={onConfirm} />);
+    mount(<ConfirmDelete title="Delete?" action="Delete" onCancel={onCancel} onConfirm={onConfirm} />);
 
     await press("Cancel");
     await press("Close");
@@ -74,12 +74,12 @@ describe("ConfirmDelete", () => {
 
   it("if the deletion fails, it says so in the sheet and allows retrying", async () => {
     const onConfirm = vi.fn().mockRejectedValueOnce(new Error("Offline")).mockResolvedValueOnce(undefined);
-    mount(<ConfirmDelete title="¿Borrar?" action="Borrar" onCancel={() => undefined} onConfirm={onConfirm} />);
+    mount(<ConfirmDelete title="Delete?" action="Delete" onCancel={() => undefined} onConfirm={onConfirm} />);
 
-    await press("Borrar");
+    await press("Delete");
     expect(document.querySelector('[role="alert"]')?.textContent).toBe("Offline");
 
-    await press("Borrar");
+    await press("Delete");
     expect(onConfirm).toHaveBeenCalledTimes(2);
     expect(document.querySelector('[role="alert"]')).toBeNull();
   });

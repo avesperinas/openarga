@@ -41,6 +41,6 @@ describe("the live view", () => {
   });
 
   it("does not touch what is in code", () => {
-    expect(shown("`[[no]]` y **sí**")).toEqual(["[[no]] y sí"]);
+    expect(shown("`[[no]]` and **yes**")).toEqual(["[[no]] and yes"]);
   });
 });

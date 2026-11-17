@@ -46,23 +46,23 @@ describe("reading to learn", () => {
     const html = render(
       <ArticleReader
         id="leer"
-        topic={<TopicChip name="Historia" glyph="landmark" hue={3} />}
-        eyebrow="Vas a Lisboa en tres semanas"
-        headline="La columna que rompió Esparta"
-        lead="En Leuctra, un ejército tebano cambió la guerra."
-        sections={[{ title: "El orden oblicuo", text: "Primero.\n\nSegundo." }]}
-        highlight={{ label: "Para contar", text: "Un dato sorprendente.", id: "contar" }}
-        coda={{ label: "Para pensar:", text: "¿Por qué tardó tanto?" }}
+        topic={<TopicChip name="History" glyph="landmark" hue={3} />}
+        eyebrow="You go to Lisbon in three weeks"
+        headline="The column that broke Sparta"
+        lead="At Leuctra, a Theban army changed war."
+        sections={[{ title: "The oblique order", text: "First.\n\nSecond." }]}
+        highlight={{ label: "To tell", text: "A surprising fact.", id: "contar" }}
+        coda={{ label: "To think about:", text: "Why did it take so long?" }}
         lang="es"
       />,
     );
     expect(html).toContain('id="leer"');
     expect(html).toContain('data-hue="3"');
     expect(html).toContain("<h1");
-    expect(html).toContain("El orden oblicuo</h2>");
+    expect(html).toContain("The oblique order</h2>");
     expect(html.match(/article-reader-text/g)).toHaveLength(2);
     expect(html).toContain('id="contar"');
-    expect(html).toContain("Para pensar:");
+    expect(html).toContain("To think about:");
   });
 
   it("the section bar shows only with two or more and marks the first", () => {
@@ -84,7 +84,7 @@ describe("reading to learn", () => {
   it("the reactions say which one is chosen", () => {
     const html = render(
       <ReactionBar
-        label="¿Qué te ha parecido?"
+        label="What did you think?"
         value="known"
         onChange={() => {}}
         options={[
@@ -101,10 +101,10 @@ describe("reading to learn", () => {
   it("branches lock while one is being requested", () => {
     const html = render(
       <BranchList
-        title="Quiero saber más sobre…"
+        title="I want to know more about…"
         items={[
           { title: "Epaminondas", why: "El general" },
-          { title: "El Batallón Sagrado", why: "150 parejas", done: true },
+          { title: "The Sacred Band", why: "150 pairs", done: true },
         ]}
         busy={0}
         onOpen={() => {}}
@@ -117,12 +117,12 @@ describe("reading to learn", () => {
 
   it("a resource with a cover links outside and its button says whether it is saved", () => {
     const html = render(
-      <ResourceRow cover="/c.png" icon="book" title="Un libro" href="https://openlibrary.org/x" detail="2008 · 720 páginas" saved onSave={() => {}} />,
+      <ResourceRow cover="/c.png" icon="book" title="A book" href="https://openlibrary.org/x" detail="2008 · 720 pages" saved onSave={() => {}} />,
     );
     expect(html).toContain('src="/c.png"');
     expect(html).toContain('rel="noopener noreferrer"');
     expect(html).toContain('aria-pressed="true"');
-    expect(html).toContain("Un libro: guardado");
+    expect(html).toContain("A book: saved");
     const plain = render(<ResourceRow icon="headphones" hue={6} title="Un podcast" saved={false} />);
     expect(plain).toContain('data-hue="6"');
     expect(plain).not.toContain("<button");
@@ -131,12 +131,12 @@ describe("reading to learn", () => {
   it("a recommendation card without a cover carries its glyph and kind", () => {
     const html = render(
       <Carousel label="Para ti esta semana">
-        <PickCard icon="film" hue={7} kind="Película" title="Ágora" detail="2009" why="Hipatia" />
+        <PickCard icon="film" hue={7} kind="Film" title="Agora" detail="2009" why="Hypatia" />
       </Carousel>,
     );
     expect(html).toContain('role="list"');
     expect(html).toContain('role="listitem"');
-    expect(html).toContain("Película");
+    expect(html).toContain("Film");
     expect(html).toContain("pick-card-glyph");
     expect(html).toContain('aria-label="Anterior"');
     expect(html).toContain('aria-label="Siguiente"');
@@ -192,7 +192,7 @@ describe("conocer a alguien", () => {
     const html = render(
       <QuestionCard
         kind="one"
-        text="¿A qué hora?"
+        text="At what time?"
         why="Para avisarte"
         options={[
           { value: "9", label: "9:00" },
@@ -217,7 +217,7 @@ describe("conocer a alguien", () => {
     );
     expect(many).toContain('aria-pressed="false"');
     expect(many).toContain("Continue");
-    const free = render(<QuestionCard kind="free" text="¿Qué te marcó?" options={[]} onAnswer={() => {}} />);
+    const free = render(<QuestionCard kind="free" text="What stayed with you?" options={[]} onAnswer={() => {}} />);
     expect(free).toContain("<textarea");
   });
 
@@ -241,8 +241,8 @@ describe("conocer a alguien", () => {
 
   it("a conversation: yours marked, the text as written, and the box with its label", () => {
     expect(render(<ChatBubble mine sending><ChatText>Hola</ChatText></ChatBubble>)).toContain('data-mine="true"');
-    const composer = render(<Composer label="Pregúntale" value="" onChange={() => {}} onSend={() => {}} />);
-    expect(composer).toContain('aria-label="Pregúntale"');
+    const composer = render(<Composer label="Ask it" value="" onChange={() => {}} onSend={() => {}} />);
+    expect(composer).toContain('aria-label="Ask it"');
     expect(composer).toContain("disabled");
     expect(render(<ChatFab label="Hablar con Insights" onClick={() => {}} />)).toContain("Hablar con Insights");
     const field = render(<TextAreaField label="De ti" value="x" onChange={() => {}} hint="Lo lee en cada pasada" />);

@@ -30,11 +30,11 @@ describe("the editor", () => {
     wrapSelection(bold, "**");
     expect(bold.state.doc.toString()).toBe("uno **dos**");
 
-    const heading = fake("título", 2);
+    const heading = fake("heading", 2);
     toggleLinePrefix(heading, "## ");
-    expect(heading.state.doc.toString()).toBe("## título");
+    expect(heading.state.doc.toString()).toBe("## heading");
     toggleLinePrefix(heading, "## ");
-    expect(heading.state.doc.toString()).toBe("título");
+    expect(heading.state.doc.toString()).toBe("heading");
   });
 
   it("a block goes on its own line", () => {
@@ -44,16 +44,16 @@ describe("the editor", () => {
   });
 
   it("does not allow changing what an app writes, but does allow what is before and after", () => {
-    const doc = "Mío.\n\n%% arga %%\n### Training\n- Torso A\n%% /arga %%\n";
+    const doc = "Mine.\n\n%% arga %%\n### Training\n- Torso A\n%% /arga %%\n";
     let state = EditorState.create({ doc, extensions: [protectArgaBlock()] });
     const inside = doc.indexOf("Torso");
-    state = state.update({ changes: { from: inside, to: inside + 5, insert: "Pierna" } }).state;
+    state = state.update({ changes: { from: inside, to: inside + 5, insert: "Legs!" } }).state;
     expect(state.doc.toString()).toBe(doc);
     state = state.update({ changes: { from: 0, to: state.doc.length, insert: "" } }).state;
     expect(state.doc.toString()).toContain("%% arga %%\n### Training\n- Torso A\n%% /arga %%");
     state = EditorState.create({ doc, extensions: [protectArgaBlock()] });
-    state = state.update({ changes: { from: 4, insert: " Y más." } }).state;
-    state = state.update({ changes: { from: state.doc.length, insert: "Al final." } }).state;
-    expect(state.doc.toString()).toBe("Mío. Y más.\n\n%% arga %%\n### Training\n- Torso A\n%% /arga %%\nAl final.");
+    state = state.update({ changes: { from: 5, insert: " And more." } }).state;
+    state = state.update({ changes: { from: state.doc.length, insert: "At the end." } }).state;
+    expect(state.doc.toString()).toBe("Mine. And more.\n\n%% arga %%\n### Training\n- Torso A\n%% /arga %%\nAt the end.");
   });
 });

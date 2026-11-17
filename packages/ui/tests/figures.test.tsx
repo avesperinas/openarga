@@ -32,20 +32,20 @@ describe("the figures", () => {
       <Figures
         items={[
           { label: "minutos", value: 75 },
-          { label: "récords", value: 2, lit: true },
+          { label: "records", value: 2, lit: true },
         ]}
       />,
     );
     expect(html).toContain("<dt>minutos</dt><dd>75</dd>");
-    expect(html).toContain('<div data-lit=""><dt>récords</dt><dd>2</dd>');
+    expect(html).toContain('<div data-lit=""><dt>records</dt><dd>2</dd>');
     expect(render(<Figures items={[{ label: "11+ reps", value: "80 kg", muted: true }]} />)).toContain('data-muted=""');
   });
 
   it("the highlighted figure carries its unit and what changed", () => {
     const html = render(
-      <HeadlineFigure label="Máximo estimado" value={119} unit="kg" change={{ text: "+6 kg", direction: "up" }} />,
+      <HeadlineFigure label="Estimated max" value={119} unit="kg" change={{ text: "+6 kg", direction: "up" }} />,
     );
-    expect(html).toContain("Máximo estimado");
+    expect(html).toContain("Estimated max");
     expect(html).toContain('class="headline-figure-unit"> kg');
     expect(html).toContain('data-direction="up">+6 kg');
   });
@@ -62,7 +62,7 @@ describe("the rows", () => {
   it("a folded row does not show its body; open, it does, with its label", () => {
     const closed = render(
       <DisclosureList label="Ejercicios">
-        <DisclosureRow title="Sentadilla" subtitle="3 × 6–10" open={false} onToggle={noop}>
+        <DisclosureRow title="Squat" subtitle="3 × 6–10" open={false} onToggle={noop}>
           <p>Series</p>
         </DisclosureRow>
       </DisclosureList>,
@@ -71,27 +71,27 @@ describe("the rows", () => {
     expect(closed).not.toContain("<p>Series</p>");
 
     const open = render(
-      <DisclosureRow title="Sentadilla" tag="superserie" open onToggle={noop}>
+      <DisclosureRow title="Squat" tag="superset" open onToggle={noop}>
         <p>Series</p>
       </DisclosureRow>,
     );
     expect(open).toContain('aria-expanded="true"');
     expect(open).toContain("<p>Series</p>");
-    expect(open).toContain('class="disclosure-tag"> · superserie');
+    expect(open).toContain('class="disclosure-tag"> · superset');
   });
 
   it("the steps say their state, and a done one is tapped to correct it", () => {
     const html = render(
       <Sequence>
         <li>
-          <SequenceRow number={1} state="done" value="8 × 60 kg" onClick={noop} label="Serie 1" />
+          <SequenceRow number={1} state="done" value="8 × 60 kg" onClick={noop} label="Set 1" />
         </li>
         <li>
           <SequenceRow number={2} state="todo" value="8 × 60 kg" />
         </li>
       </Sequence>,
     );
-    expect(html).toMatch(/<button type="button" class="sequence-row" data-state="done" aria-label="Serie 1">/);
+    expect(html).toMatch(/<button type="button" class="sequence-row" data-state="done" aria-label="Set 1">/);
     expect(html).toMatch(/<div class="sequence-row" data-state="todo">/);
   });
 

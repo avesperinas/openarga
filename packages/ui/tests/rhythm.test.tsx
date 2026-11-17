@@ -22,39 +22,39 @@ const noop = () => {};
 
 describe("the ring with its figure", () => {
   it("fills its share, with the figure inside and its name and line", () => {
-    const html = render(<RingFigure share={0.42} value="42 %" label="Ventana" detail="acaba a las 18:30" />);
+    const html = render(<RingFigure share={0.42} value="42 %" label="Window" detail="ends at 18:30" />);
     expect(html).toContain('stroke-dasharray="42 100"');
     expect(html).toContain('<span class="share-ring-value">42 %</span>');
-    expect(html).toContain("Ventana");
-    expect(html).toContain("acaba a las 18:30");
+    expect(html).toContain("Window");
+    expect(html).toContain("ends at 18:30");
   });
 
   it("without data, the ring is empty; and what goes past one stays full", () => {
-    expect(render(<RingFigure share={null} value="–" label="Semana" />)).not.toContain("share-ring-fill");
-    expect(render(<RingFigure share={1.4} value="140 %" label="Semana" />)).toContain('stroke-dasharray="100 100"');
-    expect(render(<RingFigure share={0.7} value="70 %" label="Semana" tone="warning" size="medium" />)).toContain(
+    expect(render(<RingFigure share={null} value="–" label="Week" />)).not.toContain("share-ring-fill");
+    expect(render(<RingFigure share={1.4} value="140 %" label="Week" />)).toContain('stroke-dasharray="100 100"');
+    expect(render(<RingFigure share={0.7} value="70 %" label="Week" tone="warning" size="medium" />)).toContain(
       'data-size="medium" data-tone="warning"',
     );
   });
 
   it("the ring takes the colour of how it goes: ahead, on pace, careful or at the limit", () => {
     for (const tone of ["positive", "info", "warning", "negative"] as const) {
-      expect(render(<RingFigure share={0.5} value="50 %" label="Semana" tone={tone} />)).toContain(`data-tone="${tone}"`);
+      expect(render(<RingFigure share={0.5} value="50 %" label="Week" tone={tone} />)).toContain(`data-tone="${tone}"`);
     }
   });
 });
 
 describe("how often", () => {
   it("up to the mark is normal", () => {
-    const html = render(<FrequencyBar since={7} every={14} label="cada 2 semanas, hace 7 días" />);
-    expect(html).toContain('aria-label="cada 2 semanas, hace 7 días"');
+    const html = render(<FrequencyBar since={7} every={14} label="every 2 weeks, 7 days ago" />);
+    expect(html).toContain('aria-label="every 2 weeks, 7 days ago"');
     expect(html).toContain("width:50%");
     expect(html).toContain("left:100%");
     expect(html).not.toContain("data-over");
   });
 
   it("past the mark, it says so, and the mark stays where it was due", () => {
-    const html = render(<FrequencyBar since={16} every={8} label="cada 8 días, hace 16" />);
+    const html = render(<FrequencyBar since={16} every={8} label="every 8 days, 16 ago" />);
     expect(html).toContain('data-over="true"');
     expect(html).toContain("width:100%");
     expect(html).toContain("left:50%");
@@ -62,17 +62,17 @@ describe("how often", () => {
 
   it("in its row, with its name and figure, and tapping it opens it", () => {
     const html = render(
-      <FrequencyRows label="Lo que compras">
-        <FrequencyRow title="Tomate" since={15} every={8} label="cada 8 días, hace 15" value="15 / 8 d" onClick={noop} />
+      <FrequencyRows label="What you buy">
+        <FrequencyRow title="Tomato" since={15} every={8} label="every 8 days, 15 ago" value="15 / 8 d" onClick={noop} />
       </FrequencyRows>,
     );
-    expect(html).toContain('aria-label="Lo que compras"');
+    expect(html).toContain('aria-label="What you buy"');
     expect(html).toContain('<button type="button" class="frequency-row">');
     expect(html).toContain('class="frequency-row-value" data-over="true">15 / 8 d');
   });
 
   it("with no habit yet, the bar without a mark", () => {
-    expect(render(<FrequencyBar since={3} every={null} label="hace 3 días" />)).not.toContain("frequency-bar-mark");
+    expect(render(<FrequencyBar since={3} every={null} label="3 days ago" />)).not.toContain("frequency-bar-mark");
   });
 });
 
@@ -108,10 +108,10 @@ describe("the day in 24 hours", () => {
 
 describe("bottom bar and covers", () => {
   it("the bottom bar carries its text and its action", () => {
-    const html = render(<DockBar title="4 en el carro" detail="Pan y 3 más" action={{ label: "Terminar", onClick: noop }} />);
-    expect(html).toContain('aria-label="4 en el carro"');
-    expect(html).toContain("Pan y 3 más");
-    expect(html).toContain(">Terminar</button>");
+    const html = render(<DockBar title="4 in the cart" detail="Bread and 3 more" action={{ label: "Finish", onClick: noop }} />);
+    expect(html).toContain('aria-label="4 in the cart"');
+    expect(html).toContain("Bread and 3 more");
+    expect(html).toContain(">Finish</button>");
   });
 
   it("a cover without an image is its title; the wall opens them by id", () => {

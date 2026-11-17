@@ -363,7 +363,7 @@ export function ResourceRow({ cover, icon, hue = 8, title, href, detail, why, sa
           type="button"
           className="resource-row-save"
           aria-pressed={saved}
-          aria-label={saved ? `${title}: guardado` : `${saveLabel}: ${title}`}
+          aria-label={saved ? say("resource.saved", { title }) : `${saveLabel}: ${title}`}
           onClick={onSave}
         >
           <Icon name={saved ? "done" : "plus"} />

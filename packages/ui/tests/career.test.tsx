@@ -87,7 +87,7 @@ describe("each month's balance", () => {
   it("one dot per month with its state; forecast ones are not tappable", () => {
     const html = render(
       <MonthDots
-        label="Nóminas de 2026"
+        label="2026 payslips"
         onSelect={() => undefined}
         items={[
           { key: "2026-01", label: "e", state: "matched", description: "enero: cuadra" },
@@ -106,9 +106,9 @@ describe("the waterfall", () => {
   it("each step starts where the previous one ended and totals start from zero", () => {
     const bars = waterfallBars([
       { key: "due", label: "Cuota", value: 9420, kind: "total" },
-      { key: "min", label: "Mínimo", value: -1084, kind: "change" },
+      { key: "min", label: "Minimum", value: -1084, kind: "change" },
       { key: "work", label: "Trabajo", value: -400, kind: "change" },
-      { key: "net", label: "Líquida", value: 7936, kind: "total" },
+      { key: "net", label: "Net", value: 7936, kind: "total" },
       { key: "held", label: "Retenido", value: -6556, kind: "change" },
       { key: "result", label: "Falta", value: 1380, kind: "result" },
     ]);

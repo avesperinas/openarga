@@ -4,19 +4,19 @@ import { describe, expect, it } from "vitest";
 import { AppShell } from "../src/index";
 
 const tabs = [
-  { id: "shelf" as const, label: "Estantería", icon: "book" as const },
-  { id: "stats" as const, label: "Estadísticas", icon: "chart" as const },
+  { id: "shelf" as const, label: "Shelf", icon: "book" as const },
+  { id: "stats" as const, label: "Stats", icon: "chart" as const },
 ];
 
 describe("AppShell", () => {
   it("with detail, it renders it next to the list and marks it for the CSS", () => {
     const html = renderToString(
       <AppShell label="Secciones" tabs={tabs} active="shelf" onSelect={() => undefined} detail={<p>Un libro</p>}>
-        <p>La estantería</p>
+        <p>The shelf</p>
       </AppShell>,
     );
     expect(html).toContain('data-detail="true"');
-    expect(html).toContain('class="app-shell-main"><p>La estantería</p>');
+    expect(html).toContain('class="app-shell-main"><p>The shelf</p>');
     expect(html).toContain('class="app-shell-detail"><p>Un libro</p>');
     expect(html).toContain('aria-label="Secciones"');
   });

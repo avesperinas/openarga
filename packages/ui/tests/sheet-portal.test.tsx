@@ -23,7 +23,7 @@ function openFromACard(): HTMLElement {
   document.body.append(card);
   act(() =>
     createRoot(card).render(
-      <Sheet title="¿Empezar Pull?" onClose={noop}>
+      <Sheet title="Start Pull?" onClose={noop}>
         <p>contenido</p>
       </Sheet>,
     ),

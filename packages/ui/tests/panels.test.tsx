@@ -49,10 +49,10 @@ describe("an area's panel", () => {
 
 describe("the blocks", () => {
   it("tasks are ticked and added with their widget; without an actor, they are not", () => {
-    const block = { type: "tasks" as const, widget: "today", items: [{ id: "t1", title: "Pagar la comunidad", done: true }], add: "Añadir una tarea" };
+    const block = { type: "tasks" as const, widget: "today", items: [{ id: "t1", title: "Pay the building fees", done: true }], add: "Add a task" };
     const acting = render(<PanelBlockView block={block} onAct={() => undefined} />);
     expect(acting).toContain('aria-pressed="true"');
-    expect(acting).toContain('placeholder="Añadir una tarea"');
+    expect(acting).toContain('placeholder="Add a task"');
     const quiet = render(<PanelBlockView block={block} />);
     expect(quiet).toContain("disabled");
     expect(quiet).not.toContain("placeholder");
@@ -65,7 +65,7 @@ describe("the blocks", () => {
   });
 
   it("the rings, the bars, the silhouette and the day", () => {
-    expect(render(<PanelBlockView block={{ type: "rings", items: [{ label: "Sueño", value: "82", share: 0.82, hue: 1 }] }} />)).toContain("Sueño: 82");
+    expect(render(<PanelBlockView block={{ type: "rings", items: [{ label: "Sleep", value: "82", share: 0.82, hue: 1 }] }} />)).toContain("Sleep: 82");
     expect(render(<PanelBlockView block={{ type: "bars", labels: ["L", "M"], values: [6, 8], goal: 7.5, unit: "hours" }} />)).toContain("M 8 h");
     expect(render(<PanelBlockView block={{ type: "feature", title: "Pierna, hoy", body: ["legs"], action: "Empezar", href: "/training/" }} />)).toContain("data-on");
     const day = render(<PanelBlockView now={new Date("2026-11-06T17:40:00")} block={{ type: "timeline", items: [{ start: "2026-11-06T18:00:00", end: "2026-11-06T19:30:00", title: "Escalada", hue: 6 }] }} />);

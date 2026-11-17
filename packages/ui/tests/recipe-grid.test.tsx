@@ -7,7 +7,7 @@ import type { RecipeGridCell, RecipeGridRow } from "../src/index";
 
 const ROWS: RecipeGridRow[] = [
   { id: 1, amount: "115 g", label: "Mantequilla" },
-  { id: 2, amount: "200 g", label: "Azúcar" },
+  { id: 2, amount: "200 g", label: "Sugar" },
   { id: 3, amount: "2", label: "Huevos" },
 ];
 const CELLS: RecipeGridCell[] = [

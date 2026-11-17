@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-// @ts-expect-error -- módulo .mjs sin tipos: es la definición, y el test la mide tal cual.
+// @ts-expect-error -- untyped .mjs module: it is the definition, and the test measures it as is.
 import { COLLECTION, FLOOR, MUTED_FLOOR, THEMES, VEIL_MAX, contrast, measure, rgb, samples } from "../wallpapers.mjs";
 
 const css = readFileSync(new URL("../tokens.css", import.meta.url), "utf8");
@@ -91,7 +91,7 @@ describe.each(["light", "dark"] as const)("real contrast in the %s theme", (them
 
 const HARD = [
   ["un reflejo blanco quemado", { id: "a", name: "Faros de noche", base: "#05070c", blobs: [{ cx: 0.5, cy: 0.4, r: 0.35, color: "#fffbe8", alpha: 1 }] }],
-  ["una foto a plena luz", { id: "b", name: "Playa al mediodía", base: "#f4efe2", blobs: [{ cx: 0.3, cy: 0.2, r: 0.6, color: "#ffffff", alpha: 0.9 }] }],
+  ["a photo in full light", { id: "b", name: "Beach at noon", base: "#f4efe2", blobs: [{ cx: 0.3, cy: 0.2, r: 0.6, color: "#ffffff", alpha: 0.9 }] }],
   ["nieve", { id: "c", name: "Nieve", base: "#ffffff", blobs: [] }],
   ["noche cerrada", { id: "d", name: "Noche", base: "#000000", blobs: [] }],
 ] as const;
