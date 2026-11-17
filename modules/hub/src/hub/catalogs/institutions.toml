@@ -1,3 +1,5 @@
+# One table per bank or institution. See docs/apps/hub.md, "Institutions", before adding one.
+
 [BBVA]
 internal = "^TRASPASO // TRASPASO (A|DESDE) CUENTA"
 bank_category = "^(?:PAGO CON TARJETA|CARGO POR COMPRA CON TARJETA) (?:EN |DE )?([^/]+?) //"

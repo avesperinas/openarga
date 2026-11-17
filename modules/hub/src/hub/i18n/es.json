@@ -23,5 +23,7 @@
   "notice.reauth.today": "El permiso de {label} caduca hoy",
   "sync.no_access_left": "Hoy ya no quedan accesos a {label}: vuelve mañana.",
   "widget.status.all_good": "todo al día",
-  "widget.status.empty": "nada conectado todavía"
+  "widget.status.empty": "nada conectado todavía",
+  "game.untimed": "hora por confirmar",
+  "game.postponed": "aplazado"
 }

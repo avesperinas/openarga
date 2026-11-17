@@ -23,5 +23,7 @@
   "notice.reauth.today": "The permission for {label} expires today",
   "sync.no_access_left": "No accesses to {label} left today: try again tomorrow.",
   "widget.status.all_good": "all up to date",
-  "widget.status.empty": "nothing connected yet"
+  "widget.status.empty": "nothing connected yet",
+  "game.untimed": "time to be confirmed",
+  "game.postponed": "postponed"
 }
