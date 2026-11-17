@@ -6,6 +6,7 @@ import { AiSettings } from "./AiSettings";
 import { ConnectionScreen } from "./Connection";
 import { APP } from "./Header";
 import { HomeScreen } from "./Home";
+import { say } from "./words";
 
 const ROOT = "/hub";
 const CONNECTION = new RegExp(`^${ROOT}/([0-9a-f-]{36})/?$`);
@@ -16,10 +17,10 @@ export type Route = { screen: Tab } | { screen: "settings" } | { screen: "connec
 
 const PATHS: Record<Tab, string> = {
   status: `${ROOT}/`,
-  setup: `${ROOT}/configurar`,
+  setup: `${ROOT}/setup`,
 };
 
-const SETTINGS = `${ROOT}/ajustes`;
+const SETTINGS = `${ROOT}/settings`;
 
 export function route(pathname: string): Route {
   const match = CONNECTION.exec(pathname);
@@ -53,12 +54,12 @@ export function App() {
   const current = route(path);
   return (
     <AppShell
-      label="Secciones"
+      label={say("tabs.sections")}
       active={current.screen === "connection" ? "status" : current.screen}
       onSelect={(tab) => navigate(tab === "settings" ? SETTINGS : PATHS[tab])}
       tabs={[
-        { id: "status", label: "Estado", icon: "bolt" },
-        { id: "setup", label: "Configurar", icon: "plus" },
+        { id: "status", label: say("tabs.status"), icon: "bolt" },
+        { id: "setup", label: say("tabs.setup"), icon: "plus" },
         SETTINGS_TAB,
       ]}
     >

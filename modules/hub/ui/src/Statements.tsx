@@ -1,16 +1,18 @@
-import { Button, Card, Hint, List, ListRow } from "@openarga/ui";
+import { Button, Card, Hint, List, ListRow, regional } from "@openarga/ui";
 import { useRef, useState } from "react";
 
 import { Refused, type StatementRead, Unauthorised, signIn, uploadStatements } from "./api";
+import { say } from "./words";
 
 export function statementLine(read: StatementRead): string {
   if (read.problem) return read.problem;
   const parts = [read.entity, ...(read.accounts ?? [])].filter(Boolean);
   const facts = [];
-  if (read.movements) facts.push(read.movements === 1 ? "1 movimiento" : `${read.movements} movimientos`);
-  if (read.balances) facts.push(read.balances === 1 ? "1 saldo" : `${read.balances} saldos`);
-  const fresh = read.new ? `${read.new} nuevos` : "nada nuevo";
-  return `${parts.join(" · ")} · ${facts.join(" y ") || "nada"}, ${fresh}`;
+  if (read.movements) facts.push(say(read.movements === 1 ? "statements.movement" : "statements.movements", { n: read.movements }));
+  if (read.balances) facts.push(say(read.balances === 1 ? "statements.balance" : "statements.balances", { n: read.balances }));
+  const fresh = read.new ? say("statements.new", { n: read.new }) : say("statements.nothing_new");
+  const summary = facts.length ? new Intl.ListFormat(regional().locale, { type: "conjunction" }).format(facts) : say("statements.nothing");
+  return `${parts.join(" · ")} · ${summary}, ${fresh}`;
 }
 
 export function StatementUpload() {
@@ -30,7 +32,7 @@ export function StatementUpload() {
       setResults((await uploadStatements(files)).files);
     } catch (error) {
       if (error instanceof Unauthorised) return signIn();
-      setProblem(error instanceof Refused ? error.message : "No se pudo subir. Vuelve a intentarlo.");
+      setProblem(error instanceof Refused ? error.message : say("statements.failed"));
     } finally {
       setBusy(false);
       if (input.current) input.current.value = "";
@@ -38,12 +40,8 @@ export function StatementUpload() {
   };
 
   return (
-    <Card title="Subir un extracto">
-      <Hint>
-        Para lo que no tiene conexión: guarda desde el navegador la página de movimientos de Renault Bank, o la posición
-        global, la cartera y los movimientos de cada plan de Finizens, y súbelas aquí. Con la cartera, su valor se mueve
-        cada día con el precio de sus fondos. Se leen y no se guardan; subirlas otra vez no duplica nada.
-      </Hint>
+    <Card title={say("statements.title")}>
+      <Hint>{say("statements.hint")}</Hint>
       <input
         ref={input}
         type="file"
@@ -53,7 +51,7 @@ export function StatementUpload() {
         onChange={(event) => void upload(event.target.files)}
       />
       <Button block icon="plus" disabled={busy} onClick={() => input.current?.click()}>
-        {busy ? "Leyendo…" : "Elegir las páginas"}
+        {busy ? say("statements.reading") : say("statements.choose")}
       </Button>
       {problem && (
         <Hint tone="warning">
@@ -68,7 +66,7 @@ export function StatementUpload() {
               title={read.file}
               subtitle={statementLine(read)}
               tone={read.problem ? "warning" : undefined}
-              detail={read.skipped?.length ? `${read.skipped.length} fuera` : undefined}
+              detail={read.skipped?.length ? say("statements.skipped", { n: read.skipped.length }) : undefined}
             />
           ))}
         </List>

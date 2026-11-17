@@ -2,6 +2,7 @@ import { Hint, List, ListRow, Sheet, TextField } from "@openarga/ui";
 import { useEffect, useMemo, useState } from "react";
 
 import { type Provider, Refused, Unauthorised, connectBank, listBanks, readBankApp, signIn } from "./api";
+import { say } from "./words";
 
 const SHOWN_BANKS = 40;
 
@@ -47,7 +48,7 @@ export function BankSheet({ provider, onClose }: { provider: Provider; onClose: 
   const showBanks = (secrets: Record<string, string>) =>
     listBanks(secrets)
       .then((banks) => setStep({ name: "banks", banks }))
-      .catch((error: unknown) => failed(error, "No se pudo leer la lista de bancos."));
+      .catch((error: unknown) => failed(error, say("bank.list_failed")));
 
   useEffect(() => {
     readBankApp()
@@ -56,7 +57,7 @@ export function BankSheet({ provider, onClose }: { provider: Provider; onClose: 
       )
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        setProblem(error instanceof Refused ? error.message : "No se pudo empezar.");
+        setProblem(error instanceof Refused ? error.message : say("bank.start_failed"));
       });
   }, []);
 
@@ -69,7 +70,7 @@ export function BankSheet({ provider, onClose }: { provider: Provider; onClose: 
       .then((url) => window.location.assign(url))
       .catch((error: unknown) => {
         setGoing(null);
-        failed(error, "No se pudo empezar.");
+        failed(error, say("bank.start_failed"));
       });
   };
 
@@ -78,17 +79,15 @@ export function BankSheet({ provider, onClose }: { provider: Provider; onClose: 
 
   return (
     <Sheet
-      title="Conectar un banco"
+      title={say("bank.title")}
       onClose={onClose}
-      action={needsApp ? { label: "Ver los bancos", onClick: () => void showBanks(app), disabled: !complete } : undefined}
+      action={needsApp ? { label: say("bank.see"), onClick: () => void showBanks(app), disabled: !complete } : undefined}
     >
-      {step.name === "loading" && !problem && <Hint>Cargando…</Hint>}
+      {step.name === "loading" && !problem && <Hint>{say("loading")}</Hint>}
       {needsApp && (
         <>
           <Hint>
-            Arga lee tus cuentas por tu propia aplicación de Enable Banking. Dala de alta en su panel con{" "}
-            <strong>{step.redirect}</strong> como dirección de vuelta, y pega aquí su id y su clave. Se guardan
-            cifradas y valen para todos tus bancos.
+            {say("bank.app.before")} <strong>{step.redirect}</strong> {say("bank.app.after")}
           </Hint>
           {provider.secrets.map((secret) => (
             <TextField
@@ -104,11 +103,9 @@ export function BankSheet({ provider, onClose }: { provider: Provider; onClose: 
       )}
       {step.name === "banks" && (
         <>
-          <TextField label="Banco" type="search" value={query} onChange={setQuery} autoFocus placeholder="Busca el tuyo" />
+          <TextField label={say("bank.bank")} type="search" value={query} onChange={setQuery} autoFocus placeholder={say("bank.search")} />
           {going ? (
-            <Hint announce>
-              Abriendo {going}…
-            </Hint>
+            <Hint announce>{say("bank.opening", { bank: going })}</Hint>
           ) : (
             <List>
               {matching(step.banks, query).map((bank) => (

@@ -51,7 +51,7 @@ test("sin nada conectado se explica qué es esto, no se enseña una lista vacía
   const html = renderToString(<Yours connections={[]} />);
 
   expect(html).toContain("Nada conectado aquí todavía");
-  expect(html).toContain("sin que tengas que");
+  expect(html).toContain("tus calendarios");
 });
 
 test("una conexión que pide algo dice qué, con su nombre", () => {

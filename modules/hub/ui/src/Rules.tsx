@@ -1,30 +1,31 @@
-import { Button, Card, ChoiceChips, ConfirmDelete, Hint, List, ListRow, Sheet, TextField } from "@openarga/ui";
+import { Button, Card, ChoiceChips, ConfirmDelete, Hint, List, ListRow, Sheet, TextField, regional } from "@openarga/ui";
 import { useState } from "react";
 
 import { type ConnectionDetail, type MailRule, type RuleFact, type RuleTrial, Refused, saveRules, tryRule } from "./api";
+import { say } from "./words";
 
 export const FACTS: { value: RuleFact; label: string }[] = [
-  { value: "balance", label: "Lo que vale" },
-  { value: "deposit", label: "Una aportación" },
-  { value: "withdrawal", label: "Una retirada" },
+  { value: "balance", get label() { return say("rules.fact.balance"); } },
+  { value: "deposit", get label() { return say("rules.fact.deposit"); } },
+  { value: "withdrawal", get label() { return say("rules.fact.withdrawal"); } },
 ];
 
 export function ruleLine(rule: MailRule): string {
   const fact = FACTS.find((one) => one.value === rule.fact)?.label ?? rule.fact;
-  return `${fact}, tras «${rule.anchor}»`;
+  return say("rules.line", { fact, anchor: rule.anchor });
 }
 
 export function trialLine(trial: RuleTrial): string {
-  if (trial.problem) return `No lo entiende: ${trial.problem}`;
+  if (trial.problem) return say("rules.trial.problem", { problem: trial.problem });
   const amount = Number(trial.amount);
-  return amount.toLocaleString("es-ES", { style: "currency", currency: "EUR" });
+  return amount.toLocaleString(regional().locale, { style: "currency", currency: "EUR" });
 }
 
 export function ruleProblem(rule: MailRule): string | null {
-  if (!rule.entity.trim()) return "Falta la entidad.";
-  if (!rule.product.trim()) return "Falta el producto.";
-  if (rule.sender.trim().length < 3) return "Falta el remitente, o una parte de su dirección.";
-  if (rule.anchor.trim().length < 2) return "Falta el texto que va justo antes del importe.";
+  if (!rule.entity.trim()) return say("rules.missing.entity");
+  if (!rule.product.trim()) return say("rules.missing.product");
+  if (rule.sender.trim().length < 3) return say("rules.missing.sender");
+  if (rule.anchor.trim().length < 2) return say("rules.missing.anchor");
   return null;
 }
 
@@ -35,12 +36,9 @@ export function MailRules({ connection, onChange }: { connection: ConnectionDeta
   const [editing, setEditing] = useState<{ rule: MailRule; index: number | null } | null>(null);
 
   return (
-    <Card title="Reglas">
+    <Card title={say("rules.title")}>
       {rules.length === 0 ? (
-        <Hint>
-          Todavía ninguna. Una regla dice de quién es un correo y dónde está su importe: el valor de tu cartera, o
-          lo que aportaste.
-        </Hint>
+        <Hint>{say("rules.empty")}</Hint>
       ) : (
         <List>
           {rules.map((rule, index) => (
@@ -55,11 +53,9 @@ export function MailRules({ connection, onChange }: { connection: ConnectionDeta
         </List>
       )}
       <Button block icon="plus" onClick={() => setEditing({ rule: EMPTY, index: null })}>
-        Añadir una regla
+        {say("rules.add")}
       </Button>
-      <Hint>
-        Reenvía los correos con un filtro automático: el día de cada dato es el del correo que llega al buzón.
-      </Hint>
+      <Hint>{say("rules.forward")}</Hint>
       {editing && (
         <RuleSheet
           connection={connection}
@@ -116,7 +112,7 @@ function RuleSheet({
     try {
       await work();
     } catch (error) {
-      setProblem(error instanceof Refused ? error.message : "No se ha podido. Vuelve a intentarlo.");
+      setProblem(error instanceof Refused ? error.message : say("rules.failed"));
     } finally {
       setBusy(false);
     }
@@ -124,55 +120,55 @@ function RuleSheet({
 
   return (
     <Sheet
-      title={rule.entity ? `${rule.entity} · ${rule.product}` : "Una regla"}
+      title={rule.entity ? `${rule.entity} · ${rule.product}` : say("rules.one")}
       onClose={onClose}
-      action={{ label: "Guardar", disabled: busy, onClick: () => void run(() => onSave(draft)) }}
+      action={{ label: say("rules.save"), disabled: busy, onClick: () => void run(() => onSave(draft)) }}
     >
-      <TextField label="Entidad" placeholder="Finizens" value={draft.entity} onChange={set("entity")} autoFocus />
+      <TextField label={say("rules.entity")} placeholder="Finizens" value={draft.entity} onChange={set("entity")} autoFocus />
       <TextField
-        label="Producto"
-        placeholder="Plan de pensiones"
+        label={say("rules.product")}
+        placeholder={say("rules.product.placeholder")}
         value={draft.product}
         onChange={set("product")}
-        hint="Dos reglas con la misma entidad y el mismo producto son el mismo producto en Money."
+        hint={say("rules.product.hint")}
       />
       <TextField
-        label="El remitente contiene"
+        label={say("rules.sender")}
         placeholder="@finizens.com"
         value={draft.sender}
         onChange={set("sender")}
       />
       <TextField
-        label="El asunto contiene"
-        placeholder="Opcional"
+        label={say("rules.subject")}
+        placeholder={say("rules.optional")}
         value={draft.subject}
         onChange={set("subject")}
       />
       <TextField
-        label="Texto justo antes del importe"
-        placeholder="Valor de tu cartera"
+        label={say("rules.anchor")}
+        placeholder={say("rules.anchor.placeholder")}
         value={draft.anchor}
         onChange={set("anchor")}
-        hint="Cópialo del correo tal cual. Si un correo no lo trae, la pasada falla y te lo dice."
+        hint={say("rules.anchor.hint")}
       />
-      <p className="hub-label">Ese importe es</p>
-      <ChoiceChips label="Ese importe es" options={FACTS} value={draft.fact} onChange={set("fact")} />
+      <p className="hub-label">{say("rules.fact")}</p>
+      <ChoiceChips label={say("rules.fact")} options={FACTS} value={draft.fact} onChange={set("fact")} />
       <Button
         disabled={busy}
         onClick={() => void run(async () => setTrials(await tryRule(connection.id, draft)))}
       >
-        Probar con los correos del buzón
+        {say("rules.try")}
       </Button>
       {trials !== null &&
         (trials.length === 0 ? (
-          <Hint>Ningún correo de los últimos seis meses casa con el remitente y el asunto.</Hint>
+          <Hint>{say("rules.try.none")}</Hint>
         ) : (
           <List>
             {trials.map((trial, index) => (
               <ListRow
                 key={index}
                 title={trialLine(trial)}
-                subtitle={`${trial.on ?? "Sin fecha"} · ${trial.subject}`}
+                subtitle={`${trial.on ?? say("rules.undated")} · ${trial.subject}`}
                 tone={trial.problem ? "warning" : undefined}
               />
             ))}
@@ -180,7 +176,7 @@ function RuleSheet({
         ))}
       {onRemove && (
         <Button variant="plain" disabled={busy} onClick={() => setConfirming(true)}>
-          Quitar esta regla
+          {say("rules.remove")}
         </Button>
       )}
       {problem && (
@@ -190,10 +186,10 @@ function RuleSheet({
       )}
       {confirming && onRemove && (
         <ConfirmDelete
-          title="¿Quitar la regla?"
+          title={say("rules.remove.title")}
           subject={`${rule.entity} · ${rule.product}`}
-          consequence="Sus correos dejan de leerse. Lo que ya trajo se queda en Money."
-          action="Quitar"
+          consequence={say("rules.remove.consequence")}
+          action={say("rules.remove.action")}
           onCancel={() => setConfirming(false)}
           onConfirm={onRemove}
         />

@@ -173,10 +173,10 @@ async def test_a_bank_that_gives_no_account_says_so_until_it_is_reconnected(
     fixed = await api.get(f"/hub/callback?state={state}&code=otro-codigo")
     ficha = (await api.get(f"/connections/{connection}")).json()
 
-    assert back.headers["location"] == f"/hub/{connection}?banco=sin-cuentas"
+    assert back.headers["location"] == f"/hub/{connection}?bank=no-accounts"
     assert (empty["state"], empty["tone"]) == ("failing", "negative")
     assert "link this bank's accounts in its dashboard" in empty["reason"]
-    assert fixed.headers["location"] == f"/hub/{connection}?banco=conectado"
+    assert fixed.headers["location"] == f"/hub/{connection}?bank=connected"
     assert (ficha["state"], ficha["reason"], len(ficha["accounts"])) == ("active", None, 1)
 
 
@@ -184,8 +184,8 @@ async def test_a_return_nobody_asked_for_or_cancelled_says_so(api, kernel) -> No
     unknown = await api.get("/hub/callback?state=inventado&code=x")
     cancelled = await api.get("/hub/callback?error=access_denied")
 
-    assert unknown.headers["location"] == "/hub/?banco=desconocido"
-    assert cancelled.headers["location"] == "/hub/?banco=cancelado"
+    assert unknown.headers["location"] == "/hub/?bank=unknown"
+    assert cancelled.headers["location"] == "/hub/?bank=cancelled"
 
 
 async def test_a_new_bank_syncs_in_the_minute_and_then_waits_for_its_hour(
@@ -247,7 +247,7 @@ async def test_reconnecting_is_the_same_connection_with_a_new_consent(api, kerne
     state = parse_qs(urlparse(again.json()["authorization_url"]).query)["s"][0]
     back = await api.get(f"/hub/callback?state={state}&code=otro-codigo")
 
-    assert back.headers["location"] == f"/hub/{connection}?banco=conectado"
+    assert back.headers["location"] == f"/hub/{connection}?bank=connected"
     ficha = (await api.get(f"/connections/{connection}")).json()
     assert datetime.fromisoformat(ficha["consent_expires_at"]) == fake.valid_until
     assert len((await api.get("/connections")).json()) == 1

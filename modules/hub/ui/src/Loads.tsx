@@ -1,10 +1,11 @@
 import { Unauthorised, invalidate, mutate, signIn, useResource } from "@openarga/app";
 import { EmptyState, ErrorState, Skeleton } from "@openarga/ui";
 import { useCallback, useEffect } from "react";
+import { say } from "./words";
 
 export const changed = () => invalidate("");
 
-const gone = (error: Error | null) => Boolean(error?.message.includes("no existe"));
+const gone = (error: Error | null) => Boolean(error?.message.includes("does not exist"));
 
 export function useLoad<T>(key: string | null, load: () => Promise<T>) {
   const found = useResource(key, load, { persist: true });
@@ -31,10 +32,10 @@ export function Pending({
   if (!found.error || found.error instanceof Unauthorised) return <Skeleton rows={rows} />;
   if (gone(found.error)) {
     return (
-      <EmptyState icon="search" title="Ya no está">
-        Se borró o no es tuyo.
+      <EmptyState icon="search" title={say("gone.title")}>
+        {say("gone.hint")}
       </EmptyState>
     );
   }
-  return <ErrorState title="Hub no contesta" detail={found.error.message} onRetry={() => void found.refresh()} />;
+  return <ErrorState title={say("down")} detail={found.error.message} onRetry={() => void found.refresh()} />;
 }

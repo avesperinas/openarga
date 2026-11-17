@@ -24,10 +24,8 @@ import {
   saveAiKey,
   saveAiSettings,
 } from "./ai";
-import en from "./i18n/en.json";
-import es from "./i18n/es.json";
+import { CATALOGS } from "./words";
 
-const CATALOGS = { en, es };
 const DEFAULTS: Partial<Record<AiProvider, { fast: string; smart: string }>> = {
   anthropic: { fast: "claude-haiku-5-5", smart: "claude-opus-5-5" },
 };
