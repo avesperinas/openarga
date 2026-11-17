@@ -1,6 +1,6 @@
 import { renderToString } from "react-dom/server";
 
-import { ByApp, ProviderSection, Yours, appPath, providerAction, providersOf, whereItLives } from "./Home";
+import { ByApp, ProviderSection, Yours, appPath, providerAction, whereItLives } from "./Home";
 import type { Connection, Provider } from "./api";
 
 const provider = (overrides: Partial<Provider>): Provider => ({
@@ -41,10 +41,10 @@ test("el nombre de la app con tilde lleva a su ruta sin ella", () => {
 });
 
 test("lo que no existe en ningún sitio todavía no finge estar", () => {
-  const mail = provider({ id: "imap", name: "Correo" });
+  const later = provider({ id: "later", name: "Pronto" });
 
-  expect(whereItLives(mail)).toBe("Próximamente");
-  expect(appPath(mail)).toBeNull();
+  expect(whereItLives(later)).toBe("Próximamente");
+  expect(appPath(later)).toBeNull();
 });
 
 test("sin nada conectado se explica qué es esto, no se enseña una lista vacía", () => {
@@ -83,7 +83,7 @@ test("cada trozo enseña sus proveedores y dónde están", () => {
   const html = renderToString(
     <ProviderSection
       title="Otras fuentes"
-      providers={[provider({ lives_in: "Money" }), provider({ id: "imap", name: "Correo" })]}
+      providers={[provider({ lives_in: "Money" }), provider({ id: "later", name: "Pronto" })]}
     />,
   );
 
@@ -108,7 +108,7 @@ test("lo que se tiene una vez y ya está conectado abre su ficha en vez de añad
 
 test("lo que aún vive en su app lleva allí, y lo que no existe no hace nada", () => {
   expect(providerAction(provider({ lives_in: "Money" }), [])).toEqual({ kind: "app", path: "/money" });
-  expect(providerAction(provider({ id: "imap" }), [])).toBeNull();
+  expect(providerAction(provider({ id: "later" }), [])).toBeNull();
 });
 
 test("lo que crea otra app se ve aquí pero se añade allí: una cuenta de Claude, desde Chuping", () => {
@@ -116,10 +116,6 @@ test("lo que crea otra app se ve aquí pero se añade allí: una cuenta de Claud
 
   expect(whereItLives(claude)).toBe("Desde Chuping");
   expect(providerAction(claude, [])).toEqual({ kind: "app", path: "/chuping" });
-});
-
-test("una entidad que se lee por correo sale en su categoría con esa marca", () => {
-  expect(whereItLives(provider({ id: "imap.gestora", name: "Gestora", by_mail: true }))).toBe("Por correo");
 });
 
 test("en Configurar se ven las cuentas que ya tienes, y debajo la fila para añadir otra", () => {
@@ -163,12 +159,11 @@ describe("por app (ADR-0103)", () => {
       name: "Finanzas",
       providers: [
         provider({ id: "enable_banking", name: "Bancos (PSD2)", available: true }),
-        provider({ id: "imap", name: "Correo", available: true }),
-        provider({ id: "imap.gestora", name: "Gestora", by_mail: true }),
+        provider({ id: "prices", name: "Cotizaciones", available: true }),
       ],
     },
     { id: "books", name: "Libros", providers: [provider({ id: "openlibrary", name: "Open Library", available: true })] },
-    { id: "economy", name: "Economía", providers: [provider({ id: "ine", name: "INE", available: true })] },
+    { id: "weather", name: "Tiempo", providers: [provider({ id: "open_meteo", name: "Open-Meteo", available: true })] },
   ];
   const apps = {
     apps: [
@@ -176,7 +171,7 @@ describe("por app (ADR-0103)", () => {
         module: "money",
         name: "Money",
         view: "/money",
-        inlets: [{ key: "money.accounts", title: "Cuentas", providers: ["enable_banking", "imap"] }],
+        inlets: [{ key: "money.accounts", title: "Cuentas", providers: ["enable_banking", "prices"] }],
         services: [],
       },
       {
@@ -187,12 +182,8 @@ describe("por app (ADR-0103)", () => {
         services: [{ provider: "openlibrary", capabilities: ["books.search"] }],
       },
     ],
-    others: ["ine"],
+    others: ["open_meteo"],
   };
-
-  it("lo que se lee por correo va detrás del buzón, en la app a la que llega", () => {
-    expect(providersOf(["imap"], catalogue).map((one) => one.id)).toEqual(["imap", "imap.gestora"]);
-  });
 
   it("cada app con lo que le llega, sus conexiones encima, y aparte lo que no llega a ninguna", () => {
     const html = renderToString(
@@ -201,11 +192,11 @@ describe("por app (ADR-0103)", () => {
 
     expect(html).toContain("Money");
     expect(html).toContain("Banco de prueba");
-    expect(html).toContain("Gestora");
+    expect(html).toContain("Cotizaciones");
     expect(html).toContain("Library");
     expect(html).toContain("Open Library");
     expect(html.indexOf("Library")).toBeLessThan(html.indexOf("Otras fuentes"));
-    expect(html).toContain("INE");
+    expect(html).toContain("Open-Meteo");
     expect(html.indexOf("Money")).toBeLessThan(html.indexOf("Banco de prueba"));
   });
 });

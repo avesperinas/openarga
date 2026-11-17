@@ -37,11 +37,9 @@ modules/hub/tests/test_hub_banks.py
 modules/hub/tests/test_hub_batch.py
 modules/hub/tests/test_hub_books.py
 modules/hub/tests/test_hub_calendar.py
-modules/hub/tests/test_hub_economy.py
 modules/hub/tests/test_hub_food.py
 modules/hub/tests/test_hub_github.py
 modules/hub/tests/test_hub_google_health.py
-modules/hub/tests/test_hub_mail.py
 modules/hub/tests/test_hub_notices.py
 modules/hub/tests/test_hub_places.py
 modules/hub/tests/test_hub_portfolio.py
@@ -53,7 +51,6 @@ modules/hub/tests/test_hub_wikimedia.py
 modules/hub/ui/src/Add.test.tsx
 modules/hub/ui/src/Connection.test.tsx
 modules/hub/ui/src/Home.test.tsx
-modules/hub/ui/src/Rules.test.ts
 modules/hub/ui/src/Statements.test.tsx
 modules/hub/ui/src/states.test.tsx
 packages/contracts/src/arga_contracts/records.py

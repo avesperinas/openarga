@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import hmac
 import os
 from contextlib import asynccontextmanager
@@ -29,13 +28,11 @@ from hub import (
     google_auth,
     plugs,
     push,
-    rules,
     statements,
     sync,
 )
 from hub.capabilities import CAPABILITIES
 from hub.db import as_module
-from hub.providers import SourceError, imap
 from hub.tools import TOOLS, role_for_scopes
 from hub.widgets import RENDERERS
 from hub.words import say
@@ -405,45 +402,6 @@ async def rename_connection(connection_id: UUID, request: LabelIn) -> dict:
     except connections.Refused as error:
         raise refused(error) from error
     return await tell(found)
-
-
-class RulesIn(BaseModel):
-    rules: Annotated[list[dict[str, Any]], Field(max_length=rules.MAX_RULES)]
-
-
-@app.put("/connections/{connection_id}/rules")
-async def change_rules(connection_id: UUID, request: RulesIn) -> dict:
-    require_person()
-    try:
-        async with as_app() as connection:
-            if not await connections.set_rules(connection, connection_id, request.rules):
-                raise HTTPException(status_code=404, detail="that mailbox does not exist")
-            found = await detail_or_404(connection, connection_id)
-    except connections.Refused as error:
-        raise refused(error) from error
-    return await tell(found)
-
-
-@app.post("/connections/{connection_id}/rules/try")
-async def try_rule(connection_id: UUID, request: dict[str, Any]) -> dict:
-    require_person()
-    try:
-        rule = rules.clean(request)
-    except rules.Invalid as error:
-        raise HTTPException(status_code=422, detail=str(error)) from error
-    async with as_app() as connection:
-        found = await detail_or_404(connection, connection_id)
-        if found["provider"] != "imap":
-            raise HTTPException(status_code=404, detail="that mailbox does not exist")
-        config = await connections.config_of(connection, connection_id)
-        secrets = await sync.secrets_of(connection, catalogue.provider("imap"), connection_id)
-    if not secrets.get(imap.PASSWORD):
-        raise HTTPException(status_code=422, detail=say("mailbox.missing_password"))
-    try:
-        results = await asyncio.to_thread(imap.trial, config, secrets[imap.PASSWORD], rule)
-    except SourceError as error:
-        raise HTTPException(status_code=422, detail=str(error)) from error
-    return {"results": results}
 
 
 async def pause(connection_id: UUID, paused: bool) -> dict:

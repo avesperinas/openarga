@@ -1,7 +1,7 @@
 import { renderToString } from "react-dom/server";
 
 import { route } from "./App";
-import { budgetLine, calendarLine, landsIn, mailLine, removeConsequence, RenameSheet, runLine } from "./Connection";
+import { budgetLine, calendarLine, landsIn, removeConsequence, RenameSheet, runLine } from "./Connection";
 import { AddSheet, missing } from "./Add";
 import type { ConnectionDetail, Provider, Run } from "./api";
 import { matching, oneAtATime } from "./BankSheet";
@@ -120,14 +120,6 @@ test("la lista de bancos se busca sin tildes ni mayúsculas, y un toque doble no
   expect(calls).toBe(1);
 });
 
-test("un buzón dice qué entidades lee, o que aún ninguna", () => {
-
-  expect(mailLine([])).toContain("Todavía no lee ninguna entidad");
-  expect(mailLine([{ entity: "Gestora Inventada" }])).toBe(
-    "Lee los correos de Gestora Inventada. Los demás no se abren.",
-  );
-});
-
 test("una suscripción de calendario dice qué trae con sus parámetros", () => {
 
   expect(calendarLine({ provider: "holidays", settings: { country: "ES", region: "ES-NC" } })).toBe(
@@ -142,7 +134,7 @@ test("una suscripción de calendario dice qué trae con sus parámetros", () => 
   expect(calendarLine({ provider: "football", settings: { team: "11", team_name: "Equipo de prueba" } })).toBe(
     "Los partidos de Equipo de prueba: liga, copa y Europa, cada seis horas.",
   );
-  expect(calendarLine({ provider: "imap", settings: {} })).toBeNull();
+  expect(calendarLine({ provider: "prices", settings: {} })).toBeNull();
 });
 
 test("una conexión dice a qué apps llega por las tomas que declaran, sin nombrarlas aquí", () => {

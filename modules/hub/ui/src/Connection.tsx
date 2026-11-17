@@ -35,7 +35,6 @@ import {
 import { TokenSheet } from "./Add";
 import { ScreenHeader } from "./Header";
 import { Pending, changed, useLoad } from "./Loads";
-import { MailRules } from "./Rules";
 import { say } from "./words";
 
 export function when(iso: string): string {
@@ -67,13 +66,6 @@ export function runLine(run: Run): string {
 export function budgetLine(budget: NonNullable<ConnectionDetail["budget"]>): string {
   if (budget.remaining === 0) return say("budget.spent", { limit: budget.limit });
   return say("budget.left", { remaining: budget.remaining, limit: budget.limit });
-}
-
-export function mailLine(extractors: { entity: string }[]): string {
-  if (extractors.length === 0) {
-    return say("mail.none");
-  }
-  return say("mail.reads", { entities: extractors.map((extractor) => extractor.entity).join(", ") });
 }
 
 const SESSIONS = ["race", "qualifying", "sprint", "sprint_qualifying", "practice"];
@@ -235,33 +227,12 @@ export function ConnectionScreen({ id, onBack }: { id: string; onBack: () => voi
         </Card>
       )}
 
-      {connection.extractors && connection.provider === "imap" && (
-        <Card title={say("mailbox")}>
-          {connection.settings && (
-            <Hint>
-              {say("mailbox.where", {
-                user: String(connection.settings.username ?? ""),
-                host: String(connection.settings.host ?? ""),
-                folder: String(connection.settings.folder ?? "INBOX"),
-              })}
-            </Hint>
-          )}
-          <Hint>
-            {mailLine([
-              ...new Map(
-                [...(connection.rules ?? []), ...connection.extractors].map((one) => [one.entity, one]),
-              ).values(),
-            ])}
-          </Hint>
-        </Card>
-      )}
       {(calendarLine(connection) || landsIn(connection)) && (
         <Card title={say("brings")}>
           {calendarLine(connection) && <Hint>{calendarLine(connection)}</Hint>}
           {landsIn(connection) && <Hint>{landsIn(connection)}</Hint>}
         </Card>
       )}
-      {connection.provider === "imap" && <MailRules connection={connection} onChange={show} />}
 
       <Card title={say("runs")}>
         {connection.runs.length === 0 ? (
