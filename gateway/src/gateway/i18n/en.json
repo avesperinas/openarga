@@ -7,5 +7,6 @@
   "login.unreachable": "The authorisation server does not answer. Try again in a moment.",
   "logout.body": "Your session is closed and what was stored on this device, erased.",
   "logout.enter": "Sign in",
-  "logout.title": "You have left OpenArga"
+  "logout.title": "You have left OpenArga",
+  "privacy.title": "arga · Privacy"
 }

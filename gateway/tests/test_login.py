@@ -219,14 +219,16 @@ async def test_a_write_without_a_session_is_never_redirected(browser) -> None:
 
 
 @pytest.mark.parametrize(
-    "path", ["/healthz", "/version", "/privacidad", "/manifest.webmanifest", "/sw.js"]
+    "path", ["/healthz", "/version", "/privacy", "/privacidad", "/manifest.webmanifest", "/sw.js"]
 )
 async def test_what_needed_no_login_still_needs_none(browser, path) -> None:
     assert (await browser.get(path)).status_code == 200
 
 
 async def test_the_privacy_policy_says_what_is_read_and_what_is_never_done(browser) -> None:
-    response = await browser.get("/privacidad", headers={"sec-fetch-mode": "navigate"})
+    response = await browser.get(
+        "/privacy", headers={"sec-fetch-mode": "navigate", "accept-language": "es-ES,es;q=0.9"}
+    )
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/html")
@@ -234,6 +236,13 @@ async def test_the_privacy_policy_says_what_is_read_and_what_is_never_done(brows
     assert "Limited Use" in page
     assert "read-only" in page and "solo permisos de" in page
     assert "never used to train" in page
+
+
+async def test_the_privacy_policy_is_english_unless_the_browser_asks_for_spanish(browser) -> None:
+    page = (await browser.get("/privacidad", headers={"accept-language": "en-GB"})).text
+
+    assert '<html lang="en">' in page and "read-only" in page
+    assert "solo permisos de" not in page
 
 
 async def test_login_asks_the_realm_for_a_code_with_pkce_and_goes_straight_to_google(

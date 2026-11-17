@@ -1,70 +1,16 @@
 from __future__ import annotations
 
 import re
+import tomllib
 import unicodedata
 from dataclasses import dataclass
+from pathlib import Path
 
-NOISE_PREFIXES = (
-    "compra en",
-    "compra tarjeta",
-    "compra",
-    "pago en",
-    "pago tarjeta",
-    "pago",
-    "recibo",
-    "adeudo",
-    "cargo en",
-    "cargo",
-    "tarj",
-    "tarjeta",
-    "movimiento",
-)
-
-LEGAL_FORMS = frozenset(
-    {"sa", "sl", "sau", "slu", "sll", "srl", "sc", "scp", "coop", "sociedad", "limitada", "anonima"}
-)
-
-STOPWORDS = frozenset({"el", "la", "los", "las", "un", "una", "de", "del", "y", "en", "al", "a"})
-
-GENERIC_TOKENS = frozenset(
-    {
-        "supermercado",
-        "supermercados",
-        "superm",
-        "super",
-        "supm",
-        "market",
-        "shopping",
-        "tienda",
-        "comercial",
-        "farmacia",
-        "parafarmacia",
-        "bar",
-        "cafeteria",
-        "cafe",
-        "restaurante",
-        "rest",
-        "panaderia",
-        "pasteleria",
-        "libreria",
-        "papeleria",
-        "gasolinera",
-        "estacion",
-        "servicio",
-        "carburantes",
-        "talleres",
-        "taller",
-        "clinica",
-        "dental",
-        "centro",
-        "central",
-        "online",
-        "shop",
-        "store",
-        "es",
-        "km",
-    }
-)
+_WORDS = tomllib.loads((Path(__file__).resolve().parent / "catalogs" / "identity.toml").read_text())
+NOISE_PREFIXES = tuple(_WORDS["noise_prefixes"])
+LEGAL_FORMS = frozenset(_WORDS["legal_forms"])
+STOPWORDS = frozenset(_WORDS["stopwords"])
+GENERIC_TOKENS = frozenset(_WORDS["generic_tokens"])
 
 AUTO_MERGE_CONFIDENCE = 0.8
 

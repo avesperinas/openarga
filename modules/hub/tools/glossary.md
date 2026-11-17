@@ -1,23 +1,24 @@
-# Glosario de Hub
+# Hub glossary
 
-**Conexión.** Una fuente de fuera configurada para ti: un banco, tu Bitvavo, tu cuenta de Claude.
-Puedes tener varias del mismo proveedor, cada una con su nombre.
+**Connection.** An outside source set up for you: a bank, your Bitvavo, a calendar, a mailbox.
+You can have several from the same provider, each with its own name.
 
-**Proveedor.** La fuente en sí (Enable Banking, Bitvavo, Claude). Cada uno es de una categoría:
-Finanzas, IA o Alimentación.
+**Provider.** The source itself (Enable Banking, Bitvavo, Google Health...). Each belongs to a
+category, such as Finance, Health, Calendars or Food.
 
-**Estado de una conexión.** Se calcula, no se guarda:
+**State of a connection.** It is computed, not stored:
 
-- *al día*: la última vez funcionó;
-- *por caducar*: el permiso que diste en la fuente vence en menos de 14 días;
-- *caducada*: venció, y hay que volver a autorizar con tu biometría; nadie puede hacerlo por ti;
-- *fallando*: las dos últimas veces fallaron por algo que no es la caducidad, con el motivo que dio
-  la fuente;
-- *en pausa*: la paraste tú;
-- *a medias*: empezaste a autorizarla y no volviste.
+- *up to date*: it worked the last time;
+- *expiring*: the permission you gave at the source runs out in less than 14 days;
+- *expired*: it ran out, and it has to be authorised again with your biometrics; nobody can do it
+  for you;
+- *failing*: the last two runs failed for something other than expiry, with the reason the source
+  gave;
+- *paused*: you stopped it;
+- *half done*: you started authorising it and did not come back.
 
-**Configurada en su app.** Una fuente que todavía no ha pasado a Hub y se configura en la
-app que la usa. No es que no esté: está en otro sitio.
+**Set up in its app.** A source that has not moved to Hub yet and is set up in the app that uses
+it. It is not missing: it lives somewhere else.
 
-**Cuatro veces al día.** El techo de los bancos por PSD2 sin ti delante. "Al día" en un banco
-significa de hace menos de seis horas, no de este minuto.
+**Four times a day.** The ceiling PSD2 puts on banks without you present. "Up to date" for a bank
+means less than six hours old, not this minute.

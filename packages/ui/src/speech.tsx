@@ -45,7 +45,7 @@ export function chunksOf(parts: string[], limit = CHUNK): Chunk[] {
   return out;
 }
 
-const PREFERRED = /premium|enhanced|mejorad|natural|neural|siri|mónica|monica|google/i;
+const PREFERRED = /premium|enhanced|mejorad|natural|neural|siri|m(?:o|\u00f3)nica|google/i;
 
 export function pickVoice(voices: SpeechSynthesisVoice[], lang: string): SpeechSynthesisVoice | null {
   const base = lang.toLowerCase().split("-")[0]!;
