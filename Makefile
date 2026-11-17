@@ -1,6 +1,12 @@
-.PHONY: up down migrate provision modules identity resolve seed seed-clear test-db check lint test fmt hooks new-module
+.PHONY: compose stack-check up down migrate provision modules identity resolve seed seed-clear test-db check lint test fmt hooks new-module
 
-up:
+compose:
+	uv run python scripts/compose.py
+
+stack-check:
+	scripts/stack-check.sh
+
+up: compose
 	docker compose up -d --build
 
 down:

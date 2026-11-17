@@ -59,8 +59,18 @@ The full set of principles is in `docs/adr/0001-principles.md`; the architecture
 Requirements: Docker, about 4 GB of RAM for the whole stack, a domain if you want to reach it from
 outside your network.
 
-The one-command setup (`docker compose up` with demo data) lands with tasks P2 and P10. Until
-then, the development loop is:
+The instance lives in `openarga.yaml`: domain, which modules run, default locale, time zone and
+currency, login providers and AI defaults. Secrets live in `.env`.
+
+```bash
+cp openarga.example.yaml openarga.yaml   # edit it
+cp .env.example .env                     # fill every password, secret and token
+uv run python scripts/compose.py         # regenerates docker-compose.yml
+docker compose up -d --build
+```
+
+`scripts/stack-check.sh` boots the stack with throwaway secrets and checks every service answers
+`/healthz`. Demo data lands with P10. The development loop is:
 
 ```bash
 uv sync --all-packages

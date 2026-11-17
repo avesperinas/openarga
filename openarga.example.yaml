@@ -1,0 +1,28 @@
+# The instance. Copy to openarga.yaml (ignored by git), edit, then run
+#   uv run python scripts/compose.py
+# to regenerate docker-compose.yml. Secrets stay in .env.
+
+domain: localhost
+
+modules:
+  enabled: all
+  disabled: []
+
+defaults:
+  locale: en-GB
+  timezone: Europe/Madrid
+  currency: EUR
+  country: ES
+  region: ""
+  area: ""
+
+auth:
+  providers: [local]
+
+ai:
+  provider: none
+  base_url: ""
+  fast_model: ""
+  smart_model: ""
+
+connections: live
