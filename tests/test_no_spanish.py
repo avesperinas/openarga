@@ -13,6 +13,7 @@ ALLOWED = (
     "modules/outings/areas/*.yaml",
     "modules/hub/src/hub/catalogs/*.toml",
     "kernel/src/kernel/catalogs/*.toml",
+    "packages/recurrence/phrases.json",
     "packages/ui/src/app-names.ts",
     "packages/ui/geo/*",
     "tests/test_no_spanish.py",
