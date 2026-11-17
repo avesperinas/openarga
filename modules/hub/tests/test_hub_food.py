@@ -171,13 +171,13 @@ async def test_a_source_that_is_down_is_seen_in_hub(api, sources) -> None:
 
 
 async def test_the_usda_key_from_an_app_passes_once_and_overwrites_nothing(api, sources) -> None:
-    first = await ask(api, "usda.handoff", {"secrets": {"api_key": "del-servidor"}})
+    first = await ask(api, "usda.handoff", {"secrets": {"api_key": "from-the-server"}})
     again = await ask(api, "usda.handoff", {"secrets": {"api_key": "otra"}})
 
     assert first.json()["created"] is True
     assert again.json() == {"connection": first.json()["connection"], "created": False}
     await ask(api, "food.search", {"query": "leek"})
-    assert sources.keys == ["del-servidor"]
+    assert sources.keys == ["from-the-server"]
 
 
 def _off(handler):
@@ -187,8 +187,8 @@ def _off(handler):
 async def test_a_product_with_its_energy_only_in_kilojoules_is_still_a_food() -> None:
     milk = {
         "code": "0000000000017",
-        "product_name": "Leche sintética",
-        "brands": ["Marca Sintética"],
+        "product_name": "Synthetic milk",
+        "brands": ["Synthetic Brand"],
         "nutriments": {
             "energy-kj_100g": 278,
             "proteins_100g": 2.2,
@@ -205,7 +205,7 @@ async def test_a_product_with_its_energy_only_in_kilojoules_is_still_a_food() ->
 async def test_a_product_brings_its_package_and_serving_in_grams() -> None:
     yogurt = {
         "code": "0000000000024",
-        "product_name": "Yogur sintético",
+        "product_name": "Synthetic yoghurt",
         "nutriments": {
             "energy-kcal_100g": 61,
             "proteins_100g": 3.5,
@@ -219,28 +219,28 @@ async def test_a_product_brings_its_package_and_serving_in_grams() -> None:
     juice = {
         **yogurt,
         "code": "0000000000031",
-        "product_name": "Zumo sintético",
+        "product_name": "Synthetic juice",
         "product_quantity": 1000,
         "product_quantity_unit": "ml",
         "serving_quantity": "200",
         "serving_quantity_unit": "g",
     }
     async with _off(lambda request: httpx.Response(200, json={"hits": [yogurt, juice]})) as client:
-        first, second = await search_off(client, "sintético")
+        first, second = await search_off(client, "synthetic")
 
-    assert first.portions == [{"name": "envase", "grams": 125.0}]
-    assert second.portions == [{"name": "ración", "grams": 200.0}]
+    assert first.portions == [{"name": "package", "grams": 125.0}]
+    assert second.portions == [{"name": "serving", "grams": 200.0}]
 
 
 def test_usda_brings_a_serving_from_its_measures() -> None:
     from hub.providers.food import _usda_portions
 
     assert _usda_portions({"servingSize": 30, "servingSizeUnit": "g"}) == [
-        {"name": "ración", "grams": 30.0}
+        {"name": "serving", "grams": 30.0}
     ]
     assert _usda_portions(
         {"foodPortions": [{"amount": 0.5, "gramWeight": 60}, {"amount": 1, "gramWeight": 245}]}
-    ) == [{"name": "ración", "grams": 245.0}]
+    ) == [{"name": "serving", "grams": 245.0}]
     assert _usda_portions({"foodPortions": []}) == []
 
 
@@ -315,7 +315,7 @@ def _candidate(**overrides) -> food.Candidate:
     values = {
         "source": "off",
         "source_ref": "0000000000017",
-        "name": "Sintético",
+        "name": "Synthetic",
         "kcal_100g": 100.0,
         "protein_100g": 5.0,
         "fat_100g": 5.0,

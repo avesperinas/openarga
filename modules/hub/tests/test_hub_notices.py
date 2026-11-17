@@ -31,7 +31,7 @@ async def test_three_errors_in_a_row_say_a_source_fails(schema) -> None:
 
 
 async def test_a_bank_consent_warns_a_week_before_and_the_day(schema) -> None:
-    await connect(schema, "Banco sintético", consent_expires_at=NOW + timedelta(days=30))
+    await connect(schema, "Synthetic bank", consent_expires_at=NOW + timedelta(days=30))
     found = await built()
     assert [one["kind"] for one in found] == ["reauth", "reauth"]
     days = sorted(one["at"][:10] for one in found)

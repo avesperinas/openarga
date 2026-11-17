@@ -66,13 +66,13 @@ async def _get(client: httpx.AsyncClient, params: dict[str, str]) -> dict[str, A
             timeout=timeout(),
         )
     except httpx.HTTPError as error:
-        raise SourceFailed(f"Wikidata no contesta ({type(error).__name__})") from error
+        raise SourceFailed(f"Wikidata does not answer ({type(error).__name__})") from error
     if response.status_code != 200:
         raise SourceFailed(f"Wikidata contesta {response.status_code}")
     try:
         return response.json()
     except ValueError as error:
-        raise SourceFailed("Wikidata no devuelve JSON") from error
+        raise SourceFailed("Wikidata returns no JSON") from error
 
 
 def _ids(claims: dict, prop: str) -> list[str]:

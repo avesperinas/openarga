@@ -233,7 +233,7 @@ async def test_a_pass_brings_every_kind_in_its_contract(
         "sampling_hz": 250,
         "millivolts_scale": 1000,
         "leads": 1,
-        "device": "Pulsera sintética",
+        "device": "Synthetic band",
         "samples": [0, 12, 80, -20, 3],
     }
     [irn] = await events(schema, "health.irn")
@@ -247,7 +247,7 @@ async def test_a_pass_brings_every_kind_in_its_contract(
     [device] = await events(schema, "health.device")
     assert device.payload == {
         "id": "users/me/pairedDevices/pulsera-sintetica",
-        "name": "Pulsera sintética",
+        "name": "Synthetic band",
         "kind": "tracker",
         "features": ["STEPS", "HEART_RATE", "SPO2"],
         "battery_pct": 82,

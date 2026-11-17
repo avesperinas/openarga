@@ -164,7 +164,7 @@ async def test_a_source_that_is_down_says_so_and_shows_in_its_card(api, sources)
 
     answer = (await ask(api, "films.search", {"query": "x"})).json()
 
-    assert answer["candidates"] == [] and "Wikidata no contesta" in answer["failed"]
+    assert answer["candidates"] == [] and "Wikidata does not answer" in answer["failed"]
     connected = {c["provider"]: c for c in (await api.get("/connections")).json()}
     card = (await api.get(f"/connections/{connected['wikidata']['id']}")).json()
     assert [(r["operation"], r["outcome"]) for r in card["runs"]] == [("search", "error")]

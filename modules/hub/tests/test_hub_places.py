@@ -17,13 +17,13 @@ BRUGES = [
         "lat": "51.2085526",
         "lon": "3.2267720",
         "addresstype": "city",
-        "name": "Brujas",
-        "display_name": "Brujas, Flandes Occidental, Flandes, Bélgica",
+        "name": "Bruges",
+        "display_name": "Bruges, West Flanders, Flanders, Belgium",
         "address": {
             "ISO3166-2-lvl4": "BE-VLG",
             "country_code": "be",
-            "city": "Brujas",
-            "country": "Bélgica",
+            "city": "Bruges",
+            "country": "Belgium",
         },
     },
     {"osm_type": "node", "osm_id": 1, "name": "Roto"},
@@ -70,14 +70,14 @@ async def logged(schema) -> int:
 async def test_a_search_brings_places_and_leaves_nothing_in_the_log(api, schema, nominatim):
     before = await logged(schema)
 
-    answer = (await ask(api, {"query": "Brujas"})).json()
+    answer = (await ask(api, {"query": "Bruges"})).json()
 
     assert answer["failed"] == []
     [bruges] = answer["candidates"]
-    assert (bruges["name"], bruges["lat"], bruges["lon"]) == ("Brujas", 51.2085526, 3.226772)
+    assert (bruges["name"], bruges["lat"], bruges["lon"]) == ("Bruges", 51.2085526, 3.226772)
     assert (bruges["country_code"], bruges["region_code"]) == ("BE", "BE-VLG")
     assert (bruges["osm_type"], bruges["osm_id"], bruges["kind"]) == ("relation", 562654, "city")
-    assert (bruges["town"], bruges["country"]) == ("Brujas", "Bélgica")
+    assert (bruges["town"], bruges["country"]) == ("Bruges", "Belgium")
     listed = (await api.get("/connections")).json()
     [connection] = [c for c in listed if c["provider"] == "nominatim"]
     ficha = (await api.get(f"/connections/{connection['id']}")).json()
@@ -86,26 +86,26 @@ async def test_a_search_brings_places_and_leaves_nothing_in_the_log(api, schema,
 
 
 async def test_it_says_who_asks_and_in_which_language(api, nominatim) -> None:
-    await ask(api, {"query": "Brujas"})
+    await ask(api, {"query": "Bruges"})
 
     [request] = nominatim.asked
     assert request.headers["user-agent"].startswith("OpenArga/")
     assert request.url.params["accept-language"] == "es"
-    assert request.url.params["q"] == "Brujas"
+    assert request.url.params["q"] == "Bruges"
 
 
 async def test_the_same_search_twice_asks_once(api, nominatim) -> None:
-    await ask(api, {"query": "Brujas"})
-    again = (await ask(api, {"query": "  brujas "})).json()
+    await ask(api, {"query": "Bruges"})
+    again = (await ask(api, {"query": "  bruges "})).json()
 
     assert len(nominatim.asked) == 1
-    assert [one["name"] for one in again["candidates"]] == ["Brujas"]
+    assert [one["name"] for one in again["candidates"]] == ["Bruges"]
 
 
 async def test_nominatim_down_is_said_and_seen(api, nominatim) -> None:
     nominatim.down = True
 
-    answer = (await ask(api, {"query": "Brujas"})).json()
+    answer = (await ask(api, {"query": "Bruges"})).json()
 
     assert answer["candidates"] == []
     assert answer["failed"][0]["source"] == "nominatim"

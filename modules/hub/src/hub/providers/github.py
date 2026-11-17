@@ -76,7 +76,7 @@ async def _call(client: httpx.AsyncClient, method: str, url: str, token: str, do
     try:
         response = await client.request(method, url, headers=_headers(token), timeout=30.0, **kw)
     except httpx.HTTPError as error:
-        raise SourceError(f"GitHub no contesta ({type(error).__name__})") from error
+        raise SourceError(f"GitHub does not answer ({type(error).__name__})") from error
     return response
 
 

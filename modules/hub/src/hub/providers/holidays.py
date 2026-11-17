@@ -43,10 +43,10 @@ async def _get(client: httpx.AsyncClient, path: str) -> Any:
         response = await client.get(f"{BASE}{path}", timeout=20.0)
     except httpx.HTTPError as error:
         raise SourceError(
-            f"Nager.Date no contesta ({type(error).__name__})", transient=True
+            f"Nager.Date does not answer ({type(error).__name__})", transient=True
         ) from error
     if response.status_code == 429:
-        raise SourceError("Nager.Date pide esperar", rate_limited=True)
+        raise SourceError("Nager.Date asks to wait", rate_limited=True)
     if response.status_code >= 500:
         raise SourceError(f"Nager.Date falla ({response.status_code})", transient=True)
     if response.status_code == 404:

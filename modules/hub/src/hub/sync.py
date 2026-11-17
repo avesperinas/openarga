@@ -429,7 +429,7 @@ async def announce(
     try:
         await publish(kernel, event)
     except httpx.HTTPError as error:
-        print(f"hub.run sin publicar ({type(error).__name__})", file=sys.stderr)
+        print(f"hub.run not published ({type(error).__name__})", file=sys.stderr)
 
 
 CONNECTION = "hub.connection"
@@ -462,7 +462,7 @@ async def announce_connection(
     try:
         await publish(kernel, event)
     except httpx.HTTPError as error:
-        print(f"hub.connection sin publicar ({type(error).__name__})", file=sys.stderr)
+        print(f"hub.connection not published ({type(error).__name__})", file=sys.stderr)
 
 
 def _iso(moment: datetime | str | None) -> str | None:
@@ -475,4 +475,4 @@ async def publish_events(
     try:
         await publish_all(kernel, provider, events, Outcome(UUID(int=0), "ok"))
     except httpx.HTTPError as error:
-        print(f"{len(events)} eventos sin publicar ({type(error).__name__})", file=sys.stderr)
+        print(f"{len(events)} events not published ({type(error).__name__})", file=sys.stderr)

@@ -160,7 +160,7 @@ async def download(client: httpx.AsyncClient, url: str) -> bytes:
     if response.status_code >= 400:
         raise SourceError(f"the calendar server answers {response.status_code}")
     if len(response.content) > MAX_BYTES:
-        raise SourceError("el calendario pesa demasiado para suscribirse")
+        raise SourceError("the calendar is too large to subscribe to")
     return response.content
 
 

@@ -95,7 +95,9 @@ async def test_connecting_a_bank_goes_to_it_and_comes_back_active(api, kernel, s
     ficha = (await api.get(f"/connections/{connection}")).json()
     assert (ficha["label"], ficha["state"], ficha["authorizes"]) == (BANK, "active", True)
     assert datetime.fromisoformat(ficha["consent_expires_at"]) == fake.valid_until
-    assert ficha["accounts"] == [{"name": "Cuenta nómina", "iban_tail": "1234", "kind": "checking"}]
+    assert ficha["accounts"] == [
+        {"name": "Payroll account", "iban_tail": "1234", "kind": "checking"}
+    ]
     assert ficha["budget"] == {"limit": 4, "used": 0, "remaining": 4}
     [account] = await events(schema, "finance.account")
     assert (account.source, account.payload["bank"], account.payload["account"]) == (
