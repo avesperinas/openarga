@@ -1,10 +1,11 @@
 import { invalidate, mutate, useResource } from "@openarga/app";
 import { EmptyState, ErrorState, Skeleton } from "@openarga/ui";
 import { useCallback } from "react";
+import { t } from "./lang";
 
 export const changed = () => invalidate("");
 
-const gone = (error: Error | null) => Boolean(error?.message.startsWith("no existe"));
+const gone = (error: Error | null) => Boolean(error?.message.startsWith("does not exist"));
 
 export function useLoad<T>(key: string | null, load: () => Promise<T>) {
   const found = useResource(key, load, { persist: true });
@@ -30,10 +31,10 @@ export function Pending({
   if (!found.error) return <Skeleton rows={rows} label={label} />;
   if (gone(found.error)) {
     return (
-      <EmptyState icon="search" title="Ya no está">
-        Se borró o ya no lo compartes.
+      <EmptyState icon="search" title={t("load.gone")}>
+        {t("load.gone_detail")}
       </EmptyState>
     );
   }
-  return <ErrorState title="Travel no contesta" detail={found.error.message} onRetry={() => void found.refresh()} />;
+  return <ErrorState title={t("error.no_answer")} detail={found.error.message} onRetry={() => void found.refresh()} />;
 }

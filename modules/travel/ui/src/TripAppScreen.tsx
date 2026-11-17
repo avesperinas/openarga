@@ -9,6 +9,7 @@ import { prepare } from "./prepare";
 import { TodayScreen } from "./Today";
 import { dressAs, markPrepared, preparedOnce, standalone } from "./tripApp";
 import { TripScreen } from "./TripScreen";
+import { t } from "./lang";
 
 export function TripAppScreen({ id, navigate }: { id: string; navigate: Navigate }) {
   const read = useLoad<Trip>(`trip/${id}`, () => readTrip(id));
@@ -23,22 +24,22 @@ export function TripAppScreen({ id, navigate }: { id: string; navigate: Navigate
   const loaded = trip !== null;
   useEffect(() => {
     if (!loaded || !installed || !navigator.onLine || preparedOnce(id)) return;
-    setPreparing("Preparando el viaje para usarlo sin conexión…");
-    prepare(id, (done, total) => setPreparing(`Guardando el viaje sin conexión: ${done} de ${total}`))
+    setPreparing(t("tripapp.preparing"));
+    prepare(id, (done, total) => setPreparing(t("tripapp.saving", { done, total })))
       .then((failed) => {
         markPrepared(id);
-        setPreparing(failed ? `Guardado sin conexión, salvo ${failed} cosa(s).` : "Listo: todo el viaje funciona sin conexión.");
+        setPreparing(failed ? t("tripapp.partial", { failed }) : t("tripapp.done"));
       })
       .catch((error: unknown) =>
-        setPreparing(error instanceof Error ? `No se ha guardado sin conexión: ${error.message}` : ""),
+        setPreparing(error instanceof Error ? t("tripapp.failed", { reason: error.message }) : ""),
       );
   }, [id, installed, loaded]);
 
   if (!trip) {
     return (
       <Screen>
-        <ScreenHeader title="Viaje" />
-        <Pending found={read.found} label="Cargando el viaje" />
+        <ScreenHeader title={t("trip.title")} />
+        <Pending found={read.found} label={t("trip.loading")} />
       </Screen>
     );
   }
@@ -57,8 +58,7 @@ export function TripAppScreen({ id, navigate }: { id: string; navigate: Navigate
       {!installed && (
         <div className="travel-install-hint">
           <Hint>
-            Para tener este viaje como app: en Safari, Compartir → «Añadir a pantalla de inicio». Se abre a pantalla
-            completa, con su portada de icono y todo el viaje sin conexión.
+            {t("tripapp.install_hint")}
           </Hint>
         </div>
       )}

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { repeatable } from "./api";
 
-describe("lo que se guarda sin red para mandarlo luego", () => {
-  it("guarda lo que repetido no cambia nada", () => {
+describe("what is kept offline to send later", () => {
+  it("keeps what changes nothing when repeated", () => {
     expect(repeatable("PUT", { title: "x" })).toBe(true);
     expect(repeatable("PATCH", { checked: true })).toBe(true);
     expect(repeatable("DELETE", undefined)).toBe(true);
@@ -11,7 +11,7 @@ describe("lo que se guarda sin red para mandarlo luego", () => {
     expect(repeatable("POST", [{ id: "a", text: "x" }, { id: "b", text: "y" }])).toBe(true);
   });
 
-  it("no guarda lo que repetido se duplicaría", () => {
+  it("does not keep what would be duplicated when repeated", () => {
     expect(repeatable("POST", { title: "x" })).toBe(false);
     expect(repeatable("POST", [{ id: "a" }, { text: "y" }])).toBe(false);
     expect(repeatable("POST", [])).toBe(false);

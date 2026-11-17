@@ -1,5 +1,6 @@
 import { type DayRoute, type Itinerary, type TripDocument, documentUrl, readDayRoute, readDays, readDocuments } from "./api";
 import { controlled } from "./offline";
+import { t } from "./lang";
 
 export function tileOf(lon: number, lat: number, zoom: number): [number, number] {
   const n = 2 ** zoom;
@@ -51,7 +52,7 @@ export function documentsToKeep(papers: TripDocument[], budget = DOCUMENTS_BUDGE
 
 export class CannotKeep extends Error {
   constructor() {
-    super("Este navegador no deja guardar el viaje sin conexión.");
+    super(t("prepare.cannot_keep"));
   }
 }
 

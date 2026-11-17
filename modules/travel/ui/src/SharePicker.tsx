@@ -2,24 +2,25 @@ import { Hint, List, ListRow, Sheet } from "@openarga/ui";
 import { useState } from "react";
 
 import type { Space, Trip } from "./api";
+import { t } from "./lang";
 
 export function withWhom(space: Space): string {
   const others = space.members.filter((member) => member.user_id !== space.me);
-  if (others.length === 0) return "Solo tú, de momento";
-  const names = ["Tú", ...others.map((member) => member.name ?? "Sin nombre")];
-  return `${names.slice(0, -1).join(", ")} y ${names[names.length - 1]}`;
+  if (others.length === 0) return t("share.only_you_so_far");
+  const names = [t("people.you"), ...others.map((member) => member.name ?? t("share.no_name"))];
+  return t("share.and", { first: names.slice(0, -1).join(", "), last: names[names.length - 1]! });
 }
 
 export function sharedTitle(trip: Pick<Trip, "space_id">, spaces: Space[]): string {
-  if (trip.space_id === null) return "Solo tuyo";
-  return spaces.find((space) => space.id === trip.space_id)?.name ?? "Compartido";
+  if (trip.space_id === null) return t("share.only_yours");
+  return spaces.find((space) => space.id === trip.space_id)?.name ?? t("trip.shared");
 }
 
 export function sharedSubtitle(trip: Pick<Trip, "space_id" | "mine">, spaces: Space[]): string {
-  if (trip.space_id === null) return "Solo lo ves tú";
+  if (trip.space_id === null) return t("share.only_you_see");
   const space = spaces.find((one) => one.id === trip.space_id);
-  const who = space ? `Lo ven y lo editan: ${withWhom(space)}` : "Compartido en un espacio";
-  return trip.mine ? who : `${who}. Te lo compartieron`;
+  const who = space ? t("share.seen_by", { names: withWhom(space) }) : t("share.in_space");
+  return trip.mine ? who : t("share.shared_with_you", { who });
 }
 
 export function SharePicker({
@@ -56,12 +57,12 @@ export function SharePicker({
         />
       </List>
       {open && (
-        <Sheet title="Con quién lo compartes" onClose={() => setOpen(false)}>
+        <Sheet title={t("share.title")} onClose={() => setOpen(false)}>
           <List>
             <ListRow
               icon="shield"
-              title="Solo tuyo"
-              subtitle="Solo lo ves tú"
+              title={t("share.only_yours")}
+              subtitle={t("share.only_you_see")}
               accessory={trip.space_id === null ? "done" : undefined}
               disabled={busy}
               onClick={() => void choose(null)}
@@ -80,18 +81,16 @@ export function SharePicker({
           </List>
           {trip.space_id !== null && (
             <Hint>
-              Si dejas de compartirlo, todo lo que apuntaron los demás se queda en tu viaje, y ellos
-              dejan de verlo.
+              {t("share.stop_hint")}
             </Hint>
           )}
           {spaces.length === 0 ? (
             <Hint>
-              Para compartirlo, crea un espacio en los <a href="/">Ajustes de arga</a> e invita a
-              quien viajó contigo.
+              {t("share.create_before")} <a href="/">{t("share.settings")}</a> {t("share.create_after")}
             </Hint>
           ) : (
             <Hint>
-              Los espacios y quién está en ellos se cambian en los <a href="/">Ajustes de arga</a>.
+              {t("share.spaces_before")} <a href="/">{t("share.settings")}</a>.
             </Hint>
           )}
         </Sheet>

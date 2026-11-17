@@ -1,4 +1,4 @@
-import { Button, CANNOT_UNDO, ConfirmDelete, GroupLabel, Hint, Icon, IconButton, SelectField, Sheet } from "@openarga/ui";
+import { Button, ConfirmDelete, GroupLabel, Hint, Icon, IconButton, SelectField, Sheet, cannotUndo } from "@openarga/ui";
 import { useEffect, useRef, useState } from "react";
 
 import {
@@ -14,11 +14,13 @@ import {
   signIn,
   uploadDocument,
 } from "./api";
+import { currentLocale, t } from "./lang";
 
 export function fileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
+  const megas = (bytes / 1024 / 1024).toFixed(1);
+  return `${currentLocale() === "es" ? megas.replace(".", ",") : megas} MB`;
 }
 
 const iconOf = (one: TripDocument) => (one.content_type.startsWith("image/") ? "image" : one.link ? "ticket" : "file");
@@ -41,7 +43,7 @@ export function DocumentsSection({ tripId }: { tripId: string }) {
   if (found === null) return null;
   return (
     <section className="travel-group">
-      <GroupLabel>Billetes y documentos</GroupLabel>
+      <GroupLabel>{t("docs.title")}</GroupLabel>
       {problem && <Hint tone="warning">{problem}</Hint>}
       <ol className="surface travel-day">
         {found.map((one) => (
@@ -57,13 +59,13 @@ export function DocumentsSection({ tripId }: { tripId: string }) {
                 </span>
               </span>
             </a>
-            <IconButton icon="trash" label={`Quitar ${one.name}`} variant="plain" size="small" onClick={() => setRemoving(one)} />
+            <IconButton icon="trash" label={t("editor.remove", { what: one.name })} variant="plain" size="small" onClick={() => setRemoving(one)} />
           </li>
         ))}
-        {found.length === 0 && <li className="travel-day-empty">El billete, la reserva del hotel, el seguro…</li>}
+        {found.length === 0 && <li className="travel-day-empty">{t("docs.empty")}</li>}
         <li className="travel-day-add">
           <Button variant="plain" size="small" icon="plus" onClick={() => setAdding(true)}>
-            Documento
+            {t("docs.document")}
           </Button>
         </li>
       </ol>
@@ -80,17 +82,17 @@ export function DocumentsSection({ tripId }: { tripId: string }) {
       )}
       {removing && (
         <ConfirmDelete
-          title="¿Quitar el documento?"
+          title={t("docs.remove_confirm")}
           subject={removing.name}
-          consequence={CANNOT_UNDO}
-          action="Quitar documento"
+          consequence={cannotUndo()}
+          action={t("docs.remove")}
           onCancel={() => setRemoving(null)}
           onConfirm={async () => {
             try {
               setFound(await removeDocument(tripId, removing.id));
               setProblem("");
             } catch (error) {
-              setProblem(error instanceof Error ? error.message : "No se ha podido quitar.");
+              setProblem(error instanceof Error ? error.message : t("docs.error.remove"));
             }
             setRemoving(null);
           }}
@@ -130,7 +132,7 @@ function UploadSheet({
     try {
       onDone(await uploadDocument(tripId, file, type && id ? { type, id } : null));
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : "No se ha podido subir.");
+      setProblem(error instanceof Error ? error.message : t("docs.error.upload"));
     } finally {
       setBusy(false);
     }
@@ -138,9 +140,9 @@ function UploadSheet({
 
   return (
     <Sheet
-      title="Nuevo documento"
+      title={t("docs.new")}
       onClose={onClose}
-      action={{ label: busy ? "Subiendo…" : "Subir", disabled: !file || tooBig || busy, onClick: () => void upload() }}
+      action={{ label: busy ? t("cover.uploading") : t("docs.upload"), disabled: !file || tooBig || busy, onClick: () => void upload() }}
     >
       <div className="travel-sheet-stack">
         <input
@@ -151,20 +153,20 @@ function UploadSheet({
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
         />
         <Button variant="secondary" icon="clip" onClick={() => input.current?.click()}>
-          {file ? file.name : "Elegir un PDF o una foto"}
+          {file ? file.name : t("docs.choose")}
         </Button>
         {file && (
           <Hint tone={tooBig ? "warning" : undefined}>
-            {tooBig ? `Pesa ${fileSize(file.size)}: el límite son 20 MB.` : fileSize(file.size)}
+            {tooBig ? t("docs.too_big", { size: fileSize(file.size) }) : fileSize(file.size)}
           </Hint>
         )}
         {bookings.length > 0 && (
           <SelectField
-            label="Para"
+            label={t("docs.for")}
             value={link}
             onChange={setLink}
             options={[
-              { value: "", label: "Todo el viaje" },
+              { value: "", label: t("docs.whole_trip") },
               ...bookings.map((one) => ({
                 value: `${one.type}:${one.id}`,
                 label: one.day ? `${one.title} · ${one.day}` : one.title,

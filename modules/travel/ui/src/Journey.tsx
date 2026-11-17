@@ -7,6 +7,7 @@ import type { Navigate } from "./App";
 import { areasOf, listed, placesOf, playOrder, pointsOf, routesOf, year, yearSpan } from "./atlas";
 import { GEO } from "./atlas";
 import { dateRange } from "./words";
+import { t } from "./lang";
 
 export function JourneyScreen({
   trips,
@@ -61,14 +62,14 @@ export function JourneyScreen({
         tour={current !== null}
         onTourDone={next}
         selected={null}
-        label="El recorrido de los viajes"
+        label={t("journey.label")}
       />
 
       <div className="travel-journey-top">
         <div className="travel-map-filter glass">
           <IconButton
             icon="chevron-left"
-            label="Volver a los viajes"
+            label={t("journey.back")}
             variant="plain"
             onClick={() => navigate({ screen: "trips" })}
           />

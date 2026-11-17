@@ -39,20 +39,20 @@ const ITINERARY: Itinerary = {
 
 const ids = (itinerary: Itinerary, slot: string | null) => blocksOf(itinerary, slot).map((one) => one.id);
 
-describe("arrastrar en el itinerario", () => {
-  it("soltar en otro día lo saca del suyo y lo pone en su puesto", () => {
+describe("dragging in the itinerary", () => {
+  it("dropping on another day takes it out of its own and puts it in its place", () => {
     const after = moved(ITINERARY, "a", "2025-04-11", 1);
     expect(ids(after, "2025-04-10")).toEqual(["b"]);
     expect(ids(after, "2025-04-11")).toEqual(["c", "a"]);
     expect(blocksOf(after, "2025-04-11")[1]!.day).toBe("2025-04-11");
   });
 
-  it("dentro del mismo día cuenta sin él, y a sin día también vale", () => {
+  it("within the same day it counts without it, and to no day works too", () => {
     expect(ids(moved(ITINERARY, "a", "2025-04-10", 1), "2025-04-10")).toEqual(["b", "a"]);
     expect(ids(moved(ITINERARY, "c", null, 0), null)).toEqual(["c", "d"]);
   });
 
-  it("lo que no es un bloque se queda en su sitio entre los bloques", () => {
+  it("what is not a block stays in its place among the blocks", () => {
     const leaving = { type: "check_out" as const, stay: null, leg: null, block: null };
     const withStay: Itinerary = {
       ...ITINERARY,
@@ -68,7 +68,7 @@ describe("arrastrar en el itinerario", () => {
     expect(after.days[0]!.items.map((item) => item.block?.id ?? item.type)).toEqual(["b", "check_out", "a"]);
   });
 
-  it("con las flechas, al acabar un día pasa al siguiente o al anterior", () => {
+  it("with the arrows, at the end of a day it moves to the next or the previous one", () => {
     expect(stepped(ITINERARY, "a", 1)).toEqual({ slot: "2025-04-10", index: 1 });
     expect(stepped(ITINERARY, "b", 1)).toEqual({ slot: "2025-04-11", index: 0 });
     expect(stepped(ITINERARY, "c", -1)).toEqual({ slot: "2025-04-10", index: 2 });

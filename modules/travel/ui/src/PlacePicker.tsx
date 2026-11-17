@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { type Candidate, type Place, readPlaces, savePlace, searchPlaces } from "./api";
 import { flag, where } from "./words";
+import { t } from "./lang";
 
 export function PlacePicker({ label, onPick }: { label: string; onPick: (place: Place) => void }) {
   const [query, setQuery] = useState("");
@@ -37,7 +38,7 @@ export function PlacePicker({ label, onPick }: { label: string; onPick: (place: 
       setFound(answer.candidates);
       if (answer.failed.length) setFailed(answer.failed.map((one) => one.reason).join(" · "));
     } catch (error) {
-      setFailed(error instanceof Error ? error.message : "No se ha podido buscar.");
+      setFailed(error instanceof Error ? error.message : t("picker.error.search"));
     } finally {
       setBusy(false);
     }
@@ -49,7 +50,7 @@ export function PlacePicker({ label, onPick }: { label: string; onPick: (place: 
       onPick(await savePlace(candidate));
       setQuery("");
     } catch (error) {
-      setFailed(error instanceof Error ? error.message : "No se ha podido guardar el lugar.");
+      setFailed(error instanceof Error ? error.message : t("picker.error.save"));
     } finally {
       setBusy(false);
     }
@@ -63,7 +64,7 @@ export function PlacePicker({ label, onPick }: { label: string; onPick: (place: 
         value={query}
         onChange={setQuery}
         onSubmit={() => void search()}
-        placeholder="Brujas, Museo del Prado, Santiago de Chile…"
+        placeholder={t("picker.example")}
       />
       {saved.length > 0 && (
         <List>
@@ -71,7 +72,7 @@ export function PlacePicker({ label, onPick }: { label: string; onPick: (place: 
             <ListRow
               key={place.id}
               title={`${flag(place.country_code)} ${place.name}`}
-              detail={[place.region, place.country].filter(Boolean).join(", ") || "Sin situar"}
+              detail={[place.region, place.country].filter(Boolean).join(", ") || t("other.unplaced")}
               accessory="plus"
               onClick={() => onPick(place)}
             />
@@ -80,7 +81,7 @@ export function PlacePicker({ label, onPick }: { label: string; onPick: (place: 
       )}
       {query.trim().length >= 2 && (
         <Button variant="secondary" icon="globe" onClick={() => void search()} disabled={busy}>
-          {busy ? "Buscando…" : "Buscar en OpenStreetMap"}
+          {busy ? t("picker.searching") : t("picker.search")}
         </Button>
       )}
       {found && found.length > 0 && (
@@ -98,7 +99,7 @@ export function PlacePicker({ label, onPick }: { label: string; onPick: (place: 
           ))}
         </List>
       )}
-      {found && found.length === 0 && !failed && <Hint>OpenStreetMap no conoce ese nombre.</Hint>}
+      {found && found.length === 0 && !failed && <Hint>{t("picker.unknown")}</Hint>}
       {failed && (
         <Hint tone="warning">
           {failed}
@@ -106,7 +107,7 @@ export function PlacePicker({ label, onPick }: { label: string; onPick: (place: 
       )}
       {(failed || (found && found.length === 0)) && query.trim() && (
         <Button variant="plain" onClick={() => void pick({ name: query.trim() })} disabled={busy}>
-          Guardar «{query.trim()}» sin situar en el mapa
+          {t("picker.save_unplaced", { name: query.trim() })}
         </Button>
       )}
     </div>

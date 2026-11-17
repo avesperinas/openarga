@@ -15,38 +15,38 @@ globalThis.localStorage = {
   length: 0,
 } as Storage;
 
-describe("la app de un viaje", () => {
-  it("su dirección lleva al viaje, de ida y de vuelta", () => {
+describe("a trip's app", () => {
+  it("its address leads to the trip, there and back", () => {
     expect(tripOfPath(`/travel/viaje/${ID}`)).toBe(ID);
     expect(tripOfPath(`/travel/viajes/${ID}`)).toBeNull();
     expect(route(pathOf({ screen: "tripapp", id: ID }))).toEqual({ screen: "tripapp", id: ID });
   });
 
-  it("en el navegador solo se está en el viaje mientras se está en su dirección", () => {
+  it("in the browser you are in the trip only while you are at its address", () => {
     expect(lockedTrip(`/travel/viaje/${ID}`, false)).toBe(ID);
     expect(lockedTrip(`/travel/viajes/${ID}/dias`, false)).toBeNull();
   });
 
-  it("instalada, se sigue en el viaje con el que arrancó la app", () => {
+  it("installed, it stays in the trip the app started with", () => {
     expect(lockedTrip("/travel/viajes", true, `/travel/viaje/${ID}`)).toBe(ID);
   });
 
-  it("la app de Travel no se queda encerrada en un viaje por haber entrado en su página", () => {
+  it("the Travel app is not locked in a trip for having opened its page", () => {
     expect(lockedTrip(`/travel/viaje/${ID}`, true, "/travel/")).toBe(ID);
     expect(lockedTrip("/travel/viajes", true, "/travel/")).toBeNull();
     expect(lockedTrip("/travel/", true, "/travel/")).toBeNull();
   });
 
-  it("lo que dejó guardado la versión anterior no encierra a nadie", () => {
+  it("what the previous version left stored locks nobody in", () => {
     localStorage.setItem("travel.trip-app", ID);
     forgetStoredLock();
     expect(localStorage.getItem("travel.trip-app")).toBeNull();
     expect(lockedTrip("/travel/viajes", true, "/travel/")).toBeNull();
   });
 
-  it("las iniciales del icono saltan las palabras pequeñas", () => {
-    expect(initials("Japón en sakura")).toBe("JS");
+  it("the icon's initials skip the small words", () => {
+    expect(initials("Japan in sakura")).toBe("JS");
     expect(initials("Budapest")).toBe("B");
-    expect(initials("La ruta de los castillos")).toBe("RC");
+    expect(initials("The road of the castles")).toBe("RC");
   });
 });

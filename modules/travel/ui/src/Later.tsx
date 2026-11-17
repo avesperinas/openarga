@@ -1,5 +1,6 @@
 import { ErrorState, Screen, Skeleton } from "@openarga/ui";
 import { Component, type ComponentType, type ReactNode, Suspense, lazy, useState } from "react";
+import { t } from "./lang";
 
 class Caught extends Component<{ onRetry: () => void; children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -12,8 +13,8 @@ class Caught extends Component<{ onRetry: () => void; children: ReactNode }, { f
     if (!this.state.failed) return this.props.children;
     return (
       <ErrorState
-        title="Esta parte de Travel no ha llegado"
-        detail="Sin conexión, o hay una versión nueva de Travel."
+        title={t("later.title")}
+        detail={t("later.detail")}
         onRetry={() => {
           this.setState({ failed: false });
           this.props.onRetry();

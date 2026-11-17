@@ -34,6 +34,7 @@ import { ScreenHeader } from "./Header";
 import { Pending, useLoad } from "./Loads";
 import { TripTabs } from "./TripChrome";
 import { MODES, dateRange, dayLabel, eurosExact, hours } from "./words";
+import { t } from "./lang";
 
 type Loaded = { trip: Trip; days: Itinerary; bookings: Booking[]; travellers: Traveller[] };
 
@@ -52,12 +53,12 @@ export function BookingsScreen({ id, navigate }: { id: string; navigate: Navigat
   const [problem, setProblem] = useState("");
   const [open, setOpen] = useState<Booking | null>(null);
 
-  const back = { label: "Viaje", onClick: () => navigate({ screen: "trip", id }) };
+  const back = { label: t("trip.title"), onClick: () => navigate({ screen: "trip", id }) };
   if (!loaded) {
     return (
       <Screen>
-        <ScreenHeader title="Reservas" back={back} />
-        <Pending found={read.found} label="Cargando las reservas" />
+        <ScreenHeader title={t("bookings.title")} back={back} />
+        <Pending found={read.found} label={t("bookings.loading")} />
       </Screen>
     );
   }
@@ -70,22 +71,22 @@ export function BookingsScreen({ id, navigate }: { id: string; navigate: Navigat
 
   return (
     <Screen>
-      <ScreenHeader eyebrow={trip.title} title="Reservas" back={back} />
+      <ScreenHeader eyebrow={trip.title} title={t("bookings.title")} back={back} />
       <TripTabs id={id} active="bookings" navigate={navigate} />
       {problem && <Hint tone="warning">{problem}</Hint>}
       {bookings.length === 0 && (
         <EmptyState
           icon="calendar"
-          title="Aún no hay nada que reservar"
-          action={{ label: "Editar el viaje", icon: "edit", onClick: () => navigate({ screen: "edit", id }) }}
+          title={t("bookings.empty")}
+          action={{ label: t("bookings.edit_trip"), icon: "edit", onClick: () => navigate({ screen: "edit", id }) }}
         >
-          Añade alojamientos y trayectos al editar el viaje, o una entrada desde el día a día, y aquí apuntas su reserva.
+          {t("bookings.empty_detail")}
         </EmptyState>
       )}
       {pending.length > 0 && (
         <section className="travel-group">
           <GroupLabel>
-            Por reservar
+            {t("trip.kpi.to_book")}
             <span className="travel-group-detail">{pending.length}</span>
           </GroupLabel>
           <BookingList bookings={pending} trip={trip} onOpen={setOpen} />
@@ -94,8 +95,8 @@ export function BookingsScreen({ id, navigate }: { id: string; navigate: Navigat
       {rest.length > 0 && (
         <section className="travel-group">
           <GroupLabel>
-            {pending.length > 0 ? "Reservado" : "Reservas"}
-            {total > 0 && <span className="travel-group-detail">{eurosExact(total)} en total</span>}
+            {pending.length > 0 ? t("bookings.booked") : t("bookings.title")}
+            {total > 0 && <span className="travel-group-detail">{t("bookings.total", { amount: eurosExact(total) })}</span>}
           </GroupLabel>
           <BookingList bookings={rest} trip={trip} onOpen={setOpen} />
         </section>
@@ -155,12 +156,12 @@ function BookingList({
               </span>
               {(one.confirmation || one.provider || one.ticket_of) && (
                 <span className="travel-step-detail travel-booking-code">
-                  {[one.ticket_of && `En el billete de ${one.ticket_of}`, one.provider, one.confirmation]
+                  {[one.ticket_of && t("bookings.on_ticket", { name: one.ticket_of }), one.provider, one.confirmation]
                     .filter(Boolean)
                     .join(" · ")}
                 </span>
               )}
-              {one.paid_by && <span className="travel-step-detail">Pagó {one.paid_by}</span>}
+              {one.paid_by && <span className="travel-step-detail">{t("bookings.paid_by", { name: one.paid_by })}</span>}
             </span>
             {one.cost_eur !== null && <span className="travel-booking-cost">{eurosExact(one.cost_eur)}</span>}
           </button>
@@ -287,7 +288,7 @@ function BookingSheet({
       title={booking.title}
       onClose={onClose}
       action={{
-        label: "Guardar",
+        label: t("action.save"),
         disabled: !ready,
         onClick: () => {
           setBusy(true);
@@ -295,7 +296,7 @@ function BookingSheet({
             .then(onSaved)
             .catch((error: unknown) => {
               if (error instanceof Unauthorised) return signIn();
-              onProblem(error instanceof Error ? error.message : "No se ha podido guardar la reserva.");
+              onProblem(error instanceof Error ? error.message : t("bookings.error.save"));
               onClose();
             })
             .finally(() => setBusy(false));
@@ -306,90 +307,92 @@ function BookingSheet({
         {stay && (
           <>
             <div className="travel-form-row">
-              <TextField label="Entrada" type="time" value={checkIn} onChange={setCheckIn} />
-              <TextField label="Salida" type="time" value={checkOut} onChange={setCheckOut} />
+              <TextField label={t("bookings.check_in")} type="time" value={checkIn} onChange={setCheckIn} />
+              <TextField label={t("bookings.check_out")} type="time" value={checkOut} onChange={setCheckOut} />
             </div>
-            <TextField label="Dirección" value={address} onChange={setAddress} />
+            <TextField label={t("bookings.address")} value={address} onChange={setAddress} />
           </>
         )}
         {leg && (
           <>
             <div className="travel-form-row">
-              <TextField label="Compañía" value={carrier} onChange={setCarrier} placeholder="Iberia, Renfe…" />
-              <TextField label="Número" value={number} onChange={setNumber} placeholder="IB3166" />
+              <TextField label={t("bookings.carrier")} value={carrier} onChange={setCarrier} placeholder={t("bookings.carrier_example")} />
+              <TextField label={t("bookings.number")} value={number} onChange={setNumber} placeholder="IB3166" />
             </div>
             <div className="travel-form-row">
-              <TextField label="Sale" type="time" value={departs} onChange={setDeparts} />
-              <TextField label="Llega" type="time" value={arrives} onChange={setArrives} />
+              <TextField label={t("bookings.departs")} type="time" value={departs} onChange={setDeparts} />
+              <TextField label={t("bookings.arrives")} type="time" value={arrives} onChange={setArrives} />
             </div>
             <DateField
-              label="Día que llega"
+              label={t("bookings.arrives_on")}
               value={arrivesOn}
               onChange={setArrivesOn}
-              hint="Solo si no es el de salida: un vuelo de noche."
+              hint={t("bookings.arrives_on_hint")}
             />
             <div className="travel-form-row">
-              <TextField label="Desde" value={fromCode} onChange={setFromCode} placeholder="MAD" />
-              <TextField label="Hasta" value={toCode} onChange={setToCode} placeholder="KIX" />
+              <TextField label={t("editor.from")} value={fromCode} onChange={setFromCode} placeholder="MAD" />
+              <TextField label={t("editor.to")} value={toCode} onChange={setToCode} placeholder="KIX" />
             </div>
             <div className="travel-form-row">
               <TextField label="Terminal" value={terminal} onChange={setTerminal} />
-              <TextField label="Asiento" value={seat} onChange={setSeat} />
+              <TextField label={t("bookings.seat")} value={seat} onChange={setSeat} />
             </div>
             {tickets.length > 0 && (
               <SelectField
-                label="Billete"
+                label={t("bookings.ticket")}
                 value={ticket}
                 onChange={setTicket}
                 options={[
-                  { value: "", label: "El suyo propio" },
+                  { value: "", label: t("bookings.own_ticket") },
                   ...tickets.map((one) => ({
                     value: one.id,
-                    label: `El de ${one.from_place.name} → ${one.to_place.name}`,
+                    label: t("bookings.ticket_of", { name: `${one.from_place.name} → ${one.to_place.name}` }),
                   })),
                 ]}
               />
             )}
-            {ticket && <Hint>El localizador y lo que costó van en el billete de aquel trayecto.</Hint>}
+            {ticket && <Hint>{t("bookings.ticket_hint")}</Hint>}
           </>
         )}
         <div className="travel-form-row">
-          <TextField label="Localizador" value={confirmation} onChange={setConfirmation} />
-          <TextField label="Dónde se reservó" value={provider} onChange={setProvider} placeholder="Booking…" />
+          <TextField label={t("bookings.code")} value={confirmation} onChange={setConfirmation} />
+          <TextField label={t("bookings.provider")} value={provider} onChange={setProvider} placeholder="Booking…" />
         </div>
         <TextField
-          label="Enlace"
+          label={t("bookings.link")}
           value={url}
           onChange={setUrl}
           placeholder="https://…"
           invalid={badUrl}
-          hint={badUrl ? "Empieza por https://" : undefined}
+          hint={badUrl ? t("bookings.link_invalid") : undefined}
         />
         {facts?.booking_url && (
           <a className="travel-booking-link" href={facts.booking_url} target="_blank" rel="noreferrer">
-            <Icon name="link" /> Abrir la reserva
+            <Icon name="link" /> {t("bookings.open")}
           </a>
         )}
         <TextField
-          label="Lo que costó, en euros"
+          label={t("bookings.cost")}
           inputMode="decimal"
           value={cost}
           onChange={setCost}
           invalid={badCost}
           hint={
             badCost
-              ? "Un importe como 240 o 240,50"
-              : `Total del grupo: se apunta como gasto del viaje${loaded.trip.travellers > 1 ? `, ${loaded.trip.travellers} viajeros` : ""}.`
+              ? t("bookings.cost_invalid")
+              : loaded.trip.travellers > 1
+                ? t("bookings.cost_hint_group", { count: loaded.trip.travellers })
+                : t("bookings.cost_hint")
           }
         />
         {amount && loaded.travellers.length > 1 && (
           <SelectField
-            label="Quién pagó"
+            label={t("bookings.payer")}
             value={payer}
             onChange={setPayer}
             options={[
-              { value: "", label: "Sin decir" },
-              ...loaded.travellers.map((one) => ({ value: one.id, label: one.me ? "Tú" : one.name })),
+              { value: "", label: t("bookings.payer_unsaid") },
+              ...loaded.travellers.map((one) => ({ value: one.id, label: one.me ? t("people.you") : one.name })),
             ]}
           />
         )}

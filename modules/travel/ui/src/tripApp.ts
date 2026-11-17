@@ -37,11 +37,10 @@ export function forgetStoredLock(): void {
 export function initials(title: string): string {
   const words = title
     .split(/\s+/)
-    .filter((word) => word.length > 2 || /^[A-ZÁÉÍÓÚÑ]/.test(word))
-    .filter((word) => !/^(de|del|la|las|los|el|en|y|a)$/i.test(word));
+    .filter((word) => word.length > 3 || /^\p{Lu}{2,3}$/u.test(word));
   return (words.length ? words : [title])
     .slice(0, 2)
-    .map((word) => word[0]!.toLocaleUpperCase("es"))
+    .map((word) => word[0]!.toLocaleUpperCase())
     .join("");
 }
 

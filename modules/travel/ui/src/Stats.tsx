@@ -15,9 +15,11 @@ import type { Navigate } from "./App";
 import { AppVersion } from "./AppVersion";
 import { ScreenHeader } from "./Header";
 import { Pending, useLoad } from "./Loads";
-import { MODES, euros, flag, km, whole } from "./words";
+import { MODES, euros, flag, km, nights, whole } from "./words";
+import { intl, plural, t } from "./lang";
 
-const MONTHS = ["E", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+const monthNarrow = (month: number) =>
+  new Intl.DateTimeFormat(intl(), { month: "narrow", timeZone: "UTC" }).format(new Date(Date.UTC(2000, month - 1, 1))).toUpperCase();
 
 export function nightsByMonth(calendar: Record<string, number>): Map<number, number[]> {
   const years = new Map<number, number[]>();
@@ -38,8 +40,8 @@ export function StatsScreen({ navigate }: { trips: Trip[] | null; navigate: Navi
   if (!stats) {
     return (
       <Screen>
-        <ScreenHeader title="Cifras" />
-        <Pending found={loaded.found} label="Cargando las cifras" />
+        <ScreenHeader title={t("stats.title")} />
+        <Pending found={loaded.found} label={t("stats.loading")} />
       </Screen>
     );
   }
@@ -50,49 +52,49 @@ export function StatsScreen({ navigate }: { trips: Trip[] | null; navigate: Navi
 
   return (
     <Screen>
-      <ScreenHeader title="Cifras" />
+      <ScreenHeader title={t("stats.title")} />
       {stats.trips === 0 && (
         <EmptyState
           icon="chart"
-          title="Aún no hay cifras"
-          action={{ label: "Añadir un viaje", icon: "plus", onClick: () => navigate({ screen: "edit", id: null }) }}
+          title={t("stats.empty")}
+          action={{ label: t("stats.add_trip"), icon: "plus", onClick: () => navigate({ screen: "edit", id: null }) }}
         >
-          Salen de los viajes hechos: países, noches, kilómetros y lo que costaron.
+          {t("stats.empty_detail")}
         </EmptyState>
       )}
 
-      <StatRow label="Resumen">
+      <StatRow label={t("trip.summary")}>
         <StatTile
-          label="Europa"
-          value={`${europe} de ${stats.europe_total}`}
+          label={t("stats.europe")}
+          value={t("stats.of", { count: europe, total: stats.europe_total })}
           progress={europe / stats.europe_total}
-          foot={stats.europe_visited.map(flag).join(" ") || "Ninguno todavía"}
-          info="Los 44 estados de Europa de la ONU donde has dormido o que has visitado."
+          foot={stats.europe_visited.map(flag).join(" ") || t("stats.none_yet")}
+          info={t("stats.europe_info")}
         />
-        <StatTile label="Países" value={whole(stats.countries)} foot={`${whole(stats.regions)} regiones`} />
-        <StatTile label="Noches fuera" value={whole(stats.nights)} foot={`${whole(stats.trips)} viajes`} />
+        <StatTile label={t("stats.countries")} value={whole(stats.countries)} foot={plural(stats.regions, "count.regions", { count: whole(stats.regions) })} />
+        <StatTile label={t("stats.nights_away")} value={whole(stats.nights)} foot={plural(stats.trips, "count.trips", { count: whole(stats.trips) })} />
         <StatTile
-          label="Kilómetros"
+          label={t("stats.km")}
           value={whole(stats.km)}
-          info="El avión, en línea recta. Tren, coche, bus y barco, una estimación sobre la línea recta: no se traza la carretera."
+          info={t("stats.km_info")}
         />
         <StatTile
-          label="Coste medio al día"
+          label={t("stats.cost_per_day")}
           value={stats.average_cost_per_day !== null ? euros(stats.average_cost_per_day) : "—"}
-          foot="por persona"
-          info="La media del coste por día de cada viaje con gastos: lo que costó por persona entre sus días, contando el primero y el último."
+          foot={t("stats.per_person")}
+          info={t("stats.cost_info")}
         />
       </StatRow>
 
       {stats.by_year.length > 0 && (
         <section className="surface travel-panel">
-          <Heading>Por año</Heading>
+          <Heading>{t("stats.by_year")}</Heading>
           <SeriesChart
-            label="Viajes y noches fuera por año"
+            label={t("stats.by_year_label")}
             labels={stats.by_year.map((row) => String(row.year))}
             series={[
-              { key: "nights", name: "Noches", values: stats.by_year.map((row) => row.nights) },
-              { key: "trips", name: "Viajes", values: stats.by_year.map((row) => row.trips) },
+              { key: "nights", name: t("stats.nights"), values: stats.by_year.map((row) => row.nights) },
+              { key: "trips", name: t("nav.trips"), values: stats.by_year.map((row) => row.trips) },
             ]}
             order={["nights", "trips"]}
             format={whole}
@@ -102,9 +104,9 @@ export function StatsScreen({ navigate }: { trips: Trip[] | null; navigate: Navi
 
       {stats.km > 0 && (
         <section className="surface travel-panel">
-          <Heading>Kilómetros por medio</Heading>
+          <Heading>{t("stats.km_by_mode")}</Heading>
           <ShareChart
-            label="Kilómetros por medio de transporte"
+            label={t("stats.km_by_mode_label")}
             items={(Object.keys(stats.km_by_mode) as Mode[]).map((mode) => ({
               key: mode,
               name: MODES[mode].label,
@@ -119,15 +121,15 @@ export function StatsScreen({ navigate }: { trips: Trip[] | null; navigate: Navi
 
       {stats.top_countries.length > 0 && (
         <section className="surface travel-panel">
-          <Heading>Los países que más repites</Heading>
+          <Heading>{t("stats.top_countries")}</Heading>
           <DataTable
-            label="Países por número de viajes"
+            label={t("stats.top_countries_label")}
             rowKey={(row) => row.code}
             rows={stats.top_countries}
             columns={[
-              { key: "name", label: "País", cell: (row) => `${flag(row.code)} ${row.name}` },
-              { key: "trips", label: "Viajes", numeric: true, cell: (row) => whole(row.trips) },
-              { key: "nights", label: "Noches", numeric: true, cell: (row) => whole(row.nights) },
+              { key: "name", label: t("stats.country"), cell: (row) => `${flag(row.code)} ${row.name}` },
+              { key: "trips", label: t("nav.trips"), numeric: true, cell: (row) => whole(row.trips) },
+              { key: "nights", label: t("stats.nights"), numeric: true, cell: (row) => whole(row.nights) },
             ]}
           />
         </section>
@@ -135,19 +137,19 @@ export function StatsScreen({ navigate }: { trips: Trip[] | null; navigate: Navi
 
       {stats.cost_per_day.length > 0 && (
         <section className="surface travel-panel">
-          <Heading>Coste por día de cada viaje</Heading>
+          <Heading>{t("stats.cost_by_trip")}</Heading>
           <DataTable
-            label="Coste por día y por persona de cada viaje"
+            label={t("stats.cost_by_trip_label")}
             rowKey={(row) => row.trip_id}
             rows={[...stats.cost_per_day].reverse()}
             onRowClick={(row) => navigate({ screen: "trip", id: row.trip_id })}
             columns={[
-              { key: "title", label: "Viaje", cell: (row) => row.title },
-              { key: "year", label: "Año", cell: (row) => row.starts_on.slice(0, 4) },
-              { key: "per_day", label: "Al día", numeric: true, cell: (row) => euros(row.per_day) },
+              { key: "title", label: t("trip.title"), cell: (row) => row.title },
+              { key: "year", label: t("stats.year"), cell: (row) => row.starts_on.slice(0, 4) },
+              { key: "per_day", label: t("stats.a_day"), numeric: true, cell: (row) => euros(row.per_day) },
             ]}
             footer={[
-              "Media",
+              t("stats.average"),
               "",
               stats.average_cost_per_day !== null ? euros(stats.average_cost_per_day) : "—",
             ]}
@@ -157,33 +159,33 @@ export function StatsScreen({ navigate }: { trips: Trip[] | null; navigate: Navi
 
       {stats.spend_per_night_by_country.length > 0 && (
         <section className="surface travel-panel">
-          <Heading>Gasto por noche en cada país</Heading>
+          <Heading>{t("stats.night_cost")}</Heading>
           <DataTable
-            label="Gasto por persona y noche en cada país"
+            label={t("stats.night_cost_label")}
             rowKey={(row) => row.code}
             rows={stats.spend_per_night_by_country}
             columns={[
-              { key: "name", label: "País", cell: (row) => `${flag(row.code)} ${row.name}` },
-              { key: "nights", label: "Noches", numeric: true, cell: (row) => whole(row.nights) },
-              { key: "per_night", label: "Por noche", numeric: true, cell: (row) => euros(row.per_night) },
+              { key: "name", label: t("stats.country"), cell: (row) => `${flag(row.code)} ${row.name}` },
+              { key: "nights", label: t("stats.nights"), numeric: true, cell: (row) => whole(row.nights) },
+              { key: "per_night", label: t("stats.per_night"), numeric: true, cell: (row) => euros(row.per_night) },
             ]}
           />
           <p className="travel-footnote">
-            Todo el gasto del viaje por persona, repartido entre sus países según las noches dormidas en cada uno.
+            {t("stats.night_cost_note")}
           </p>
         </section>
       )}
 
       {calendar.size > 0 && (
         <section className="surface travel-panel">
-          <Heading>Noches fuera, mes a mes</Heading>
+          <Heading>{t("stats.month_by_month")}</Heading>
           <table className="travel-calendar">
             <thead>
               <tr>
                 <th scope="col">
-                  <span className="visually-hidden">Año</span>
+                  <span className="visually-hidden">{t("stats.year")}</span>
                 </th>
-                {MONTHS.map((month, index) => (
+                {Array.from({ length: 12 }, (_, index) => monthNarrow(index + 1)).map((month, index) => (
                   <th key={index} scope="col">
                     {month}
                   </th>
@@ -200,9 +202,9 @@ export function StatsScreen({ navigate }: { trips: Trip[] | null; navigate: Navi
                       className="travel-calendar-cell"
                       data-empty={count === 0 || undefined}
                       style={{ "--level": `${Math.round(Math.sqrt(count / busiest) * 100)}%` } as CSSProperties}
-                      title={`${count} noches`}
+                      title={nights(count)}
                     >
-                      <span className="visually-hidden">{count} noches</span>
+                      <span className="visually-hidden">{nights(count)}</span>
                     </td>
                   ))}
                 </tr>

@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { type JournalEntry, Queued, type Trip, readJournal, writeJournal } from "./api";
 import { addDays, dayLabel, todayIso } from "./words";
+import { t } from "./lang";
 
 export const journalKey = (tripId: string) => `journal/${tripId}`;
 
@@ -53,7 +54,7 @@ export function DaySheet({
       title={dayLabel(day)}
       onClose={onClose}
       action={{
-        label: busy ? "Guardando…" : "Guardar",
+        label: busy ? t("journal.saving") : t("action.save"),
         disabled: busy,
         onClick: () => {
           setBusy(true);
@@ -62,17 +63,17 @@ export function DaySheet({
       }}
     >
       <label className="text-field">
-        <span className="text-field-label">Lo que pasó</span>
+        <span className="text-field-label">{t("journal.what")}</span>
         <textarea
           className="text-field-input"
           value={text}
           rows={8}
           maxLength={20000}
-          placeholder="Dónde fuiste, qué comiste, qué no quieres olvidar."
+          placeholder={t("journal.example")}
           onChange={(event) => setText(event.target.value)}
         />
       </label>
-      <Hint>Es tuyo: los demás del viaje no lo ven. Sale en la nota de ese día.</Hint>
+      <Hint>{t("journal.private")}</Hint>
     </Sheet>
   );
 }
@@ -85,14 +86,14 @@ export function JournalSection({ trip }: { trip: Trip }) {
 
   if (!found.data) {
     if (found.error) {
-      return <ErrorState title="El diario no ha llegado" detail={found.error.message} onRetry={found.refresh} />;
+      return <ErrorState title={t("journal.error")} detail={found.error.message} onRetry={found.refresh} />;
     }
-    return <Skeleton label="Cargando el diario" />;
+    return <Skeleton label={t("journal.loading")} />;
   }
   if (days.length === 0) {
     return (
-      <EmptyState icon="book" title="El diario empieza con el viaje">
-        Cada día, en Hoy o aquí, cuentas lo que pasó. Sale en la nota de ese día.
+      <EmptyState icon="book" title={t("journal.empty")}>
+        {t("journal.empty_detail")}
       </EmptyState>
     );
   }
@@ -106,7 +107,7 @@ export function JournalSection({ trip }: { trip: Trip }) {
             key={day}
             icon="book"
             title={dayLabel(day)}
-            subtitle={written.get(day) ?? "Sin escribir"}
+            subtitle={written.get(day) ?? t("journal.unwritten")}
             onClick={() => setOpen(day)}
           />
         ))}
@@ -121,7 +122,7 @@ export function JournalSection({ trip }: { trip: Trip }) {
               setSaid(await saveDay(trip, open, body));
               setOpen(null);
             } catch (error) {
-              setSaid(error instanceof Error ? error.message : "No se ha podido guardar.");
+              setSaid(error instanceof Error ? error.message : t("error.save"));
             }
           }}
         />

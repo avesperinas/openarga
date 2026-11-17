@@ -1,7 +1,7 @@
 import {
   Button,
-  CANNOT_UNDO,
   ConfirmDelete,
+  cannotUndo,
   GroupLabel,
   Hint,
   Icon,
@@ -49,6 +49,7 @@ import { SharePicker } from "./SharePicker";
 import { TripHero, TripTabs } from "./TripChrome";
 import { lock, standalone, tripAppPath } from "./tripApp";
 import { CATEGORIES, MODES, dateRange, dayLabel, euros, eurosExact, flag, km, nights, where } from "./words";
+import { plural, t } from "./lang";
 
 type Step =
   | { kind: "leg"; day: string | null; leg: Leg }
@@ -135,13 +136,13 @@ export function TripScreen({
   const back =
     lock() === id
       ? undefined
-      : { label: list.screen === "plans" ? "Planes" : "Viajes", onClick: () => navigate(list) };
+      : { label: list.screen === "plans" ? t("nav.plans") : t("nav.trips"), onClick: () => navigate(list) };
 
   if (!trip || !map) {
     return (
       <Screen>
-        <ScreenHeader title="Viaje" back={back} />
-        <Pending found={loaded.found} label="Cargando el viaje" />
+        <ScreenHeader title={t("trip.title")} back={back} />
+        <Pending found={loaded.found} label={t("trip.loading")} />
       </Screen>
     );
   }
@@ -156,7 +157,7 @@ export function TripScreen({
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={trip.archived ? "Archivado" : undefined}
+        eyebrow={trip.archived ? t("trip.archived") : undefined}
         title={trip.title}
         back={back}
       />
@@ -171,23 +172,23 @@ export function TripScreen({
         data-empty={trip.summary ? undefined : true}
         onClick={() => setSummarising(trip.summary ?? "")}
       >
-        {trip.summary ?? "Cuenta en dos líneas de qué va este viaje"}
+        {trip.summary ?? t("trip.summary_empty")}
       </button>
       <dl className="travel-kpis">
         <div className="surface">
-          <dt>Días</dt>
+          <dt>{t("trip.kpi.days")}</dt>
           <dd>{trip.days}</dd>
         </div>
         <div className="surface">
-          <dt>{trip.phase === "done" ? "Gastado" : "Llevas"}</dt>
+          <dt>{trip.phase === "done" ? t("trip.kpi.spent") : t("trip.kpi.so_far")}</dt>
           <dd>{euros(trip.spend.group)}</dd>
         </div>
         <div className="surface">
-          <dt>Viajeros</dt>
+          <dt>{t("trip.kpi.travellers")}</dt>
           <dd>{trip.travellers}</dd>
         </div>
         <div className="surface">
-          <dt>Por reservar</dt>
+          <dt>{t("trip.kpi.to_book")}</dt>
           <dd>{pending ?? "—"}</dd>
         </div>
       </dl>
@@ -201,18 +202,18 @@ export function TripScreen({
           routes={map.routes}
           highlight={trip.id}
           focus={map.focus.length ? map.focus : null}
-          label={`Mapa de ${trip.title}`}
+          label={t("trip.map_of", { title: trip.title })}
         />
       </div>
 
       <Hint>
         {trip.countries.map((code) => flag(code)).join(" ")}
-        {trip.travellers > 1 ? ` · ${trip.travellers} viajeros` : " · 1 viajero"}
-        {trip.companions.length > 0 && ` · con ${trip.companions.join(", ")}`}
+        {` · ${plural(trip.travellers, "count.travellers")}`}
+        {trip.companions.length > 0 && ` · ${t("trip.with", { names: trip.companions.join(", ") })}`}
         {trip.km > 0 && ` · ${km(trip.km)}`}
       </Hint>
       {trip.tags.length > 0 && (
-        <div className="chips" aria-label="Etiquetas">
+        <div className="chips" aria-label={t("trip.tags")}>
           {trip.tags.map((tag) => (
             <span key={tag} className="chip" aria-pressed="true">
               {tag}
@@ -222,7 +223,7 @@ export function TripScreen({
       )}
 
       <section className="travel-group">
-        <GroupLabel>Compartido</GroupLabel>
+        <GroupLabel>{t("trip.shared")}</GroupLabel>
         <SharePicker
           trip={trip}
           spaces={spaces}
@@ -232,16 +233,16 @@ export function TripScreen({
               onChanged();
             } catch (error) {
               if (error instanceof Unauthorised) return signIn();
-              setProblem(error instanceof Error ? error.message : "No se ha podido compartir el viaje.");
+              setProblem(error instanceof Error ? error.message : t("trip.error.share"));
             }
           }}
         />
       </section>
 
       <section className="travel-group">
-        <GroupLabel>Itinerario</GroupLabel>
+        <GroupLabel>{t("trip.itinerary")}</GroupLabel>
         {steps.length === 0 ? (
-          <Hint>Aún sin lugares. Añádelos al editar el viaje.</Hint>
+          <Hint>{t("trip.no_places")}</Hint>
         ) : (
           <ol className="surface travel-timeline">
             {steps.map((step) => (
@@ -257,23 +258,23 @@ export function TripScreen({
       {tab === "money" && (
         <>
       <section className="travel-group">
-        <GroupLabel>Gasto</GroupLabel>
+        <GroupLabel>{t("trip.spending")}</GroupLabel>
         {trip.budget_eur != null && <BudgetBar budget={trip.budget_eur} spent={trip.spend.per_person} />}
         {trip.expenses.length === 0 ? (
-          <Hint>Sin gastos apuntados.</Hint>
+          <Hint>{t("trip.no_spending")}</Hint>
         ) : (
           <div className="surface travel-spend">
             <dl className="travel-spend-totals">
               <div>
-                <dt>Por persona</dt>
+                <dt>{t("trip.per_person")}</dt>
                 <dd>{euros(trip.spend.per_person)}</dd>
               </div>
               <div>
-                <dt>El grupo</dt>
+                <dt>{t("trip.group")}</dt>
                 <dd>{euros(trip.spend.group)}</dd>
               </div>
               <div>
-                <dt>Por día</dt>
+                <dt>{t("trip.per_day")}</dt>
                 <dd>{trip.spend.per_day !== null ? euros(trip.spend.per_day) : "—"}</dd>
               </div>
             </dl>
@@ -291,7 +292,7 @@ export function TripScreen({
                         <span>
                           {item.concept}
                           {trip.space_id !== null && !item.mine && (
-                            <span className="travel-step-detail"> · lo apuntó otra persona</span>
+                            <span className="travel-step-detail"> · {t("trip.noted_by_other")}</span>
                           )}
                         </span>
                         <span>{eurosExact(item.amount_eur)}</span>
@@ -301,8 +302,10 @@ export function TripScreen({
                 </div>
               ))}
             <p className="travel-footnote">
-              Importes por persona. El grupo son {trip.travellers} {trip.travellers === 1 ? "persona" : "personas"}; el
-              día, entre {trip.days} días.
+              {t("trip.footnote", {
+                people: plural(trip.travellers, "count.people"),
+                days: plural(trip.days, "count.days"),
+              })}
             </p>
           </div>
         )}
@@ -329,15 +332,14 @@ export function TripScreen({
         </Hint>
       )}
       {tab === "trip" && trip.phase === "plan" && (
-        <Hint>Es un plan: las fechas pueden moverse y no sale en tu calendario hasta que lo confirmes.</Hint>
+        <Hint>{t("trip.plan_hint")}</Hint>
       )}
       {tab === "settings" && (
         <>
       {prepared && <Hint>{prepared}</Hint>}
       {installHint && (
         <Hint>
-          Dentro de una app instalada no se puede añadir otra a la pantalla de inicio. Abre arga en Safari, entra en
-          este viaje, pulsa «App en el iPhone» y luego Compartir → «Añadir a pantalla de inicio».
+          {t("trip.install_hint")}
         </Hint>
       )}
       <div className="travel-actions">
@@ -347,27 +349,27 @@ export function TripScreen({
             icon="pull"
             disabled={preparing !== null}
             onClick={async () => {
-              setPreparing("Preparando…");
+              setPreparing(t("trip.offline.preparing"));
               try {
                 const failed = await prepare(trip.id, (done, total) =>
-                  setPreparing(`Guardando ${done} de ${total}`),
+                  setPreparing(t("trip.offline.saving", { done, total })),
                 );
                 setPrepared(
                   failed
-                    ? `Guardado sin conexión, salvo ${failed} cosa(s) que no contestaron.`
-                    : "Guardado: este viaje, sus días, sus reservas y sus mapas se ven sin conexión.",
+                    ? t("trip.offline.partial", { failed })
+                    : t("trip.offline.done"),
                 );
               } catch (error) {
                 if (error instanceof Unauthorised) return signIn();
                 setPrepared(
-                  error instanceof CannotKeep ? error.message : "No se ha podido preparar: hace falta conexión.",
+                  error instanceof CannotKeep ? error.message : t("trip.offline.failed"),
                 );
               } finally {
                 setPreparing(null);
               }
             }}
           >
-            {preparing ?? "Preparar sin conexión"}
+            {preparing ?? t("trip.offline.prepare")}
           </Button>
         )}
         {trip.phase !== "done" && lock() !== trip.id && (
@@ -378,11 +380,11 @@ export function TripScreen({
               standalone() ? setInstallHint(true) : window.location.assign(tripAppPath(trip.id))
             }
           >
-            App en el iPhone
+            {t("trip.iphone_app")}
           </Button>
         )}
         <Button variant="secondary" icon="edit" onClick={() => navigate({ screen: "edit", id: trip.id })}>
-          Editar viaje
+          {t("trip.edit")}
         </Button>
         {(trip.phase === "plan" || trip.phase === "upcoming") && (
           <Button
@@ -396,13 +398,13 @@ export function TripScreen({
                 onChanged();
               } catch (error) {
                 if (error instanceof Unauthorised) return signIn();
-                setProblem(error instanceof Error ? error.message : "No se ha podido cambiar el viaje.");
+                setProblem(error instanceof Error ? error.message : t("trip.error.change"));
               } finally {
                 setConfirming(false);
               }
             }}
           >
-            {trip.phase === "plan" ? "Confirmar viaje" : "Volver a plan"}
+            {trip.phase === "plan" ? t("trip.confirm") : t("trip.back_to_plan")}
           </Button>
         )}
         <Button
@@ -416,17 +418,17 @@ export function TripScreen({
               onChanged();
             } catch (error) {
               if (error instanceof Unauthorised) return signIn();
-              setProblem(error instanceof Error ? error.message : "No se ha podido archivar el viaje.");
+              setProblem(error instanceof Error ? error.message : t("trip.error.archive"));
             } finally {
               setArchiving(false);
             }
           }}
         >
-          {trip.archived ? "Sacar del archivo" : "Archivar"}
+          {trip.archived ? t("action.unarchive") : t("action.archive")}
         </Button>
         {trip.mine && (
           <Button variant="destructive" icon="trash" onClick={() => setDeleting(true)}>
-            Borrar viaje
+            {t("trip.delete")}
           </Button>
         )}
       </div>
@@ -447,27 +449,27 @@ export function TripScreen({
       )}
       {summarising !== null && (
         <Sheet
-          title="De qué va el viaje"
+          title={t("trip.summary_title")}
           onClose={() => setSummarising(null)}
           action={{
-            label: "Guardar",
+            label: t("action.save"),
             onClick: async () => {
               try {
                 setTrip(await setSummary(trip, summarising));
                 setSummarising(null);
               } catch (error) {
                 if (error instanceof Unauthorised) return signIn();
-                setProblem(error instanceof Error ? error.message : "No se ha podido guardar el resumen.");
+                setProblem(error instanceof Error ? error.message : t("trip.error.summary"));
                 setSummarising(null);
               }
             },
           }}
         >
           <TextField
-            label="Resumen"
+            label={t("trip.summary")}
             value={summarising}
             onChange={(value) => setSummarising(value.slice(0, 1000))}
-            placeholder="Cuatro días en pareja: termas, ruin bars y el Danubio de noche."
+            placeholder={t("trip.summary_example")}
             autoFocus
           />
         </Sheet>
@@ -475,10 +477,10 @@ export function TripScreen({
 
       {deleting && (
         <ConfirmDelete
-          title="¿Borrar este viaje?"
+          title={t("trip.delete_confirm")}
           subject={`${trip.title} · ${dateRange(trip.starts_on, trip.ends_on)}`}
-          consequence={`Se pierden sus lugares principales, visitas, trayectos y gastos. Los lugares se quedan para otros viajes. ${CANNOT_UNDO}`}
-          action="Borrar viaje"
+          consequence={`${t("trip.delete_consequence")} ${cannotUndo()}`}
+          action={t("trip.delete")}
           onCancel={() => setDeleting(false)}
           onConfirm={async () => {
             await deleteTrip(trip.id);
@@ -527,7 +529,7 @@ function TimelineStep({ step }: { step: Step }) {
             {dateRange(stay.arrives_on, stay.leaves_on)} · {nights(stay.nights)}
             {stay.accommodation && ` · ${stay.accommodation}`}
           </span>
-          {stay.place.lat === null && <span className="travel-step-warning">Sin situar en el mapa</span>}
+          {stay.place.lat === null && <span className="travel-step-warning">{t("trip.not_on_map")}</span>}
           {visits.length > 0 && (
             <ul className="travel-step-visits">
               {visits.map((visit) => (
@@ -552,7 +554,7 @@ function TimelineStep({ step }: { step: Step }) {
       <span className="travel-step-text">
         <span className="travel-step-title">{visit.place.name}</span>
         <span className="travel-step-detail">
-          De visita{visit.visited_on && ` · ${dayLabel(visit.visited_on)}`}
+          {t("trip.visiting")}{visit.visited_on && ` · ${dayLabel(visit.visited_on)}`}
           {visit.note && ` · ${visit.note}`}
         </span>
       </span>
@@ -567,14 +569,14 @@ export function BudgetBar({ budget, spent }: { budget: number; spent: number }) 
     <div className="surface travel-budget" data-over={over || undefined}>
       <div className="travel-budget-line">
         <span>
-          {euros(spent)} de {euros(budget)} por persona
+          {t("budget.of", { spent: euros(spent), budget: euros(budget) })}
         </span>
-        <strong>{over ? `${euros(spent - budget)} de más` : `Quedan ${euros(budget - spent)}`}</strong>
+        <strong>{over ? t("budget.over", { amount: euros(spent - budget) }) : t("budget.left", { amount: euros(budget - spent) })}</strong>
       </div>
       <div
         className="travel-budget-track"
         role="meter"
-        aria-label="Presupuesto gastado"
+        aria-label={t("budget.spent")}
         aria-valuemin={0}
         aria-valuemax={budget}
         aria-valuenow={spent}
@@ -594,17 +596,17 @@ function CoverSheet({ trip, onClose, onSaved }: { trip: Trip; onClose: () => voi
       onSaved(await action());
     } catch (error) {
       if (error instanceof Unauthorised) return signIn();
-      setProblem(error instanceof Error ? error.message : "No se ha podido cambiar la portada.");
+      setProblem(error instanceof Error ? error.message : t("cover.error"));
     } finally {
       setBusy(false);
     }
   };
   return (
-    <Sheet title="Portada" onClose={onClose}>
+    <Sheet title={t("cover.title")} onClose={onClose}>
       <div className="travel-sheet-stack">
         <label className="travel-cover-pick">
           <Icon name="camera" />
-          {busy ? "Subiendo…" : "Elegir una foto"}
+          {busy ? t("cover.uploading") : t("cover.choose")}
           <input
             type="file"
             accept="image/*"
@@ -616,11 +618,11 @@ function CoverSheet({ trip, onClose, onSaved }: { trip: Trip; onClose: () => voi
           />
         </label>
         {trip.cover?.page && (
-          <Hint>Es la de su destino en Wikimedia. Una tuya la sustituye.</Hint>
+          <Hint>{t("cover.hint")}</Hint>
         )}
         {trip.cover && (
           <Button variant="destructive" icon="trash" disabled={busy} onClick={() => void run(() => removeCover(trip.id))}>
-            Quitar la portada
+            {t("cover.remove")}
           </Button>
         )}
         {problem && <Hint tone="warning">{problem}</Hint>}

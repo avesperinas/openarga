@@ -33,6 +33,7 @@ import {
   GEO,
 } from "./atlas";
 import { MODES, dateRange, flag, km, nights, trips as tripsWord, whole } from "./words";
+import { t } from "./lang";
 
 export type AreaLevel = Exclude<MapLevel, "none">;
 
@@ -85,7 +86,7 @@ export function MapScreen({
         routes={[]}
         focus={focus}
         selected={panel?.kind === "area" ? panel.code : null}
-        label="Mapa de los viajes"
+        label={t("atlas.map")}
         onSelectArea={(code, name) => setPanel({ kind: "area", code, name })}
       />
 
@@ -93,28 +94,28 @@ export function MapScreen({
         <MapFigures
           figures={[
             level === "country"
-              ? { label: "Países", value: whole(tallies.countries) }
-              : { label: "Regiones", value: whole(tallies.regions) },
-            { label: "Viajes", value: whole(tallies.trips) },
-            { label: "Noches", value: whole(tallies.nights) },
+              ? { label: t("stats.countries"), value: whole(tallies.countries) }
+              : { label: t("atlas.regions"), value: whole(tallies.regions) },
+            { label: t("nav.trips"), value: whole(tallies.trips) },
+            { label: t("stats.nights"), value: whole(tallies.nights) },
           ]}
         />
         <HomeLink />
         <div className="travel-map-level glass">
           <SegmentedControl
-            label="Qué se pinta"
+            label={t("atlas.level")}
             value={level}
             onChange={setLevel}
             options={[
-              { value: "country", label: "Países" },
-              { value: "region", label: "Regiones" },
+              { value: "country", label: t("stats.countries") },
+              { value: "region", label: t("atlas.regions") },
             ]}
           />
         </div>
         <div className="travel-map-filter glass">
           <IconButton
             icon="filter"
-            label={chosen ? `Filtros, ${chosen} puestos` : "Filtros"}
+            label={chosen ? t("atlas.filters_on", { count: chosen }) : t("atlas.filters")}
             variant="plain"
             onClick={() => setEditing(true)}
           />
@@ -122,17 +123,17 @@ export function MapScreen({
         </div>
         {problem && (
           <div className="travel-map-problem">
-            <ErrorState title="Travel no contesta" detail={problem} onRetry={onRetry} />
+            <ErrorState title={t("error.no_answer")} detail={problem} onRetry={onRetry} />
           </div>
         )}
         {trips && trips.length === 0 && others.length === 0 && (
           <div className="travel-map-empty glass">
-            <Heading>Aún no hay viajes</Heading>
+            <Heading>{t("atlas.empty")}</Heading>
             <Hint>
-              Añade el primero, o cuéntaselo a Claude con sus sitios y sus gastos y aparecerá aquí.
+              {t("atlas.empty_detail")}
             </Hint>
             <Button variant="primary" icon="plus" onClick={() => navigate({ screen: "edit", id: null })}>
-              Añadir viaje
+              {t("atlas.add_trip")}
             </Button>
           </div>
         )}
@@ -198,25 +199,25 @@ function FiltersSheet({
   const NONE = "";
   return (
     <Sheet
-      title="Filtros"
+      title={t("atlas.filters")}
       onClose={onClose}
-      action={{ label: "Quitar filtros", onClick: () => onChange({ ...noFilters(trips) }), disabled: !activeFilters(filters) }}
+      action={{ label: t("atlas.clear_filters"), onClick: () => onChange({ ...noFilters(trips) }), disabled: !activeFilters(filters) }}
     >
       <div className="travel-sheet-stack">
         <SelectField
-          label="Viaje"
+          label={t("trip.title")}
           value={filters.trip ?? NONE}
           onChange={(value) => onChange({ ...filters, trip: value || null })}
           options={[
-            { value: NONE, label: "Todos" },
+            { value: NONE, label: t("map.all") },
             ...trips.map((one) => ({ value: one.id, label: `${one.title} · ${one.starts_on.slice(0, 4)}` })),
           ]}
         />
         {choices.companions.length > 0 && (
           <section className="travel-sheet-group">
-            <GroupLabel>Con quién</GroupLabel>
+            <GroupLabel>{t("editor.companions")}</GroupLabel>
             <CheckChips
-              label="Con quién"
+              label={t("editor.companions")}
               values={filters.companions}
               onChange={(companions) => onChange({ ...filters, companions })}
               options={choices.companions.map((one) => ({ value: one, label: one }))}
@@ -225,9 +226,9 @@ function FiltersSheet({
         )}
         {choices.tags.length > 0 && (
           <section className="travel-sheet-group">
-            <GroupLabel>Etiqueta</GroupLabel>
+            <GroupLabel>{t("atlas.tag")}</GroupLabel>
             <CheckChips
-              label="Etiqueta"
+              label={t("atlas.tag")}
               values={filters.tags}
               onChange={(tags) => onChange({ ...filters, tags })}
               options={choices.tags.map((one) => ({ value: one, label: one }))}
@@ -236,9 +237,9 @@ function FiltersSheet({
         )}
         {choices.modes.length > 0 && (
           <section className="travel-sheet-group">
-            <GroupLabel>Medio</GroupLabel>
+            <GroupLabel>{t("editor.mode")}</GroupLabel>
             <CheckChips<Mode>
-              label="Medio"
+              label={t("editor.mode")}
               values={filters.modes}
               onChange={(modes) => onChange({ ...filters, modes })}
               options={choices.modes.map((one) => ({ value: one, label: MODES[one].label }))}
@@ -273,10 +274,10 @@ function PanelSheet({
       found.flatMap((one) => [...one.stays, ...one.visits]).find((one) => one.place.id === panel.id)?.place ?? null;
     const slept = found.flatMap((one) => one.stays).filter((one) => one.place.id === panel.id);
     return (
-      <Sheet title={place ? `${flag(place.country_code)} ${place.name}` : "Lugar"} onClose={onClose}>
+      <Sheet title={place ? `${flag(place.country_code)} ${place.name}` : t("atlas.place")} onClose={onClose}>
         <Hint>
           {[place?.region, place?.country].filter(Boolean).join(", ")}
-          {slept.length ? ` · ${nights(slept.reduce((sum, one) => sum + one.nights, 0))}` : " · de visita"}
+          {slept.length ? ` · ${nights(slept.reduce((sum, one) => sum + one.nights, 0))}` : ` · ${t("atlas.visited")}`}
         </Hint>
         <TripList trips={found} navigate={navigate} />
       </Sheet>
@@ -287,19 +288,19 @@ function PanelSheet({
   return (
     <Sheet title={`${countryFlag} ${panel.name}`} onClose={onClose}>
       {inside.trips.length === 0 && inside.others.length === 0 && (
-        <Hint>Aún no has estado aquí.</Hint>
+        <Hint>{t("atlas.never_here")}</Hint>
       )}
       {inside.trips.length > 0 && (
         <>
           <Hint>
-            {tripsWord(inside.trips.length)} · {inside.nights ? nights(inside.nights) : "sin dormir"}
+            {tripsWord(inside.trips.length)} · {inside.nights ? nights(inside.nights) : t("atlas.no_nights")}
           </Hint>
           <p className="travel-places">{inside.places.join(" · ")}</p>
           <TripList trips={inside.trips.map((one) => one.trip)} navigate={navigate} />
         </>
       )}
       {inside.others.length > 0 && (
-        <Hint>Sin viaje apuntado: {inside.others.map((one) => one.place.name).join(" · ")}</Hint>
+        <Hint>{t("atlas.no_trip", { names: inside.others.map((one) => one.place.name).join(" · ") })}</Hint>
       )}
     </Sheet>
   );

@@ -11,6 +11,7 @@ import { Pending, changed, useLoad } from "./Loads";
 import { TodayScreen } from "./Today";
 import { forgetStoredLock, lockedTrip, setLock } from "./tripApp";
 import { TripsScreen } from "./Trips";
+import { t } from "./lang";
 
 const MapScreen = later(() => import("./MapScreen").then((found) => found.MapScreen));
 const JourneyScreen = later(() => import("./Journey").then((found) => found.JourneyScreen));
@@ -229,21 +230,21 @@ export function App() {
     <div className="travel-offline">
       <OfflineNotice pending={offline.pending} />
       {offline.signedOut && (
-        <Notice tone="warning" title="Sin sesión">
-          Inicia sesión para enviar lo apuntado sin conexión.{" "}
+        <Notice tone="warning" title={t("app.signed_out")}>
+          {t("app.sign_in_to_send")}{" "}
           <Button variant="plain" onClick={signIn}>
-            Entrar
+            {t("app.sign_in")}
           </Button>
         </Notice>
       )}
       {offline.refused.map((one) => (
-        <Notice key={one.key} tone="negative" title={`No se pudo guardar ${one.what}`}>
+        <Notice key={one.key} tone="negative" title={t("app.not_saved", { what: one.what })}>
           {one.problem}{" "}
           <Button variant="plain" onClick={() => void offline.retry(one.key!)}>
-            Reintentar
+            {t("app.retry")}
           </Button>
           <Button variant="plain" onClick={() => void offline.dismiss(one.key!)}>
-            Olvidarlo
+            {t("app.forget")}
           </Button>
         </Notice>
       ))}
@@ -274,17 +275,17 @@ export function App() {
           <JourneyScreen trips={done} home={home} navigate={navigate} />
         ) : (
           <Screen>
-            <ScreenHeader title="Recorrido" back={{ label: "Viajes", onClick: () => navigate({ screen: "trips" }) }} />
+            <ScreenHeader title={t("app.journey")} back={{ label: t("nav.trips"), onClick: () => navigate({ screen: "trips" }) }} />
             {done ? (
               <EmptyState
                 icon="globe"
-                title="Aún no hay nada que recorrer"
-                action={{ label: "Añadir un viaje", icon: "plus", onClick: () => navigate({ screen: "edit", id: null }) }}
+                title={t("app.journey_empty")}
+                action={{ label: t("stats.add_trip"), icon: "plus", onClick: () => navigate({ screen: "edit", id: null }) }}
               >
-                El recorrido pinta los viajes hechos, uno detrás de otro.
+                {t("app.journey_empty_detail")}
               </EmptyState>
             ) : (
-              <Pending found={read.found} label="Cargando los viajes" />
+              <Pending found={read.found} label={t("trips.loading")} />
             )}
           </Screen>
         ))}
@@ -316,15 +317,15 @@ export function App() {
   }
   return (
     <AppShell
-      label="Secciones"
+      label={t("app.sections")}
       active={tab}
       onSelect={(id) => navigate({ screen: id })}
       tabs={[
-        ...(travelling || current.screen === "today" ? [{ id: "today" as const, label: "Hoy", icon: "today" as const }] : []),
-        { id: "map", label: "Mapa", icon: "map" },
-        { id: "plans", label: "Planes", icon: "plane" },
-        { id: "trips", label: "Viajes", icon: "globe" },
-        { id: "stats", label: "Cifras", icon: "chart" },
+        ...(travelling || current.screen === "today" ? [{ id: "today" as const, label: t("today.title"), icon: "today" as const }] : []),
+        { id: "map", label: t("days.map"), icon: "map" },
+        { id: "plans", label: t("nav.plans"), icon: "plane" },
+        { id: "trips", label: t("nav.trips"), icon: "globe" },
+        { id: "stats", label: t("stats.title"), icon: "chart" },
         SETTINGS_TAB,
       ]}
     >

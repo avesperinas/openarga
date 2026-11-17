@@ -4,6 +4,7 @@ import { useState } from "react";
 import { type Place, clearHome, setHome } from "./api";
 import { PlacePicker } from "./PlacePicker";
 import { flag } from "./words";
+import { t } from "./lang";
 
 export function HomePlace({ home, onChanged }: { home: Place | null; onChanged: () => void }) {
   const [choosing, setChoosing] = useState(false);
@@ -16,7 +17,7 @@ export function HomePlace({ home, onChanged }: { home: Place | null; onChanged: 
       setChoosing(false);
       onChanged();
     } catch (error) {
-      setFailed(error instanceof Error ? error.message : "No se ha podido guardar dónde vives.");
+      setFailed(error instanceof Error ? error.message : t("home.error.save"));
     }
   };
 
@@ -27,44 +28,44 @@ export function HomePlace({ home, onChanged }: { home: Place | null; onChanged: 
       setChoosing(false);
       onChanged();
     } catch (error) {
-      setFailed(error instanceof Error ? error.message : "No se ha podido quitar.");
+      setFailed(error instanceof Error ? error.message : t("docs.error.remove"));
     }
   };
 
   return (
     <section className="travel-group">
       <GroupLabel>
-        Dónde vives
-        <span className="travel-group-detail">de otro color en el mapa</span>
+        {t("home.title")}
+        <span className="travel-group-detail">{t("home.detail")}</span>
       </GroupLabel>
       {home ? (
         <List>
           <ListRow
             title={`${flag(home.country_code)} ${home.name}`}
-            subtitle={[home.region, home.country].filter(Boolean).join(", ") || "Sin situar"}
+            subtitle={[home.region, home.country].filter(Boolean).join(", ") || t("other.unplaced")}
             accessory="chevron-right"
-            aria-label={`Cambiar dónde vives, ahora ${home.name}`}
+            aria-label={t("home.change", { name: home.name })}
             onClick={() => setChoosing(true)}
           />
         </List>
       ) : (
         <>
           <Hint>
-            Tu país y tu región salen en el mapa de otro color. No cuentan como visitados.
+            {t("home.hint")}
           </Hint>
           <Button variant="secondary" icon="plus" onClick={() => setChoosing(true)}>
-            Elegir dónde vives
+            {t("home.choose")}
           </Button>
         </>
       )}
 
       {choosing && (
-        <Sheet title="Dónde vives" onClose={() => setChoosing(false)}>
+        <Sheet title={t("home.title")} onClose={() => setChoosing(false)}>
           <div className="travel-sheet-stack">
-            <PlacePicker label="Ciudad o pueblo" onPick={(place) => void choose(place)} />
+            <PlacePicker label={t("home.place")} onPick={(place) => void choose(place)} />
             {home && (
               <Button variant="plain" onClick={() => void forget()}>
-                No pintar dónde vivo
+                {t("home.forget")}
               </Button>
             )}
             {failed && (

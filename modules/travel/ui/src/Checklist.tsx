@@ -19,8 +19,16 @@ import {
 } from "./api";
 import { Queued } from "./offline";
 import { type Members, travellerLabel } from "./people";
+import { t } from "./lang";
 
-const LISTS: Record<ListKind, string> = { packing: "Maleta", todo: "Antes de irte" };
+const LISTS: Record<ListKind, string> = {
+  get packing() {
+    return t("list.packing");
+  },
+  get todo() {
+    return t("list.todo");
+  },
+};
 
 export function ChecklistSection({ trip, members, version }: { trip: Trip; members: Members; version: number }) {
   const [found, setFound] = useState<CheckItem[] | null>(null);
@@ -61,7 +69,7 @@ export function ChecklistSection({ trip, members, version }: { trip: Trip; membe
         setProblem(error.message);
         return true;
       }
-      setProblem(error instanceof Error ? error.message : "No se ha podido guardar.");
+      setProblem(error instanceof Error ? error.message : t("error.save"));
       return false;
     }
   };
@@ -78,16 +86,16 @@ export function ChecklistSection({ trip, members, version }: { trip: Trip; membe
     if (texts.length === 0) return;
     const ok = await apply(addCheckItems(trip.id, list, texts), (now) => [
       ...now,
-      ...texts.map((one, index) => ({ id: `nuevo-${index}-${one}`, list, text: one, position: now.length + index, checked: false })),
+      ...texts.map((one, index) => ({ id: `new-${index}-${one}`, list, text: one, position: now.length + index, checked: false })),
     ]);
     if (ok) setText("");
   };
 
   return (
     <section className="travel-group">
-      <GroupLabel>Listas</GroupLabel>
+      <GroupLabel>{t("list.lists")}</GroupLabel>
       <SegmentedControl
-        label="Lista"
+        label={t("list.list")}
         value={list}
         onChange={setList}
         options={(Object.keys(LISTS) as ListKind[]).map((value) => {
@@ -100,7 +108,7 @@ export function ChecklistSection({ trip, members, version }: { trip: Trip; membe
       <div className="surface travel-checklist">
         {shown.length > 0 && (
           <p className="travel-checklist-count">
-            {done === shown.length ? "Todo listo." : `${done} de ${shown.length}`}
+            {done === shown.length ? t("list.all_done") : t("stats.of", { count: done, total: shown.length })}
           </p>
         )}
         {shown.map((item) => (
@@ -114,12 +122,12 @@ export function ChecklistSection({ trip, members, version }: { trip: Trip; membe
                 now.map((one) => (one.id === item.id ? { ...one, checked: !item.checked } : one)),
               )
             }
-            more={{ label: `Cambiar «${item.text}»`, onClick: () => setOpen(item) }}
+            more={{ label: t("list.change_item", { text: item.text }), onClick: () => setOpen(item) }}
           />
         ))}
         {shown.length === 0 && (
           <p className="travel-checklist-count">
-            {list === "packing" ? "Pasaporte, cargador, adaptador…" : "Seguro, visado, reservar el coche…"}
+            {list === "packing" ? t("list.packing_example") : t("list.todo_example")}
           </p>
         )}
         <form
@@ -129,15 +137,15 @@ export function ChecklistSection({ trip, members, version }: { trip: Trip; membe
             void add();
           }}
         >
-          <TextField label={list === "packing" ? "Meter en la maleta" : "Hacer antes de irte"} value={text} onChange={setText} />
+          <TextField label={list === "packing" ? t("list.packing_add") : t("list.todo_add")} value={text} onChange={setText} />
           <Button type="submit" variant="tinted" icon="plus" disabled={!text.trim()}>
-            Añadir
+            {t("action.add")}
           </Button>
         </form>
       </div>
       <div className="travel-actions">
         <Button variant="plain" size="small" icon="copy" onClick={() => setCopying(true)}>
-          Copiar de otro viaje
+          {t("list.copy_from")}
         </Button>
       </div>
       {open && (
@@ -196,26 +204,26 @@ function ItemSheet({
   };
   return (
     <Sheet
-      title="Cambiar"
+      title={t("action.change")}
       onClose={onClose}
       action={{
-        label: "Guardar",
+        label: t("action.save"),
         disabled: !text.trim() || Object.keys(change).length === 0 || busy,
         onClick: () => run(onSave(change)),
       }}
     >
       <div className="travel-sheet-stack">
-        <TextField label="Qué" value={text} onChange={setText} autoFocus />
+        <TextField label={t("days.what")} value={text} onChange={setText} autoFocus />
         {people.length > 1 && (
           <ChoiceChips
-            label="Le toca a"
+            label={t("list.owner")}
             value={owner}
             onChange={(next) => setOwner(next === owner ? null : next)}
             options={people}
           />
         )}
         <Button variant="plain" icon="trash" disabled={busy} onClick={() => run(onRemove())}>
-          Quitar de la lista
+          {t("list.remove")}
         </Button>
       </div>
     </Sheet>
@@ -249,10 +257,10 @@ function CopySheet({
 
   return (
     <Sheet
-      title={`Copiar la ${LISTS[list].toLowerCase()}`}
+      title={t(`list.copy.${list}`)}
       onClose={onClose}
       action={{
-        label: "Copiar",
+        label: t("list.copy"),
         disabled: !from || busy,
         onClick: () => {
           setBusy(true);
@@ -262,16 +270,16 @@ function CopySheet({
     >
       <div className="travel-sheet-stack">
         {others === null ? null : others.length === 0 ? (
-          <Hint>No hay otro viaje del que copiar.</Hint>
+          <Hint>{t("list.no_other")}</Hint>
         ) : (
           <>
             <SelectField
-              label="De qué viaje"
+              label={t("list.from_trip")}
               value={from}
               onChange={setFrom}
               options={others.map((one) => ({ value: one.id, label: `${one.title} · ${one.starts_on.slice(0, 4)}` }))}
             />
-            <Hint>Se copia sin marcar, y lo que ya está en esta lista no se repite.</Hint>
+            <Hint>{t("list.copy_hint")}</Hint>
           </>
         )}
       </div>
