@@ -24,6 +24,7 @@ import {
 import { appIcons } from "./lib/app-icons";
 import { type PersonPreferences, fromHeaders } from "./lib/regional";
 import { type AreaKey, type Contributor, placedAreas, shownAreas } from "./lib/panels";
+import { say } from "./words";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +81,7 @@ export default async function Today() {
 
   return (
     <Desktop initial={preferences} person={person} modules={launchable(modules)} wallpapers={wallpapers}>
-      <main className="page" aria-label="Hoy">
+      <main className="page" aria-label={say("tabs.today")}>
         <header className="desktop-brand">
           <span className="desktop-mark">
             <img className="desktop-logo" src="/icon.svg" alt="" width={28} height={28} />

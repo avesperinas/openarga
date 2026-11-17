@@ -7,8 +7,8 @@ function here(pathname: string, search = "") {
   return { pathname, search, assign: (url: string | URL) => void assigned.push(String(url)), assigned };
 }
 
-describe("la sesión caducada", () => {
-  it("lleva a entrar y vuelve a la misma pantalla", () => {
+describe("the expired session", () => {
+  it("leads to signing in and back to the same screen", () => {
     const location = here("/training/hoy", "?semana=3");
 
     signIn(location);
@@ -16,7 +16,7 @@ describe("la sesión caducada", () => {
     expect(location.assigned).toEqual(["/login?next=%2Ftraining%2Fhoy%3Fsemana%3D3"]);
   });
 
-  it("una respuesta 401 lleva a entrar y las demás no", async () => {
+  it("a 401 answer leads to signing in and the others do not", async () => {
     const assign = vi.fn();
     vi.stubGlobal("location", { pathname: "/", search: "", assign });
     vi.stubGlobal("fetch", vi.fn(async (url: string) => new Response("{}", { status: url === "/fuera" ? 401 : 200 })));

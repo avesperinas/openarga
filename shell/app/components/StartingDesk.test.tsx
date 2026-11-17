@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 
 import { StartingDesk } from "./StartingDesk";
 
-describe("el escritorio de partida en Ajustes", () => {
-  it("dice qué trae y ofrece ponerlo en este dispositivo, sin tocar nada hasta confirmar", () => {
+describe("the starting desktop in Settings", () => {
+  it("says what it brings and offers it for this device, touching nothing until confirmed", () => {
     const html = renderToStaticMarkup(<StartingDesk reload={() => {}} />);
 
-    expect(html).toContain("Escritorio");
-    expect(html).toContain("Hoy (agenda, tareas y el uso de Claude), Salud, Dinero y");
-    expect(html).toContain("Usar el de partida del móvil");
-    expect(html).not.toContain("Sustituir");
+    expect(html).toContain("Desktop");
+    expect(html).toContain("Today (agenda, tasks and Claude usage), Health, Money and");
+    expect(html).toContain("Use the phone&#x27;s starting one");
+    expect(html).not.toContain("Replace");
   });
 });

@@ -127,8 +127,8 @@ const comeBack = async () => {
 const batches = () => calls.filter((call) => call.url.startsWith("/envelopes"));
 const keysOf = (call: Call) => new URL(call.url, "http://x").searchParams.getAll("w");
 
-describe("el escritorio se pone al día solo (T-V07)", () => {
-  it("con la pestaña oculta no pide nada; al volver, una sola petición en lote", async () => {
+describe("the desktop updates itself (T-V07)", () => {
+  it("with the tab hidden it requests nothing; when back, a single batched request", async () => {
     await mount([KPI, TASKS], ["kpi", "tasks"], { "goals/kpi": kpi("1"), "goals/tasks": tasks([]) });
     visibility = "hidden";
     await act(async () => {
@@ -142,7 +142,7 @@ describe("el escritorio se pone al día solo (T-V07)", () => {
     expect(calls.map((call) => keysOf(call))).toEqual([["goals/kpi", "goals/tasks"]]);
   });
 
-  it("un sobre que no llega en el lote no borra el que se ve", async () => {
+  it("an envelope missing from the batch does not erase the one shown", async () => {
     await mount([KPI], ["kpi"], { "goals/kpi": kpi("bueno") });
     vi.setSystemTime(new Date("2026-10-21T08:06:00Z"));
     await comeBack();
@@ -152,9 +152,9 @@ describe("el escritorio se pone al día solo (T-V07)", () => {
     expect(container.textContent).toContain("bueno");
   });
 
-  it("un lote que salió antes de tachar una tarea no la devuelve al llegar", async () => {
+  it("a batch that left before a task was ticked does not bring it back", async () => {
     const before = tasks([
-      { id: "t1", title: "Comprar pan" },
+      { id: "t1", title: "Buy bread" },
       { id: "t2", title: "Llamar" },
     ]);
     await mount([TASKS], ["tasks"], { "goals/tasks": before });
@@ -162,7 +162,7 @@ describe("el escritorio se pone al día solo (T-V07)", () => {
     await comeBack();
     const batch = batches()[0]!;
 
-    const check = container.querySelector('[aria-label="Marcar hecha Comprar pan"]') as HTMLButtonElement;
+    const check = container.querySelector('[aria-label="Mark Buy bread done"]') as HTMLButtonElement;
     await act(async () => check.click());
     await flush();
     const post = calls.find((call) => call.url.includes("/act"))!;
@@ -171,15 +171,15 @@ describe("el escritorio se pone al día solo (T-V07)", () => {
     await act(async () => batch.resolve(json({ "goals/tasks": before })));
     await flush();
 
-    expect(container.textContent).not.toContain("Comprar pan");
+    expect(container.textContent).not.toContain("Buy bread");
     expect(container.textContent).toContain("Llamar");
   });
 
-  it("estrechar la ventana y volver no devuelve el sobre de la carga", async () => {
-    await mount([KPI], ["kpi"], { "goals/kpi": kpi("1.000 € de la carga") });
+  it("narrowing the window and back does not restore the envelope from the load", async () => {
+    await mount([KPI], ["kpi"], { "goals/kpi": kpi("1.000 € from the load") });
     vi.setSystemTime(new Date("2026-10-21T08:06:00Z"));
     await comeBack();
-    await act(async () => batches()[0]!.resolve(json({ "goals/kpi": kpi("2.500 € de ahora") })));
+    await act(async () => batches()[0]!.resolve(json({ "goals/kpi": kpi("2.500 € from now") })));
     await flush();
     expect(container.textContent).toContain("2.500");
 
@@ -197,7 +197,7 @@ describe("el escritorio se pone al día solo (T-V07)", () => {
     expect(batches()).toEqual([]);
   });
 
-  it("lo que vence a la vez va de 64 en 64, y lo que no cabe, en la vuelta siguiente", async () => {
+  it("what is due at once goes 64 at a time, and what does not fit, in the next round", async () => {
     const many = Array.from({ length: 70 }, (_, index) => entry(`w${index}`, "kpi", 300));
     await mount(
       many,

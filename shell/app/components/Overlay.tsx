@@ -2,6 +2,7 @@
 
 import { IconButton } from "@openarga/ui";
 import * as React from "react";
+import { say } from "../words";
 
 const STUCK_MS = 1000;
 
@@ -45,7 +46,7 @@ export function Overlay({
       <div className="glass overlay-panel" data-wide={wide || undefined} onClick={(event) => event.stopPropagation()}>
         <header className="overlay-head">
           <h2 className="overlay-title">{label}</h2>
-          <IconButton icon="close" label="Cerrar" onClick={() => setLeaving(true)} />
+          <IconButton icon="close" label={say("add.close")} onClick={() => setLeaving(true)} />
         </header>
         <div className="overlay-body">{children}</div>
       </div>

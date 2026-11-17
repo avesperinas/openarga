@@ -22,7 +22,7 @@ const app = (id: string, family: string, badge?: string): ModuleSummary => ({
   updated_at: "2026-09-28T00:00:00Z",
 });
 
-it("una petición a /badges para todos los que acompañan, y cada punto con lo suyo", async () => {
+it("one request to /badges for every companion, and each dot with its own", async () => {
   const asked: string[] = [];
   globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
     asked.push(String(input));
@@ -36,7 +36,7 @@ it("una petición a /badges para todos los que acompañan, y cada punto con lo s
       <Launcher
         modules={[
           app("insights", "companion", "/api/insights/badge"),
-          app("otra", "companion", "/api/otra/badge"),
+          app("other", "companion", "/api/other/badge"),
           app("vitals", "health"),
         ]}
       />,
@@ -45,7 +45,7 @@ it("una petición a /badges para todos los que acompañan, y cada punto con lo s
   for (let i = 0; i < 5; i++) await act(async () => await Promise.resolve());
 
   expect(asked).toEqual(["/badges"]);
-  expect(container.querySelector('[aria-label="insights, 3 sin ver"] .launcher-companion-dot')).not.toBeNull();
-  expect(container.querySelector('[aria-label="otra"] .launcher-companion-dot')).toBeNull();
+  expect(container.querySelector('[aria-label="insights, 3 unseen"] .launcher-companion-dot')).not.toBeNull();
+  expect(container.querySelector('[aria-label="other"] .launcher-companion-dot')).toBeNull();
   act(() => root.unmount());
 });
