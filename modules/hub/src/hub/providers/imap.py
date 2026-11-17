@@ -54,16 +54,16 @@ class Imap:
             status, _ = self.client.select(folder, readonly=True)
         except (OSError, imaplib.IMAP4.error) as error:
             raise SourceError(
-                f"El buzón no deja entrar: {error}", transient=isinstance(error, OSError)
+                f"the mailbox refuses the login: {error}", transient=isinstance(error, OSError)
             ) from error
         if status != "OK":
-            raise SourceError(f"El buzón no tiene la carpeta '{folder}'")
+            raise SourceError(f"the mailbox has no folder '{folder}'")
 
     def headers(self, since: date) -> list[Header]:
         day = f"{since.day:02d}-{MONTHS[since.month - 1]}-{since.year}"
         status, found = self.client.uid("search", None, f"SINCE {day}")
         if status != "OK":
-            raise SourceError(f"El buzón no deja buscar: {found}")
+            raise SourceError(f"the mailbox refuses the search: {found}")
         uids = found[0].split() if found and found[0] else []
         result = []
         for uid in uids:
@@ -79,7 +79,7 @@ class Imap:
     def message(self, uid: str) -> EmailMessage:
         status, data = self.client.uid("fetch", uid, "(BODY.PEEK[])")
         if status != "OK" or not data or not isinstance(data[0], tuple):
-            raise SourceError(f"El buzón no da el mensaje {uid}")
+            raise SourceError(f"the mailbox does not return message {uid}")
         parsed = email.message_from_bytes(data[0][1], policy=email.policy.default)
         return parsed  # type: ignore[return-value]
 
@@ -115,7 +115,7 @@ OPENER: list[Opener] = [open_imap]
 def normalise(key: str, raw: str) -> str:
     value = raw.strip()
     if not value:
-        raise ValueError("falta la contraseña")
+        raise ValueError("the password is missing")
     return value
 
 
@@ -123,15 +123,15 @@ def clean_settings(raw: dict[str, Any]) -> dict[str, Any]:
     host = str(raw.get("host") or "").strip()
     username = str(raw.get("username") or "").strip()
     if not re.fullmatch(r"[A-Za-z0-9.-]{3,253}", host):
-        raise ValueError("el servidor IMAP es un nombre como imap.gmail.com")
+        raise ValueError("the IMAP server is a name like imap.gmail.com")
     if not username or len(username) > 254:
-        raise ValueError("falta el usuario del buzón, normalmente su dirección")
+        raise ValueError("the mailbox user is missing, usually its address")
     try:
         port = int(raw.get("port") or 993)
     except (TypeError, ValueError) as error:
-        raise ValueError("el puerto es un número, normalmente 993") from error
+        raise ValueError("the port is a number, usually 993") from error
     if not 1 <= port <= 65535:
-        raise ValueError("el puerto es un número, normalmente 993")
+        raise ValueError("the port is a number, usually 993")
     folder = str(raw.get("folder") or "INBOX").strip() or "INBOX"
     return {"host": host, "port": port, "username": username, "folder": folder}
 
@@ -246,14 +246,14 @@ def read(mailbox: Mailbox, since: date, connection: Any) -> Fetched:
         for extractor in found:
             if not extractor.matches(header.sender, header.subject):
                 continue
-            when = f"{header.received:%d/%m/%Y}" if header.received else "sin fecha"
+            when = f"{header.received:%d/%m/%Y}" if header.received else "undated"
             try:
                 facts = extractor.parse(mailbox.message(header.uid))
             except extractors.ExtractorError as error:
-                problems.append(f"{extractor.entity} no entiende su correo del {when}: {error}")
+                problems.append(f"{extractor.entity} cannot read its email of {when}: {error}")
                 continue
             if not facts:
-                problems.append(f"{extractor.entity} no encuentra nada en su correo del {when}")
+                problems.append(f"{extractor.entity} finds nothing in its email of {when}")
             events.extend(events_of(connection, extractor, facts))
     return Fetched(events, problem="; ".join(problems) or None)
 
@@ -307,32 +307,32 @@ async def sync(client: httpx.AsyncClient, secrets: dict[str, str], connection: A
 
     got = await asyncio.to_thread(work)
     if not readers(config) and not got.problem:
-        got.note = "Sin reglas todavía: el buzón se lee cuando pongas una en su ficha."
+        got.note = "no rules yet: the mailbox is read once you add one on its page"
     return got
 
 
 SOURCES = (
     Provider(
         id="imap",
-        name="Correo",
+        name="Mail",
         category="finance",
-        description="Un buzón dedicado al que reenvías los avisos de entidades sin API, como "
-        "roboadvisors o cuentas de ahorro. Solo lectura, y solo los correos de las entidades que "
-        "arga sabe leer.",
+        description="A dedicated mailbox you forward the notices of entities without an API "
+        "to, such as robo-advisors or savings accounts. Read only, and only the emails of the "
+        "entities arga knows how to read.",
         capabilities=("sync",),
         secrets=(
             Secret(
                 "password",
-                "Contraseña de aplicación",
-                "La que da tu proveedor de correo para una aplicación, no la de siempre. Nunca las "
-                "claves de tu banco o de tu gestora: aquí solo se lee correo.",
+                "App password",
+                "The one your mail provider gives for an app, not your usual one. Never "
+                "your bank's or your fund manager's keys: only mail is read here.",
             ),
         ),
         settings=(
-            Setting("host", "Servidor IMAP", "Por ejemplo imap.gmail.com."),
-            Setting("port", "Puerto", "Casi siempre 993.", "993"),
-            Setting("username", "Usuario", "La dirección del buzón dedicado."),
-            Setting("folder", "Carpeta", "Donde llegan los reenvíos.", "INBOX"),
+            Setting("host", "IMAP server", "For example imap.gmail.com."),
+            Setting("port", "Port", "Almost always 993.", "993"),
+            Setting("username", "User", "The address of the dedicated mailbox."),
+            Setting("folder", "Folder", "Where the forwards arrive.", "INBOX"),
         ),
         emits=("finance.movement", "finance.balance", "finance.account"),
         available=True,

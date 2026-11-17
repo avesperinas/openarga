@@ -108,7 +108,7 @@ def test_a_pension_plan_gives_weights_and_each_fund_is_its_share_of_the_total() 
 
 
 def test_funds_that_do_not_add_up_to_the_plan_publish_nothing() -> None:
-    with pytest.raises(statements.StatementError, match="suman"):
+    with pytest.raises(statements.StatementError, match="add up to"):
         statements.read(investment_page(INVESTMENT, total="2.000,00"), date(2030, 10, 6))
 
 
@@ -159,7 +159,7 @@ def test_the_same_photo_twice_is_the_same_and_a_different_one_is_new() -> None:
 def test_two_spellings_of_the_same_fund_are_one_fund() -> None:
     assert symbol_of("Vanguard Global Short Bond Index Hedged Inst Plus") == "0P00012NJE.F"
     assert symbol_of("iShares Developed Real Estate Index Fund") == "0P0000Y354.F"
-    with pytest.raises(statements.StatementError, match="dos veces"):
+    with pytest.raises(statements.StatementError, match="is twice"):
         statements.portfolio(
             "Finizens",
             "Plan de Inversión - 1",

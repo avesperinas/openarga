@@ -32,7 +32,7 @@ def parse(message: EmailMessage) -> list[extractors.Fact]:
     body = extractors.body_text(message)
     value = VALUE.search(body)
     if value is None:
-        raise extractors.ExtractorError("no está el valor de la cartera")
+        raise extractors.ExtractorError("the portfolio value is missing")
     facts: list[extractors.Fact] = [
         extractors.Balance(
             "cartera",
@@ -260,12 +260,12 @@ async def test_a_changed_format_fails_loudly_and_says_which_and_when(
 
     assert first.outcome == "error"
     assert first.detail == (
-        "Gestora Inventada no entiende su correo del 01/09/2026: no está el valor de la cartera"
+        "Gestora Inventada cannot read its email of 01/09/2026: the portfolio value is missing"
     )
     assert await events(schema, "finance.balance") == []
     ficha = (await api.get(f"/connections/{connection}")).json()
     assert ficha["state"] == "failing"
-    assert "Gestora Inventada no entiende" in ficha["reason"]
+    assert "Gestora Inventada cannot read" in ficha["reason"]
     assert ficha["extractors"] == [{"id": "gestora", "entity": "Gestora Inventada"}]
 
 
@@ -279,7 +279,7 @@ async def test_without_extractors_the_mailbox_is_read_and_says_so(
     outcome = await read(connection, kernel)
 
     assert (outcome.outcome, outcome.emitted) == ("ok", 0)
-    assert "Sin reglas" in outcome.detail
+    assert "no rules yet" in outcome.detail
     assert mailbox.opened == []
 
 
@@ -329,7 +329,7 @@ async def test_rules_are_kept_on_the_mailbox_and_checked(api, mailbox) -> None:
     assert {k: rule[k] for k in VALUE_RULE} == VALUE_RULE
     assert len(rule["id"]) >= 8
     assert missing.status_code == 422
-    assert "antes del importe" in missing.json()["detail"]
+    assert "before the amount" in missing.json()["detail"]
     assert wrong_fact.status_code == 422
     again = await rules_of(api, connection, {**rule, "anchor": "Valor:"})
     assert [(r["id"], r["anchor"]) for r in again.json()["rules"]] == [(rule["id"], "Valor:")]
@@ -398,7 +398,7 @@ async def test_a_rule_that_no_longer_finds_its_text_fails_loudly(
     outcome = await read(connection, kernel)
 
     assert outcome.outcome == "error"
-    assert "Gestora Inventada no entiende su correo del 01/09/2026" in outcome.detail
+    assert "Gestora Inventada cannot read its email of 01/09/2026" in outcome.detail
     assert "Valor de tu plan:" in outcome.detail
     assert await events(schema, "finance.balance") == []
 
@@ -417,7 +417,7 @@ async def test_trying_a_rule_reads_the_mail_there_is_and_publishes_nothing(
 
     assert tried.status_code == 200, tried.text
     newest, older = tried.json()["results"]
-    assert newest["amount"] is None and "no aparece" in newest["problem"]
+    assert newest["amount"] is None and "does not appear" in newest["problem"]
     assert (older["amount"], older["problem"]) == ("8000.00", None)
     assert await events(schema, "finance.balance") == []
     assert (await api.get(f"/connections/{connection}")).json()["rules"] == []

@@ -1,0 +1,35 @@
+# Labels of the statement pages arga reads, as the banks print them.
+
+[renault]
+product = "Cuenta Contigo"
+balance = "Saldo"
+value_date = "Fecha Valor:"
+concept = "Concepto:"
+
+[finizens]
+capital = [
+  "Transferencia entrante",
+  "Aportación mensual",
+  "Aportación puntual",
+  "Aportación periódica",
+  "Aportación extraordinaria",
+  "Traspaso de Plan de Pensiones",
+  "Retirada",
+  "Reembolso",
+]
+in_value = ["Comisión de gestión", "Comisión de custodia", "Abono por redondeos"]
+without_amount = ["Operación de inversión"]
+pension = "pensiones"
+latest = "Últimos movimientos"
+selected = "Producto seleccionado"
+portfolio = "Composición de la Cartera"
+overview = "Posición global"
+plans = "Mis planes"
+contributed = "Aportado neto"
+see_plan = "Ver este plan"
+net_asset_value = "V. Liqd."
+prospectus = "Los Folletos"
+fund = "Fondo"
+distribution = "Distribución"
+own_portfolio = "Tu cartera"
+new_product = "Nuevo producto"

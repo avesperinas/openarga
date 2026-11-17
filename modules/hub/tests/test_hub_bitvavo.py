@@ -171,8 +171,8 @@ async def test_what_arga_does_not_know_is_not_connected(api) -> None:
 @pytest.mark.parametrize(
     ("secrets_in", "said"),
     [
-        ({"api_key": KEY}, "Falta secreto"),
-        ({"api_key": "no es una clave", "api_secret": SECRET}, "Clave de API"),
+        ({"api_key": KEY}, "Secret is missing"),
+        ({"api_key": "not a key", "api_secret": SECRET}, "API key"),
         ({"api_key": KEY, "api_secret": SECRET, "otra": "x"}, "does not ask for otra"),
     ],
 )

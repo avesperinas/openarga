@@ -20,6 +20,8 @@
   "notice.reauth.body": "Renew it in Hub so the transactions keep coming in.",
   "notice.reauth.days": "The permission for {label} expires in {days} days",
   "notice.reauth.today": "The permission for {label} expires today",
+  "rule.deposit": "Deposit",
+  "rule.withdrawal": "Withdrawal",
   "sync.no_access_left": "No accesses to {label} left today: try again tomorrow.",
   "widget.status.all_good": "all up to date",
   "widget.status.empty": "nothing connected yet"

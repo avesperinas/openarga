@@ -20,6 +20,8 @@
   "notice.reauth.body": "Renuévalo en Hub para que sigan entrando los movimientos.",
   "notice.reauth.days": "El permiso de {label} caduca en {days} días",
   "notice.reauth.today": "El permiso de {label} caduca hoy",
+  "rule.deposit": "Aportación",
+  "rule.withdrawal": "Retirada",
   "sync.no_access_left": "Hoy ya no quedan accesos a {label}: vuelve mañana.",
   "widget.status.all_good": "todo al día",
   "widget.status.empty": "nada conectado todavía"

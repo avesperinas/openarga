@@ -81,13 +81,15 @@ def test_renault_takes_the_sign_from_the_balance() -> None:
         (16, Decimal("120.00")),
         (21, Decimal("100.00")),
     ]
-    assert found.skipped == ["el apunte más antiguo (01/09/2026, 69.50 €) no dice si entra o sale"]
+    assert found.skipped == [
+        "the oldest entry (01/09/2026, 69.50 €) does not say whether it is in or out"
+    ]
 
 
 def test_renault_stops_if_a_movement_is_missing() -> None:
     rows = [RENAULT_ROWS[0], RENAULT_ROWS[2], RENAULT_ROWS[3]]
 
-    with pytest.raises(statements.StatementError, match="falta un apunte"):
+    with pytest.raises(statements.StatementError, match="an entry is missing"):
         statements.read(renault_page(rows), TODAY)
 
 
@@ -140,11 +142,11 @@ def test_finizens_movements_are_capital_and_the_fees_stay_in_the_value() -> None
     assert {m.nature for m in moved} == {"contribution"}
     assert sum(m.amount for m in moved) == Decimal("200.00")
     assert len({m.reference for m in moved}) == 4
-    assert fees == ["Comisión de gestión del 08/07/2026: ya está en el valor del plan"]
+    assert fees == ["Comisión de gestión of 08/07/2026: already in the plan's value"]
 
 
 def test_a_page_nobody_reads_says_so() -> None:
-    with pytest.raises(statements.StatementError, match="Renault Bank o Finizens"):
+    with pytest.raises(statements.StatementError, match="Renault Bank or Finizens"):
         statements.read("<html><title>Otra entidad</title></html>", TODAY)
 
 
@@ -200,7 +202,7 @@ async def test_uploading_publishes_once_and_says_what_it_read(api, kernel, schem
     renault, other = first.json()["files"]
     assert (renault["entity"], renault["movements"], renault["balances"]) == ("Renault Bank", 3, 3)
     assert renault["new"] == 7 and renault["repeated"] == 0
-    assert "Renault Bank o Finizens" in other["problem"]
+    assert "Renault Bank or Finizens" in other["problem"]
     assert again.json()["files"][0]["new"] == 0
     assert again.json()["files"][0]["repeated"] == 7
     published = await events(schema)

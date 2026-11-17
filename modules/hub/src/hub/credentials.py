@@ -31,7 +31,9 @@ def _subkey(master: bytes, provider: str) -> bytes:
 def masters() -> tuple[bytes, tuple[bytes, ...]]:
     raw = os.environ.get(VARIABLE, "").strip()
     if not raw:
-        raise NotConfigured(f"falta {VARIABLE}: without it no credential can be stored or used")
+        raise NotConfigured(
+            f"{VARIABLE} is missing: without it no credential can be stored or used"
+        )
     previous_raw = os.environ.get(f"{VARIABLE}_PREVIOUS", "").strip()
     previous = (decode_key(previous_raw, f"{VARIABLE}_PREVIOUS"),) if previous_raw else ()
     return decode_key(raw, VARIABLE), previous

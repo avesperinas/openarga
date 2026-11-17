@@ -36,7 +36,7 @@ def api_url() -> str:
 def normalise(raw: str) -> str:
     token = raw.strip()
     if not re.fullmatch(r"[A-Za-z0-9]{16,256}", token):
-        raise ValueError("no parece una clave de API: pégala tal cual, sin espacios")
+        raise ValueError("that does not look like an API key: paste it as it is, without spaces")
     return token
 
 
@@ -71,7 +71,7 @@ class Bitvavo:
             response = await self.client.get(f"{api_url()}{path}", headers=headers, timeout=30.0)
         except httpx.HTTPError as error:
             raise SourceError(
-                f"Bitvavo no contesta: {type(error).__name__}", transient=True
+                f"Bitvavo is not answering: {type(error).__name__}", transient=True
             ) from error
         try:
             body = response.json()
@@ -251,7 +251,7 @@ def trades(history: list[dict[str, Any]]) -> list[dict]:
             value = _amount(item.get("priceAmount"))
             if item.get("priceCurrency") != "EUR" or value is None:
                 raise SourceError(
-                    f"Bitvavo: la permuta {item['transactionId']} no dice su valor en euros"
+                    f"Bitvavo: swap {item['transactionId']} does not give its value in euros"
                 )
             found.append(_leg(item, "sell", sent, sent_n, value * got_n / sent_n, ":sell"))
             found.append(_leg(item, "buy", got, got_n, value, ":buy"))
@@ -270,7 +270,7 @@ async def sync(
     today: date | None = None,
 ) -> list[dict]:
     if not (secrets.get(API_KEY) and secrets.get(API_SECRET)):
-        raise SourceError("falta la clave o el secreto de Bitvavo")
+        raise SourceError("the Bitvavo key or secret is missing")
     api = Bitvavo(client, Key(secrets[API_KEY], secrets[API_SECRET]))
     holdings = await api.balance()
     prices = await api.prices_in_euros()
@@ -284,18 +284,18 @@ SOURCES = (
         id="bitvavo",
         name="Bitvavo",
         category="finance",
-        description="Tus posiciones en cripto, valoradas en euros una vez al día, y cada compra, "
-        "venta y movimiento, con una clave de solo lectura.",
+        description="Your crypto positions, valued in euros once a day, and every buy, sell and "
+        "movement, with a read-only key.",
         capabilities=("sync",),
         serves=("bitvavo.handoff",),
         secrets=(
             Secret(
                 "api_key",
-                "Clave de API",
-                "En Bitvavo, Ajustes → API: crea una clave solo de lectura, sin permiso para "
-                "operar ni para retirar.",
+                "API key",
+                "In Bitvavo, Settings → API: create a read-only key, without permission to trade "
+                "or withdraw.",
             ),
-            Secret("api_secret", "Secreto", "Bitvavo solo lo enseña una vez, al crear la clave."),
+            Secret("api_secret", "Secret", "Bitvavo only shows it once, when the key is created."),
         ),
         emits=("finance.account", "finance.balance", "finance.holding", "finance.trade"),
         available=True,
