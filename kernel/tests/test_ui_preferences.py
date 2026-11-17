@@ -38,6 +38,7 @@ async def test_the_first_day_there_are_defaults_and_not_a_404(api) -> None:
         "custom_app_names": {},
         "icon_style": "solid",
         "home_panels": {"order": [], "hidden": [], "placed": []},
+        "hidden_apps": [],
     }
 
 
@@ -50,6 +51,15 @@ async def test_home_panels_keep_their_order_and_refuse_what_is_not_an_area(api) 
     assert prefs["home_panels"] == {"order": ["money", "day"], "hidden": ["mind"], "placed": []}
 
     wrong = await api.put("/ui/preferences", json={"home_panels": {"order": ["nothing"]}})
+    assert wrong.status_code == 422
+
+
+async def test_apps_a_person_hides_stay_hidden_and_only_app_ids_are_accepted(api) -> None:
+    saved = await api.put("/ui/preferences", json={"hidden_apps": ["study", "insights"]})
+    assert saved.status_code == 200, saved.text
+    assert (await api.get("/ui/preferences")).json()["hidden_apps"] == ["study", "insights"]
+
+    wrong = await api.put("/ui/preferences", json={"hidden_apps": ["Not An App"]})
     assert wrong.status_code == 422
 
 

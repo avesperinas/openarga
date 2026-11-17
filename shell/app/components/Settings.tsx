@@ -14,6 +14,8 @@ import {
   SelectField,
   Slider,
   TextField,
+  ToggleList,
+  ToggleRow,
   VersionTag,
   styledIcon,
 } from "@openarga/ui";
@@ -91,6 +93,8 @@ export function Settings({
 
       <StartingDesk />
 
+      <ShownApps preferences={preferences} onChange={onChange} modules={modules} />
+
       <AppNames preferences={preferences} onChange={onChange} modules={modules} />
 
       <Spaces />
@@ -101,6 +105,38 @@ export function Settings({
 
       <Versions modules={modules} />
     </div>
+  );
+}
+
+export function ShownApps({
+  preferences,
+  onChange,
+  modules,
+}: {
+  preferences: Pick<UiPreferences, "hidden_apps" | "app_names" | "custom_app_names">;
+  onChange: (next: Partial<UiPreferences>) => void;
+  modules: ModuleSummary[];
+}) {
+  const hidden = preferences.hidden_apps ?? [];
+  const apps = modules.filter((module) => module.view);
+  if (apps.length === 0) return null;
+  const toggle = (id: string, shown: boolean) =>
+    onChange({ hidden_apps: shown ? hidden.filter((one) => one !== id) : [...hidden.filter((one) => one !== id), id] });
+  return (
+    <Section title={say("settings.apps")}>
+      <ToggleList label={say("settings.apps")}>
+        {apps.map((module) => (
+          <ToggleRow
+            key={module.id}
+            name={appNameOf(module.id, module.name, preferences)}
+            tone={module.hue ?? undefined}
+            checked={!hidden.includes(module.id)}
+            onChange={(shown) => toggle(module.id, shown)}
+          />
+        ))}
+      </ToggleList>
+      <Hint>{say("settings.apps.hint")}</Hint>
+    </Section>
   );
 }
 

@@ -38,11 +38,11 @@ def seed(client: httpx.Client) -> str:
     if categories.status_code != 200:
         fail(f"goals through the gateway: {categories.status_code} {categories.text[:200]}")
     by_name = {one["name"]: one["id"] for one in categories.json()}
-    home = by_name.get("Casa") or next(iter(by_name.values()))
-    work = by_name.get("Trabajo") or home
+    home = by_name.get("Home") or by_name.get("Casa") or next(iter(by_name.values()))
+    work = by_name.get("Work") or by_name.get("Trabajo") or home
     tasks = [
         (work, "Send the garage invoice", today - timedelta(days=2), None),
-        (home, "Llamar al fontanero", today, "18:00"),
+        (home, "Call the plumber", today, "18:00"),
         (home, "Water the plants", today, None),
         (home, "Renew the insurance", today + timedelta(days=3), None),
     ]
@@ -53,7 +53,7 @@ def seed(client: httpx.Client) -> str:
             json={"category_id": category, "title": title, "due_on": str(due), "due_time": at},
         )
         if created.status_code != 201:
-            fail(f"crear tarea: {created.status_code} {created.text[:200]}")
+            fail(f"creating a task: {created.status_code} {created.text[:200]}")
         first = first or created.json()["id"]
 
     calendars = client.get("/api/planner/calendars")
@@ -91,6 +91,27 @@ def seed(client: httpx.Client) -> str:
         fail(f"shopping: {added.status_code} {added.text[:200]}")
     assert first is not None
     return first
+
+
+def first_run(browser) -> None:
+    page = browser.new_context(extra_http_headers=SESSION, viewport={"width": 1440, "height": 900})
+    tab = page.new_page()
+    tab.goto(URL + "/", wait_until="networkidle")
+    if not tab.url.endswith("/welcome"):
+        fail(f"an empty account should start at /welcome, not {tab.url}")
+    tab.screenshot(path=str(OUT / "welcome.png"), full_page=True)
+    tab.get_by_role("button", name="Next").click()
+    tab.get_by_role("switch", name="Hide Shopping").click()
+    tab.get_by_role("button", name="Start").click()
+    tab.wait_for_url(URL + "/", timeout=20_000)
+    tab.wait_for_load_state("networkidle")
+    if not tab.locator("main.page").count():
+        fail("after the first run the dashboard does not open")
+    hidden = api().get("/api/kernel/ui/preferences").json().get("hidden_apps")
+    if hidden != ["shopping"]:
+        fail(f"the first run did not keep the apps chosen: {hidden}")
+    print("  first run: region, apps, dashboard")
+    page.close()
 
 
 def shoot(browser, name: str, **context) -> None:
@@ -136,10 +157,11 @@ def main() -> None:
         print("  seeded: 4 tasks, 5 events, 3 shopping items")
         with sync_playwright() as p:
             browser = p.chromium.launch()
+            first_run(browser)
             iphone = p.devices["iPhone 13"]
-            shoot(browser, "movil", **iphone)
+            shoot(browser, "phone", **iphone)
             shoot(browser, "tablet", viewport={"width": 820, "height": 1180}, has_touch=True)
-            shoot(browser, "ordenador", viewport={"width": 1440, "height": 900})
+            shoot(browser, "computer", viewport={"width": 1440, "height": 900})
             tick(browser, client, task_id)
             browser.close()
 

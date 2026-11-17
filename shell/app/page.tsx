@@ -1,5 +1,6 @@
 import { intlLocale } from "@openarga/ui";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { Dashboard } from "./components/Dashboard";
 import { HomeProvider } from "./components/Home";
@@ -13,6 +14,7 @@ import {
   launchable,
   readCatalogue,
   readDesktops,
+  readFirstRun,
   readModules,
   readPreferences,
   readWallpapers,
@@ -47,6 +49,7 @@ async function guessDevice(): Promise<Device> {
 }
 
 export default async function Today() {
+  if ((await readFirstRun().catch(() => ({ pending: false }))).pending) redirect("/welcome");
   const person = fromHeaders(await headers());
   const [desks, device, catalogue, preferences, modules, wallpapers] = await Promise.all([
     readDesktops(),
@@ -71,7 +74,7 @@ export default async function Today() {
     pending[key] = readWidget(url, WIDGET_LIMIT_MS).catch(() => null);
   }
 
-  const apps = launchable(modules);
+  const apps = launchable(modules, preferences.hidden_apps);
   const panels: Partial<Record<AreaKey, Promise<Contributor[]>>> = {};
   const migrating = !preferences.home_panels?.placed?.includes(device);
   const wanted = new Set([...placedAreas(desks[device].pages), ...(migrating ? shownAreas(preferences.home_panels) : [])]);

@@ -121,6 +121,8 @@
   "search.none": "Nothing with that.",
   "search.open": "Open",
   "search.shortcut": "Search arga (⌘K)",
+  "settings.apps": "Apps you see",
+  "settings.apps.hint": "A hidden app stays installed: it leaves the launcher and the home panels.",
   "settings.claude": "Connect Claude",
   "settings.claude.client": "Client ID",
   "settings.claude.hint": "Connect your own Claude to your arga account. Whatever Claude looks up or does, it does with your data and only yours.",
@@ -211,5 +213,15 @@
   "wallpaper.scrim": "The system darkens or lightens the photo just enough for what sits on top to be readable: on this one, up to {light}% in light mode and {dark}% in dark mode, and less in the centre.",
   "wallpaper.title": "Wallpaper",
   "wallpaper.upload": "Upload my own",
-  "wallpaper.uploading": "Uploading…"
+  "wallpaper.uploading": "Uploading…",
+  "welcome.apps.intro": "Choose the apps you want to see. The rest stay installed and out of your way.",
+  "welcome.apps.later": "Hidden apps come back from Settings whenever you want them.",
+  "welcome.apps.title": "Your apps",
+  "welcome.back": "Back",
+  "welcome.failed": "It could not be saved. Try again in a moment.",
+  "welcome.finish": "Start",
+  "welcome.next": "Next",
+  "welcome.region.intro": "First, how dates, times and amounts should look for you. You can change it later in Settings.",
+  "welcome.saving": "Getting it ready…",
+  "welcome.title": "Welcome to OpenArga"
 }

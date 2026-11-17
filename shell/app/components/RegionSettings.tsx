@@ -57,9 +57,11 @@ type Status = "idle" | "saving" | "saved" | "failed";
 export function RegionForm({
   initial,
   onSave,
+  action,
 }: {
   initial: PersonPreferences;
   onSave: (next: PersonPreferences) => Promise<void>;
+  action?: string;
 }) {
   const [draft, setDraft] = React.useState(initial);
   const [status, setStatus] = React.useState<Status>("idle");
@@ -130,9 +132,9 @@ export function RegionForm({
       </div>
       <Hint>{t("region.preview", { sample: sampleOf(draft) })}</Hint>
       <Button onClick={() => void save()} disabled={status === "saving" || Object.keys(problems).length > 0}>
-        {status === "saving" ? t("region.saving") : t("region.save")}
+        {status === "saving" ? t("region.saving") : (action ?? t("region.save"))}
       </Button>
-      {status === "saved" && <Notice tone="positive">{t("region.saved")}</Notice>}
+      {status === "saved" && !action && <Notice tone="positive">{t("region.saved")}</Notice>}
       {status === "failed" && <Notice tone="negative">{t("region.failed")}</Notice>}
     </Section>
   );
