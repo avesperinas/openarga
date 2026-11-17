@@ -1,21 +1,22 @@
 "use client";
 
-import { EmptyState, type IconStyle, styledIcon, zonedDates } from "@openarga/ui";
+import { EmptyState, type IconStyle, regional, styledIcon, zonedDates } from "@openarga/ui";
 import * as React from "react";
 
 import { appIconOf } from "../lib/app-icons";
 import type { ModuleSummary } from "../lib/kernel";
+import { say } from "../words";
 
 export const FAMILIES = [
-  { id: "health", label: "Salud" },
-  { id: "goals", label: "Objetivos" },
-  { id: "growth", label: "Crecimiento" },
-  { id: "wellbeing", label: "Bienestar" },
+  { id: "health", get label() { return say("launcher.health"); } },
+  { id: "goals", get label() { return say("launcher.goals"); } },
+  { id: "growth", get label() { return say("launcher.growth"); } },
+  { id: "wellbeing", get label() { return say("launcher.wellbeing"); } },
 ] as const;
 
 export const FILLERS = ["finance", "system"] as const;
 
-const byName = (a: ModuleSummary, b: ModuleSummary) => a.name.localeCompare(b.name, "es");
+const byName = (a: ModuleSummary, b: ModuleSummary) => a.name.localeCompare(b.name, regional().locale);
 
 export function groupModules(modules: ModuleSummary[]) {
   const known = new Set<string>(["calendar", "companion", ...FILLERS, ...FAMILIES.map((family) => family.id)]);
@@ -91,7 +92,7 @@ function Companion({
       className="launcher-companion"
       href={module.view ?? module.api_prefix}
       title={module.name}
-      aria-label={unseen > 0 ? `${module.name}, ${unseen} sin ver` : module.name}
+      aria-label={unseen > 0 ? say("launcher.unseen", { name: module.name, n: unseen }) : module.name}
     >
       {children}
       {unseen > 0 && <span className="launcher-companion-dot" aria-hidden="true" />}
@@ -116,9 +117,8 @@ export function Launcher({
 
   if (modules.length === 0) {
     return (
-      <EmptyState icon="modules" title="No hay módulos instalados">
-        Los widgets que ves ahora son del propio sistema. Cuando instales un módulo —finanzas, salud,
-        objetivos— aparecerá aquí y traerá los suyos.
+      <EmptyState icon="modules" title={say("launcher.empty")}>
+        {say("launcher.empty.hint")}
       </EmptyState>
     );
   }

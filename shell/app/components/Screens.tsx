@@ -2,6 +2,7 @@
 
 import { Button } from "@openarga/ui";
 import * as React from "react";
+import { say } from "../words";
 
 export function DeletePageDialog({
   index,
@@ -24,23 +25,23 @@ export function DeletePageDialog({
         className="glass sheet sheet-narrow"
         role="dialog"
         aria-modal="true"
-        aria-label={`Borrar la pantalla ${index + 1}`}
+        aria-label={say("dashboard.page.delete", { n: index + 1 })}
         onClick={(event) => event.stopPropagation()}
       >
         <header className="sheet-head">
           <h2 className="sheet-title">
-            Borrar la pantalla {index + 1}, con {count} {count === 1 ? "widget" : "widgets"}
+            {say(count === 1 ? "screens.delete.one" : "screens.delete", { n: index + 1, count })}
           </h2>
         </header>
         <div className="sheet-body sheet-actions">
           <Button variant="tinted" icon="arrow-right" block onClick={() => onResolve(true)}>
-            Llevármelos a la pantalla de al lado
+            {say("screens.keep")}
           </Button>
           <Button variant="destructive" icon="trash" block onClick={() => onResolve(false)}>
-            Borrarlos con la pantalla
+            {say("screens.drop")}
           </Button>
           <Button block onClick={() => onResolve(null)}>
-            Cancelar
+            {say("screens.cancel")}
           </Button>
         </div>
       </div>

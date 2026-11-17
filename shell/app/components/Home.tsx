@@ -6,6 +6,7 @@ import * as React from "react";
 import type { WidgetSize } from "../lib/kernel";
 import { AREAS, type AreaKey, type Contributor, ask, compose, splitActing } from "../lib/panels";
 import { request } from "../lib/session";
+import { say } from "../words";
 
 type Focus = { area: AreaKey; tab?: string; board?: boolean };
 
@@ -160,9 +161,9 @@ export function PanelPage({
     <div className="panel-page">
       {editing && (
         <div className="panel-page-tools">
-          <IconButton icon="chevron-left" label={`Mover ${label} a la izquierda`} size="small" variant="plain" disabled={first} onClick={() => onMove?.(-1)} />
-          <IconButton icon="trash" label={`Quitar el panel de ${label}`} size="small" variant="plain" onClick={onRemove} />
-          <IconButton icon="chevron-right" label={`Mover ${label} a la derecha`} size="small" variant="plain" disabled={last} onClick={() => onMove?.(1)} />
+          <IconButton icon="chevron-left" label={say("home.panel.left", { name: label })} size="small" variant="plain" disabled={first} onClick={() => onMove?.(-1)} />
+          <IconButton icon="trash" label={say("home.panel.remove", { name: label })} size="small" variant="plain" onClick={onRemove} />
+          <IconButton icon="chevron-right" label={say("home.panel.right", { name: label })} size="small" variant="plain" disabled={last} onClick={() => onMove?.(1)} />
         </div>
       )}
       <React.Suspense fallback={<AreaPanelSkeleton area={areaInfo(area)} board={board} />}>
@@ -337,14 +338,14 @@ export function Ask() {
             everything();
             setQuery(event.target.value);
           }}
-          placeholder="Pregunta: vacaciones, renta, fin de mes…"
-          aria-label="Pregunta a tus apps"
+          placeholder={say("home.ask.placeholder")}
+          aria-label={say("home.ask")}
         />
       </label>
       {query.trim().length >= 2 && (
-        <div className="home-answers" role="region" aria-live="polite" aria-label="Respuestas">
+        <div className="home-answers" role="region" aria-live="polite" aria-label={say("home.answers")}>
           {answers.length === 0 ? (
-            <p className="home-answers-none">{asked.current && Object.keys(home?.known ?? {}).length < AREAS.length ? "Buscando…" : "Ninguna app contesta a eso todavía."}</p>
+            <p className="home-answers-none">{asked.current && Object.keys(home?.known ?? {}).length < AREAS.length ? say("home.searching") : say("home.no_answer")}</p>
           ) : (
             answers.map((answer) => {
               const area = areas.find((one) => one.key === answer.area)!;

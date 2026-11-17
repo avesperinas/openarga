@@ -10,13 +10,14 @@ import { Launcher } from "./Launcher";
 import { Overlay } from "./Overlay";
 import { SearchField, SearchPalette, useSearchShortcut } from "./Search";
 import { Settings } from "./Settings";
+import { say } from "../words";
 
 type Tab = "modules" | "settings";
 
 const DESTINATIONS: { id: Tab | null; label: string; icon: IconName }[] = [
-  { id: null, label: "Hoy", icon: "today" },
-  { id: "modules", label: "Módulos", icon: "modules" },
-  { id: "settings", label: "Ajustes", icon: "settings" },
+  { id: null, get label() { return say("tabs.today"); }, icon: "today" },
+  { id: "modules", get label() { return say("tabs.modules"); }, icon: "modules" },
+  { id: "settings", get label() { return say("tabs.settings"); }, icon: "settings" },
 ];
 
 export function TabBar({ modules }: { modules: ModuleSummary[] }) {
@@ -30,7 +31,7 @@ export function TabBar({ modules }: { modules: ModuleSummary[] }) {
 
   React.useEffect(() => {
     const follow = () => {
-      if (window.location.hash !== "#ajustes") return;
+      if (window.location.hash !== "#settings") return;
       setOpen("settings");
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
     };
@@ -49,10 +50,10 @@ export function TabBar({ modules }: { modules: ModuleSummary[] }) {
   return (
     <>
       {!desktop?.editing && (
-        <nav className="glass tabbar" aria-label="Secciones">
+        <nav className="glass tabbar" aria-label={say("tabs.sections")}>
           {DESTINATIONS.map((destination) => (
             <button
-              key={destination.label}
+              key={destination.id ?? "today"}
               type="button"
               className="tab"
               data-active={open === destination.id || undefined}
@@ -66,19 +67,19 @@ export function TabBar({ modules }: { modules: ModuleSummary[] }) {
           ))}
           <button type="button" className="tab" onClick={edit}>
             <Icon name="edit" />
-            <span className="tab-label">Editar</span>
+            <span className="tab-label">{say("tabs.edit")}</span>
           </button>
         </nav>
       )}
 
       {open === "modules" && (
-        <Overlay label="Módulos" wide onClose={() => setOpen(null)}>
+        <Overlay label={say("tabs.modules")} wide onClose={() => setOpen(null)}>
           <Launcher modules={named} iconStyle={desktop?.preferences.icon_style} search={<SearchField onOpen={() => setSearching(true)} />} />
         </Overlay>
       )}
 
       {open === "settings" && desktop && (
-        <Overlay label="Ajustes" onClose={() => setOpen(null)}>
+        <Overlay label={say("tabs.settings")} onClose={() => setOpen(null)}>
           <Settings preferences={desktop.preferences} onChange={desktop.change} modules={modules} locale={desktop.person.locale} />
         </Overlay>
       )}

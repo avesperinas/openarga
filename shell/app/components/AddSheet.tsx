@@ -6,8 +6,10 @@ import * as React from "react";
 import type { CatalogueEntry, WidgetChoice } from "../lib/kernel";
 import type { AreaKey } from "../lib/panels";
 import { request } from "../lib/session";
+import { say } from "../words";
 
-const GROUP_NAMES: Record<string, string> = { panel: "Paneles del inicio", kernel: "Sistema" };
+const groupName = (source: string) =>
+  source === "panel" ? say("add.group.panel") : source === "kernel" ? say("add.group.kernel") : source;
 
 export function AddSheet({
   catalogue,
@@ -58,20 +60,20 @@ export function AddSheet({
         className="glass sheet"
         role="dialog"
         aria-modal="true"
-        aria-label="Añadir widget"
+        aria-label={say("add.title")}
         onClick={(event) => event.stopPropagation()}
       >
         <header className="sheet-head">
-          {choosing && <IconButton icon="chevron-left" label="Volver a los widgets" onClick={() => setChoosing(null)} />}
-          <h2 className="sheet-title">{choosing ? `${choosing.title}: ${choosing.option?.label.toLowerCase()}` : "Añadir widget"}</h2>
-          <IconButton icon="close" label="Cerrar" onClick={onClose} />
+          {choosing && <IconButton icon="chevron-left" label={say("add.back")} onClick={() => setChoosing(null)} />}
+          <h2 className="sheet-title">{choosing ? `${choosing.title}: ${choosing.option?.label.toLowerCase()}` : say("add.title")}</h2>
+          <IconButton icon="close" label={say("add.close")} onClick={onClose} />
         </header>
 
         {choosing ? (
           <div className="sheet-body">
-            {failed && <p className="sheet-group">No se han podido cargar las opciones.</p>}
-            {!failed && choices === null && <p className="sheet-group">Cargando…</p>}
-            {choices !== null && choices.length === 0 && <p className="sheet-group">No hay nada que elegir todavía.</p>}
+            {failed && <p className="sheet-group">{say("add.failed")}</p>}
+            {!failed && choices === null && <p className="sheet-group">{say("notifications.loading")}</p>}
+            {choices !== null && choices.length === 0 && <p className="sheet-group">{say("add.empty")}</p>}
             {choices && choices.length > 0 && (
               <List>
                 {choices.map((choice) => (
@@ -90,13 +92,13 @@ export function AddSheet({
         <div className="sheet-body">
           {panels.length > 0 && onPanel && (
             <section>
-              <h3 className="sheet-group">Paneles</h3>
+              <h3 className="sheet-group">{say("add.panels")}</h3>
               <List>
                 {panels.map((panel) => (
                   <ListRow
                     key={panel.key}
                     title={panel.label}
-                    detail="Una página con lo de todas sus apps"
+                    detail={say("add.panel.detail")}
                     hue={panel.hue}
                     accessory="plus"
                     onClick={() => onPanel(panel.key)}
@@ -107,7 +109,7 @@ export function AddSheet({
           )}
           {[...groups].map(([source, entries]) => (
             <section key={source}>
-              <h3 className="sheet-group">{GROUP_NAMES[source] ?? source}</h3>
+              <h3 className="sheet-group">{groupName(source)}</h3>
               <List>
                 {entries.map((entry) => {
                   const already = !entry.option && placed.has(`${entry.source}/${entry.id}`);
@@ -115,7 +117,7 @@ export function AddSheet({
                     <ListRow
                       key={`${entry.source}/${entry.id}`}
                       title={entry.title}
-                      detail={already ? "Ya colocado" : entry.option ? `Eliges ${entry.option.label.toLowerCase()}` : entry.sizes.join(" · ")}
+                      detail={already ? say("add.placed") : entry.option ? say("add.choose", { what: entry.option.label.toLowerCase() }) : entry.sizes.join(" · ")}
                       hue={entry.hue}
                       accessory={already ? "done" : "plus"}
                       disabled={already}

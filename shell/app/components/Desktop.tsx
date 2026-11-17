@@ -15,6 +15,7 @@ import {
   wallpaperStyle,
 } from "../lib/wallpaper";
 import { TabBar } from "./TabBar";
+import { say } from "../words";
 
 const SAVE_DEBOUNCE = 400;
 
@@ -91,15 +92,15 @@ export function Desktop({
       try {
         const body = new FormData();
         const reduced = await shrink(file);
-        body.append("file", reduced, reduced === file ? file.name : "fondo.jpg");
+        body.append("file", reduced, reduced === file ? file.name : "wallpaper.jpg");
         const response = await request("/api/kernel/ui/wallpapers", { method: "POST", body });
 
         if (!response.ok) {
           const detail = await response.json().catch(() => null);
           setFailed(
             typeof detail?.detail === "string"
-              ? `No se pudo usar esta imagen: ${detail.detail}.`
-              : "No se pudo subir la imagen. Inténtalo otra vez.",
+              ? say("wallpaper.rejected", { detail: detail.detail })
+              : say("wallpaper.failed"),
           );
           return;
         }
@@ -108,7 +109,7 @@ export function Desktop({
         setMine((previous) => [saved, ...previous]);
         change({ wallpaper: saved.id });
       } catch {
-        setFailed("No llegó a subirse: parece que no hay conexión. Inténtalo otra vez.");
+        setFailed(say("wallpaper.offline"));
       } finally {
         setUploading(false);
       }
@@ -182,7 +183,7 @@ export function WallpaperSheet() {
   const own = desktop.mine.some((entry) => entry.id === desktop.current.id);
 
   return (
-    <Section title="Fondo">
+    <Section title={say("wallpaper.title")}>
 
       <ul className="wallpaper-grid">
         <li>
@@ -194,7 +195,7 @@ export function WallpaperSheet() {
           >
             <Icon name={desktop.uploading ? "image" : "plus"} />
             <span className="wallpaper-upload-label">
-              {desktop.uploading ? "Subiendo…" : "Subir la mía"}
+              {desktop.uploading ? say("wallpaper.uploading") : say("wallpaper.upload")}
             </span>
           </button>
           <input
@@ -233,7 +234,7 @@ export function WallpaperSheet() {
                 <button
                   type="button"
                   className="wallpaper-forget"
-                  aria-label={`Borrar el fondo ${entry.name}`}
+                  aria-label={say("wallpaper.delete", { name: entry.name })}
                   onClick={() => setForgetting(entry)}
                 >
                   <Icon name="close" />
@@ -246,10 +247,10 @@ export function WallpaperSheet() {
 
       {forgetting && (
         <ConfirmDelete
-          title="¿Borrar este fondo?"
+          title={say("wallpaper.delete.title")}
           subject={forgetting.name}
-          consequence="La imagen que subiste se borra. Si estaba puesta, vuelve el fondo por defecto. No se puede deshacer."
-          action="Borrar fondo"
+          consequence={say("wallpaper.delete.consequence")}
+          action={say("wallpaper.delete.action")}
           onCancel={() => setForgetting(null)}
           onConfirm={() => desktop.forget(forgetting.id).then(() => setForgetting(null))}
         />
@@ -264,11 +265,12 @@ export function WallpaperSheet() {
       {own && <Framing wallpaper={desktop.current} onFrame={desktop.frame} />}
 
       <Hint>
-        El sistema oscurece o aclara la foto lo justo para que lo que va encima se lea: en esta,
-        hasta un {Math.round(desktop.current.scrim.light * 100)}% en claro y un{" "}
-        {Math.round(desktop.current.scrim.dark * 100)}% en oscuro, y menos en el centro.
+        {say("wallpaper.scrim", {
+          light: Math.round(desktop.current.scrim.light * 100),
+          dark: Math.round(desktop.current.scrim.dark * 100),
+        })}
       </Hint>
-      <Hint>Este es el del escritorio. Cada app puede llevar el suyo: se elige en sus Ajustes.</Hint>
+      <Hint>{say("wallpaper.hint")}</Hint>
     </Section>
   );
 }
@@ -305,11 +307,11 @@ function Framing({
 
   return (
     <div className="wallpaper-framing">
-      <h4 className="sheet-group">Encuadre</h4>
+      <h4 className="sheet-group">{say("wallpaper.framing")}</h4>
       <button
         type="button"
         className="wallpaper-frame"
-        aria-label={`Punto que queda a la vista: ${Math.round(focus.x * 100)}% desde la izquierda y ${Math.round(focus.y * 100)}% desde arriba. Toca o usa las flechas para moverlo.`}
+        aria-label={say("wallpaper.focus", { x: Math.round(focus.x * 100), y: Math.round(focus.y * 100) })}
         onPointerDown={onPointer}
         onKeyDown={onKey}
       >
@@ -324,7 +326,7 @@ function Framing({
           }
         />
       </button>
-      <Hint>Toca lo que quieres ver cuando la pantalla recorta la foto.</Hint>
+      <Hint>{say("wallpaper.focus.hint")}</Hint>
     </div>
   );
 }
