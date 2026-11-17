@@ -56,34 +56,96 @@ The full set of principles is in `docs/adr/0001-principles.md`; the architecture
 
 ## Run it
 
-Requirements: Docker, about 4 GB of RAM for the whole stack, a domain if you want to reach it from
-outside your network.
-
-The instance lives in `openarga.yaml`: domain, which modules run, default locale, time zone and
-currency, login providers and AI defaults. Secrets live in `.env`.
+Requirements: Docker with Compose, about 4 GB of RAM for the whole stack, and a domain with HTTPS
+if you want to reach it (or connect Claude) from outside your network.
 
 ```bash
-cp openarga.example.yaml openarga.yaml   # edit it
-cp .env.example .env                     # fill every password, secret and token
-uv run python scripts/compose.py         # regenerates docker-compose.yml
+git clone https://github.com/avesperinas/openarga && cd openarga
+cp openarga.example.yaml openarga.yaml   # the instance: see Configuration
+cp .env.example .env                     # every empty PASSWORD, SECRET and TOKEN needs a long random value
+uv run python scripts/compose.py         # writes docker-compose.yml from openarga.yaml
 docker compose up -d --build
 ```
 
-`scripts/stack-check.sh` boots the stack with throwaway secrets and checks every service answers
-`/healthz`. Demo data lands with P10. The development loop is:
+Open `http://localhost:8000`, sign in with `OPENARGA_ADMIN_USERNAME` and `OPENARGA_ADMIN_PASSWORD`
+from `.env`, and the first-run wizard asks for your language, region, time zone, currency, home
+area and the apps you want to see.
+
+`scripts/stack-check.sh` boots the same stack with throwaway secrets and checks that every service
+answers `/healthz`. To fill a value in `.env`: `openssl rand -hex 24`.
+
+## Configuration
+
+`openarga.yaml` describes the instance. `scripts/compose.py` reads it with the module manifests and
+regenerates `docker-compose.yml`; run it again after every change.
+
+| Key | What it sets |
+|---|---|
+| `domain` | `localhost`, or the public host name; public URLs become `https://<domain>` |
+| `modules.enabled`, `modules.disabled` | which apps run: `all` or a list, minus the disabled ones |
+| `defaults` | locale, time zone, currency, country, region and home area for new people |
+| `auth.providers` | `local` (username and password), `google`, `oidc` (any OpenID Connect provider) |
+| `ai` | the platform's model: provider, base URL, the `fast` and `smart` models, a monthly token cap |
+| `connections` | `live`, or `fake` to answer every outside source from fixtures |
+| `demo` | a public demo: anyone signs in as the synthetic cast, and MCP is read-only |
+
+Secrets never go in `openarga.yaml`. `.env` holds the database passwords (one per module), the
+session and client secrets, the Keycloak admin password, the first admin, and the keys of Google,
+your OIDC provider and your AI provider.
+
+## AI
+
+The AI does not use the apps; it uses tools. Every module declares its tools in its manifest with a
+scope, and the MCP server at `https://<domain>/mcp` exposes them with OAuth 2.1: add it as a custom
+connector in Claude (Settings shows what to paste) or point any MCP client at it. Each call runs as
+the Postgres role its scope grants, so a read token cannot write even by mistake.
+
+The platform calls a model itself only where a feature needs it (reading an events page with no
+feed, writing the weekly insights), through one layer with narrow inputs and outputs. Anthropic,
+OpenAI and any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM) work, and each person can bring
+their own key. See `docs/platform/ai.md`.
+
+## Connections
+
+Everything that comes from outside goes through the Connections app (`modules/hub`): banks through
+Enable Banking, Apple Health and Google Health, calendars and iCal, holidays, weather, books, films,
+podcasts, maps and routes, prices and currencies, and more. One provider file per source, with its
+schedule, its retries and credentials encrypted per person. What it brings lands in the kernel's
+event log with a written contract, and the apps derive their own tables from it.
+
+With `connections: fake` every provider that has a double answers from fixtures, which is how the
+tests and the demo run without accounts anywhere.
+
+## Security
+
+- One Postgres role per module and row-level security per person: isolation is enforced by the
+  database, and the tests run as the module role against a real Postgres.
+- Login is Keycloak behind the gateway; modules never see a password or a token, only the identity
+  the gateway injects.
+- Permission is the same chain everywhere: OAuth scope, then Postgres role.
+- Seeds and tests are synthetic: there is no personal data in the repository.
+
+Report a vulnerability privately as `SECURITY.md` explains.
+
+## Build your own app
 
 ```bash
+scripts/new-module.sh garden Garden      # creates modules/custom/garden from the template
 uv sync --all-packages
-pnpm install
-eval "$(scripts/test-databases.sh up 4)"
-uv run pytest -n 4
-pnpm -r test
+uv run pytest modules/custom/garden
+uv run python scripts/compose.py         # the stack now runs it
 ```
+
+A module is a manifest, a schema, a service on the module kit, its tools and widgets, and
+optionally its own app. Forks keep their modules in `modules/custom/`, so updates from upstream
+never touch them. `docs/platform/module-contract.md` is the contract and `modules/_template` the
+living example.
 
 ## Contributing
 
-Read `AGENTS.md` first: it is the working agreement for humans and coding agents alike. Everything
-in the repository is English except the Spanish UI catalogs.
+`CONTRIBUTING.md` has the development loop and the rules a change has to follow; `AGENTS.md` is the
+working agreement for humans and coding agents alike. Everyone taking part follows
+`CODE_OF_CONDUCT.md`.
 
 ## License
 
