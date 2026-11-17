@@ -31,7 +31,6 @@ export interface Provider {
   created_in?: string | null;
   authorizes?: boolean;
   daily_budget?: number | null;
-  by_mail?: boolean;
   settings?: SettingSpec[];
   secrets: SecretSpec[];
   emits?: string[];
@@ -113,30 +112,11 @@ export interface ConnectionDetail extends Connection {
   accounts?: { name: string | null; iban_tail: string | null; kind: string | null }[];
   budget?: Budget | null;
   settings?: Record<string, string | number | string[] | null>;
-  extractors?: { id: string; entity: string }[];
-  rules?: MailRule[];
   plugs?: Record<string, InletValues>;
   inlets?: Inlet[];
 }
 
 export type RuleFact = "balance" | "deposit" | "withdrawal";
-
-export interface MailRule {
-  id?: string;
-  entity: string;
-  product: string;
-  sender: string;
-  subject: string;
-  anchor: string;
-  fact: RuleFact;
-}
-
-export interface RuleTrial {
-  on: string | null;
-  subject: string;
-  amount: string | null;
-  problem: string | null;
-}
 
 export class Refused extends Error {}
 
@@ -204,10 +184,6 @@ export const connectBank = (bank: string, secrets: Record<string, string>, count
   }).then((created) => created.authorization_url);
 export const reauthorize = (id: string) =>
   send<{ authorization_url: string }>(`/connections/${id}/reauthorize`, "POST").then((r) => r.authorization_url);
-export const saveRules = (id: string, rules: MailRule[]) =>
-  send<ConnectionDetail>(`/connections/${id}/rules`, "PUT", { rules });
-export const tryRule = (id: string, rule: MailRule) =>
-  send<{ results: RuleTrial[] }>(`/connections/${id}/rules/try`, "POST", rule).then((r) => r.results);
 export const syncNow = (id: string) =>
   send<ConnectionDetail & { outcome: string; outcome_detail: string | null }>(`/connections/${id}/sync`, "POST");
 

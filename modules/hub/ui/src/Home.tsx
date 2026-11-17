@@ -11,7 +11,6 @@ import { StatementUpload } from "./Statements";
 import { say } from "./words";
 
 export function whereItLives(provider: Provider, connected = false): string {
-  if (provider.by_mail) return say("where.mail");
   if (provider.available && provider.created_in) return say("where.from", { app: provider.created_in });
   if (provider.available) return provider.single && connected ? say("where.connected") : say("where.add");
   if (provider.lives_in) return say("add.inlet", { app: provider.lives_in });
@@ -198,7 +197,7 @@ export function ProviderSection({
 
 export function providersOf(ids: string[], catalogue: Category[]): Provider[] {
   const all = catalogue.flatMap((category) => category.providers);
-  return ids.flatMap((id) => all.filter((item) => item.id === id || item.id.startsWith(`${id}.`)));
+  return ids.flatMap((id) => all.filter((item) => item.id === id));
 }
 
 export function ByApp({

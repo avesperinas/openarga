@@ -1,6 +1,6 @@
 # Hub glossary
 
-**Connection.** An outside source set up for you: a bank, your Bitvavo, a calendar, a mailbox.
+**Connection.** An outside source set up for you: a bank, a calendar, a price source.
 You can have several from the same provider, each with its own name.
 
 **Provider.** The source itself (Enable Banking, Bitvavo, Google Health...). Each belongs to a

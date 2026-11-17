@@ -27,8 +27,6 @@ from hub.providers import (
     google_health,
     holidays,
     ical,
-    imap,
-    ine,
     maps,
     nearby,
     places,
@@ -84,7 +82,6 @@ MODULES = (
     google_health,
     enable_banking,
     bitvavo,
-    imap,
     fx,
     food,
     books,
@@ -101,7 +98,6 @@ MODULES = (
     football,
     ical,
     github,
-    ine,
     prices,
     agendas,
 )
@@ -193,34 +189,8 @@ def listed() -> list[dict]:
                 }
                 for item in PROVIDERS
                 if item.category == category.id
-            ]
-            + by_mail(category.id),
+            ],
         }
         for category in CATEGORIES
-        if any(item.category == category.id for item in PROVIDERS) or by_mail(category.id)
-    ]
-
-
-def by_mail(category: str) -> list[dict]:
-    from hub.extractors import EXTRACTORS
-
-    return [
-        {
-            "id": f"imap.{extractor.id}",
-            "name": extractor.entity,
-            "description": f"By email: forward its notices to your mailbox and {extractor.entity} "
-            "comes in by itself.",
-            "capabilities": ["sync"],
-            "available": False,
-            "single": False,
-            "lives_in": None,
-            "created_in": None,
-            "authorizes": False,
-            "daily_budget": None,
-            "by_mail": True,
-            "secrets": [],
-            "settings": [],
-        }
-        for extractor in EXTRACTORS.values()
-        if extractor.category == category
+        if any(item.category == category.id for item in PROVIDERS)
     ]

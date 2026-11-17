@@ -9,8 +9,7 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from hub import catalogue, credentials, rules
-from hub.extractors import EXTRACTORS
+from hub import catalogue, credentials
 from hub.sync import CLIENTS, NORMALISE, SETTINGS, used_today
 from hub.words import say
 
@@ -401,30 +400,7 @@ async def detail(
             setting.key: config.get(setting.key)
             for setting in (provider.settings if provider else ())
         },
-        "extractors": [
-            {"id": extractor.id, "entity": extractor.entity} for extractor in EXTRACTORS.values()
-        ]
-        if provider and provider.id == "imap"
-        else [],
-        "rules": rules.of(config) if provider and provider.id == "imap" else [],
     }
-
-
-SET_RULES = text("""
-    update hub.hub_connection
-    set config = jsonb_set(config, '{rules}', cast(:rules as jsonb))
-    where id = :id and provider = 'imap'
-    returning id
-""")
-
-
-async def set_rules(database: AsyncConnection, connection_id: UUID, raw: list[Any]) -> bool:
-    try:
-        cleaned = rules.clean_all(raw)
-    except rules.Invalid as error:
-        raise Refused(str(error)) from error
-    found = await database.scalar(SET_RULES, {"id": connection_id, "rules": json.dumps(cleaned)})
-    return found is not None
 
 
 CONFIG = text("select config from hub.hub_connection where id = :id")

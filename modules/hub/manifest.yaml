@@ -31,7 +31,7 @@ tools:
   - name: get_connections
     scope: hub:read
     description: >
-      Which outside sources the person has connected (banks, exchanges, mail, calendars), the
+      Which outside sources the person has connected (banks, exchanges, calendars), the
       category of each and its state: up to date, about to expire, expired, failing or paused, with
       the reason, when it last brought something successfully and how many items it brought in the
       last week. It also says which sources are still set up inside their own app. Use it to answer

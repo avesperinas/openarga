@@ -96,14 +96,12 @@ async def test_the_catalogue_comes_in_its_categories_in_order(api) -> None:
         "Books",
         "Calendar",
         "Notes",
-        "Economy",
         "Leisure",
         "Weather",
     ]
     assert [p["id"] for p in listed[0]["providers"]] == [
         "enable_banking",
         "bitvavo",
-        "imap",
         "frankfurter",
         "prices",
     ]
