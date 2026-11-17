@@ -14,6 +14,8 @@ from urllib.parse import parse_qs, urlencode, urljoin, urlparse
 import httpx
 
 GATEWAY = "http://gateway:8000"
+LOCAL_GATEWAY = "http://gateway-local:8000"
+FIRST_ADMIN = ("first-admin", "first-admin-password-1")
 REALM = "http://auth:8080/auth/realms/arga"
 SESSION = "__Host-arga_session"
 NAVIGATE = {"sec-fetch-mode": "navigate", "accept": "text/html"}
@@ -72,7 +74,7 @@ class Browser:
             hops.append(url)
             if not url.startswith("http://"):
                 break
-            if urlparse(url).netloc not in ("gateway:8000", "auth:8080"):
+            if urlparse(url).netloc not in ("gateway:8000", "gateway-local:8000", "auth:8080"):
                 break
             response = self.request("GET", url, headers=NAVIGATE)
         return response, hops
@@ -261,9 +263,36 @@ def phase_two(state: Path) -> None:
     )
 
 
+def phase_local(state: Path) -> None:
+    browser = Browser()
+    target = f"{LOCAL_GATEWAY}/login?next=/api/kernel/ui/preferences"
+    page, hops = browser.follow("GET", target, headers=NAVIGATE)
+    check(
+        "with no provider hint the realm shows its own username and password form",
+        "/realms/arga/" in hops[-1] and 'id="kc-form-login"' in page.text,
+        f"{page.status_code} " + " → ".join(hops),
+    )
+    check("the realm's form is in English", 'lang="en"' in page.text or "Sign in" in page.text)
+    done, hops = browser.submit_login(page, *FIRST_ADMIN)
+    check(
+        "a local user signs in and lands where they were going",
+        done.status_code == 200 and hops[-1] == f"{LOCAL_GATEWAY}/api/kernel/ui/preferences",
+        f"{done.status_code} " + " → ".join(hops),
+    )
+    check("and the kernel answers for them", "theme" in done.text, done.text[:200])
+    wrong = Browser()
+    page, _ = wrong.follow("GET", target, headers=NAVIGATE)
+    refused, hops = wrong.submit_login(page, FIRST_ADMIN[0], "not-the-password")
+    check(
+        "a wrong password stays on the realm's form",
+        "/realms/arga/" in hops[-1] and 'id="kc-form-login"' in refused.text,
+        " → ".join(hops),
+    )
+
+
 if __name__ == "__main__":
     phase, directory = sys.argv[1], Path(sys.argv[2])
-    {"uno": phase_one, "dos": phase_two}[phase](directory)
+    {"one": phase_one, "two": phase_two, "local": phase_local}[phase](directory)
     if failures:
         print(f"{len(failures)} failed check(s)")
         sys.exit(1)
