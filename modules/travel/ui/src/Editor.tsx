@@ -1,8 +1,8 @@
 import {
   Button,
-  CANNOT_UNDO,
   ChoiceChips,
   ConfirmDelete,
+  cannotUndo,
   DateField,
   ErrorState,
   Hint,
@@ -43,16 +43,18 @@ import { ScreenHeader } from "./Header";
 import { ExpenseForm } from "./ExpenseForm";
 import { PlacePicker } from "./PlacePicker";
 import { CATEGORIES, MODES, dateRange, dayLabel, eurosExact, flag, km, nights, paidLine, todayIso } from "./words";
+import { t } from "./lang";
 
 type Step = "data" | "stays" | "visits" | "legs" | "expenses";
 
-const STEPS: { value: Step; label: string }[] = [
-  { value: "data", label: "Datos" },
-  { value: "stays", label: "Lugares" },
-  { value: "visits", label: "Visitas" },
-  { value: "legs", label: "Trayectos" },
-  { value: "expenses", label: "Gastos" },
-];
+const STEPS: { value: Step; readonly label: string }[] = (["data", "stays", "visits", "legs", "expenses"] as const).map(
+  (value) => ({
+    value,
+    get label() {
+      return t(`editor.step.${value}`);
+    },
+  }),
+);
 
 type Removal = { part: "stays" | "visits" | "legs" | "expenses"; id: string; subject: string; what: string };
 
@@ -81,7 +83,7 @@ export function EditorScreen({
       .then(setTrip)
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        setProblem(error instanceof Error ? error.message : "No se ha podido leer el viaje.");
+        setProblem(error instanceof Error ? error.message : t("trip.error.read"));
       });
   }, [id, attempt]);
 
@@ -94,22 +96,22 @@ export function EditorScreen({
       return saved;
     } catch (error) {
       if (error instanceof Unauthorised) signIn();
-      setProblem(error instanceof Error ? error.message : "No se ha podido guardar.");
+      setProblem(error instanceof Error ? error.message : t("error.save"));
       return null;
     }
   };
 
   const back = trip
     ? { label: trip.title, onClick: () => navigate({ screen: "trip", id: trip.id }) }
-    : { label: "Viajes", onClick: () => navigate({ screen: "trips" }) };
+    : { label: t("nav.trips"), onClick: () => navigate({ screen: "trips" }) };
 
   if (id && !trip) {
     return (
       <Screen>
-        <ScreenHeader title="Editar viaje" back={back} />
+        <ScreenHeader title={t("trip.edit")} back={back} />
         {problem ? (
           <ErrorState
-            title="Travel no contesta"
+            title={t("error.no_answer")}
             detail={problem}
             onRetry={() => {
               setProblem("");
@@ -117,7 +119,7 @@ export function EditorScreen({
             }}
           />
         ) : (
-          <Skeleton label="Cargando el viaje" />
+          <Skeleton label={t("trip.loading")} />
         )}
       </Screen>
     );
@@ -127,10 +129,10 @@ export function EditorScreen({
     <Screen>
       <ScreenHeader
         eyebrow={trip ? dateRange(trip.starts_on, trip.ends_on) : undefined}
-        title={trip ? trip.title : "Nuevo viaje"}
+        title={trip ? trip.title : t("trip.new")}
         back={back}
       />
-      {trip && <ChoiceChips label="Paso" value={step} onChange={setStep} options={STEPS} />}
+      {trip && <ChoiceChips label={t("editor.step")} value={step} onChange={setStep} options={STEPS} />}
       {problem && (
         <Hint tone="warning">
           {problem}
@@ -173,10 +175,10 @@ export function EditorScreen({
 
       {removing && trip && (
         <ConfirmDelete
-          title={`¿Quitar ${removing.what}?`}
+          title={t("editor.remove_confirm", { what: removing.what })}
           subject={removing.subject}
-          consequence={CANNOT_UNDO}
-          action={`Quitar ${removing.what}`}
+          consequence={cannotUndo()}
+          action={t("editor.remove", { what: removing.what })}
           onCancel={() => setRemoving(null)}
           onConfirm={async () => {
             const saved = await deletePart(trip.id, removing.part, removing.id);
@@ -235,52 +237,52 @@ function DataStep({ trip, onSave }: { trip: Trip | null; onSave: (data: TripIn) 
         }).finally(() => setBusy(false));
       }}
     >
-      <TextField label="Título" value={title} onChange={setTitle} placeholder="Flandes en primavera" />
+      <TextField label={t("editor.title")} value={title} onChange={setTitle} placeholder={t("editor.title_example")} />
       <div className="travel-form-row">
-        <DateField label="Primer día" value={starts} onChange={setStarts} />
+        <DateField label={t("editor.first_day")} value={starts} onChange={setStarts} />
         <DateField
-          label="Último día"
+          label={t("editor.last_day")}
           value={ends}
           onChange={setEnds}
           invalid={backwards}
-          hint={backwards ? "Acaba antes de empezar" : undefined}
+          hint={backwards ? t("editor.backwards") : undefined}
         />
       </div>
       <div className="travel-field">
-        <span className="travel-field-label">Viajeros</span>
-        <Stepper label="Viajeros" value={travellers} onChange={setTravellers} min={1} max={50} step={1} />
+        <span className="travel-field-label">{t("trip.kpi.travellers")}</span>
+        <Stepper label={t("trip.kpi.travellers")} value={travellers} onChange={setTravellers} min={1} max={50} step={1} />
       </div>
-      <TextField label="Con quién" value={companions} onChange={setCompanions} hint="Separados por comas" />
-      <TextField label="Etiquetas" value={tags} onChange={setTags} hint="Escapada, trabajo, verano…" />
-      <TextField label="Notas" value={notes} onChange={setNotes} />
+      <TextField label={t("editor.companions")} value={companions} onChange={setCompanions} hint={t("editor.comma_separated")} />
+      <TextField label={t("trip.tags")} value={tags} onChange={setTags} hint={t("editor.tags_example")} />
+      <TextField label={t("editor.notes")} value={notes} onChange={setNotes} />
       <TextField
-        label="Presupuesto por persona, en euros"
+        label={t("editor.budget")}
         inputMode="decimal"
         value={budget}
         onChange={setBudget}
         invalid={badBudget}
-        hint={badBudget ? "Un importe como 900 o 900,50" : "Opcional: lo que quieres gastar"}
+        hint={badBudget ? t("editor.budget_invalid") : t("editor.budget_hint")}
       />
       {!trip && (
         <>
           <SegmentedControl
-            label="Estado"
+            label={t("editor.status")}
             value={chosen}
             onChange={setStatus}
             options={[
-              { value: "plan", label: "Plan" },
-              { value: "confirmed", label: "Confirmado" },
+              { value: "plan", label: t("phase.plan") },
+              { value: "confirmed", label: t("phase.upcoming") },
             ]}
           />
           <Hint>
             {chosen === "plan"
-              ? "Un plan se queda en Travel, con fechas que pueden moverse, hasta que lo confirmes."
-              : "Confirmado sale en tu calendario."}
+              ? t("editor.plan_hint")
+              : t("editor.confirmed_hint")}
           </Hint>
         </>
       )}
       <Button type="submit" variant="primary" disabled={!ready}>
-        {trip ? "Guardar datos" : "Crear viaje"}
+        {trip ? t("editor.save_details") : t("editor.create")}
       </Button>
     </form>
   );
@@ -310,7 +312,7 @@ function StaysStep({
 
   return (
     <>
-      <Hint>Donde dormiste, en orden. Las noches son los días entre llegar y salir.</Hint>
+      <Hint>{t("editor.stays_hint")}</Hint>
       {trip.stays.length > 0 && (
         <List>
           {trip.stays.map((stay) => (
@@ -320,7 +322,7 @@ function StaysStep({
               detail={`${dateRange(stay.arrives_on, stay.leaves_on)} · ${nights(stay.nights)}${stay.accommodation ? ` · ${stay.accommodation}` : ""}`}
               accessory="trash"
               onClick={() =>
-                onRemove({ part: "stays", id: stay.id, subject: stay.place.name, what: "lugar principal" })
+                onRemove({ part: "stays", id: stay.id, subject: stay.place.name, what: t("editor.what.stay") })
               }
             />
           ))}
@@ -331,19 +333,19 @@ function StaysStep({
           <>
             <ListRow
               title={`${flag(place.country_code)} ${place.name}`}
-              detail={[place.region, place.country].filter(Boolean).join(", ") || "Sin situar en el mapa"}
+              detail={[place.region, place.country].filter(Boolean).join(", ") || t("trip.not_on_map")}
               accessory="close"
               onClick={() => setPlace(null)}
             />
             <div className="travel-form-row">
-              <DateField label="Llegada" value={arrives} onChange={setArrives} />
-              <DateField label="Salida" value={leaves} onChange={setLeaves} />
+              <DateField label={t("editor.arrival")} value={arrives} onChange={setArrives} />
+              <DateField label={t("editor.departure")} value={leaves} onChange={setLeaves} />
             </div>
             <TextField
-              label="Alojamiento"
+              label={t("editor.lodging")}
               value={accommodation}
               onChange={setAccommodation}
-              placeholder="Hotel, apartamento, casa de amigos…"
+              placeholder={t("editor.lodging_example")}
             />
             <Button
               variant="primary"
@@ -364,15 +366,15 @@ function StaysStep({
                 }
               }}
             >
-              Añadir lugar principal
+              {t("editor.add_stay")}
             </Button>
           </>
         ) : (
-          <PlacePicker label="Lugar principal" onPick={setPlace} />
+          <PlacePicker label={t("editor.stay")} onPick={setPlace} />
         )}
       </div>
       <Button variant="secondary" onClick={onNext}>
-        Siguiente: visitas
+        {t("editor.next.visits")}
       </Button>
     </>
   );
@@ -402,7 +404,7 @@ function VisitsStep({
 
   return (
     <>
-      <Hint>Lo que viste sin dormir allí: una excursión, un museo, una playa. Se pinta en tono suave.</Hint>
+      <Hint>{t("editor.visits_hint")}</Hint>
       {trip.visits.length > 0 && (
         <List>
           {trip.visits.map((visit) => (
@@ -411,7 +413,7 @@ function VisitsStep({
               title={`${flag(visit.place.country_code)} ${visit.place.name}`}
               detail={[visit.visited_on && dayLabel(visit.visited_on), visit.note].filter(Boolean).join(" · ") || undefined}
               accessory="trash"
-              onClick={() => onRemove({ part: "visits", id: visit.id, subject: visit.place.name, what: "visita" })}
+              onClick={() => onRemove({ part: "visits", id: visit.id, subject: visit.place.name, what: t("editor.what.visit") })}
             />
           ))}
         </List>
@@ -421,23 +423,23 @@ function VisitsStep({
           <>
             <ListRow
               title={`${flag(place.country_code)} ${place.name}`}
-              detail={[place.region, place.country].filter(Boolean).join(", ") || "Sin situar en el mapa"}
+              detail={[place.region, place.country].filter(Boolean).join(", ") || t("trip.not_on_map")}
               accessory="close"
               onClick={() => setPlace(null)}
             />
-            <DateField label="Día" value={day} onChange={setDay} />
+            <DateField label={t("editor.day")} value={day} onChange={setDay} />
             {trip.stays.length > 0 && (
               <SelectField
-                label="Desde"
+                label={t("editor.from")}
                 value={stay}
                 onChange={setStay}
                 options={[
-                  { value: "", label: "Ninguno" },
+                  { value: "", label: t("editor.none") },
                   ...trip.stays.map((one) => ({ value: one.id, label: one.place.name })),
                 ]}
               />
             )}
-            <TextField label="Nota" value={note} onChange={setNote} />
+            <TextField label={t("editor.note")} value={note} onChange={setNote} />
             <Button
               variant="primary"
               icon="plus"
@@ -456,15 +458,15 @@ function VisitsStep({
                 }
               }}
             >
-              Añadir visita
+              {t("editor.add_visit")}
             </Button>
           </>
         ) : (
-          <PlacePicker label="Lugar visitado" onPick={setPlace} />
+          <PlacePicker label={t("editor.visited_place")} onPick={setPlace} />
         )}
       </div>
       <Button variant="secondary" onClick={onNext}>
-        Siguiente: trayectos
+        {t("editor.next.legs")}
       </Button>
     </>
   );
@@ -498,8 +500,7 @@ function LegsStep({
   return (
     <>
       <Hint>
-        Cómo fuiste de un sitio a otro. La ida sale de casa: añádela como otro sitio. Los kilómetros se calculan solos.
-        El interruptor dice si sale en el mapa, la miniatura y el recorrido.
+        {t("editor.legs_hint")}
       </Hint>
       {trip.legs.length > 0 && (
         <ul className="surface travel-legs">
@@ -516,7 +517,7 @@ function LegsStep({
                   </span>
                 </span>
                 <Switch
-                  label={`${name} en el mapa`}
+                  label={t("editor.leg_on_map", { name })}
                   checked={drawn(trip, leg)}
                   onChange={(on) =>
                     apply(
@@ -533,9 +534,9 @@ function LegsStep({
                 />
                 <IconButton
                   icon="trash"
-                  label={`Quitar ${name}`}
+                  label={t("editor.remove", { what: name })}
                   variant="plain"
-                  onClick={() => onRemove({ part: "legs", id: leg.id, subject: name, what: "trayecto" })}
+                  onClick={() => onRemove({ part: "legs", id: leg.id, subject: name, what: t("editor.what.leg") })}
                 />
               </li>
             );
@@ -544,20 +545,20 @@ function LegsStep({
       )}
       <div className="surface travel-form">
         <SelectField
-          label="Desde"
+          label={t("editor.from")}
           value={from}
           onChange={setFrom}
-          options={[{ value: "", label: "Elige…" }, ...places.map((one) => ({ value: one.id, label: one.name }))]}
+          options={[{ value: "", label: t("editor.choose") }, ...places.map((one) => ({ value: one.id, label: one.name }))]}
         />
         <SelectField
-          label="Hasta"
+          label={t("editor.to")}
           value={to}
           onChange={setTo}
-          options={[{ value: "", label: "Elige…" }, ...places.map((one) => ({ value: one.id, label: one.name }))]}
+          options={[{ value: "", label: t("editor.choose") }, ...places.map((one) => ({ value: one.id, label: one.name }))]}
         />
         {adding ? (
           <PlacePicker
-            label="Otro sitio"
+            label={t("editor.other_place")}
             onPick={(place) => {
               setExtra((now) => [...now, place]);
               if (!from) setFrom(place.id);
@@ -567,16 +568,16 @@ function LegsStep({
           />
         ) : (
           <Button variant="plain" icon="plus" onClick={() => setAdding(true)}>
-            Otro sitio, como casa
+            {t("editor.other_place_home")}
           </Button>
         )}
         <ChoiceChips<Mode>
-          label="Medio"
+          label={t("editor.mode")}
           value={mode}
           onChange={setMode}
           options={(Object.keys(MODES) as Mode[]).map((one) => ({ value: one, label: MODES[one].label }))}
         />
-        <DateField label="Día" value={day} onChange={setDay} />
+        <DateField label={t("editor.day")} value={day} onChange={setDay} />
         <Button
           variant="primary"
           icon="plus"
@@ -595,11 +596,11 @@ function LegsStep({
             }
           }}
         >
-          Añadir trayecto
+          {t("editor.add_leg")}
         </Button>
       </div>
       <Button variant="secondary" onClick={onNext}>
-        Siguiente: gastos
+        {t("editor.next.expenses")}
       </Button>
     </>
   );
@@ -645,11 +646,11 @@ function ExpensesStep({
         }}
       />
       <Hint>
-        {eurosExact(trip.spend.per_person)} por persona · {eurosExact(trip.spend.group)} el grupo
-        {trip.spend.per_day !== null && ` · ${eurosExact(trip.spend.per_day)} al día`}
+        {t("editor.spend_line", { person: eurosExact(trip.spend.per_person), group: eurosExact(trip.spend.group) })}
+        {trip.spend.per_day !== null && ` · ${t("editor.per_day", { amount: eurosExact(trip.spend.per_day) })}`}
       </Hint>
       <Button variant="primary" onClick={onDone}>
-        Hecho
+        {t("action.done")}
       </Button>
     </>
   );

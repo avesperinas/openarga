@@ -11,17 +11,17 @@ const one = (name: string, me: boolean, member: string | null = null) => ({
   member_user_id: member,
 });
 
-describe("cómo se llama a cada viajero", () => {
-  it("quien mira es «Tú», aunque el viaje le llame de otra forma", () => {
-    expect(travellerLabel(one("Luis", true, "luis-id"), members)).toBe("Tú");
+describe("what each traveller is called", () => {
+  it("whoever looks is “You”, even if the trip calls them otherwise", () => {
+    expect(travellerLabel(one("Luis", true, "luis-id"), members)).toBe("You");
   });
 
-  it("«Yo» para los demás es quien creó el viaje, con su nombre del espacio", () => {
+  it("“Me” for the others is whoever created the trip, with their name in the space", () => {
     expect(travellerLabel(one("Yo", false, "ana-id"), members)).toBe("Ana");
-    expect(travellerLabel(one("Yo", false, "otra-id"), members)).toBe("Quien creó el viaje");
+    expect(travellerLabel(one("Yo", false, "otra-id"), members)).toBe("Whoever created the trip");
   });
 
-  it("los demás, con el nombre que tienen en el viaje", () => {
+  it("the others, with the name they have in the trip", () => {
     expect(travellerLabel(one("Viajero 3", false), members)).toBe("Viajero 3");
   });
 });

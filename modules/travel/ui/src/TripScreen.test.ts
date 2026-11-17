@@ -16,11 +16,11 @@ const place = (id: string, name: string): Place => ({
   kind: null,
 });
 
-describe("el itinerario", () => {
-  it("cada trayecto antes del lugar al que llega, y las visitas dentro de su lugar", () => {
-    const home = place("h", "Casa");
-    const bruges = place("b", "Brujas");
-    const ghent = place("g", "Gante");
+describe("the itinerary", () => {
+  it("each leg before the place it reaches, and the visits inside their place", () => {
+    const home = place("h", "Home");
+    const bruges = place("b", "Bruges");
+    const ghent = place("g", "Ghent");
     const trip = {
       starts_on: "2025-03-07",
       ends_on: "2025-03-10",
@@ -39,6 +39,6 @@ describe("el itinerario", () => {
       step.kind === "leg" ? `→${step.leg.to_place.name}` : step.kind === "stay" ? `${step.stay.place.name}(${step.visits.length})` : step.visit.place.name,
     );
 
-    expect(steps).toEqual(["→Brujas", "Brujas(1)", "→Gante", "Gante(0)"]);
+    expect(steps).toEqual(["→Bruges", "Bruges(1)", "→Ghent", "Ghent(0)"]);
   });
 });

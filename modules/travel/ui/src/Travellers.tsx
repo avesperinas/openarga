@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { type Traveller, type Trip, Unauthorised, readTravellers, signIn, updateTraveller } from "./api";
 import { type Members, travellerLabel } from "./people";
+import { t } from "./lang";
 
 export function TravellersSection({
   trip,
@@ -28,11 +29,11 @@ export function TravellersSection({
   if (!people || people.length < 2) return null;
   return (
     <section className="travel-group">
-      <GroupLabel>Viajeros</GroupLabel>
+      <GroupLabel>{t("trip.kpi.travellers")}</GroupLabel>
       <div className="surface travel-travellers">
         <p className="travel-travellers-names">{people.map((one) => travellerLabel(one, members)).join(" · ")}</p>
         <Button variant="plain" size="small" icon="edit" onClick={() => setEditing(true)}>
-          Cambiar
+          {t("action.change")}
         </Button>
       </div>
       {editing && (
@@ -87,29 +88,29 @@ function TravellersSheet({
       }
       onSaved(latest);
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : "No se ha podido guardar.");
+      setProblem(error instanceof Error ? error.message : t("error.save"));
     } finally {
       setBusy(false);
     }
   };
 
   const options = [
-    { value: NOBODY, label: "Nadie de arga" },
+    { value: NOBODY, label: t("travellers.nobody") },
     ...[...members.entries()].map(([value, label]) => ({ value, label })),
   ];
   return (
-    <Sheet title="Viajeros" onClose={onClose} action={{ label: "Guardar", disabled: busy, onClick: () => void save() }}>
+    <Sheet title={t("trip.kpi.travellers")} onClose={onClose} action={{ label: t("action.save"), disabled: busy, onClick: () => void save() }}>
       <div className="travel-sheet-stack">
         {people.map((one) => (
           <div key={one.id} className="travel-traveller-edit">
             <TextField
-              label={one.me ? "Tú" : `Viajero ${one.position + 1}`}
+              label={one.me ? t("people.you") : t("travellers.number", { number: one.position + 1 })}
               value={names[one.id] ?? ""}
               onChange={(next) => setNames({ ...names, [one.id]: next })}
             />
             {shared && (
               <SelectField
-                label="Es"
+                label={t("travellers.is")}
                 value={who[one.id] ?? NOBODY}
                 onChange={(next) => setWho({ ...who, [one.id]: next })}
                 options={options}
@@ -117,7 +118,7 @@ function TravellersSheet({
             )}
           </div>
         ))}
-        {!shared && <Hint>Comparte el viaje con un espacio para decir quién es cada uno en arga.</Hint>}
+        {!shared && <Hint>{t("travellers.share_hint")}</Hint>}
         {problem && <Hint tone="warning">{problem}</Hint>}
       </div>
     </Sheet>

@@ -85,8 +85,8 @@ const ROMA = trip("roma", "2025-06-01", {
   legs: [{ id: "l3", from_place: HOME, to_place: ROME, mode: "train", travelled_on: null, km: 1500, note: null, on_map: null }],
 });
 
-describe("lo que se pinta", () => {
-  it("todo lo visitado del mismo azul, dormido o de excursión, por país o por región", () => {
+describe("what is drawn", () => {
+  it("everything visited in the same blue, slept in or on a day trip, by country or by region", () => {
     expect(areasOf([FLANDERS], "country")).toEqual([
       { code: "BE", tone: "slept", weight: 1 },
       { code: "FR", tone: "slept", weight: 1 },
@@ -95,18 +95,18 @@ describe("lo que se pinta", () => {
     expect(areasOf([FLANDERS], "none")).toEqual([]);
   });
 
-  it("da igual cuántos viajes o noches: un área visitada pinta igual que otra", () => {
+  it("no matter how many trips or nights: one visited area draws the same as another", () => {
     const areas = areasOf([FLANDERS, ROMA, ROMA], "country");
     expect(new Set(areas.map((a) => `${a.tone}:${a.weight}`))).toEqual(new Set(["slept:1"]));
   });
 
-  it("los lugares principales crecen con sus noches y los visitados van aparte", () => {
+  it("main places grow with their nights and visited ones go apart", () => {
     const found = placesOf([FLANDERS, ROMA]);
     expect(found.find((p) => p.id === "p1")).toMatchObject({ kind: "stay", size: 1 });
     expect(found.find((p) => p.id === "p2")).toMatchObject({ kind: "visit" });
   });
 
-  it("cada trayecto por el viaje es una ruta en su orden, sin la ida desde casa ni la vuelta", () => {
+  it("each leg of the trip is a route in its order, without the way out from home or the way back", () => {
     const GHENT = place("p4", "Gante", "BE", "BE-VLG", 3.72, 51.05);
     const stays = [
       { id: "s1", place: BRUGES, arrives_on: "2024-04-10", leaves_on: "2024-04-12", nights: 2, accommodation: null },
@@ -137,7 +137,7 @@ describe("lo que se pinta", () => {
     expect(pointsOf(FLANDERS)).not.toContainEqual([HOME.lon, HOME.lat]);
   });
 
-  it("lo que se elige a mano manda sobre lo deducido: la vuelta que sale y un trayecto que no", () => {
+  it("what is chosen by hand wins over what is worked out: the way back that shows and a leg that does not", () => {
     const GHENT = place("p4", "Gante", "BE", "BE-VLG", 3.72, 51.05);
     const leg = (id: string, from: Place, to: Place, on_map: boolean | null) =>
       ({ id, from_place: from, to_place: to, mode: "car", travelled_on: null, km: null, note: null, on_map }) as const;
@@ -157,19 +157,19 @@ describe("lo que se pinta", () => {
     expect(routesOf([chosen]).map((r) => r.id)).toEqual(["ultimo-dia"]);
   });
 
-  it("las cifras suman lo filtrado", () => {
+  it("the figures add up what is filtered", () => {
     expect(talliesOf([FLANDERS, ROMA])).toEqual({ countries: 3, regions: 3, trips: 2, nights: 6, km: 1400 });
   });
 });
 
-describe("los filtros", () => {
-  it("de inicio abarcan todos los años y nada más", () => {
+describe("the filters", () => {
+  it("at first they span every year and nothing else", () => {
     const filters = noFilters([FLANDERS, ROMA]);
     expect(filters.years).toEqual([2024, 2025]);
     expect(activeFilters(filters)).toBe(0);
   });
 
-  it("filtran por años, compañía, etiqueta y medio", () => {
+  it("they filter by years, company, tag and means", () => {
     const all = noFilters([FLANDERS, ROMA]);
     expect(matches(ROMA, { ...all, years: [2024, 2024] })).toBe(false);
     expect(matches(FLANDERS, { ...all, companions: ["Ane"] })).toBe(true);
@@ -178,13 +178,13 @@ describe("los filtros", () => {
     expect(matches(FLANDERS, { ...all, tags: ["trabajo"] })).toBe(false);
   });
 
-  it("reproducir va del primero al último", () => {
+  it("playing goes from the first to the last", () => {
     expect(playOrder([ROMA, FLANDERS]).map((t) => t.id)).toEqual(["flandes", "roma"]);
   });
 });
 
-describe("el panel de un área", () => {
-  it("dice sus viajes, sus noches y sus lugares", () => {
+describe("an area's panel", () => {
+  it("says its trips, its nights and its places", () => {
     const inside = insideArea([FLANDERS, ROMA], "BE", "country");
     expect(inside.trips.map((t) => t.trip.id)).toEqual(["flandes"]);
     expect(inside.nights).toBe(4);
@@ -193,10 +193,10 @@ describe("el panel de un área", () => {
   });
 });
 
-describe("los otros lugares, sin viaje", () => {
+describe("other places, without a trip", () => {
   const SEVILLE: OtherPlace = { id: "o1", place: place("p9", "Sevilla", "ES", "ES-AN", -5.98, 37.39), note: null, source: "app" };
 
-  it("pintan del mismo color que un viaje y suman países y regiones, no viajes ni noches", () => {
+  it("they draw in the same colour as a trip and add countries and regions, not trips or nights", () => {
     expect(areasOf([ROMA], "country", [SEVILLE])).toEqual([
       { code: "IT", tone: "slept", weight: 1 },
       { code: "ES", tone: "slept", weight: 1 },
@@ -204,13 +204,13 @@ describe("los otros lugares, sin viaje", () => {
     expect(talliesOf([ROMA], [SEVILLE])).toEqual({ countries: 2, regions: 2, trips: 1, nights: 2, km: 0 });
   });
 
-  it("salen en el panel de su área", () => {
+  it("they show in their area's panel", () => {
     const inside = insideArea([ROMA], "ES-AN", "region", [SEVILLE]);
     expect(inside.trips).toEqual([]);
     expect(inside.others.map((one) => one.place.name)).toEqual(["Sevilla"]);
   });
 
-  it("solo cuando se mira todo: sin fecha no se sabe si caen en unos años o en un viaje", () => {
+  it("only when everything is shown: without a date it is unknown whether they fall in some years or in a trip", () => {
     const all = noFilters([FLANDERS, ROMA]);
     expect(othersShown([SEVILLE], all, [FLANDERS, ROMA])).toEqual([SEVILLE]);
     expect(othersShown([SEVILLE], { ...all, years: [2025, 2025] }, [FLANDERS, ROMA])).toEqual([]);
@@ -218,21 +218,21 @@ describe("los otros lugares, sin viaje", () => {
   });
 });
 
-describe("los viajes archivados", () => {
+describe("archived trips", () => {
   const OLD = trip("viejo", "2019-06-01", { archived: true, stays: FLANDERS.stays });
 
-  it("no salen en la lista ni en el recorrido", () => {
+  it("they do not show in the list or in the journey", () => {
     expect(listed([FLANDERS, OLD, ROMA]).map((one) => one.id)).toEqual([FLANDERS.id, ROMA.id]);
   });
 
-  it("siguen pintando en el mapa y contando en las cifras", () => {
+  it("they still draw on the map and count in the figures", () => {
     expect(areasOf([OLD], "country")).toEqual([{ code: "BE", tone: "slept", weight: 1 }]);
     expect(talliesOf([OLD]).trips).toBe(1);
   });
 });
 
-describe("dónde vives", () => {
-  it("pinta su país o su región de su color, aunque también hayas viajado por allí", () => {
+describe("where you live", () => {
+  it("draws its country or its region in its colour, even if you also travelled there", () => {
     const home = place("h", "Amberes", "BE", "BE-VLG");
     expect(areasOf([FLANDERS], "country", [], home)).toEqual([
       { code: "FR", tone: "slept", weight: 1 },
@@ -242,8 +242,8 @@ describe("dónde vives", () => {
   });
 });
 
-describe("lo que viene y lo vivido", () => {
-  it("el mapa solo ve lo empezado; la lista de lo que viene, del más cercano al más lejano", () => {
+describe("what is coming and what was lived", () => {
+  it("the map only sees what has started; the list of what is coming, from nearest to furthest", () => {
     const done = trip("done", "2025-04-10");
     const now = trip("now", "2026-10-01", { phase: "ongoing" });
     const later = trip("later", "2027-05-01", { status: "plan", phase: "plan" });

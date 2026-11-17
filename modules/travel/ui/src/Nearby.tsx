@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { type NearbyKind, type NearbyPlace, Unauthorised, readNearby, signIn } from "./api";
 import { distance } from "./words";
+import { t } from "./lang";
 
 export interface Around {
   lat: number;
@@ -12,13 +13,14 @@ export interface Around {
   dayLabel: string | null;
 }
 
-const KINDS: { value: NearbyKind; label: string }[] = [
-  { value: "sights", label: "Qué ver" },
-  { value: "food", label: "Comer" },
-  { value: "nature", label: "Naturaleza" },
-  { value: "shopping", label: "Compras" },
-  { value: "nightlife", label: "Noche" },
-];
+const KINDS: { value: NearbyKind; readonly label: string }[] = (
+  ["sights", "food", "nature", "shopping", "nightlife"] as const
+).map((value) => ({
+  value,
+  get label() {
+    return t(`nearby.kind.${value}`);
+  },
+}));
 
 const RADII: { value: string; label: string }[] = [
   { value: "500", label: "500 m" },
@@ -53,7 +55,7 @@ export function NearbySheet({
       })
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        if (current) setProblem(error instanceof Error ? error.message : "No se ha podido preguntar.");
+        if (current) setProblem(error instanceof Error ? error.message : t("nearby.error"));
       });
     return () => {
       current = false;
@@ -65,13 +67,13 @@ export function NearbySheet({
   };
 
   return (
-    <Sheet title={`Cerca de ${around.label}`} onClose={onClose}>
+    <Sheet title={t("nearby.title", { name: around.label })} onClose={onClose}>
       <div className="travel-sheet-stack">
-        <ChoiceChips label="Qué buscas" value={kind} onChange={setKind} options={KINDS} />
-        <ChoiceChips label="Hasta" value={radius} onChange={setRadius} options={RADII} />
+        <ChoiceChips label={t("nearby.kind")} value={kind} onChange={setKind} options={KINDS} />
+        <ChoiceChips label={t("nearby.radius")} value={radius} onChange={setRadius} options={RADII} />
         {problem && <Hint tone="warning">{problem}</Hint>}
-        {found === null && !problem && <Skeleton label="Buscando cerca" />}
-        {found !== null && found.length === 0 && !problem && <Hint>No hay nada de eso tan cerca.</Hint>}
+        {found === null && !problem && <Skeleton label={t("nearby.searching")} />}
+        {found !== null && found.length === 0 && !problem && <Hint>{t("nearby.none")}</Hint>}
         {found !== null && found.length > 0 && (
           <ol className="surface travel-day">
             {found.map((one) => {
@@ -88,15 +90,15 @@ export function NearbySheet({
                   </span>
                   <span className="travel-nearby-actions">
                     {done ? (
-                      <span className="travel-step-detail">Guardado</span>
+                      <span className="travel-step-detail">{t("nearby.saved")}</span>
                     ) : (
                       <>
                         <Button variant="plain" size="small" onClick={() => void keep(one, null)}>
-                          Guardar
+                          {t("action.save")}
                         </Button>
                         {around.day && (
                           <Button variant="tinted" size="small" onClick={() => void keep(one, around.day)}>
-                            {around.dayLabel ?? "Al día"}
+                            {around.dayLabel ?? t("nearby.to_day")}
                           </Button>
                         )}
                       </>
@@ -107,7 +109,7 @@ export function NearbySheet({
             })}
           </ol>
         )}
-        <p className="travel-footnote">Datos de OpenStreetMap.</p>
+        <p className="travel-footnote">{t("nearby.credit")}</p>
       </div>
     </Sheet>
   );

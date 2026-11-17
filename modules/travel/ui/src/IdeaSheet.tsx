@@ -9,9 +9,10 @@ import {
 import { useState } from "react";
 
 import type { Idea, IdeaIn } from "./api";
-import { MONTHS_SHORT, todayIso } from "./words";
+import { monthShort, todayIso } from "./words";
+import { plural, t } from "./lang";
 
-const MONTH_OPTIONS = MONTHS_SHORT.map((label, index) => ({ value: String(index + 1), label }));
+const monthOptions = () => Array.from({ length: 12 }, (_, index) => ({ value: String(index + 1), label: monthShort(index + 1) }));
 
 export function IdeaSheet({
   idea,
@@ -37,10 +38,10 @@ export function IdeaSheet({
 
   return (
     <Sheet
-      title={idea ? "Editar idea" : "Nueva idea"}
+      title={idea ? t("idea.edit") : t("idea.new")}
       onClose={onClose}
       action={{
-        label: idea ? "Guardar" : "Crear idea",
+        label: idea ? t("action.save") : t("idea.create"),
         disabled: !ready,
         onClick: () => {
           setBusy(true);
@@ -60,29 +61,29 @@ export function IdeaSheet({
       }}
     >
       <div className="travel-sheet-stack">
-        <TextField label="Título" value={title} onChange={setTitle} placeholder="Japón en otoño" autoFocus />
+        <TextField label={t("editor.title")} value={title} onChange={setTitle} placeholder={t("idea.title_example")} autoFocus />
         <TextField
-          label="Presupuesto por persona, en euros"
+          label={t("editor.budget")}
           inputMode="decimal"
           value={budget}
           onChange={setBudget}
           invalid={badBudget}
-          hint={badBudget ? "Un importe como 900 o 900,50" : undefined}
+          hint={badBudget ? t("editor.budget_invalid") : undefined}
         />
         <div className="travel-form-row">
           <div className="travel-field">
-            <span className="travel-field-label">Días, como poco</span>
-            <Stepper label="Días como poco" value={daysMin} onChange={setDaysMin} min={1} max={365} step={1} />
+            <span className="travel-field-label">{t("idea.days_min")}</span>
+            <Stepper label={t("idea.days_min")} value={daysMin} onChange={setDaysMin} min={1} max={365} step={1} />
           </div>
           <div className="travel-field">
-            <span className="travel-field-label">Como mucho</span>
-            <Stepper label="Días como mucho" value={daysMax} onChange={setDaysMax} min={1} max={365} step={1} />
+            <span className="travel-field-label">{t("idea.days_max")}</span>
+            <Stepper label={t("idea.days_max_label")} value={daysMax} onChange={setDaysMax} min={1} max={365} step={1} />
           </div>
         </div>
-        {backwards && <Hint tone="warning">Como mucho no puede ser menos que como poco.</Hint>}
-        <CheckChips label="Meses buenos" values={months} onChange={setMonths} options={MONTH_OPTIONS} />
-        <TextField label="Etiquetas" value={tags} onChange={setTags} hint="Separadas por comas" />
-        <TextField label="Notas" value={notes} onChange={setNotes} />
+        {backwards && <Hint tone="warning">{t("idea.days_backwards")}</Hint>}
+        <CheckChips label={t("idea.months")} values={months} onChange={setMonths} options={monthOptions()} />
+        <TextField label={t("trip.tags")} value={tags} onChange={setTags} hint={t("editor.comma_separated")} />
+        <TextField label={t("editor.notes")} value={notes} onChange={setNotes} />
       </div>
     </Sheet>
   );
@@ -106,10 +107,10 @@ export function PlanSheet({
 
   return (
     <Sheet
-      title="Pasar a plan"
+      title={t("idea.to_plan")}
       onClose={onClose}
       action={{
-        label: "Crear el plan",
+        label: t("idea.create_plan"),
         disabled: !ready,
         onClick: () => {
           setBusy(true);
@@ -119,22 +120,21 @@ export function PlanSheet({
     >
       <div className="travel-sheet-stack">
         <Hint>
-          Un viaje en plan, con fechas que aún pueden moverse. Sus {idea.places.length} destino(s) esperan en «Sin día» para
-          colocarlos.
+          {t("idea.plan_hint", { places: plural(idea.places.length, "count.destinations") })}
         </Hint>
         <div className="travel-form-row">
-          <DateField label="Primer día" value={starts} onChange={setStarts} min={todayIso()} />
+          <DateField label={t("editor.first_day")} value={starts} onChange={setStarts} min={todayIso()} />
           <DateField
-            label="Último día"
+            label={t("editor.last_day")}
             value={ends}
             onChange={setEnds}
             invalid={backwards}
-            hint={backwards ? "Acaba antes de empezar" : undefined}
+            hint={backwards ? t("editor.backwards") : undefined}
           />
         </div>
         <div className="travel-field">
-          <span className="travel-field-label">Viajeros</span>
-          <Stepper label="Viajeros" value={travellers} onChange={setTravellers} min={1} max={50} step={1} />
+          <span className="travel-field-label">{t("trip.kpi.travellers")}</span>
+          <Stepper label={t("trip.kpi.travellers")} value={travellers} onChange={setTravellers} min={1} max={50} step={1} />
         </div>
       </div>
     </Sheet>

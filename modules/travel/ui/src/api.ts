@@ -1,5 +1,6 @@
 import { Unauthorised, createApi, invalidate, problemOf } from "@openarga/app";
 import { createOfflineQueue, repeatable as replayable } from "@openarga/app/offline";
+import { t } from "./lang";
 
 export { Unauthorised, signIn } from "@openarga/app";
 export { NeedsNetwork, Queued } from "@openarga/app/offline";
@@ -229,12 +230,12 @@ export function repeatable(method: string, body: unknown): boolean {
   return method === "PATCH" || replayable(method, body);
 }
 
-function send<T>(path: string, method: string, body?: unknown, what = "un cambio"): Promise<T> {
+function send<T>(path: string, method: string, body?: unknown, what = t("queue.change")): Promise<T> {
   return queue.send<T>(`${BASE}${path}`, method, body, { what, repeatable: repeatable(method, body) });
 }
 
 async function answer<T>(path: string, response: Response): Promise<T> {
-  if (response.status === 401) throw new Unauthorised("sin sesión");
+  if (response.status === 401) throw new Unauthorised("signed out");
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new Error(problemOf(body) ?? `${path}: ${response.status}`);
@@ -264,7 +265,7 @@ export const searchPlaces = (query: string) => get<Search>(`/places/search?query
 
 export const savePlace = (place: Partial<Candidate> & { name: string }) => send<Place>("/places", "POST", place);
 export const setPlaceCategory = (placeId: string, category: PlaceCategory) =>
-  send<Place>(`/places/${placeId}/category`, "PUT", { category }, "el tipo del sitio");
+  send<Place>(`/places/${placeId}/category`, "PUT", { category }, t("queue.place_kind"));
 export const createTrip = (trip: TripIn) => send<Trip>("/trips", "POST", trip);
 export const updateTrip = (id: string, trip: TripIn, shift = false) =>
   send<Trip>(`/trips/${id}${shift ? "?shift=true" : ""}`, "PUT", trip);
@@ -325,7 +326,7 @@ export const updateTraveller = (
   tripId: string,
   travellerId: string,
   change: { name?: string; member_user_id?: string | null },
-) => send<Traveller[]>(`/trips/${tripId}/travellers/${travellerId}`, "PATCH", change, "un viajero");
+) => send<Traveller[]>(`/trips/${tripId}/travellers/${travellerId}`, "PATCH", change, t("queue.traveller"));
 
 export interface Balance {
   people: { traveller: Traveller; paid_eur: number; share_eur: number; net_eur: number }[];
@@ -354,7 +355,7 @@ export const addExpense = (tripId: string, expense: ExpenseIn) =>
     `/trips/${tripId}/expenses`,
     "POST",
     { id: crypto.randomUUID(), ...expense },
-    `el gasto «${expense.concept}»`,
+    t("queue.expense", { concept: expense.concept }),
   );
 export const updateExpense = (tripId: string, expenseId: string, expense: ExpenseIn) => send<Trip>(`/trips/${tripId}/expenses/${expenseId}`, "PUT", expense);
 export const deletePart = (tripId: string, part: "stays" | "visits" | "legs" | "expenses", id: string) =>
@@ -462,15 +463,15 @@ export interface BlockIn extends BookingIn {
 
 export const readDays = (tripId: string) => get<Itinerary>(`/trips/${tripId}/days`);
 export const addBlock = (tripId: string, block: BlockIn) =>
-  send<Itinerary>(`/trips/${tripId}/blocks`, "POST", block, `«${block.title}» al itinerario`);
+  send<Itinerary>(`/trips/${tripId}/blocks`, "POST", block, t("queue.block_add", { title: block.title }));
 export const updateBlock = (tripId: string, blockId: string, block: BlockIn) =>
-  send<Itinerary>(`/trips/${tripId}/blocks/${blockId}`, "PUT", block, `el cambio de «${block.title}»`);
+  send<Itinerary>(`/trips/${tripId}/blocks/${blockId}`, "PUT", block, t("queue.block_change", { title: block.title }));
 export const moveBlock = (tripId: string, blockId: string, day: string | null, position: number) =>
-  send<Itinerary>(`/trips/${tripId}/blocks/${blockId}/position`, "PUT", { day, position }, "mover un bloque");
+  send<Itinerary>(`/trips/${tripId}/blocks/${blockId}/position`, "PUT", { day, position }, t("queue.block_move"));
 export const removeBlock = (tripId: string, blockId: string) =>
   send<Itinerary>(`/trips/${tripId}/blocks/${blockId}`, "DELETE");
 export const setDayTitle = (tripId: string, day: string, title: string) =>
-  send<Itinerary>(`/trips/${tripId}/days/${day}/title`, "PUT", { title }, "el título del día");
+  send<Itinerary>(`/trips/${tripId}/days/${day}/title`, "PUT", { title }, t("queue.day_title"));
 
 export type Profile = "foot" | "bike" | "car";
 
@@ -635,13 +636,13 @@ export interface JournalEntry {
 
 export const readJournal = (tripId: string) => get<JournalEntry[]>(`/trips/${tripId}/journal`);
 export const writeJournal = (tripId: string, day: string, body: string) =>
-  send<JournalEntry[]>(`/trips/${tripId}/journal/${day}`, "PUT", { body }, "el diario");
+  send<JournalEntry[]>(`/trips/${tripId}/journal/${day}`, "PUT", { body }, t("queue.journal"));
 
 export const readNotes = (tripId: string) => get<TripNote[]>(`/trips/${tripId}/notes`);
 export const addNote = (tripId: string, note: NoteIn) =>
-  send<TripNote[]>(`/trips/${tripId}/notes`, "POST", { id: crypto.randomUUID(), ...note }, `la nota «${note.title}»`);
+  send<TripNote[]>(`/trips/${tripId}/notes`, "POST", { id: crypto.randomUUID(), ...note }, t("queue.note", { title: note.title }));
 export const updateNote = (tripId: string, noteId: string, note: NoteIn) =>
-  send<TripNote[]>(`/trips/${tripId}/notes/${noteId}`, "PUT", note, `la nota «${note.title}»`);
+  send<TripNote[]>(`/trips/${tripId}/notes/${noteId}`, "PUT", note, t("queue.note", { title: note.title }));
 export const removeNote = (tripId: string, noteId: string) =>
   send<TripNote[]>(`/trips/${tripId}/notes/${noteId}`, "DELETE");
 
@@ -662,15 +663,15 @@ export const addCheckItems = (tripId: string, list: ListKind, texts: string[]) =
     `/trips/${tripId}/checklist`,
     "POST",
     texts.map((text) => ({ id: crypto.randomUUID(), list, text })),
-    texts.length === 1 ? `«${texts[0]}»` : `${texts.length} cosas de la lista`,
+    texts.length === 1 ? t("queue.quoted", { text: texts[0]! }) : t("queue.list_items", { count: texts.length }),
   );
 export const setChecked = (tripId: string, item: CheckItem, checked: boolean) =>
-  send<CheckItem[]>(`/trips/${tripId}/checklist/${item.id}`, "PATCH", { checked }, `«${item.text}»`);
+  send<CheckItem[]>(`/trips/${tripId}/checklist/${item.id}`, "PATCH", { checked }, t("queue.quoted", { text: item.text }));
 export const changeCheckItem = (
   tripId: string,
   item: CheckItem,
   change: { text?: string; traveller_id?: string | null },
-) => send<CheckItem[]>(`/trips/${tripId}/checklist/${item.id}`, "PATCH", change, `«${change.text ?? item.text}»`);
+) => send<CheckItem[]>(`/trips/${tripId}/checklist/${item.id}`, "PATCH", change, t("queue.quoted", { text: change.text ?? item.text }));
 export const removeCheckItem = (tripId: string, itemId: string) =>
   send<CheckItem[]>(`/trips/${tripId}/checklist/${itemId}`, "DELETE");
 export const copyChecklist = (tripId: string, fromTripId: string, list: ListKind) =>
@@ -707,7 +708,7 @@ export async function uploadCover(tripId: string, file: File): Promise<Trip> {
       headers: { "content-type": file.type || "application/octet-stream", accept: "application/json" },
     });
   } catch {
-    throw new Error("Sin conexión: subir una portada necesita red.");
+    throw new Error(t("cover.offline"));
   }
   return answer<Trip>(path, response);
 }
@@ -727,7 +728,7 @@ export const setSummary = (trip: Trip, summary: string) =>
       notes: trip.notes,
       summary: summary.trim() || null,
     },
-    "el resumen del viaje",
+    t("queue.summary"),
   );
 
 export async function uploadDocument(
@@ -749,7 +750,7 @@ export async function uploadDocument(
       body: file,
     });
   } catch {
-    throw new Error("Sin conexión: subir un documento necesita red.");
+    throw new Error(t("docs.offline"));
   }
   return answer<TripDocument[]>(path, response);
 }
@@ -758,6 +759,6 @@ export const changeDocument = (
   tripId: string,
   documentId: string,
   change: { name?: string; link_type?: LinkKind; link_id?: string; unlink?: boolean },
-) => send<TripDocument[]>(`/trips/${tripId}/documents/${documentId}`, "PATCH", change, "un documento");
+) => send<TripDocument[]>(`/trips/${tripId}/documents/${documentId}`, "PATCH", change, t("queue.document"));
 export const removeDocument = (tripId: string, documentId: string) =>
   send<TripDocument[]>(`/trips/${tripId}/documents/${documentId}`, "DELETE");

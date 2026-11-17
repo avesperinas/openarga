@@ -13,6 +13,7 @@ import { OtherPlaces } from "./OtherPlaces";
 const MiniRoute = later(() => import("./MiniRoute").then((found) => found.MiniRoute), { screen: false, rows: 1 });
 
 import { PHASES, dateRange, daysRange, euros, flag, monthsLabel, nights, trips as tripsWord } from "./words";
+import { t } from "./lang";
 
 export function TripsScreen({
   kind,
@@ -50,41 +51,40 @@ export function TripsScreen({
 
   return (
     <Screen>
-      <ScreenHeader title={kind === "plans" ? "Planes" : "Viajes"} />
-      <CreateButton label="Viaje" onClick={() => navigate({ screen: "edit", id: null })} />
+      <ScreenHeader title={kind === "plans" ? t("nav.plans") : t("nav.trips")} />
+      <CreateButton label={t("trip.title")} onClick={() => navigate({ screen: "edit", id: null })} />
       {kind === "trips" && listed !== null && listed.length > 0 && (
         <div className="travel-actions">
           <Button variant="tinted" icon="play" onClick={() => navigate({ screen: "journey" })}>
-            Ver el recorrido
+            {t("trips.journey")}
           </Button>
         </div>
       )}
 
-      {trips === null && problem && <ErrorState title="Travel no contesta" detail={problem} onRetry={onRetry} />}
-      {trips === null && !problem && <Skeleton label="Cargando los viajes" />}
+      {trips === null && problem && <ErrorState title={t("error.no_answer")} detail={problem} onRetry={onRetry} />}
+      {trips === null && !problem && <Skeleton label={t("trips.loading")} />}
       {kind === "trips" && listed !== null && listed.length === 0 && (
         <EmptyState
-          title="Aún no hay viajes hechos"
-          action={{ label: "Añadir un viaje", icon: "plus", onClick: () => navigate({ screen: "edit", id: null }) }}
+          title={t("trips.empty")}
+          action={{ label: t("stats.add_trip"), icon: "plus", onClick: () => navigate({ screen: "edit", id: null }) }}
         >
-          Añade uno con sus sitios, sus trayectos y lo que costó, o cuéntaselo a Claude: busca los lugares él mismo y lo
-          deja en el mapa.
+          {t("trips.empty_detail")}
         </EmptyState>
       )}
       {kind === "plans" && trips !== null && coming.length === 0 && ideas.length === 0 && (
         <EmptyState
-          title="Sin planes"
-          action={{ label: "Planear un viaje", icon: "plus", onClick: () => navigate({ screen: "edit", id: null }) }}
+          title={t("trips.no_plans")}
+          action={{ label: t("today.plan_trip"), icon: "plus", onClick: () => navigate({ screen: "edit", id: null }) }}
         >
-          Lo que tienes por delante sale aquí: un viaje con fechas, o una idea para cuando sea.
+          {t("trips.no_plans_detail")}
         </EmptyState>
       )}
 
       {kind === "plans" && trips !== null && (
         <section className="travel-group">
           <GroupLabel>
-            Ideas
-            <span className="travel-group-detail">Viajes que quieres hacer, aún sin fechas</span>
+            {t("trips.ideas")}
+            <span className="travel-group-detail">{t("trips.ideas_detail")}</span>
           </GroupLabel>
           {ideaProblem && <Hint tone="warning">{ideaProblem}</Hint>}
           <div className="travel-cards">
@@ -92,7 +92,7 @@ export function TripsScreen({
               <IdeaCard key={one.id} idea={one} navigate={navigate} />
             ))}
             <Button variant="tinted" icon="plus" onClick={() => setCreating(true)}>
-              Idea
+              {t("trips.idea")}
             </Button>
           </div>
         </section>
@@ -107,7 +107,7 @@ export function TripsScreen({
               onChanged();
               navigate({ screen: "idea", id: made.id });
             } catch (error) {
-              setIdeaProblem(error instanceof Error ? error.message : "No se ha podido crear la idea.");
+              setIdeaProblem(error instanceof Error ? error.message : t("trips.error.idea"));
               setCreating(false);
             }
           }}
@@ -117,7 +117,7 @@ export function TripsScreen({
       {kind === "plans" && coming.length > 0 && (
         <section className="travel-group">
           <GroupLabel>
-            Próximos
+            {t("trips.upcoming")}
             <span className="travel-group-detail">{tripsWord(coming.length)}</span>
           </GroupLabel>
           <div className="travel-cards">
@@ -153,7 +153,7 @@ export function TripsScreen({
             aria-expanded={showArchived}
             onClick={() => setShowArchived(!showArchived)}
           >
-            Archivados · {archived.length}
+            {t("trips.archived")} · {archived.length}
           </Button>
           {showArchived && (
             <div className="travel-cards">
@@ -173,18 +173,18 @@ function IdeaCard({ idea, navigate }: { idea: Idea; navigate: Navigate }) {
   const facts = [
     idea.months.length ? monthsLabel(idea.months) : null,
     daysRange(idea.days_min, idea.days_max),
-    idea.budget_eur !== null ? `${euros(idea.budget_eur)} por persona` : null,
+    idea.budget_eur !== null ? t("trips.per_person", { amount: euros(idea.budget_eur) }) : null,
   ].filter(Boolean);
   return (
     <button type="button" className="surface travel-card travel-idea-card" onClick={() => navigate({ screen: "idea", id: idea.id })}>
       <span className="travel-card-text">
         <span className="travel-card-title">{idea.title}</span>
         <span className="travel-card-detail">
-          {idea.places.map((one) => one.place.name).join(" · ") || "Sin destinos aún"}
+          {idea.places.map((one) => one.place.name).join(" · ") || t("trips.no_places")}
         </span>
         {facts.length > 0 && <span className="travel-card-spend">{facts.join(" · ")}</span>}
         {idea.countries.length > 0 && (
-          <span className="travel-card-flags" aria-label={`Países: ${idea.countries.join(", ")}`}>
+          <span className="travel-card-flags" aria-label={t("trips.countries", { names: idea.countries.join(", ") })}>
             {idea.countries.map(flag).join(" ")}
           </span>
         )}
@@ -202,15 +202,15 @@ function TripCard({ trip, navigate }: { trip: Trip; navigate: Navigate }) {
         <span className="travel-card-detail">
           {trip.phase !== "done" && `${PHASES[trip.phase]} · `}
           {dateRange(trip.starts_on, trip.ends_on)} · {nights(trip.nights)}
-          {trip.space_id !== null && " · Compartido"}
+          {trip.space_id !== null && ` · ${t("trip.shared")}`}
         </span>
-        <span className="travel-card-flags" aria-label={`Países: ${trip.countries.join(", ")}`}>
+        <span className="travel-card-flags" aria-label={t("trips.countries", { names: trip.countries.join(", ") })}>
           {trip.countries.map(flag).join(" ")}
         </span>
         {trip.spend.per_person > 0 && (
           <span className="travel-card-spend">
-            {euros(trip.spend.per_person)} por persona
-            {trip.spend.per_day !== null && ` · ${euros(trip.spend.per_day)}/día`}
+            {t("trips.per_person", { amount: euros(trip.spend.per_person) })}
+            {trip.spend.per_day !== null && ` · ${t("trips.per_day", { amount: euros(trip.spend.per_day) })}`}
           </span>
         )}
       </span>

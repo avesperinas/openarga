@@ -1,4 +1,5 @@
 import type { ClimateMonth, ForecastDay } from "./api";
+import { t } from "./lang";
 
 export function sky(code: number | null): string {
   if (code === null) return "";
@@ -14,7 +15,7 @@ export function sky(code: number | null): string {
 
 export function dayLine(day: ForecastDay): string {
   const temps = day.max_c !== null && day.min_c !== null ? `${Math.round(day.max_c)}° / ${Math.round(day.min_c)}°` : "";
-  const rain = day.rain_chance !== null && day.rain_chance >= 30 ? ` · ${day.rain_chance} % lluvia` : "";
+  const rain = day.rain_chance !== null && day.rain_chance >= 30 ? ` · ${t("weather.rain", { chance: day.rain_chance })}` : "";
   return `${sky(day.code)} ${temps}${rain}`.trim();
 }
 

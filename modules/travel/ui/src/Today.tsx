@@ -24,6 +24,7 @@ import { TripTabs } from "./TripChrome";
 import { clock, onApple, progress } from "./today";
 import { dayLine } from "./weather";
 import { KINDS, MODES, dateRange, dayLabel, hours } from "./words";
+import { t } from "./lang";
 
 function iconOf(entry: TodayEntry): IconName {
   if (entry.type === "leg") return MODES[entry.kind as keyof typeof MODES]?.icon ?? "train";
@@ -60,8 +61,8 @@ export function TodayScreen({ navigate, tripId }: { navigate: Navigate; tripId?:
   if (!found) {
     return (
       <Screen>
-        <ScreenHeader title="Hoy" />
-        <Pending found={loaded.found} label="Cargando el día" />
+        <ScreenHeader title={t("today.title")} />
+        <Pending found={loaded.found} label={t("today.loading")} />
       </Screen>
     );
   }
@@ -70,17 +71,17 @@ export function TodayScreen({ navigate, tripId }: { navigate: Navigate; tripId?:
     const upcoming = found.next_trip;
     return (
       <Screen>
-        <ScreenHeader eyebrow={dayLabel(day)} title="Hoy" />
+        <ScreenHeader eyebrow={dayLabel(day)} title={t("today.title")} />
         <EmptyState
           icon="plane"
-          title="Hoy no hay viaje en curso"
+          title={t("today.no_trip")}
           action={
             upcoming
-              ? { label: "Ver el siguiente", icon: "arrow-right", onClick: () => navigate({ screen: "trip", id: upcoming.id }) }
-              : { label: "Planear un viaje", icon: "plus", onClick: () => navigate({ screen: "edit", id: null }) }
+              ? { label: t("today.see_next"), icon: "arrow-right", onClick: () => navigate({ screen: "trip", id: upcoming.id }) }
+              : { label: t("today.plan_trip"), icon: "plus", onClick: () => navigate({ screen: "edit", id: null }) }
           }
         >
-          {upcoming ? `El siguiente es ${upcoming.title}, ${dateRange(upcoming.starts_on, upcoming.ends_on)}.` : "Cuando estés de viaje, aquí sale el día."}
+          {upcoming ? t("today.next_is", { title: upcoming.title, dates: dateRange(upcoming.starts_on, upcoming.ends_on) }) : t("today.when_away")}
         </EmptyState>
       </Screen>
     );
@@ -97,8 +98,8 @@ export function TodayScreen({ navigate, tripId }: { navigate: Navigate; tripId?:
   return (
     <Screen>
       <ScreenHeader
-        eyebrow={`${trip.title} · Día ${trip.number} de ${trip.days} · ${dayLabel(day)}`}
-        title={trip.day_title ?? `Día ${trip.number} de ${trip.days}`}
+        eyebrow={`${trip.title} · ${t("today.day_of", { number: trip.number, days: trip.days })} · ${dayLabel(day)}`}
+        title={trip.day_title ?? t("today.day_of", { number: trip.number, days: trip.days })}
       />
       {inside === trip.id && <TripTabs id={trip.id} active="today" navigate={navigate} today />}
       {weather && <p className="travel-today-weather">{weather}</p>}
@@ -107,13 +108,13 @@ export function TodayScreen({ navigate, tripId }: { navigate: Navigate; tripId?:
         <div className="travel-today-progress" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={count}>
           <span className="travel-today-bar" style={{ "--done": `${(count / total) * 100}%` } as CSSProperties} />
           <span className="travel-today-count">
-            {count} de {total}
+            {t("stats.of", { count, total })}
           </span>
         </div>
       )}
       {coming && (
         <section className="surface travel-today-next">
-          <span className="travel-today-label">Lo siguiente</span>
+          <span className="travel-today-label">{t("today.next")}</span>
           <span className="travel-today-title">
             <Icon name={iconOf(coming)} />
             {coming.title}
@@ -126,17 +127,17 @@ export function TodayScreen({ navigate, tripId }: { navigate: Navigate; tripId?:
           {go(coming) && (
             <a className="button travel-today-go" data-variant="primary" data-block href={go(coming)!} target="_blank" rel="noreferrer">
               <Icon name="arrow-right" />
-              <span className="button-label">Ir</span>
+              <span className="button-label">{t("today.go")}</span>
             </a>
           )}
         </section>
       )}
-      {total === 0 && <Hint>Hoy no hay nada en el itinerario. Añádelo en el día a día.</Hint>}
+      {total === 0 && <Hint>{t("today.nothing")}</Hint>}
       {total > 0 && (
         <section className="travel-group">
           <GroupLabel>
-            El día
-            {found.sleeping && <span className="travel-group-detail">Duermes en {found.sleeping}</span>}
+            {t("today.the_day")}
+            {found.sleeping && <span className="travel-group-detail">{t("days.sleeping", { name: found.sleeping })}</span>}
           </GroupLabel>
           <ol className="surface travel-day">
             {found.entries.map((entry, index) => (
@@ -159,7 +160,7 @@ export function TodayScreen({ navigate, tripId }: { navigate: Navigate; tripId?:
                   )}
                 </span>
                 {go(entry) && !done[index] && (
-                  <a className="travel-today-link" href={go(entry)!} target="_blank" rel="noreferrer" aria-label={`Ir a ${entry.title}`}>
+                  <a className="travel-today-link" href={go(entry)!} target="_blank" rel="noreferrer" aria-label={t("today.go_to", { title: entry.title })}>
                     <Icon name="arrow-right" />
                   </a>
                 )}
@@ -169,13 +170,13 @@ export function TodayScreen({ navigate, tripId }: { navigate: Navigate; tripId?:
         </section>
       )}
       <Card
-        title="Diario de hoy"
-        action={{ icon: "edit", label: found.journal ? "Seguir" : "Escribir", onClick: () => setWriting(true) }}
+        title={t("today.journal")}
+        action={{ icon: "edit", label: found.journal ? t("today.journal_go_on") : t("today.journal_write"), onClick: () => setWriting(true) }}
       >
         {found.journal ? (
           <Hint lines>{found.journal}</Hint>
         ) : (
-          <Hint>Lo que pasó hoy, en tus palabras. También sin conexión: se manda al volver la red.</Hint>
+          <Hint>{t("today.journal_hint")}</Hint>
         )}
       </Card>
       {writing && (
@@ -189,7 +190,7 @@ export function TodayScreen({ navigate, tripId }: { navigate: Navigate; tripId?:
               setSpent(await saveDay({ id: trip.id }, day, body));
               setWriting(false);
             } catch (error) {
-              setSpent(error instanceof Error ? error.message : "No se ha podido guardar el diario.");
+              setSpent(error instanceof Error ? error.message : t("today.error.journal"));
             }
           }}
         />
@@ -204,21 +205,21 @@ export function TodayScreen({ navigate, tripId }: { navigate: Navigate; tripId?:
               .then(setSpending)
               .catch((error: unknown) => {
                 if (error instanceof Unauthorised) return signIn();
-                setProblem("Sin conexión no se puede abrir el gasto si el viaje no está preparado.");
+                setProblem(t("today.error.offline_spend"));
               })
           }
         >
-          Apuntar gasto
+          {t("today.note_spend")}
         </Button>
         <Button variant="tinted" icon="map" onClick={() => navigate({ screen: "day", id: trip.id, day })}>
-          El día en el mapa
+          {t("today.day_on_map")}
         </Button>
         <Button variant="secondary" icon="calendar" onClick={() => navigate({ screen: "days", id: trip.id })}>
-          Día a día
+          {t("days.title")}
         </Button>
       </div>
       {spending && (
-        <Sheet title="Apuntar gasto" onClose={() => setSpending(null)}>
+        <Sheet title={t("today.note_spend")} onClose={() => setSpending(null)}>
           <ExpenseForm
             trip={spending}
             compact
@@ -226,12 +227,12 @@ export function TodayScreen({ navigate, tripId }: { navigate: Navigate; tripId?:
             onSave={async (expense) => {
               try {
                 await addExpense(spending.id, expense);
-                setSpent(`Apuntado: ${expense.concept}.`);
+                setSpent(t("today.noted", { concept: expense.concept }));
               } catch (error) {
                 if (error instanceof Queued) setSpent(error.message);
                 else {
                   setNeedsRate(Boolean(expense.currency));
-                  setSpent(error instanceof Error ? error.message : "No se ha podido apuntar.");
+                  setSpent(error instanceof Error ? error.message : t("today.error.note"));
                   return false;
                 }
               }

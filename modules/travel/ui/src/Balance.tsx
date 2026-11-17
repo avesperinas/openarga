@@ -1,9 +1,10 @@
-import { Button, CANNOT_UNDO, ConfirmDelete, GroupLabel, Hint, IconButton } from "@openarga/ui";
+import { Button, ConfirmDelete, GroupLabel, Hint, IconButton, cannotUndo } from "@openarga/ui";
 import { useEffect, useState } from "react";
 
 import { type Balance, type Traveller, Unauthorised, addSettlement, readBalance, removeSettlement, signIn } from "./api";
 import { type Members, travellerLabel } from "./people";
 import { eurosExact } from "./words";
+import { t } from "./lang";
 
 export function BalanceSection({ tripId, version, members }: { tripId: string; version: string; members: Members }) {
   const who = (one: Traveller) => travellerLabel(one, members);
@@ -25,7 +26,7 @@ export function BalanceSection({ tripId, version, members }: { tripId: string; v
       setFound(await change);
       setProblem("");
     } catch (error) {
-      setProblem(error instanceof Error ? error.message : "No se ha podido apuntar.");
+      setProblem(error instanceof Error ? error.message : t("today.error.note"));
     }
   };
 
@@ -34,7 +35,7 @@ export function BalanceSection({ tripId, version, members }: { tripId: string; v
 
   return (
     <section className="travel-group">
-      <GroupLabel>Cuentas</GroupLabel>
+      <GroupLabel>{t("balance.title")}</GroupLabel>
       {problem && <Hint tone="warning">{problem}</Hint>}
       <div className="surface travel-balance">
         <ol className="travel-balance-people">
@@ -42,20 +43,20 @@ export function BalanceSection({ tripId, version, members }: { tripId: string; v
             <li key={one.traveller.id} data-tone={one.net_eur > 0.004 ? "owed" : one.net_eur < -0.004 ? "owes" : "even"}>
               <span className="travel-balance-name">{who(one.traveller)}</span>
               <span className="travel-balance-detail">
-                pagó {eurosExact(one.paid_eur)} · le tocaba {eurosExact(one.share_eur)}
+                {t("balance.paid_share", { paid: eurosExact(one.paid_eur), share: eurosExact(one.share_eur) })}
               </span>
               <strong className="travel-balance-net">
                 {Math.abs(one.net_eur) < 0.005
-                  ? "en paz"
+                  ? t("balance.even")
                   : one.net_eur > 0
-                    ? `le deben ${eurosExact(one.net_eur)}`
-                    : `debe ${eurosExact(-one.net_eur)}`}
+                    ? t("balance.owed", { amount: eurosExact(one.net_eur) })
+                    : t("balance.owes", { amount: eurosExact(-one.net_eur) })}
               </strong>
             </li>
           ))}
         </ol>
         {found.transfers.length > 0 && (
-          <ol className="travel-balance-transfers" aria-label="Para quedar en paz">
+          <ol className="travel-balance-transfers" aria-label={t("balance.to_settle")}>
             {found.transfers.map((one) => (
               <li key={`${one.from_traveller.id}-${one.to_traveller.id}`}>
                 <span>
@@ -74,38 +75,42 @@ export function BalanceSection({ tripId, version, members }: { tripId: string; v
                     )
                   }
                 >
-                  Hecho
+                  {t("action.done")}
                 </Button>
               </li>
             ))}
           </ol>
         )}
-        {found.transfers.length === 0 && <p className="travel-balance-even">Todos en paz.</p>}
+        {found.transfers.length === 0 && <p className="travel-balance-even">{t("balance.all_even")}</p>}
         {found.settlements.length > 0 && (
-          <ol className="travel-balance-settled" aria-label="Ya devuelto">
+          <ol className="travel-balance-settled" aria-label={t("balance.settled")}>
             {found.settlements.map((one) => (
               <li key={one.id}>
                 <span>
-                  {who(one.from_traveller)} devolvió {eurosExact(one.amount_eur)} a {who(one.to_traveller)} ·{" "}
-                  {one.settled_on}
+                  {t("balance.paid_back", {
+                    from: who(one.from_traveller),
+                    amount: eurosExact(one.amount_eur),
+                    to: who(one.to_traveller),
+                  })}{" "}
+                  · {one.settled_on}
                 </span>
-                <IconButton icon="undo" label="Deshacer la devolución" variant="plain" size="small" onClick={() => setUndoing(one)} />
+                <IconButton icon="undo" label={t("balance.undo")} variant="plain" size="small" onClick={() => setUndoing(one)} />
               </li>
             ))}
           </ol>
         )}
         {found.unassigned_eur > 0 && (
           <p className="travel-balance-even">
-            {eurosExact(found.unassigned_eur)} apuntados sin quién pagó no cuentan aquí.
+            {t("balance.unassigned", { amount: eurosExact(found.unassigned_eur) })}
           </p>
         )}
       </div>
       {undoing && (
         <ConfirmDelete
-          title="¿Deshacer la devolución?"
+          title={t("balance.undo_confirm")}
           subject={`${who(undoing.from_traveller)} → ${who(undoing.to_traveller)}, ${eurosExact(undoing.amount_eur)}`}
-          consequence={`Vuelve a deberse. ${CANNOT_UNDO}`}
-          action="Deshacer"
+          consequence={`${t("balance.undo_consequence")} ${cannotUndo()}`}
+          action={t("action.undo")}
           onCancel={() => setUndoing(null)}
           onConfirm={async () => {
             await apply(removeSettlement(tripId, undoing.id));

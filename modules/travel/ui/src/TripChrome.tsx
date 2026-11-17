@@ -5,20 +5,31 @@ import { type Trip, coverUrl } from "./api";
 import type { Navigate, Route } from "./App";
 import { lock } from "./tripApp";
 import { PHASES, dateRange, flag, nights } from "./words";
+import { plural, t } from "./lang";
 
 export type TripTab = "today" | "trip" | "days" | "tripmap" | "bookings" | "money" | "notes" | "journal" | "tripsettings";
 
-const TABS: { id: TripTab; label: string; icon: IconName }[] = [
-  { id: "trip", label: "Resumen", icon: "home" },
-  { id: "days", label: "Días", icon: "calendar" },
-  { id: "tripmap", label: "Mapa", icon: "map" },
-  { id: "bookings", label: "Reservas", icon: "ticket" },
-  { id: "money", label: "Dinero", icon: "wallet" },
-  { id: "journal", label: "Diario", icon: "book" },
-  { id: "notes", label: "Notas", icon: "note" },
-  { id: "tripsettings", label: "Ajustes", icon: "settings" },
+type Tab = { id: TripTab; readonly label: string; icon: IconName };
+
+const tab = (id: TripTab, icon: IconName): Tab => ({
+  id,
+  icon,
+  get label() {
+    return t(`tab.${id}`);
+  },
+});
+
+const TABS: Tab[] = [
+  tab("trip", "home"),
+  tab("days", "calendar"),
+  tab("tripmap", "map"),
+  tab("bookings", "ticket"),
+  tab("money", "wallet"),
+  tab("journal", "book"),
+  tab("notes", "note"),
+  tab("tripsettings", "settings"),
 ];
-const TODAY: { id: TripTab; label: string; icon: IconName } = { id: "today", label: "Hoy", icon: "today" };
+const TODAY = tab("today", "today");
 
 export function TripTabs({
   id,
@@ -38,7 +49,7 @@ export function TripTabs({
     if (current && bar.current) bar.current.scrollLeft = current.offsetLeft - bar.current.clientWidth / 2 + current.clientWidth / 2;
   }, [active]);
   return (
-    <nav ref={bar} className="travel-trip-tabs" aria-label="Secciones del viaje">
+    <nav ref={bar} className="travel-trip-tabs" aria-label={t("tab.sections")}>
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -72,11 +83,11 @@ export function TripHero({ trip, onCover }: { trip: Trip; onCover?: () => void }
       <figcaption className="travel-hero-caption">
         <span className="travel-hero-phase">{PHASES[trip.phase]}</span>
         <span className="travel-hero-dates">
-          {dateRange(trip.starts_on, trip.ends_on)} · {trip.days} días · {nights(trip.nights)}
+          {dateRange(trip.starts_on, trip.ends_on)} · {plural(trip.days, "count.days")} · {nights(trip.nights)}
         </span>
       </figcaption>
       {onCover && (
-        <button type="button" className="travel-hero-edit glass" onClick={onCover} aria-label="Cambiar la portada">
+        <button type="button" className="travel-hero-edit glass" onClick={onCover} aria-label={t("cover.change")}>
           <Icon name="camera" />
         </button>
       )}

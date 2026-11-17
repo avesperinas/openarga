@@ -1,6 +1,5 @@
 import {
   Button,
-  CANNOT_UNDO,
   ConfirmDelete,
   GroupLabel,
   Hint,
@@ -8,14 +7,16 @@ import {
   ListRow,
   Sheet,
   TextField,
+  cannotUndo,
 } from "@openarga/ui";
 import { useState } from "react";
 
 import { type OtherPlace, type Place, addOtherPlace, deleteOtherPlace } from "./api";
 import { PlacePicker } from "./PlacePicker";
 import { flag } from "./words";
+import { t } from "./lang";
 
-const where = (place: Place) => [place.region, place.country].filter(Boolean).join(", ") || "Sin situar";
+const where = (place: Place) => [place.region, place.country].filter(Boolean).join(", ") || t("other.unplaced");
 
 export function OtherPlaces({ others, onChanged }: { others: OtherPlace[]; onChanged: () => void }) {
   const [adding, setAdding] = useState(false);
@@ -24,13 +25,12 @@ export function OtherPlaces({ others, onChanged }: { others: OtherPlace[]; onCha
   return (
     <section className="travel-group">
       <GroupLabel>
-        Otros lugares
-        <span className="travel-group-detail">sin viaje apuntado</span>
+        {t("other.title")}
+        <span className="travel-group-detail">{t("other.detail")}</span>
       </GroupLabel>
       {others.length === 0 ? (
         <Hint>
-          Escapadas pequeñas o viajes tan antiguos que no recuerdas las fechas. Salen en el mapa y
-          cuentan en países y regiones, no en viajes ni noches.
+          {t("other.hint")}
         </Hint>
       ) : (
         <List>
@@ -40,14 +40,14 @@ export function OtherPlaces({ others, onChanged }: { others: OtherPlace[]; onCha
               title={`${flag(one.place.country_code)} ${one.place.name}`}
               subtitle={[where(one.place), one.note].filter(Boolean).join(" · ")}
               accessory="trash"
-              aria-label={`Quitar ${one.place.name}`}
+              aria-label={t("editor.remove", { what: one.place.name })}
               onClick={() => setRemoving(one)}
             />
           ))}
         </List>
       )}
       <Button variant="secondary" icon="plus" onClick={() => setAdding(true)}>
-        Añadir lugar
+        {t("other.add")}
       </Button>
 
       {adding && (
@@ -61,10 +61,10 @@ export function OtherPlaces({ others, onChanged }: { others: OtherPlace[]; onCha
       )}
       {removing && (
         <ConfirmDelete
-          title="¿Quitar este lugar?"
+          title={t("other.remove_confirm")}
           subject={`${removing.place.name} · ${where(removing.place)}`}
-          consequence={`Deja de contar en el mapa si no has estado allí en ningún viaje. ${CANNOT_UNDO}`}
-          action="Quitar lugar"
+          consequence={`${t("other.remove_consequence")} ${cannotUndo()}`}
+          action={t("other.remove")}
           onCancel={() => setRemoving(null)}
           onConfirm={async () => {
             await deleteOtherPlace(removing.id);
@@ -87,21 +87,21 @@ function AddSheet({ onClose, onAdded }: { onClose: () => void; onAdded: () => vo
       await addOtherPlace({ place_id: place.id, note: note.trim() || null });
       onAdded();
     } catch (error) {
-      setFailed(error instanceof Error ? error.message : "No se ha podido añadir el lugar.");
+      setFailed(error instanceof Error ? error.message : t("other.error.add"));
     }
   };
 
   return (
-    <Sheet title="Añadir lugar" onClose={onClose}>
+    <Sheet title={t("other.add")} onClose={onClose}>
       <div className="travel-sheet-stack">
         <TextField
-          label="Nota"
+          label={t("editor.note")}
           value={note}
           onChange={setNote}
-          placeholder="Con quién, hacia qué año…"
-          hint="Opcional. Escríbela antes de elegir el lugar."
+          placeholder={t("other.note_example")}
+          hint={t("other.note_hint")}
         />
-        <PlacePicker label="Lugar" onPick={(place) => void add(place)} />
+        <PlacePicker label={t("atlas.place")} onPick={(place) => void add(place)} />
         {failed && (
           <Hint tone="warning">
             {failed}

@@ -1,6 +1,6 @@
 import "@openarga/ui/notes.css";
 
-import { Button, CANNOT_UNDO, ChoiceChips, ConfirmDelete, GroupLabel, Hint, Sheet, TextField } from "@openarga/ui";
+import { Button, ChoiceChips, ConfirmDelete, GroupLabel, Hint, Sheet, TextField, cannotUndo } from "@openarga/ui";
 import { Editor, render } from "@openarga/ui/notes";
 import { useEffect, useMemo, useState } from "react";
 
@@ -16,15 +16,12 @@ import {
   updateNote,
 } from "./api";
 import { Queued } from "./offline";
+import { t } from "./lang";
 
-export const NOTE_CATEGORIES: Record<NoteCategory, string> = {
-  general: "General",
-  visa: "Visado y papeles",
-  culture: "Costumbres",
-  tips: "Consejos",
-  health: "Salud",
-  other: "Otras",
-};
+export const NOTE_CATEGORIES = {} as Record<NoteCategory, string>;
+for (const key of ["general", "visa", "culture", "tips", "health", "other"] as const) {
+  Object.defineProperty(NOTE_CATEGORIES, key, { enumerable: true, get: () => t(`note.category.${key}`) });
+}
 
 export function NotesSection({ tripId }: { tripId: string }) {
   const [found, setFound] = useState<TripNote[] | null>(null);
@@ -52,7 +49,7 @@ export function NotesSection({ tripId }: { tripId: string }) {
         setProblem(error.message);
         return true;
       }
-      setProblem(error instanceof Error ? error.message : "No se ha podido guardar.");
+      setProblem(error instanceof Error ? error.message : t("error.save"));
       return false;
     }
   };
@@ -60,7 +57,7 @@ export function NotesSection({ tripId }: { tripId: string }) {
   if (found === null) return null;
   return (
     <section className="travel-group">
-      <GroupLabel>Notas</GroupLabel>
+      <GroupLabel>{t("editor.notes")}</GroupLabel>
       {problem && <Hint tone="warning">{problem}</Hint>}
       <ol className="surface travel-day">
         {found.map((note) => (
@@ -81,20 +78,20 @@ export function NotesSection({ tripId }: { tripId: string }) {
                 <NoteBody body={note.body} />
                 <div className="travel-actions">
                   <Button variant="secondary" size="small" icon="edit" onClick={() => setEditing(note)}>
-                    Editar
+                    {t("action.edit")}
                   </Button>
                   <Button variant="plain" size="small" icon="trash" onClick={() => setRemoving(note)}>
-                    Quitar
+                    {t("action.remove")}
                   </Button>
                 </div>
               </div>
             )}
           </li>
         ))}
-        {found.length === 0 && <li className="travel-day-empty">Visado, costumbres, consejos, salud…</li>}
+        {found.length === 0 && <li className="travel-day-empty">{t("note.empty")}</li>}
         <li className="travel-day-add">
           <Button variant="plain" size="small" icon="plus" onClick={() => setEditing("new")}>
-            Nota
+            {t("editor.note")}
           </Button>
         </li>
       </ol>
@@ -111,10 +108,10 @@ export function NotesSection({ tripId }: { tripId: string }) {
       )}
       {removing && (
         <ConfirmDelete
-          title="¿Quitar la nota?"
+          title={t("note.remove_confirm")}
           subject={removing.title}
-          consequence={CANNOT_UNDO}
-          action="Quitar nota"
+          consequence={cannotUndo()}
+          action={t("note.remove")}
           onCancel={() => setRemoving(null)}
           onConfirm={async () => {
             await apply(removeNote(tripId, removing.id));
@@ -128,7 +125,7 @@ export function NotesSection({ tripId }: { tripId: string }) {
 
 function NoteBody({ body }: { body: string }) {
   const html = useMemo(() => render(body), [body]);
-  if (!body.trim()) return <p className="travel-step-detail">Sin texto.</p>;
+  if (!body.trim()) return <p className="travel-step-detail">{t("note.no_text")}</p>;
   return <div className="mn-prose travel-note-prose" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
@@ -136,10 +133,8 @@ const NO_SUGGESTIONS = () => ({ notes: [], tags: [] });
 const ignore = () => {};
 const noImages = async () => "";
 
-const CATEGORY_OPTIONS = (Object.keys(NOTE_CATEGORIES) as NoteCategory[]).map((value) => ({
-  value,
-  label: NOTE_CATEGORIES[value],
-}));
+const categoryOptions = () =>
+  (Object.keys(NOTE_CATEGORIES) as NoteCategory[]).map((value) => ({ value, label: NOTE_CATEGORIES[value] }));
 
 function NoteSheet({
   note,
@@ -156,10 +151,10 @@ function NoteSheet({
   const [busy, setBusy] = useState(false);
   return (
     <Sheet
-      title={note ? "Editar nota" : "Nueva nota"}
+      title={note ? t("note.edit") : t("note.new")}
       onClose={onClose}
       action={{
-        label: note ? "Guardar" : "Añadir nota",
+        label: note ? t("action.save") : t("note.add"),
         disabled: !title.trim() || busy,
         onClick: () => {
           setBusy(true);
@@ -168,18 +163,18 @@ function NoteSheet({
       }}
     >
       <div className="travel-sheet-stack">
-        <TextField label="Título" value={title} onChange={setTitle} placeholder="Visado, propinas, vacunas…" autoFocus />
-        <ChoiceChips label="Categoría" value={category} onChange={setCategory} options={CATEGORY_OPTIONS} />
+        <TextField label={t("editor.title")} value={title} onChange={setTitle} placeholder={t("note.title_example")} autoFocus />
+        <ChoiceChips label={t("expense.category")} value={category} onChange={setCategory} options={categoryOptions()} />
         <div className="surface travel-note-editor">
           <Editor
-            id={note?.id ?? "nueva"}
+            id={note?.id ?? "new"}
             value={body}
             onChange={setBody}
             suggestions={NO_SUGGESTIONS}
             onOpenLink={ignore}
             onTag={ignore}
             onImage={noImages}
-            placeholder="Escribe. Markdown: **negrita**, - listas, [enlaces](https://…)."
+            placeholder={t("note.body_hint")}
           />
         </div>
       </div>

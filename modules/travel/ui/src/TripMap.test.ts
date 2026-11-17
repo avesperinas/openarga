@@ -51,7 +51,7 @@ const TRIP: Itinerary = {
       items: [
         { type: "check_in", stay: hotel, leg: null, block: null },
         { type: "block", stay: null, leg: null, block: block("Parlamento", "2027-11-11", 47.507) },
-        { type: "block", stay: null, leg: null, block: block("Sin sitio", "2027-11-11", null) },
+        { type: "block", stay: null, leg: null, block: block("No place", "2027-11-11", null) },
       ],
     },
     {
@@ -64,8 +64,8 @@ const TRIP: Itinerary = {
   unscheduled: [],
 };
 
-describe("el mapa del viaje", () => {
-  it("cada día en su color, lo que tiene lugar numerado y el alojamiento una vez", () => {
+describe("the trip's map", () => {
+  it("each day in its colour, what has a place numbered and the lodging once", () => {
     const stops = tripStops(TRIP);
     expect(stops.map((one) => [one.title, one.number, one.hue])).toEqual([
       ["Hotel", null, dayHue(1)],
@@ -74,7 +74,7 @@ describe("el mapa del viaje", () => {
     ]);
   });
 
-  it("los colores de los días no repiten hasta el octavo y nunca son el gris", () => {
+  it("the days' colours do not repeat until the eighth and are never grey", () => {
     const hues = Array.from({ length: 7 }, (_, index) => dayHue(index + 1));
     expect(new Set(hues).size).toBe(7);
     expect(dayHue(8)).toBe(dayHue(1));
@@ -82,7 +82,7 @@ describe("el mapa del viaje", () => {
   });
 });
 
-describe("los sitios guardados", () => {
+describe("saved places", () => {
   const saved = (id: string, category: "beach" | "restaurant" | null): Block => ({
     ...block(id, "", 39.6),
     day: null,
@@ -90,7 +90,7 @@ describe("los sitios guardados", () => {
   });
   const WITH_SAVED: Itinerary = { ...TRIP, unscheduled: [saved("Glyfada", "beach"), saved("Taverna", "restaurant"), saved("Algo", null)] };
 
-  it("salen como marcas pequeñas en el color de su tipo, y se filtran por tipo", () => {
+  it("they show as small marks in their kind's colour, and are filtered by kind", () => {
     expect(savedStops(WITH_SAVED).map((one) => [one.title, one.quiet, one.hue])).toEqual([
       ["Glyfada", true, 6],
       ["Taverna", true, 4],
@@ -99,7 +99,7 @@ describe("los sitios guardados", () => {
     expect(savedStops(WITH_SAVED, "beach").map((one) => one.title)).toEqual(["Glyfada"]);
   });
 
-  it("los tipos con cuántos hay, en el orden de la lista y sin tipo como otro", () => {
+  it("the kinds with how many there are, in the list's order and no kind as other", () => {
     expect(savedKinds(WITH_SAVED)).toEqual([
       { category: "restaurant", count: 1 },
       { category: "beach", count: 1 },

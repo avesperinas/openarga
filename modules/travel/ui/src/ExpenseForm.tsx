@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { type Category, type ExpenseIn, type Traveller, type Trip, readConcepts, readTravellers } from "./api";
 import { travellerLabel, useMembers } from "./people";
 import { CATEGORIES, todayIso } from "./words";
+import { t } from "./lang";
 
 export const CURRENCIES = [
   "EUR", "USD", "GBP", "JPY", "CHF", "SEK", "NOK", "DKK", "ISK", "CZK", "HUF", "PLN", "RON", "TRY",
@@ -123,16 +124,16 @@ export function ExpenseForm({
   return (
     <div className="surface travel-form">
       <SegmentedControl
-        label="Cómo lo apuntas"
+        label={t("expense.how")}
         value={mode}
         onChange={setMode}
         options={[
-          { value: "paid", label: "Lo pagado" },
-          { value: "per_person", label: "Por persona (€)" },
+          { value: "paid", label: t("expense.paid") },
+          { value: "per_person", label: t("expense.per_person") },
         ]}
       />
       <SegmentedControl
-        label="Categoría"
+        label={t("expense.category")}
         value={category}
         onChange={(next) => {
           setCategory(next);
@@ -142,63 +143,63 @@ export function ExpenseForm({
       />
       {concepts && (
         <ChoiceChips
-          label="Concepto sugerido"
+          label={t("expense.suggested")}
           value={concepts[category].includes(concept) ? concept : null}
           onChange={setConcept}
           options={concepts[category].map((one) => ({ value: one, label: one }))}
         />
       )}
-      <TextField label="Concepto" value={concept} onChange={setConcept} />
+      <TextField label={t("expense.concept")} value={concept} onChange={setConcept} />
       {mode === "paid" ? (
         <>
           <div className="travel-form-row">
             <TextField
-              label="Lo pagado"
+              label={t("expense.paid")}
               inputMode="decimal"
               value={amount}
               onChange={setAmount}
               invalid={amount !== "" && value === null}
-              hint="El total, no por persona"
+              hint={t("expense.paid_hint")}
             />
             <SelectField
-              label="Moneda"
+              label={t("expense.currency")}
               value={currency}
               onChange={setCurrency}
-              options={[...CURRENCIES.map((one) => ({ value: one, label: one })), { value: OTHER, label: "Otra…" }]}
+              options={[...CURRENCIES.map((one) => ({ value: one, label: one })), { value: OTHER, label: t("expense.other_currency") }]}
             />
           </div>
           {currency === OTHER && (
-            <TextField label="Código de la moneda" value={custom} onChange={setCustom} placeholder="VND, PEN, MAD…" />
+            <TextField label={t("expense.currency_code")} value={custom} onChange={setCustom} placeholder="VND, PEN, MAD…" />
           )}
           {askRate && (
             <TextField
-              label={`Euros por 1 ${code || "unidad"}`}
+              label={t("expense.rate", { code: code || t("expense.unit") })}
               inputMode="decimal"
               value={rate}
               onChange={setRate}
-              hint="El BCE no publica el cambio de esta moneda: ponlo tú."
+              hint={t("expense.rate_hint")}
             />
           )}
           {people.length > 0 && (
             <div className="travel-field">
-              <span className="travel-field-label">Quién pagó</span>
+              <span className="travel-field-label">{t("bookings.payer")}</span>
               <ChoiceChips
-                label="Quién pagó"
+                label={t("bookings.payer")}
                 value={payer}
                 onChange={setPayer}
                 options={people.map((one) => ({ value: one.id, label: travellerLabel(one, members) }))}
               />
             </div>
           )}
-          <DateField label="Día" value={day} onChange={setDay} min={trip.starts_on} max={trip.ends_on} />
+          <DateField label={t("editor.day")} value={day} onChange={setDay} min={trip.starts_on} max={trip.ends_on} />
           {people.length > 1 && (
             <SegmentedControl
-              label="Reparto"
+              label={t("expense.split")}
               value={split}
               onChange={setSplit}
               options={[
-                { value: "equal", label: "A partes iguales" },
-                { value: "custom", label: "A medida" },
+                { value: "equal", label: t("expense.equal") },
+                { value: "custom", label: t("expense.custom") },
               ]}
             />
           )}
@@ -217,10 +218,10 @@ export function ExpenseForm({
               </div>
               <Hint tone={partsMatch ? undefined : "warning"}>
                 {value === null
-                  ? "Pon lo pagado y la parte de cada uno."
+                  ? t("expense.parts_missing")
                   : partsMatch
-                    ? "Las partes suman lo pagado."
-                    : `Las partes suman ${partsTotal.toFixed(2)} y lo pagado es ${value.toFixed(2)} ${code}.`}
+                    ? t("expense.parts_match")
+                    : t("expense.parts_differ", { parts: partsTotal.toFixed(2), paid: `${value.toFixed(2)} ${code}` })}
               </Hint>
             </>
           )}
@@ -228,18 +229,18 @@ export function ExpenseForm({
       ) : (
         <>
           <TextField
-            label="Importe por persona (€)"
+            label={t("expense.amount_per_person")}
             inputMode="decimal"
             value={amount}
             onChange={setAmount}
             invalid={amount !== "" && value === null}
           />
-          <Hint>Como en la hoja: por persona y ya en euros. Sois {trip.travellers}.</Hint>
+          <Hint>{t("expense.per_person_hint", { count: trip.travellers })}</Hint>
         </>
       )}
-      {!compact && <TextField label="Nota" value={note} onChange={setNote} />}
+      {!compact && <TextField label={t("editor.note")} value={note} onChange={setNote} />}
       <Button variant="primary" icon="plus" disabled={!ready} onClick={() => void save()}>
-        Apuntar gasto
+        {t("today.note_spend")}
       </Button>
     </div>
   );

@@ -20,16 +20,18 @@ import { Pending, useLoad } from "./Loads";
 import { Queued } from "./offline";
 import { TripTabs } from "./TripChrome";
 import { KINDS, MODES, PLACE_CATEGORIES, categoryOf, dayHue, dayLabel, distance, duration, hours, mapsLink } from "./words";
+import { t } from "./lang";
 
 const StreetMap = lazy(() => import("@openarga/ui/street-map").then((found) => ({ default: found.StreetMap })));
 
 const MAP_PADDING = { top: 72, bottom: 190, left: 40, right: 40 };
 
-const PROFILES: { value: Profile; label: string }[] = [
-  { value: "foot", label: "A pie" },
-  { value: "bike", label: "Bici" },
-  { value: "car", label: "Coche" },
-];
+const PROFILES: { value: Profile; readonly label: string }[] = (["foot", "bike", "car"] as const).map((value) => ({
+  value,
+  get label() {
+    return t(`map.profile.${value}`);
+  },
+}));
 
 export interface TripStop {
   id: string;
@@ -142,7 +144,7 @@ export function TripMapScreen({ id, navigate }: { id: string; navigate: Navigate
     } catch (error) {
       if (error instanceof Queued) return setProblem(error.message);
       if (error instanceof Unauthorised) return signIn();
-      setProblem(error instanceof Error ? error.message : "No se ha podido llevar al día.");
+      setProblem(error instanceof Error ? error.message : t("map.error.to_day"));
     }
   };
 
@@ -163,13 +165,13 @@ export function TripMapScreen({ id, navigate }: { id: string; navigate: Navigate
   const shown = [...(day ? all.filter((one) => one.day === day) : all), ...(showSaved ? saved : [])];
   const chosen = found?.days.find((one) => one.day === day) ?? null;
   const open = [...all, ...saved].find((one) => one.id === selected) ?? null;
-  const back = { label: "Viaje", onClick: () => navigate({ screen: "trip", id }) };
+  const back = { label: t("trip.title"), onClick: () => navigate({ screen: "trip", id }) };
 
   if (!found) {
     return (
       <Screen>
-        <ScreenHeader title="Mapa" back={back} />
-        <Pending found={loaded.found} label="Cargando el mapa" />
+        <ScreenHeader title={t("days.map")} back={back} />
+        <Pending found={loaded.found} label={t("map.loading")} />
       </Screen>
     );
   }
@@ -177,11 +179,11 @@ export function TripMapScreen({ id, navigate }: { id: string; navigate: Navigate
   const kinds = savedKinds(found);
   return (
     <main className="travel-whole-map-screen" data-panel={panel || undefined}>
-      <ScreenHeader eyebrow={found.title} title={chosen ? (chosen.title ?? `Día ${chosen.number}`) : "Mapa"} back={back} />
+      <ScreenHeader eyebrow={found.title} title={chosen ? (chosen.title ?? t("days.day", { number: chosen.number })) : t("days.map")} back={back} />
       <TripTabs id={id} active="tripmap" navigate={navigate} />
       {problem && <Hint tone="warning">{problem}</Hint>}
       {all.length === 0 && saved.length === 0 ? (
-        <Hint>Aún no hay sitios con lugar. Añade dónde duermes o lo que vas a ver, y aquí sale el viaje entero.</Hint>
+        <Hint>{t("map.empty")}</Hint>
       ) : (
         <div className="travel-whole-map-body">
         <SideList
@@ -194,7 +196,7 @@ export function TripMapScreen({ id, navigate }: { id: string; navigate: Navigate
           }}
         />
         <div className="travel-whole-map">
-          <Suspense fallback={<Skeleton label="Cargando el mapa" />}>
+          <Suspense fallback={<Skeleton label={t("map.loading")} />}>
             <StreetMap
               tiles="/api/travel/tiles/{z}/{x}/{y}"
               glyphs="/travel/map/"
@@ -204,13 +206,13 @@ export function TripMapScreen({ id, navigate }: { id: string; navigate: Navigate
               padding={MAP_PADDING}
               selected={selected}
               onSelect={setSelected}
-              label={chosen ? `Mapa del día ${chosen.number}` : `Mapa de ${found.title}`}
+              label={chosen ? t("map.of_day", { number: chosen.number }) : t("trip.map_of", { title: found.title })}
             />
           </Suspense>
           <div className="travel-whole-map-controls">
             {chosen && (
               <div className="travel-whole-map-route glass">
-                <SegmentedControl label="Cómo te mueves" value={profile} onChange={setProfile} options={PROFILES} />
+                <SegmentedControl label={t("map.profile")} value={profile} onChange={setProfile} options={PROFILES} />
                 {route && route.distance_m !== null && route.duration_s !== null && (
                   <span className="travel-whole-map-total">
                     {distance(route.distance_m)} · {duration(route.duration_s)}
@@ -218,7 +220,7 @@ export function TripMapScreen({ id, navigate }: { id: string; navigate: Navigate
                 )}
               </div>
             )}
-            <div className="travel-day-chips" role="group" aria-label="Qué día">
+            <div className="travel-day-chips" role="group" aria-label={t("map.which_day")}>
               <button
                 type="button"
                 className="travel-day-chip glass"
@@ -228,7 +230,7 @@ export function TripMapScreen({ id, navigate }: { id: string; navigate: Navigate
                   setSelected(null);
                 }}
               >
-                Todos
+                {t("map.all")}
               </button>
               {found.days.map((one) => (
                 <button
@@ -242,7 +244,7 @@ export function TripMapScreen({ id, navigate }: { id: string; navigate: Navigate
                     setSelected(null);
                   }}
                 >
-                  Día {one.number} · {dayLabel(one.day)}
+                  {t("days.day", { number: one.number })} · {dayLabel(one.day)}
                 </button>
               ))}
             </div>
@@ -254,7 +256,7 @@ export function TripMapScreen({ id, navigate }: { id: string; navigate: Navigate
             aria-expanded={panel}
             onClick={() => setPanel(!panel)}
           >
-            <Icon name="bookmark" /> Guardados{found.unscheduled.length ? ` · ${found.unscheduled.length}` : ""}
+            <Icon name="bookmark" /> {t("map.saved")}{found.unscheduled.length ? ` · ${found.unscheduled.length}` : ""}
           </button>
           )}
           {panel && (
@@ -273,7 +275,7 @@ export function TripMapScreen({ id, navigate }: { id: string; navigate: Navigate
           {open && (
             <StopCard
               stop={open}
-              days={found.days.map((one) => ({ value: one.day, label: `Día ${one.number} · ${dayLabel(one.day)}` }))}
+              days={found.days.map((one) => ({ value: one.day, label: `${t("days.day", { number: one.number })} · ${dayLabel(one.day)}` }))}
               onClose={() => setSelected(null)}
               onDay={() => navigate({ screen: "days", id })}
               onToDay={(target) => open.block && void toDay(open.block.id, target)}
@@ -299,12 +301,12 @@ function SideList({
 }) {
   const days = day ? itinerary.days.filter((one) => one.day === day) : itinerary.days;
   return (
-    <aside className="travel-side-list" aria-label="Día a día">
+    <aside className="travel-side-list" aria-label={t("days.title")}>
       {days.map((one) => (
         <section key={one.day} className="travel-side-day">
           <GroupLabel>
             <span className="travel-day-dot" data-hue={dayHue(one.number)} aria-hidden />
-            Día {one.number} · {dayLabel(one.day)}
+            {t("days.day", { number: one.number })} · {dayLabel(one.day)}
             {one.title && <span className="travel-side-day-name">{one.title}</span>}
           </GroupLabel>
           <ol className="travel-side-items">
@@ -316,7 +318,7 @@ function SideList({
                 ? block.title
                 : item.leg
                   ? `${item.leg.from_place.name} → ${item.leg.to_place.name}`
-                  : `${item.type === "check_out" ? "Sales de" : "Llegas a"} ${item.stay?.accommodation ?? item.stay?.place.name ?? ""}`;
+                  : t(item.type === "check_out" ? "days.leave" : "days.arrive", { name: item.stay?.accommodation ?? item.stay?.place.name ?? "" });
               const icon = block
                 ? block.place
                   ? categoryOf(block.place).icon
@@ -376,28 +378,28 @@ function SavedPanel({
       blocks: itinerary.unscheduled.filter((block) => (block.place?.category ?? "other") === one.category),
     }));
   return (
-    <aside className="travel-saved-panel surface" aria-label="Sitios guardados">
+    <aside className="travel-saved-panel surface" aria-label={t("map.saved_places")}>
       <header className="travel-saved-head">
-        <span className="travel-stop-card-title">Guardados</span>
+        <span className="travel-stop-card-title">{t("map.saved")}</span>
         <button
           type="button"
           className="travel-day-chip"
           aria-pressed={showSaved}
           onClick={() => onShowSaved(!showSaved)}
         >
-          En el mapa
+          {t("map.on_map")}
         </button>
-        <button type="button" className="travel-stop-card-close" aria-label="Cerrar" onClick={onClose}>
+        <button type="button" className="travel-stop-card-close" aria-label={t("action.close")} onClick={onClose}>
           <Icon name="close" />
         </button>
       </header>
       {kinds.length === 0 ? (
         <p className="travel-stop-card-notes">
-          Nada guardado aún. Desde «Cerca» o al añadir algo sin día, se queda aquí esperando hueco.
+          {t("map.saved_empty")}
         </p>
       ) : (
         <>
-          <div className="travel-saved-kinds" role="group" aria-label="Qué tipo">
+          <div className="travel-saved-kinds" role="group" aria-label={t("map.which_kind")}>
             {kinds.map((one) => (
               <button
                 key={one.category}
@@ -470,30 +472,30 @@ function StopCard({
         </span>
         <span className="travel-step-text">
           <span className="travel-stop-card-kind">
-            {[kind?.label ?? "Alojamiento", block?.starts_at && hours(block.starts_at, block.ends_at)].filter(Boolean).join(" · ")}
+            {[kind?.label ?? t("editor.lodging"), block?.starts_at && hours(block.starts_at, block.ends_at)].filter(Boolean).join(" · ")}
           </span>
           <span className="travel-stop-card-title">{stop.title}</span>
           <span className="travel-step-detail" data-hue={stop.day ? stop.hue : undefined}>
-            {stop.day ? `Día ${stop.dayNumber} · ${dayLabel(stop.day)}` : "Guardado, sin día"}
+            {stop.day ? `${t("days.day", { number: stop.dayNumber })} · ${dayLabel(stop.day)}` : t("map.saved_undated")}
           </span>
         </span>
-        <button type="button" className="travel-stop-card-close" aria-label="Cerrar" onClick={onClose}>
+        <button type="button" className="travel-stop-card-close" aria-label={t("action.close")} onClick={onClose}>
           <Icon name="close" />
         </button>
       </header>
       {block?.notes && <p className="travel-stop-card-notes">{block.notes}</p>}
       {stop.day === null && days.length > 0 && (
         <div className="travel-stop-card-today">
-          <SelectField label="A qué día" value={target} onChange={setTarget} options={days} hideLabel />
+          <SelectField label={t("map.to_which_day")} value={target} onChange={setTarget} options={days} hideLabel />
           <Button variant="primary" size="small" icon="calendar" onClick={() => onToDay(target)}>
-            A un día
+            {t("map.to_a_day")}
           </Button>
         </div>
       )}
       <div className="travel-actions">
         {stop.day !== null && (
           <Button variant="secondary" size="small" icon="list" onClick={onDay}>
-            Ver en el día
+            {t("map.see_in_day")}
           </Button>
         )}
         {place?.lat != null && place.lon != null && (

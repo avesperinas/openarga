@@ -1,46 +1,48 @@
 import type { IconName } from "@openarga/ui";
 
 import type { Category, Kind, Mode, Phase, PlaceCategory } from "./api";
+import { currentZone, intl, plural, t } from "./lang";
 
-export const MODES: Record<Mode, { label: string; icon: IconName }> = {
-  plane: { label: "Avión", icon: "plane" },
-  train: { label: "Tren", icon: "train" },
-  car: { label: "Coche", icon: "car" },
-  bus: { label: "Bus", icon: "bus" },
-  boat: { label: "Barco", icon: "boat" },
+function labels<K extends string>(keys: K[], prefix: string): Record<K, string> {
+  const found = {} as Record<K, string>;
+  for (const key of keys) Object.defineProperty(found, key, { enumerable: true, get: () => t(`${prefix}.${key}`) });
+  return found;
+}
+
+export const MODES: Record<Mode, { readonly label: string; icon: IconName }> = {
+  plane: { get label() { return t("mode.plane"); }, icon: "plane" },
+  train: { get label() { return t("mode.train"); }, icon: "train" },
+  car: { get label() { return t("mode.car"); }, icon: "car" },
+  bus: { get label() { return t("mode.bus"); }, icon: "bus" },
+  boat: { get label() { return t("mode.boat"); }, icon: "boat" },
 };
 
-export const PHASES: Record<Phase, string> = {
-  plan: "Plan",
-  upcoming: "Confirmado",
-  ongoing: "En curso",
-  done: "Hecho",
+export const PHASES: Record<Phase, string> = labels(["plan", "upcoming", "ongoing", "done"], "phase");
+
+export const KINDS: Record<Kind, { readonly label: string; icon: IconName }> = {
+  activity: { get label() { return t("kind.activity"); }, icon: "pin" },
+  transport: { get label() { return t("kind.transport"); }, icon: "car" },
+  meal: { get label() { return t("kind.meal"); }, icon: "basket" },
+  accommodation: { get label() { return t("kind.accommodation"); }, icon: "home" },
+  free_time: { get label() { return t("kind.free_time"); }, icon: "sun" },
+  other: { get label() { return t("kind.other"); }, icon: "note" },
 };
 
-export const KINDS: Record<Kind, { label: string; icon: IconName }> = {
-  activity: { label: "Visita", icon: "pin" },
-  transport: { label: "Transporte", icon: "car" },
-  meal: { label: "Comida", icon: "basket" },
-  accommodation: { label: "Alojamiento", icon: "home" },
-  free_time: { label: "Libre", icon: "sun" },
-  other: { label: "Otro", icon: "note" },
-};
-
-export const PLACE_CATEGORIES: Record<PlaceCategory, { label: string; icon: IconName; hue: Hue }> = {
-  restaurant: { label: "Restaurante", icon: "food", hue: 4 },
-  cafe: { label: "Cafetería", icon: "cup", hue: 3 },
-  market: { label: "Shopping", icon: "basket", hue: 3 },
-  nightlife: { label: "Bares y noche", icon: "party", hue: 7 },
-  beach: { label: "Playa", icon: "umbrella", hue: 6 },
-  nature: { label: "Naturaleza", icon: "mountain", hue: 2 },
-  viewpoint: { label: "Mirador", icon: "binoculars", hue: 5 },
-  culture: { label: "Museos y cultura", icon: "landmark", hue: 1 },
-  castle: { label: "Castillos y ruinas", icon: "castle", hue: 8 },
-  town: { label: "Pueblo o ciudad", icon: "home", hue: 2 },
-  shopping: { label: "Compras", icon: "bag", hue: 7 },
-  parking: { label: "Aparcamiento", icon: "parking", hue: 1 },
-  lodging: { label: "Alojamiento", icon: "bed", hue: 5 },
-  other: { label: "Otro", icon: "pin", hue: 8 },
+export const PLACE_CATEGORIES: Record<PlaceCategory, { readonly label: string; icon: IconName; hue: Hue }> = {
+  restaurant: { get label() { return t("place.restaurant"); }, icon: "food", hue: 4 },
+  cafe: { get label() { return t("place.cafe"); }, icon: "cup", hue: 3 },
+  market: { get label() { return t("place.market"); }, icon: "basket", hue: 3 },
+  nightlife: { get label() { return t("place.nightlife"); }, icon: "party", hue: 7 },
+  beach: { get label() { return t("place.beach"); }, icon: "umbrella", hue: 6 },
+  nature: { get label() { return t("place.nature"); }, icon: "mountain", hue: 2 },
+  viewpoint: { get label() { return t("place.viewpoint"); }, icon: "binoculars", hue: 5 },
+  culture: { get label() { return t("place.culture"); }, icon: "landmark", hue: 1 },
+  castle: { get label() { return t("place.castle"); }, icon: "castle", hue: 8 },
+  town: { get label() { return t("place.town"); }, icon: "home", hue: 2 },
+  shopping: { get label() { return t("place.shopping"); }, icon: "bag", hue: 7 },
+  parking: { get label() { return t("place.parking"); }, icon: "parking", hue: 1 },
+  lodging: { get label() { return t("place.lodging"); }, icon: "bed", hue: 5 },
+  other: { get label() { return t("place.other"); }, icon: "pin", hue: 8 },
 };
 
 export type Hue = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
@@ -70,65 +72,44 @@ export function hours(starts: string | null, ends: string | null = null): string
   return ends ? `${a}–${ends.slice(0, 5)}` : a;
 }
 
-export const CATEGORIES: Record<Category, string> = {
-  transport: "Transporte",
-  lodging: "Alojamiento",
-  other: "Gastos",
-};
+export const CATEGORIES: Record<Category, string> = labels(["transport", "lodging", "other"], "spend");
 
-const DAY = new Intl.DateTimeFormat("es-ES", { day: "numeric", month: "short", timeZone: "UTC" });
-const DAY_YEAR = new Intl.DateTimeFormat("es-ES", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  timeZone: "UTC",
-});
-const WEEKDAY = new Intl.DateTimeFormat("es-ES", {
-  weekday: "short",
-  day: "numeric",
-  month: "short",
-  timeZone: "UTC",
-});
+const DAY: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", timeZone: "UTC" };
+const DAY_YEAR: Intl.DateTimeFormatOptions = { ...DAY, year: "numeric" };
+const WEEKDAY: Intl.DateTimeFormatOptions = { ...DAY, weekday: "short" };
+const formatted = (options: Intl.DateTimeFormatOptions, date: Date) => new Intl.DateTimeFormat(intl(), options).format(date);
 
 const at = (day: string) => new Date(`${day}T00:00:00Z`);
-const tidy = (text: string) => text.replace(/\./g, "");
+const tidy = (text: string) => text.replace(/\./g, "").replace(",", "");
 
 export function dateRange(starts: string, ends: string): string {
   const a = at(starts);
   const b = at(ends);
-  if (starts === ends) return tidy(DAY_YEAR.format(a));
+  if (starts === ends) return tidy(formatted(DAY_YEAR, a));
   if (a.getUTCFullYear() !== b.getUTCFullYear()) {
-    return `${tidy(DAY_YEAR.format(a))} – ${tidy(DAY_YEAR.format(b))}`;
+    return `${tidy(formatted(DAY_YEAR, a))} – ${tidy(formatted(DAY_YEAR, b))}`;
   }
   if (a.getUTCMonth() === b.getUTCMonth()) {
-    return `${a.getUTCDate()}–${tidy(DAY_YEAR.format(b))}`;
+    const end = tidy(formatted(DAY_YEAR, b));
+    return end.startsWith(String(b.getUTCDate())) ? `${a.getUTCDate()}–${end}` : `${tidy(formatted(DAY, a))} – ${end}`;
   }
-  return `${tidy(DAY.format(a))} – ${tidy(DAY_YEAR.format(b))}`;
+  return `${tidy(formatted(DAY, a))} – ${tidy(formatted(DAY_YEAR, b))}`;
 }
 
-export const dayLabel = (day: string) => tidy(WEEKDAY.format(at(day)));
+export const dayLabel = (day: string) => tidy(formatted(WEEKDAY, at(day)));
 
-export function nights(count: number): string {
-  return count === 1 ? "1 noche" : `${count} noches`;
-}
+export const nights = (count: number): string => plural(count, "count.nights");
 
-export function trips(count: number): string {
-  return count === 1 ? "1 viaje" : `${count} viajes`;
-}
+export const trips = (count: number): string => plural(count, "count.trips");
 
-const EUROS = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
-const EUROS_CENTS = new Intl.NumberFormat("es-ES", {
-  style: "currency",
-  currency: "EUR",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-const WHOLE = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0 });
+const number = (value: number, options: Intl.NumberFormatOptions) => new Intl.NumberFormat(intl(), options).format(value);
+const MONEY = { style: "currency", currency: "EUR" } as const;
 
-export const euros = (value: number) => EUROS.format(value);
-export const eurosExact = (value: number) => EUROS_CENTS.format(value);
-export const whole = (value: number) => WHOLE.format(value);
-export const km = (value: number) => `${WHOLE.format(value)} km`;
+export const euros = (value: number) => number(value, { ...MONEY, maximumFractionDigits: 0 });
+export const eurosExact = (value: number) =>
+  number(value, { ...MONEY, minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const whole = (value: number) => number(value, { maximumFractionDigits: 0 });
+export const km = (value: number) => `${whole(value)} km`;
 
 export function flag(code: string | null): string {
   if (!code || !/^[A-Z]{2}$/.test(code)) return "";
@@ -149,14 +130,12 @@ export function addDays(day: string, count: number): string {
   return moved.toISOString().slice(0, 10);
 }
 
-export function todayIso(now: Date = new Date()): string {
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
+export const todayIso = (now: Date = new Date(), zone: string = currentZone()): string =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 
 export function distance(metres: number): string {
   if (metres < 1000) return `${Math.round(metres / 10) * 10} m`;
-  return `${(metres / 1000).toLocaleString("es-ES", { maximumFractionDigits: 1 })} km`;
+  return `${number(metres / 1000, { maximumFractionDigits: 1 })} km`;
 }
 
 export function duration(seconds: number): string {
@@ -166,13 +145,13 @@ export function duration(seconds: number): string {
   return rest ? `${Math.floor(minutes / 60)} h ${rest} min` : `${minutes / 60} h`;
 }
 
-export const MONTHS_SHORT = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+export const monthShort = (month: number): string =>
+  tidy(new Intl.DateTimeFormat(intl(), { month: "short", timeZone: "UTC" }).format(new Date(Date.UTC(2000, month - 1, 1))));
 
 export function daysRange(min: number | null, max: number | null): string | null {
   if (min === null && max === null) return null;
-  if (min !== null && max !== null && min !== max) return `${min}–${max} días`;
-  const one = (min ?? max)!;
-  return `${one} día${one === 1 ? "" : "s"}`;
+  if (min !== null && max !== null && min !== max) return t("count.days.range", { min, max });
+  return plural((min ?? max)!, "count.days");
 }
 
 export function monthsLabel(months: number[]): string {
@@ -184,12 +163,12 @@ export function monthsLabel(months: number[]): string {
     else runs.push([month, month]);
   }
   return runs
-    .map(([a, b]) => (a === b ? MONTHS_SHORT[a - 1] : `${MONTHS_SHORT[a - 1]}–${MONTHS_SHORT[b - 1]}`))
+    .map(([a, b]) => (a === b ? monthShort(a) : `${monthShort(a)}–${monthShort(b)}`))
     .join(", ");
 }
 
 export function paidLine(expense: { amount?: number | null; currency?: string; fx_rate?: number | null }): string | null {
   if (expense.amount == null || !expense.currency || (expense.currency === "EUR" && expense.fx_rate == null)) return null;
-  const amount = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 2 }).format(expense.amount);
+  const amount = number(expense.amount, { maximumFractionDigits: 2 });
   return `${amount} ${expense.currency}`;
 }

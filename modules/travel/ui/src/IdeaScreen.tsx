@@ -1,6 +1,6 @@
 import {
   Button,
-  CANNOT_UNDO,
+  cannotUndo,
   ConfirmDelete,
   GroupLabel,
   Hint,
@@ -32,7 +32,8 @@ import { Pending, useLoad } from "./Loads";
 import { PlacePicker } from "./PlacePicker";
 import { IdeaSheet, PlanSheet } from "./IdeaSheet";
 import { SharePicker } from "./SharePicker";
-import { MONTHS_SHORT, PHASES, daysRange, euros, flag, monthsLabel, where } from "./words";
+import { PHASES, daysRange, euros, flag, monthShort, monthsLabel, where } from "./words";
+import { t } from "./lang";
 
 export function IdeaScreen({ id, navigate, onChanged }: { id: string; navigate: Navigate; onChanged: () => void }) {
   const loaded = useLoad<Idea>(`idea/${id}`, () => readIdea(id));
@@ -48,7 +49,7 @@ export function IdeaScreen({ id, navigate, onChanged }: { id: string; navigate: 
 
   const fail = (error: unknown) => {
     if (error instanceof Unauthorised) return signIn();
-    setProblem(error instanceof Error ? error.message : "No se ha podido guardar.");
+    setProblem(error instanceof Error ? error.message : t("error.save"));
   };
   const apply = async (change: Promise<Idea>) => {
     try {
@@ -68,26 +69,26 @@ export function IdeaScreen({ id, navigate, onChanged }: { id: string; navigate: 
       .catch(() => setSpaces([]));
   }, [id]);
 
-  const back = { label: "Planes", onClick: () => navigate({ screen: "plans" }) };
+  const back = { label: t("nav.plans"), onClick: () => navigate({ screen: "plans" }) };
   if (!idea) {
     return (
       <Screen>
-        <ScreenHeader title="Idea" back={back} />
-        <Pending found={loaded.found} label="Cargando la idea" />
+        <ScreenHeader title={t("trips.idea")} back={back} />
+        <Pending found={loaded.found} label={t("idea.loading")} />
       </Screen>
     );
   }
 
   const located = idea.places.filter((one) => one.place.lat !== null && one.place.lon !== null);
   const facts = [
-    idea.budget_eur !== null ? `${euros(idea.budget_eur)} por persona` : null,
+    idea.budget_eur !== null ? t("trips.per_person", { amount: euros(idea.budget_eur) }) : null,
     daysRange(idea.days_min, idea.days_max),
     idea.months.length ? monthsLabel(idea.months) : null,
   ].filter(Boolean);
 
   return (
     <Screen>
-      <ScreenHeader eyebrow={`Idea${idea.archived ? " · Archivada" : ""}`} title={idea.title} back={back} />
+      <ScreenHeader eyebrow={idea.archived ? `${t("trips.idea")} · ${t("idea.archived")}` : t("trips.idea")} title={idea.title} back={back} />
       {problem && <Hint tone="warning">{problem}</Hint>}
       {located.length > 0 && (
         <div className="surface travel-trip-map">
@@ -104,14 +105,14 @@ export function IdeaScreen({ id, navigate, onChanged }: { id: string; navigate: 
             }))}
             routes={[]}
             focus={located.map((one) => [one.place.lon!, one.place.lat!] as [number, number])}
-            label={`Destinos de ${idea.title}`}
+            label={t("idea.places_of", { title: idea.title })}
           />
         </div>
       )}
       {facts.length > 0 && <p className="travel-idea-facts">{facts.join(" · ")}</p>}
       {idea.months.length > 0 && (
-        <ol className="travel-months" aria-label="Meses buenos">
-          {MONTHS_SHORT.map((name, index) => (
+        <ol className="travel-months" aria-label={t("idea.months")}>
+          {Array.from({ length: 12 }, (_, index) => monthShort(index + 1)).map((name, index) => (
             <li key={name} data-good={idea.months.includes(index + 1) || undefined}>
               {name}
             </li>
@@ -138,7 +139,7 @@ export function IdeaScreen({ id, navigate, onChanged }: { id: string; navigate: 
 
       <section className="travel-group">
         <GroupLabel>
-          Destinos
+          {t("idea.places")}
           {idea.countries.length > 0 && (
             <span className="travel-group-detail">{idea.countries.map(flag).join(" ")}</span>
           )}
@@ -152,19 +153,19 @@ export function IdeaScreen({ id, navigate, onChanged }: { id: string; navigate: 
                 </span>
                 <span className="travel-step-detail">{[where(one.place), one.note].filter(Boolean).join(" · ")}</span>
               </span>
-              <IconButton icon="trash" label={`Quitar ${one.place.name}`} variant="plain" size="small" onClick={() => setRemoving(one)} />
+              <IconButton icon="trash" label={t("editor.remove", { what: one.place.name })} variant="plain" size="small" onClick={() => setRemoving(one)} />
             </li>
           ))}
-          {idea.places.length === 0 && <li className="travel-day-empty">Aún sin destinos</li>}
+          {idea.places.length === 0 && <li className="travel-day-empty">{t("idea.no_places")}</li>}
           <li className="travel-day-add">
             <Button variant="plain" size="small" icon="plus" onClick={() => setAdding(!adding)}>
-              Destino
+              {t("idea.place")}
             </Button>
           </li>
         </ol>
         {adding && (
           <PlacePicker
-            label="Destino"
+            label={t("idea.place")}
             onPick={async (place) => {
               if (await apply(addIdeaPlace(idea.id, place.id))) setAdding(false);
             }}
@@ -174,7 +175,7 @@ export function IdeaScreen({ id, navigate, onChanged }: { id: string; navigate: 
 
       {idea.trips.length > 0 && (
         <section className="travel-group">
-          <GroupLabel>Viajes que salieron de aquí</GroupLabel>
+          <GroupLabel>{t("idea.trips")}</GroupLabel>
           <ol className="surface travel-day">
             {idea.trips.map((trip) => (
               <li key={trip.id} className="travel-block">
@@ -194,28 +195,28 @@ export function IdeaScreen({ id, navigate, onChanged }: { id: string; navigate: 
 
       {idea.mine && (
         <section className="travel-group">
-          <GroupLabel>Compartida</GroupLabel>
+          <GroupLabel>{t("idea.shared")}</GroupLabel>
           <SharePicker trip={idea} spaces={spaces} onChoose={async (space) => void (await apply(shareIdea(idea.id, space)))} />
         </section>
       )}
 
       <div className="travel-actions">
         <Button variant="primary" icon="calendar" onClick={() => setPlanning(true)}>
-          Pasar a plan
+          {t("idea.to_plan")}
         </Button>
         <Button variant="secondary" icon="edit" onClick={() => setEditing(true)}>
-          Editar
+          {t("action.edit")}
         </Button>
         <Button
           variant="secondary"
           icon={idea.archived ? "undo" : undefined}
           onClick={() => void apply(archiveIdea(idea.id, !idea.archived))}
         >
-          {idea.archived ? "Sacar del archivo" : "Archivar"}
+          {idea.archived ? t("action.unarchive") : t("action.archive")}
         </Button>
         {idea.mine && (
           <Button variant="destructive" icon="trash" onClick={() => setDeleting(true)}>
-            Borrar idea
+            {t("idea.delete")}
           </Button>
         )}
       </div>
@@ -247,10 +248,10 @@ export function IdeaScreen({ id, navigate, onChanged }: { id: string; navigate: 
       )}
       {removing && (
         <ConfirmDelete
-          title="¿Quitar el destino?"
+          title={t("idea.remove_place_confirm")}
           subject={removing.place.name}
-          consequence="El lugar sigue guardado."
-          action="Quitar"
+          consequence={t("idea.remove_place_consequence")}
+          action={t("action.remove")}
           onCancel={() => setRemoving(null)}
           onConfirm={async () => {
             await apply(removeIdeaPlace(idea.id, removing.id));
@@ -260,10 +261,10 @@ export function IdeaScreen({ id, navigate, onChanged }: { id: string; navigate: 
       )}
       {deleting && (
         <ConfirmDelete
-          title="¿Borrar la idea?"
+          title={t("idea.delete_confirm")}
           subject={idea.title}
-          consequence={`Se borran sus destinos; los viajes que salieron de ella se quedan. ${CANNOT_UNDO}`}
-          action="Borrar idea"
+          consequence={`${t("idea.delete_consequence")} ${cannotUndo()}`}
+          action={t("idea.delete")}
           onCancel={() => setDeleting(false)}
           onConfirm={async () => {
             await deleteIdea(idea.id);

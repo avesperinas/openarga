@@ -1,9 +1,9 @@
 import { mutate } from "@openarga/app";
 import {
   Button,
-  CANNOT_UNDO,
   ChoiceChips,
   ConfirmDelete,
+  cannotUndo,
   GroupLabel,
   Hint,
   Icon,
@@ -58,6 +58,7 @@ import {
   hours,
   mapsLink,
 } from "./words";
+import { t } from "./lang";
 
 type Editing = { block: Block | null; slot: Slot };
 type Drag = { id: string; from: Slot; startY: number; dy: number; maxScroll: number };
@@ -111,7 +112,7 @@ export function DaysScreen({ id, navigate }: { id: string; navigate: Navigate })
 
   const fail = useCallback((error: unknown) => {
     if (error instanceof Unauthorised) return signIn();
-    setProblem(error instanceof Error ? error.message : "No se ha podido guardar.");
+    setProblem(error instanceof Error ? error.message : t("error.save"));
   }, []);
 
   const apply = useCallback(
@@ -139,12 +140,12 @@ export function DaysScreen({ id, navigate }: { id: string; navigate: Navigate })
     void apply(moveBlock(id, blockId, slot, index));
   };
 
-  const back = { label: "Viaje", onClick: () => navigate({ screen: "trip", id }) };
+  const back = { label: t("trip.title"), onClick: () => navigate({ screen: "trip", id }) };
   if (!found) {
     return (
       <Screen>
-        <ScreenHeader title="Día a día" back={back} />
-        <Pending found={loaded.found} label="Cargando el itinerario" />
+        <ScreenHeader title={t("days.title")} back={back} />
+        <Pending found={loaded.found} label={t("days.loading")} />
       </Screen>
     );
   }
@@ -211,7 +212,7 @@ export function DaysScreen({ id, navigate }: { id: string; navigate: Navigate })
       <button
         type="button"
         className="travel-block-handle"
-        aria-label={`Mover ${block.title}. Flechas arriba y abajo.`}
+        aria-label={t("days.move", { title: block.title })}
         onPointerDown={(event) => grab(event, block)}
         onPointerMove={follow}
         onPointerUp={drop}
@@ -249,7 +250,7 @@ export function DaysScreen({ id, navigate }: { id: string; navigate: Navigate })
                 block.place &&
                   `${flag(block.place.country_code)}${block.place.name === block.title ? "" : ` ${block.place.name}`}`,
                 block.notes,
-                block.confirmation && `Reserva ${block.confirmation}`,
+                block.confirmation && t("days.booking", { code: block.confirmation }),
               ]
                 .filter(Boolean)
                 .join(" · ")}
@@ -263,7 +264,7 @@ export function DaysScreen({ id, navigate }: { id: string; navigate: Navigate })
           href={mapsLink(block.place.lat, block.place.lon, block.place.name)}
           target="_blank"
           rel="noreferrer"
-          aria-label={`Abrir ${block.place.name} en Maps`}
+          aria-label={t("days.open_maps", { name: block.place.name })}
         >
           <Icon name="external" />
         </a>
@@ -299,20 +300,20 @@ export function DaysScreen({ id, navigate }: { id: string; navigate: Navigate })
       >
         {rows}
         {blocks.length === 0 && fixed.length === 0 && marker < 0 && (
-          <li className="travel-day-empty">{slot === null ? "Nada guardado sin día" : "Nada aún"}</li>
+          <li className="travel-day-empty">{slot === null ? t("days.nothing_undated") : t("days.nothing_yet")}</li>
         )}
         <li className="travel-day-add">
           <Button variant="plain" size="small" icon="plus" onClick={() => setEditing({ block: null, slot })}>
-            Añadir
+            {t("action.add")}
           </Button>
           {slot !== null && (
             <Button variant="plain" size="small" icon="map" onClick={() => navigate({ screen: "day", id, day: slot })}>
-              Mapa
+              {t("days.map")}
             </Button>
           )}
           {around && (
             <Button variant="plain" size="small" icon="search" onClick={() => setNear(around)}>
-              Cerca
+              {t("days.nearby")}
             </Button>
           )}
         </li>
@@ -336,10 +337,10 @@ export function DaysScreen({ id, navigate }: { id: string; navigate: Navigate })
         <section key={day.day} className="travel-group">
           <GroupLabel>
             <span className="travel-day-dot" data-hue={dayHue(day.number)} aria-hidden />
-            Día {day.number} · {dayLabel(day.day)}
+            {t("days.day", { number: day.number })} · {dayLabel(day.day)}
             {(day.sleeping || forecast[day.day]) && (
               <span className="travel-group-detail">
-                {[day.sleeping && `Duermes en ${day.sleeping.place.name}`, forecast[day.day]].filter(Boolean).join(" · ")}
+                {[day.sleeping && t("days.sleeping", { name: day.sleeping.place.name }), forecast[day.day]].filter(Boolean).join(" · ")}
               </span>
             )}
           </GroupLabel>
@@ -349,36 +350,36 @@ export function DaysScreen({ id, navigate }: { id: string; navigate: Navigate })
             data-empty={day.title ? undefined : true}
             onClick={() => setTitling({ day: day.day, number: day.number, title: day.title ?? "" })}
           >
-            {day.title ?? "Ponle título al día"}
+            {day.title ?? t("days.title_empty")}
           </button>
           {list(day.day, day.items, aroundOf(day))}
         </section>
       ))}
       <section className="travel-group">
         <GroupLabel>
-          Sin día
-          <span className="travel-group-detail">Lo que quieres ver, esperando hueco</span>
+          {t("days.undated")}
+          <span className="travel-group-detail">{t("days.undated_detail")}</span>
         </GroupLabel>
         {list(null, null)}
       </section>
 
       {titling && (
         <Sheet
-          title={`Día ${titling.number}`}
+          title={t("days.day", { number: titling.number })}
           onClose={() => setTitling(null)}
           action={{
-            label: "Guardar",
+            label: t("action.save"),
             onClick: async () => {
               if (await apply(setDayTitle(id, titling.day, titling.title.trim()))) setTitling(null);
             },
           }}
         >
           <TextField
-            label="Título"
+            label={t("editor.title")}
             value={titling.title}
             onChange={(title) => setTitling({ ...titling, title: title.slice(0, 80) })}
-            placeholder="Llegada y casco antiguo"
-            hint="Vacío, el día se queda sin título"
+            placeholder={t("days.title_example")}
+            hint={t("days.title_hint")}
             autoFocus
           />
         </Sheet>
@@ -386,7 +387,7 @@ export function DaysScreen({ id, navigate }: { id: string; navigate: Navigate })
       {editing && (
         <BlockSheet
           editing={editing}
-          days={found.days.map((day) => ({ value: day.day, label: `Día ${day.number} · ${dayLabel(day.day)}` }))}
+          days={found.days.map((day) => ({ value: day.day, label: `${t("days.day", { number: day.number })} · ${dayLabel(day.day)}` }))}
           onClose={() => setEditing(null)}
           onSave={async (data) => {
             const saved = editing.block
@@ -407,7 +408,7 @@ export function DaysScreen({ id, navigate }: { id: string; navigate: Navigate })
                     lon: place.lon!,
                     label: editing.block!.title,
                     day: day?.day ?? null,
-                    dayLabel: day ? `Al día ${day.number}` : null,
+                    dayLabel: day ? t("days.to_day", { number: day.number }) : null,
                   });
                   setEditing(null);
                 }
@@ -451,7 +452,7 @@ function aroundOf(day: Day): Around | null {
   const place = day.sleeping?.place.lat != null ? day.sleeping.place : block?.place;
   if (!place || place.lat == null || place.lon == null) return null;
   const label = day.sleeping?.place.lat != null ? (day.sleeping.accommodation ?? day.sleeping.place.name) : place.name;
-  return { lat: place.lat, lon: place.lon, label, day: day.day, dayLabel: `Al día ${day.number}` };
+  return { lat: place.lat, lon: place.lon, label, day: day.day, dayLabel: t("days.to_day", { number: day.number }) };
 }
 
 function FixedItem({ item }: { item: DayItem }) {
@@ -470,13 +471,13 @@ function FixedItem({ item }: { item: DayItem }) {
           <span className="travel-step-detail">
             {[
               item.leg.arrives_at &&
-                `llega ${hours(item.leg.arrives_at)}` +
+                t("days.arrives", { time: hours(item.leg.arrives_at) }) +
                   (item.leg.arrives_on && item.leg.arrives_on !== item.leg.travelled_on
                     ? ` (+${daysBetween(item.leg.travelled_on ?? item.leg.arrives_on, item.leg.arrives_on)})`
                     : ""),
               mode.label,
               [item.leg.carrier, item.leg.number].filter(Boolean).join(" ") || null,
-              item.leg.seat && `asiento ${item.leg.seat}`,
+              item.leg.seat && t("days.seat", { seat: item.leg.seat }),
               item.leg.confirmation,
             ]
               .filter(Boolean)
@@ -498,7 +499,7 @@ function FixedItem({ item }: { item: DayItem }) {
           {(leaving ? item.stay.check_out_at : item.stay.check_in_at) && (
             <span className="travel-block-time">{hours((leaving ? item.stay.check_out_at : item.stay.check_in_at)!)} </span>
           )}
-          {leaving ? "Sales de" : "Llegas a"} {item.stay.place.name}
+          {t(leaving ? "days.leave" : "days.arrive", { name: item.stay.place.name })}
         </span>
         {(item.stay.accommodation || item.stay.confirmation) && (
           <span className="travel-step-detail">
@@ -515,11 +516,9 @@ function FixedItem({ item }: { item: DayItem }) {
   );
 }
 
-const CATEGORY_OPTIONS = (Object.keys(PLACE_CATEGORIES) as PlaceCategory[]).map((value) => ({
-  value,
-  label: PLACE_CATEGORIES[value].label,
-}));
-const KIND_OPTIONS = (Object.keys(KINDS) as Kind[]).map((kind) => ({ value: kind, label: KINDS[kind].label }));
+const categoryOptions = () =>
+  (Object.keys(PLACE_CATEGORIES) as PlaceCategory[]).map((value) => ({ value, label: PLACE_CATEGORIES[value].label }));
+const kindOptions = () => (Object.keys(KINDS) as Kind[]).map((kind) => ({ value: kind, label: KINDS[kind].label }));
 const NO_DAY = "sin-dia";
 
 function BlockSheet({
@@ -555,10 +554,10 @@ function BlockSheet({
   if (removing && block) {
     return (
       <ConfirmDelete
-        title="¿Quitar del itinerario?"
+        title={t("days.remove_confirm")}
         subject={block.title}
-        consequence={block.visit_id ? `Deja de contar como visitado. ${CANNOT_UNDO}` : CANNOT_UNDO}
-        action="Quitar"
+        consequence={block.visit_id ? `${t("days.remove_visit")} ${cannotUndo()}` : cannotUndo()}
+        action={t("action.remove")}
         onCancel={() => setRemoving(false)}
         onConfirm={onRemove}
       />
@@ -567,10 +566,10 @@ function BlockSheet({
 
   return (
     <Sheet
-      title={block ? "Editar" : "Añadir al día"}
+      title={block ? t("action.edit") : t("days.add_to_day")}
       onClose={onClose}
       action={{
-        label: block ? "Guardar" : "Añadir",
+        label: block ? t("action.save") : t("action.add"),
         disabled: !ready,
         onClick: () => {
           setBusy(true);
@@ -591,36 +590,36 @@ function BlockSheet({
       }}
     >
       <div className="travel-sheet-stack">
-        <TextField label="Qué" value={title} onChange={setTitle} placeholder="Museo, comida, paseo…" autoFocus />
-        <ChoiceChips label="Tipo" value={kind} onChange={setKind} options={KIND_OPTIONS} />
-        <SelectField label="Día" value={day} onChange={setDay} options={[...days, { value: NO_DAY, label: "Sin día" }]} />
+        <TextField label={t("days.what")} value={title} onChange={setTitle} placeholder={t("days.what_example")} autoFocus />
+        <ChoiceChips label={t("days.kind")} value={kind} onChange={setKind} options={kindOptions()} />
+        <SelectField label={t("editor.day")} value={day} onChange={setDay} options={[...days, { value: NO_DAY, label: t("days.undated") }]} />
         <div className="travel-form-row">
-          <TextField label="Empieza" type="time" value={starts} onChange={setStarts} />
+          <TextField label={t("days.starts")} type="time" value={starts} onChange={setStarts} />
           <TextField
-            label="Acaba"
+            label={t("days.ends")}
             type="time"
             value={ends}
             onChange={setEnds}
             invalid={backwards}
-            hint={backwards ? "Acaba antes de empezar" : undefined}
+            hint={backwards ? t("editor.backwards") : undefined}
           />
         </div>
         {place && !picking ? (
           <div className="travel-field">
-            <span className="travel-field-label">Dónde</span>
+            <span className="travel-field-label">{t("days.where")}</span>
             <span className="travel-block-place">
               {flag(place.country_code)} {place.name}
               <Button variant="plain" size="small" onClick={() => setPicking(true)}>
-                Cambiar
+                {t("action.change")}
               </Button>
               <Button variant="plain" size="small" onClick={() => setPlace(null)}>
-                Quitar
+                {t("action.remove")}
               </Button>
             </span>
           </div>
         ) : (
           <PlacePicker
-            label="Dónde"
+            label={t("days.where")}
             onPick={(chosen) => {
               setPlace(chosen);
               setCategory(chosen.category ?? "other");
@@ -630,18 +629,18 @@ function BlockSheet({
           />
         )}
         {place && (
-          <ChoiceChips label="Qué sitio es" value={category} onChange={setCategory} options={CATEGORY_OPTIONS} />
+          <ChoiceChips label={t("days.place_kind")} value={category} onChange={setCategory} options={categoryOptions()} />
         )}
-        {kind === "activity" && place && <Hint>Cuenta como visitado y sale en el mapa.</Hint>}
-        <TextField label="Notas" value={notes} onChange={setNotes} placeholder="Qué llevar, reservas…" />
+        {kind === "activity" && place && <Hint>{t("days.counts_visited")}</Hint>}
+        <TextField label={t("editor.notes")} value={notes} onChange={setNotes} placeholder={t("days.notes_example")} />
         {onNearby && (
           <Button variant="secondary" icon="search" onClick={onNearby}>
-            Qué hay cerca
+            {t("days.whats_near")}
           </Button>
         )}
         {block && (
           <Button variant="destructive" icon="trash" onClick={() => setRemoving(true)}>
-            Quitar del itinerario
+            {t("days.remove")}
           </Button>
         )}
       </div>

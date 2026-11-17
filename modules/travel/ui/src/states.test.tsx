@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { reset } from "@openarga/app";
+import { configureRegional } from "@openarga/ui";
 import axe from "axe-core";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -52,8 +53,9 @@ beforeAll(() => {
 });
 
 beforeEach(async () => {
+  configureRegional({ locale: "en-GB" });
   void reset();
-  await queue.bindPerson(`prueba-${Math.random()}`);
+  await queue.bindPerson(`test-${Math.random()}`);
   replies = {
     "GET /api/travel/atlas": () => EMPTY_ATLAS,
     "GET /api/travel/stats": () => EMPTY_STATS,
@@ -67,7 +69,7 @@ beforeEach(async () => {
     vi.fn(async (url: string, init?: RequestInit) => {
       const method = init?.method ?? "GET";
       const reply = replies[`${method} ${url}`] ?? replies[`${method} ${url.split("?")[0]}`];
-      if (!reply) return json({ detail: "no existe" }, 404);
+      if (!reply) return json({ detail: "does not exist" }, 404);
       const body = await reply();
       return body instanceof Response ? body : json(body);
     }),
@@ -78,6 +80,7 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
+  configureRegional({ locale: "es-ES" });
   act(() => root.unmount());
   host.remove();
   vi.unstubAllGlobals();
@@ -114,133 +117,133 @@ async function serious(): Promise<string[]> {
     .map((one) => `${one.id}: ${one.nodes.map((node) => node.target.join(" ")).join(", ")}`);
 }
 
-describe("los viajes", () => {
-  it("mientras llegan, el esqueleto", async () => {
+describe("trips", () => {
+  it("while they arrive, the skeleton", async () => {
     replies["GET /api/travel/atlas"] = () => new Promise(() => undefined);
-    await open("/travel/viajes");
+    await open("/travel/trips");
     expect(host.querySelector(".skeleton")).not.toBeNull();
   });
 
-  it("sin viajes, el botón añade el primero", async () => {
-    await open("/travel/viajes");
-    expect(host.textContent).toContain("Aún no hay viajes hechos");
-    expect(button("Añadir un viaje")).toBeDefined();
+  it("without trips, the button adds the first", async () => {
+    await open("/travel/trips");
+    expect(host.textContent).toContain("No trips made yet");
+    expect(button("Add a trip")).toBeDefined();
   });
 
-  it("si falla, lo dice y reintentar lo trae", async () => {
-    replies["GET /api/travel/atlas"] = () => json({ detail: "la base no contesta" }, 503);
-    await open("/travel/viajes");
-    expect(host.textContent).toContain("Travel no contesta");
-    expect(host.textContent).toContain("la base no contesta");
+  it("if it fails, it says so and retrying brings it", async () => {
+    replies["GET /api/travel/atlas"] = () => json({ detail: "the database does not answer" }, 503);
+    await open("/travel/trips");
+    expect(host.textContent).toContain("Travel does not answer");
+    expect(host.textContent).toContain("the database does not answer");
 
     replies["GET /api/travel/atlas"] = () => EMPTY_ATLAS;
-    await act(async () => button("Reintentar")!.click());
+    await act(async () => button("Try again")!.click());
     await settle();
-    expect(host.textContent).toContain("Aún no hay viajes hechos");
+    expect(host.textContent).toContain("No trips made yet");
   });
 
-  it("sin red, lo dice arriba", async () => {
+  it("offline, it says so on top", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
-    await open("/travel/viajes");
-    expect(host.textContent).toContain("Sin conexión");
+    await open("/travel/trips");
+    expect(host.textContent).toContain("Offline");
   });
 });
 
-describe("los planes", () => {
-  it("sin ninguno, el botón planea uno", async () => {
-    await open("/travel/planes");
-    expect(host.textContent).toContain("Sin planes");
-    expect(button("Planear un viaje")).toBeDefined();
+describe("plans", () => {
+  it("without any, the button plans one", async () => {
+    await open("/travel/plans");
+    expect(host.textContent).toContain("No plans");
+    expect(button("Plan a trip")).toBeDefined();
   });
 });
 
-describe("hoy", () => {
-  it("sin viaje en curso, el botón planea uno", async () => {
-    await open("/travel/hoy");
-    expect(host.textContent).toContain("Hoy no hay viaje en curso");
-    expect(button("Planear un viaje")).toBeDefined();
+describe("today", () => {
+  it("without a trip under way, the button plans one", async () => {
+    await open("/travel/today");
+    expect(host.textContent).toContain("No trip under way today");
+    expect(button("Plan a trip")).toBeDefined();
   });
 
-  it("si falla, se reintenta", async () => {
-    replies["GET /api/travel/today"] = () => json({ detail: "la base no contesta" }, 503);
-    await open("/travel/hoy");
-    expect(host.textContent).toContain("la base no contesta");
-    expect(button("Reintentar")).toBeDefined();
+  it("if it fails, it is retried", async () => {
+    replies["GET /api/travel/today"] = () => json({ detail: "the database does not answer" }, 503);
+    await open("/travel/today");
+    expect(host.textContent).toContain("the database does not answer");
+    expect(button("Try again")).toBeDefined();
   });
 });
 
-describe("el diario de hoy", () => {
+describe("today's journal", () => {
   const ONGOING = {
     ...NO_TRIP_TODAY,
     trip: { id: TRIP, title: "Lisboa", number: 2, days: 4, day_title: null },
     journal: null,
   };
 
-  it("se escribe sin red: se queda y espera para enviarse", async () => {
+  it("it is written offline: it stays and waits to be sent", async () => {
     await queue.bindPerson("00000000-0000-4000-8000-00000000a7e5");
     replies["GET /api/travel/today"] = () => ONGOING;
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     replies[`PUT /api/travel/trips/${TRIP}/journal`] = () => {
-      throw new TypeError("sin red");
+      throw new TypeError("offline");
     };
     const fetcher = globalThis.fetch as ReturnType<typeof vi.fn>;
     const answer = fetcher.getMockImplementation()!;
     fetcher.mockImplementation(async (url: string, init?: RequestInit) => {
-      if (init?.method === "PUT") throw new TypeError("sin red");
+      if (init?.method === "PUT") throw new TypeError("offline");
       return answer(url, init);
     });
-    await open("/travel/hoy");
-    await shows("Diario de hoy");
+    await open("/travel/today");
+    await shows("Today's journal");
 
-    await act(async () => button("Escribir")!.click());
+    await act(async () => button("Write")!.click());
     const box = host.ownerDocument.querySelector<HTMLTextAreaElement>("textarea")!;
     await act(async () => {
-      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!.call(box, "Tranvía 28.");
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!.call(box, "Tram 28.");
       box.dispatchEvent(new Event("input", { bubbles: true }));
     });
     const save = Array.from(host.ownerDocument.querySelectorAll<HTMLButtonElement>("button")).find(
-      (one) => one.textContent === "Guardar",
+      (one) => one.textContent === "Save",
     )!;
     await act(async () => save.click());
     await settle();
 
-    expect(host.textContent).toContain("Tranvía 28.");
-    expect(host.textContent).toContain("1 cambio por enviar");
+    expect(host.textContent).toContain("Tram 28.");
+    expect(host.textContent).toContain("1 change waiting to be sent");
   });
 });
 
-describe("las cifras", () => {
-  it("sin viajes, el botón añade el primero", async () => {
-    await open("/travel/estadisticas");
-    await shows("Aún no hay cifras");
-    expect(button("Añadir un viaje")).toBeDefined();
+describe("figures", () => {
+  it("without trips, the button adds the first", async () => {
+    await open("/travel/stats");
+    await shows("No figures yet");
+    expect(button("Add a trip")).toBeDefined();
   });
 });
 
-describe("las reservas de un viaje", () => {
-  it("si no existe lo dice; otro fallo se reintenta", async () => {
-    await open(`/travel/viajes/${TRIP}/reservas`);
-    await shows("Ya no está");
-    expect(button("Reintentar")).toBeUndefined();
+describe("a trip's bookings", () => {
+  it("if it does not exist it says so; another failure is retried", async () => {
+    await open(`/travel/trips/${TRIP}/bookings`);
+    await shows("It is no longer here");
+    expect(button("Try again")).toBeUndefined();
 
     act(() => root.unmount());
     root = createRoot(host);
     void reset();
     for (const path of ["", "/days", "/bookings"]) {
-      replies[`GET /api/travel/trips/${TRIP}${path}`] = () => json({ detail: "la base no contesta" }, 503);
+      replies[`GET /api/travel/trips/${TRIP}${path}`] = () => json({ detail: "the database does not answer" }, 503);
     }
-    await open(`/travel/viajes/${TRIP}/reservas`);
-    await shows("la base no contesta");
-    expect(button("Reintentar")).toBeDefined();
+    await open(`/travel/trips/${TRIP}/bookings`);
+    await shows("the database does not answer");
+    expect(button("Try again")).toBeDefined();
   });
 });
 
-describe("axe-core sin errores graves", () => {
+describe("axe-core without serious errors", () => {
   it.each([
-    ["/travel/viajes", "Aún no hay viajes hechos"],
-    ["/travel/planes", "Sin planes"],
-    ["/travel/hoy", "Hoy no hay viaje en curso"],
-    ["/travel/estadisticas", "Aún no hay cifras"],
+    ["/travel/trips", "No trips made yet"],
+    ["/travel/plans", "No plans"],
+    ["/travel/today", "No trip under way today"],
+    ["/travel/stats", "No figures yet"],
   ])("%s", async (path, text) => {
     await open(path);
     await shows(text);
