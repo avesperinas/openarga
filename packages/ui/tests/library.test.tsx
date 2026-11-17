@@ -26,8 +26,8 @@ import {
 
 const render = (element: React.ReactElement): string => renderToStaticMarkup(element);
 
-describe("el vocabulario de tamaños", () => {
-  it("los cuatro nuevos y los dos viejos siguen resolviendo", () => {
+describe("the size vocabulary", () => {
+  it("the four new ones and the two old ones still resolve", () => {
     expect(spanOf("1x1")).toEqual([1, 1]);
     expect(spanOf("1x2")).toEqual([1, 2]);
     expect(spanOf("2x2")).toEqual([2, 2]);
@@ -36,16 +36,16 @@ describe("el vocabulario de tamaños", () => {
     expect(spanOf("4x4")).toEqual([4, 4]);
   });
 
-  it("un tamaño desconocido cae al más pequeño que siempre cabe, no rompe", () => {
+  it("an unknown size falls back to the smallest that always fits, it does not break", () => {
     expect(spanOf("9x9")).toEqual([2, 2]);
   });
 
-  it("la cifra crece con el hueco, que es lo que hace que un KPI grande se sienta grande", () => {
+  it("the figure grows with the space, which is what makes a big KPI feel big", () => {
     const steps = ["1x1", "2x2", "2x4", "4x4"].map(kpiStep);
     expect(new Set(steps).size).toBe(4);
   });
 
-  it("lo pequeño no finge que tiene sitio", () => {
+  it("small ones do not pretend to have room", () => {
     expect(isCompact("1x1")).toBe(true);
     expect(isCompact("1x2")).toBe(true);
     expect(isCompact("2x2")).toBe(false);
@@ -55,27 +55,27 @@ describe("el vocabulario de tamaños", () => {
   });
 });
 
-describe("la cifra", () => {
-  it("el servidor pinta el número de verdad, no un cero que luego sube", () => {
+describe("the figure", () => {
+  it("the server renders the real number, not a zero that then counts up", () => {
     expect(render(<WidgetKpi value={1240} />)).toContain("1,240");
   });
 
-  it("abrevia solo cuando el ancho lo pide", () => {
+  it("abbreviates only when the width asks for it", () => {
     expect(render(<WidgetKpi value={9870} />)).toContain("9,870");
     expect(render(<WidgetKpi value={124000} />)).toContain("124");
   });
 
-  it("la unidad va aparte de la cifra", () => {
+  it("the unit goes apart from the figure", () => {
     const html = render(<WidgetKpi value={1240} unit="km" />);
     expect(html).toContain('class="kpi-unit"');
     expect(html).toContain("km");
   });
 
-  it("un valor que ya viene formateado se pinta tal cual", () => {
+  it("a value that arrives formatted renders as is", () => {
     expect(render(<WidgetKpi value="v0.4.1" />)).toContain("v0.4.1");
   });
 
-  it("hereda el paso de cifra del tamaño del widget que la contiene", () => {
+  it("inherits the figure step from the containing widget's size", () => {
     const html = render(
       <Widget title="Pasos" hue={1} size="4x4" shape="number" state="ready">
         <WidgetKpi value={12} />
@@ -85,19 +85,19 @@ describe("la cifra", () => {
   });
 });
 
-describe("la comparación contra el periodo anterior", () => {
-  it("el signo va siempre, también en positivo", () => {
+describe("the comparison against the previous period", () => {
+  it("the sign is always shown, positive too", () => {
     expect(render(<WidgetKpiDelta value={112} previous={100} />)).toContain("+12%");
     expect(render(<WidgetKpiDelta value={88} previous={100} />)).toContain("-12%");
   });
 
-  it("la flecha dice la dirección sin depender del color", () => {
+  it("the arrow says the direction without relying on colour", () => {
     expect(render(<WidgetKpiDelta value={112} previous={100} />)).toContain('data-direction="1"');
     expect(render(<WidgetKpiDelta value={88} previous={100} />)).toContain('data-direction="-1"');
     expect(render(<WidgetKpiDelta value={100} previous={100} />)).toContain('data-direction="0"');
   });
 
-  it("subir es bueno o malo según el dominio, no según el componente", () => {
+  it("going up is good or bad by domain, not by component", () => {
     const pasos = render(<WidgetKpiDelta value={112} previous={100} goodWhen="up" />);
     const gasto = render(<WidgetKpiDelta value={112} previous={100} goodWhen="down" />);
 
@@ -105,13 +105,13 @@ describe("la comparación contra el periodo anterior", () => {
     expect(gasto).toContain('data-tone="bad"');
   });
 
-  it("sin dirección buena la variación no se tiñe", () => {
+  it("without a good direction the change is not tinted", () => {
     expect(render(<WidgetKpiDelta value={112} previous={100} goodWhen="neutral" />)).toContain(
       'data-tone="neutral"',
     );
   });
 
-  it("de cero a cinco no es un 500% más", () => {
+  it("from zero to five is not 500% more", () => {
     const html = render(<WidgetKpiDelta value={5} previous={0} />);
 
     expect(html).toContain("no previous value");
@@ -119,28 +119,28 @@ describe("la comparación contra el periodo anterior", () => {
   });
 });
 
-describe("las gráficas", () => {
-  it("una serie vacía lo dice en vez de pintar un lienzo en blanco", () => {
+describe("the charts", () => {
+  it("an empty series says so instead of drawing a blank canvas", () => {
     expect(render(<WidgetChart series={[]} />)).toContain("No series");
     expect(render(<WidgetBars series={[]} />)).toContain("No series");
   });
 
-  it("un solo punto no rompe la proyección", () => {
+  it("a single point does not break the projection", () => {
     const html = render(<WidgetChart series={[7]} />);
     expect(html).toContain("chart-line");
     expect(html).not.toContain("NaN");
   });
 
-  it("una serie plana no divide entre cero al escalar", () => {
+  it("a flat series does not divide by zero when scaling", () => {
     const html = render(<WidgetChart series={[5, 5, 5, 5]} />);
     expect(html).not.toContain("NaN");
   });
 
-  it("el trazo no se deforma al estirar el lienzo", () => {
+  it("the stroke does not deform when the canvas stretches", () => {
     expect(render(<WidgetChart series={[1, 4, 2]} />)).toContain('vector-effect="non-scaling-stroke"');
   });
 
-  it("las etiquetas solo se pintan si hay una por barra", () => {
+  it("labels render only if there is one per bar", () => {
     const bien = render(<WidgetBars series={[1, 2]} labels={["L", "M"]} />);
     const mal = render(<WidgetBars series={[1, 2, 3]} labels={["L", "M"]} />);
 
@@ -148,15 +148,15 @@ describe("las gráficas", () => {
     expect(mal).not.toContain("chart-labels");
   });
 
-  it("la barra de hoy se distingue de las demás", () => {
+  it("today's bar stands out from the others", () => {
     expect(render(<WidgetBars series={[1, 2, 3]} highlight={1} />)).toContain("data-highlight");
   });
 
-  it("las barras se escalan con transform y no con altura", () => {
+  it("the bars scale with transform and not height", () => {
     expect(render(<WidgetBars series={[5, 10]} />)).toContain("--bar:");
   });
 
-  it("en el mapa de constancia, cero es su propio escalón", () => {
+  it("in the consistency map, zero is its own step", () => {
     const html = render(<WidgetHeatmap values={[0, 1, 4]} />);
 
     expect(html).toContain('data-level="0"');
@@ -164,8 +164,8 @@ describe("las gráficas", () => {
   });
 });
 
-describe("el avance", () => {
-  it("pasarse del objetivo llena la barra pero no la estira", () => {
+describe("progress", () => {
+  it("going past the target fills the bar but does not stretch it", () => {
     const html = render(<WidgetProgress value={140} target={100} />);
 
     expect(html).toContain("--filled:1");
@@ -173,17 +173,17 @@ describe("el avance", () => {
     expect(html).toContain("Goal met");
   });
 
-  it("sin objetivo no se inventa una fracción", () => {
+  it("without a target no fraction is invented", () => {
     expect(render(<WidgetProgress value={50} target={0} />)).toContain("--filled:0");
   });
 
-  it("la barra se anuncia como barra de progreso", () => {
+  it("the bar announces itself as a progress bar", () => {
     const html = render(<WidgetProgress value={25} target={100} />);
     expect(html).toContain('role="progressbar"');
     expect(html).toContain('aria-valuenow="25"');
   });
 
-  it("el anillo descubre la porción que toca, sin pasarse", () => {
+  it("the ring reveals the share due, without overshooting", () => {
     const medio = render(<WidgetRing value={50} target={100} />);
     const pasado = render(<WidgetRing value={300} target={100} />);
 
@@ -191,64 +191,64 @@ describe("el avance", () => {
     expect(pasado).toContain("stroke-dashoffset:0");
   });
 
-  it("el anillo puede enseñar el porcentaje en vez del valor", () => {
+  it("the ring can show the percentage instead of the value", () => {
     expect(render(<WidgetRing value={25} target={100} show="percent" />)).toContain("25%");
   });
 });
 
-describe("la racha", () => {
-  it("concuerda el singular y el plural", () => {
+describe("the streak", () => {
+  it("agrees singular and plural", () => {
     expect(render(<WidgetStreak current={1} />)).toContain("day");
     expect(render(<WidgetStreak current={4} />)).toContain("days");
   });
 
-  it("los puntos cuentan tanto como el número", () => {
+  it("the dots count as much as the number", () => {
     const html = render(<WidgetStreak current={3} days={[true, false, true]} />);
     expect(html.match(/class="streak-day"/g)).toHaveLength(3);
   });
 
-  it("no pinta más días de los que caben", () => {
+  it("renders no more days than fit", () => {
     const html = render(<WidgetStreak current={40} days={Array(60).fill(true)} />);
     expect(html.match(/class="streak-day"/g)).toHaveLength(14);
   });
 });
 
-describe("el calendario", () => {
-  it("la semana empieza en lunes", () => {
+describe("the calendar", () => {
+  it("the week starts on Monday", () => {
     const html = render(<WidgetCalendar month={new Date(2026, 8, 1)} />);
     const week = [...html.matchAll(/calendar-weekday"[^>]*>(\w)</g)].map((match) => match[1]);
 
     expect(week).toEqual(["M", "T", "W", "T", "F", "S", "S"]);
   });
 
-  it("el día 1 cae en su columna", () => {
+  it("day 1 falls in its column", () => {
     const html = render(<WidgetCalendar month={new Date(2026, 8, 1)} />);
     expect(html.match(/data-empty="true"/g)).toHaveLength(1);
   });
 
-  it("cuenta los días del mes sin tabla de longitudes", () => {
+  it("counts the month's days without a length table", () => {
     const febrero = render(<WidgetCalendar month={new Date(2024, 1, 1)} />);
     expect(febrero.match(/role="gridcell"/g)).toHaveLength(29);
   });
 
-  it("hoy gana al marcado", () => {
+  it("today wins over marked", () => {
     const html = render(<WidgetCalendar month={new Date(2026, 8, 1)} marked={[4]} today={4} />);
     expect(html).toContain('data-marked="true" data-today="true"');
   });
 });
 
-describe("lo siguiente y los accesos", () => {
-  it("sin nada a la vista lo dice", () => {
+describe("the next thing and the shortcuts", () => {
+  it("with nothing in view it says so", () => {
     expect(render(<WidgetUpNext events={[]} />)).toContain("Nothing ahead");
   });
 
-  it("una fecha ilegible no rompe la fila", () => {
+  it("an unreadable date does not break the row", () => {
     const html = render(<WidgetUpNext events={[{ at: "no es una fecha", title: "Algo" }]} />);
     expect(html).toContain("Algo");
     expect(html).toContain("—");
   });
 
-  it("los accesos directos son enlaces, no botones que ejecutan", () => {
+  it("shortcuts are links, not buttons that run something", () => {
     const html = render(
       <WidgetShortcuts actions={[{ label: "Entrenar", href: "/fitness", icon: "bolt" }]} />,
     );
@@ -257,7 +257,7 @@ describe("lo siguiente y los accesos", () => {
     expect(html).not.toContain("<button");
   });
 
-  it("ni los accesos ni las cifras pequeñas pasan de cuatro", () => {
+  it("neither the shortcuts nor the small figures go past four", () => {
     const accesos = render(
       <WidgetShortcuts
         actions={Array.from({ length: 7 }, (_, index) => ({
@@ -277,8 +277,8 @@ describe("lo siguiente y los accesos", () => {
   });
 });
 
-describe("la tarjeta con símbolo", () => {
-  it("pinta el símbolo del tono que se le pide, y no un color suyo", () => {
+describe("the card with a symbol", () => {
+  it("renders the symbol in the tone asked, and not a colour of its own", () => {
     const html = render(<WidgetKpi value="Pull" detail="rotación 7" icon="pull" hue={2} />);
 
     expect(html).toContain("kpi-icon");
@@ -286,22 +286,22 @@ describe("la tarjeta con símbolo", () => {
     expect(html).toContain("Pull");
   });
 
-  it("sin símbolo, la tarjeta es la de siempre", () => {
+  it("without a symbol, the card is the usual one", () => {
     const html = render(<WidgetKpi value={1284} unit="pasos" />);
 
     expect(html).not.toContain("kpi-icon");
     expect(html).not.toContain("data-with-icon");
   });
 
-  it("con símbolo, la cifra baja un paso para que no compitan", () => {
+  it("with a symbol, the figure steps down so they do not compete", () => {
     const html = render(<WidgetKpi value="Push" icon="push" hue={4} />);
 
     expect(html).toContain("data-with-icon");
   });
 });
 
-describe("dónde se apoya una cifra", () => {
-  it("una cifra va centrada en su tarjeta, con lo que la explica debajo", () => {
+describe("where a figure rests", () => {
+  it("a figure is centred in its card, with its explanation below", () => {
     const css = readFileSync(new URL("../library.css", import.meta.url), "utf8");
     const kpi = /\.kpi \{([^}]*)\}/.exec(css)?.[1] ?? "";
 
@@ -311,8 +311,8 @@ describe("dónde se apoya una cifra", () => {
   });
 });
 
-describe("el objetivo cumplido se ve", () => {
-  it("el anillo pasa a hecho: tick en el centro y la frase, sin la cifra", () => {
+describe("the met goal shows", () => {
+  it("the ring turns done: a tick in the centre and the sentence, without the figure", () => {
     const html = render(<WidgetRing value={3} target={3} label="of 3 this week" />);
 
     expect(html).toContain("data-done");
@@ -322,7 +322,7 @@ describe("el objetivo cumplido se ve", () => {
     expect(html).toContain("goal met");
   });
 
-  it("a medias sigue siendo la cifra y la etiqueta del módulo", () => {
+  it("half-loaded it is still the module's figure and label", () => {
     const html = render(<WidgetRing value={2} target={3} label="of 3 this week" />);
 
     expect(html).not.toContain("data-done");
@@ -330,7 +330,7 @@ describe("el objetivo cumplido se ve", () => {
     expect(html).toContain("of 3 this week");
   });
 
-  it("donde hay sitio lo dice entero, y en un 1x1 solo queda el anillo", () => {
+  it("where there is room it says it in full, and a 1x1 keeps only the ring", () => {
     const grande = render(
       <Widget title="Entreno" hue={4} size="4x2" shape="number" state="ready">
         <WidgetRing value={5} target={4} label="of 4 this week" />
@@ -346,13 +346,13 @@ describe("el objetivo cumplido se ve", () => {
     expect(pequeno).not.toContain("ring-label");
   });
 
-  it("sin objetivo no hay nada que cumplir", () => {
+  it("without a target there is nothing to meet", () => {
     expect(render(<WidgetRing value={0} target={0} />)).not.toContain("data-done");
   });
 });
 
-describe("la placa de un icono", () => {
-  it("lleva el tono y el icono dentro", () => {
+describe("an icon's badge", () => {
+  it("carries the tone and the icon inside", () => {
     const html = render(<IconBadge name="kettlebell" hue={5} />);
 
     expect(html).toContain('class="icon-badge" data-hue="5"');
@@ -360,8 +360,8 @@ describe("la placa de un icono", () => {
   });
 });
 
-describe("un nombre en vez de una cifra", () => {
-  it("se marca para partir en líneas en vez de salirse", () => {
+describe("a name instead of a figure", () => {
+  it("is marked to wrap lines instead of overflowing", () => {
     expect(render(<WidgetKpi value="Cuerpo entero" />)).toContain("data-text");
     expect(render(<WidgetKpi value={12} />)).not.toContain("data-text");
     expect(render(<WidgetKpi value="12" />)).not.toContain("data-text");
@@ -369,7 +369,7 @@ describe("un nombre en vez de una cifra", () => {
 });
 
 describe("tres cifras", () => {
-  it("en una tarjeta ancha van en fila, y en una estrecha no dejan una sola abajo", () => {
+  it("in a wide card they go in a row, and in a narrow one they do not leave a single one below", () => {
     const items = [
       { label: "Bancos", value: 2 },
       { label: "Cuentas", value: 5 },

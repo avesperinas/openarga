@@ -16,15 +16,15 @@ import {
 
 const render = (node: React.ReactElement) => renderToStaticMarkup(node);
 
-describe("la cifra con su curva", () => {
-  it("la curva se corta donde no hay dato y marca el último punto", () => {
+describe("the figure with its curve", () => {
+  it("the curve breaks where there is no data and marks the last point", () => {
     const { line, fill, last } = areaPath([10, 12, null, 14, 15]);
     expect(line.split("M").length - 1).toBe(2);
     expect(fill).toContain("Z");
     expect(last?.x).toBe(300);
   });
 
-  it("sin datos, sin curva; con ellos, la cifra, el cambio y el principio y el final", () => {
+  it("without data, no curve; with it, the figure, the change and the start and end", () => {
     expect(areaPath([null, null]).line).toBe("");
     const html = render(
       <AreaTrend
@@ -44,8 +44,8 @@ describe("la cifra con su curva", () => {
   });
 });
 
-describe("la tira de meses", () => {
-  it("dice cada mes al lector y marca el elegido", () => {
+describe("the months strip", () => {
+  it("reads each month to the screen reader and marks the chosen one", () => {
     const html = render(
       <MonthStrip
         label="Months"
@@ -63,8 +63,8 @@ describe("la tira de meses", () => {
   });
 });
 
-describe("quién debe a quién", () => {
-  it("con deuda, la flecha; en paz, sin ella", () => {
+describe("who owes whom", () => {
+  it("with a debt, the arrow; settled, without it", () => {
     const owed = render(<BalanceHero payer={{ name: "Sam", hue: 6 }} payee={{ name: "Alex", hue: 5 }} amount="312 €" />);
     expect(owed).toContain('aria-label="Sam pays Alex"');
     expect(owed).toContain("<path");
@@ -74,8 +74,8 @@ describe("quién debe a quién", () => {
   });
 });
 
-describe("lo aportado contra lo que vale", () => {
-  it("sombrea la ganancia en verde si vale más, y en rojo si menos", () => {
+describe("what was paid in against what it is worth", () => {
+  it("shades the gain in green if it is worth more, and red if less", () => {
     const up = render(<GainChart label="Fondos" labels={["ene", "feb"]} value={[100, 130]} contributed={[100, 110]} />);
     expect(up).toContain('class="gain-chart-gain" data-ahead="true"');
     expect(up).toContain("Gain");
@@ -85,7 +85,7 @@ describe("lo aportado contra lo que vale", () => {
   });
 });
 
-describe("el mapa de bloques", () => {
+describe("the treemap", () => {
   const items = [
     { key: "casa", label: "Casa", value: 6, detail: "6 €", hue: 3 as const },
     { key: "super", label: "Súper", value: 3, detail: "3 €", hue: 2 as const },
@@ -93,7 +93,7 @@ describe("el mapa de bloques", () => {
     { key: "nada", label: "Nada", value: 0, detail: "0 €", hue: 8 as const },
   ];
 
-  it("cada bloque mide lo que pesa, sin pasarse del rectángulo, y lo que no suma no sale", () => {
+  it("each block is sized by its weight, within the rectangle, and what adds nothing is left out", () => {
     const tiles = treemapLayout(items, 100, 100);
     expect(tiles.map((tile) => tile.key)).toEqual(["casa", "super", "ocio"]);
     const area = (key: string) => tiles.find((tile) => tile.key === key)!;
@@ -105,15 +105,15 @@ describe("el mapa de bloques", () => {
     }
   });
 
-  it("con algo que hacer al tocarlo, cada bloque es un botón con su nombre e importe", () => {
+  it("with something to do on tap, each block is a button with its name and amount", () => {
     const html = render(<Treemap label="Gasto" items={items} onSelect={() => undefined} />);
     expect(html).toContain('aria-label="Casa: 6 €"');
     expect(html.match(/<button/g)?.length).toBe(3);
   });
 });
 
-describe("contra la media", () => {
-  it("lo que sube va a la derecha y lo que baja a la izquierda, en su tono", () => {
+describe("against the average", () => {
+  it("what goes up goes right and what goes down goes left, in its tone", () => {
     const html = render(
       <DivergingBars
         label="Contra tu media"
@@ -129,8 +129,8 @@ describe("contra la media", () => {
   });
 });
 
-describe("el flujo en vertical", () => {
-  it("dibuja sin texto dentro y pone los nombres en una lista que enciende un camino", () => {
+describe("the vertical flow", () => {
+  it("draws without text inside and puts the names in a list that lights a path", () => {
     const html = render(
       <Sankey
         vertical
@@ -154,8 +154,8 @@ describe("el flujo en vertical", () => {
   });
 });
 
-describe("las áreas apiladas", () => {
-  it("una por serie, una encima de otra", () => {
+describe("the stacked areas", () => {
+  it("one per series, one on top of another", () => {
     const html = render(
       <SeriesChart
         kind="area"

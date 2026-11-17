@@ -19,45 +19,45 @@ function storage(initial: Record<string, string> = {}) {
 }
 
 describe("volver a arga", () => {
-  it("llegar desde el escritorio deja ofrecer la vuelta", () => {
+  it("arriving from the desktop allows offering the way back", () => {
     expect(cameFromArga("recipes", `${ORIGIN}/`, ORIGIN, storage())).toBe(true);
   });
 
-  it("y se recuerda al navegar dentro de la app, donde ya no hay referrer que lo diga", () => {
+  it("and it is remembered while navigating within the app, where no referrer says it", () => {
     const remembered = storage();
     cameFromArga("recipes", `${ORIGIN}/`, ORIGIN, remembered);
 
     expect(cameFromArga("recipes", "", ORIGIN, remembered)).toBe(true);
   });
 
-  it("cada app recuerda lo suyo: venir a Training no ofrece volver desde Money", () => {
+  it("each app remembers its own: coming to Training does not offer going back from Money", () => {
     const remembered = storage();
     cameFromArga("training", `${ORIGIN}/`, ORIGIN, remembered);
 
     expect(cameFromArga("money", "", ORIGIN, remembered)).toBe(false);
   });
 
-  it("abriendo la app instalada no hay de dónde volver", () => {
+  it("opening the installed app there is nowhere to go back to", () => {
     expect(cameFromArga("recipes", "", ORIGIN, storage())).toBe(false);
   });
 
-  it("venir de otro sitio de la misma app no es venir de arga", () => {
+  it("coming from elsewhere in the same app is not coming from arga", () => {
     expect(cameFromArga("recipes", `${ORIGIN}/recipes/receta/a1`, ORIGIN, storage())).toBe(
       false,
     );
   });
 
-  it("y venir de fuera del hostname, tampoco", () => {
+  it("nor coming from outside the hostname", () => {
     expect(cameFromArga("recipes", "https://otro.example/", ORIGIN, storage())).toBe(false);
   });
 
-  it("sin almacenamiento (modo privado) no revienta: simplemente no se ofrece", () => {
+  it("without storage (private mode) it does not crash: it is simply not offered", () => {
     expect(cameFromArga("recipes", "", ORIGIN, null)).toBe(false);
   });
 });
 
-describe("la cabecera de una app", () => {
-  it("lleva la marca de la app, el antetítulo y el título, con la forma de todas", () => {
+describe("an app's header", () => {
+  it("carries the app's mark, the eyebrow and the title, shaped like all of them", () => {
     const html = renderToStaticMarkup(
       <AppHeader
         app={{ id: "money", name: "Money", icon: "/money/icon.svg?v=1" }}
@@ -72,7 +72,7 @@ describe("la cabecera de una app", () => {
     expect(html).toContain('<h1 class="app-title">Resumen</h1>');
   });
 
-  it("una pantalla que cuelga de otra lleva un atrás con su nombre, que no es la salida a arga", () => {
+  it("a screen under another carries a back with its name, which is not the exit to arga", () => {
     const html = renderToStaticMarkup(
       <AppHeader
         app={{ id: "money", name: "Money", icon: "/money/icon.svg?v=1" }}
@@ -86,7 +86,7 @@ describe("la cabecera de una app", () => {
     expect(html).toMatch(/<a class="app-home" href="\/"/);
   });
 
-  it("sin pantalla de la que colgar no hay atrás", () => {
+  it("without a parent screen there is no back", () => {
     const html = renderToStaticMarkup(
       <AppHeader app={{ id: "money", name: "Money", icon: "/money/icon.svg?v=1" }} title="Resumen" />,
     );
@@ -95,8 +95,8 @@ describe("la cabecera de una app", () => {
   });
 });
 
-describe("el fondo de una app", () => {
-  it("sin foto ni velo: el tinte de su color, y la clase de la app para sus estilos", () => {
+describe("an app's background", () => {
+  it("no photo or scrim: its colour's tint, and the app class for its styles", () => {
     const html = renderToStaticMarkup(
       <AppBackdrop app="training" className="training-desktop">
         <p>dentro</p>
@@ -112,7 +112,7 @@ describe("el fondo de una app", () => {
     expect(html).not.toContain("data-kind");
   });
 
-  it("con `colored`, las piezas del sistema toman el color de la app", () => {
+  it("with `colored`, the system pieces take the app's colour", () => {
     const html = renderToStaticMarkup(
       <AppBackdrop app="library" className="library-desktop" colored>
         <p>dentro</p>
@@ -122,7 +122,7 @@ describe("el fondo de una app", () => {
     expect(html).toContain('data-kind="hue-5"');
   });
 
-  it("lo elegido en sus Ajustes manda, y lo que ya no existe vuelve a su color", () => {
+  it("the choice in its Settings rules, and what no longer exists goes back to its colour", () => {
     expect(backgroundOf("training", { app_backgrounds: { training: "plain" } })).toBe("plain");
     expect(backgroundOf("training", { app_backgrounds: { training: "hue-2" } })).toBe("hue-2");
     expect(backgroundOf("training", { app_backgrounds: { training: "foto" as never } })).toBe("app");
@@ -131,7 +131,7 @@ describe("el fondo de una app", () => {
     expect(backgroundStyle("training", "hue-2")).toEqual({ "--app-background-hue": "var(--hue-2)" });
   });
 
-  it("el color de cada app es el de su manifiesto", () => {
+  it("each app's colour is its manifest's", () => {
     const root = resolve(__dirname, "../../../modules");
     for (const id of readdirSync(root)) {
       const file = resolve(root, id, "manifest.yaml");

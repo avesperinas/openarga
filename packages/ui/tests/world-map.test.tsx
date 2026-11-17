@@ -5,13 +5,13 @@ import { describe, expect, it } from "vitest";
 
 import { MapFigures, TimeBar, partOf } from "../src/world-map";
 
-describe("la barra de tiempo", () => {
+describe("the time bar", () => {
   const markup = (value: [number, number], playing = false) =>
     renderToStaticMarkup(
       <TimeBar min={2016} max={2026} value={value} onChange={() => {}} playing={playing} onPlay={() => {}} onPause={() => {}} />,
     );
 
-  it("son dos tiradores con nombre y el tramo elegido pintado entre ellos", () => {
+  it("they are two named handles with the chosen span drawn between them", () => {
     const html = markup([2018, 2023]);
 
     expect(html).toContain('aria-label="Desde"');
@@ -20,19 +20,19 @@ describe("la barra de tiempo", () => {
     expect(html).toContain("--to:70%");
   });
 
-  it("el botón dice lo que va a hacer", () => {
+  it("the button says what it will do", () => {
     expect(markup([2016, 2026])).toContain("Play the trips in order");
     expect(markup([2016, 2026], true)).toContain('aria-label="Pause"');
   });
 
-  it("sin reproducir que ofrecer no hay botón: la barra solo filtra", () => {
+  it("with nothing to play there is no button: the bar only filters", () => {
     const html = renderToStaticMarkup(<TimeBar min={2016} max={2026} value={[2016, 2026]} onChange={() => {}} />);
 
     expect(html).not.toContain("time-bar-play");
     expect(html).toContain('aria-label="Desde"');
   });
 
-  it("con un solo año no hay rango que mover", () => {
+  it("with a single year there is no range to move", () => {
     const html = renderToStaticMarkup(
       <TimeBar min={2025} max={2025} value={[2025, 2025]} onChange={() => {}} playing={false} onPlay={() => {}} onPause={() => {}} />,
     );
@@ -41,29 +41,29 @@ describe("la barra de tiempo", () => {
   });
 });
 
-describe("las cifras", () => {
-  it("cada una es un término con su valor", () => {
+describe("the figures", () => {
+  it("each one is a term with its value", () => {
     const html = renderToStaticMarkup(<MapFigures figures={[{ label: "Países", value: "12" }]} />);
 
     expect(html).toContain("<dt>Países</dt><dd>12</dd>");
   });
 });
 
-describe("una ruta a medias", () => {
+describe("a half route", () => {
   const line = {
     type: "LineString" as const,
     coordinates: Array.from({ length: 11 }, (_, i) => [i, 0]),
   };
 
-  it("crece con el progreso y acaba entera", () => {
+  it("grows with progress and ends full", () => {
     expect(partOf(line, 0.5).coordinates).toHaveLength(6);
     expect(partOf(line, 1)).toBe(line);
     expect(partOf(line, 0).coordinates.length).toBeGreaterThanOrEqual(2);
   });
 });
 
-describe("ningún color sale del componente", () => {
-  it("el mapa no escribe un solo color: todos son tokens --map-*", () => {
+describe("no colour comes from the component", () => {
+  it("the map writes no colour itself: all are --map-* tokens", () => {
     const source = readFileSync(new URL("../src/world-map.tsx", import.meta.url), "utf8");
     const code = source.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
 
@@ -71,7 +71,7 @@ describe("ningún color sale del componente", () => {
     expect(code.match(/rgba?\([^)]*\)/g) ?? []).toEqual(["rgb(${r}, ${g}, ${bl})", "rgba(0, 0, 0, 0)"]);
   });
 
-  it("los tokens del mapa existen en claro y en los dos oscuros", () => {
+  it("the map tokens exist in light and both darks", () => {
     const tokens = readFileSync(new URL("../tokens.css", import.meta.url), "utf8");
 
     for (const token of ["--map-water", "--map-slept-high", "--map-home", "--map-route", "--map-selected"]) {

@@ -6,19 +6,19 @@ import { Card, CreateButton, EmptyState, GroupLabel, Hint, Notice, Screen, Secti
 
 const css = readFileSync(new URL("../controls.css", import.meta.url), "utf8");
 
-describe("la pantalla de una app", () => {
-  it("es una columna que no se sale por la derecha", () => {
+describe("an app's screen", () => {
+  it("is a column that does not overflow on the right", () => {
     expect(renderToStaticMarkup(<Screen>x</Screen>)).toContain('<main class="screen"');
     expect(css).toMatch(/\.screen \{[^}]*grid-template-columns: minmax\(0, 1fr\)/);
   });
 
-  it("deja sitio abajo para las pestañas y el botón de crear", () => {
+  it("leaves room below for the tabs and the create button", () => {
     expect(css).toMatch(/\.screen \{[^}]*var\(--tap-target\) \* 2\)/);
   });
 });
 
-describe("una sección", () => {
-  it("lleva su título en negrita, la cuenta y la acción", () => {
+describe("a section", () => {
+  it("carries its title in bold, the count and the action", () => {
     const html = renderToStaticMarkup(
       <Section title="Pronto" count={2} action={{ label: "Ver todo", onClick: () => undefined }}>
         <p>fila</p>
@@ -29,23 +29,23 @@ describe("una sección", () => {
     expect(css).toMatch(/\.section-title \{[^}]*font-weight: var\(--weight-bold\)/);
   });
 
-  it("el gris en versalitas es solo del grupo de filas", () => {
+  it("the small-caps grey belongs only to the row group", () => {
     expect(renderToStaticMarkup(<GroupLabel>Lácteos</GroupLabel>)).toContain('<h2 class="group-label"');
     expect(css).toMatch(/\.group-label \{[^}]*text-transform: uppercase/);
     expect(css).not.toMatch(/\.section-title \{[^}]*text-transform/);
   });
 });
 
-describe("una tarjeta", () => {
-  it("es un control entero solo si lleva a algún sitio", () => {
+describe("a card", () => {
+  it("is a whole control only if it leads somewhere", () => {
     expect(renderToStaticMarkup(<Card>x</Card>)).toMatch(/^<div class="surface card"/);
     expect(renderToStaticMarkup(<Card onClick={() => undefined}>x</Card>)).toMatch(/^<button class="surface card"[^>]*data-pressable/);
     expect(renderToStaticMarkup(<Card href="/a">x</Card>)).toMatch(/^<a class="surface card"[^>]*href="\/a"/);
   });
 });
 
-describe("el estado vacío", () => {
-  it("dice qué falta, por qué, y ofrece la acción", () => {
+describe("the empty state", () => {
+  it("says what is missing, why, and offers the action", () => {
     const html = renderToStaticMarkup(
       <EmptyState icon="book" title="Todavía no hay libros" action={{ label: "Añadir libro", onClick: () => undefined }}>
         Busca el que estás leyendo.
@@ -57,27 +57,27 @@ describe("el estado vacío", () => {
   });
 });
 
-describe("la línea que ayuda", () => {
-  it("con `lines`, un texto escrito a mano guarda sus saltos de línea", () => {
+describe("the helper line", () => {
+  it("with `lines`, hand-written text keeps its line breaks", () => {
     expect(renderToStaticMarkup(<Hint lines>{"Primera\nSegunda"}</Hint>)).toContain('data-lines="true"');
     expect(renderToStaticMarkup(<Hint>Sin más</Hint>)).not.toContain("data-lines");
     expect(css).toMatch(/\.hint\[data-lines\] \{ white-space: pre-line; \}/);
   });
 });
 
-describe("crear y avisar", () => {
-  it("crear lleva el nombre de lo que crea", () => {
+describe("create and notify", () => {
+  it("create carries the name of what it creates", () => {
     expect(renderToStaticMarkup(<CreateButton label="Receta" onClick={() => undefined} />)).toContain("Receta");
   });
 
-  it("un aviso de error se anuncia; uno normal, no interrumpe", () => {
+  it("an error notice is announced; a normal one does not interrupt", () => {
     expect(renderToStaticMarkup(<Notice tone="negative">Sin conexión</Notice>)).toContain('role="alert"');
     expect(renderToStaticMarkup(<Notice tone="warning">Caduca</Notice>)).toContain('role="status"');
   });
 });
 
-describe("un bloque con sus acciones detrás de un botón", () => {
-  it("pone el menú en la cabecera, con su nombre, y sin título también", () => {
+describe("a block with its actions behind a button", () => {
+  it("puts the menu in the header, with its name, and without a title too", () => {
     const html = renderToStaticMarkup(
       <Section title="07:45 · 400 kcal" menu={{ label: "Acciones de las 07:45", items: [{ label: "Borrar", onSelect: () => undefined }] }}>
         dentro
@@ -92,8 +92,8 @@ describe("un bloque con sus acciones detrás de un botón", () => {
   });
 });
 
-describe("lo que envuelve la pantalla entera", () => {
-  it("tirar para refrescar y deslizar de lado guardan la columna y el hueco de la pantalla", () => {
+describe("what wraps the whole screen", () => {
+  it("pull to refresh and sideways swipe keep the screen's column and gap", () => {
     expect(css).toMatch(/\.pull-to-refresh,\s*\.pull-to-refresh-content,\s*\.swipe-area \{[^}]*gap: inherit/);
   });
 });

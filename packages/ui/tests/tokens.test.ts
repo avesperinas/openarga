@@ -7,8 +7,8 @@ const declared = (prefix: string): string[] => [
   ...new Set([...css.matchAll(new RegExp(`--${prefix}[a-z0-9-]*(?=\\s*:)`, "g"))].map((m) => m[0])),
 ];
 
-describe("tokens.css es la única fuente de valores de diseño", () => {
-  it("declara exactamente tres radios: superficie, control y píldora", () => {
+describe("tokens.css is the only source of design values", () => {
+  it("declares exactly three radii: surface, control and pill", () => {
     expect(declared("radius-").sort()).toEqual([
       "--radius-control",
       "--radius-pill",
@@ -16,7 +16,7 @@ describe("tokens.css es la única fuente de valores de diseño", () => {
     ]);
   });
 
-  it("la escala de espacio es cerrada y de base 4, con el medio paso de 2 px", () => {
+  it("the spacing scale is closed and base 4, with the 2 px half step", () => {
     expect(declared("space-").sort()).toEqual([
       "--space-1",
       "--space-10",
@@ -36,7 +36,7 @@ describe("tokens.css es la única fuente de valores de diseño", () => {
     }
   });
 
-  it("las capas van de abajo arriba y no se repite ninguna", () => {
+  it("layers go bottom to top and none repeats", () => {
     const order = [
       "--z-raised",
       "--z-sticky",
@@ -54,7 +54,7 @@ describe("tokens.css es la única fuente de valores de diseño", () => {
     expect(new Set(values).size).toBe(values.length);
   });
 
-  it("tres anchos de app: estrecho, normal y ancho", () => {
+  it("three app widths: narrow, normal and wide", () => {
     expect(declared("app-width").sort()).toEqual([
       "--app-width",
       "--app-width-narrow",
@@ -62,7 +62,7 @@ describe("tokens.css es la única fuente de valores de diseño", () => {
     ]);
   });
 
-  it("declara la escala completa y ni un paso más", () => {
+  it("declares the full scale and not one step more", () => {
     expect(declared("text-").sort()).toEqual([
       "--text-body",
       "--text-callout",
@@ -83,13 +83,13 @@ describe("tokens.css es la única fuente de valores de diseño", () => {
     ]);
   });
 
-  it("los nombres viejos conservan su tamaño", () => {
+  it("the old names keep their size", () => {
     expect(css).toMatch(/--text-caption:\s*0\.8125rem/);
     expect(css).toMatch(/--text-body:\s*1\.0625rem/);
     expect(css).toMatch(/--text-display:\s*2\.125rem/);
   });
 
-  it("la cifra de un KPI tiene un paso por cada sitio donde cabe", () => {
+  it("a KPI's figure has one step per place it fits", () => {
     expect(declared("text-kpi-").sort()).toEqual([
       "--text-kpi-l",
       "--text-kpi-m",
@@ -98,7 +98,7 @@ describe("tokens.css es la única fuente de valores de diseño", () => {
     ]);
   });
 
-  it("declara los cuatro pesos", () => {
+  it("declares the four weights", () => {
     expect(declared("weight-").sort()).toEqual([
       "--weight-bold",
       "--weight-medium",
@@ -120,11 +120,11 @@ describe("tokens.css es la única fuente de valores de diseño", () => {
     expect(css).toContain(`${token}:`);
   });
 
-  it("expone la paleta fija de tonos de módulo", () => {
+  it("exposes the fixed palette of module tones", () => {
     expect(declared("hue-")).toHaveLength(8);
   });
 
-  it("los tonos se distinguen sobre la tarjeta en los dos temas: 3:1 como mínimo", () => {
+  it("the tones stand out on the card in both themes: 3:1 at least", () => {
     const hex = (block: string, name: string) =>
       new RegExp(`--${name}:\\s*(#[0-9a-f]{6})`).exec(block)?.[1];
     const lum = (value: string) => {
@@ -151,7 +151,7 @@ describe("tokens.css es la única fuente de valores de diseño", () => {
     }
   });
 
-  it("el texto secundario se lee: --fg-faint a 4,5:1 sobre la tarjeta y el fondo, en los dos temas", () => {
+  it("secondary text is readable: --fg-faint at 4.5:1 over the card and the background, in both themes", () => {
     const light = css.slice(0, css.indexOf("@media (prefers-color-scheme: dark)"));
     const dark = css.slice(css.indexOf(':root[data-theme="dark"]'));
     const hex = (text: string, name: string) =>
@@ -182,7 +182,7 @@ describe("tokens.css es la única fuente de valores de diseño", () => {
     expect(lum(hex(dark, "--fg-faint")!)).toBeLessThan(lum(hex(dark, "--fg-muted")!));
   });
 
-  it("los tonos del calendario son diez, cada uno en pleno, tintado y tinta, en los dos temas", () => {
+  it("the calendar has ten tones, each solid, tinted and ink, in both themes", () => {
     const light = css.slice(0, css.indexOf("@media (prefers-color-scheme: dark)"));
     const expected = Array.from({ length: 10 }, (_, i) => [
       `--tone-${i + 1}`,
@@ -194,7 +194,7 @@ describe("tokens.css es la única fuente de valores de diseño", () => {
     expect(tones(block('[data-theme="dark"]'))).toEqual(expected);
   });
 
-  it("un evento se lee en los dos temas: la barra a 3:1 y el título a 4,5:1", () => {
+  it("an event reads in both themes: the bar at 3:1 and the title at 4.5:1", () => {
     const hex = (block: string, name: string) =>
       new RegExp(`${name}:\\s*(#[0-9a-f]{6})`).exec(block)?.[1];
     const lum = (value: string) => {
@@ -223,7 +223,7 @@ describe("tokens.css es la única fuente de valores de diseño", () => {
     }
   });
 
-  it("los iconos tienen cuatro tamaños y un trazo grueso, y no más", () => {
+  it("icons have four sizes and a thick stroke, and no more", () => {
     expect(declared("icon-").sort()).toEqual([
       "--icon-badge",
       "--icon-badge-tint",
@@ -253,47 +253,47 @@ describe("tokens.css es la única fuente de valores de diseño", () => {
     expect(css).toContain(`${token}:`);
   });
 
-  it("el mínimo táctil son 44 px", () => {
+  it("the touch minimum is 44 px", () => {
     expect(css).toMatch(/--tap-target:\s*44px/);
   });
 });
 
-describe("material de tarjeta", () => {
-  it("`.surface` no lleva backdrop-filter", () => {
+describe("card material", () => {
+  it("`.surface` has no backdrop-filter", () => {
     const surface = css.slice(css.indexOf(".surface {"), css.indexOf(".surface::after"));
     expect(surface).not.toMatch(/backdrop-filter/);
   });
 
-  it("comparte radio y canto con el cristal", () => {
+  it("shares radius and edge with the glass", () => {
     expect(css).toMatch(/\.surface\s*{[^}]*--radius-surface/);
     expect(css).toMatch(/\.surface::after/);
     expect(css).toMatch(/--surface-edge/);
   });
 
-  it("sube a opaca con prefers-reduced-transparency, igual que el cristal", () => {
+  it("turns opaque with prefers-reduced-transparency, like the glass", () => {
     const reduced = css.slice(css.indexOf("@media (prefers-reduced-transparency: reduce)"));
     expect(reduced).toMatch(/--surface-opacity:\s*1/);
   });
 });
 
-describe("material de cristal", () => {
-  it("--glass-opacity es un ajuste, no una constante enterrada en el componente", () => {
+describe("glass material", () => {
+  it("--glass-opacity is a setting, not a constant buried in the component", () => {
     expect(css).toMatch(/--glass-opacity:/);
     expect(css).toMatch(/rgb\(var\(--glass-tint\) \/ var\(--glass-opacity\)\)/);
   });
 
-  it("tiene canto de vidrio con gradiente", () => {
+  it("has a glass edge with a gradient", () => {
     expect(css).toMatch(/\.glass::after/);
     expect(css).toMatch(/--glass-edge-top/);
     expect(css).toMatch(/--glass-edge-bottom/);
   });
 
-  it("honra prefers-reduced-transparency y prefers-reduced-motion", () => {
+  it("honours prefers-reduced-transparency and prefers-reduced-motion", () => {
     expect(css).toMatch(/@media \(prefers-reduced-transparency: reduce\)/);
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)/);
   });
 
-  it("degrada el blur si el navegador no soporta backdrop-filter", () => {
+  it("degrades the blur if the browser does not support backdrop-filter", () => {
     expect(css).toMatch(/@supports \(backdrop-filter/);
   });
 });
@@ -307,13 +307,13 @@ const tokensIn = (text: string): string[] =>
   [...new Set([...text.matchAll(/--[a-z0-9-]+(?=\s*:)/g)].map((m) => m[0]))].sort();
 
 describe("movimiento", () => {
-  it("los tres muelles son muelles, no curvas de ease", () => {
+  it("the three springs are springs, not ease curves", () => {
     for (const spring of ["--spring", "--spring-snappy", "--spring-bouncy"]) {
       expect(css).toMatch(new RegExp(`${spring}:\\s*linear\\(`));
     }
   });
 
-  it("el muelle con rebote se pasa de 1 y el rápido casi no", () => {
+  it("the bouncy spring overshoots 1 and the fast one barely does", () => {
     const overshoot = (name: string): number => {
       const body = css.match(new RegExp(`${name}:\\s*linear\\(([^)]*)\\)`, "s"))![1]!;
       return Math.max(...body.split(",").map((stop) => Number.parseFloat(stop)));
@@ -322,14 +322,14 @@ describe("movimiento", () => {
     expect(overshoot("--spring")).toBeGreaterThan(overshoot("--spring-snappy"));
   });
 
-  it("prefers-reduced-motion aplana todos los muelles, no solo el primero", () => {
+  it("prefers-reduced-motion flattens every spring, not just the first", () => {
     const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
     for (const spring of ["--spring", "--spring-snappy", "--spring-bouncy"]) {
       expect(reduced).toMatch(new RegExp(`${spring}:\\s*linear\\(0,\\s*1\\)`));
     }
   });
 
-  it("con movimiento reducido las duraciones son cortas pero no cero", () => {
+  it("with reduced motion durations are short but not zero", () => {
     const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
     for (const duration of ["--duration-fast", "--duration-base", "--duration-slow"]) {
       expect(reduced).toMatch(new RegExp(`${duration}:\\s*1ms`));
@@ -338,26 +338,26 @@ describe("movimiento", () => {
 });
 
 describe("esquema oscuro", () => {
-  it("redefine el fondo y el tinte de cristal bajo prefers-color-scheme", () => {
+  it("redefines the background and glass tint under prefers-color-scheme", () => {
     const dark = block('@media (prefers-color-scheme: dark)');
     for (const token of ["--bg-base", "--fg", "--glass-tint", "--glass-opacity"]) {
       expect(dark).toContain(`${token}:`);
     }
   });
 
-  it("el tema oscuro explícito no está vacío", () => {
+  it("the explicit dark theme is not empty", () => {
     expect(tokensIn(block('[data-theme="dark"]')).length).toBeGreaterThan(10);
   });
 
-  it("los dos bloques oscuros declaran exactamente los mismos tokens", () => {
+  it("the two dark blocks declare exactly the same tokens", () => {
     expect(tokensIn(block('[data-theme="dark"]'))).toEqual(
       tokensIn(block('@media (prefers-color-scheme: dark)')),
     );
   });
 });
 
-describe("las marcas de cada app", () => {
-  it("solo arga tiene marca propia; las apps comparten la paleta de sus iconos", () => {
+describe("each app's marks", () => {
+  it("only arga has its own mark; apps share their icons' palette", () => {
     const brands = declared("brand-").map((name) => name.replace("--brand-", "").split("-")[0]);
 
     expect([...new Set(brands)]).toEqual(["arga"]);
@@ -369,15 +369,15 @@ describe("las marcas de cada app", () => {
     );
   });
 
-  it("la marca de arga es la que eligió el dueño: azul noche sobre hueso", () => {
+  it("arga's mark is the owner's choice: night blue on bone", () => {
     expect(css).toContain("--brand-arga-ground:  #e8e4db");
     expect(css).toContain("--brand-arga-river:   #2b3a4a");
     expect(css).toContain("--brand-arga-orchard: #4e7c63");
   });
 });
 
-describe("ni un tamaño de icono suelto", () => {
-  it("las hojas del sistema dimensionan los iconos con los cuatro tokens", () => {
+describe("not one loose icon size", () => {
+  it("the system stylesheets size icons with the four tokens", () => {
     for (const sheet of ["../controls.css", "../library.css", "../widget.css"]) {
       const source = readFileSync(new URL(sheet, import.meta.url), "utf8");
       const rules = source.match(/\.icon[^{]*\{[^}]*\}/g) ?? [];

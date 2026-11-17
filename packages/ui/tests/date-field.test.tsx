@@ -28,27 +28,27 @@ function typeInto(input: HTMLInputElement, text: string): void {
   });
 }
 
-describe("leer y escribir un día", () => {
-  it("enseña el día con el día delante", () => {
+describe("reading and writing a day", () => {
+  it("shows the day with the weekday first", () => {
     expect(spanishDate("2026-10-02")).toBe("02/10/2026");
     expect(spanishDate("")).toBe("");
   });
 
-  it("entiende el día escrito a la española, y el ISO pegado", () => {
+  it("understands a day typed in the locale's order, and pasted ISO", () => {
     expect(parseSpanishDate("2/10/2026")).toBe("2026-10-02");
     expect(parseSpanishDate("02-10-26")).toBe("2026-10-02");
     expect(parseSpanishDate("2026-10-02")).toBe("2026-10-02");
   });
 
-  it("no da por buenos días que no existen ni lo que está a medio escribir", () => {
+  it("does not accept days that do not exist or half-typed input", () => {
     expect(parseSpanishDate("31/02/2026")).toBeNull();
     expect(parseSpanishDate("13/13/2026")).toBeNull();
     expect(parseSpanishDate("02/10")).toBeNull();
   });
 });
 
-describe("el campo", () => {
-  it("escribe en ISO lo tecleado a la española", () => {
+describe("the field", () => {
+  it("writes what was typed in the locale's order as ISO", () => {
     const onChange = vi.fn();
     mount(<DateField label="From" value="" onChange={onChange} />);
     const input = document.querySelector("input")!;
@@ -57,7 +57,7 @@ describe("el campo", () => {
     expect(onChange).toHaveBeenLastCalledWith("2026-10-05");
   });
 
-  it("abre el mes con el lunes primero y elige el día pulsado", async () => {
+  it("opens the month with Monday first and picks the tapped day", async () => {
     const onChange = vi.fn();
     mount(<DateField label="From" value="2026-10-02" onChange={onChange} />);
     expect(document.querySelector("input")!.value).toBe("02/10/2026");
@@ -74,7 +74,7 @@ describe("el campo", () => {
     expect(onChange).toHaveBeenLastCalledWith("2026-10-05");
   });
 
-  it("no deja elegir días pasado el máximo", async () => {
+  it("does not allow picking days past the maximum", async () => {
     mount(<DateField label="Hecho el" value="2026-10-02" max="2026-10-02" onChange={() => {}} />);
     const open = document.querySelector<HTMLButtonElement>('button[aria-label="Pick on the calendar"]')!;
     await act(async () => open.click());

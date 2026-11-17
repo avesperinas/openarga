@@ -29,40 +29,40 @@ describe("when a task is due", () => {
   });
 });
 
-describe("la lista de tareas (ADR-0086 §4)", () => {
-  it("con quien actúa, la casilla es un botón que dice qué hace", () => {
+describe("the task list (ADR-0086 §4)", () => {
+  it("with an actor, the checkbox is a button that says what it does", () => {
     const html = card("2x2", async () => true);
     expect(html).toContain('<button type="button" class="task-check"');
     expect(html).toContain('aria-label="Mark Send the invoice done"');
   });
 
-  it("sin quien actúa, la casilla no es un botón y la tarjeta abre la app", () => {
+  it("without an actor, the checkbox is not a button and the card opens the app", () => {
     expect(card("2x2")).not.toContain("<button");
   });
 
-  it("lo hecho sale tachado y se puede desmarcar", () => {
+  it("done items show struck through and can be unticked", () => {
     const html = card("4x4", async () => true);
     expect(html).toContain('aria-label="Unmark Bread"');
   });
 
-  it("lo vencido va avisado", () => {
+  it("overdue items are flagged", () => {
     expect(card("2x2")).toContain("data-overdue");
   });
 
-  it("en un 1x1, cuántas quedan y cuántas vencidas", () => {
+  it("in a 1x1, how many are left and how many overdue", () => {
     const html = card("1x1");
     expect(html).toContain(">5<");
     expect(html).toContain("1 vencida<");
   });
 
-  it("en una tira, la primera sin hacer y cuántas más", () => {
+  it("in a strip, the first undone and how many more", () => {
     const html = card("4x1", async () => true);
     expect(html).toContain("Send the invoice");
     expect(html).not.toContain("Water the plants");
     expect(html).toContain("+4");
   });
 
-  it("en un 4x4 se agrupa: vencidas, hoy y lo demás", () => {
+  it("in a 4x4 it groups: overdue, today and the rest", () => {
     const html = card("4x4");
     expect(html).toContain("Overdue");
     expect(html).toContain("Today");

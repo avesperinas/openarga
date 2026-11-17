@@ -9,7 +9,7 @@ const tabs = [
 ];
 
 describe("AppShell", () => {
-  it("con detalle, lo pinta al lado de la lista y lo marca para el CSS", () => {
+  it("with detail, it renders it next to the list and marks it for the CSS", () => {
     const html = renderToString(
       <AppShell label="Secciones" tabs={tabs} active="shelf" onSelect={() => undefined} detail={<p>Un libro</p>}>
         <p>La estantería</p>
@@ -21,7 +21,7 @@ describe("AppShell", () => {
     expect(html).toContain('aria-label="Secciones"');
   });
 
-  it("sin detalle (o con `false`), la sección ocupa todo", () => {
+  it("without detail (or with `false`), the section takes everything", () => {
     const html = renderToString(
       <AppShell label="Secciones" tabs={tabs} active="stats" onSelect={() => undefined} detail={false}>
         <p>Cifras</p>
@@ -31,7 +31,7 @@ describe("AppShell", () => {
     expect(html).not.toContain("app-shell-detail");
   });
 
-  it("sin secciones no hay barra ni rail, y el detalle se nombra", () => {
+  it("without sections there is no bar or rail, and the detail is named", () => {
     const html = renderToString(
       <AppShell fill detail={<p>Cena</p>} detailLabel="Evento">
         <p>La semana</p>

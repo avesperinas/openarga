@@ -8,21 +8,21 @@ const base = { title: "Events", hue: 1, size: "2x2", shape: "number" } as const;
 
 const render = (element: React.ReactElement): string => renderToStaticMarkup(element);
 
-describe("la cabecera es del sistema", () => {
-  it("se pinta entera aunque no haya datos", () => {
+describe("the header belongs to the system", () => {
+  it("renders whole even without data", () => {
     const html = render(<Widget {...base} state="loading" />);
 
     expect(html).toContain("Events");
     expect(html).toContain('class="widget-dot"');
   });
 
-  it("el tono sale de la paleta fija, no del componente", () => {
+  it("the tone comes from the fixed palette, not the component", () => {
     expect(render(<Widget {...base} hue={5} state="ready" />)).toContain('data-hue="5"');
   });
 });
 
-describe("los cuatro estados", () => {
-  it("loading trae un esqueleto con la forma del contenido, no un spinner", () => {
+describe("the four states", () => {
+  it("loading brings a skeleton shaped like the content, not a spinner", () => {
     const number = render(<Widget {...base} state="loading" />);
     const list = render(<Widget {...base} shape="list" state="loading" />);
 
@@ -31,11 +31,11 @@ describe("los cuatro estados", () => {
     expect(list.match(/widget-skeleton-bar/g)).toHaveLength(4);
   });
 
-  it("empty dice una frase y no pinta un hueco", () => {
+  it("empty says a sentence and does not draw a gap", () => {
     expect(render(<Widget {...base} state="empty" />)).toContain("Nothing to show yet");
   });
 
-  it("error CONSERVA el último valor bueno, fechado", () => {
+  it("error KEEPS the last good value, dated", () => {
     const html = render(
       <Widget {...base} state="error" updatedAt={new Date(Date.now() - 7200_000)}>
         <WidgetValue>47</WidgetValue>
@@ -47,14 +47,14 @@ describe("los cuatro estados", () => {
     expect(html).toContain("Could not load");
   });
 
-  it("disconnected ofrece conectar, no reintentar", () => {
+  it("disconnected offers to connect, not to retry", () => {
     const html = render(<Widget {...base} state="disconnected" onConnect={() => {}} />);
 
     expect(html).toContain("Conectar");
     expect(html).not.toContain("Try again");
   });
 
-  it("disconnected dice qué fuente no contesta cuando el módulo lo sabe", () => {
+  it("disconnected says which source does not answer when the module knows", () => {
     const html = render(<Widget {...base} state="disconnected" note="Sin conexión con Anthropic" />);
 
     expect(html).toContain("Sin conexión con Anthropic");
@@ -62,10 +62,10 @@ describe("los cuatro estados", () => {
   });
 });
 
-describe("la duda es un modificador, no un estado", () => {
+describe("doubt is a modifier, not a state", () => {
   const uncertainty = { summary: "puede faltar: 2 eventos en 1 entidad sin unir" };
 
-  it("marca el número con el punteado", () => {
+  it("marks the number with the dotted line", () => {
     const html = render(
       <Widget {...base} state="ready" uncertainty={uncertainty}>
         <WidgetValue>7</WidgetValue>
@@ -75,7 +75,7 @@ describe("la duda es un modificador, no un estado", () => {
     expect(html).toContain('data-uncertain="true"');
   });
 
-  it("sin duda no hay marca", () => {
+  it("without doubt there is no mark", () => {
     const html = render(
       <Widget {...base} state="ready">
         <WidgetValue>7</WidgetValue>
@@ -85,7 +85,7 @@ describe("la duda es un modificador, no un estado", () => {
     expect(html).not.toContain("data-uncertain");
   });
 
-  it("en 2x2 solo el punteado; la explicación necesita sitio", () => {
+  it("in 2x2 only the dotted line; the explanation needs room", () => {
     const small = render(
       <Widget {...base} state="ready" uncertainty={uncertainty}>
         <WidgetValue>7</WidgetValue>
@@ -103,7 +103,7 @@ describe("la duda es un modificador, no un estado", () => {
     expect(medium).toContain(uncertainty.summary);
   });
 
-  it("no se pinta sobre un estado sin dato", () => {
+  it("does not render over a state without data", () => {
     for (const state of ["empty", "loading"] as const) {
       const html = render(<Widget {...base} state={state} uncertainty={uncertainty} />);
       expect(html).not.toContain(uncertainty.summary);
@@ -111,13 +111,13 @@ describe("la duda es un modificador, no un estado", () => {
   });
 });
 
-describe("la cabecera", () => {
-  it("no lleva raya debajo, tampoco sobre una lista", () => {
+describe("the header", () => {
+  it("has no line below, not over a list either", () => {
     expect(render(<Widget {...base} state="ready" />)).not.toContain("widget-separator");
     expect(render(<Widget {...base} shape="list" state="ready" />)).not.toContain("widget-separator");
   });
 
-  it("lleva el icono de la app cuando la shell lo da, y si no, el punto", () => {
+  it("carries the app icon when the shell provides it, and otherwise the dot", () => {
     const conIcono = render(<Widget {...base} state="ready" appIcon="/training/icon.svg" />);
     expect(conIcono).toContain('class="widget-icon"');
     expect(conIcono).toContain('src="/training/icon.svg"');
@@ -125,13 +125,13 @@ describe("la cabecera", () => {
     expect(render(<Widget {...base} state="ready" />)).toContain('class="widget-dot"');
   });
 
-  it("pone el tono de la app en la tarjeta, para que lo lea lo de dentro", () => {
+  it("puts the app's tone on the card, for the inside to read", () => {
     expect(render(<Widget {...base} hue={5} state="ready" />)).toContain('data-hue="5"');
   });
 });
 
-describe("el cuerpo", () => {
-  it("es lo único que pone el módulo", () => {
+describe("the body", () => {
+  it("is the only thing the module sets", () => {
     const html = render(
       <Widget {...base} state="ready">
         <WidgetValue>1.284</WidgetValue>
@@ -145,8 +145,8 @@ describe("el cuerpo", () => {
   });
 });
 
-describe("lo que dice el módulo, se ve", () => {
-  it("vacío, con el motivo del módulo y no con la frase genérica", () => {
+describe("what the module says shows", () => {
+  it("empty, with the module's reason and not the generic sentence", () => {
     const html = render(<Widget {...base} state="empty" note="nada conectado todavía" />);
 
     expect(html).toContain("nada conectado todavía");
@@ -154,8 +154,8 @@ describe("lo que dice el módulo, se ve", () => {
   });
 });
 
-describe("las listas", () => {
-  it("cada fila puede llevar su estado, en punto y en color", () => {
+describe("the lists", () => {
+  it("each row can carry its state, as a dot and a colour", () => {
     const html = render(
       <WidgetRows>
         <WidgetRow label="BBVA" value="Caducada" tone="negative" />
@@ -168,7 +168,7 @@ describe("las listas", () => {
     expect(html.match(/widget-row-dot/g)).toHaveLength(1);
   });
 
-  it("se desplaza, y si la tarjeta lleva a algún sitio, tocar una fila lleva allí", () => {
+  it("scrolls, and if the card leads somewhere, tapping a row goes there", () => {
     const linked = render(
       <WidgetRows href="/hub">
         <WidgetRow label="BBVA" value="Caducada" />
@@ -185,8 +185,8 @@ describe("las listas", () => {
   });
 });
 
-describe("el 1x1", () => {
-  it("guarda el título para el lector de pantalla aunque no se vea", () => {
+describe("the 1x1", () => {
+  it("keeps the title for the screen reader even when not visible", () => {
     const html = render(<Widget {...base} size="1x1" state="loading" />);
 
     expect(html).toContain('data-size="1x1"');

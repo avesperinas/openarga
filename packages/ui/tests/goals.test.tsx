@@ -9,8 +9,8 @@ const WEEK = ["met", "missed", "today", "future", "future", "future", "future"].
   state: state as "met" | "missed" | "today" | "future",
 }));
 
-describe("la semana en siete puntos", () => {
-  it("dice su estado a quien no ve los puntos y marca cada día", () => {
+describe("the week in seven dots", () => {
+  it("tells whoever cannot see the dots its state and marks each day", () => {
     const html = renderToStaticMarkup(<WeekDots days={WEEK} label="1 de 5 esta semana" />);
     expect(html).toContain('role="img" aria-label="1 de 5 esta semana"');
     const states = [...html.matchAll(/class="goal-week-day" data-state="([a-z]+)"/g)].map((found) => found[1]);
@@ -18,15 +18,15 @@ describe("la semana en siete puntos", () => {
   });
 });
 
-describe("la fila de una meta", () => {
-  it("la casilla de hoy dice si está marcada", () => {
+describe("a goal's row", () => {
+  it("today's box says whether it is checked", () => {
     const html = renderToStaticMarkup(
       <GoalRow title="Leer" week={WEEK} check={{ checked: true, label: "Hecho hoy: Leer", onClick: () => undefined }} />,
     );
     expect(html).toContain('aria-pressed="true" aria-label="Hecho hoy: Leer"');
   });
 
-  it("el carril no se sale aunque se pase del objetivo, y lleva la marca de hoy", () => {
+  it("the track does not overflow even past the target, and carries today's mark", () => {
     const html = renderToStaticMarkup(
       <GoalRow title="Ahorrar" tone="negative" progress={1.4} expected={0.5} figure="4.200 €" />,
     );
@@ -35,7 +35,7 @@ describe("la fila de una meta", () => {
     expect(html).toContain('data-tone="negative"');
   });
 
-  it("sin carril no hay marca", () => {
+  it("without a track there is no mark", () => {
     const html = renderToStaticMarkup(<GoalRow title="El B2" status="Sin empezar" />);
     expect(html).not.toContain("goal-row-track");
     expect(html).toContain("Sin empezar");

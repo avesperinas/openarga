@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 
 import { YearCalendar, monthStarts, yearCells, yearLevel } from "../src/index";
 
-describe("el año", () => {
-  it("son 53 semanas que acaban en el último día, con el lunes arriba", () => {
+describe("the year", () => {
+  it("they are 53 weeks ending on the last day, with Monday on top", () => {
     const cells = yearCells([], "2026-09-25");
 
     expect(cells.at(-1)).toMatchObject({ day: "2026-09-25", week: 52, weekday: 4 });
@@ -21,7 +21,7 @@ describe("el año", () => {
     expect(months.map((one) => one.label)).toContain("ene");
   });
 
-  it("sin dato no es cero, y sin objetivo los escalones se reparten hasta el tope", () => {
+  it("no data is not zero, and without a target the steps spread up to the top", () => {
     expect(yearLevel(undefined, 8000)).toBe("none");
     expect(yearLevel(0, 8000)).toBe(0);
     expect(yearLevel(1500, 8000)).toBe(1);
@@ -30,7 +30,7 @@ describe("el año", () => {
     expect(yearLevel(8000, 8000)).toBe(4);
   });
 
-  it("con objetivo, el cuarto escalón es llegar y quedarse cerca no cuenta", () => {
+  it("with a target, the fourth step is reaching it and getting close does not count", () => {
     expect(yearLevel(0, 10000, true)).toBe(0);
     expect(yearLevel(2000, 10000, true)).toBe(1);
     expect(yearLevel(5000, 10000, true)).toBe(2);
@@ -39,7 +39,7 @@ describe("el año", () => {
     expect(yearLevel(15000, 10000, true)).toBe(4);
   });
 
-  it("pinta los días con dato, los huecos y la leyenda", () => {
+  it("renders the days with data, the gaps and the legend", () => {
     const html = renderToStaticMarkup(
       <YearCalendar
         label="Steps"
@@ -59,7 +59,7 @@ describe("el año", () => {
     expect(html).toContain("target");
   });
 
-  it("sin días lo dice", () => {
+  it("without days it says so", () => {
     expect(renderToStaticMarkup(<YearCalendar label="Steps" days={[]} />)).toContain("No data this year");
   });
 });

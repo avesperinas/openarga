@@ -42,13 +42,13 @@ const render = (element: React.ReactElement): string => renderToStaticMarkup(ele
 const noop = () => {};
 
 describe("Button", () => {
-  it("es secundario por defecto y nunca envía un formulario sin pedirlo", () => {
+  it("is secondary by default and never submits a form unasked", () => {
     const html = render(<Button onClick={noop}>Cancelar</Button>);
     expect(html).toContain('data-variant="secondary"');
     expect(html).toContain('type="button"');
   });
 
-  it("lleva la variante, el tamaño y el ancho que se le piden", () => {
+  it("carries the variant, size and width asked of it", () => {
     const html = render(
       <Button variant="destructive" size="small" block icon="trash">
         Borrar
@@ -62,7 +62,7 @@ describe("Button", () => {
 });
 
 describe("IconButton", () => {
-  it("se anuncia con su etiqueta y el icono queda como decoración", () => {
+  it("announces itself with its label and the icon stays decorative", () => {
     const html = render(<IconButton icon="close" label="Close" onClick={noop} />);
     expect(html).toContain('aria-label="Close"');
     expect(html).toContain('aria-hidden="true"');
@@ -80,31 +80,31 @@ describe("SegmentedControl", () => {
     <SegmentedControl label="Tema" options={[...options]} value="light" onChange={noop} />,
   );
 
-  it("es un grupo de radio con un único elegido", () => {
+  it("is a radio group with a single chosen one", () => {
     expect(html).toContain('role="radiogroup"');
     expect(html).toContain('aria-label="Tema"');
     expect(html.match(/role="radio"/g)).toHaveLength(3);
     expect(html.match(/aria-checked="true"/g)).toHaveLength(1);
   });
 
-  it("solo el elegido entra en el orden de tabulación", () => {
+  it("only the chosen one enters the tab order", () => {
     expect(html.match(/tabindex="0"/g)).toHaveLength(1);
     expect(html.match(/tabindex="-1"/g)).toHaveLength(2);
   });
 
-  it("el pulgar sabe cuántos segmentos hay y a cuál ir", () => {
+  it("the thumb knows how many segments there are and which to go to", () => {
     expect(html).toContain("--segments:3");
     expect(html).toContain("--selected:1");
   });
 
-  it("con un valor que no está en la lista, el pulgar no se va fuera del carril", () => {
+  it("with a value not in the list, the thumb does not leave the track", () => {
     const stray = render(
       <SegmentedControl label="Tema" options={[...options]} value={"sepia" as never} onChange={noop} />,
     );
     expect(stray).toContain("--selected:0");
   });
 
-  it("puede quedarse en solo iconos en pantalla estrecha sin perder el nombre", () => {
+  it("can stay icons-only on a narrow screen without losing the name", () => {
     const narrow = render(
       <SegmentedControl label="Tema" options={[...options]} value="light" onChange={noop} iconsWhenNarrow />,
     );
@@ -115,14 +115,14 @@ describe("SegmentedControl", () => {
 });
 
 describe("segmentFor", () => {
-  it("las flechas avanzan y dan la vuelta en los extremos", () => {
+  it("the arrows advance and wrap at the ends", () => {
     expect(segmentFor("ArrowRight", 0, 3)).toBe(1);
     expect(segmentFor("ArrowRight", 2, 3)).toBe(0);
     expect(segmentFor("ArrowLeft", 0, 3)).toBe(2);
     expect(segmentFor("ArrowDown", 1, 3)).toBe(2);
   });
 
-  it("Inicio y Fin van a los extremos y el resto de teclas no mueve nada", () => {
+  it("Home and End go to the ends and other keys move nothing", () => {
     expect(segmentFor("Home", 2, 3)).toBe(0);
     expect(segmentFor("End", 0, 3)).toBe(2);
     expect(segmentFor("a", 1, 3)).toBeNull();
@@ -131,7 +131,7 @@ describe("segmentFor", () => {
 });
 
 describe("Slider", () => {
-  it("pinta el tramo relleno hasta el valor y anuncia el texto, no el número crudo", () => {
+  it("fills the stretch up to the value and announces the text, not the raw number", () => {
     const html = render(
       <Slider
         label="Transparencia"
@@ -147,7 +147,7 @@ describe("Slider", () => {
     expect(html).toContain('aria-valuetext="60 por ciento"');
   });
 
-  it("el relleno se recorta al carril", () => {
+  it("the fill is clipped to the track", () => {
     expect(sliderFill(2, 0, 1)).toBe(100);
     expect(sliderFill(-1, 0, 1)).toBe(0);
     expect(sliderFill(1, 1, 1)).toBe(0);
@@ -155,7 +155,7 @@ describe("Slider", () => {
 });
 
 describe("List", () => {
-  it("cada fila va en su elemento de lista, y lo deshabilitado sigue en su sitio", () => {
+  it("each row goes in its list item, and disabled ones stay in place", () => {
     const html = render(
       <List>
         <ListRow title="Eventos" detail="Ya colocado" hue={1} accessory="done" disabled />
@@ -167,7 +167,7 @@ describe("List", () => {
     expect(html).toContain('data-hue="5"');
   });
 
-  it("con segunda línea y cifra, el nombre y lo que es van apilados y el importe aparte", () => {
+  it("with a second line and a figure, the name and what it is stack and the amount sits apart", () => {
     const html = render(
       <ListRow title="Supermercado Alba" subtitle="Sin categoría" value="−60,00 €" tone="warning" onClick={noop} />,
     );
@@ -177,7 +177,7 @@ describe("List", () => {
     expect(html).toContain('data-tone="warning"');
   });
 
-  it("sin segunda línea, la fila es la de siempre", () => {
+  it("without a second line, the row is the usual one", () => {
     const html = render(<ListRow title="Demo" detail="2x2" onClick={noop} />);
     expect(html).not.toContain("list-row-text");
     expect(html).not.toContain("list-row-value");
@@ -185,7 +185,7 @@ describe("List", () => {
 });
 
 describe("CheckRow", () => {
-  it("es una casilla que dice si está marcada, y la fila entera es lo que se toca", () => {
+  it("is a checkbox that says whether it is checked, and the whole row is the target", () => {
     const html = render(<CheckRow title="Leche" detail="2" checked onToggle={noop} />);
     expect(html).toContain('role="checkbox"');
     expect(html).toContain('aria-checked="true"');
@@ -194,7 +194,7 @@ describe("CheckRow", () => {
     expect(html).not.toContain("check-row-more");
   });
 
-  it("lo que no es marcar va en su propio botón, y ese botón tiene nombre", () => {
+  it("anything other than ticking goes in its own button, and that button has a name", () => {
     const html = render(
       <CheckRow title="Pan" checked={false} onToggle={noop} more={{ label: "Cambiar pan", onClick: noop }} />,
     );
@@ -205,30 +205,30 @@ describe("CheckRow", () => {
 });
 
 describe("Stepper", () => {
-  it("pequeño, para una fila: lo dice para el CSS y sigue siendo el mismo grupo con su nombre (T-B05)", () => {
+  it("small, for a row: it says so for the CSS and is still the same named group (T-B05)", () => {
     const html = render(<Stepper size="small" label="Reps" value={8} step={1} onChange={noop} />);
     expect(html).toContain('data-size="small"');
     expect(html).toContain('aria-label="Reps"');
     expect(render(<Stepper label="Reps" value={8} step={1} onChange={noop} />)).not.toContain("data-size");
   });
 
-  it("sube y baja por pasos sin arrastrar error de coma flotante", () => {
+  it("steps up and down without accumulating floating point error", () => {
     let value = 60;
     for (let i = 0; i < 7; i++) value = stepValue(value, 2.5, 1);
     expect(value).toBe(77.5);
     expect(stepValue(0.3, 0.1, 1)).toBe(0.4);
   });
 
-  it("no baja del mínimo ni sube del máximo", () => {
+  it("does not go below the minimum or above the maximum", () => {
     expect(stepValue(1, 2.5, -1, 0)).toBe(0);
     expect(stepValue(99, 5, 1, 0, 100)).toBe(100);
   });
 
-  it("sin valor, el primer toque arranca en el mínimo en vez de sumar a la nada", () => {
+  it("without a value, the first tap starts at the minimum instead of adding to nothing", () => {
     expect(stepValue(null, 2.5, 1, 20)).toBe(20);
   });
 
-  it("lee la coma de un teclado español, y vacío no es cero", () => {
+  it("reads the decimal comma of a Spanish keyboard, and empty is not zero", () => {
     expect(parseDecimal("62,5")).toBe(62.5);
     expect(parseDecimal(" 17.5 ")).toBe(17.5);
     expect(parseDecimal("")).toBeNull();
@@ -241,7 +241,7 @@ describe("Stepper", () => {
     expect(formatDecimal(null)).toBe("—");
   });
 
-  it("es un grupo con nombre, y sus botones dicen qué cambian", () => {
+  it("is a named group, and its buttons say what they change", () => {
     const html = render(<Stepper label="Weight" value={60} step={2.5} unit="kg" onChange={noop} />);
     expect(html).toContain('role="group"');
     expect(html).toContain('aria-label="Less weight"');
@@ -249,14 +249,14 @@ describe("Stepper", () => {
     expect(html).not.toContain("<input");
   });
 
-  it("en el mínimo el botón de bajar se apaga", () => {
+  it("at the minimum the decrease button turns off", () => {
     const html = render(<Stepper label="Reps" value={0} step={1} onChange={noop} />);
     expect(html).toMatch(/aria-label="Less reps" disabled/);
   });
 });
 
 describe("ChoiceChips", () => {
-  it("es un grupo de radio con la elegida marcada", () => {
+  it("is a radio group with the chosen one checked", () => {
     const html = render(
       <ChoiceChips
         label="Variante"
@@ -274,29 +274,29 @@ describe("ChoiceChips", () => {
 });
 
 describe("Elapsed", () => {
-  it("cuenta minutos y segundos, y horas cuando las hay", () => {
+  it("counts minutes and seconds, and hours when there are some", () => {
     expect(formatElapsed(7_000)).toBe("0:07");
     expect(formatElapsed(750_000)).toBe("12:30");
     expect(formatElapsed(3_902_000)).toBe("1:05:02");
   });
 
-  it("un reloj adelantado no da tiempo negativo", () => {
+  it("a clock running ahead gives no negative time", () => {
     expect(formatElapsed(-5_000)).toBe("0:00");
   });
 
-  it("sin fecha de inicio no inventa un cero", () => {
+  it("without a start date it does not invent a zero", () => {
     const html = render(<Elapsed since={null} label="Descanso" now={0} />);
     expect(html).toContain("—");
   });
 });
 
-describe("SyncMark y ConfirmButton", () => {
-  it("el estado de envío se anuncia, no solo se colorea", () => {
+describe("SyncMark and ConfirmButton", () => {
+  it("the sending state is announced, not only coloured", () => {
     expect(render(<SyncMark state="pending" />)).toContain('aria-label="Waiting to be sent"');
     expect(render(<SyncMark state="saved" />)).toContain('aria-label="Saved"');
   });
 
-  it("confirmar dice si ya está confirmada", () => {
+  it("confirm says whether it is already confirmed", () => {
     expect(render(<ConfirmButton label="Confirmar serie 1" confirmed />)).toContain(
       'aria-pressed="true"',
     );
@@ -304,7 +304,7 @@ describe("SyncMark y ConfirmButton", () => {
 });
 
 describe("AppBar", () => {
-  it("acepta acciones y no nodos", () => {
+  it("accepts actions and not nodes", () => {
     const html = render(
       <AppBar
         title="Pull"
@@ -320,7 +320,7 @@ describe("AppBar", () => {
 });
 
 describe("MonthCalendar", () => {
-  it("las semanas van de lunes a domingo, con huecos antes del 1", () => {
+  it("weeks run Monday to Sunday, with gaps before the 1st", () => {
     const weeks = monthWeeks(2026, 8);
     expect(weeks).toHaveLength(5);
     expect(weeks[0]?.monday).toBe("2026-08-31");
@@ -329,7 +329,7 @@ describe("MonthCalendar", () => {
     expect(weeks[4]?.cells.filter(Boolean)).toHaveLength(3);
   });
 
-  it("con etiqueta de semana, cada fila lleva la suya a la izquierda", () => {
+  it("with a week label, each row carries its own on the left", () => {
     const html = render(
       <MonthCalendar
         year={2026}
@@ -346,7 +346,7 @@ describe("MonthCalendar", () => {
     expect(html).toContain(">R12</span>");
   });
 
-  it("vacío se pinta entero, con hoy señalado", () => {
+  it("empty, it renders whole, with today marked", () => {
     const html = render(
       <MonthCalendar year={2026} month={8} marks={{}} today="2026-09-16" onPrevious={noop} onNext={noop} />,
     );
@@ -355,7 +355,7 @@ describe("MonthCalendar", () => {
     expect(html).toMatch(/data-today="true"[^>]*aria-label="Wednesday 16 September"/);
   });
 
-  it("un día con entreno lleva su tipo y lo dice", () => {
+  it("a day with a workout carries its kind and says it", () => {
     const html = render(
       <MonthCalendar
         year={2026}
@@ -369,21 +369,21 @@ describe("MonthCalendar", () => {
     expect(html).toMatch(/data-marked="true" data-kind="pull"[^>]*aria-label="Monday 14 September: Pull, 52 min"/);
   });
 
-  it("el día local no se corre por el huso", () => {
+  it("the local day does not shift with the time zone", () => {
     expect(isoDay(new Date(2026, 0, 1, 0, 30))).toBe("2026-01-01");
   });
 });
 
 describe("VersionTag", () => {
-  it("enseña qué es y qué versión corre, sin adornos", () => {
+  it("shows what it is and which version runs, without decoration", () => {
     const html = render(<VersionTag name="training" version="v1.2.0" />);
     expect(html).toContain("training");
     expect(html).toContain("v1.2.0");
   });
 });
 
-describe("TabBar, Sheet y TextField", () => {
-  it("la pestaña activa se anuncia como la página actual", () => {
+describe("TabBar, Sheet and TextField", () => {
+  it("the active tab announces itself as the current page", () => {
     const html = render(
       <TabBar
         label="Secciones"
@@ -399,7 +399,7 @@ describe("TabBar, Sheet y TextField", () => {
     expect(html).toMatch(/aria-current="page"[^>]*>.*Plan/);
   });
 
-  it("la hoja es un diálogo con nombre y su acción", () => {
+  it("the sheet is a named dialog with its action", () => {
     const html = render(
       <Sheet title="Añadir ejercicio" onClose={noop} action={{ label: "Añadir", onClick: noop }}>
         <p>contenido</p>
@@ -410,7 +410,7 @@ describe("TabBar, Sheet y TextField", () => {
     expect(html).toContain("Añadir</span></button>");
   });
 
-  it("sin acción, el cuerpo es lo último y deja sitio a la barra de inicio del teléfono", () => {
+  it("without an action, the body is last and leaves room for the phone's home bar", () => {
     const html = render(
       <Sheet title="¿Empezar Pull?" onClose={noop}>
         <button type="button">Empezar</button>
@@ -423,7 +423,7 @@ describe("TabBar, Sheet y TextField", () => {
     expect(rule).toContain("env(safe-area-inset-bottom)");
   });
 
-  it("el campo está unido a su etiqueta y a su pista", () => {
+  it("the field is tied to its label and its hint", () => {
     const html = render(<TextField label="Nombre" value="" onChange={noop} hint="Obligatorio" invalid />);
     const id = /for="([^"]+)"/.exec(html)?.[1];
     expect(html).toContain(`id="${id}"`);
@@ -438,14 +438,14 @@ describe("LevelChips", () => {
     { value: "secondary", label: "secundario" },
   ] as const;
 
-  it("tocar recorre principal, secundario y sin elegir", () => {
+  it("tapping cycles primary, secondary and unchosen", () => {
     const levels = [...LEVELS];
     expect(nextLevel(levels, undefined)).toBe("primary");
     expect(nextLevel(levels, "primary")).toBe("secondary");
     expect(nextLevel(levels, "secondary")).toBeUndefined();
   });
 
-  it("el nivel se anuncia y se ve, no solo se colorea", () => {
+  it("the level is announced and visible, not only coloured", () => {
     const html = render(
       <LevelChips
         label="Músculos"
@@ -467,7 +467,7 @@ describe("LevelChips", () => {
 });
 
 describe("WallpaperPicker", () => {
-  it("marca el elegido, y seguir el heredado es una opción más", () => {
+  it("marks the chosen one, and following the inherited one is one more option", () => {
     const options = [
       { id: "marea", name: "Marea", image: "/wallpapers/marea.svg" },
       { id: "duna", name: "Duna", image: "/wallpapers/duna.svg" },
@@ -490,7 +490,7 @@ describe("WallpaperPicker", () => {
 });
 
 describe("Switch", () => {
-  it("es un interruptor con nombre que dice si está encendido", () => {
+  it("is a named switch that says whether it is on", () => {
     const on = render(<Switch label="Programación" checked onChange={noop} />);
     const off = render(<Switch label="Programación" checked={false} onChange={noop} />);
 
@@ -503,7 +503,7 @@ describe("Switch", () => {
 });
 
 describe("CopyField", () => {
-  it("enseña el valor sin dejar editarlo, y el botón copia sin enviar nada", () => {
+  it("shows the value without letting it be edited, and the button copies without sending anything", () => {
     const html = renderToStaticMarkup(<CopyField label="Client ID" value="claude" />);
 
     expect(html).toContain('readOnly=""');
@@ -513,7 +513,7 @@ describe("CopyField", () => {
     expect(html).toContain(">Copy<");
   });
 
-  it("la etiqueta nombra el campo", () => {
+  it("the label names the field", () => {
     const html = renderToStaticMarkup(<CopyField label="URL del servidor" value="https://x/mcp" />);
     const id = /<input id="([^"]+)"/.exec(html)?.[1];
 
@@ -532,7 +532,7 @@ describe("CredentialField", () => {
     onRemove: () => undefined,
   };
 
-  it("puesta: lo dice con sus cuatro últimos, deja cambiarla y quitarla, sin enseñar el valor", () => {
+  it("set: it says so with its last four, allows changing and removing it, without showing the value", () => {
     const html = renderToStaticMarkup(<CredentialField {...props} configured hint="…a3f9" />);
 
     expect(html).toContain('type="password"');
@@ -541,7 +541,7 @@ describe("CredentialField", () => {
     expect(html).toContain('value=""');
   });
 
-  it("sin `onRemove` se puede cambiar pero no quitar: una conexión no se queda sin su clave", () => {
+  it("without `onRemove` it can be changed but not removed: a connection does not lose its key", () => {
     const html = renderToStaticMarkup(<CredentialField {...props} onRemove={undefined} configured hint="…a3f9" />);
 
     expect(html).toContain("…a3f9");
@@ -549,7 +549,7 @@ describe("CredentialField", () => {
     expect(html).not.toContain("Remove");
   });
 
-  it("sin poner: pide pegarla, dice dónde se consigue y no ofrece quitar", () => {
+  it("not set: asks to paste it, says where to get it and does not offer removal", () => {
     const html = renderToStaticMarkup(<CredentialField {...props} configured={false} />);
 
     expect(html).toContain("Paste it here");
@@ -557,7 +557,7 @@ describe("CredentialField", () => {
     expect(html).not.toContain("Remove");
   });
 
-  it("lo que falla se dice en el propio campo", () => {
+  it("what fails is said in the field itself", () => {
     const html = renderToStaticMarkup(
       <CredentialField {...props} configured={false} problem="No se ha guardado." />,
     );

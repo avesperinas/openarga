@@ -18,23 +18,23 @@ import {
   ringMark,
 } from "../src/index";
 
-describe("lo principal y su apoyo", () => {
-  it("lo principal va antes que el apoyo en el DOM, y el apoyo dice su nombre", () => {
+describe("the main part and its support", () => {
+  it("the main part comes before the support in the DOM, and the support says its name", () => {
     const html = renderToStaticMarkup(<Panes main={<p>uno</p>} aside={<p>dos</p>} asideLabel="Atajos" />);
     expect(html.indexOf("uno")).toBeLessThan(html.indexOf("dos"));
     expect(html).toContain('aria-label="Atajos"');
     expect(html).not.toContain("data-aside-first");
   });
 
-  it("con asideFirst lo marca para el móvil sin cambiar el orden del DOM", () => {
+  it("with asideFirst it marks it for the phone without changing the DOM order", () => {
     const html = renderToStaticMarkup(<Panes main={<p>uno</p>} aside={<p>dos</p>} asideLabel="El plan" asideFirst />);
     expect(html).toContain('data-aside-first="true"');
     expect(html.indexOf("uno")).toBeLessThan(html.indexOf("dos"));
   });
 });
 
-describe("las filas que se ven o no", () => {
-  it("la fila dice qué hace, lleva su tono y, apagada, se dice", () => {
+describe("the rows that show or not", () => {
+  it("the row says what it does, carries its tone and, when disabled, says so", () => {
     const html = renderToStaticMarkup(<ToggleRow name="Plan" tone={2} checked={false} onChange={() => undefined} detail="De fondo" />);
     expect(html).toContain('aria-label="Mostrar Plan"');
     expect(html).toContain('data-tone="2"');
@@ -42,7 +42,7 @@ describe("las filas que se ven o no", () => {
     expect(html).toContain("De fondo");
   });
 
-  it("el grupo a medias lleva su casilla a medias, y cerrado no pinta sus filas", () => {
+  it("a partly chosen group carries a mixed checkbox, and closed it renders no rows", () => {
     const html = renderToStaticMarkup(
       <ToggleGroup name="Viajes" count="1 de 3" state="mixed" onChange={() => undefined} open={false} onOpen={() => undefined}>
         <li>fila</li>
@@ -53,7 +53,7 @@ describe("las filas que se ven o no", () => {
     expect(html).not.toContain("fila");
   });
 
-  it("a medias, la casilla ofrece mostrarlo todo", () => {
+  it("partly shown, the checkbox offers to show everything", () => {
     const html = renderToStaticMarkup(
       <ToggleGroup name="Viajes" state="mixed" onChange={() => undefined} open onOpen={() => undefined}>
         <li>fila</li>
@@ -64,8 +64,8 @@ describe("las filas que se ven o no", () => {
   });
 });
 
-describe("de un vistazo", () => {
-  it("con acción, la tarjeta es un botón con su nombre y su veredicto, y la «i» va fuera", () => {
+describe("at a glance", () => {
+  it("with an action, the card is a button with its name and verdict, and the “i” goes outside", () => {
     const html = renderToStaticMarkup(
       <VitalCard label="Sleep" icon="moon" ring={{ value: 81, target: 100, display: "81" }} verdict="Good" tone="good" info="what it is" onOpen={() => undefined} />,
     );
@@ -74,7 +74,7 @@ describe("de un vistazo", () => {
     expect(html.indexOf("info-button")).toBeGreaterThan(html.indexOf("</button>"));
   });
 
-  it("la marca del anillo cae en su ángulo", () => {
+  it("the ring's mark falls at its angle", () => {
     const half = ringMark(0.5);
     expect(half.x1).toBeCloseTo(50);
     expect(half.y1).toBeGreaterThan(50);
@@ -83,28 +83,28 @@ describe("de un vistazo", () => {
     expect(quarter.x1).toBeGreaterThan(50);
   });
 
-  it("una cifra con su línea; sin acción no es un botón", () => {
+  it("a figure with its line; without an action it is not a button", () => {
     const html = renderToStaticMarkup(<TrendTile label="Reposo" value="60 lpm" weeks={[60, null, 58, 57]} />);
     expect(html).toContain("60 lpm");
     expect(html).not.toContain("<button");
   });
 });
 
-describe("la línea pequeña", () => {
-  it("un hueco corta la línea en dos tramos y no se rellena", () => {
+describe("the small line", () => {
+  it("a gap cuts the line into two stretches and is not filled", () => {
     const html = renderToStaticMarkup(<Sparkline series={[1, 2, null, 3, 4]} />);
     expect((html.match(/M /g) ?? []).length).toBe(2);
     expect(html).not.toContain("chart-area");
   });
 
-  it("las marcas son rayas en su sitio", () => {
+  it("the marks are ticks in their place", () => {
     const html = renderToStaticMarkup(<Sparkline series={[1, 2, 3]} marks={[1]} />);
     expect(html).toContain("sparkline-mark");
   });
 });
 
-describe("las 24 horas", () => {
-  it("cinco niveles, y lo que aún no ha llegado, vacío", () => {
+describe("the 24 hours", () => {
+  it("five levels, and what has not arrived yet, empty", () => {
     expect([0, 3, 10, 20, 45].map(hourLevel)).toEqual([0, 1, 2, 3, 4]);
     const html = renderToStaticMarkup(<HourStrip values={Array(24).fill(10)} label="Tensión" format={(v) => `${v} min`} now={12} />);
     expect((html.match(/data-future/g) ?? []).length).toBe(11);
@@ -112,8 +112,8 @@ describe("las 24 horas", () => {
   });
 });
 
-describe("variantes de lo que ya había", () => {
-  it("la barra repartida con su hueco y con los colores de las zonas", () => {
+describe("variants of what already existed", () => {
+  it("the split bar with its gap and the zone colours", () => {
     const html = renderToStaticMarkup(
       <SplitBar label="Kcal" palette="zones" parts={[{ label: "A", value: "1", share: 1, hue: 1 }]} rest={{ label: "Queda", value: "2", share: 2 }} />,
     );
@@ -122,14 +122,14 @@ describe("variantes de lo que ya había", () => {
     expect(html).toContain("Queda");
   });
 
-  it("las tarjetas apagadas y la compartida", () => {
+  it("the disabled cards and the shared one", () => {
     expect(renderToStaticMarkup(<Tile title="X" hue={1} muted />)).toContain("data-muted");
     const photo = renderToStaticMarkup(<PhotoTile title="Y" hue={2} icon="paw" shared badge="Vencido" badgeTone="warning" />);
     expect(photo).toContain("Compartido");
     expect(photo).toContain('data-tone="warning"');
   });
 
-  it("los miles llevan punto también en cuatro cifras", () => {
+  it("thousands are grouped in four-digit numbers too", () => {
     expect(plain(1560)).toBe("1,560");
   });
 });

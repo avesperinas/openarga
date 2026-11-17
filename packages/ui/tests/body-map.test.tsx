@@ -3,20 +3,20 @@ import { describe, expect, it } from "vitest";
 
 import { BODY_MUSCLES, BodyMap, BodyMaps, changeColor, muscleOfZone, musclesOn } from "../src/index";
 
-describe("el cuerpo", () => {
-  it("cada músculo de Training se ve en alguna cara", () => {
+describe("the body", () => {
+  it("each Training muscle shows on some side", () => {
     const seen = new Set([...musclesOn("front"), ...musclesOn("back")]);
     expect([...BODY_MUSCLES].filter((muscle) => !seen.has(muscle))).toEqual([]);
   });
 
-  it("el deltoide pinta el anterior de frente, el posterior de espalda y si no, el lateral", () => {
+  it("the deltoid paints the front head from the front, the rear from the back and otherwise the side", () => {
     expect(muscleOfZone("front", "deltoids", { front_delts: "red" })).toBe("front_delts");
     expect(muscleOfZone("front", "deltoids", { side_delts: "red" })).toBe("side_delts");
     expect(muscleOfZone("back", "deltoids", { rear_delts: "red", side_delts: "blue" })).toBe("rear_delts");
     expect(muscleOfZone("back", "head", {})).toBeNull();
   });
 
-  it("pinta cada músculo con su color y el resto, vacío", () => {
+  it("paints each muscle in its colour and the rest empty", () => {
     const html = renderToStaticMarkup(<BodyMap side="back" label="Dorsal" colors={{ lats: "var(--positive)" }} />);
     expect(html).toContain('role="img"');
     expect(html).toContain('aria-label="Dorsal"');
@@ -24,14 +24,14 @@ describe("el cuerpo", () => {
     expect(html).toContain('fill="var(--body-empty)"');
   });
 
-  it("con onSelect, cada músculo es un botón con su nombre", () => {
+  it("with onSelect, each muscle is a button with its name", () => {
     const html = renderToStaticMarkup(
       <BodyMap side="front" label="Elige" colors={{}} names={{ chest: "Pecho" }} onSelect={() => undefined} />,
     );
     expect(html).toMatch(/role="button" tabindex="0" aria-label="Pecho"/);
   });
 
-  it("el color de un cambio: estable entre −1 y +1, verde arriba, rojo abajo, nada sin dato", () => {
+  it("the colour of a change: steady between −1 and +1, green up, red down, none without data", () => {
     expect(changeColor(null)).toBeUndefined();
     expect(changeColor(0.8)).toBe("var(--body-steady)");
     expect(changeColor(5)).toContain("var(--positive)");

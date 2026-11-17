@@ -31,18 +31,18 @@ import {
 
 const render = (node: React.ReactElement) => renderToStaticMarkup(node);
 
-describe("leer para aprender", () => {
-  it("un texto sale en sus párrafos", () => {
+describe("reading to learn", () => {
+  it("a text comes out in its paragraphs", () => {
     expect(render(<Prose text={"Uno.\n\nDos."} />).match(/<p>/g)).toHaveLength(2);
   });
 
-  it("los párrafos se separan por líneas y los minutos salen a 220 palabras", () => {
+  it("paragraphs split on lines and minutes come at 220 words", () => {
     expect(paragraphs("Uno.\n\nDos.\nTres.\n\n")).toEqual(["Uno.", "Dos.", "Tres."]);
     expect(readingMinutes("palabra ".repeat(660))).toBe(3);
     expect(readingMinutes("")).toBe(1);
   });
 
-  it("el artículo lleva su tema, titular, entradilla, secciones con ladillo y lo destacado", () => {
+  it("the article carries its topic, headline, lead, sections with subheads and highlights", () => {
     const html = render(
       <ArticleReader
         id="leer"
@@ -65,7 +65,7 @@ describe("leer para aprender", () => {
     expect(html).toContain("Para pensar:");
   });
 
-  it("la barra de secciones solo sale con dos o más y marca la primera", () => {
+  it("the section bar shows only with two or more and marks the first", () => {
     expect(render(<SectionRail label="Secciones" items={[{ id: "a", label: "Leer", icon: "book" }]} />)).toBe("");
     const html = render(
       <SectionRail
@@ -81,7 +81,7 @@ describe("leer para aprender", () => {
     expect(html.match(/aria-current="location"/g)).toHaveLength(1);
   });
 
-  it("las reacciones dicen cuál está elegida", () => {
+  it("the reactions say which one is chosen", () => {
     const html = render(
       <ReactionBar
         label="¿Qué te ha parecido?"
@@ -98,7 +98,7 @@ describe("leer para aprender", () => {
     expect(html).toContain('aria-pressed="false"');
   });
 
-  it("las ramas se bloquean mientras se pide una", () => {
+  it("branches lock while one is being requested", () => {
     const html = render(
       <BranchList
         title="Quiero saber más sobre…"
@@ -115,7 +115,7 @@ describe("leer para aprender", () => {
     expect(html).toContain('data-done="true"');
   });
 
-  it("un recurso con portada enlaza fuera y su botón dice si está guardado", () => {
+  it("a resource with a cover links outside and its button says whether it is saved", () => {
     const html = render(
       <ResourceRow cover="/c.png" icon="book" title="Un libro" href="https://openlibrary.org/x" detail="2008 · 720 páginas" saved onSave={() => {}} />,
     );
@@ -128,7 +128,7 @@ describe("leer para aprender", () => {
     expect(plain).not.toContain("<button");
   });
 
-  it("una recomendación en tarjeta sin portada lleva su glifo y su tipo", () => {
+  it("a recommendation card without a cover carries its glyph and kind", () => {
     const html = render(
       <Carousel label="Para ti esta semana">
         <PickCard icon="film" hue={7} kind="Película" title="Ágora" detail="2009" why="Hipatia" />
@@ -143,7 +143,7 @@ describe("leer para aprender", () => {
     expect(html).toContain('tabindex="0"');
   });
 
-  it("un dato del día cuenta su posición, enlaza su fuente y sus reacciones", () => {
+  it("a fact of the day counts its position, links its source and its reactions", () => {
     const html = render(
       <FactCard
         index={2}
@@ -166,7 +166,7 @@ describe("leer para aprender", () => {
     expect(html.match(/aria-pressed="true"/g)).toHaveLength(1);
   });
 
-  it("la cabecera, la racha, lo que flota y la espera", () => {
+  it("the header, the streak, what floats and the wait", () => {
     const html = render(
       <ReaderHero
         eyebrow="Tuesday 10 November"
@@ -188,7 +188,7 @@ describe("leer para aprender", () => {
 });
 
 describe("conocer a alguien", () => {
-  it("una pregunta de una opción contesta al tocar, sin botón de seguir", () => {
+  it("a single-choice question answers on tap, without a continue button", () => {
     const html = render(
       <QuestionCard
         kind="one"
@@ -211,7 +211,7 @@ describe("conocer a alguien", () => {
     expect(html).not.toContain("Continue");
   });
 
-  it("las de varias marcan y llevan Seguir; la libre, su cuadro", () => {
+  it("multiple-choice ones check and carry Continue; the free one, its box", () => {
     const many = render(
       <QuestionCard kind="many" text="Which topics?" options={[{ value: "a", label: "A" }]} onAnswer={() => {}} />,
     );
@@ -221,7 +221,7 @@ describe("conocer a alguien", () => {
     expect(free).toContain("<textarea");
   });
 
-  it("un rasgo propuesto se confirma o descarta; uno confirmado se olvida", () => {
+  it("a proposed trait is confirmed or rejected; a confirmed one is forgotten", () => {
     const proposed = render(
       <TraitRow label="Epic fantasy" stance={2} source="Seen in your reading" evidence="6 novels" proposed onConfirm={() => {}} onReject={() => {}} />,
     );
@@ -233,13 +233,13 @@ describe("conocer a alguien", () => {
     expect(confirmed).toContain('data-negative="true"');
   });
 
-  it("la postura enciende los puntos de su lado", () => {
+  it("the stance lights the dots on its side", () => {
     expect(render(<StanceDots stance={2} />).match(/data-on/g)).toHaveLength(2);
     expect(render(<StanceDots stance={-1} />).match(/data-on/g)).toHaveLength(1);
     expect(render(<StanceDots stance={0} />)).toContain('aria-label="Neutral"');
   });
 
-  it("una conversación: lo tuyo marcado, lo escrito tal cual, y el cuadro con su etiqueta", () => {
+  it("a conversation: yours marked, the text as written, and the box with its label", () => {
     expect(render(<ChatBubble mine sending><ChatText>Hola</ChatText></ChatBubble>)).toContain('data-mine="true"');
     const composer = render(<Composer label="Pregúntale" value="" onChange={() => {}} onSend={() => {}} />);
     expect(composer).toContain('aria-label="Pregúntale"');

@@ -27,8 +27,8 @@ function mount(node: React.ReactNode): void {
   act(() => createRoot(host).render(node));
 }
 
-describe("una pantalla que falla", () => {
-  it("dice qué falló en vez de quedarse en blanco, y se puede volver a intentar", async () => {
+describe("a failing screen", () => {
+  it("says what failed instead of going blank, and can be retried", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     broken = true;
     mount(
@@ -49,7 +49,7 @@ describe("una pantalla que falla", () => {
     expect(document.body.textContent).toBe("Stats");
   });
 
-  it("lo tiene cualquier app, porque va dentro de su fondo", () => {
+  it("any app has it, because it goes inside its background", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     vi.stubGlobal("fetch", async () => new Response("{}", { status: 404 }));
     broken = true;

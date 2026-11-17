@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { argaBlock, linkText, render, slug, split, toggleTask, wikilink } from "../src/notes/markdown";
 
-describe("el Markdown de Obsidian", () => {
-  it("quita el frontmatter y cuenta sus líneas", () => {
+describe("Obsidian's Markdown", () => {
+  it("strips the frontmatter and counts its lines", () => {
     expect(split("---\na: 1\nb: 2\n---\n# T\n")).toEqual({ frontmatter: "a: 1\nb: 2", body: "# T\n", offset: 4 });
     expect(split("# Sin\n").offset).toBe(0);
   });
 
-  it("parte un enlace con carpeta, parte y alias, y el \\| de una tabla", () => {
+  it("splits a link with folder, part and alias, and a table's \\|", () => {
     expect(wikilink("B1/DE 2.3 Perfekt#Formen|Perfekt")).toEqual({
       target: "B1/DE 2.3 Perfekt",
       heading: "Formen",
@@ -19,28 +19,28 @@ describe("el Markdown de Obsidian", () => {
     expect(linkText(wikilink("B1/Nota#Parte")!)).toBe("Nota › Parte");
   });
 
-  it("pinta un enlace resuelto como enlace a su nota y uno que falta como que falta", () => {
+  it("renders a resolved link as a link to its note and a missing one as missing", () => {
     const html = render("Ver [[Uno]] y [[Dos|el dos]].", { resolve: (t) => (t === "Uno" ? "id-1" : null) });
 
     expect(html).toContain('<a class="mn-link" data-target="Uno" href="/notebook/note/id-1">Uno</a>');
     expect(html).toContain('data-target="Dos" href="#" data-missing="">el dos</a>');
   });
 
-  it("dentro de una tabla, el enlace con alias no parte la celda", () => {
+  it("inside a table, an aliased link does not split the cell", () => {
     const html = render("| a | b |\n|---|---|\n| [[X\\|equis]] | 2 |");
 
     expect(html).toContain(">equis</a></td>");
     expect(html).toContain("<td>2</td>");
   });
 
-  it("no pinta enlaces ni tags dentro del código", () => {
+  it("renders no links or tags inside code", () => {
     const html = render("`[[no]]` y\n\n```\n#no [[no]]\n```\n");
 
     expect(html).not.toContain("mn-link");
     expect(html).not.toContain("mn-tag");
   });
 
-  it("un tag es un enlace a buscarlo; un número o un encabezado no", () => {
+  it("a tag is a link to search for it; a number or a heading is not", () => {
     const html = render("# Título\n\nHola #deutsch/b1 y #42");
 
     expect(html).toContain('data-tag="deutsch/b1">#deutsch/b1</a>');
@@ -48,7 +48,7 @@ describe("el Markdown de Obsidian", () => {
     expect(html).toContain('<h1 data-line="0" id="título">Título</h1>');
   });
 
-  it("los callouts llevan su tipo y su título", () => {
+  it("callouts carry their type and title", () => {
     const html = render("> [!warning] Ojo\n> Esto importa.");
 
     expect(html).toContain('class="mn-callout" data-callout="warning"');
@@ -56,7 +56,7 @@ describe("el Markdown de Obsidian", () => {
     expect(html).toContain("Esto importa.");
   });
 
-  it("las casillas, el resaltado y las notas al pie", () => {
+  it("the checkboxes, highlighting and footnotes", () => {
     const html = render("- [x] hecho\n- [ ] no\n\nEs ==clave==.[^1]\n\n[^1]: Nota.");
 
     expect(html).toContain('<input class="mn-check" type="checkbox" disabled checked> hecho');
@@ -64,7 +64,7 @@ describe("el Markdown de Obsidian", () => {
     expect(html).toContain('class="footnotes"');
   });
 
-  it("el HTML escrito sale escapado", () => {
+  it("written HTML comes out escaped", () => {
     const html = render('<script>alert(1)</script> [x](javascript:alert(1)) [[<img src=x onerror=1>]]');
 
     expect(html).not.toContain("<script>");
@@ -72,23 +72,23 @@ describe("el Markdown de Obsidian", () => {
     expect(html).not.toContain("<img src=x");
   });
 
-  it("la línea de cada bloque es la del texto entero, frontmatter incluido", () => {
+  it("each block's line is that of the whole text, frontmatter included", () => {
     expect(render("---\na: 1\n---\nUno\n\nDos")).toContain('<p data-line="5">Dos</p>');
   });
 
-  it("los comentarios de Obsidian no se ven", () => {
+  it("Obsidian comments are hidden", () => {
     expect(render("Sí %%no%% sí")).toBe("<p data-line=\"0\">Sí  sí</p>\n");
   });
 
-  it("un enlace externo se abre fuera", () => {
+  it("an external link opens outside", () => {
     expect(render("[x](https://example.org)")).toContain('target="_blank" rel="noopener noreferrer"');
   });
 
-  it("el slug de un encabezado es estable", () => {
+  it("a heading's slug is stable", () => {
     expect(slug("Präpositionen mit Dativ!")).toBe("präpositionen-mit-dativ");
   });
 
-  it("con casillas que se marcan, cada una dice cuál es, y marcarla cambia la suya", () => {
+  it("with checkable boxes, each says which it is, and ticking it changes its own", () => {
     const text = "- [ ] uno\n```\n- [ ] código\n```\n- [x] dos";
 
     expect(render(text, { tasks: true })).toContain('data-task="1" checked>');
@@ -96,7 +96,7 @@ describe("el Markdown de Obsidian", () => {
     expect(toggleTask(text, 1)).toBe("- [ ] uno\n```\n- [ ] código\n```\n- [ ] dos");
   });
 
-  it("un enlace a otra app lleva a su sitio con su nombre, y sin saberlo se queda en texto", () => {
+  it("a link to another app goes to its place with its name, and if unknown stays as text", () => {
     const appLink = (target: string) => (target === "training:v-1" ? { href: "/training/stats?variante=v-1", title: "Press banca" } : null);
 
     expect(render("[[training:v-1]] y [[training:v-9|otra]]", { appLink })).toContain(
@@ -105,12 +105,12 @@ describe("el Markdown de Obsidian", () => {
     expect(render("[[training:v-9|otra]]", { appLink })).toContain('<span class="mn-app-link" title="training:v-9">otra</span>');
   });
 
-  it("el primer encabezado no se repite si es el título que ya se enseña", () => {
+  it("the first heading is not repeated if it is the title already shown", () => {
     expect(render("# DE 1.1 Kasus\n\nKern", { title: "de 1.1 kasus" })).toBe('<p data-line="2">Kern</p>\n');
     expect(render("# Otro\n\nKern", { title: "DE 1.1 Kasus" })).toContain("<h1");
   });
 
-  it("encuentra el bloque de arga fuera del frontmatter", () => {
+  it("finds the arga block outside the frontmatter", () => {
     const text = "---\narga: library:1\n---\n%% arga %%\n**Autor**\n\n## Lectura\n%% /arga %%\n\nMío.";
     const found = argaBlock(text);
     expect(found?.inner).toBe("**Autor**\n\n## Lectura");
@@ -118,7 +118,7 @@ describe("el Markdown de Obsidian", () => {
     expect(argaBlock("Sin bloque %% arga %% en línea")).toBeNull();
   });
 
-  it("un enlace a algo de otra app con ficha lleva a la ficha", () => {
+  it("a link to another app's item with a page goes to the page", () => {
     const html = render("[[library:1|El libro]] y [[training:2]]", {
       resolve: (target) => (target === "library:1" ? "nota-1" : null),
       appLink: (target) => (target === "training:2" ? { href: "/training/2", title: "Press" } : null),

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { boundsOf, graticule, projectCollection, projectPoint, routeLine, unprojectPoint } from "../src/map-projection";
 
-describe("la cónica disfrazada para MapLibre", () => {
-  it("ida y vuelta: un punto proyectado vuelve a su sitio", () => {
+describe("the conic projection disguised for MapLibre", () => {
+  it("round trip: a projected point comes back to its place", () => {
     for (const [lon, lat] of [
       [3.2267, 51.2085],
       [-5.98, 37.39],
@@ -16,7 +16,7 @@ describe("la cónica disfrazada para MapLibre", () => {
     }
   });
 
-  it("el norte queda arriba y el este a la derecha", () => {
+  it("north is up and east is to the right", () => {
     const [, oslo] = projectPoint(10.75, 59.91);
     const [, rome] = projectPoint(12.5, 41.9);
     const [lisbon] = projectPoint(-9.14, 38.72);
@@ -26,7 +26,7 @@ describe("la cónica disfrazada para MapLibre", () => {
     expect(athens).toBeGreaterThan(lisbon);
   });
 
-  it("los paralelos se curvan: es una cónica y no Mercator", () => {
+  it("parallels curve: it is a conic and not Mercator", () => {
     const [, west] = projectPoint(-9.14, 38.72);
     const [, east] = projectPoint(37.14, 38.72);
     const [, middle] = projectPoint(14, 38.72);
@@ -36,7 +36,7 @@ describe("la cónica disfrazada para MapLibre", () => {
     expect(west).toBeCloseTo(east, 3);
   });
 
-  it("todo el mundo cabe dentro de lo que MapLibre sabe dibujar", () => {
+  it("the whole world fits inside what MapLibre can draw", () => {
     for (const [lon, lat] of [
       [-165, -60],
       [165, -60],
@@ -49,7 +49,7 @@ describe("la cónica disfrazada para MapLibre", () => {
     }
   });
 
-  it("un país que cruza el antimeridiano de la cónica se corta, no atraviesa el mapa", () => {
+  it("a country crossing the conic's antimeridian is cut, it does not cross the map", () => {
     const strip = projectCollection({
       type: "FeatureCollection",
       features: [
@@ -76,7 +76,7 @@ describe("la cónica disfrazada para MapLibre", () => {
     expect(geometry.type).toBe("MultiPolygon");
   });
 
-  it("la retícula y el contorno existen y son líneas de verdad", () => {
+  it("the graticule and the outline exist and are real lines", () => {
     const { lines, outline } = graticule();
 
     expect(lines.coordinates.length).toBeGreaterThan(20);
@@ -84,18 +84,18 @@ describe("la cónica disfrazada para MapLibre", () => {
   });
 });
 
-describe("las rutas", () => {
+describe("the routes", () => {
   const madrid: [number, number] = [-3.7, 40.42];
   const bruges: [number, number] = [3.23, 51.21];
 
-  it("empiezan y acaban en sus lugares", () => {
+  it("they start and end at their places", () => {
     const line = routeLine(madrid, bruges, "plane");
 
     expect(line.coordinates[0]).toEqual(projectPoint(...madrid));
     expect(line.coordinates.at(-1)).toEqual(projectPoint(...bruges));
   });
 
-  it("el avión se levanta más que el tren", () => {
+  it("the plane arcs higher than the train", () => {
     const middle = (mode: "plane" | "train") => routeLine(madrid, bruges, mode).coordinates[24]!;
     const straight = projectPoint((madrid[0] + bruges[0]) / 2, (madrid[1] + bruges[1]) / 2);
     const away = (p: number[]) => Math.hypot(p[0]! - straight[0], p[1]! - straight[1]);
@@ -103,14 +103,14 @@ describe("las rutas", () => {
     expect(away(middle("plane"))).toBeGreaterThan(away(middle("train")) * 2);
   });
 
-  it("la ida y la vuelta no se pisan", () => {
+  it("outbound and return do not overlap", () => {
     const there = routeLine(madrid, bruges, "train").coordinates[24]!;
     const back = routeLine(bruges, madrid, "train").coordinates[24]!;
 
     expect(there).not.toEqual(back);
   });
 
-  it("la caja de unos puntos los contiene", () => {
+  it("the box of some points contains them", () => {
     const box = boundsOf([madrid, bruges])!;
 
     for (const point of [madrid, bruges]) {
@@ -121,8 +121,8 @@ describe("las rutas", () => {
   });
 });
 
-describe("las geometrías de verdad", () => {
-  it("cada país de Natural Earth se proyecta entero y ninguno cruza el mapa de lado a lado", async () => {
+describe("the real geometries", () => {
+  it("every Natural Earth country projects whole and none crosses the map side to side", async () => {
     const { readFileSync } = await import("node:fs");
     const { feature } = await import("topojson-client");
     const topology = JSON.parse(readFileSync(new URL("../geo/countries.json", import.meta.url), "utf8"));

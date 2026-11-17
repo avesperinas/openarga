@@ -16,8 +16,8 @@ const CELLS: RecipeGridCell[] = [
   { id: 3, label: "Batir", column: 3, row: 1, span: 3, attended: false },
 ];
 
-describe("las columnas salen donde tienen que salir", () => {
-  it("una fila que una celda alta atraviesa no vuelve a pedir esa columna", () => {
+describe("the columns come out where they should", () => {
+  it("a row crossed by a tall cell does not ask for that column again", () => {
     const lines = layout(ROWS, CELLS, 3);
 
     expect(lines[0]!.map((cell) => cell.label)).toEqual(["Derretir", "Mezclar", "Batir"]);
@@ -26,7 +26,7 @@ describe("las columnas salen donde tienen que salir", () => {
     expect(lines[2]!.map((cell) => cell.column)).toEqual([1, 2]);
   });
 
-  it("un hueco de enmedio no corre la celda que viene después", () => {
+  it("a gap in the middle does not shift the next cell", () => {
     const sparse: RecipeGridCell[] = [
       { id: 1, label: "Picar", column: 1, row: 1, span: 1 },
       { id: 2, label: "Pelar", column: 1, row: 3, span: 1 },
@@ -47,8 +47,8 @@ describe("las columnas salen donde tienen que salir", () => {
   });
 });
 
-describe("el HTML es una tabla de receta y no una caja de cajas", () => {
-  it("cada operación abarca sus filas con rowspan", () => {
+describe("the HTML is a recipe table and not a box of boxes", () => {
+  it("each operation spans its rows with rowspan", () => {
     const html = renderToStaticMarkup(
       <RecipeGrid label="El bizcocho" rows={ROWS} cells={CELLS} columns={3} />,
     ).toLowerCase();
@@ -60,7 +60,7 @@ describe("el HTML es una tabla de receta y no una caja de cajas", () => {
     expect(html).toContain('rowspan="3"><span class="recipe-grid-verb">batir');
   });
 
-  it("los pasos que no juntan nada cruzan la rejilla entera", () => {
+  it("steps that group nothing cross the whole grid", () => {
     const html = renderToStaticMarkup(
       <RecipeGrid
         label="El bizcocho"
@@ -75,7 +75,7 @@ describe("el HTML es una tabla de receta y no una caja de cajas", () => {
     expect(html).toContain("Precalentar el horno");
   });
 
-  it("una receta sin ingredientes no pinta una rejilla vacía", () => {
+  it("a recipe without ingredients draws no empty grid", () => {
     const html = renderToStaticMarkup(
       <RecipeGrid label="Nada" rows={[]} cells={[]} columns={0} />,
     );
@@ -85,13 +85,13 @@ describe("el HTML es una tabla de receta y no una caja de cajas", () => {
 });
 
 describe("ampliar", () => {
-  it("el zoom se mueve por pasos y se para en los extremos", () => {
+  it("zoom moves in steps and stops at the ends", () => {
     expect(zoomStep(1, 1)).toBe(ZOOM[2]);
     expect(zoomStep(ZOOM[ZOOM.length - 1]!, 1)).toBe(ZOOM[ZOOM.length - 1]);
     expect(zoomStep(ZOOM[0], -1)).toBe(ZOOM[0]);
   });
 
-  it("el tamaño llega como variable CSS, que es lo único que el linter de tokens permite", () => {
+  it("the size arrives as a CSS variable, the only thing the token linter allows", () => {
     const html = renderToStaticMarkup(
       <RecipeGrid label="El bizcocho" rows={ROWS} cells={CELLS} columns={3} />,
     );

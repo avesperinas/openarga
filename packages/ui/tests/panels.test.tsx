@@ -7,7 +7,7 @@ import type { PanelTab } from "../src/index";
 const render = (node: React.ReactElement) => renderToStaticMarkup(node);
 const area = { key: "money", label: "Money", apps: "Money · Carrera", hue: 2 as const, icon: "€" };
 
-describe("el panel de un área", () => {
+describe("an area's panel", () => {
   const tabs: PanelTab[] = [
     {
       id: "money.resumen",
@@ -22,7 +22,7 @@ describe("el panel de un área", () => {
     { id: "study.renta", label: "Renta", blocks: [] },
   ];
 
-  it("dice cómo va, la frase con su trozo destacado, las pestañas, sus bloques y sus botones", () => {
+  it("says how it is going, the sentence with its highlighted part, the tabs, their blocks and buttons", () => {
     const html = render(
       <AreaPanel area={area} headline={{ text: "Llegas a fin de mes con unos 420 €", emphasis: "unos 420 €", tone: "positive", status: "On track" }} tabs={tabs} onExpand={() => undefined} />,
     );
@@ -36,19 +36,19 @@ describe("el panel de un área", () => {
     expect(html).not.toContain("Fondos");
   });
 
-  it("a pantalla completa enseña también lo de detalle y se cierra", () => {
+  it("full screen it also shows the detail and closes", () => {
     const html = render(<AreaPanel area={area} tabs={tabs} focus onExpand={() => undefined} />);
     expect(html).toContain("Fondos");
     expect(html).toContain("Close Money");
   });
 
-  it("una pestaña vacía lo dice", () => {
+  it("an empty tab says so", () => {
     expect(render(<AreaPanel area={area} tabs={[tabs[1]!]} />)).toContain("Nothing to tell here yet");
   });
 });
 
-describe("los bloques", () => {
-  it("las tareas se marcan y se añaden con su widget; sin quien actúe, no", () => {
+describe("the blocks", () => {
+  it("tasks are ticked and added with their widget; without an actor, they are not", () => {
     const block = { type: "tasks" as const, widget: "today", items: [{ id: "t1", title: "Pagar la comunidad", done: true }], add: "Añadir una tarea" };
     const acting = render(<PanelBlockView block={block} onAct={() => undefined} />);
     expect(acting).toContain('aria-pressed="true"');
@@ -58,13 +58,13 @@ describe("los bloques", () => {
     expect(quiet).not.toContain("placeholder");
   });
 
-  it("la línea dice de dónde a dónde va y se recorre con el teclado", () => {
+  it("the line says from where to where it goes and is walked with the keyboard", () => {
     const html = render(<PanelBlockView block={{ type: "trend", unit: "money", points: [{ label: "dic", value: 39180 }, { label: "nov", value: 48320 }] }} />);
     expect(html).toContain("from €39,180 to €48,320");
     expect(html).toContain('role="slider"');
   });
 
-  it("los anillos, las barras, la silueta y el día", () => {
+  it("the rings, the bars, the silhouette and the day", () => {
     expect(render(<PanelBlockView block={{ type: "rings", items: [{ label: "Sueño", value: "82", share: 0.82, hue: 1 }] }} />)).toContain("Sueño: 82");
     expect(render(<PanelBlockView block={{ type: "bars", labels: ["L", "M"], values: [6, 8], goal: 7.5, unit: "hours" }} />)).toContain("M 8 h");
     expect(render(<PanelBlockView block={{ type: "feature", title: "Pierna, hoy", body: ["legs"], action: "Empezar", href: "/training/" }} />)).toContain("data-on");
@@ -73,28 +73,28 @@ describe("los bloques", () => {
     expect(day).toContain("Escalada");
   });
 
-  it("cada unidad se escribe como se lee", () => {
+  it("each unit is written as it is read", () => {
     expect(panelValue(48320, "money")).toBe("€48,320");
     expect(panelValue(74.2, "kg")).toBe("74.2 kg");
     expect(panelValue(7.2, "hours")).toBe("7 h 12 min");
   });
 });
 
-describe("las bolas", () => {
-  it("cada área con su estado, para el lector de pantalla", () => {
+describe("the orbs", () => {
+  it("each area with its state, for the screen reader", () => {
     const html = render(<AreaOrbs items={[{ key: "money", label: "Money", status: "On track", tone: "positive", hue: 2, icon: "€" }]} />);
     expect(html).toContain('aria-label="Money: On track"');
     expect(html).toContain('data-tone="positive"');
   });
 });
 
-describe("el panel como página del ordenador", () => {
+describe("the panel as a computer page", () => {
   const tabs: PanelTab[] = [
     { id: "summary", label: "Summary", blocks: [{ type: "figure", label: "Net worth", value: "48.320 €" }], actions: [{ label: "Abrir Money", href: "/money/" }] },
     { id: "gasto", label: "Gasto", blocks: [{ type: "list", rows: [{ label: "Casa", value: "640 €" }], detail: true }] },
   ];
 
-  it("enseña todas las pestañas a la vez, cada una en su columna con su detalle, sin lista de pestañas", () => {
+  it("shows every tab at once, each in its column with its detail, without a tab list", () => {
     const html = render(<AreaPanel area={area} tabs={tabs} board />);
     expect(html).toContain('data-board="true"');
     expect(html).not.toContain('role="tablist"');
@@ -104,15 +104,15 @@ describe("el panel como página del ordenador", () => {
     expect(html).toContain('href="/money/"');
   });
 
-  it("mientras llega, su cabecera de verdad y el cuerpo en reposo", () => {
+  it("while it arrives, its real header and the body at rest", () => {
     const html = render(<AreaPanelSkeleton area={area} />);
     expect(html).toContain("Money");
     expect(html).toContain('aria-busy="true"');
   });
 });
 
-describe("las pestañas de las páginas", () => {
-  it("una por página, la que se mira encendida", () => {
+describe("the page tabs", () => {
+  it("one per page, the viewed one lit", () => {
     const html = render(
       <PageTabs items={[{ key: "money", label: "Money", hue: 2 }, { key: "widgets", label: "Widgets" }]} current={1} onSelect={() => undefined} />,
     );
@@ -122,8 +122,8 @@ describe("las pestañas de las páginas", () => {
   });
 });
 
-describe("el mes en un panel", () => {
-  it("con entradas, el mes que dice qué hay cada día", () => {
+describe("the month in a panel", () => {
+  it("with entries, the month that says what is on each day", () => {
     const html = render(
       <PanelBlockView
         block={{
@@ -141,7 +141,7 @@ describe("el mes en un panel", () => {
     expect(html).toContain("month-entries");
   });
 
-  it("sin entradas, el mes de siempre con sus días marcados", () => {
+  it("without entries, the usual month with its days marked", () => {
     const html = render(<PanelBlockView block={{ type: "month", month: "2026-11", today: 9, marked: [3] }} />);
     expect(html).toContain('class="calendar"');
   });

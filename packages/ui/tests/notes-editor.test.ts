@@ -15,8 +15,8 @@ function fake(doc: string, anchor: number, head = anchor) {
   return view as never as Parameters<typeof wrapSelection>[0] & { state: EditorState };
 }
 
-describe("el editor", () => {
-  it("Intro en una casilla vacía la quita", () => {
+describe("the editor", () => {
+  it("Enter on an empty field removes it", () => {
     let state = EditorState.create({ doc: "- [ ] uno\n- [ ] " });
     state = state.update({ selection: { anchor: state.doc.length } }).state;
     const view = { state, dispatch: (spec: Parameters<typeof state.update>[0]) => (state = state.update(spec).state) };
@@ -25,7 +25,7 @@ describe("el editor", () => {
     expect(state.doc.toString()).toBe("- [ ] uno\n");
   });
 
-  it("envuelve lo seleccionado y pone o quita un prefijo de línea", () => {
+  it("wraps the selection and adds or removes a line prefix", () => {
     const bold = fake("uno dos", 4, 7);
     wrapSelection(bold, "**");
     expect(bold.state.doc.toString()).toBe("uno **dos**");
@@ -37,13 +37,13 @@ describe("el editor", () => {
     expect(heading.state.doc.toString()).toBe("título");
   });
 
-  it("un bloque va en su propia línea", () => {
+  it("a block goes on its own line", () => {
     const view = fake("texto", 5);
     insertBlock(view, "![foto](/x.png)");
     expect(view.state.doc.toString()).toBe("texto\n![foto](/x.png)\n");
   });
 
-  it("no deja cambiar lo que escribe una app, y sí lo de antes y lo de después", () => {
+  it("does not allow changing what an app writes, but does allow what is before and after", () => {
     const doc = "Mío.\n\n%% arga %%\n### Training\n- Torso A\n%% /arga %%\n";
     let state = EditorState.create({ doc, extensions: [protectArgaBlock()] });
     const inside = doc.indexOf("Torso");

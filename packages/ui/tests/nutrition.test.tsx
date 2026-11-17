@@ -4,8 +4,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { RangeBar, rangeScale } from "../src/index";
 
-describe("la barra con su zona objetivo", () => {
-  it("deja sitio a lo comido y a la zona, y no se sale", () => {
+describe("the bar with its target zone", () => {
+  it("leaves room for what was eaten and the zone, and does not overflow", () => {
     const scale = rangeScale(2200, 1900, 2100);
     expect(scale.value).toBeCloseTo(2200 / 2420);
     expect(scale.low).toBeCloseTo(1900 / 2420);
@@ -13,7 +13,7 @@ describe("la barra con su zona objetivo", () => {
     expect(rangeScale(50, 130).high).toBe(1);
   });
 
-  it("dice cómo va a quien no ve los colores, y lo que no se sabe no es cero", () => {
+  it("tells whoever cannot see the colours how it is going, and the unknown is not zero", () => {
     const html = renderToStaticMarkup(<RangeBar label="Fibre" value={12} unit="g" low={25} state="low" />);
     expect(html).toContain('aria-label="Fibre: 12 g, below"');
     expect(html).toContain('data-state="low"');
