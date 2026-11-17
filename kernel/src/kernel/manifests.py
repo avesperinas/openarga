@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 from kernel.provision import MODULE_ID_PATTERN, role_for
 
 MANIFEST_GLOB = "[a-z]*/manifest.yaml"
+CUSTOM_GLOB = "custom/[a-z]*/manifest.yaml"
 
 RESERVED_IDS = frozenset({"kernel", "login", "logout"})
 RESERVED_VIEWS = RESERVED_IDS | frozenset(
@@ -218,11 +219,15 @@ Family = Literal[
 ]
 
 
+Area = Literal["day", "money", "health", "work", "home", "leisure", "mind"]
+
+
 class Ui(Strict):
     widgets: list[Widget] = []
     view: str
     hue: Annotated[int, Field(ge=1, le=8)] | None = None
     family: Family | None = None
+    panels: list[Area] | None = None
     badge: str | None = None
     search: str | None = None
 
@@ -449,7 +454,10 @@ def load_manifest(path: Path) -> Manifest:
 
 
 def load_all(root: Path) -> list[Manifest]:
-    manifests = [load_manifest(path) for path in sorted(root.glob(MANIFEST_GLOB))]
+    paths = sorted(
+        [*root.glob(MANIFEST_GLOB), *root.glob(CUSTOM_GLOB)], key=lambda path: path.parent.name
+    )
+    manifests = [load_manifest(path) for path in paths]
     identifiers = [manifest.id for manifest in manifests]
     repeated = sorted({value for value in identifiers if identifiers.count(value) > 1})
     if repeated:
@@ -478,7 +486,7 @@ def main(argv: list[str] | None = None) -> int:
 
     for manifest in manifests:
         print(f"ok  {manifest.id} {manifest.version}  scopes={manifest.scopes or '[]'}")
-    print(f"{len(manifests)} valid manifest(s) in {root}/{MANIFEST_GLOB}")
+    print(f"{len(manifests)} valid manifest(s) in {root}")
     return 0
 
 

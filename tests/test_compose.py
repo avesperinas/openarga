@@ -25,11 +25,25 @@ def test_the_committed_compose_file_is_generated_from_the_example():
 
 def test_every_module_with_an_image_gets_a_service_and_publishers_get_a_worker():
     services = compose.generate(EXAMPLE)["services"]
-    for module_id in compose.available_modules(ROOT):
-        assert services[module_id]["build"]["dockerfile"] == f"modules/{module_id}/Dockerfile"
+    for module_id, folder in compose.module_folders(ROOT).items():
+        assert services[module_id]["build"]["dockerfile"] == f"{folder}/Dockerfile"
     assert services["vitals-worker"]["command"] == ["python", "-m", "vitals.publisher"]
     assert "hub-worker" not in services
     assert "_template" not in services
+
+
+def test_a_fork_module_in_custom_joins_the_stack(tmp_path):
+    for folder in ("modules/money", "modules/custom/garden/src/garden"):
+        (tmp_path / folder).mkdir(parents=True)
+    (tmp_path / "modules/money/manifest.yaml").write_text("id: money\n")
+    (tmp_path / "modules/money/Dockerfile").write_text("")
+    (tmp_path / "modules/custom/garden/manifest.yaml").write_text("id: garden\n")
+    (tmp_path / "modules/custom/garden/Dockerfile").write_text("")
+    (tmp_path / "modules/custom/garden/src/garden/publisher.py").write_text("")
+    services = compose.generate(EXAMPLE, tmp_path)["services"]
+    assert services["garden"]["build"]["dockerfile"] == "modules/custom/garden/Dockerfile"
+    assert services["garden-worker"]["command"] == ["python", "-m", "garden.publisher"]
+    assert services["money"]["build"]["dockerfile"] == "modules/money/Dockerfile"
 
 
 def test_disabling_two_modules_leaves_them_out_of_the_stack():

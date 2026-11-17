@@ -10,6 +10,7 @@ from sqlalchemy import text
 
 from arga_tenancy import CURRENT_USER_SQL, require_person
 from kernel.db import engine
+from kernel.panels import panels_of
 from kernel.subject import SUBJECT_HEADER, subject_of
 from kernel.ui import BREAKPOINTS, FALLBACK_SIZE, SIZE_PATTERN, SIZES, Breakpoint
 from kernel.widgets import BY_ID, KERNEL
@@ -169,15 +170,7 @@ STARTING: dict[Device, Starting] = {
     ),
 }
 
-PANEL_APPS: dict[str, tuple[str, ...]] = {
-    "day": ("planner", "goals"),
-    "money": ("money",),
-    "health": ("vitals", "training", "macros"),
-    "work": ("study",),
-    "home": ("shopping", "recipes"),
-    "leisure": ("travel", "outings", "library"),
-    "mind": ("notebook", "insights"),
-}
+PANEL = "panel"
 
 AVAILABLE = text("""
     select m.id as module, w.value->>'id' as id
@@ -186,18 +179,24 @@ AVAILABLE = text("""
     where m.enabled
 """)
 
+DECLARED_PANELS = text("""
+    select id, manifest->'ui'->'panels' as panels from kernel.modules where enabled
+""")
+
 
 async def available(connection: Any) -> set[tuple[str, str]]:
-    return {(row.module, row.id) for row in await connection.execute(AVAILABLE)}
+    installed = {(row.module, row.id) for row in await connection.execute(AVAILABLE)}
+    for row in await connection.execute(DECLARED_PANELS):
+        installed |= {(PANEL, area) for area in panels_of(row.id, row.panels)}
+    return installed
 
 
 def _present(source: str, widget: str, option: str | None, installed: set[tuple[str, str]]) -> bool:
-    if source != "panel":
+    if source != PANEL:
         return (source, widget) in installed
-    apps = {module for module, _ in installed}
     if option:
-        return option.split(".", 1)[0] in apps
-    return any(app in apps for app in PANEL_APPS.get(widget, ()))
+        return option.split(".", 1)[0] in {module for module, _ in installed}
+    return (PANEL, widget) in installed
 
 
 def default_desktop(

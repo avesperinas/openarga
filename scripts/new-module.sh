@@ -1,19 +1,25 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ID="${1:?usage: new-module.sh <id> <name>}"
+# A fork's own modules go to modules/custom/, so upstream modules/ merges without conflicts.
+# --core puts it in modules/ instead.
+FOLDER="modules/custom"
+if [[ "${1:-}" == "--core" ]]; then FOLDER="modules"; shift; fi
+ID="${1:?usage: new-module.sh [--core] <id> <name>}"
 NAME="${2:-$ID}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DEST="$ROOT/modules/$ID"
+DIR="$FOLDER/$ID"
+DEST="$ROOT/$DIR"
 
 [[ "$ID" =~ ^[a-z][a-z0-9_]*$ ]] || { echo "invalid id: lowercase letters, digits and _ only"; exit 1; }
-[[ -d "$DEST" ]] && { echo "module $ID already exists"; exit 1; }
-[[ "$ID" == "kernel" ]] && { echo "'kernel' is reserved by the system"; exit 1; }
+[[ -d "$DEST" || -d "$ROOT/modules/$ID" || -d "$ROOT/modules/custom/$ID" ]] && { echo "module $ID already exists"; exit 1; }
+[[ "$ID" == "kernel" || "$ID" == "custom" ]] && { echo "'$ID' is reserved by the system"; exit 1; }
 
+mkdir -p "$ROOT/$FOLDER"
 cp -r "$ROOT/modules/_template" "$DEST"
 
-grep -rl '__MODULE_ID__\|__MODULE_NAME__' "$DEST" | while read -r f; do
-  sed -i.bak "s/__MODULE_ID__/$ID/g; s/__MODULE_NAME__/$NAME/g" "$f"
+grep -rl '__MODULE_ID__\|__MODULE_NAME__\|__MODULE_DIR__' "$DEST" | while read -r f; do
+  sed -i.bak "s#__MODULE_DIR__#$DIR#g; s/__MODULE_ID__/$ID/g; s/__MODULE_NAME__/$NAME/g" "$f"
   rm -f "$f.bak"
 done
 
@@ -50,8 +56,10 @@ if f'"{module}"' not in text:
     open(path, "w").write(text)
 PY
 
-( cd "$ROOT" && uv lock --quiet )
+grep -q "^${ID^^}_DB_PASSWORD=" "$ROOT/.env.example" || echo "${ID^^}_DB_PASSWORD=" >> "$ROOT/.env.example"
 
-echo "modules/$ID created and added to the workspace."
-echo "Check it: uv run pytest modules/$ID"
+( cd "$ROOT" && uv lock --quiet && uv run --quiet ruff check --quiet --fix --select I "$DIR" && uv run --quiet ruff format --quiet "$DIR" )
+
+echo "$DIR created and added to the workspace."
+echo "Check it: uv run pytest $DIR"
 echo "Then: docs/platform/ explains manifests, tools, widgets and the demo seed."

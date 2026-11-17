@@ -58,16 +58,6 @@ export const AREAS: { key: AreaKey; label: string; hue: PanelHue; icon: string }
   area("mind", 3, "note"),
 ];
 
-export const AREA_APPS: Record<AreaKey, string[]> = {
-  day: ["planner", "goals"],
-  money: ["money"],
-  health: ["vitals", "training", "macros"],
-  work: ["study"],
-  home: ["shopping", "recipes"],
-  leisure: ["travel", "outings", "library"],
-  mind: ["notebook", "insights"],
-};
-
 export const DEFAULT_SHOWN: AreaKey[] = ["day", "money", "health"];
 
 export type HomePanels = { order?: string[]; hidden?: string[]; placed?: string[] };

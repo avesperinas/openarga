@@ -29,14 +29,15 @@ def generated(tmp_path: Path) -> Path:
             source.read_bytes()
             .replace(b"__MODULE_ID__", MODULE.encode())
             .replace(b"__MODULE_NAME__", MODULE.title().encode())
+            .replace(b"__MODULE_DIR__", f"modules/custom/{MODULE}".encode())
         )
     return tmp_path
 
 
-def test_the_generator_substitutes_both_placeholders() -> None:
+def test_the_generator_substitutes_every_placeholder() -> None:
     script = GENERATOR.read_text(encoding="utf-8")
 
-    assert "__MODULE_ID__" in script and "__MODULE_NAME__" in script
+    assert all(f"__MODULE_{name}__" in script for name in ("ID", "NAME", "DIR"))
 
 
 def test_what_comes_out_is_a_manifest_the_kernel_accepts(generated: Path) -> None:
