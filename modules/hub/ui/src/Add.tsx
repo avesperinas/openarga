@@ -16,6 +16,7 @@ import { useCallback, useState } from "react";
 
 import { type Provider, Refused, Unauthorised, createConnection, searchOffer, signIn } from "./api";
 import { BankSheet } from "./BankSheet";
+import { say } from "./words";
 
 export function missing(provider: Provider, values: Record<string, string>): string[] {
   return provider.secrets.filter((secret) => !values[secret.key]?.trim()).map((secret) => secret.label);
@@ -69,7 +70,7 @@ export function AddSheet({
       })
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        setProblem(error instanceof Refused ? error.message : "No se ha podido conectar.");
+        setProblem(error instanceof Refused ? error.message : say("add.failed"));
         setBusy(false);
       });
   };
@@ -78,16 +79,16 @@ export function AddSheet({
 
   return (
     <Sheet
-      title={`Conectar ${provider.name}`}
+      title={say("add.title", { name: provider.name })}
       onClose={onClose}
       action={{
-        label: busy ? "Conectando…" : "Conectar",
+        label: busy ? say("add.connecting") : say("add.connect"),
         onClick: connect,
         disabled: busy || missing(provider, values).length > 0,
       }}
     >
       <Hint>{provider.description}</Hint>
-      <TextField label="Nombre" value={label} onChange={setLabel} hint="Como lo verás aquí y en tus apps." />
+      <TextField label={say("add.name")} value={label} onChange={setLabel} hint={say("add.name.hint")} />
       {(provider.settings ?? []).map((setting) => (
         <TextField
           key={setting.key}
@@ -112,7 +113,7 @@ export function AddSheet({
           {problem}
         </Hint>
       )}
-      <Hint>Se guarda cifrado y no se vuelve a enseñar.</Hint>
+      <Hint>{say("add.encrypted")}</Hint>
     </Sheet>
   );
 }
@@ -149,20 +150,20 @@ export function PlugSheet({
       .then((created) => onCreated(created.id))
       .catch((error: unknown) => {
         if (error instanceof Unauthorised) return signIn();
-        setProblem(error instanceof Refused ? error.message : "No se ha podido conectar.");
+        setProblem(error instanceof Refused ? error.message : say("add.failed"));
         setBusy(false);
       });
   };
 
   return (
-    <Sheet title={offer.title} onClose={onClose} action={{ label: busy ? "Conectando…" : "Conectar", onClick: connect, disabled: busy }}>
+    <Sheet title={offer.title} onClose={onClose} action={{ label: busy ? say("add.connecting") : say("add.connect"), onClick: connect, disabled: busy }}>
       <Hint>{provider.description}</Hint>
       <SourceQuestions asks={offer.asks} answers={answers} onChange={setAnswers} search={search} onError={setProblem} />
-      <TextField label="Nombre" value={name} onChange={setLabel} hint="Como lo verás aquí." />
+      <TextField label={say("add.name")} value={name} onChange={setLabel} hint={say("add.name.here")} />
       {(provider.inlets ?? []).map((inlet) => (
         <InletSettings
           key={inlet.key}
-          title={`En ${inlet.app}`}
+          title={say("add.inlet", { app: inlet.app })}
           settings={inlet.settings}
           values={plugs[inlet.key] ?? {}}
           onChange={(values) => setChosen((current) => ({ ...current, [inlet.key]: values }))}
@@ -177,13 +178,10 @@ export const PUSH_URL = `${typeof window === "undefined" ? "" : window.location.
 
 export function TokenSheet({ token, onDone }: { token: string; onDone: () => void }) {
   return (
-    <Sheet title="Tu token de ingesta" onClose={onDone} action={{ label: "Hecho", onClick: onDone }}>
-      <Hint>
-        Cópialo ahora en el atajo del iPhone: no se vuelve a enseñar. Si lo pierdes, genera otro en la
-        ficha de la conexión y este dejará de valer.
-      </Hint>
-      <CopyField label="Token" value={token} />
-      <CopyField label="Dirección" value={PUSH_URL} />
+    <Sheet title={say("token.title")} onClose={onDone} action={{ label: say("done"), onClick: onDone }}>
+      <Hint>{say("token.hint")}</Hint>
+      <CopyField label={say("token.token")} value={token} />
+      <CopyField label={say("token.address")} value={PUSH_URL} />
     </Sheet>
   );
 }

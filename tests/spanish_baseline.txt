@@ -91,17 +91,10 @@ modules/hub/tests/test_hub_statements.py
 modules/hub/tests/test_hub_wikimedia.py
 modules/hub/tools/glossary.md
 modules/hub/ui/src/Add.test.tsx
-modules/hub/ui/src/Add.tsx
-modules/hub/ui/src/BankSheet.tsx
 modules/hub/ui/src/Connection.test.tsx
-modules/hub/ui/src/Connection.tsx
 modules/hub/ui/src/Home.test.tsx
-modules/hub/ui/src/Home.tsx
-modules/hub/ui/src/Loads.tsx
 modules/hub/ui/src/Rules.test.ts
-modules/hub/ui/src/Rules.tsx
 modules/hub/ui/src/Statements.test.tsx
-modules/hub/ui/src/Statements.tsx
 modules/hub/ui/src/states.test.tsx
 modules/travel/ui/src/App.tsx
 modules/travel/ui/src/Balance.tsx

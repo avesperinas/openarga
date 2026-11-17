@@ -55,7 +55,7 @@ beforeEach(() => {
     vi.fn(async (url: string, init?: RequestInit) => {
       const method = init?.method ?? "GET";
       const reply = replies[`${method} ${url}`] ?? replies[`${method} ${url.split("?")[0]}`];
-      if (!reply) return json({ detail: "esa conexión no existe" }, 404);
+      if (!reply) return json({ detail: "that connection does not exist" }, 404);
       const body = await reply();
       return body instanceof Response ? body : json(body);
     }),
@@ -105,7 +105,7 @@ describe("la portada", () => {
     expect(host.textContent).toContain("Nada conectado aquí todavía");
     act(() => button("Conectar una fuente")!.click());
     await settle();
-    expect(window.location.pathname).toBe("/hub/configurar");
+    expect(window.location.pathname).toBe("/hub/setup");
     expect(host.textContent).toContain("Planner");
   });
 
@@ -145,7 +145,7 @@ describe("una conexión", () => {
 });
 
 describe("axe-core sin errores graves", () => {
-  it.each(["/hub/", "/hub/configurar", "/hub/ajustes"])("%s", async (path) => {
+  it.each(["/hub/", "/hub/setup", "/hub/settings"])("%s", async (path) => {
     await open(path);
     expect(await serious()).toEqual([]);
   });

@@ -558,15 +558,15 @@ async def upload_statements(body: StatementsIn) -> dict[str, Any]:
 async def callback(state: str = "", code: str = "", error: str = "") -> RedirectResponse:
     require_person()
     if error or not (state and code):
-        return RedirectResponse(f"{UI_ROOT}/?banco=cancelado", status_code=303)
+        return RedirectResponse(f"{UI_ROOT}/?bank=cancelled", status_code=303)
     try:
         async with source_client() as client, as_app() as connection:
             connection_id, config = await banks.finish(connection, client, state, code)
             found = await detail_or_404(connection, connection_id)
     except banks.UnknownAuthorisation:
-        return RedirectResponse(f"{UI_ROOT}/?banco=desconocido", status_code=303)
+        return RedirectResponse(f"{UI_ROOT}/?bank=unknown", status_code=303)
     except connections.Refused:
-        return RedirectResponse(f"{UI_ROOT}/?banco=fallo", status_code=303)
+        return RedirectResponse(f"{UI_ROOT}/?bank=failed", status_code=303)
     async with httpx.AsyncClient(
         base_url=kernel_url(), transport=capabilities.kernel_transport(), timeout=30.0
     ) as kernel:
@@ -574,25 +574,25 @@ async def callback(state: str = "", code: str = "", error: str = "") -> Redirect
             kernel, banks.PROVIDER, banks.account_events(connection_id, config)
         )
         await sync.announce_connection(kernel, found)
-    said = "conectado" if config.get("accounts") else "sin-cuentas"
-    return RedirectResponse(f"{UI_ROOT}/{connection_id}?banco={said}", status_code=303)
+    said = "connected" if config.get("accounts") else "no-accounts"
+    return RedirectResponse(f"{UI_ROOT}/{connection_id}?bank={said}", status_code=303)
 
 
 @app.get(UI_ROOT + "/google/callback")
 async def google_callback(state: str = "", code: str = "", error: str = "") -> RedirectResponse:
     require_person()
     if error or not (state and code):
-        return RedirectResponse(f"{UI_ROOT}/?google=cancelado", status_code=303)
+        return RedirectResponse(f"{UI_ROOT}/?google=cancelled", status_code=303)
     try:
         async with source_client() as client, as_app() as connection:
             connection_id = await google_auth.finish(connection, client, state, code)
             found = await detail_or_404(connection, connection_id)
     except google_auth.UnknownAuthorisation:
-        return RedirectResponse(f"{UI_ROOT}/?google=desconocido", status_code=303)
+        return RedirectResponse(f"{UI_ROOT}/?google=unknown", status_code=303)
     except connections.Refused:
-        return RedirectResponse(f"{UI_ROOT}/?google=fallo", status_code=303)
+        return RedirectResponse(f"{UI_ROOT}/?google=failed", status_code=303)
     await tell(found)
-    return RedirectResponse(f"{UI_ROOT}/{connection_id}?google=conectado", status_code=303)
+    return RedirectResponse(f"{UI_ROOT}/{connection_id}?google=connected", status_code=303)
 
 
 service.serve_ui()

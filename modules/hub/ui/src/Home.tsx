@@ -8,13 +8,14 @@ import type { Tab } from "./App";
 import { ScreenHeader } from "./Header";
 import { Pending, useLoad } from "./Loads";
 import { StatementUpload } from "./Statements";
+import { say } from "./words";
 
 export function whereItLives(provider: Provider, connected = false): string {
-  if (provider.by_mail) return "Por correo";
-  if (provider.available && provider.created_in) return `Desde ${provider.created_in}`;
-  if (provider.available) return provider.single && connected ? "Conectado" : "Añadir";
-  if (provider.lives_in) return `En ${provider.lives_in}`;
-  return "Próximamente";
+  if (provider.by_mail) return say("where.mail");
+  if (provider.available && provider.created_in) return say("where.from", { app: provider.created_in });
+  if (provider.available) return provider.single && connected ? say("where.connected") : say("where.add");
+  if (provider.lives_in) return say("add.inlet", { app: provider.lives_in });
+  return say("where.soon");
 }
 
 function pathOf(app: string): string {
@@ -26,7 +27,6 @@ export function appPath(provider: Provider): string | null {
   return app ? pathOf(app) : null;
 }
 
-const TITLES: Record<Tab, string> = { status: "Estado", setup: "Configurar" };
 
 export function HomeScreen({
   tab,
@@ -47,14 +47,14 @@ export function HomeScreen({
   useEffect(() => {
     if (!home || asked.current) return;
     asked.current = true;
-    const wanted = new URLSearchParams(window.location.search).get("anadir");
+    const wanted = new URLSearchParams(window.location.search).get("add");
     const provider = home.catalogue.flatMap((category) => category.providers).find((item) => item.id === wanted);
     if (provider?.available) setAdding(provider);
   }, [home]);
 
   return (
     <Screen>
-      <ScreenHeader title={TITLES[tab]} />
+      <ScreenHeader title={say(tab === "status" ? "tabs.status" : "tabs.setup")} />
       <OfflineNotice />
       <Returned />
       {!home && <Pending found={found} />}
@@ -88,16 +88,16 @@ export function Yours({
     return (
       <EmptyState
         icon="bolt"
-        title="Nada conectado aquí todavía"
-        action={onSetup ? { label: "Conectar una fuente", onClick: onSetup } : undefined}
-      >Este es el sitio de todo lo que entra de fuera: tus bancos, tus exchanges, tu correo y tu
-          cuenta de Claude. Irán llegando una a una desde la app que las usa hoy, sin que tengas que
-          volver a conectar nada.</EmptyState>
+        title={say("yours.empty")}
+        action={onSetup ? { label: say("yours.connect"), onClick: onSetup } : undefined}
+      >
+        {say("yours.empty.hint")}
+      </EmptyState>
     );
   }
   const attention = connections.find((connection) => connection.reason);
   return (
-    <Card title="Tus conexiones">
+    <Card title={say("yours.title")}>
       <List>
         {connections.map((connection) => (
           <ConnectionRow key={connection.id} connection={connection} onOpen={onOpen} />
@@ -227,7 +227,7 @@ export function ByApp({
           ))}
           {app.services.length > 0 && (
             <div className="hub-group">
-              {app.inlets.length > 0 && <GroupLabel>Consultas</GroupLabel>}
+              {app.inlets.length > 0 && <GroupLabel>{say("byapp.services")}</GroupLabel>}
               <ProviderRows
                 providers={providersOf(
                   app.services.map((one) => one.provider),
@@ -242,33 +242,24 @@ export function ByApp({
         </Card>
       ))}
       {others.length > 0 && (
-        <ProviderSection title="Otras fuentes" providers={others} connections={connections} onAdd={onAdd} onOpen={onOpen} />
+        <ProviderSection title={say("byapp.others")} providers={others} connections={connections} onAdd={onAdd} onOpen={onOpen} />
       )}
     </>
   );
 }
 
-export const RETURNS: Record<string, string> = {
-  cancelado: "No se ha conectado: la autorización se canceló en el banco.",
-  desconocido: "No se ha conectado: la vuelta del banco no casa con ninguna petición tuya.",
-  fallo: "No se ha conectado: el banco no abrió la sesión. Vuelve a intentarlo.",
-};
+const RETURNS = ["cancelled", "unknown", "failed"];
 
-export const GOOGLE_RETURNS: Record<string, string> = {
-  cancelado: "No se ha conectado: la autorización se canceló en Google.",
-  desconocido: "No se ha conectado: la vuelta de Google no casa con ninguna petición tuya.",
-  fallo: "No se ha conectado: Google no dio el permiso. Comprueba el Client ID, el secret y que la dirección de vuelta está dada de alta, y vuelve a intentarlo.",
-};
-
-export const CLAUDE_RETURNS: Record<string, string> = {
-  cancelado: "No se ha dado el permiso: se canceló al entrar.",
-  fallo: "No se ha dado el permiso: la vuelta no casa con ninguna petición tuya o ha caducado.",
-};
+export function returned(params: URLSearchParams): string | null {
+  for (const source of ["bank", "google"]) {
+    const said = params.get(source) ?? "";
+    if (RETURNS.includes(said)) return say(`returned.${source}.${said}`);
+  }
+  return null;
+}
 
 function Returned() {
-  const params = new URLSearchParams(window.location.search);
-  const said =
-    RETURNS[params.get("banco") ?? ""] ?? GOOGLE_RETURNS[params.get("google") ?? ""] ?? CLAUDE_RETURNS[params.get("claude") ?? ""];
+  const said = returned(new URLSearchParams(window.location.search));
   return said ? (
     <Hint tone="warning">
       {said}

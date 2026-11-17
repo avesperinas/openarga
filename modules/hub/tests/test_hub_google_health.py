@@ -59,7 +59,7 @@ async def connect(api) -> UUID:
     state = parse_qs(urlparse(started.json()["authorization_url"]).query)["state"][0]
     back = await api.get(f"/hub/google/callback?state={state}&code=codigo-sintetico")
     assert back.status_code == 303, back.text
-    assert back.headers["location"].endswith("?google=conectado")
+    assert back.headers["location"].endswith("?google=connected")
     return UUID(started.json()["id"])
 
 
@@ -122,8 +122,8 @@ async def test_a_return_nobody_asked_for_or_cancelled_says_so(api, kernel) -> No
     unknown = await api.get("/hub/google/callback?state=inventado&code=x")
     cancelled = await api.get("/hub/google/callback?error=access_denied")
 
-    assert unknown.headers["location"] == "/hub/?google=desconocido"
-    assert cancelled.headers["location"] == "/hub/?google=cancelado"
+    assert unknown.headers["location"] == "/hub/?google=unknown"
+    assert cancelled.headers["location"] == "/hub/?google=cancelled"
 
 
 async def test_what_is_pasted_is_checked(api, kernel) -> None:

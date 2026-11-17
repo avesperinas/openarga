@@ -60,8 +60,8 @@ test("una conexión tiene su dirección, para recargar o llegar desde otra app",
 
 test("el estado y el catálogo son dos pestañas, cada una con su dirección", () => {
   expect(route("/hub")).toEqual({ screen: "status" });
-  expect(route("/hub/configurar")).toEqual({ screen: "setup" });
-  expect(route("/hub/configurar/")).toEqual({ screen: "setup" });
+  expect(route("/hub/setup")).toEqual({ screen: "setup" });
+  expect(route("/hub/setup/")).toEqual({ screen: "setup" });
 });
 
 test("no se conecta hasta tener todo lo que pide", () => {
