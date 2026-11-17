@@ -18,10 +18,10 @@ connectors: []
 uses: [notify.sync]
 notifications:
   - kind: failing
-    label: Una fuente falla
+    label: A source is failing
     default: true
   - kind: reauth
-    label: Reautorizar un banco
+    label: Reauthorise a bank
     default: true
 
 api:
@@ -31,26 +31,26 @@ tools:
   - name: get_connections
     scope: hub:read
     description: >
-      Qué fuentes de fuera tienes conectadas —bancos, exchanges, correo, tu cuenta de Claude—, de
-      qué categoría es cada una y cómo está: al día, a punto de caducar, caducada, fallando o en
-      pausa, con el motivo, cuándo trajo algo bien por última vez y cuántos datos trajo la última
-      semana. Dice también qué fuentes se configuran todavía en su app. Úsala para contestar por
-      qué no entra un dato, qué hay que reconectar o qué está conectado.
+      Which outside sources the person has connected (banks, exchanges, mail, calendars), the
+      category of each and its state: up to date, about to expire, expired, failing or paused, with
+      the reason, when it last brought something successfully and how many items it brought in the
+      last week. It also says which sources are still set up inside their own app. Use it to answer
+      why some data is not coming in, what needs reconnecting or what is connected.
   - name: record_portfolio
     scope: hub:write
     description: >
-      Guarda la cartera de un producto de inversión tal como la ves en la web de su entidad —por
-      ejemplo, en una captura de pantalla de Finizens que te pase la persona—: la entidad, el nombre
-      del producto tal cual sale, el día que dice la página, lo que vale el producto, lo aportado si
-      sale, y cada fondo con su nombre exacto y lo que vale en euros o su peso en % (el de la
-      liquidez también). Si salen participaciones y valor liquidativo, inclúyelos. Si sale el ISIN
-      de un fondo, un ETF, un ETC o una acción, ponlo: es lo que lo identifica. Sin ISIN se busca
-      por su nombre. Un valor que cotiza se valora en su línea de la moneda de la cuenta con más
-      liquidez (en euros, Xetra); si la persona lo tiene en otra, pon su MIC (XMIL, XLON...) y su
-      moneda. Entra igual que si se hubiera subido la página: Money parte de esa foto y mueve el
-      valor cada día con el precio de cada fondo. Los fondos tienen que sumar lo que vale el
-      producto. La respuesta dice con qué línea se valora cada uno y cuál se queda sin precio. Úsala
-      solo cuando la persona te pida actualizar su cartera.
+      Stores the portfolio of an investment product as shown on its entity's website (for example
+      in a Finizens screenshot the person sends you): the entity, the product name exactly as it
+      appears, the day the page states, what the product is worth, what was paid in if shown, and
+      each fund with its exact name and its value in euros or its weight in % (cash included). If
+      units and net asset value are shown, include them. If the ISIN of a fund, ETF, ETC or share
+      is shown, give it: it is what identifies it. Without an ISIN it is looked up by name. A
+      listed security is valued on its line in the currency of the account with most liquidity
+      (in euros, Xetra); if the person holds it on another, give its MIC (XMIL, XLON...) and its
+      currency. It enters as if the page had been uploaded: Money starts from that snapshot and
+      moves the value every day with each fund's price. The funds must add up to what the product
+      is worth. The answer says which line values each fund and which one is left without a price.
+      Use it only when the person asks you to update their portfolio.
 
 ui:
   widgets:

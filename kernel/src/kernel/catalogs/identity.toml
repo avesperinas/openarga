@@ -1,0 +1,22 @@
+# Words of Spanish bank descriptors that say nothing about who was paid.
+
+noise_prefixes = [
+  "compra en", "compra tarjeta", "compra", "pago en", "pago tarjeta", "pago", "recibo", "adeudo",
+  "cargo en", "cargo", "tarj", "tarjeta", "movimiento",
+]
+
+legal_forms = [
+  "anonima", "coop", "limitada", "sa", "sau", "sc", "scp", "sl", "sll", "slu", "sociedad", "srl",
+]
+
+stopwords = [
+  "a", "al", "de", "del", "el", "en", "la", "las", "los", "un", "una", "y",
+]
+
+generic_tokens = [
+  "bar", "cafe", "cafeteria", "carburantes", "central", "centro", "clinica", "comercial",
+  "dental", "es", "estacion", "farmacia", "gasolinera", "km", "libreria", "market", "online",
+  "panaderia", "papeleria", "parafarmacia", "pasteleria", "rest", "restaurante", "servicio",
+  "shop", "shopping", "store", "super", "superm", "supermercado", "supermercados", "supm",
+  "taller", "talleres", "tienda",
+]

@@ -1,89 +1,10 @@
-PAGE = """<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>arga · Privacidad</title>
-<style>
-body { font-family: system-ui, sans-serif; line-height: 1.55; max-width: 44rem;
-       margin: 0 auto; padding: 2rem 1rem 4rem; }
-h1 { font-size: 1.6rem; } h2 { font-size: 1.2rem; margin-top: 2rem; }
-hr { margin: 3rem 0; }
-</style>
-</head>
-<body>
+from __future__ import annotations
 
-<h1>Política de privacidad de arga</h1>
-<p>Última actualización: 9 de octubre de 2026.</p>
+from starlette.requests import Request
 
-<p>arga es un sistema personal, privado y sin ánimo de lucro que reúne en un solo sitio los datos
-de cada persona que lo usa: salud, finanzas, notas, agenda y otros. Solo pueden usarlo las
-personas invitadas por su administrador; no está abierto al público, no tiene publicidad y no vende
-nada. Esta página explica qué datos trata arga, para qué y qué no hace nunca con ellos.</p>
+from gateway import words
 
-<h2>Qué datos se tratan</h2>
-<ul>
-<li><strong>Cuenta.</strong> El nombre y el correo de la cuenta de Google con la que se inicia
-sesión, para saber quién es cada persona.</li>
-<li><strong>Datos que la persona escribe</strong> en las aplicaciones de arga.</li>
-<li><strong>Datos de fuentes externas que la persona conecta ella misma</strong>, y solo
-mientras la conexión exista: por ejemplo, sus bancos o sus datos de salud.</li>
-</ul>
-
-<h2>Datos de Google Health</h2>
-<p>Si la persona conecta su cuenta de Google Health, arga pide <strong>solo permisos de
-lectura</strong> sobre:</p>
-<ul>
-<li>actividad y ejercicio: pasos, distancia, calorías, minutos activos, pisos, VO₂ máx. y
-entrenamientos;</li>
-<li>métricas de salud: frecuencia cardiaca, frecuencia en reposo, variabilidad, saturación de
-oxígeno, frecuencia respiratoria, temperatura y peso;</li>
-<li>sueño: duración y fases;</li>
-<li>perfil: edad, sexo y altura;</li>
-<li>ubicación registrada durante un entrenamiento, para dibujar su recorrido.</li>
-</ul>
-<p>arga nunca escribe, modifica ni borra nada en la cuenta de Google Health.</p>
-
-<h2>Para qué se usan</h2>
-<p>Solo para enseñar a la propia persona sus datos: gráficas, tendencias, resúmenes y objetivos
-dentro de arga. Si la persona conecta por su cuenta un asistente de IA a arga, ese asistente puede
-consultar sus datos cuando ella se lo pide, para contestarle a ella. Nada más.</p>
-
-<h2>Qué no se hace nunca</h2>
-<ul>
-<li>No se venden ni se ceden datos a nadie.</li>
-<li>No se usan para publicidad, perfiles comerciales ni decisiones de crédito o seguros.</li>
-<li>No se usan para entrenar modelos de inteligencia artificial.</li>
-<li>Ninguna otra persona usuaria de arga puede ver los datos de otra: el aislamiento lo garantiza la
-base de datos.</li>
-<li>Nadie los lee a mano, salvo que la persona lo pida para resolver un problema, por seguridad o
-por obligación legal.</li>
-</ul>
-<p>El uso que hace arga de la información recibida de las API de Google cumple la
-<a href="https://developers.google.com/terms/api-services-user-data-policy">Política de datos de
-usuario de los servicios de API de Google</a>, incluidos los requisitos de uso limitado, y la
-<a href="https://developers.google.com/health/policies/health-api-developer-user-data-policy">Política
-de datos de la API de Google Health</a>.</p>
-
-<h2>Dónde y cómo se guardan</h2>
-<p>En un servidor propio en la Unión Europea, en una base de datos que separa los datos de cada
-persona. Las credenciales de las conexiones se guardan cifradas. Todo el tráfico va cifrado
-(HTTPS).</p>
-
-<h2>Cuánto tiempo y cómo borrarlos</h2>
-<p>Los datos se guardan mientras la persona use arga. Puede desconectar Google Health en cualquier
-momento desde arga o desde
-<a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>; desde ese
-momento arga deja de leer nada. Puede pedir que se borren todos sus datos, y se borran.</p>
-
-<h2>Contacto</h2>
-<p>Para cualquier pregunta o para pedir el borrado de tus datos, escribe al correo de soporte que
-aparece en la pantalla de autorización de Google al conectar arga.</p>
-
-<hr>
-
-<h1 lang="en">arga privacy policy</h1>
-<div lang="en">
+ENGLISH = """<h1>arga privacy policy</h1>
 <p>Last updated: October 9, 2026.</p>
 
 <p>arga is a private, non-commercial personal system that brings together the data of each person
@@ -139,9 +60,34 @@ deleted.</p>
 
 <h2>Contact</h2>
 <p>For any question or to request deletion of your data, write to the support email shown on
-Google's authorization screen when connecting arga.</p>
-</div>
+Google's authorization screen when connecting arga.</p>"""
 
+STYLE = """<style>
+body { font-family: system-ui, sans-serif; line-height: 1.55; max-width: 44rem;
+       margin: 0 auto; padding: 2rem 1rem 4rem; }
+h1 { font-size: 1.6rem; } h2 { font-size: 1.2rem; margin-top: 2rem; }
+hr { margin: 3rem 0; }
+</style>"""
+
+
+def page(request: Request | None) -> str:
+    language = words.language(request)
+    translated = words.say(request, "privacy.body") if language != "en" else "privacy.body"
+    body = (
+        ENGLISH
+        if translated == "privacy.body"
+        else f'{translated}\n\n<hr>\n\n<div lang="en">\n{ENGLISH}\n</div>'
+    )
+    return f"""<!doctype html>
+<html lang="{language}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{words.say(request, "privacy.title")}</title>
+{STYLE}
+</head>
+<body>
+{body}
 </body>
 </html>
 """

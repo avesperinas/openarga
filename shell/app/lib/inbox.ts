@@ -24,7 +24,7 @@ const BASE = "/api/kernel/notifications/inbox";
 
 export async function readInbox(): Promise<Notice[]> {
   const response = await request(BASE, { headers: { accept: "application/json" } });
-  if (!response.ok) throw new Error(`la bandeja contestó ${response.status}`);
+  if (!response.ok) throw new Error(`the inbox answered ${response.status}`);
   return (await response.json()) as Notice[];
 }
 

@@ -2,9 +2,7 @@ auth/client-scopes.ndjson
 auth/realm.json
 backup/arga-backup
 backup/e2e.sh
-gateway/src/gateway/privacy.py
 gateway/tests/test_login.py
-kernel/src/kernel/identity.py
 kernel/tests/corpus.py
 kernel/tests/test_capabilities.py
 kernel/tests/test_identity.py
@@ -56,7 +54,6 @@ modules/goals/ui/src/goalWords.test.ts
 modules/goals/ui/src/goalWords.ts
 modules/goals/ui/src/states.test.tsx
 modules/goals/ui/src/words.ts
-modules/hub/manifest.yaml
 modules/hub/src/hub/providers/food.py
 modules/hub/tests/bank_fake.py
 modules/hub/tests/google_fake.py
@@ -79,7 +76,6 @@ modules/hub/tests/test_hub_recommended.py
 modules/hub/tests/test_hub_sources.py
 modules/hub/tests/test_hub_statements.py
 modules/hub/tests/test_hub_wikimedia.py
-modules/hub/tools/glossary.md
 modules/hub/ui/src/Add.test.tsx
 modules/hub/ui/src/Connection.test.tsx
 modules/hub/ui/src/Home.test.tsx
@@ -103,7 +99,6 @@ packages/nutrients/src/arga_nutrients/__init__.py
 packages/recurrence/phrases.json
 packages/ui/.storybook/preview.tsx
 packages/ui/README.md
-packages/ui/src/speech.tsx
 packages/ui/stories/Analysis.stories.tsx
 packages/ui/stories/AppBackground.stories.tsx
 packages/ui/stories/AppShell.stories.tsx
@@ -233,7 +228,6 @@ shell/app/components/StartingDesk.test.tsx
 shell/app/components/WidgetCard.test.tsx
 shell/app/envelopes/route.test.ts
 shell/app/lib/envelope.test.ts
-shell/app/lib/inbox.ts
 shell/app/lib/kernel.test.ts
 shell/app/lib/layout.test.ts
 shell/app/lib/paging.test.ts

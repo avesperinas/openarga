@@ -50,7 +50,7 @@ ACCEPT_ENCODING = "accept-encoding"
 
 OWN_COOKIES = frozenset({COOKIE, LOGIN_COOKIE})
 
-PUBLIC = ("/healthz", "/version", "/privacidad")
+PUBLIC = ("/healthz", "/version", "/privacy", "/privacidad")
 
 INSTALL_ASSETS = frozenset(
     {
@@ -119,9 +119,10 @@ async def version() -> dict[str, str]:
     return {"service": SERVICE, "version": os.environ.get("APP_VERSION", "dev")}
 
 
+@app.get("/privacy", include_in_schema=False)
 @app.get("/privacidad", include_in_schema=False)
-async def privacy() -> HTMLResponse:
-    return HTMLResponse(privacy_module.PAGE)
+async def privacy(request: Request) -> HTMLResponse:
+    return HTMLResponse(privacy_module.page(request))
 
 
 async def person(request: Request) -> Resolved:
