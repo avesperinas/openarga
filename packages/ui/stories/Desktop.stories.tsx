@@ -54,9 +54,9 @@ function Cell({ size, children }: { size: WidgetSize; children: React.ReactNode 
 const CONNECTIONS = [
   { label: "BBVA", value: "Caducada", tone: "negative" },
   { label: "Santander", value: "A medias", tone: "warning" },
-  { label: "Bitvavo", value: "Al día", tone: "positive" },
-  { label: "Correo", value: "Al día", tone: "positive" },
-  { label: "Claude", value: "En pausa", tone: "neutral" },
+  { label: "Bitvavo", value: "Up to date", tone: "positive" },
+  { label: "Correo", value: "Up to date", tone: "positive" },
+  { label: "Claude", value: "Paused", tone: "neutral" },
 ] as const;
 
 export const LasApps: Story = {
@@ -64,21 +64,21 @@ export const LasApps: Story = {
     <Grid>
       <Cell size="2x2">
         <Widget title="Entreno" hue={4} size="2x2" shape="number" state="ready">
-          <WidgetRing value={2} target={4} label="de 4 esta semana" />
+          <WidgetRing value={2} target={4} label="of 4 this week" />
         </Widget>
       </Cell>
       <Cell size="2x2">
         <Widget title="Entreno" hue={4} size="2x2" shape="number" state="ready">
-          <WidgetRing value={4} target={4} label="de 4 esta semana" />
+          <WidgetRing value={4} target={4} label="of 4 this week" />
         </Widget>
       </Cell>
       <Cell size="2x2">
-        <Widget title="Siguiente sesión" hue={4} size="2x2" shape="number" state="ready">
+        <Widget title="Next session" hue={4} size="2x2" shape="number" state="ready">
           <WidgetKpi value="Pull" icon="pull" hue={2} />
         </Widget>
       </Cell>
       <Cell size="2x2">
-        <Widget title="Siguiente sesión" hue={4} size="2x2" shape="number" state="ready">
+        <Widget title="Next session" hue={4} size="2x2" shape="number" state="ready">
           <WidgetKpi value="Cuerpo entero" icon="kettlebell" hue={5} />
         </Widget>
       </Cell>
@@ -89,7 +89,7 @@ export const LasApps: Story = {
               <WidgetRow key={row.label} {...row} />
             ))}
           </WidgetRows>
-          <WidgetFootnote>El acceso a BBVA caducó el 20/09; hay que reconectarlo.</WidgetFootnote>
+          <WidgetFootnote>Access to BBVA expired on 20/09; it needs reconnecting.</WidgetFootnote>
         </Widget>
       </Cell>
       <Cell size="2x2">
@@ -98,7 +98,7 @@ export const LasApps: Story = {
             items={[
               { label: "Bancos", value: 2 },
               { label: "Cuentas", value: 5 },
-              { label: "Última sincronización", value: "2 h" },
+              { label: "Last sync", value: "2 h" },
             ]}
           />
         </Widget>
@@ -109,10 +109,10 @@ export const LasApps: Story = {
             items={[
               { label: "Bancos", value: 2 },
               { label: "Cuentas", value: 5 },
-              { label: "Última sincronización", value: "2 h" },
+              { label: "Last sync", value: "2 h" },
             ]}
           />
-          <WidgetFootnote>El acceso a BBVA caduca en 5 días.</WidgetFootnote>
+          <WidgetFootnote>Access to BBVA expires in 5 days.</WidgetFootnote>
         </Widget>
       </Cell>
       <Cell size="1x1">
@@ -132,7 +132,7 @@ export const LasApps: Story = {
           size="2x2"
           shape="number"
           state="empty"
-          note="sin recetas todavía"
+          note="no recipes yet"
         />
       </Cell>
     </Grid>

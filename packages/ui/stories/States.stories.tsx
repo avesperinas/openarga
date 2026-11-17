@@ -14,10 +14,10 @@ export const VacioErrorYSinRed: Story = {
   render: () => (
     <div style={column}>
       <OfflineNotice offline pending={2} />
-      <EmptyState icon="basket" title="No hay nada apuntado" action={{ label: "Apuntar algo", onClick: () => undefined, icon: "plus" }}>
-        Escribe arriba lo que haga falta.
+      <EmptyState icon="basket" title="Nothing logged" action={{ label: "Apuntar algo", onClick: () => undefined, icon: "plus" }}>
+        Write above whatever is needed.
       </EmptyState>
-      <ErrorState detail="El servicio no ha contestado." onRetry={() => new Promise((resolve) => setTimeout(resolve, 800))} />
+      <ErrorState detail="The service has not answered." onRetry={() => new Promise((resolve) => setTimeout(resolve, 800))} />
     </div>
   ),
 };

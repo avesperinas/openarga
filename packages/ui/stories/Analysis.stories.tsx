@@ -4,7 +4,7 @@ import * as React from "react";
 import { ChoiceChips, FilterBar, SegmentedControl, SeriesChart } from "../src/index";
 
 const meta: Meta<typeof SeriesChart> = {
-  title: "Gráficas/Análisis",
+  title: "Charts/Analysis",
   component: SeriesChart,
 };
 export default meta;
@@ -19,7 +19,7 @@ const categories = [
   { key: "ropa", name: "Ropa", values: [0, 90, 0, 40, 0, 110] },
   { key: "regalos", name: "Regalos", values: [0, 0, 25, 0, 60, 0] },
 ];
-const euros = (value: number) => `${value.toLocaleString("es-ES")} €`;
+const euros = (value: number) => `${value.toLocaleString("en-GB")} €`;
 
 function WithFilters() {
   const [kind, setKind] = React.useState<"stacked" | "bars" | "lines">("stacked");
@@ -31,7 +31,7 @@ function WithFilters() {
           label="Rango"
           options={[
             { value: "6m", label: "6 meses" },
-            { value: "1y", label: "Un año" },
+            { value: "1y", label: "One year" },
           ]}
           value={range}
           onChange={setRange}
@@ -41,13 +41,13 @@ function WithFilters() {
           options={[
             { value: "stacked", label: "Apilado" },
             { value: "bars", label: "Barras" },
-            { value: "lines", label: "Líneas" },
+            { value: "lines", label: "Lines" },
           ]}
           value={kind}
           onChange={setKind}
         />
       </FilterBar>
-      <SeriesChart label="Gasto por categoría" labels={labels} series={categories} kind={kind} format={euros} />
+      <SeriesChart label="Spending by category" labels={labels} series={categories} kind={kind} format={euros} />
     </div>
   );
 }
@@ -57,7 +57,7 @@ export const ConFiltros: StoryObj = { render: () => <WithFilters /> };
 export const AhorroConNegativos: StoryObj = {
   render: () => (
     <SeriesChart
-      label="Lo que queda cada mes"
+      label="What is left each month"
       labels={labels}
       series={[{ key: "net", name: "Te queda", values: [420, -130, 610, 90, 380, -40] }]}
       kind="bars"
@@ -69,7 +69,7 @@ export const AhorroConNegativos: StoryObj = {
 export const PatrimonioConAportado: StoryObj = {
   render: () => (
     <SeriesChart
-      label="Patrimonio por tipo, con lo aportado"
+      label="Net worth by kind, with what was paid in"
       labels={labels}
       kind="stacked"
       series={[

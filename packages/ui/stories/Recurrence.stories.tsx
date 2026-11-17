@@ -5,7 +5,7 @@ import "../controls.css";
 
 import { RecurrencePicker, recurrenceRule, toRRule, type RecurrenceRule } from "../src/index";
 
-const meta: Meta = { title: "Controles/Repetición" };
+const meta: Meta = { title: "Controls/Recurrence" };
 export default meta;
 
 function Playground({ date, initial }: { date: string; initial: RecurrenceRule | null }) {

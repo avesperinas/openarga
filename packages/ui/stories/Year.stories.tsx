@@ -5,7 +5,7 @@ import "../library.css";
 
 import { YearCalendar } from "../src/index";
 
-const meta: Meta = { title: "Gráficas/Año" };
+const meta: Meta = { title: "Charts/Year" };
 export default meta;
 
 function steps() {
@@ -20,12 +20,12 @@ function steps() {
   return out;
 }
 
-const pasos = (value: number) => `${value.toLocaleString("es-ES")} pasos`;
+const pasos = (value: number) => `${value.toLocaleString("en-GB")} steps`;
 
 export const ConObjetivo: StoryObj = {
-  render: () => <YearCalendar label="Pasos del año" days={steps()} goal={8000} format={pasos} />,
+  render: () => <YearCalendar label="The year's steps" days={steps()} goal={8000} format={pasos} />,
 };
 
 export const SinObjetivo: StoryObj = {
-  render: () => <YearCalendar label="Páginas del año" days={steps().map((one) => ({ ...one, value: Math.round(one.value / 200) }))} />,
+  render: () => <YearCalendar label="The year's pages" days={steps().map((one) => ({ ...one, value: Math.round(one.value / 200) }))} />,
 };

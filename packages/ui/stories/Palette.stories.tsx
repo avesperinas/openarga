@@ -9,13 +9,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const COMMANDS = [
-  { key: "today", label: "Ir a hoy", icon: "today" as const, shortcut: "T", run: () => undefined },
-  { key: "week", label: "Ver la semana", icon: "calendar" as const, shortcut: "W", run: () => undefined },
+  { key: "today", label: "Go to today", icon: "today" as const, shortcut: "T", run: () => undefined },
+  { key: "week", label: "See the week", icon: "calendar" as const, shortcut: "W", run: () => undefined },
   { key: "new", label: "Nuevo evento", icon: "plus" as const, shortcut: "N", run: () => undefined },
 ];
 const NOTES = [
-  { key: "n1", label: "Ideas para el viaje", detail: "Viajes", icon: "note" as const, run: () => undefined },
-  { key: "n2", label: "Lista de lecturas", detail: "Libros", icon: "note" as const, run: () => undefined },
+  { key: "n1", label: "Ideas for the trip", detail: "Viajes", icon: "note" as const, run: () => undefined },
+  { key: "n2", label: "Reading list", detail: "Libros", icon: "note" as const, run: () => undefined },
 ];
 
 export const Abierta: Story = {
@@ -28,8 +28,8 @@ export const Abierta: Story = {
         <Button onClick={() => setOpen(true)}>Abrir (⌘K)</Button>
         {open && (
           <CommandPalette
-            label="Buscar y comandos"
-            placeholder="Qué quieres hacer, o una nota"
+            label="Search and commands"
+            placeholder="What you want to do, or a note"
             query={query}
             onQuery={setQuery}
             onClose={() => setOpen(false)}
@@ -45,8 +45,8 @@ export const Abierta: Story = {
 };
 
 const EVENTS = [
-  { key: "e1", label: "Cena con Ane", detail: "jue, 29 oct · 21:00 · Casa", tone: 5, run: () => undefined },
-  { key: "e2", label: "Inglés", detail: "mié, 28 oct · 19:00", tone: 3, icon: "repeat" as const, run: () => undefined },
+  { key: "e1", label: "Dinner with Ane", detail: "jue, 29 oct · 21:00 · Casa", tone: 5, run: () => undefined },
+  { key: "e2", label: "English", detail: "Wed, 28 Oct · 19:00", tone: 3, icon: "repeat" as const, run: () => undefined },
 ];
 
 export const ConEventos: Story = {
@@ -54,8 +54,8 @@ export const ConEventos: Story = {
     const [query, setQuery] = React.useState("");
     return (
       <CommandPalette
-        label="Buscar y comandos"
-        placeholder="Buscar eventos o escribir un comando"
+        label="Search and commands"
+        placeholder="Search events or type a command"
         query={query}
         onQuery={setQuery}
         onClose={() => undefined}

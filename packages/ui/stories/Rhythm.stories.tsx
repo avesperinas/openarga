@@ -19,7 +19,7 @@ import {
   RingFigure,
 } from "../src/index";
 
-const meta = { title: "Cifras con forma y carriles", parameters: { layout: "padded" } } satisfies Meta;
+const meta = { title: "Figures with shape and tracks", parameters: { layout: "padded" } } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
@@ -30,21 +30,21 @@ export const Anillos: Story = {
     <div data-kind="hue-3" style={{ maxWidth: 390, display: "grid", gap: "var(--space-4)" }}>
       <Card>
         <Columns>
-          <RingFigure share={0.42} value="42 %" label="Ventana" detail="acaba a las 18:30" />
-          <RingFigure share={0.71} value="71 %" label="Semana" detail="a 0 el jueves" tone="warning" />
+          <RingFigure share={0.42} value="42 %" label="Ventana" detail="ends at 18:30" />
+          <RingFigure share={0.71} value="71 %" label="Week" detail="at 0 on Thursday" tone="warning" />
         </Columns>
       </Card>
       <Card>
-        <RingFigure size="medium" share={0.7} value="14" label="14 de 20 este año" detail="2 por delante del ritmo" />
+        <RingFigure size="medium" share={0.7} value="14" label="14 of 20 this year" detail="2 ahead of pace" />
       </Card>
-      <Card title="Del color de cómo va">
+      <Card title="In the colour of how it goes">
         <Columns>
-          <RingFigure size="medium" share={0.2} value="20 %" label="De sobra" tone="positive" />
+          <RingFigure size="medium" share={0.2} value="20 %" label="Plenty" tone="positive" />
           <RingFigure size="medium" share={0.5} value="50 %" label="A ritmo" tone="info" />
         </Columns>
         <Columns>
           <RingFigure size="medium" share={0.8} value="80 %" label="Ojo" tone="warning" />
-          <RingFigure size="medium" share={0.95} value="95 %" label="Al límite" tone="negative" />
+          <RingFigure size="medium" share={0.95} value="95 %" label="At the limit" tone="negative" />
         </Columns>
       </Card>
     </div>
@@ -54,14 +54,14 @@ export const Anillos: Story = {
 export const CadaCuanto: Story = {
   render: () => (
     <div data-kind="hue-1" style={{ maxWidth: 390, display: "grid", gap: "var(--space-3)" }}>
-      <FrequencyBar since={15} every={8} label="cada 8 días, hace 15" />
-      <FrequencyBar since={7} every={7} label="cada semana, hace 7 días" />
-      <FrequencyBar since={2} every={14} label="cada 2 semanas, hace 2 días" />
-      <FrequencyBar since={5} every={null} label="hace 5 días" />
-      <FrequencyRows label="Lo que compras">
-        <FrequencyRow title="Tomate" since={15} every={8} label="cada 8 días, hace 15" value="15 / 8 d" onClick={noop} />
-        <FrequencyRow title="Café" since={11} every={14} label="cada 2 semanas, hace 11" value="11 / 14 d" onClick={noop} />
-        <FrequencyRow title="Pan" since={1} every={3} label="cada 3 días, hace 1" value="1 / 3 d" onClick={noop} />
+      <FrequencyBar since={15} every={8} label="every 8 days, 15 ago" />
+      <FrequencyBar since={7} every={7} label="every week, 7 days ago" />
+      <FrequencyBar since={2} every={14} label="every 2 weeks, 2 days ago" />
+      <FrequencyBar since={5} every={null} label="5 days ago" />
+      <FrequencyRows label="What you buy">
+        <FrequencyRow title="Tomate" since={15} every={8} label="every 8 days, 15 ago" value="15 / 8 d" onClick={noop} />
+        <FrequencyRow title="Coffee" since={11} every={14} label="every 2 weeks, 11 ago" value="11 / 14 d" onClick={noop} />
+        <FrequencyRow title="Pan" since={1} every={3} label="every 3 days, 1 ago" value="1 / 3 d" onClick={noop} />
       </FrequencyRows>
     </div>
   ),
@@ -92,8 +92,8 @@ export const ElDiaEnVeinticuatroHoras: Story = {
           ))}
         </DayTimelines>
       </Card>
-      <Card title="Discreta: solo marca los periodos">
-        <DayTimeline label="Hoy: pings a las 7:00 y 12:05" marks={[7, 12.1]} spans={[{ from: 7, to: 12 }, { from: 12.1, to: 17.1 }]} now={14.5} quiet />
+      <Card title="Discreet: marks only the periods">
+        <DayTimeline label="Today: pings at 7:00 and 12:05" marks={[7, 12.1]} spans={[{ from: 7, to: 12 }, { from: 12.1, to: 17.1 }]} now={14.5} quiet />
       </Card>
     </div>
   ),
@@ -102,7 +102,7 @@ export const ElDiaEnVeinticuatroHoras: Story = {
 export const BarraDeAbajo: Story = {
   render: () => (
     <div data-kind="hue-1" style={{ maxWidth: 390, display: "grid", gap: "var(--space-4)" }}>
-      <DockBar title="4 en el carro" detail="Pan, plátanos y 2 más" action={{ label: "Terminar", icon: "done", onClick: noop }} />
+      <DockBar title="4 in the cart" detail="Bread, bananas and 2 more" action={{ label: "Terminar", icon: "done", onClick: noop }} />
     </div>
   ),
 };
@@ -111,7 +111,7 @@ export const Portadas: Story = {
   render: () => (
     <div data-kind="hue-5" style={{ maxWidth: 390, display: "grid", gap: "var(--space-4)" }}>
       <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "end" }}>
-        <Cover size="large" title="Un libro largo" subtitle="Autora de ejemplo" />
+        <Cover size="large" title="A long book" subtitle="Sample author" />
         <Cover size="small" title="Corto" />
       </div>
       <CoverWall
@@ -131,11 +131,11 @@ export const LoQueTienesEntreManos: Story = {
   render: () => (
     <div data-kind="hue-5" style={{ maxWidth: 390, display: "grid", gap: "var(--space-4)" }}>
       <MediaCard
-        media={<Cover size="large" title="Un libro largo" subtitle="Autora de ejemplo" />}
-        title="Un libro largo"
-        lines={["Autora de ejemplo", "Desde el 12 oct · 19 días", "452 páginas"]}
+        media={<Cover size="large" title="A long book" subtitle="Sample author" />}
+        title="A long book"
+        lines={["Sample author", "Since 12 Oct · 19 days", "452 pages"]}
         onOpen={noop}
-        action={{ label: "Terminado hoy", icon: "done", onClick: noop }}
+        action={{ label: "Finished today", icon: "done", onClick: noop }}
       />
       <MediaHero media={<Cover size="hero" title="Otro libro" subtitle="Alguien" />}>
         <span>Alguien · 2016</span>

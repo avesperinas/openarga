@@ -22,7 +22,7 @@ import {
   WeekDots,
 } from "../src/index";
 
-const meta = { title: "Cifras y filas", parameters: { layout: "padded" } } satisfies Meta;
+const meta = { title: "Figures and rows", parameters: { layout: "padded" } } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
@@ -34,12 +34,12 @@ export const AlTerminar: Story = {
           items={[
             { label: "minutos", value: 75 },
             { label: "series", value: 28 },
-            { label: "récords", value: 2, lit: true },
+            { label: "records", value: 2, lit: true },
           ]}
         />
       </Card>
       <Card>
-        <HeadlineFigure label="Máximo estimado" value={119} unit="kg" change={{ text: "+6 kg en 3 meses", direction: "up" }} />
+        <HeadlineFigure label="Estimated max" value={119} unit="kg" change={{ text: "+6 kg in 3 months", direction: "up" }} />
       </Card>
     </div>
   ),
@@ -60,7 +60,7 @@ function Session() {
           open={open === "a"}
           onToggle={() => setOpen(open === "a" ? null : "a")}
         >
-          <Hint>La última vez, lun 7 sept: 3, 3, 2 + 40 kg</Hint>
+          <Hint>Last time, Mon 7 Sept: 3, 3, 2 + 40 kg</Hint>
           <Sequence>
             <li>
               <SequenceRow number={1} state="done" value="3 + 40 kg" onClick={() => undefined} label="Serie 1" />
@@ -74,7 +74,7 @@ function Session() {
                 <SequenceSeparator />
                 <Stepper size="small" label="Reps" value={reps} step={1} onChange={setReps} />
               </SequenceRow>
-              <SequenceHint>Corrigiendo la serie 3</SequenceHint>
+              <SequenceHint>Correcting set 3</SequenceHint>
             </li>
             <li>
               <SequenceRow number={4} state="todo" value="3 + 40 kg" />
@@ -82,12 +82,12 @@ function Session() {
           </Sequence>
         </DisclosureRow>
         <DisclosureRow
-          title="Remo en polea"
+          title="Cable row"
           subtitle="8, 8, 8, 7 × 65 kg"
           leading={<ProgressRing done={4} target={4} />}
           trailing={
             <>
-              <Badge tone="positive">Récord</Badge>
+              <Badge tone="positive">Record</Badge>
               <Delta text="+1 rep" direction="up" />
             </>
           }
@@ -95,7 +95,7 @@ function Session() {
           onToggle={() => setOpen(open === "b" ? null : "b")}
         />
         <DisclosureRow
-          title="Curl en polea"
+          title="Cable curl"
           subtitle="4 × 10–12 · primera vez"
           leading={<ProgressRing done={0} target={4} />}
           open={open === "c"}
@@ -113,7 +113,7 @@ export const LaSemana: Story = {
     <Card>
       <WeekDots
         size="large"
-        label="3 de 5 esta semana"
+        label="3 of 5 this week"
         days={[
           { day: "2026-09-14", state: "met", kind: "push" },
           { day: "2026-09-15", state: "missed" },

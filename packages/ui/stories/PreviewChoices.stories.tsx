@@ -11,7 +11,7 @@ import trainingInk from "../../../modules/training/ui/public/icon-ink.svg?url";
 import trainingPaper from "../../../modules/training/ui/public/icon-paper.svg?url";
 import trainingSolid from "../../../modules/training/ui/public/icon-solid.svg?url";
 
-const meta = { title: "Elegir viendo cómo queda", parameters: { layout: "padded" } } satisfies Meta;
+const meta = { title: "Choose while seeing how it looks", parameters: { layout: "padded" } } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 

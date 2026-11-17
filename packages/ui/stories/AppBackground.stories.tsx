@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import "../library.css";
 import { AppBackdrop, AppHeader, AppSettings, List, ListRow, Screen, Section } from "../src/index";
 
-const meta = { title: "Fondo de una app", parameters: { layout: "fullscreen" } } satisfies Meta;
+const meta = { title: "An app's background", parameters: { layout: "fullscreen" } } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
@@ -13,12 +13,12 @@ export const Pantalla: Story = {
   render: () => (
     <AppBackdrop app="training">
       <Screen>
-        <AppHeader app={APP} eyebrow="Viernes, 30 de octubre" title="Hoy" />
-        <Section title="Esta semana">
+        <AppHeader app={APP} eyebrow="Friday 30 October" title="Today" />
+        <Section title="This week">
           <List>
             <ListRow title="Pierna" subtitle="Lunes · 52 min" accessory="chevron-right" onClick={() => undefined} />
-            <ListRow title="Empuje" subtitle="Miércoles · 47 min" accessory="chevron-right" onClick={() => undefined} />
-            <ListRow title="Tirón" subtitle="Hoy" accessory="chevron-right" onClick={() => undefined} />
+            <ListRow title="Empuje" subtitle="Wednesday · 47 min" accessory="chevron-right" onClick={() => undefined} />
+            <ListRow title="Pull" subtitle="Today" accessory="chevron-right" onClick={() => undefined} />
           </List>
         </Section>
       </Screen>

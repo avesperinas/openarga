@@ -42,8 +42,8 @@ function Card({ className, title, detail }: { className: string; title: string; 
 export const Tarjeta: Story = {
   render: () => (
     <div style={{ display: "flex", gap: "var(--grid-gap)" }}>
-      <Card className="surface" title="● Eventos" detail="12 hoy" />
-      <Card className="surface" title="● Entidades" detail="3 esta semana" />
+      <Card className="surface" title="● Eventos" detail="12 today" />
+      <Card className="surface" title="● Entidades" detail="3 this week" />
     </div>
   ),
 };
@@ -51,7 +51,7 @@ export const Tarjeta: Story = {
 export const Cristal: Story = {
   render: () => (
     <div style={{ display: "grid", gap: "var(--space-6)", justifyItems: "start" }}>
-      <Card className="surface" title="● Eventos" detail="12 hoy" />
+      <Card className="surface" title="● Eventos" detail="12 today" />
       <div
         className="glass"
         style={{
@@ -63,8 +63,8 @@ export const Cristal: Story = {
           marginLeft: "var(--space-8)",
         }}
       >
-        <span style={{ color: "var(--accent)" }}>Hoy</span>
-        <span style={{ color: "var(--fg-muted)" }}>Módulos</span>
+        <span style={{ color: "var(--accent)" }}>Today</span>
+        <span style={{ color: "var(--fg-muted)" }}>Modules</span>
         <span style={{ color: "var(--fg-muted)" }}>Ajustes</span>
       </div>
     </div>

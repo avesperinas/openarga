@@ -4,11 +4,11 @@ import * as React from "react";
 import "../library.css";
 import { AppShell, List, ListRow, Screen, SETTINGS_TAB, Heading, Hint } from "../src/index";
 
-const meta = { title: "Armazón", parameters: { layout: "fullscreen" } } satisfies Meta;
+const meta = { title: "Frame", parameters: { layout: "fullscreen" } } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const BOOKS = ["Un libro sintético", "Otro libro", "El tercero"];
+const BOOKS = ["A synthetic book", "Otro libro", "The third"];
 
 function Shell({ startOpen }: { startOpen: boolean }) {
   const [tab, setTab] = React.useState<"shelf" | "stats" | "settings">("shelf");
@@ -19,15 +19,15 @@ function Shell({ startOpen }: { startOpen: boolean }) {
       active={tab}
       onSelect={setTab}
       tabs={[
-        { id: "shelf", label: "Estantería", icon: "book" },
-        { id: "stats", label: "Estadísticas", icon: "chart" },
+        { id: "shelf", label: "Shelf", icon: "book" },
+        { id: "stats", label: "Stats", icon: "chart" },
         SETTINGS_TAB,
       ]}
       detail={
         open && (
           <Screen>
             <Heading>{open}</Heading>
-            <Hint>La ficha, al lado de la lista en ancho.</Hint>
+            <Hint>The record, next to the list when wide.</Hint>
           </Screen>
         )
       }
@@ -56,7 +56,7 @@ function Bare() {
         open && (
           <Screen>
             <Heading>{open}</Heading>
-            <Hint>El detalle, sin rail a la izquierda.</Hint>
+            <Hint>The detail, without a rail on the left.</Hint>
           </Screen>
         )
       }

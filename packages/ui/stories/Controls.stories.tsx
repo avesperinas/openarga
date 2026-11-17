@@ -59,14 +59,14 @@ export const Botones: Story = {
         </Button>
         <Button>Cancelar</Button>
         <Button variant="tinted" icon="plus">
-          Añadir
+          Add
         </Button>
         <Button variant="plain" size="small" icon="undo">
           Deshacer
         </Button>
       </div>
       <Button variant="destructive" icon="trash" block>
-        Borrarlos con la pantalla
+        Delete them with the page
       </Button>
       <div style={{ display: "flex", gap: "var(--space-2)" }}>
         <IconButton icon="close" label="Cerrar" />
@@ -100,7 +100,7 @@ export const Segmentado: Story = {
           max={1}
           step={0.05}
           value={opacity}
-          valueText={`${Math.round(opacity * 100)} por ciento`}
+          valueText={`${Math.round(opacity * 100)} percent`}
           onChange={setOpacity}
         />
       </Panel>
@@ -114,12 +114,12 @@ export const Interruptor: Story = {
     return (
       <Panel>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span>Programación activa</span>
-          <Switch label="Programación activa" checked={on} onChange={setOn} />
+          <span>Active schedule</span>
+          <Switch label="Active schedule" checked={on} onChange={setOn} />
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span>Sin permiso</span>
-          <Switch label="Sin permiso" checked={false} onChange={() => {}} disabled />
+          <span>No permission</span>
+          <Switch label="No permission" checked={false} onChange={() => {}} disabled />
         </div>
       </Panel>
     );
@@ -130,7 +130,7 @@ export const Lista: Story = {
   render: () => (
     <Panel>
       <List>
-        <ListRow title="Eventos" detail="Ya colocado" hue={1} accessory="done" disabled />
+        <ListRow title="Eventos" detail="Already placed" hue={1} accessory="done" disabled />
         <ListRow title="Constancia" detail="2x2 · 2x4" hue={2} accessory="plus" />
         <ListRow title="Demo" detail="2x2 · 4x2" hue={5} accessory="plus" />
       </List>
@@ -177,12 +177,12 @@ export const Registrar: Story = {
       <div style={{ display: "grid", gap: "var(--space-4)", width: "min(24rem, 100%)" }}>
         <AppBar
           title="Leg"
-          subtitle="Rotación 3 · día 3 de 3"
-          back={{ icon: "chevron-left", label: "Hoy", onClick: () => undefined }}
+          subtitle="Rotation 3 · day 3 of 3"
+          back={{ icon: "chevron-left", label: "Today", onClick: () => undefined }}
           action={{ label: "Terminar", onClick: () => undefined }}
         />
         <Panel>
-          <Elapsed since={started} label="Sesión" />
+          <Elapsed since={started} label="Session" />
           <ChoiceChips
             label="Variante"
             value={variant}
@@ -195,7 +195,7 @@ export const Registrar: Story = {
           />
           <div data-kind="leg" style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
             <span style={{ width: "var(--space-2)", height: "var(--space-2)", borderRadius: "50%", background: "var(--kind)" }} />
-            <span>Tipo de sesión</span>
+            <span>Session kind</span>
           </div>
           <Stepper label="Peso" value={weight} step={2.5} unit="kg" onChange={setWeight} />
           <Stepper label="Reps" value={reps} step={1} inputMode="numeric" onChange={setReps} />
@@ -219,7 +219,7 @@ export const Registrar: Story = {
 
 export const App: Story = {
   render: function Render() {
-    const [tab, setTab] = React.useState<"hoy" | "calendario" | "plan">("calendario");
+    const [tab, setTab] = React.useState<"today" | "calendario" | "plan">("calendario");
     const [month, setMonth] = React.useState(8);
     const [name, setName] = React.useState("");
     const [open, setOpen] = React.useState(false);
@@ -252,7 +252,7 @@ export const App: Story = {
           active={tab}
           onSelect={setTab}
           items={[
-            { id: "hoy", label: "Hoy", icon: "today" },
+            { id: "today", label: "Today", icon: "today" },
             { id: "calendario", label: "Calendario", icon: "calendar" },
             { id: "plan", label: "Plan", icon: "edit" },
           ]}
@@ -265,8 +265,8 @@ export const App: Story = {
 export const Copiar: Story = {
   render: () => (
     <Panel>
-      <CopyField label="URL del servidor" value="https://arga.example/mcp" copy={async () => undefined} />
-      <CopyField label="ID de cliente" value="claude" copy={async () => undefined} />
+      <CopyField label="Server URL" value="https://arga.example/mcp" copy={async () => undefined} />
+      <CopyField label="Client ID" value="claude" copy={async () => undefined} />
     </Panel>
   ),
 };
@@ -281,9 +281,9 @@ export const Borrar: Story = {
         </Button>
         {open && (
           <ConfirmDelete
-            title="¿Borrar esta receta?"
-            subject="Lentejas con verduras"
-            consequence="Se pierden sus 9 ingredientes y 6 pasos. No se puede deshacer."
+            title="Delete this recipe?"
+            subject="Lentils with vegetables"
+            consequence="Its 9 ingredients and 6 steps are lost. This cannot be undone."
             action="Borrar receta"
             onCancel={() => setOpen(false)}
             onConfirm={() => setOpen(false)}
@@ -300,8 +300,8 @@ export const Credencial: Story = {
     return (
       <Panel>
         <CredentialField
-          label="Token de Claude Code"
-          help="Lo generas con `claude setup-token` en tu ordenador."
+          label="Claude Code token"
+          help="You generate it with `claude setup-token` on your computer."
           configured
           hint="…a3f9"
           value={value}
@@ -319,7 +319,7 @@ export const Fecha: Story = {
     const [day, setDay] = React.useState("2026-10-02");
     return (
       <Panel>
-        <DateField label="Desde" value={day} onChange={setDay} />
+        <DateField label="From" value={day} onChange={setDay} />
       </Panel>
     );
   },

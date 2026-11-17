@@ -19,17 +19,17 @@ function Reopen({ label, children }: { label: string; children: (close: () => vo
 
 export const Dialogo: Story = {
   render: () => (
-    <Reopen label="¿Salir?">
+    <Reopen label="Leave?">
       {(close) => (
         <Dialog
-          title="¿Salir sin guardar?"
+          title="Leave without saving?"
           onClose={close}
           actions={[
             { label: "Seguir editando", onClick: close },
             { label: "Salir", onClick: close, tone: "danger" },
           ]}
         >
-          Lo escrito en la nota se pierde.
+          What was written in the note is lost.
         </Dialog>
       )}
     </Reopen>
@@ -38,11 +38,11 @@ export const Dialogo: Story = {
 
 export const Hoja: Story = {
   render: () => (
-    <Reopen label="Añadir">
+    <Reopen label="Add">
       {(close) => (
-        <Sheet title="Añadir a la lista" onClose={close} action={{ label: "Añadir", onClick: close }}>
-          <TextField label="Qué" value="Leche" onChange={() => undefined} />
-          <Hint>Arrástrala hacia abajo desde arriba para cerrarla.</Hint>
+        <Sheet title="Add to the list" onClose={close} action={{ label: "Add", onClick: close }}>
+          <TextField label="What" value="Leche" onChange={() => undefined} />
+          <Hint>Drag it down from the top to close it.</Hint>
         </Sheet>
       )}
     </Reopen>
@@ -53,7 +53,7 @@ export const MenuYGlobo: Story = {
   render: () => (
     <div style={{ display: "flex", gap: "var(--space-4)", alignItems: "center" }}>
       <Menu
-        label="Acciones del libro"
+        label="Book actions"
         items={[
           { label: "Editar", icon: "edit", onSelect: () => undefined },
           { label: "Duplicar", icon: "copy", onSelect: () => undefined },
@@ -68,10 +68,10 @@ export const MenuYGlobo: Story = {
           </Button>
         )}
       >
-        <Hint>Un globo para algo pequeño que no merece una hoja.</Hint>
+        <Hint>A popover for something small that does not deserve a sheet.</Hint>
       </Popover>
-      <Tooltip label="Ir a hoy">
-        <IconButton icon="today" label="Hoy" />
+      <Tooltip label="Go to today">
+        <IconButton icon="today" label="Today" />
       </Tooltip>
     </div>
   ),

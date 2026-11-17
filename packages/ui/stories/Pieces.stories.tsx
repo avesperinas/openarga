@@ -39,9 +39,9 @@ export const CarasYEtiquetas: Story = {
   render: () => (
     <Panel>
       <div style={{ display: "flex", gap: "var(--space-3)", alignItems: "center" }}>
-        <Avatar name="Persona Sintética" size="s" />
+        <Avatar name="Synthetic Person" size="s" />
         <Avatar name="Otra Persona" />
-        <Avatar name="Alguien Más" size="l" />
+        <Avatar name="Someone Else" size="l" />
       </div>
       <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
         <Badge>3</Badge>
@@ -61,18 +61,18 @@ export const Campos: Story = {
     return (
       <Panel>
         <Combobox
-          label="País"
+          label="Country"
           value={country}
           onChange={setCountry}
-          create={(text) => `Añadir «${text}»`}
+          create={(text) => `Add “${text}”`}
           options={[
-            { value: "es", label: "España" },
+            { value: "es", label: "Spain" },
             { value: "fr", label: "Francia" },
-            { value: "jp", label: "Japón" },
+            { value: "jp", label: "Japan" },
           ]}
         />
-        <DateRangeField label="Fechas del viaje" value={range} onChange={setRange} />
-        <FileField label="Subir el PDF" accept="application/pdf" hint="Un PDF de hasta 10 MB." onFiles={() => undefined} />
+        <DateRangeField label="Trip dates" value={range} onChange={setRange} />
+        <FileField label="Upload the PDF" accept="application/pdf" hint="A PDF of up to 10 MB." onFiles={() => undefined} />
       </Panel>
     );
   },

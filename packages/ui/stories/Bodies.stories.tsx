@@ -36,7 +36,7 @@ export const Kpi: Story = {
   args: { ...base, title: "Pasos", size: "2x2", shape: "number" },
   render: (args) => (
     <Widget {...args}>
-      <WidgetKpi value={1284} unit="pasos" detail="12 más que ayer" />
+      <WidgetKpi value={1284} unit="pasos" detail="12 more than yesterday" />
     </Widget>
   ),
 };
@@ -45,7 +45,7 @@ export const KpiConSimbolo: Story = {
   args: { ...base, title: "Siguiente entreno", size: "2x2", shape: "number", hue: 2 },
   render: (args) => (
     <Widget {...args}>
-      <WidgetKpi value="Pull" detail="rotación 7, día 2 de 3" icon="pull" hue={2} />
+      <WidgetKpi value="Pull" detail="rotation 7, day 2 of 3" icon="pull" hue={2} />
     </Widget>
   ),
 };
@@ -58,7 +58,7 @@ export const KpiDelta: Story = {
         value={62.5}
         previous={63.1}
         unit="kg"
-        since="la semana pasada"
+        since="last week"
         goodWhen="down"
       />
     </Widget>
@@ -69,7 +69,7 @@ export const Chart: Story = {
   args: { ...base, title: "Gasto", size: "4x2", shape: "number" },
   render: (args) => (
     <Widget {...args}>
-      <WidgetChart series={[12, 19, 8, 24, 17, 22, 15]} value={117} unit="€" detail="esta semana" />
+      <WidgetChart series={[12, 19, 8, 24, 17, 22, 15]} value={117} unit="€" detail="this week" />
     </Widget>
   ),
 };
@@ -82,7 +82,7 @@ export const Bars: Story = {
         series={[1, 0, 1, 1, 0, 2, 0]}
         labels={["L", "M", "X", "J", "V", "S", "D"]}
         value={5}
-        detail="esta semana"
+        detail="this week"
         highlight={5}
       />
     </Widget>
@@ -96,7 +96,7 @@ export const Heatmap: Story = {
       <WidgetHeatmap
         values={[0, 1, 2, 0, 3, 1, 0, 2, 2, 0, 1, 3, 3, 0, 1, 1, 2, 0, 0, 3, 2]}
         columns={7}
-        detail="últimas tres semanas"
+        detail="last three weeks"
       />
     </Widget>
   ),
@@ -106,16 +106,16 @@ export const Progress: Story = {
   args: { ...base, title: "Ahorro", size: "2x2", shape: "number" },
   render: (args) => (
     <Widget {...args}>
-      <WidgetProgress value={640} target={1000} unit="€" label="de 1.000 este mes" />
+      <WidgetProgress value={640} target={1000} unit="€" label="of 1,000 this month" />
     </Widget>
   ),
 };
 
 export const Ring: Story = {
-  args: { ...base, title: "Esta semana", size: "2x2", shape: "number" },
+  args: { ...base, title: "This week", size: "2x2", shape: "number" },
   render: (args) => (
     <Widget {...args}>
-      <WidgetRing value={2} target={5} label="de 5 esta semana" show="value" />
+      <WidgetRing value={2} target={5} label="of 5 this week" show="value" />
     </Widget>
   ),
 };
@@ -124,20 +124,20 @@ export const Streak: Story = {
   args: { ...base, title: "Racha", size: "2x2", shape: "number" },
   render: (args) => (
     <Widget {...args}>
-      <WidgetStreak current={4} best={9} days={[true, true, false, true, true, true, true]} label="días" />
+      <WidgetStreak current={4} best={9} days={[true, true, false, true, true, true, true]} label="days" />
     </Widget>
   ),
 };
 
 export const Stats: Story = {
-  args: { ...base, title: "Última sesión", size: "4x2", shape: "number" },
+  args: { ...base, title: "Last session", size: "4x2", shape: "number" },
   render: (args) => (
     <Widget {...args}>
       <WidgetStats
         items={[
           { label: "Series", value: 18 },
           { label: "Volumen", value: 4820, unit: "kg" },
-          { label: "Duración", value: "52", unit: "min" },
+          { label: "Duration", value: "52", unit: "min" },
         ]}
       />
     </Widget>
@@ -167,12 +167,12 @@ export const Calendario: Story = {
 };
 
 export const LoSiguiente: Story = {
-  args: { ...base, title: "Lo siguiente", size: "4x2", shape: "list" },
+  args: { ...base, title: "Next", size: "4x2", shape: "list" },
   render: (args) => (
     <Widget {...args}>
       <WidgetUpNext
         events={[
-          { at: "2026-09-18T18:00:00Z", title: "Push", detail: "rotación 7, día 3" },
+          { at: "2026-09-18T18:00:00Z", title: "Push", detail: "rotation 7, day 3" },
           { at: "2026-09-20T09:30:00Z", title: "Leg" },
         ]}
       />

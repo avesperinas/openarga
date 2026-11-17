@@ -33,7 +33,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const TEXT =
-  "En el año 371 antes de nuestra era, en la llanura de Leuctra, un ejército tebano rompió la formación espartana con una columna de cincuenta filas en el ala izquierda.\n\nEpaminondas concentró allí su fuerza y dejó el resto atrás, en escalón, para que llegara tarde al choque.";
+  "In 371 BC, on the plain of Leuctra, a Theban army broke the Spartan formation with a column fifty ranks deep on the left wing.\n\nEpaminondas massed his strength there and held the rest back, in echelon, so it would reach the clash late.";
 
 export const Pildora: Story = {
   render: () => {
@@ -43,12 +43,12 @@ export const Pildora: Story = {
       <div style={{ maxWidth: 390, display: "grid", gap: "1.5rem", position: "relative" }}>
         <MotifBackdrop glyph="landmark" hue={3} />
         <ReaderHero
-          eyebrow="martes, 10 de noviembre"
-          title="Tu píldora"
+          eyebrow="Tuesday 10 November"
+          title="Your pill"
           actions={
             <>
               <StreakBadge days={6} />
-              <FloatButton icon="spark" label="Sorpréndeme" tone="accent" onClick={() => {}} />
+              <FloatButton icon="spark" label="Surprise me" tone="accent" onClick={() => {}} />
             </>
           }
         />
@@ -56,49 +56,49 @@ export const Pildora: Story = {
           label="Secciones"
           items={[
             { id: "leer", label: "Leer", icon: "book" },
-            { id: "contar", label: "Para contar", icon: "lightbulb" },
-            { id: "mas", label: "Saber más", icon: "arrow-right" },
+            { id: "contar", label: "To tell", icon: "lightbulb" },
+            { id: "mas", label: "Learn more", icon: "arrow-right" },
             { id: "seguir", label: "Seguir", icon: "bookmark" },
           ]}
         />
         <ArticleReader
           id="leer"
           topic={<TopicChip name="Historia" glyph="landmark" hue={3} />}
-          eyebrow="Porque empezaste una novela de la antigua Grecia"
-          headline="La columna que rompió Esparta"
-          lead="Un ejército que nunca perdía, una llanura en Beocia y una idea tan simple que nadie la había probado."
+          eyebrow="Because you started a novel set in ancient Greece"
+          headline="The column that broke Sparta"
+          lead="An army that never lost, a plain in Boeotia and an idea so simple nobody had tried it."
           sections={[
-            { title: "El orden oblicuo", text: TEXT },
-            { title: "Lo que vino después", text: TEXT },
+            { title: "The oblique order", text: TEXT },
+            { title: "What came after", text: TEXT },
           ]}
-          highlight={{ label: "Para contar", text: "Esparta no perdía una batalla campal desde hacía generaciones.", id: "contar" }}
-          coda={{ label: "Para pensar:", text: "¿Por qué una idea tan sencilla tardó tanto en llegar?" }}
+          highlight={{ label: "To tell", text: "Sparta had not lost a pitched battle in generations.", id: "contar" }}
+          coda={{ label: "To think about:", text: "Why did such a simple idea take so long to arrive?" }}
           listen={{ lang: "es-ES" }}
         >
           <ReactionBar
-            label="¿Qué te ha parecido?"
+            label="What did you think?"
             value={reaction}
             onChange={setReaction}
             options={[
               { value: "interested", label: "Me interesa", icon: "heart" },
-              { value: "known", label: "Ya lo sabía", icon: "done" },
+              { value: "known", label: "I already knew", icon: "done" },
               { value: "other", label: "Otro tema", icon: "repeat" },
             ]}
           />
         </ArticleReader>
         <BranchList
           id="mas"
-          title="Quiero saber más sobre…"
+          title="I want to know more about…"
           items={[
-            { title: "Epaminondas", why: "El general que enseñó a Filipo de Macedonia" },
-            { title: "El Batallón Sagrado", why: "150 parejas que decidieron batallas", done: true },
-            { title: "La caída de Esparta", why: "De Leuctra a la irrelevancia" },
+            { title: "Epaminondas", why: "The general who taught Philip of Macedon" },
+            { title: "The Sacred Band", why: "150 pairs who decided battles", done: true },
+            { title: "The fall of Sparta", why: "From Leuctra to irrelevance" },
           ]}
           onOpen={() => {}}
         />
-        <Card title="Para seguir">
-          <ResourceRow icon="book" title="Un libro sobre Tebas" detail="Una autora · 2019 · 320 páginas" why="Le gustó la historia militar" saved={saved} onSave={() => setSaved(!saved)} />
-          <ResourceRow icon="headphones" hue={6} title="Un podcast de historia antigua" detail="48 min" saved={false} onSave={() => {}} />
+        <Card title="To continue">
+          <ResourceRow icon="book" title="A book about Thebes" detail="An author · 2019 · 320 pages" why="Liked military history" saved={saved} onSave={() => setSaved(!saved)} />
+          <ResourceRow icon="headphones" hue={6} title="An ancient history podcast" detail="48 min" saved={false} onSave={() => {}} />
         </Card>
       </div>
     );
@@ -108,17 +108,17 @@ export const Pildora: Story = {
 export const DatosDelDia: Story = {
   render: () => (
     <div style={{ maxWidth: 390 }}>
-      <Carousel label="Datos de hoy">
+      <Carousel label="Today's data">
         {[1, 2, 3].map((n) => (
           <FactCard
             key={n}
             index={n}
             total={3}
             hue={(n + 3) as 4 | 5 | 6}
-            topic={<TopicChip name="Ciencia y universo" glyph="atom" hue={5} size="small" />}
-            text="La luz de algunas estrellas que ves esta noche salió antes de que existiera la escritura."
-            detail="Las más lejanas a simple vista están a miles de años luz."
-            source={{ title: "Una fuente", url: "https://example.org" }}
+            topic={<TopicChip name="Science and the universe" glyph="atom" hue={5} size="small" />}
+            text="The light of some stars you see tonight left before writing existed."
+            detail="The farthest ones visible to the naked eye are thousands of light years away."
+            source={{ title: "A source", url: "https://example.org" }}
             liked={n === 1}
             known={false}
             onLike={() => {}}
@@ -133,10 +133,10 @@ export const DatosDelDia: Story = {
 export const ParaTiEstaSemana: Story = {
   render: () => (
     <div style={{ maxWidth: 390 }}>
-      <Carousel label="Para ti esta semana">
-        <PickCard icon="book" hue={3} kind="Libro" title="Una novela histórica" detail="Un autor · 720 páginas" why="Le diste un 5 a la anterior de la saga" actions={<Button variant="primary" icon="plus">Guardar</Button>} />
-        <PickCard icon="film" hue={7} kind="Película" title="Una película" detail="2009 · 127 min" why="Por tu máster de cuántica: la ciencia antigua" actions={<Button icon="plus">Guardar</Button>} />
-        <PickCard icon="headphones" hue={6} kind="Podcast" title="Un podcast" detail="20 episodios" why="Para tus salidas largas en bici" />
+      <Carousel label="For you this week">
+        <PickCard icon="book" hue={3} kind="Libro" title="A historical novel" detail="An author · 720 pages" why="You gave the previous one in the saga a 5" actions={<Button variant="primary" icon="plus">Guardar</Button>} />
+        <PickCard icon="film" hue={7} kind="Film" title="A film" detail="2009 · 127 min" why="For your quantum master's: ancient science" actions={<Button icon="plus">Guardar</Button>} />
+        <PickCard icon="headphones" hue={6} kind="Podcast" title="A podcast" detail="20 episodios" why="For your long bike rides" />
       </Carousel>
     </div>
   ),
@@ -147,14 +147,14 @@ export const Preguntas: Story = {
     <div style={{ maxWidth: 390, display: "grid", gap: "1rem" }}>
       <QuestionCard
         kind="many"
-        eyebrow="Que te conozca"
+        eyebrow="Let it know you"
         progress={{ done: 0, total: 12 }}
-        text="¿De qué te gusta aprender?"
-        why="Para saber qué temas traerte."
+        text="What do you like to learn about?"
+        why="To know which topics to bring you."
         options={[
           { value: "historia", label: "Historia" },
-          { value: "ciencia", label: "Ciencia y universo" },
-          { value: "economia", label: "Economía y dinero" },
+          { value: "ciencia", label: "Science and the universe" },
+          { value: "economia", label: "Economy and money" },
         ]}
         onAnswer={() => {}}
         onSkip={() => {}}
@@ -163,11 +163,11 @@ export const Preguntas: Story = {
       <QuestionCard
         kind="either"
         eyebrow="Insights te pregunta"
-        text="¿Sagas largas o novelas que se cierran?"
-        why="Has terminado varias sagas este año"
+        text="Long sagas or self-contained novels?"
+        why="You finished several sagas this year"
         options={[
           { value: "saga", label: "Sagas largas" },
-          { value: "one", label: "Que se cierren" },
+          { value: "one", label: "Let them close" },
         ]}
         onAnswer={() => {}}
         onSkip={() => {}}
@@ -179,16 +179,16 @@ export const Preguntas: Story = {
 export const LoQueSabeDeTi: Story = {
   render: () => (
     <div style={{ maxWidth: 390, display: "grid", gap: "1rem" }}>
-      <Card title="¿Es así?">
-        <TraitRow label="Fantasía épica larga" stance={2} source="Lo vio en tus lecturas" evidence="6 novelas, media 4,2" proposed onConfirm={() => {}} onReject={() => {}} />
-        <TraitRow label="Divulgación clara" stance={1} source="Lo vio en tus notas" proposed onConfirm={() => {}} onReject={() => {}} />
+      <Card title="Is that right?">
+        <TraitRow label="Long epic fantasy" stance={2} source="Seen in your reading" evidence="6 novelas, media 4,2" proposed onConfirm={() => {}} onReject={() => {}} />
+        <TraitRow label="Clear explainers" stance={1} source="Seen in your notes" proposed onConfirm={() => {}} onReject={() => {}} />
       </Card>
-      <Card title="Lo que sé">
-        <TraitRow label="Historia" stance={2} source="Lo contestaste" proposed={false} onForget={() => {}} />
-        <TraitRow label="Fútbol" stance={-2} source="Lo dijiste" proposed={false} onForget={() => {}} />
+      <Card title="What I know">
+        <TraitRow label="Historia" stance={2} source="You answered it" proposed={false} onForget={() => {}} />
+        <TraitRow label="Football" stance={-2} source="You said it" proposed={false} onForget={() => {}} />
       </Card>
       <Card>
-        <TextAreaField label="Lo que quieres que sepa de ti" value="" onChange={() => {}} placeholder="Qué te importa, tu contexto…" />
+        <TextAreaField label="What you want it to know about you" value="" onChange={() => {}} placeholder="What matters to you, your context…" />
       </Card>
     </div>
   ),
@@ -201,17 +201,17 @@ export const Conversacion: Story = {
       <div style={{ maxWidth: 390, display: "grid", gap: "1rem" }}>
         <ChatThread>
           <ChatBubble mine>
-            <ChatText>¿Qué libro me recomiendas para el viaje?</ChatText>
+            <ChatText>Which book do you recommend for the trip?</ChatText>
           </ChatBubble>
           <ChatBubble mine={false}>
-            <ChatText>Te he dejado dos en tu biblioteca, los dos ambientados donde vas.</ChatText>
+            <ChatText>I left you two in your library, both set where you are going.</ChatText>
           </ChatBubble>
           <ChatBubble mine={false}>
-            <Working>Insights está mirando tus datos · 12 s</Working>
+            <Working>Insights is looking at your data · 12 s</Working>
           </ChatBubble>
         </ChatThread>
         <Card>
-          <Composer label="Pregúntale" value={draft} onChange={setDraft} onSend={() => setDraft("")} placeholder="Pregúntale a Insights…" />
+          <Composer label="Ask it" value={draft} onChange={setDraft} onSend={() => setDraft("")} placeholder="Ask Insights…" />
         </Card>
       </div>
     );

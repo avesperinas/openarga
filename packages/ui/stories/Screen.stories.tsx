@@ -33,20 +33,20 @@ export const Completa: Story = {
     const [query, setQuery] = React.useState("");
     return (
       <Screen>
-        <AppHeader app={APP} eyebrow="Martes, 22 de octubre" title="Tu lista" />
-        <SearchField label="Buscar en Demo" placeholder="Buscar" value={query} onChange={setQuery} />
-        <Notice tone="warning" title="El acceso caduca en 5 días" action={{ label: "Renovar", onClick: () => undefined }}>
-          Sin renovarlo, dejan de llegar los movimientos.
+        <AppHeader app={APP} eyebrow="Tuesday 22 October" title="Your list" />
+        <SearchField label="Search Demo" placeholder="Buscar" value={query} onChange={setQuery} />
+        <Notice tone="warning" title="Access expires in 5 days" action={{ label: "Renovar", onClick: () => undefined }}>
+          Without renewing it, movements stop arriving.
         </Notice>
         <Section title="Pendiente" count={2} action={{ label: "Ver todo", onClick: () => undefined }}>
           <List>
-            <ListRow title="Una cosa sintética" subtitle="mañana" accessory="chevron-right" onClick={() => undefined} />
-            <ListRow title="Otra cosa sintética" subtitle="el jueves" accessory="chevron-right" onClick={() => undefined} />
+            <ListRow title="A synthetic thing" subtitle="tomorrow" accessory="chevron-right" onClick={() => undefined} />
+            <ListRow title="Another synthetic thing" subtitle="on Thursday" accessory="chevron-right" onClick={() => undefined} />
           </List>
         </Section>
         <Heading count={1}>Hecho</Heading>
-        <GroupLabel>Esta semana</GroupLabel>
-        <Hint>Lo hecho se guarda una semana.</Hint>
+        <GroupLabel>This week</GroupLabel>
+        <Hint>Done items are kept for a week.</Hint>
         <CreateButton label="Cosa" onClick={() => undefined} />
       </Screen>
     );
@@ -56,9 +56,9 @@ export const Completa: Story = {
 export const Vacia: Story = {
   render: () => (
     <Screen>
-      <AppHeader app={APP} title="Tu lista" />
-      <EmptyState icon="list" title="Todavía no hay nada" action={{ label: "Añadir la primera", onClick: () => undefined, icon: "plus" }}>
-        Lo que añadas sale aquí, lo más próximo arriba.
+      <AppHeader app={APP} title="Your list" />
+      <EmptyState icon="list" title="Nothing yet" action={{ label: "Add the first one", onClick: () => undefined, icon: "plus" }}>
+        What you add shows here, the soonest on top.
       </EmptyState>
     </Screen>
   ),
@@ -67,8 +67,8 @@ export const Vacia: Story = {
 export const TextoEscritoAMano: Story = {
   render: () => (
     <Screen>
-      <AppHeader app={APP} title="Notas del viaje" />
-      <Hint lines>{"Llevar el adaptador.\nEl museo cierra los lunes.\nReservar la cena del sábado."}</Hint>
+      <AppHeader app={APP} title="Trip notes" />
+      <Hint lines>{"Bring the adapter.\nThe museum closes on Mondays.\nBook Saturday's dinner."}</Hint>
     </Screen>
   ),
 };

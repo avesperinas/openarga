@@ -22,16 +22,16 @@ export const CifraConCurva: Story = {
           <AreaTrend
             label="Patrimonio"
             value={euros(which === "total" ? 48320 : 41200)}
-            delta={{ text: "+9.140 € · +23,3 % en 12 meses", tone: "positive" }}
+            delta={{ text: "+€9,140 · +23.3 % in 12 months", tone: "positive" }}
             points={months.map((label, index) => ({ label, value: worth[index]! * (which === "total" ? 1 : 0.85) }))}
             aside={
               <SegmentedControl
-                label="Qué patrimonio"
+                label="Which net worth"
                 value={which}
                 onChange={setWhich}
                 options={[
                   { value: "total", label: "Total" },
-                  { value: "liquid", label: "Líquido" },
+                  { value: "liquid", label: "Net" },
                 ]}
               />
             }
@@ -67,7 +67,7 @@ export const QuienDebe: Story = {
   render: () => (
     <div style={{ maxWidth: 390, display: "grid", gap: "var(--space-4)" }}>
       <Card>
-        <BalanceHero payer={{ name: "Sam", hue: 6 }} payee={{ name: "Alex", hue: 5 }} amount="312 €" detail="Por lo de 2026 · sin liquidar" />
+        <BalanceHero payer={{ name: "Sam", hue: 6 }} payee={{ name: "Alex", hue: 5 }} amount="312 €" detail="For 2026 · unsettled" />
       </Card>
       <Card>
         <BalanceHero payer={{ name: "Sam", hue: 6 }} payee={{ name: "Alex", hue: 5 }} amount="0 €" detail="2025 liquidado" even />
@@ -81,7 +81,7 @@ export const AportadoContraValor: Story = {
     <div style={{ maxWidth: 390 }}>
       <Card>
         <GainChart
-          label="Fondos: lo que valen contra lo aportado"
+          label="Funds: what they are worth against what was paid in"
           labels={months}
           value={worth.map((one) => one * 0.4)}
           contributed={months.map((_, index) => 15000 + index * 300)}
@@ -97,22 +97,22 @@ export const MapaDeBloques: Story = {
     <div style={{ maxWidth: 390, display: "grid", gap: "var(--space-4)" }}>
       <Card>
         <Treemap
-          label="Gasto del año por categoría"
+          label="The year's spending by category"
           onSelect={() => undefined}
           items={[
             { key: "casa", label: "Casa", value: 6500, detail: "6.500 €", hue: 3 },
-            { key: "super", label: "Súper", value: 4120, detail: "4.120 €", hue: 2, mark: "▲" },
+            { key: "super", label: "Groceries", value: 4120, detail: "4.120 €", hue: 2, mark: "▲" },
             { key: "viajes", label: "Viajes", value: 3200, detail: "3.200 €", hue: 1 },
             { key: "ocio", label: "Ocio", value: 2010, detail: "2.010 €", hue: 7 },
             { key: "transporte", label: "Transporte", value: 1890, detail: "1.890 €", hue: 6 },
             { key: "salud", label: "Salud", value: 900, detail: "900 €", hue: 5 },
-            { key: "resto", label: "El resto", value: 790, detail: "790 €", hue: 8 },
+            { key: "resto", label: "The rest", value: 790, detail: "790 €", hue: 8 },
           ]}
         />
         <DivergingBars
-          label="Contra tu media"
+          label="Against your average"
           rows={[
-            { key: "super", label: "Súper", value: 0.18, text: "+18 %", tone: "negative" },
+            { key: "super", label: "Groceries", value: 0.18, text: "+18 %", tone: "negative" },
             { key: "ocio", label: "Ocio", value: 0.09, text: "+9 %", tone: "negative" },
             { key: "viajes", label: "Viajes", value: -0.12, text: "−12 %", tone: "positive" },
             { key: "transporte", label: "Transporte", value: -0.05, text: "−5 %", tone: "positive" },
@@ -129,13 +129,13 @@ export const AreasApiladas: Story = {
       <Card>
         <SeriesChart
           kind="area"
-          label="Patrimonio por tipo"
+          label="Net worth by kind"
           labels={months}
           format={euros}
           series={[
             { key: "cash", name: "Efectivo", values: worth.map((one) => one * 0.2) },
             { key: "fondos", name: "Fondos", values: worth.map((one) => one * 0.5) },
-            { key: "pension", name: "Pensión", values: worth.map((one) => one * 0.22) },
+            { key: "pension", name: "Pension", values: worth.map((one) => one * 0.22) },
             { key: "cripto", name: "Cripto", values: worth.map((one) => one * 0.08) },
           ]}
         />
@@ -150,17 +150,17 @@ export const FlujoEnVertical: Story = {
       <Card>
         <Sankey
           vertical
-          label="A dónde va cada euro"
+          label="Where each euro goes"
           format={euros}
           share={(_, value) => `${Math.round((value / 2400) * 100)} %`}
           nodes={[
-            { id: "nomina", name: "Nómina", column: 0, kind: "income" },
-            { id: "tu", name: "Tú", column: 1, kind: "you" },
-            { id: "comun", name: "Común", column: 1, kind: "common" },
+            { id: "nomina", name: "Salary", column: 0, kind: "income" },
+            { id: "tu", name: "You", column: 1, kind: "you" },
+            { id: "comun", name: "Shared", column: 1, kind: "common" },
             { id: "casa", name: "Casa", column: 2, kind: "expense" },
             { id: "ocio", name: "Ocio", column: 2, kind: "expense" },
             { id: "ahorro", name: "Ahorro", column: 2, kind: "saving" },
-            { id: "super", name: "Súper", column: 2, kind: "expense" },
+            { id: "super", name: "Groceries", column: 2, kind: "expense" },
           ]}
           links={[
             { source: "nomina", target: "tu", value: 1860 },

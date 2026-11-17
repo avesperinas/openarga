@@ -16,7 +16,7 @@ export const Fuerza: Story = {
   render: () => (
     <div style={{ maxWidth: 320 }}>
       <BodyMaps
-        label="Fuerza por músculo"
+        label="Strength by muscle"
         colors={Object.fromEntries(Object.entries(CHANGE).map(([m, d]) => [m, changeColor(d)]))}
       />
     </div>
@@ -27,7 +27,7 @@ export const Trabajado: Story = {
   render: () => (
     <div style={{ maxWidth: 320 }}>
       <BodyMaps
-        label="Lo trabajado hoy"
+        label="What was worked today"
         colors={{ lats: amountColor(1), upper_back: amountColor(0.7), biceps: amountColor(0.8), forearms: amountColor(0.3) }}
       />
     </div>
