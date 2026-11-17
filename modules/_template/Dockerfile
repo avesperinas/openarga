@@ -10,13 +10,13 @@ ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
 WORKDIR /src
 
 COPY pyproject.toml uv.lock ./
-COPY modules/__MODULE_ID__/pyproject.toml modules/__MODULE_ID__/pyproject.toml
+COPY __MODULE_DIR__/pyproject.toml __MODULE_DIR__/pyproject.toml
 COPY packages/tenancy/pyproject.toml packages/tenancy/pyproject.toml
 COPY packages/module/pyproject.toml packages/module/pyproject.toml
 COPY packages/widgets/pyproject.toml packages/widgets/pyproject.toml
 RUN uv sync --frozen --no-dev --package __MODULE_ID__ --no-install-workspace
 
-COPY modules/__MODULE_ID__/src modules/__MODULE_ID__/src
+COPY __MODULE_DIR__/src __MODULE_DIR__/src
 COPY packages/tenancy/src packages/tenancy/src
 COPY packages/module/src packages/module/src
 COPY packages/widgets/src packages/widgets/src
@@ -31,8 +31,8 @@ ENV PATH="/opt/venv/bin:${PATH}" \
 RUN useradd --system --uid 10001 --no-create-home modulo
 
 COPY --from=builder /opt/venv /opt/venv
-COPY modules/__MODULE_ID__/manifest.yaml /opt/module/manifest.yaml
-COPY modules/__MODULE_ID__/schema /opt/module/schema
+COPY __MODULE_DIR__/manifest.yaml /opt/module/manifest.yaml
+COPY __MODULE_DIR__/schema /opt/module/schema
 
 USER modulo
 EXPOSE 8000

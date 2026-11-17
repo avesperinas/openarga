@@ -1,7 +1,7 @@
 import type { WidgetSize } from "@openarga/ui";
 import { headers } from "next/headers";
 
-import { AREA_APPS, type AreaKey, type Contributor, type PanelContribution } from "./panels";
+import { type AreaKey, type Contributor, type PanelContribution } from "./panels";
 
 const SUBJECT = "x-arga-subject";
 const USER = "x-arga-user";
@@ -186,6 +186,8 @@ export interface ModuleSummary {
   api_prefix: string;
   view?: string | null;
   family?: string | null;
+  hue?: number | null;
+  panels?: string[];
   badge?: string | null;
   search?: string | null;
   scopes: string[];
@@ -232,7 +234,7 @@ export async function readPanel(apiPrefix: string, limitMs?: number): Promise<Pa
 }
 
 export async function readArea(area: AreaKey, modules: ModuleSummary[], limitMs?: number): Promise<Contributor[]> {
-  const apps = modules.filter((module) => AREA_APPS[area].includes(module.id));
+  const apps = modules.filter((module) => module.panels?.includes(area));
   const found = await Promise.all(
     apps.map(async (module) =>
       (await readPanel(module.api_prefix, limitMs))

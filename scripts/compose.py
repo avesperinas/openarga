@@ -49,15 +49,21 @@ def config_path(root: Path) -> Path:
     return own if own.exists() else root / "openarga.example.yaml"
 
 
-def available_modules(root: Path) -> list[str]:
-    found = []
-    for manifest in sorted((root / "modules").glob("*/manifest.yaml")):
+def module_folders(root: Path) -> dict[str, str]:
+    found = {}
+    manifests = [*(root / "modules").glob("*/manifest.yaml")]
+    manifests += (root / "modules" / "custom").glob("*/manifest.yaml")
+    for manifest in manifests:
         folder = manifest.parent
         if folder.name.startswith("_") or not (folder / "Dockerfile").exists():
             continue
         module_id = yaml.safe_load(manifest.read_text(encoding="utf-8"))["id"]
-        found.append(module_id)
-    return found
+        found[module_id] = folder.relative_to(root).as_posix()
+    return dict(sorted(found.items()))
+
+
+def available_modules(root: Path) -> list[str]:
+    return list(module_folders(root))
 
 
 def enabled_modules(config: dict[str, Any], available: list[str]) -> list[str]:
@@ -102,10 +108,10 @@ def database_url(user: str, password: str) -> str:
     return f"postgresql+asyncpg://{user}:${{{password}}}@postgres:5432/${{POSTGRES_DB}}"
 
 
-def module_service(module_id: str, instance: dict[str, str]) -> dict[str, Any]:
+def module_service(module_id: str, folder: str, instance: dict[str, str]) -> dict[str, Any]:
     return {
         "image": f"openarga/{module_id}:local",
-        "build": {"context": ".", "dockerfile": f"modules/{module_id}/Dockerfile"},
+        "build": {"context": ".", "dockerfile": f"{folder}/Dockerfile"},
         "environment": {
             "DATABASE_URL": database_url(f"svc_{module_id}", f"{module_id.upper()}_DB_PASSWORD"),
             "KERNEL_URL": "http://kernel:8000",
@@ -117,8 +123,8 @@ def module_service(module_id: str, instance: dict[str, str]) -> dict[str, Any]:
     }
 
 
-def worker_service(module_id: str, instance: dict[str, str]) -> dict[str, Any]:
-    service = module_service(module_id, instance)
+def worker_service(module_id: str, folder: str, instance: dict[str, str]) -> dict[str, Any]:
+    service = module_service(module_id, folder, instance)
     del service["build"]
     service["pull_policy"] = "never"
     service["command"] = ["python", "-m", f"{module_id}.publisher"]
@@ -127,8 +133,8 @@ def worker_service(module_id: str, instance: dict[str, str]) -> dict[str, Any]:
     return service
 
 
-def has_worker(root: Path, module_id: str) -> bool:
-    return (root / "modules" / module_id / "src" / module_id / "publisher.py").exists()
+def has_worker(root: Path, folder: str, module_id: str) -> bool:
+    return (root / folder / "src" / module_id / "publisher.py").exists()
 
 
 def auth_sync_environment(chosen: list[str]) -> dict[str, str]:
@@ -150,7 +156,8 @@ def auth_sync_environment(chosen: list[str]) -> dict[str, str]:
 
 
 def generate(config: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
-    modules = enabled_modules(config, available_modules(root))
+    folders = module_folders(root)
+    modules = enabled_modules(config, list(folders))
     chosen = providers(config)
     instance = instance_environment(config)
     sync = auth_sync_environment(chosen)
@@ -271,9 +278,10 @@ def generate(config: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
         },
     }
     for module_id in modules:
-        services[module_id] = module_service(module_id, instance)
-        if has_worker(root, module_id):
-            services[f"{module_id}-worker"] = worker_service(module_id, instance)
+        folder = folders[module_id]
+        services[module_id] = module_service(module_id, folder, instance)
+        if has_worker(root, folder, module_id):
+            services[f"{module_id}-worker"] = worker_service(module_id, folder, instance)
     return {"name": "openarga", "services": services, "volumes": {"pgdata": {}}}
 
 

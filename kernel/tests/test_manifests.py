@@ -195,6 +195,31 @@ def test_the_template_is_not_picked_up_as_a_module(tmp_path: Path) -> None:
     assert [manifest.id for manifest in load_all(tmp_path)] == ["health"]
 
 
+def test_a_fork_keeps_its_own_modules_in_custom(tmp_path: Path) -> None:
+    write(tmp_path, VALID)
+    write(
+        tmp_path / "custom",
+        VALID
+        | {
+            "id": "garden",
+            "database": {"schema": "garden", "role": "mod_garden", "reads": []},
+            "api": {"prefix": "/api/garden"},
+            "connectors": [],
+            "tools": [],
+            "ui": {"view": "/garden"},
+        },
+    )
+
+    assert [manifest.id for manifest in load_all(tmp_path)] == ["garden", "health"]
+
+
+def test_a_module_says_which_home_areas_it_brings_panels_to(tmp_path: Path) -> None:
+    ui = VALID["ui"] | {"panels": ["health", "day"]}
+    assert load_manifest(write(tmp_path, VALID | {"ui": ui})).ui.panels == ["health", "day"]
+    with pytest.raises(InvalidManifest, match="panels"):
+        load_manifest(write(tmp_path, VALID | {"ui": VALID["ui"] | {"panels": ["garage"]}}))
+
+
 def test_the_repo_manifests_are_valid() -> None:
     root = Path(__file__).resolve().parents[2] / "modules"
 
@@ -267,6 +292,19 @@ async def test_the_launcher_learns_each_module_family(api, tmp_path: Path) -> No
     async with engine().begin() as connection:
         await sync(connection, load_all(write(tmp_path, manifest).parent.parent))
     assert (await api.get("/modules")).json()[0]["family"] == "body"
+
+
+async def test_the_shell_learns_each_module_hue_and_panel_areas(api, tmp_path: Path) -> None:
+    async with engine().begin() as connection:
+        await sync(connection, load_all(write(tmp_path, VALID).parent.parent))
+    found = (await api.get("/modules")).json()[0]
+    assert (found["hue"], found["panels"]) == (None, [])
+
+    manifest = VALID | {"ui": {**VALID["ui"], "hue": 5, "panels": ["health"]}}
+    async with engine().begin() as connection:
+        await sync(connection, load_all(write(tmp_path, manifest).parent.parent))
+    found = (await api.get("/modules")).json()[0]
+    assert (found["hue"], found["panels"]) == (5, ["health"])
 
 
 def test_work_is_a_family(tmp_path: Path) -> None:

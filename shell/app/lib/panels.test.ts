@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { AREA_APPS, type Contributor, groupPanelPages, panelAreaOf, panelEntries, placedAreas, withPanelPages, ask, compose, hidePanel, movePanel, orderOf, plain, showPanel, shownAreas, splitActing, toneOf } from "./panels";
+import { type Contributor, groupPanelPages, panelAreaOf, panelEntries, placedAreas, withPanelPages, ask, compose, hidePanel, movePanel, orderOf, plain, showPanel, shownAreas, splitActing, toneOf } from "./panels";
 
 const planner: Contributor = {
   source: "planner",
@@ -111,12 +111,6 @@ describe("which panels you have placed", () => {
     expect(shownAreas(hidePanel(added, "money"))).toEqual(["day", "health", "work"]);
     expect(shownAreas(movePanel(added, "work", -1))).toEqual(["day", "money", "work", "health"]);
     expect(shownAreas(movePanel(added, "day", -1))).toEqual(["day", "money", "health", "work"]);
-  });
-
-  it("each area asks only its own apps, and no app is in two", () => {
-    expect(AREA_APPS.work).toContain("study");
-    const all = Object.values(AREA_APPS).flat();
-    expect(new Set(all).size).toBe(all.length);
   });
 });
 

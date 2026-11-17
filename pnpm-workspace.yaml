@@ -2,6 +2,7 @@ packages:
   - packages/*
   - shell
   - modules/*/ui
+  - modules/custom/*/ui
 
 allowBuilds:
   esbuild: true

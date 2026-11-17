@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import get_args
 
 import pytest
 import yaml
@@ -6,9 +7,13 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from kernel.db import engine
-from kernel.desktop import PANEL_APPS, STARTING, default_desktop, tolerated_desktop
+from kernel.desktop import STARTING, default_desktop, tolerated_desktop
 from kernel.main import app
+from kernel.manifests import Area
+from kernel.panels import panels_of
 from kernel.ui import SUBJECT_HEADER
+
+AREAS = get_args(Area)
 
 YO = "yo@ejemplo.com"
 
@@ -69,6 +74,9 @@ def test_with_apps_each_device_starts_with_today_health_money_and_the_rest() -> 
         ("goals", "today"),
         ("money", "networth"),
         ("vitals", "readiness"),
+        ("panel", "day"),
+        ("panel", "money"),
+        ("panel", "health"),
     }
     mobile = default_desktop(installed, "mobile")
     desktop = default_desktop(installed, "desktop")
@@ -89,7 +97,7 @@ def test_with_apps_each_device_starts_with_today_health_money_and_the_rest() -> 
 
 
 def test_a_screen_left_empty_does_not_appear() -> None:
-    desktop = default_desktop({("money", "networth")}, "desktop")
+    desktop = default_desktop({("money", "networth"), ("panel", "money")}, "desktop")
     assert [page.id for page in desktop.pages] == ["dinero"]
     assert [(i.source, i.widget) for i in desktop.pages[0].items] == [
         ("panel", "money"),
@@ -112,10 +120,12 @@ def test_every_starting_widget_is_one_its_app_declares_in_that_size() -> None:
             for source, widget, size, option in placed:
                 if source == "panel":
                     area = widget.removesuffix(".tab")
-                    assert area in PANEL_APPS, (device, widget)
+                    assert area in AREAS, (device, widget)
                     assert size in (("2x2", "4x2", "4x4") if option else ("4x6", "4x4"))
                     if option:
-                        assert option.split(".", 1)[0] in PANEL_APPS[area], (device, option)
+                        app = option.split(".", 1)[0]
+                        declared = (manifests[app].get("ui") or {}).get("panels")
+                        assert area in panels_of(app, declared), (device, option)
                     continue
                 assert (source, widget) in sizes, (device, source, widget)
                 assert size in sizes[(source, widget)], (device, source, widget, size)

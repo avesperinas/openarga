@@ -23,6 +23,8 @@ class SchemaFile:
 def schema_files(root: Path, module_id: str) -> list[Path]:
     directory = root / module_id / SCHEMA_DIR
     if not directory.is_dir():
+        directory = root / "custom" / module_id / SCHEMA_DIR
+    if not directory.is_dir():
         return []
     return sorted(path for path in directory.glob("*.sql") if path.is_file())
 

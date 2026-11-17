@@ -3,8 +3,12 @@
 Every module has the same shape. `scripts/new-module.sh <id> <Name>` produces it from
 `modules/_template`, which is the living reference of this document.
 
+A fork keeps its own modules in `modules/custom/<id>/`: that is where `new-module.sh` puts them
+(`--core` puts one in `modules/` instead). The kernel, the workspaces, the tests and
+`scripts/compose.py` discover both folders, so merging upstream never touches your modules.
+
 ```
-modules/<id>/
+modules/<id>/  or  modules/custom/<id>/
   manifest.yaml     identity, permissions, inlets, tools, widgets, names
   schema/           its migrations, every table prefixed <id>_; the first is 0001_init.sql
   src/<id>/         the service: main.py on the service kit, its domain, tools.py, widgets.py
@@ -52,7 +56,10 @@ tools:
 
 ui:
   view: /vitals
-  family: health
+  family: health     # where the launcher groups it
+  hue: 5             # its tone, 1 to 8 from the palette
+  panels: [health]   # the home areas it brings a panel to: day, money, health, work, home,
+                     # leisure, mind
   widgets:
     - id: weight
       title: Weight

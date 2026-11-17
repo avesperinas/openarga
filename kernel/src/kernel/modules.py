@@ -20,6 +20,7 @@ from kernel.backfill import backfill_module
 from kernel.db import engine
 from kernel.isolation import Isolation, ModuleNotProvisioned
 from kernel.manifests import ADDRESSED, InvalidManifest, Manifest, load_all
+from kernel.panels import panels_of
 from kernel.provision import MODULE_ID_PATTERN
 
 router = APIRouter(tags=["modules"])
@@ -58,6 +59,8 @@ LIST_MODULES = text("""
            manifest->'api'->>'prefix' as api_prefix,
            manifest->'ui'->>'view' as view,
            manifest->'ui'->>'family' as family,
+           (manifest->'ui'->>'hue')::int as hue,
+           manifest->'ui'->'panels' as panels,
            manifest->'ui'->>'badge' as badge,
            manifest->'ui'->>'search' as search,
            coalesce(
@@ -91,6 +94,8 @@ class ModuleSummary(BaseModel):
     api_prefix: str
     view: str | None = None
     family: str | None = None
+    hue: int | None = None
+    panels: list[str] = []
     badge: str | None = None
     search: str | None = None
     scopes: list[str]
@@ -219,6 +224,8 @@ async def list_modules() -> list[ModuleSummary]:
             api_prefix=row.api_prefix,
             view=row.view,
             family=row.family,
+            hue=row.hue,
+            panels=panels_of(row.id, row.panels),
             badge=row.badge,
             search=row.search,
             scopes=list(row.scopes),
