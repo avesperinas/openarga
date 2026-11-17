@@ -334,6 +334,7 @@ export { entrance, useAnimatedNumber, useHasMounted, usePrefersReducedMotion } f
 export {
   APP_BACKGROUNDS,
   APP_HUES,
+  appHue,
   FIRST_PAINT,
   ICON_STYLES,
   OPACITY_RANGE,

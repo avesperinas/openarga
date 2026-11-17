@@ -4,7 +4,7 @@ import { CrashBoundary } from "./crash";
 
 import {
   APP_BACKGROUNDS,
-  APP_HUES,
+  appHue,
   type AppBackground,
   type UiPreferences,
   apply,
@@ -297,7 +297,7 @@ export function AppBackdrop({
       <div
         className={className ? `app-desktop ${className}` : "app-desktop"}
         data-background={background === "plain" ? "plain" : "tint"}
-        data-kind={colored && APP_HUES[app] ? `hue-${APP_HUES[app]}` : undefined}
+        data-kind={colored && appHue(app) ? `hue-${appHue(app)}` : undefined}
         style={backgroundStyle(app, background)}
       >
         <CrashBoundary home={`/${app}/`}>{children}</CrashBoundary>

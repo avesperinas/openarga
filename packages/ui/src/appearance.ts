@@ -73,6 +73,11 @@ export const APP_HUES: Record<string, number> = {
   training: 4,
 };
 
+export const appHue = (app: string): number | undefined => {
+  const declared = typeof document === "undefined" ? NaN : Number(document.documentElement.dataset.hue);
+  return Number.isInteger(declared) && declared >= 1 && declared <= 8 ? declared : APP_HUES[app];
+};
+
 export type AppBackground = "app" | "plain" | `hue-${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8}`;
 
 export const APP_BACKGROUNDS: { value: AppBackground; label: string }[] = [
@@ -108,7 +113,7 @@ const HUE_TOKENS = [
 ];
 
 export const backgroundStyle = (app: string, background: AppBackground) => {
-  const hue = background === "app" ? APP_HUES[app] : background.startsWith("hue-") ? Number(background.slice(4)) : null;
+  const hue = background === "app" ? appHue(app) : background.startsWith("hue-") ? Number(background.slice(4)) : null;
   const token = hue ? HUE_TOKENS[hue - 1] : undefined;
   return (token ? { "--app-background-hue": token } : {}) as React.CSSProperties;
 };

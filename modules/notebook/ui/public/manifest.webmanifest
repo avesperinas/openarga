@@ -1,7 +1,7 @@
 {
   "name": "Notes",
   "short_name": "Notes",
-  "description": "What you know: your notes, linked.",
+  "description": "Your notes, linked.",
   "start_url": "/notebook/",
   "scope": "/notebook/",
   "id": "/notebook/",

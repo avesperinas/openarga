@@ -1,7 +1,7 @@
 {
   "name": "Insights",
   "short_name": "Insights",
-  "description": "What your data says, every week.",
+  "description": "What your data says, every day and every week.",
   "start_url": "/insights/",
   "scope": "/insights/",
   "id": "/insights/",

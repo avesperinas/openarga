@@ -76,12 +76,29 @@ function versionedAssets({ id, dir }: AppOptions): Plugin {
   };
 }
 
+export function manifestHue(dir: string): number | null {
+  const file = join(dir, "..", "manifest.yaml");
+  if (!existsSync(file)) return null;
+  const found = /^ {2}hue:\s*(\d+)\s*$/m.exec(readFileSync(file, "utf8"));
+  return found ? Number(found[1]) : null;
+}
+
+export function manifestTone(dir: string): Plugin {
+  return {
+    name: "arga-app-hue",
+    transformIndexHtml(html) {
+      const hue = manifestHue(dir);
+      return hue ? html.replace(/<html\b/, `<html data-hue="${hue}"`) : html;
+    },
+  };
+}
+
 export function appConfig(options: AppOptions, extra: UserConfig = {}): UserConfig {
   const { id, dir, port, apiPort, api = id } = options;
   return mergeConfig(
     {
       base: `/${id}/`,
-      plugins: [react(), versionedAssets(options), serviceWorker(options)],
+      plugins: [react(), versionedAssets(options), serviceWorker(options), manifestTone(dir)],
       define: iconDefine(id, dir),
       server: {
         port,

@@ -1,7 +1,7 @@
 {
   "name": "Health",
   "short_name": "Health",
-  "description": "Steps, sleep, weight and lab results.",
+  "description": "Steps, sleep, heart, weight and lab results.",
   "start_url": "/vitals/",
   "scope": "/vitals/",
   "id": "/vitals/",

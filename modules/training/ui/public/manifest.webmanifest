@@ -1,7 +1,7 @@
 {
   "name": "Training",
   "short_name": "Training",
-  "description": "Strength training, one tap per set.",
+  "description": "Strength training, one tap per set, and what the history says.",
   "start_url": "/training/",
   "scope": "/training/",
   "id": "/training/",

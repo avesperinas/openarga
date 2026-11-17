@@ -1,7 +1,7 @@
 {
   "name": "Travel",
   "short_name": "Travel",
-  "description": "Trips: ideas, plans and the ones you made.",
+  "description": "Trip ideas, plans and the trips you made.",
   "start_url": "/travel/",
   "scope": "/travel/",
   "id": "/travel/",

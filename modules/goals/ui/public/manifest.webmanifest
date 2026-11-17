@@ -1,7 +1,7 @@
 {
   "name": "Goals",
   "short_name": "Goals",
-  "description": "What you set out to do and what you have to do.",
+  "description": "Goals, habits and tasks.",
   "start_url": "/goals/",
   "scope": "/goals/",
   "id": "/goals/",

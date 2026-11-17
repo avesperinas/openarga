@@ -1,7 +1,7 @@
 {
   "name": "Recipes",
   "short_name": "Recipes",
-  "description": "Your home cookbook, with the macros worked out.",
+  "description": "Your home cookbook, with the nutrition worked out.",
   "start_url": "/recipes/",
   "scope": "/recipes/",
   "id": "/recipes/",

@@ -2,7 +2,7 @@
 
 import { createHash } from "node:crypto";
 import { deflateSync } from "node:zlib";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = new URL("..", import.meta.url).pathname;
@@ -17,7 +17,7 @@ const SIZES = [
 function hex(name) {
   const tokens = readFileSync(TOKENS, "utf8");
   const match = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{3,8}|var\\(--([\\w-]+)\\))`).exec(tokens);
-  if (!match) throw new Error(`token --${name} no encontrado en tokens.css`);
+  if (!match) throw new Error(`token --${name} not found in tokens.css`);
   return match[2] ? hex(match[2]) : match[1];
 }
 
@@ -101,11 +101,29 @@ const line = (x0, y0, x1, y1) => [
   [x0 + (x1 - x0) / 3, y0 + (y1 - y0) / 3, x0 + (2 * (x1 - x0)) / 3, y0 + (2 * (y1 - y0)) / 3, x1, y1],
 ];
 
-function familyOf(id) {
-  const source = readFileSync(join(ROOT, "modules", id, "manifest.yaml"), "utf8");
-  const match = /^\s+family:\s*(\w+)/m.exec(source);
-  if (!match) throw new Error(`modules/${id}/manifest.yaml no declara ui.family`);
+function familyOf(folder) {
+  const match = /^\s+family:\s*(\w+)/m.exec(readFileSync(join(ROOT, folder, "manifest.yaml"), "utf8"));
+  if (!match) throw new Error(`${folder}/manifest.yaml does not declare ui.family`);
   return match[1];
+}
+
+function englishOf(source, key) {
+  const match = new RegExp(`^${key}:[ \\t]*\\n(?:[ \\t]+.*\\n)*?[ \\t]+en:[ \\t]*(.+)$`, "m").exec(source);
+  if (!match) return null;
+  const value = match[1].trim();
+  return value.startsWith('"') ? JSON.parse(value) : value.replace(/^'(.*)'$/, "$1");
+}
+
+function moduleFolders() {
+  const under = (parent) =>
+    existsSync(join(ROOT, parent))
+      ? readdirSync(join(ROOT, parent))
+          .filter((name) => /^[a-z]/.test(name))
+          .map((name) => `${parent}/${name}`)
+      : [];
+  return [...under("modules"), ...under("modules/custom")].filter(
+    (folder) => existsSync(join(ROOT, folder, "manifest.yaml")) && existsSync(join(ROOT, folder, "ui", "package.json")),
+  );
 }
 
 function subpathsOf(d) {
@@ -180,7 +198,7 @@ function subpathsOf(d) {
         command = "";
         break;
       default:
-        throw new Error(`camino no soportado: ${d}`);
+        throw new Error(`unsupported path command: ${d}`);
     }
   }
   return subpaths;
@@ -238,6 +256,8 @@ const band = (cx, cy, inner, outer, from, to) => {
 
 const fill = (role, d, opacity = 1) => ({ role, d, opacity });
 const stroke = (role, d, width, opacity = 1) => ({ role, d, width, opacity });
+
+const GENERIC = [fill("P", disc(50, 50, 26)), fill("A", disc(50, 50, 12))];
 
 const FILLED = {
   planner: [
@@ -360,9 +380,10 @@ function finish(style, family, id) {
 const STYLES = ["solid", "ink", "paper"];
 const FILLED_PLACEMENT = { dy: 0, scale: 0.94 };
 
-function styled(id) {
-  const family = familyOf(id);
-  return Object.fromEntries(STYLES.map((style) => [style, { id, style, layers: FILLED[id], colors: finish(style, family, id) }]));
+function styled(id, folder) {
+  const family = familyOf(folder);
+  const layers = FILLED[id] ?? GENERIC;
+  return Object.fromEntries(STYLES.map((style) => [style, { id, style, layers, colors: finish(style, family, id) }]));
 }
 
 function svgFilled({ id, style, layers, colors }) {
@@ -463,120 +484,27 @@ function paintFilled({ layers, colors }) {
   };
 }
 
-const APPS = [
-  {
-    dir: "shell/public",
-    base: "/",
-    name: "OpenArga",
-    description: "Your system, your data.",
-    geometry: ARGA,
-  },
-  {
-    dir: "modules/training/ui/public",
-    base: "/training/",
-    name: "Training",
-    description: "Strength training, one tap per set.",
-    styles: styled("training"),
-  },
-  {
-    dir: "modules/recipes/ui/public",
-    base: "/recipes/",
-    name: "Recipes",
-    description: "Your home cookbook, with the macros worked out.",
-    styles: styled("recipes"),
-  },
-  {
-    dir: "modules/money/ui/public",
-    base: "/money/",
-    name: "Finance",
-    description: "Your accounts, shared expenses and what everything is worth.",
-    styles: styled("money"),
-  },
-  {
-    dir: "modules/hub/ui/public",
-    base: "/hub/",
-    name: "Connections",
-    description: "Everything that comes from outside, in one place.",
-    styles: styled("hub"),
-  },
-  {
-    dir: "modules/shopping/ui/public",
-    base: "/shopping/",
-    name: "Shopping",
-    description: "The shopping list that remembers what you buy.",
-    styles: styled("shopping"),
-  },
-  {
-    dir: "modules/library/ui/public",
-    base: "/library/",
-    name: "Books",
-    description: "The books you read.",
-    styles: styled("library"),
-  },
-  {
-    dir: "modules/study/ui/public",
-    base: "/study/",
-    name: "Study",
-    description: "What you study.",
-    styles: styled("study"),
-  },
-  {
-    dir: "modules/vitals/ui/public",
-    base: "/vitals/",
-    name: "Health",
-    description: "Steps, sleep, weight and lab results.",
-    styles: styled("vitals"),
-  },
-  {
-    dir: "modules/travel/ui/public",
-    base: "/travel/",
-    name: "Travel",
-    description: "Trips: ideas, plans and the ones you made.",
-    styles: styled("travel"),
-  },
-  {
-    dir: "modules/planner/ui/public",
-    base: "/planner/",
-    name: "Calendar",
-    description: "Your calendar: your events, what repeats and what arrives on its own.",
-    styles: styled("planner"),
-  },
-  {
-    dir: "modules/goals/ui/public",
-    base: "/goals/",
-    name: "Goals",
-    description: "What you set out to do and what you have to do.",
-    styles: styled("goals"),
-  },
-  {
-    dir: "modules/notebook/ui/public",
-    base: "/notebook/",
-    name: "Notes",
-    description: "What you know: your notes, linked.",
-    styles: styled("notebook"),
-  },
-  {
-    dir: "modules/macros/ui/public",
-    base: "/macros/",
-    name: "Nutrition",
-    description: "What you eat and drink, with its macros and micros.",
-    styles: styled("macros"),
-  },
-  {
-    dir: "modules/outings/ui/public",
-    base: "/outings/",
-    name: "Outings",
-    description: "What is on near you and what you want to do.",
-    styles: styled("outings"),
-  },
-  {
-    dir: "modules/insights/ui/public",
-    base: "/insights/",
-    name: "Insights",
-    description: "What your data says, every week.",
-    styles: styled("insights"),
-  },
-];
+const ARGA_APP = {
+  dir: "shell/public",
+  base: "/",
+  name: "OpenArga",
+  description: "Your system, your data.",
+  geometry: ARGA,
+};
+
+function moduleApp(folder) {
+  const source = readFileSync(join(ROOT, folder, "manifest.yaml"), "utf8");
+  const id = /^id:\s*(\w+)/m.exec(source)[1];
+  return {
+    dir: `${folder}/ui/public`,
+    base: `/${id}/`,
+    name: englishOf(source, "names") ?? id,
+    description: englishOf(source, "summary") ?? "",
+    styles: styled(id, folder),
+  };
+}
+
+const APPS = [ARGA_APP, ...moduleFolders().map(moduleApp)];
 
 const placer = ({ dy, scale }) => ([x, y]) => [50 + scale * (x - 50), 50 + scale * (y + dy - 50)];
 const transformOf = ({ dy, scale }) => `translate(50 50) scale(${scale}) translate(-50 ${-50 + dy})`;
@@ -749,9 +677,9 @@ for (const { dir, name, body } of assets) {
 
 if (check && stale.length > 0) {
   console.error(
-    `assets de la PWA desfasados respecto a tokens.css: ${stale.join(", ")}\n` +
-      `Regenera con \`node scripts/make-pwa.mjs\` y commitea el resultado.`,
+    `PWA assets out of date with tokens.css and the manifests: ${stale.join(", ")}\n` +
+      `Regenerate with \`node scripts/make-pwa.mjs\` and commit the result.`,
   );
   process.exit(1);
 }
-if (check) console.log(`pwa ok · ${assets.length} asset(s) up to date with tokens.css`);
+if (check) console.log(`pwa ok · ${assets.length} asset(s) up to date with tokens.css and the manifests`);
