@@ -107,22 +107,23 @@ async def test_a_house_portion_counts_its_grams_and_says_which(api, world) -> No
 
 async def test_one_package_from_outside_counts_its_label_and_works_in_a_menu(api, world) -> None:
     assert (await api.get("/search", params={"q": "biscuits"})).status_code == 200
+    weighed = await log(
+        api,
+        {"source": "off", "source_ref": "8400000000017", "quantity": 200, "unit": "g"},
+    )
+    assert weighed.status_code == 201, weighed.text
+    [kept] = (await world.recipes.get("/foods", params={"query": "biscuits"})).json()
+    package = next(one["name"] for one in kept["portions"] if one["grams"] == 200)
+    serving = next(one["name"] for one in kept["portions"] if one["grams"] == 30)
+
     logged = await log(
         api,
-        {
-            "source": "off",
-            "source_ref": "8400000000017",
-            "quantity": 1,
-            "unit": "unit",
-            "portion": "envase",
-        },
+        {"food_id": kept["id"], "quantity": 1, "unit": "unit", "portion": package},
     )
     assert logged.status_code == 201, logged.text
     [item] = logged.json()["items"]
-    assert (item["name"], item["grams"], item["portion"]) == ("Branded biscuits", 200, "envase")
+    assert (item["name"], item["grams"], item["portion"]) == ("Branded biscuits", 200, package)
     assert item["nutrients"]["kcal"] == pytest.approx(960)
-    [kept] = (await world.recipes.get("/foods", params={"query": "biscuits"})).json()
-    serving = next(one["name"] for one in kept["portions"] if one["grams"] == 30)
 
     two = await log(
         api,
@@ -130,11 +131,11 @@ async def test_one_package_from_outside_counts_its_label_and_works_in_a_menu(api
     )
     assert two.json()["items"][0]["grams"] == 60
 
-    menu = await api.post("/templates/from-entry/" + logged.json()["id"], json={"name": "Galletas"})
+    menu = await api.post("/templates/from-entry/" + logged.json()["id"], json={"name": "Biscuits"})
     assert menu.status_code == 201, menu.text
-    assert menu.json()["items"][0]["portion"] == "envase"
+    assert menu.json()["items"][0]["portion"] == package
     again = await api.post(f"/templates/{menu.json()['id']}/log", json={})
-    assert again.json()["items"][0]["portion"] == "envase"
+    assert again.json()["items"][0]["portion"] == package
     assert again.json()["items"][0]["grams"] == 200
 
 
