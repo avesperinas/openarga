@@ -59,5 +59,4 @@ modules/hub/ui/src/states.test.tsx
 packages/contracts/src/arga_contracts/records.py
 packages/contracts/tests/test_records.py
 packages/module/tests/test_service.py
-packages/nutrients/src/arga_nutrients/__init__.py
 scripts/between-apps.sh

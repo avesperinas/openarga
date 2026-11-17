@@ -190,15 +190,15 @@ def _amount(key: str, raw: Any) -> float:
     else:
         amount, unit = _clean(raw), nutrient.unit
     if amount is None:
-        raise ValueError(f"{key}: no es un número mayor o igual que cero")
+        raise ValueError(f"{key}: is not a number zero or greater")
     if nutrient.unit == "kcal":
         factor = ENERGY_UNITS.get(unit.lower())
         if factor is None:
-            raise ValueError(f"{key}: va en kcal o kJ, no en {unit}")
+            raise ValueError(f"{key}: goes in kcal or kJ, not in {unit}")
         return amount * factor
     to_grams = MASS_UNITS.get(unit if unit in MASS_UNITS else unit.lower())
     if to_grams is None:
-        raise ValueError(f"{key}: va en {nutrient.unit} (o g, mg, µg), no en {unit}")
+        raise ValueError(f"{key}: goes in {nutrient.unit} (or g, mg, µg), not in {unit}")
     return amount * to_grams * FROM_GRAMS[nutrient.unit]
 
 
@@ -207,7 +207,7 @@ def typed(values: Mapping[str, Any], *, per: float = 100.0) -> dict[str, float]:
     problems: list[str] = []
     for key, raw in values.items():
         if key not in BY_KEY:
-            problems.append(f"'{key}' no es un nutriente de arga (mira `list_nutrients`)")
+            problems.append(f"'{key}' is not an arga nutrient (see `list_nutrients`)")
             continue
         try:
             value = _amount(key, raw)
@@ -217,9 +217,9 @@ def typed(values: Mapping[str, Any], *, per: float = 100.0) -> dict[str, float]:
         nutrient = BY_KEY[key]
         if nutrient.unit == "kcal":
             if value > MAX_KCAL_100G * per / 100:
-                problems.append(f"{key}: {value:g} kcal en {per:g} g no puede ser")
+                problems.append(f"{key}: {value:g} kcal in {per:g} g cannot be")
         elif value / FROM_GRAMS[nutrient.unit] > per:
-            problems.append(f"{key}: {value:g} {nutrient.unit} pesa más que los {per:g} g")
+            problems.append(f"{key}: {value:g} {nutrient.unit} weighs more than the {per:g} g")
         found[key] = round(value, 6)
     if problems:
         raise Invalid(problems)
