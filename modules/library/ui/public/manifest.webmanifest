@@ -1,7 +1,7 @@
 {
   "name": "Books",
   "short_name": "Books",
-  "description": "The books you read.",
+  "description": "The books you read and want to read.",
   "start_url": "/library/",
   "scope": "/library/",
   "id": "/library/",

@@ -2,9 +2,9 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { APP_HUES, AppBackdrop, AppHeader, backgroundOf, backgroundStyle, cameFromArga } from "../src/index";
+import { APP_HUES, AppBackdrop, appHue, AppHeader, backgroundOf, backgroundStyle, cameFromArga } from "../src/index";
 
 const ORIGIN = "https://arga.example";
 
@@ -120,6 +120,17 @@ describe("an app's background", () => {
     );
 
     expect(html).toContain('data-kind="hue-5"');
+  });
+
+  it("an app built with the shared config takes its colour from the page its manifest tinted", () => {
+    vi.stubGlobal("document", { documentElement: { dataset: { hue: "3" } } });
+    try {
+      expect(appHue("garden")).toBe(3);
+      expect(backgroundStyle("garden", "app")).toEqual({ "--app-background-hue": "var(--hue-3)" });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(appHue("garden")).toBeUndefined();
   });
 
   it("the choice in its Settings rules, and what no longer exists goes back to its colour", () => {

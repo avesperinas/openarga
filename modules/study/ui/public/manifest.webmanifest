@@ -1,7 +1,7 @@
 {
   "name": "Study",
   "short_name": "Study",
-  "description": "What you study.",
+  "description": "Courses, classes, exams and grades.",
   "start_url": "/study/",
   "scope": "/study/",
   "id": "/study/",

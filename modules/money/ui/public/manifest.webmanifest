@@ -1,7 +1,7 @@
 {
   "name": "Finance",
   "short_name": "Finance",
-  "description": "Your accounts, shared expenses and what everything is worth.",
+  "description": "Accounts, investments, shared expenses and what everything is worth.",
   "start_url": "/money/",
   "scope": "/money/",
   "id": "/money/",

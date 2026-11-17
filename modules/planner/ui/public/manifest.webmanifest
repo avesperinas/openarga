@@ -1,7 +1,7 @@
 {
   "name": "Calendar",
   "short_name": "Calendar",
-  "description": "Your calendar: your events, what repeats and what arrives on its own.",
+  "description": "Your events, what repeats and what arrives on its own.",
   "start_url": "/planner/",
   "scope": "/planner/",
   "id": "/planner/",
