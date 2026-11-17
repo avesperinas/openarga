@@ -168,6 +168,8 @@ export const changeCredential = (id: string, key: string, value: string) =>
 export const pauseConnection = (id: string) => send<ConnectionDetail>(`/connections/${id}/pause`, "POST");
 export const resumeConnection = (id: string) => send<ConnectionDetail>(`/connections/${id}/resume`, "POST");
 export const removeConnection = (id: string) => send<void>(`/connections/${id}`, "DELETE");
+export const typePrice = (price: { instrument: string; on: string; price: string }) =>
+  send<{ symbol: string; on: string; new: boolean }>("/prices", "POST", price);
 export const renameConnection = (id: string, label: string) =>
   send<ConnectionDetail>(`/connections/${id}/label`, "PUT", { label });
 

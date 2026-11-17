@@ -1,7 +1,7 @@
 import { renderToString } from "react-dom/server";
 
 import { route } from "./App";
-import { budgetLine, calendarLine, landsIn, removeConsequence, RenameSheet, runLine } from "./Connection";
+import { budgetLine, calendarLine, landsIn, priceProblem, removeConsequence, RenameSheet, runLine } from "./Connection";
 import { AddSheet, missing } from "./Add";
 import type { ConnectionDetail, Provider, Run } from "./api";
 import { matching, oneAtATime } from "./BankSheet";
@@ -149,4 +149,11 @@ test("una conexión dice a qué apps llega por las tomas que declaran, sin nombr
       ],
     }),
   ).toBe("Llega a Money y Carrera.");
+});
+
+test("a typed price asks for what identifies it and a price above zero", () => {
+  expect(priceProblem("  ", "10")).toBe("Escribe su ISIN o su ticker.");
+  expect(priceProblem("VWCE.DE", "0")).toBe("Escribe un precio mayor que cero.");
+  expect(priceProblem("VWCE.DE", "abc")).toBe("Escribe un precio mayor que cero.");
+  expect(priceProblem("VWCE.DE", "101,25")).toBeNull();
 });

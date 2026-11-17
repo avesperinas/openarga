@@ -13,7 +13,6 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_tenancy import kernel_url
 from hub import capabilities, catalogue, connections, instruments, statements, sync
-from hub.funds import symbol_of
 
 MODULE = "hub"
 WRITE_ROLE = f"mod_{MODULE}"
@@ -80,6 +79,7 @@ class FundIn(BaseModel):
     quantity: Decimal | None = Field(default=None, ge=0)
     price: Decimal | None = Field(default=None, gt=0)
     isin: str | None = Field(default=None, min_length=12, max_length=12)
+    ticker: str | None = Field(default=None, min_length=1, max_length=20)
     mic: str | None = Field(default=None, pattern=r"^[A-Z]{4}$")
     currency: str | None = Field(default=None, pattern=r"^[A-Z]{2}[A-Za-z]$")
 
@@ -98,13 +98,10 @@ class PortfolioIn(BaseModel):
 KINDS = {"fund": "fund", "listed": "listed"}
 
 
-def catalogued(fund: FundIn) -> str | None:
-    if fund.mic or fund.currency:
+def cash(fund: FundIn) -> str | None:
+    if fund.isin or fund.ticker or not instruments.is_cash(fund.name):
         return None
-    if fund.isin:
-        known = instruments.in_catalogue(fund.isin.upper())
-        return known.symbol if known else None
-    return symbol_of(fund.name)
+    return instruments.CASH
 
 
 async def lines_of(
@@ -114,9 +111,14 @@ async def lines_of(
     why: dict[int, str] = {}
     async with httpx.AsyncClient(transport=capabilities.source_transport()) as source:
         for index, fund in enumerate(funds):
-            if catalogued(fund) is not None:
+            if cash(fund) is not None:
                 continue
             try:
+                if fund.ticker and not fund.isin:
+                    found[index] = instruments.ticker_line(
+                        fund.ticker, fund.name, on, fund.currency
+                    )
+                    continue
                 found[index] = await instruments.resolve(
                     source,
                     name=fund.name,
@@ -148,7 +150,7 @@ async def record_portfolio(connection: AsyncConnection, request: PortfolioIn) ->
                     price=fund.price,
                     line=lines.get(index),
                     unpriced=why.get(index),
-                    symbol=catalogued(fund),
+                    symbol=cash(fund),
                 )
                 for index, fund in enumerate(request.funds)
             ],
@@ -164,7 +166,7 @@ async def record_portfolio(connection: AsyncConnection, request: PortfolioIn) ->
     unpriced = list(found.skipped)
     if priced and not await instruments.remember(connection, priced):
         unpriced += [
-            f"'{line.name}': connect 'Fund prices' in Hub to value it every day" for line in priced
+            f"'{line.name}': connect 'Prices' in Hub to value it every day" for line in priced
         ]
     return {
         "recorded": True,
@@ -174,7 +176,8 @@ async def record_portfolio(connection: AsyncConnection, request: PortfolioIn) ->
         "new": outcome.emitted,
         "repeated": outcome.duplicated,
         "priced_by_isin": [
-            f"'{request.funds[index].name}': {line.isin} ({KINDS[line.kind]}, {line.where}), "
+            f"'{request.funds[index].name}': {line.isin or line.yahoo} ({KINDS[line.kind]}, "
+            f"{line.where}), "
             f"priced from {request.on.isoformat()}"
             for index, line in lines.items()
         ],

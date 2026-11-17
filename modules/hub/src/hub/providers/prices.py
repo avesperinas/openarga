@@ -9,7 +9,6 @@ from typing import Any
 import httpx
 
 from hub.declare import Provider, Sync
-from hub.funds import catalogue
 from hub.instruments import ONVISTA, PENCE, Line, stored
 from hub.providers import Fetched, SourceError
 
@@ -23,6 +22,19 @@ YEAR = timedelta(days=365)
 PLACES = Decimal("0.000001")
 RATES = "https://api.frankfurter.dev/v1/{start}..{end}"
 HEADERS = {"user-agent": "Mozilla/5.0 (arga)"}
+
+
+SOURCES_VARIABLE = "PRICES_SOURCES"
+KNOWN_SOURCES = ("yahoo", "onvista")
+
+
+def sources() -> tuple[str, ...]:
+    raw = os.environ.get(SOURCES_VARIABLE, ",".join(KNOWN_SOURCES))
+    chosen = tuple(one for one in (part.strip().lower() for part in raw.split(",")) if one)
+    unknown = [one for one in chosen if one not in KNOWN_SOURCES]
+    if unknown:
+        raise SourceError(f"{SOURCES_VARIABLE} names unknown sources: {', '.join(unknown)}")
+    return chosen
 
 
 def base_url() -> str:
@@ -133,13 +145,15 @@ async def chart(
             f"{base_url()}/v8/finance/chart/{symbol}", params=params, headers=HEADERS, timeout=20.0
         )
     except httpx.HTTPError as error:
-        raise SourceError(f"Yahoo no contesta ({type(error).__name__})", transient=True) from error
+        raise SourceError(
+            f"Yahoo does not answer ({type(error).__name__})", transient=True
+        ) from error
     if response.status_code == 429:
-        raise SourceError("Yahoo pide esperar", rate_limited=True)
+        raise SourceError("Yahoo asks to wait", rate_limited=True)
     if response.status_code >= 500:
         raise SourceError(f"Yahoo falla ({response.status_code})", transient=True)
     if response.status_code >= 400:
-        raise SourceError(f"Yahoo no conoce {symbol} ({response.status_code})")
+        raise SourceError(f"Yahoo does not know {symbol} ({response.status_code})")
     try:
         body = response.json()
     except ValueError as error:
@@ -171,7 +185,7 @@ async def onvista(
             )
             body = response.json() if response.status_code == 200 else None
         except (httpx.HTTPError, ValueError) as error:
-            raise SourceError(f"onvista no contesta ({type(error).__name__})") from error
+            raise SourceError(f"onvista does not answer ({type(error).__name__})") from error
         if not isinstance(body, dict):
             raise SourceError(f"onvista gives no closes for {line.isin}")
         currency = body.get("isoCurrency") or currency
@@ -211,13 +225,16 @@ async def line_series(
     client: httpx.AsyncClient, line: Line, start: date, today: date
 ) -> tuple[str, dict[date, Decimal], list[str]]:
     currency, found, problems = line.currency, {}, []
-    if line.yahoo:
+    chosen = sources()
+    if line.yahoo and "yahoo" in chosen:
         try:
             unit, got = await chart(client, line.yahoo, start)
             currency, found = in_units(unit or line.currency, got)
         except SourceError as error:
+            if error.rate_limited:
+                raise
             problems.append(str(error))
-    if line.onvista_entity and line.onvista_notation:
+    if line.onvista_entity and line.onvista_notation and "onvista" in chosen:
         try:
             unit, got = await onvista(client, line, start, today)
             unit, got = in_units(unit or line.currency, got)
@@ -238,7 +255,6 @@ async def fetch(
 ) -> Fetched:
     today = today or datetime.now(UTC).date()
     lines, filled = lines or [], dict(filled or {})
-    funds = {fund.symbol: fund for fund in catalogue()}
     found: list[Priced] = []
     failed: list[str] = []
     fx: dict[str, dict[date, Decimal]] = {}
@@ -259,25 +275,7 @@ async def fetch(
             fx[currency] = await rates(client, currency, earliest, today)
         return in_euros(series, currency, fx[currency])
 
-    for currency in sorted({fund.currency for fund in funds.values()} - {"EUR"}):
-        fx[currency] = await rates(client, currency, earliest, today)
-
-    for symbol, fund in funds.items():
-        try:
-            priced = await to_euros(await series(client, symbol), fund.currency)
-        except SourceError as error:
-            if error.rate_limited:
-                raise
-            failed.append(f"{fund.name} ({symbol}): {error}")
-            continue
-        if priced:
-            found.append(Priced(symbol, fund.name, priced))
-        else:
-            failed.append(f"{fund.name} ({symbol}): sin cierres")
-
     for line in lines:
-        if line.symbol in funds:
-            continue
         currency, got, problems = await line_series(client, line, starts(line), today)
         try:
             priced = await to_euros(got, currency) if got else {}
@@ -286,23 +284,35 @@ async def fetch(
             priced = {}
         if not priced:
             failed.append(
-                f"{line.name} ({line.isin}, {line.where}): "
-                + ("; ".join(problems) or "sin cierres")
+                f"{line.name} ({line.isin or line.yahoo}, {line.where}): "
+                + ("; ".join(problems) or "no closes")
+                + "; type its price by hand in Hub"
             )
             continue
-        extra = {"isin": line.isin, "kind": line.kind, "quote_currency": currency}
+        extra = {"kind": line.kind, "quote_currency": currency}
+        if line.isin:
+            extra["isin"] = line.isin
         if line.mic:
             extra["mic"] = line.mic
         found.append(Priced(line.symbol, line.name, priced, extra))
         filled[line.symbol] = line.since.isoformat()
 
-    if not found:
+    if not found and failed:
         raise SourceError(f"gave no price ({'; '.join(failed[:3])}…)")
     return Fetched(
         events(found),
         problem=f"No price for {'; '.join(failed)}" if failed else None,
         state={"filled": filled} if lines else None,
     )
+
+
+def typed(symbol: str, name: str, on: date, price: Decimal, line: Line | None) -> dict[str, Any]:
+    extra = {"kind": line.kind} if line else {}
+    if line and line.isin:
+        extra["isin"] = line.isin
+    if line and line.mic:
+        extra["mic"] = line.mic
+    return events([Priced(symbol, name, {on: price}, extra)])[0]
 
 
 async def sync(client: httpx.AsyncClient, _secrets: dict[str, str], connection: Any) -> Fetched:
@@ -313,12 +323,13 @@ async def sync(client: httpx.AsyncClient, _secrets: dict[str, str], connection: 
 SOURCES = (
     Provider(
         id="prices",
-        name="Fund prices",
+        name="Prices",
         category="finance",
-        description="The daily value of the funds, ETFs, ETCs and shares that can"
-        " be priced, so Money moves your portfolios between one "
-        "snapshot and the next. Public and keyless, from Yahoo "
-        "Finance and onvista; fetched once a day.",
+        description="The daily value of the funds, ETFs, ETCs and shares you hold, by"
+        " ISIN or ticker, so Money moves your portfolios between one snapshot and the"
+        " next. Public and keyless, from Yahoo Finance and onvista (the instance picks"
+        " which with PRICES_SOURCES); fetched once a day. What no source prices can be"
+        " typed by hand.",
         capabilities=("sync",),
         emits=("finance.price",),
         available=True,

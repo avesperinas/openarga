@@ -153,5 +153,15 @@
   "yours.connect": "Connect a source",
   "yours.empty": "Nothing connected here yet",
   "yours.empty.hint": "This is the place for everything that comes in from outside: your banks, your exchanges, your email and your calendars. Connect them from Set up, or from the app that uses them.",
-  "yours.title": "Your connections"
+  "yours.title": "Your connections",
+  "price.title": "Type a price",
+  "price.hint": "When no source prices an instrument, type its close in euros here. Money uses it like any other.",
+  "price.instrument": "ISIN or ticker",
+  "price.on": "Day",
+  "price.value": "Price in euros",
+  "price.save": "Save price",
+  "price.saved": "Saved: {symbol} on {on}.",
+  "price.known": "That price was already there: {symbol} on {on}.",
+  "price.missing.instrument": "Type its ISIN or its ticker.",
+  "price.missing.price": "Type a price above zero."
 }

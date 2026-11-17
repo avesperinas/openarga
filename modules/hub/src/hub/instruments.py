@@ -10,7 +10,7 @@ import httpx
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from hub.funds import Fund, catalogue
+from hub.finance import fold
 
 Kind = Literal["fund", "listed"]
 
@@ -20,6 +20,9 @@ YAHOO_SEARCH = "https://query1.finance.yahoo.com/v1/finance/search"
 HEADERS = {"user-agent": "Mozilla/5.0 (arga)"}
 TIMEOUT = 20.0
 NAV = "@_WM"
+CASH = "EUR"
+CASH_NAMES = {"cash", "liquidez", "efectivo"}
+TICKER = re.compile(r"^[A-Z0-9^][A-Z0-9.=^-]{0,19}$")
 
 
 @dataclass(frozen=True)
@@ -69,6 +72,8 @@ class Line:
 
     @property
     def symbol(self) -> str:
+        if not self.isin:
+            return f"ticker:{self.yahoo}"
         if not self.mic:
             return self.isin
         return f"{self.isin}:{self.mic}:{PENCE.get(self.currency, self.currency)}"
@@ -76,7 +81,9 @@ class Line:
     @property
     def where(self) -> str:
         venue = BY_MIC.get(self.mic or "")
-        return f"{venue.name}, {self.currency}" if venue else f"valor liquidativo, {self.currency}"
+        if not self.isin:
+            return f"ticker {self.yahoo}"
+        return f"{venue.name}, {self.currency}" if venue else f"net asset value, {self.currency}"
 
     def stored(self) -> dict[str, Any]:
         found = asdict(self)
@@ -102,8 +109,15 @@ def valid_isin(isin: str) -> bool:
     return (10 - total % 10) % 10 == int(isin[-1])
 
 
-def in_catalogue(isin: str) -> Fund | None:
-    return next((fund for fund in catalogue() if fund.isin == isin), None)
+def is_cash(name: str) -> bool:
+    return " ".join(re.findall(r"[a-z0-9]+", fold(name))) in CASH_NAMES
+
+
+def ticker_line(ticker: str, name: str, since: date, currency: str | None = None) -> Line:
+    ticker = ticker.strip().upper()
+    if not TICKER.match(ticker):
+        raise Unresolved(f"'{ticker}' is not a ticker")
+    return Line("", "listed", name, currency or "EUR", since, None, ticker)
 
 
 async def get(client: httpx.AsyncClient, url: str, **params: Any) -> Any | None:

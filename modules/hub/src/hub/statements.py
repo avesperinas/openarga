@@ -14,8 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from hub import finance
-from hub.funds import CASH, symbol_of
-from hub.instruments import PENCE, Line
+from hub.instruments import CASH, PENCE, Line, is_cash
 
 BALANCE = "finance.balance"
 MOVEMENT = "finance.movement"
@@ -136,6 +135,16 @@ def day(raw: str) -> date:
 
 def is_day(raw: str) -> bool:
     return bool(DAY.match(raw.strip()))
+
+
+SAME_WORD = {"idx": "index", "gbl": "global", "government": "gov", "govt": "gov"}
+NOISE = {"fund", "the", "etf", "acc", "eur", "accumulating", "class", "shares", "inst", "plus"}
+NOISE |= {"h", "hedged"}
+
+
+def canonical(name: str) -> str:
+    words = re.findall(r"[a-z0-9]+", finance.fold(name))
+    return " ".join(SAME_WORD.get(word, word) for word in words if word not in NOISE)
 
 
 def slug(text: str) -> str:
@@ -333,8 +342,11 @@ def portfolio(
         else:
             raise StatementError(f"'{fund.name}' gives neither its value nor its weight")
         held += value
-        symbol = fund.line.symbol if fund.line else fund.symbol or symbol_of(fund.name)
-        if symbol is not None and any(h.symbol == symbol for h in read.holdings):
+        symbol = (
+            fund.line.symbol if fund.line else fund.symbol or (CASH if is_cash(fund.name) else None)
+        )
+        key = symbol or f"name:{slug(canonical(fund.name))}"
+        if any(h.symbol == key for h in read.holdings):
             raise StatementError(f"'{fund.name}' is twice in the portfolio of '{name}'")
         if symbol is None:
             why = fund.unpriced or "its price is unknown"
@@ -344,7 +356,7 @@ def portfolio(
             Holding(
                 account.key,
                 on,
-                symbol or f"name:{slug(fund.name)}",
+                key,
                 fund.name,
                 value,
                 value if cash else fund.quantity,
@@ -465,7 +477,7 @@ def dedup(*parts: str) -> str:
 
 def line_of(line: Line) -> dict[str, str]:
     return {
-        "isin": line.isin,
+        **({"isin": line.isin} if line.isin else {}),
         "kind": line.kind,
         "quote_currency": PENCE.get(line.currency, line.currency),
         **({"mic": line.mic} if line.mic else {}),

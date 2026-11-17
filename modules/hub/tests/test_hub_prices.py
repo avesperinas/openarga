@@ -7,7 +7,7 @@ import httpx
 import pytest
 
 from arga_contracts import sources
-from hub.funds import Fund
+from hub.instruments import ticker_line
 from hub.providers import SourceError, prices
 
 
@@ -31,10 +31,10 @@ def chart(points: list[tuple[date, float | None]], offset: int = -14400) -> dict
 
 
 D1, D2 = date(2030, 10, 1), date(2030, 10, 2)
-FUNDS = (
-    Fund("Fondo en euros", "FUND.F", "EUR"),
-    Fund("ETF en dólares", "ETF", "USD"),
-)
+LINES = [
+    ticker_line("FUND.F", "Fund in euros", D1),
+    ticker_line("ETF", "ETF in dollars", D1, "USD"),
+]
 
 
 def yahoo(answers: dict[str, httpx.Response]):
@@ -48,14 +48,9 @@ def yahoo(answers: dict[str, httpx.Response]):
     return handle
 
 
-@pytest.fixture(autouse=True)
-def few_funds(monkeypatch):
-    monkeypatch.setattr(prices, "catalogue", lambda: FUNDS)
-
-
-async def run(answers: dict[str, httpx.Response]) -> list[dict]:
+async def run(answers: dict[str, httpx.Response], lines=LINES) -> list[dict]:
     async with httpx.AsyncClient(transport=httpx.MockTransport(yahoo(answers))) as client:
-        return (await prices.sync(client, {}, None)).events
+        return (await prices.fetch(client, lines, today=D2)).events
 
 
 async def test_each_close_goes_out_in_euros_on_its_market_day() -> None:
@@ -69,13 +64,14 @@ async def test_each_close_goes_out_in_euros_on_its_market_day() -> None:
 
     by = {(e["payload"]["symbol"], e["payload"]["on"]): e["payload"]["price"] for e in out}
     assert by == {
-        ("FUND.F", "2030-10-01"): "600.000000",
-        ("ETF", "2030-10-01"): "100.000000",
-        ("ETF", "2030-10-02"): "100.000000",
+        ("ticker:FUND.F", "2030-10-01"): "600.000000",
+        ("ticker:ETF", "2030-10-01"): "100.000000",
+        ("ticker:ETF", "2030-10-02"): "100.000000",
     }
     for event in out:
         sources.check(event["type"], event["payload"])
         assert event["payload"]["currency"] == "EUR"
+        assert "isin" not in event["payload"]
     assert len({e["dedup_hash"] for e in out}) == 3
 
 
@@ -86,18 +82,53 @@ async def test_a_symbol_that_fails_does_not_stop_the_rest() -> None:
             "EURUSD=X": httpx.Response(200, json=chart([(D1, 1.1)])),
         }
     )
-    assert {e["payload"]["symbol"] for e in out} == {"FUND.F"}
+    assert {e["payload"]["symbol"] for e in out} == {"ticker:FUND.F"}
 
 
-async def test_when_every_symbol_fails_the_pass_fails() -> None:
-    with pytest.raises(SourceError, match="gave no price"):
+async def test_when_every_symbol_fails_the_pass_fails_and_says_to_type_it() -> None:
+    with pytest.raises(SourceError, match="gave no price") as raised:
         await run({"EURUSD=X": httpx.Response(200, json=chart([(D1, 1.1)]))})
+    assert "by hand" in str(raised.value)
+
+
+async def test_nothing_to_price_is_not_a_failure() -> None:
+    assert await run({}, lines=[]) == []
 
 
 async def test_being_asked_to_wait_stops_the_pass() -> None:
     with pytest.raises(SourceError) as raised:
-        await run({"EURUSD=X": httpx.Response(429)})
+        await run({"FUND.F": httpx.Response(429)})
     assert raised.value.rate_limited
+
+
+async def test_the_instance_chooses_its_sources(monkeypatch) -> None:
+    monkeypatch.setenv("PRICES_SOURCES", "onvista")
+    with pytest.raises(SourceError, match="gave no price"):
+        await run({"FUND.F": httpx.Response(200, json=chart([(D1, 600.0)]))})
+
+    monkeypatch.setenv("PRICES_SOURCES", "yahoo, somewhere")
+    with pytest.raises(SourceError, match="unknown sources: somewhere"):
+        await run({})
+
+
+def test_a_ticker_is_checked_before_it_is_kept() -> None:
+    assert ticker_line(" vwce.de ", "VWCE", D1).symbol == "ticker:VWCE.DE"
+    with pytest.raises(Exception, match="not a ticker"):
+        ticker_line("not a ticker", "X", D1)
+
+
+def test_a_price_typed_by_hand_is_one_more_close() -> None:
+    event = prices.typed("ticker:FUND.F", "Fund in euros", D1, Decimal("12.5"), LINES[0])
+
+    sources.check(event["type"], event["payload"])
+    assert event["payload"] == {
+        "symbol": "ticker:FUND.F",
+        "on": "2030-10-01",
+        "price": "12.500000",
+        "currency": "EUR",
+        "name": "Fund in euros",
+        "kind": "listed",
+    }
 
 
 def test_a_dollar_price_without_a_rate_yet_is_left_out() -> None:

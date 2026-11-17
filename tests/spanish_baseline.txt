@@ -13,7 +13,6 @@ modules/hub/tests/test_hub_google_health.py
 modules/hub/tests/test_hub_notices.py
 modules/hub/tests/test_hub_places.py
 modules/hub/tests/test_hub_portfolio.py
-modules/hub/tests/test_hub_prices.py
 modules/hub/tests/test_hub_recommended.py
 modules/hub/tests/test_hub_sources.py
 modules/hub/tests/test_hub_statements.py

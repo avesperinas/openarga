@@ -8,7 +8,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from hub import capabilities, statements
-from hub.funds import catalogue, symbol_of
+from hub.instruments import is_cash
 from hub.tools import TOOLS
 
 
@@ -61,13 +61,9 @@ def pension_page(weights: list[tuple[str, str]]) -> str:
     )
 
 
-def test_every_fund_of_the_catalogue_has_one_symbol() -> None:
-    funds = catalogue()
-    assert len({fund.name for fund in funds}) == len(funds)
-    assert all(fund.currency in ("EUR", "USD") for fund in funds)
-    assert symbol_of("  vanguard us 500 index INST plus ") == "0P00011HBK.F"
-    assert symbol_of("Liquidez") == "EUR"
-    assert symbol_of("Un fondo que nadie conoce") is None
+def test_cash_is_known_by_its_name_in_any_spelling() -> None:
+    assert is_cash("  Liquidez ") and is_cash("CASH") and is_cash("Efectivo")
+    assert not is_cash("A fund nobody knows")
 
 
 def test_an_investment_plan_reads_each_fund_with_its_units_and_price() -> None:
@@ -77,7 +73,7 @@ def test_an_investment_plan_reads_each_fund_with_its_units_and_price() -> None:
     assert balance.on == date(2030, 10, 5)
     assert (balance.amount, balance.contributed) == (Decimal("1000.00"), Decimal("900.00"))
     by = {h.symbol: h for h in read.holdings}
-    us = by["0P00011HBK.F"]
+    us = by["name:vanguard-us-500-index"]
     assert (us.value, us.quantity, us.price) == (
         Decimal("600.00"),
         Decimal("1.00"),
@@ -85,7 +81,7 @@ def test_an_investment_plan_reads_each_fund_with_its_units_and_price() -> None:
     )
     assert (by["EUR"].value, by["EUR"].price) == (Decimal("10.00"), Decimal(1))
     assert {h.account for h in read.holdings} == {"statement:finizens:plan-de-inversion-1"}
-    assert read.skipped == []
+    assert len(read.skipped) == 2
 
 
 def test_a_pension_plan_gives_weights_and_each_fund_is_its_share_of_the_total() -> None:
@@ -101,8 +97,11 @@ def test_a_pension_plan_gives_weights_and_each_fund_is_its_share_of_the_total() 
     )
 
     by = {h.symbol: h for h in read.holdings}
-    assert by["SPY"].value == Decimal("1200.00") and by["SPY"].quantity is None
-    assert by["MEUD.PA"].value == Decimal("780.00")
+    assert (
+        by["name:spdr-s-p-500"].value == Decimal("1200.00")
+        and by["name:spdr-s-p-500"].quantity is None
+    )
+    assert by["name:amundi-core-stoxx-europe-600"].value == Decimal("780.00")
     assert by["EUR"].value == Decimal("20.00")
     assert read.balances[0].on == date(2030, 10, 4)
 
@@ -123,12 +122,12 @@ def test_the_holdings_go_out_as_finance_holding_with_their_identity() -> None:
     read = statements.read(investment_page(INVESTMENT), date(2030, 10, 6))
     out = [e for e in statements.events_of(read) if e["type"] == "finance.holding"]
     assert len(out) == 3
-    us = next(e for e in out if e["payload"]["symbol"] == "0P00011HBK.F")
+    us = next(e for e in out if e["payload"]["symbol"] == "name:vanguard-us-500-index")
     photo = us["payload"].pop("photo")
     assert {e["payload"].get("photo", photo) for e in out} == {photo}
     assert us["payload"] == {
         "account": "statement:finizens:plan-de-inversion-1",
-        "symbol": "0P00011HBK.F",
+        "symbol": "name:vanguard-us-500-index",
         "name": "Vanguard US 500 Index Inst Plus",
         "on": "2030-10-05",
         "value": "600.00",
@@ -157,8 +156,9 @@ def test_the_same_photo_twice_is_the_same_and_a_different_one_is_new() -> None:
 
 
 def test_two_spellings_of_the_same_fund_are_one_fund() -> None:
-    assert symbol_of("Vanguard Global Short Bond Index Hedged Inst Plus") == "0P00012NJE.F"
-    assert symbol_of("iShares Developed Real Estate Index Fund") == "0P0000Y354.F"
+    assert statements.canonical("Vanguard Global Short Bond Index Hedged Inst Plus") == (
+        "vanguard global short bond index"
+    )
     with pytest.raises(statements.StatementError, match="is twice"):
         statements.portfolio(
             "Finizens",
@@ -217,7 +217,7 @@ SHOT = {
     "value": "2000",
     "contributed": "1950",
     "funds": [
-        {"name": "SPDR S&P 500 ETF", "weight": "60"},
+        {"name": "SPDR S&P 500 ETF", "weight": "60", "ticker": "SPY", "currency": "USD"},
         {"name": "Amundi Core Stoxx Europe 600 ETF", "weight": "39"},
         {"name": "Liquidez", "weight": "1"},
     ],
@@ -240,7 +240,8 @@ async def test_a_screenshot_told_by_the_model_is_published_like_the_page(
     assert again.json()["content"]["new"] == 0
     rows = await published(schema)
     holdings = {r.payload["symbol"]: r.payload for r in rows if r.type == "finance.holding"}
-    assert holdings["SPY"]["value"] == "1200.00"
+    assert holdings["ticker:SPY"]["value"] == "1200.00"
+    assert said["priced_by_isin"][0].startswith("'SPDR S&P 500 ETF': SPY (listed, ticker SPY)")
     balance = next(r.payload for r in rows if r.type == "finance.balance")
     assert balance["account"] == "statement:finizens:plan-de-pensiones"
     assert balance["amount"] == "2000"

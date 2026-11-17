@@ -44,7 +44,8 @@ tools:
       appears, the day the page states, what the product is worth, what was paid in if shown, and
       each fund with its exact name and its value in euros or its weight in % (cash included). If
       units and net asset value are shown, include them. If the ISIN of a fund, ETF, ETC or share
-      is shown, give it: it is what identifies it. Without an ISIN it is looked up by name. A
+      is shown, give it: it is what identifies it. If only its ticker is shown (VWCE.DE, SPY), give
+      the ticker instead. Without either it is looked up by name. A
       listed security is valued on its line in the currency of the account with most liquidity
       (in euros, Xetra); if the person holds it on another, give its MIC (XMIL, XLON...) and its
       currency. It enters as if the page had been uploaded: Money starts from that snapshot and
