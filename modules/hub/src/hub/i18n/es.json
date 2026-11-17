@@ -14,6 +14,8 @@
   "connection.reason.missing": "A {label} le falta su credencial: pégala en su ficha.",
   "connection.reason.no_accounts": "{label} no ha dado ninguna cuenta. Si tu aplicación de Enable Banking está en modo restringido, enlaza en su panel las cuentas de este banco y después reconéctalo.",
   "connection.reason.pending": "{label} espera a que termines de autorizarla.",
+  "holiday": "Festivo",
+  "holiday.in": "Festivo en {regions}",
   "mailbox.missing_password": "Falta la contraseña de aplicación del buzón",
   "notice.failing.body": "Tres pasadas seguidas con error.",
   "notice.failing.title": "{label} no trae datos",

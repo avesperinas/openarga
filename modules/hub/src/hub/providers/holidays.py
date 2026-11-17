@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import re
+import tomllib
 from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import httpx
 
+from hub import words
 from hub.declare import Ask, Offer, Provider, Setting, Sync
 from hub.providers import SourceError
 from hub.providers.calendars import Item, events, window
@@ -16,29 +19,9 @@ BASE = "https://date.nager.at/api/v3"
 COUNTRY = "country"
 REGION = "region"
 
-REGIONS: dict[str, dict[str, str]] = {
-    "ES": {
-        "ES-AN": "Andalucía",
-        "ES-AR": "Aragón",
-        "ES-AS": "Asturias",
-        "ES-CB": "Cantabria",
-        "ES-CE": "Ceuta",
-        "ES-CL": "Castilla y León",
-        "ES-CM": "Castilla-La Mancha",
-        "ES-CN": "Canarias",
-        "ES-CT": "Cataluña",
-        "ES-EX": "Extremadura",
-        "ES-GA": "Galicia",
-        "ES-IB": "Illes Balears",
-        "ES-MC": "Región de Murcia",
-        "ES-MD": "Comunidad de Madrid",
-        "ES-ML": "Melilla",
-        "ES-NC": "Navarra",
-        "ES-PV": "País Vasco",
-        "ES-RI": "La Rioja",
-        "ES-VC": "Comunitat Valenciana",
-    }
-}
+REGIONS: dict[str, dict[str, str]] = tomllib.loads(
+    (Path(__file__).resolve().parent.parent / "catalogs" / "regions.toml").read_text()
+)
 
 
 def clean_settings(raw: dict[str, Any]) -> dict[str, Any]:
@@ -84,7 +67,7 @@ def items_of(found: list[dict[str, Any]], country: str, region: str | None) -> l
         if not holiday.get("global", True) and (region is None or region not in counties):
             continue
         day = date.fromisoformat(holiday["date"])
-        title = holiday.get("localName") or holiday.get("name") or "Festivo"
+        title = holiday.get("localName") or holiday.get("name") or words.say("holiday")
         items.append(
             Item(
                 uid=f"{country}:{day.isoformat()}:{holiday.get('name') or title}",
@@ -94,7 +77,9 @@ def items_of(found: list[dict[str, Any]], country: str, region: str | None) -> l
                 end=(day + timedelta(days=1)).isoformat(),
                 description=None
                 if holiday.get("global", True)
-                else f"Festivo en {', '.join(region_name(country, c) for c in counties)}",
+                else words.say(
+                    "holiday.in", regions=", ".join(region_name(country, c) for c in counties)
+                ),
             )
         )
     return items

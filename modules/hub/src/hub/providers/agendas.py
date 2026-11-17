@@ -5,10 +5,12 @@ import hashlib
 import json
 import re
 import time
+import tomllib
 import unicodedata
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from html.parser import HTMLParser
+from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin, urlsplit
 
@@ -431,15 +433,8 @@ def check(found: list[dict[str, Any]], page: Read, connection: str, today: date)
     return out
 
 
-MONTH_NAMES = (
-    "enero", "febrero", "marzo", "abril", "mayo", "junio",
-    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
-)  # fmt: skip
-QUERIES = (
-    "jornadas gastronómicas Navarra {mes} {año}",
-    "semana gastronómica Navarra {mes} {año}",
-    "fiestas de los pueblos de Navarra {mes} {año}",
-    "ferias en Navarra {mes} {año}",
+SEARCHES = tomllib.loads(
+    (Path(__file__).resolve().parent.parent / "catalogs" / "agendas.toml").read_text()
 )
 
 
@@ -447,13 +442,13 @@ def queries(day: date, recurring: list[dict[str, Any]]) -> list[str]:
     months = [(day.year, day.month), ((day.year + day.month // 12), day.month % 12 + 1)]
     out: list[str] = []
     for year, month in months:
-        for template in QUERIES:
-            out.append(template.format(mes=MONTH_NAMES[month - 1], año=year))
+        for template in SEARCHES["queries"]:
+            out.append(template.format(month=SEARCHES["months"][month - 1], year=year))
     near = {month for _, month in months}
     for one in recurring:
         if one.get("month") in near and one.get("title"):
             year = next(year for year, month in months if month == one["month"])
-            out.append(f"{one['title']} {year} fechas")
+            out.append(SEARCHES["recurring"].format(title=one["title"], year=year))
     return list(dict.fromkeys(out))
 
 

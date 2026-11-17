@@ -1,0 +1,6 @@
+# Words left out when a place name is matched against an article title.
+
+words = [
+  "el", "la", "los", "las", "lo", "de", "del", "y", "e", "en", "con", "sus", "su", "a", "al",
+  "por", "un", "una", "unos", "unas", "the",
+]

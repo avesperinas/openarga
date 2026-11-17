@@ -334,8 +334,8 @@ def test_pure_oil_is_a_food_and_impossible_figures_are_not() -> None:
 
     assert kept == [oil]
     assert [(one["name"], one["reason"]) for one in dropped] == [
-        ("Sal mal puesta", "3210 g de sal por 100 g"),
-        ("Negativo", "-1 g de proteína por 100 g"),
+        ("Sal mal puesta", "3210 g of salt per 100 g"),
+        ("Negativo", "-1 g of protein per 100 g"),
         ("Pesado", "its macros add up to more than 100 g per 100 g"),
     ]
 
@@ -358,7 +358,7 @@ async def test_a_search_drops_impossible_candidates_and_says_which(api, sources)
 
     assert answer["candidates"] == []
     assert answer["discarded"] == [
-        {"source": "off", "name": "Sal mal puesta", "reason": "3210 g de sal por 100 g"}
+        {"source": "off", "name": "Sal mal puesta", "reason": "3210 g of salt per 100 g"}
     ]
 
 
