@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import dataclasses
 import json
 from pathlib import Path
 
@@ -106,6 +107,24 @@ async def test_a_read_token_calling_a_write_tool_gets_403_from_postgres(settings
     assert result.is_error
     assert result.content[0].text.startswith("403:")
     assert "mod_shopping_read" in result.content[0].text
+
+
+async def test_a_demo_is_read_only_whatever_the_token_says(settings, stack) -> None:
+    demo = dataclasses.replace(settings, read_only=True)
+    async with served(stack, demo) as app, connected(app, "shopping:write") as client:
+        listed = {tool.name for tool in (await client.list_tools()).tools}
+        result = await client.call_tool("shopping_add_to_list", {"items": [{"name": "Milk"}]})
+
+    assert "shopping_add_to_list" not in listed
+    assert "shopping_get_shopping_list" in listed
+    assert result.is_error
+
+
+def test_demo_mode_comes_from_the_instance(monkeypatch) -> None:
+    monkeypatch.setenv("OPENARGA_DEMO", "true")
+    assert Settings.from_environment().read_only
+    monkeypatch.setenv("OPENARGA_DEMO", "")
+    assert not Settings.from_environment().read_only
 
 
 async def test_a_write_token_can_write(settings, stack) -> None:

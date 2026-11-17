@@ -99,3 +99,10 @@ def test_every_variable_the_stack_reads_is_in_the_env_example():
     example = (ROOT / ".env.example").read_text(encoding="utf-8")
     declared = set(re.findall(r"^([A-Z0-9_]+)=", example, re.MULTILINE))
     assert used - declared == set()
+
+
+def test_a_demo_instance_tells_the_gateway_and_mcp():
+    assert "OPENARGA_DEMO" not in compose.generate(EXAMPLE)["services"]["gateway"]["environment"]
+    services = compose.generate(with_changes(demo=True))["services"]
+    for name in ("gateway", "mcp", "kernel"):
+        assert services[name]["environment"].get("OPENARGA_DEMO") == "true", name

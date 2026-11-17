@@ -6,7 +6,7 @@ import time
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Query, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from starlette.background import BackgroundTask
 
@@ -17,7 +17,7 @@ from gateway import people as people_module
 from gateway import privacy as privacy_module
 from gateway import session as session_module
 from gateway.flight import Flight
-from gateway.session import COOKIE, LOGIN_COOKIE, NoSession, Resolved, Unverifiable
+from gateway.session import COOKIE, LOGIN_COOKIE, NoSession, Resolved, Session, Unverifiable
 from gateway.words import language, say
 
 SERVICE = "gateway"
@@ -382,9 +382,40 @@ def page(
     return HTMLResponse(body, status_code=status_code, headers={"cache-control": "no-store"})
 
 
+DEMO_SECONDS = 12 * 3600
+DEMO_SUBJECT = "demo-{person}"
+
+
+def demo_people() -> tuple[str, ...]:
+    if os.environ.get("OPENARGA_DEMO", "").lower() not in ("1", "true", "yes"):
+        return ()
+    names = os.environ.get("OPENARGA_DEMO_PEOPLE", "alex,sam").split(",")
+    return tuple(name.strip() for name in names if name.strip())
+
+
+@app.get("/login/demo", include_in_schema=False)
+async def demo_login(
+    request: Request,
+    who: str | None = Query(default=None, alias="as"),
+    next: str | None = None,
+) -> Response:
+    people = demo_people()
+    if not people:
+        return JSONResponse(status_code=404, content={"detail": "not found"})
+    chosen = who if who in people else people[0]
+    until = int(time.time()) + DEMO_SECONDS
+    session = Session(DEMO_SUBJECT.format(person=chosen), until, "", until)
+    response = RedirectResponse(session_module.safe_next(next), status_code=302)
+    response.headers["cache-control"] = "no-store"
+    return with_cookie(response, request.app.state.sessions.issue(session))
+
+
 @app.get("/login", include_in_schema=False)
 async def login(request: Request, next: str | None = None) -> Response:
     target = session_module.safe_next(next)
+    if demo_people():
+        demo = httpx.URL("/login/demo", params={"next": target})
+        return RedirectResponse(str(demo), status_code=302)
     sessions = request.app.state.sessions
     if sessions.read(request.cookies.get(COOKIE)) is not None:
         try:
