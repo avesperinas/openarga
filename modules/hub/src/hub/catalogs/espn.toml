@@ -1,0 +1,69 @@
+# The leagues whose teams can be followed. See docs/apps/hub.md, "Sport calendars".
+
+[soccer]
+name = "Football"
+continental_for = ["esp", "eng", "ita", "ger", "fra", "por", "ned", "bel", "sco", "tur", "aut", "sui"]
+
+[soccer.leagues]
+"esp.1" = "LaLiga"
+"esp.2" = "LaLiga Hypermotion"
+"eng.1" = "Premier League"
+"eng.2" = "Championship"
+"ita.1" = "Serie A"
+"ger.1" = "Bundesliga"
+"fra.1" = "Ligue 1"
+"por.1" = "Liga Portugal"
+"ned.1" = "Eredivisie"
+"bel.1" = "Belgian Pro League"
+"sco.1" = "Scottish Premiership"
+"tur.1" = "Süper Lig"
+"aut.1" = "Austrian Bundesliga"
+"sui.1" = "Swiss Super League"
+"usa.1" = "MLS"
+"mex.1" = "Liga MX"
+"bra.1" = "Brasileirão"
+"arg.1" = "Liga Profesional Argentina"
+"jpn.1" = "J1 League"
+"esp.w.1" = "Liga F"
+"eng.w.1" = "Women's Super League"
+
+[soccer.cups]
+esp = ["esp.copa_del_rey", "Copa del Rey"]
+eng = ["eng.fa", "FA Cup"]
+ita = ["ita.coppa_italia", "Coppa Italia"]
+ger = ["ger.dfb_pokal", "DFB-Pokal"]
+fra = ["fra.coupe_de_france", "Coupe de France"]
+por = ["por.taca.portugal", "Taça de Portugal"]
+ned = ["ned.cup", "KNVB Beker"]
+
+[soccer.continental]
+"uefa.champions" = "Champions League"
+"uefa.europa" = "Europa League"
+"uefa.europa.conf" = "Conference League"
+
+[basketball]
+name = "Basketball"
+
+[basketball.leagues]
+nba = "NBA"
+wnba = "WNBA"
+"mens-college-basketball" = "NCAA men's basketball"
+
+[football]
+name = "American football"
+
+[football.leagues]
+nfl = "NFL"
+"college-football" = "NCAA football"
+
+[baseball]
+name = "Baseball"
+
+[baseball.leagues]
+mlb = "MLB"
+
+[hockey]
+name = "Ice hockey"
+
+[hockey.leagues]
+nhl = "NHL"

@@ -27,3 +27,34 @@ The `prices` provider values what the person holds, once a day, in euros:
 - Cash (`cash`, `liquidez`, `efectivo`) needs no price.
 
 There is no catalogue of funds: anything with an ISIN or a ticker can be priced.
+
+## Institutions
+
+[`catalogs/institutions.toml`](../../modules/hub/src/hub/catalogs/institutions.toml) teaches Hub to
+read the movements of a bank: who was paid, the bank's own category, and which movements are
+transfers between the person's own accounts. One table per institution, named as the bank
+connection names it:
+
+```toml
+["Example Bank"]
+aliases = ["Example Bank Europe"]                    # other names the bank goes by
+internal = "^TRANSFER (TO|FROM) OWN ACCOUNT"         # matches own transfers (case-insensitive)
+bank_category = "^CARD PAYMENT AT ([^/]+?) //"       # group 1 is the bank's category
+merchant = ["^CARD PAYMENT // (.+)$", "^DIRECT DEBIT (.+)$"]  # first match wins, group 1
+```
+
+Every key is optional; an empty table only declares that the institution exists. Patterns are
+Python regular expressions run on the movement's description, and `bank_category` and each
+`merchant` need one capture group. `tests/test_hub_institutions.py` checks the file. When you add a
+bank, add a test with a few real-looking (synthetic) descriptions next to the existing ones.
+
+## Sport calendars
+
+The `football` provider follows any team of the leagues in
+[`catalogs/espn.toml`](../../modules/hub/src/hub/catalogs/espn.toml): football (with its domestic
+cup and, for European leagues, the UEFA competitions), basketball, American football, baseball and
+ice hockey. A football league is stored as its ESPN slug (`esp.1`), any other as `sport/slug`
+(`basketball/nba`). To follow a new league, add it to its sport's `leagues` table with its ESPN slug.
+
+Formula 1 (sessions to choose), any iCal address, and public holidays by country and region
+(Nager.Date) are the other calendar subscriptions; Planner subscribes to all of them.

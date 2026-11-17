@@ -293,7 +293,7 @@ def test_a_match_is_home_against_away_with_its_competition() -> None:
     assert (fixed.start, fixed.end) == ("2026-10-18T12:00:00+00:00", "2026-10-18T14:00:00+00:00")
     assert fixed.location == "Estadio de prueba, Villa"
     assert (open_.all_day, open_.start, open_.end) == (True, "2027-05-23", "2027-05-24")
-    assert open_.description == "LaLiga · hora por confirmar"
+    assert open_.description == "LaLiga · time to be confirmed"
     assert postponed.status == "cancelled"
 
 
@@ -318,17 +318,35 @@ def test_football_parameters() -> None:
 
 def test_a_team_brings_its_league_its_cup_and_europe() -> None:
     assert list(football.competitions("esp.1")) == [
-        "esp.1",
-        "esp.copa_del_rey",
-        "uefa.champions",
-        "uefa.europa",
-        "uefa.europa.conf",
+        "soccer/esp.1",
+        "soccer/esp.copa_del_rey",
+        "soccer/uefa.champions",
+        "soccer/uefa.europa",
+        "soccer/uefa.europa.conf",
     ]
+
+
+def test_a_team_outside_europe_or_another_sport_brings_only_its_league() -> None:
+    assert list(football.competitions("usa.1")) == ["soccer/usa.1"]
+    assert football.competitions("basketball/nba") == {"basketball/nba": "NBA"}
+    assert football.clean_settings({"team": "13", "league": "basketball/nba"})["league"] == (
+        "basketball/nba"
+    )
+
+
+def test_every_league_of_the_catalogue_has_a_name_and_an_espn_path() -> None:
+    leagues = football.leagues()
+    assert {"esp.1", "basketball/nba", "football/nfl", "baseball/mlb", "hockey/nhl"} <= set(leagues)
+    for league, name in leagues.items():
+        assert name and football.path_of(league).count("/") == 1
 
 
 async def test_a_team_is_found_by_its_name_without_accents() -> None:
     def answer(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith("/esp.1/teams"):
+        if request.url.path.endswith("/basketball/nba/teams"):
+            teams = [{"team": {"id": "13", "displayName": "Inventados Lakers"}}]
+            return httpx.Response(200, json={"sports": [{"leagues": [{"teams": teams}]}]})
+        if request.url.path.endswith("/soccer/esp.1/teams"):
             teams = [
                 {"team": {"id": "11", "displayName": "Club Atlético Inventado"}},
                 {"team": {"id": "12", "displayName": "Otro Club"}},
@@ -338,7 +356,9 @@ async def test_a_team_is_found_by_its_name_without_accents() -> None:
 
     async with httpx.AsyncClient(transport=httpx.MockTransport(answer)) as client:
         found = await football.teams(client, "atletico")
+        lakers = await football.teams(client, "lakers")
 
+    assert [(one["code"], one["league"]) for one in lakers] == [("13", "basketball/nba")]
     assert found == [
         {
             "code": "11",
@@ -352,7 +372,7 @@ async def test_a_team_is_found_by_its_name_without_accents() -> None:
 
 async def test_without_its_league_the_pass_fails_and_without_a_cup_it_does_not() -> None:
     def answer(request: httpx.Request) -> httpx.Response:
-        if "/esp.1/" in request.url.path:
+        if "/soccer/esp.1/" in request.url.path:
             return httpx.Response(200, json={"events": [espn("9", "2026-10-18T12:00Z", "A", "B")]})
         return httpx.Response(500)
 

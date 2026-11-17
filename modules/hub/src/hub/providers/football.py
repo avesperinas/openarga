@@ -1,50 +1,50 @@
 from __future__ import annotations
 
+import asyncio
 import re
+import tomllib
 import unicodedata
 from datetime import UTC, datetime, timedelta
+from functools import cache
+from pathlib import Path
 from typing import Any
-from zoneinfo import ZoneInfo
 
 import httpx
 
+from arga_module import preferences
+from hub import words
 from hub.declare import Ask, Offer, Provider, Setting, Sync
 from hub.providers import SourceError
 from hub.providers.calendars import Item, events
 
 PROVIDER = "football"
-BASE = "https://site.api.espn.com/apis/site/v2/sports/soccer"
+BASE = "https://site.api.espn.com/apis/site/v2/sports"
 TEAM = "team"
 TEAM_NAME = "team_name"
 LEAGUE = "league"
+SOCCER = "soccer"
 MATCH = timedelta(hours=2)
-MADRID = ZoneInfo("Europe/Madrid")
-
-LEAGUES: dict[str, str] = {
-    "esp.1": "LaLiga",
-    "esp.2": "LaLiga Hypermotion",
-    "eng.1": "Premier League",
-    "ita.1": "Serie A",
-    "ger.1": "Bundesliga",
-    "fra.1": "Ligue 1",
-    "por.1": "Liga Portugal",
-    "ned.1": "Eredivisie",
-}
-CUPS: dict[str, tuple[str, str]] = {
-    "esp": ("esp.copa_del_rey", "Copa del Rey"),
-    "eng": ("eng.fa", "FA Cup"),
-    "ita": ("ita.coppa_italia", "Coppa Italia"),
-    "ger": ("ger.dfb_pokal", "DFB-Pokal"),
-    "fra": ("fra.coupe_de_france", "Copa de Francia"),
-    "por": ("por.taca.portugal", "Taça de Portugal"),
-    "ned": ("ned.cup", "KNVB Beker"),
-}
-EUROPE: dict[str, str] = {
-    "uefa.champions": "Champions League",
-    "uefa.europa": "Europa League",
-    "uefa.europa.conf": "Conference League",
-}
+CATALOGUE = Path(__file__).resolve().parent.parent / "catalogs" / "espn.toml"
 CANCELLED = ("STATUS_POSTPONED", "STATUS_CANCELED", "STATUS_ABANDONED")
+FINISHED = ("STATUS_FULL_TIME", "STATUS_FINAL", "STATUS_FINAL_OT", "STATUS_FINAL_PEN")
+
+
+@cache
+def sports() -> dict[str, dict[str, Any]]:
+    return tomllib.loads(CATALOGUE.read_text())
+
+
+@cache
+def leagues() -> dict[str, str]:
+    found = {}
+    for sport, data in sports().items():
+        for slug, name in data.get("leagues", {}).items():
+            found[slug if sport == SOCCER else f"{sport}/{slug}"] = name
+    return found
+
+
+def path_of(league: str) -> str:
+    return league if "/" in league else f"{SOCCER}/{league}"
 
 
 def clean_settings(raw: dict[str, Any]) -> dict[str, Any]:
@@ -52,18 +52,24 @@ def clean_settings(raw: dict[str, Any]) -> dict[str, Any]:
     if not re.fullmatch(r"[0-9]{1,8}", team):
         raise ValueError("choose the team in the search")
     league = str(raw.get(LEAGUE) or "esp.1").strip()
-    if league not in LEAGUES:
-        raise ValueError(f"the league must be one of {', '.join(LEAGUES)}")
+    if league not in leagues():
+        raise ValueError(f"the league must be one of {', '.join(leagues())}")
     name = " ".join(str(raw.get(TEAM_NAME) or "").split())[:80] or None
     return {TEAM: team, LEAGUE: league, TEAM_NAME: name}
 
 
 def competitions(league: str) -> dict[str, str]:
-    found = {league: LEAGUES.get(league, league)}
-    cup = CUPS.get(league.split(".")[0])
+    found = {path_of(league): leagues().get(league, league)}
+    if "/" in league:
+        return found
+    soccer = sports()[SOCCER]
+    country = league.split(".")[0]
+    cup = soccer.get("cups", {}).get(country)
     if cup:
-        found[cup[0]] = cup[1]
-    return {**found, **EUROPE}
+        found[f"{SOCCER}/{cup[0]}"] = cup[1]
+    if country in soccer.get("continental_for", ()):
+        found.update({f"{SOCCER}/{slug}": name for slug, name in soccer["continental"].items()})
+    return found
 
 
 async def _get(client: httpx.AsyncClient, path: str, required: bool) -> dict[str, Any]:
@@ -72,14 +78,16 @@ async def _get(client: httpx.AsyncClient, path: str, required: bool) -> dict[str
     except httpx.HTTPError as error:
         if not required:
             return {}
-        raise SourceError(f"ESPN no contesta ({type(error).__name__})", transient=True) from error
+        raise SourceError(
+            f"ESPN does not answer ({type(error).__name__})", transient=True
+        ) from error
     if response.status_code == 429:
-        raise SourceError("ESPN pide esperar", rate_limited=True)
+        raise SourceError("ESPN asks to wait", rate_limited=True)
     if response.status_code >= 400 or not response.content:
         if not required:
             return {}
         transient = response.status_code >= 500
-        raise SourceError(f"ESPN contesta {response.status_code}", transient=transient)
+        raise SourceError(f"ESPN answers {response.status_code}", transient=transient)
     return response.json()
 
 
@@ -115,19 +123,19 @@ def items_of(found: list[dict[str, Any]], competition_name: str) -> list[Item]:
         venue = competition.get("venue") or {}
         city = (venue.get("address") or {}).get("city")
         location = ", ".join(filter(None, [venue.get("fullName"), city])) or None
-        finished = status == "STATUS_FULL_TIME"
+        finished = status in FINISHED
         score = _score(competition) if finished else None
         details = [competition_name]
         if score:
             details.append(score)
         if not timed:
-            details.append("hora por confirmar")
+            details.append(words.say("game.untimed"))
         if status == "STATUS_POSTPONED":
-            details.append("aplazado")
+            details.append(words.say("game.postponed"))
         if timed:
             first, last = start.isoformat(), (start + MATCH).isoformat()
         else:
-            day = start.astimezone(MADRID).date()
+            day = start.astimezone(preferences.current().zone).date()
             first, last = day.isoformat(), (day + timedelta(days=1)).isoformat()
         items.append(
             Item(
@@ -148,7 +156,7 @@ def items_of(found: list[dict[str, Any]], competition_name: str) -> list[Item]:
 async def fetch(client: httpx.AsyncClient, team: str, league: str) -> list[Item]:
     items: dict[str, Item] = {}
     for slug, name in competitions(league).items():
-        required = slug == league
+        required = slug == path_of(league)
         for query in ("", "?fixture=true"):
             found = await _get(client, f"/{slug}/teams/{team}/schedule{query}", required)
             for item in items_of(found.get("events") or [], name):
@@ -167,23 +175,27 @@ async def sync(client: httpx.AsyncClient, _secrets: dict[str, str], connection: 
 
 async def teams(client: httpx.AsyncClient, query: str) -> list[dict[str, str]]:
     needle = _fold(query)
-    found: list[dict[str, str]] = []
-    for slug, league in LEAGUES.items():
-        body = await _get(client, f"/{slug}/teams", required=False)
+
+    async def one_league(league: str, name: str) -> list[dict[str, str]]:
+        body = await _get(client, f"/{path_of(league)}/teams", required=False)
+        found = []
         for entry in ((body.get("sports") or [{}])[0].get("leagues") or [{}])[0].get("teams") or []:
             team = entry.get("team") or {}
-            name = team.get("displayName") or ""
-            if needle and needle in _fold(name):
+            label = team.get("displayName") or ""
+            if needle and needle in _fold(label):
                 found.append(
                     {
                         "code": str(team.get("id")),
-                        "name": name,
-                        "league": slug,
-                        "league_name": league,
-                        "detail": league,
+                        "name": label,
+                        "league": league,
+                        "league_name": name,
+                        "detail": name,
                     }
                 )
-    return found[:20]
+        return found
+
+    answers = await asyncio.gather(*(one_league(*pair) for pair in leagues().items()))
+    return [team for answer in answers for team in answer][:20]
 
 
 async def search_teams(
@@ -202,24 +214,24 @@ def _fold(text: str) -> str:
 SOURCES = (
     Provider(
         id="football",
-        name="Football",
+        name="Sport",
         category="calendar",
-        description="A team's matches, from ESPN: league, cup and Europe, with "
-        "the result of those played. Until a match's time is set it "
-        'shows as "time to be confirmed", and once set it moves to '
-        "its time. Subscribed from Planner.",
+        description="A team's games, from ESPN: football with its cup and Europe, basketball,"
+        " American football, baseball and ice hockey, with the result of those played."
+        ' Until a game\'s time is set it shows as "time to be confirmed", and once set it'
+        " moves to its time. Subscribed from Planner.",
         capabilities=("sync",),
         settings=(
             Setting("team", "Team", "Its ESPN number; Planner lets you choose it by name."),
-            Setting("league", "League", "Like esp.1 for LaLiga.", "esp.1"),
+            Setting("league", "League", "Like esp.1 for LaLiga or basketball/nba.", "esp.1"),
             Setting("team_name", "Name", "The team's name."),
         ),
         emits=("calendar.event", "calendar.feed"),
         available=True,
         schedule="20 */6 * * *",
         offer=Offer(
-            title="Football",
-            subtitle="The matches of the teams you choose: league, cup and Europe",
+            title="Sport",
+            subtitle="The games of the teams you choose, in any sport ESPN follows",
             tone=2,
             many=True,
             group="sport",
@@ -231,7 +243,7 @@ SOURCES = (
                     "Team",
                     source="teams",
                     carries=(("league", "league"), ("name", "team_name")),
-                    placeholder="Osasuna, Athletic, Arsenal…",
+                    placeholder="Osasuna, Arsenal, Lakers, Yankees…",
                     help="Any team. Until a match's time is set it shows as \"time"
                     ' to be confirmed".',
                 ),

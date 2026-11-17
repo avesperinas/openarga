@@ -132,7 +132,7 @@ test("una suscripción de calendario dice qué trae con sus parámetros", () => 
     "El calendario de example.org, cada día.",
   );
   expect(calendarLine({ provider: "football", settings: { team: "11", team_name: "Equipo de prueba" } })).toBe(
-    "Los partidos de Equipo de prueba: liga, copa y Europa, cada seis horas.",
+    "Los partidos de Equipo de prueba, cada seis horas.",
   );
   expect(calendarLine({ provider: "prices", settings: {} })).toBeNull();
 });
