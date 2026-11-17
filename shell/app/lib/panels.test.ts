@@ -8,9 +8,9 @@ const planner: Contributor = {
   panel: {
     area: "day",
     order: 10,
-    headlines: [{ text: "Dentista a las 17:00", priority: 40 }],
-    tabs: [{ id: "hoy", label: "Agenda", blocks: [{ type: "figure", label: "Ahora", value: "Libre" }] }],
-    questions: [{ text: "¿Qué tengo hoy?", words: ["agenda", "hoy", "citas"], tab: "hoy" }],
+    headlines: [{ text: "Dentist at 17:00", priority: 40 }],
+    tabs: [{ id: "today", label: "Agenda", blocks: [{ type: "figure", label: "Now", value: "Free" }] }],
+    questions: [{ text: "What do I have today?", words: ["agenda", "today", "appointments"], tab: "today" }],
   },
 };
 
@@ -20,15 +20,15 @@ const goals: Contributor = {
   panel: {
     area: "day",
     order: 20,
-    headlines: [{ text: "Tienes 2 tareas vencidas", tone: "warning", priority: 60 }],
+    headlines: [{ text: "You have 2 overdue tasks", tone: "warning", priority: 60 }],
     tabs: [
       {
-        id: "tareas",
-        label: "Tareas",
-        blocks: [{ type: "tasks", widget: "today", items: [], add: "Añadir" }],
+        id: "tasks",
+        label: "Tasks",
+        blocks: [{ type: "tasks", widget: "today", items: [], add: "Add" }],
       },
     ],
-    questions: [{ text: "¿Qué tengo que hacer?", words: ["tareas", "pendiente"], tab: "tareas" }],
+    questions: [{ text: "What do I have to do?", words: ["tasks", "pending"], tab: "tasks" }],
   },
 };
 
@@ -39,73 +39,73 @@ const study: Contributor = {
     area: "work",
     tabs: [
       {
-        id: "vacaciones",
-        label: "Vacaciones",
+        id: "holidays",
+        label: "Holidays",
         blocks: [
           { type: "rings", items: [] },
-          { type: "figure", label: "Vacaciones", value: "11 de 23 días" },
+          { type: "figure", label: "Holidays", value: "11 of 23 days" },
         ],
       },
     ],
-    questions: [{ text: "¿Cuántas vacaciones me quedan?", words: ["vacaciones", "dias libres"], tab: "vacaciones", block: 1 }],
+    questions: [{ text: "How many holidays do I have left?", words: ["holidays", "days off"], tab: "holidays", block: 1 }],
   },
 };
 
 describe("compose", () => {
-  it("junta las apps de un área: la frase más importante manda y las pestañas van en su orden", () => {
+  it("joins an area's apps: the most important sentence leads and tabs go in their order", () => {
     const day = compose([goals, planner])[0]!;
     expect(day.key).toBe("day");
     expect(day.apps).toBe("Planner · KPIs");
-    expect(day.headline?.text).toBe("Tienes 2 tareas vencidas");
+    expect(day.headline?.text).toBe("You have 2 overdue tasks");
     expect(toneOf(day)).toBe("warning");
-    expect(day.tabs.map((tab) => tab.id)).toEqual(["planner.hoy", "goals.tareas"]);
+    expect(day.tabs.map((tab) => tab.id)).toEqual(["planner.today", "goals.tasks"]);
   });
 
-  it("las casillas llevan su app delante, para que tachar vaya a la suya", () => {
+  it("checkboxes carry their app first, so ticking goes to the right one", () => {
     const block = compose([goals])[0]!.tabs[0]!.blocks[0]!;
     expect(block.type === "tasks" && block.widget).toBe("goals/today");
     expect(splitActing("goals/today")).toEqual({ source: "goals", widget: "today" });
   });
 
-  it("sigue el orden del dueño, esconde las que quitó y deja fuera las que no tienen nada", () => {
+  it("follows the owner's order, hides the removed ones and leaves out the empty ones", () => {
     expect(compose([planner, study], { order: ["work", "day"] }).map((area) => area.key)).toEqual(["work", "day"]);
     expect(compose([planner, study], { hidden: ["day"] }).map((area) => area.key)).toEqual(["work"]);
     expect(compose([]).length).toBe(0);
   });
 
-  it("el orden guardado se completa con el de siempre y olvida lo que no es un área", () => {
-    expect(orderOf(["mind", "nada", "day"])).toEqual(["mind", "day", "money", "health", "work", "home", "leisure"]);
+  it("the saved order is completed with the usual one and forgets what is not an area", () => {
+    expect(orderOf(["mind", "nothing", "day"])).toEqual(["mind", "day", "money", "health", "work", "home", "leisure"]);
   });
 });
 
 describe("ask", () => {
   const areas = compose([planner, goals, study]);
 
-  it("contesta sin tildes ni mayúsculas, con el bloque que responde", () => {
-    const first = ask(areas, "Vacaciónes")[0]!;
+  it("answers ignoring accents and case, with the block that answers", () => {
+    const first = ask(areas, "H\u00d3lidays")[0]!;
     expect(first.area).toBe("work");
-    expect(first.tab).toBe("study.vacaciones");
-    expect(first.block).toEqual({ type: "figure", label: "Vacaciones", value: "11 de 23 días" });
+    expect(first.tab).toBe("study.holidays");
+    expect(first.block).toEqual({ type: "figure", label: "Holidays", value: "11 of 23 days" });
   });
 
-  it("por el principio de una palabra, y con dos letras como mínimo", () => {
-    expect(ask(areas, "tare").map((answer) => answer.tab)).toEqual(["goals.tareas"]);
+  it("by the start of a word, and with at least two letters", () => {
+    expect(ask(areas, "task").map((answer) => answer.tab)).toEqual(["goals.tasks"]);
     expect(ask(areas, "t")).toEqual([]);
-    expect(ask(areas, "hipoteca")).toEqual([]);
+    expect(ask(areas, "mortgage")).toEqual([]);
   });
 
-  it("plain quita tildes y mayúsculas", () => {
-    expect(plain("  ¿Cuántas Vacaciones? ")).toBe("¿cuantas vacaciones?");
+  it("plain removes accents and case", () => {
+    expect(plain("  H\u00f3w Many Hol\u00cddays? ")).toBe("how many holidays?");
   });
 });
 
-describe("qué paneles tienes puestos", () => {
-  it("sin elegir, los de partida; con tu elección, los tuyos en tu orden", () => {
+describe("which panels you have placed", () => {
+  it("without a choice, the starting ones; with your choice, yours in your order", () => {
     expect(shownAreas()).toEqual(["day", "money", "health"]);
     expect(shownAreas({ order: ["work", "day"], hidden: ["money", "health", "home", "leisure", "mind"] })).toEqual(["work", "day"]);
   });
 
-  it("poner uno lo deja el último; quitarlo lo esconde; moverlo cambia su sitio entre los que ves", () => {
+  it("placing one puts it last; removing it hides it; moving it changes its place among those you see", () => {
     const added = showPanel(undefined, "work");
     expect(shownAreas(added)).toEqual(["day", "money", "health", "work"]);
     expect(shownAreas(hidePanel(added, "money"))).toEqual(["day", "health", "work"]);
@@ -120,8 +120,8 @@ describe("qué paneles tienes puestos", () => {
   });
 });
 
-describe("los paneles como widgets", () => {
-  it("cada área da dos: el panel entero, alto, y una pestaña suelta que se elige al ponerla", () => {
+describe("panels as widgets", () => {
+  it("each area gives two: the whole panel, tall, and a single tab chosen when placed", () => {
     const money = panelEntries().filter((entry) => entry.id.startsWith("money"));
     expect(money.map((entry) => [entry.id, entry.sizes[0], entry.option?.endpoint ?? null])).toEqual([
       ["money", "4x6", null],
@@ -129,10 +129,10 @@ describe("los paneles como widgets", () => {
     ]);
   });
 
-  it("de un widget se sabe su área, y de un escritorio, las áreas que hay que pedir", () => {
+  it("a widget knows its area, and a desktop, the areas to request", () => {
     expect(panelAreaOf({ source: "panel", widget: "work.tab" })).toBe("work");
     expect(panelAreaOf({ source: "money", widget: "money" })).toBeNull();
-    expect(panelAreaOf({ source: "panel", widget: "nada" })).toBeNull();
+    expect(panelAreaOf({ source: "panel", widget: "nothing" })).toBeNull();
     const pages = [
       { items: [{ source: "panel", widget: "day" }, { source: "vitals", widget: "weight" }] },
       { items: [{ source: "panel", widget: "day.tab" }, { source: "panel", widget: "work" }] },
@@ -141,29 +141,29 @@ describe("los paneles como widgets", () => {
   });
 });
 
-describe("la pasada de las páginas de panel a widgets", () => {
+describe("the move from panel pages to widgets", () => {
   const widgets = { id: "w", items: [{ instance_id: "a", source: "vitals", widget: "weight", size: "2x2" as const }] };
   let n = 0;
   const id = () => `id-${++n}`;
 
-  it("los paneles de antes pasan a pantallas con su panel entero, delante y en su orden", () => {
+  it("the old panels become pages with their whole panel, first and in their order", () => {
     const desk = withPanelPages({ pages: [widgets] }, ["day", "money"], id);
     expect(desk.pages.map((page) => page.id)).toEqual(["panel-day", "panel-money", "w"]);
     expect(desk.pages[0]!.items[0]).toMatchObject({ source: "panel", widget: "day", size: "4x6" });
   });
 
-  it("si ya hay algún panel puesto, no toca nada", () => {
+  it("if a panel is already placed, it touches nothing", () => {
     const placed = { pages: [{ id: "x", items: [{ instance_id: "p", source: "panel", widget: "work", size: "4x6" as const }] }] };
     expect(withPanelPages(placed, ["day"], id)).toBe(placed);
   });
 });
 
-describe("en el ordenador, varios paneles juntos", () => {
+describe("on the computer, several panels together", () => {
   const panel = (area: string, id = area) => ({ instance_id: id, source: "panel", widget: area, size: "4x6" as const });
   const single = (area: string) => ({ id: `panel-${area}`, items: [panel(area)] });
   const widgets = { id: "w", items: [{ instance_id: "a", source: "vitals", widget: "weight", size: "2x2" as const }] };
 
-  it("la pasada en el ordenador pone tres paneles por pantalla", () => {
+  it("the move on the computer puts three panels per page", () => {
     let n = 0;
     const desk = withPanelPages({ pages: [widgets] }, ["day", "money", "health", "work"], () => `i${++n}`, 3);
     expect(desk.pages.map((page) => [page.id, page.items.map((item) => item.widget)])).toEqual([
@@ -173,7 +173,7 @@ describe("en el ordenador, varios paneles juntos", () => {
     ]);
   });
 
-  it("las pantallas de un solo panel que dejó la pasada se juntan de tres en tres, y nada más", () => {
+  it("the one-panel pages the move left are joined three at a time, and nothing else", () => {
     const before = { pages: [single("day"), single("money"), single("health"), single("work"), widgets] };
     const after = groupPanelPages(before);
     expect(after.pages.map((page) => [page.id, page.items.map((item) => item.widget)])).toEqual([
@@ -183,7 +183,7 @@ describe("en el ordenador, varios paneles juntos", () => {
     expect(groupPanelPages(after)).toBe(after);
   });
 
-  it("lo que tocaste tú no se mueve: una pantalla con widgets o con otro nombre corta el grupo", () => {
+  it("what you touched does not move: a page with widgets or another name breaks the group", () => {
     const touched = { id: "panel-money", items: [panel("money"), { instance_id: "x", source: "money", widget: "cash", size: "2x2" as const }] };
     const mine = { id: "1b2c", items: [panel("work")] };
     const desk = { pages: [single("day"), touched, mine, single("health")] };
@@ -191,8 +191,8 @@ describe("en el ordenador, varios paneles juntos", () => {
   });
 });
 
-describe("lo que no cabe junto al último panel", () => {
-  it("si los widgets de después no caben en el hueco, se quedan en su pantalla", () => {
+describe("what does not fit next to the last panel", () => {
+  it("if the following widgets do not fit in the gap, they stay on their page", () => {
     const many = { id: "w", items: Array.from({ length: 4 }, (_, i) => ({ instance_id: `k${i}`, source: "vitals", widget: `w${i}`, size: "4x4" as const })) };
     const single = (area: string) => ({ id: `panel-${area}`, items: [{ instance_id: area, source: "panel", widget: area, size: "4x6" as const }] });
     const after = groupPanelPages({ pages: [single("day"), single("money"), many] });

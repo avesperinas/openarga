@@ -14,19 +14,19 @@ const { GET } = await import("./route");
 const ask = (keys: string[]) =>
   GET(new Request(`http://shell/envelopes?${keys.map((key) => `w=${encodeURIComponent(key)}`).join("&")}`));
 
-describe("los sobres en lote (T-V07)", () => {
+describe("batched envelopes (T-V07)", () => {
   beforeEach(() => {
     asked.length = 0;
   });
 
-  it("una clave repetida se pide una vez", async () => {
+  it("a repeated key is requested once", async () => {
     const body = await (await ask(Array.from({ length: 64 }, () => "vitals/steps"))).json();
 
     expect(asked).toEqual(["/api/vitals/widgets/steps"]);
     expect(Object.keys(body)).toEqual(["vitals/steps"]);
   });
 
-  it("lo que no es del catálogo no se traduce a ninguna dirección", async () => {
+  it("what is not in the catalogue is not turned into any address", async () => {
     const body = await (await ask(["vitals/nope", "../../admin", "vitals/steps?a b"])).json();
 
     expect(body).toEqual({ "vitals/nope": null, "../../admin": null, "vitals/steps?a b": expect.any(Object) });

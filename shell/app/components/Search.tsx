@@ -5,6 +5,7 @@ import * as React from "react";
 
 import type { ModuleSummary } from "../lib/kernel";
 import { type FoundIn, appMatches, searchApps } from "../lib/search";
+import { say } from "../words";
 
 const PAUSE_MS = 200;
 
@@ -15,7 +16,7 @@ export function searchGroups(modules: ModuleSummary[], query: string, found: Fou
   const apps = appMatches(modules, query).map((module) => ({
     key: `app:${module.id}`,
     label: module.name,
-    detail: "Abrir",
+    detail: say("search.open"),
     icon: "modules" as const,
     run: go(module.view ?? module.api_prefix),
   }));
@@ -62,12 +63,12 @@ export function SearchPalette({ modules, onClose }: { modules: ModuleSummary[]; 
   const found = useFound(query);
   return (
     <CommandPalette
-      label="Buscar en arga"
-      placeholder="Buscar en arga"
+      label={say("search.label")}
+      placeholder={say("search.label")}
       query={query}
       onQuery={setQuery}
       groups={searchGroups(modules, query, found)}
-      empty={query.trim() ? "Nada con eso." : "Escribe el nombre de una app o lo que buscas."}
+      empty={query.trim() ? say("search.none") : say("search.hint")}
       onClose={onClose}
     />
   );
@@ -79,8 +80,8 @@ export function SearchField({ onOpen }: { onOpen: () => void }) {
       type="button"
       className="launcher-search"
       onClick={onOpen}
-      aria-label="Buscar en arga"
-      title="Buscar en arga (⌘K)"
+      aria-label={say("search.label")}
+      title={say("search.shortcut")}
     >
       <Icon name="search" />
     </button>

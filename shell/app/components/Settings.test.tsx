@@ -6,18 +6,18 @@ import { AppNames, CLAUDE_CLIENT_ID, ConnectClaude, IconStyles, Versions } from 
 import { PlatformVersion } from "./Version";
 
 describe("conectar Claude", () => {
-  it("da lo que hay que pegar en Claude, y dice que no hace falta secreto", () => {
+  it("gives what to paste into Claude, and says no secret is needed", () => {
     const html = renderToStaticMarkup(
       <ConnectClaude origin="https://arga.example" />,
     );
 
     expect(html).toContain('value="https://arga.example/mcp"');
     expect(html).toContain(`value="${CLAUDE_CLIENT_ID}"`);
-    expect(html).toContain("deja el secreto");
-    expect(html).toContain("vacío");
+    expect(html).toContain("leave the secret");
+    expect(html).toContain("empty");
   });
 
-  it("lleva a la consola de cuenta del realm, donde se ven y se revocan los accesos", () => {
+  it("links to the realm's account console, where access is seen and revoked", () => {
     const html = renderToStaticMarkup(
       <ConnectClaude origin="https://arga.example" />,
     );
@@ -25,7 +25,7 @@ describe("conectar Claude", () => {
     expect(html).toContain('href="/auth/realms/arga/account"');
   });
 
-  it("el cliente es el del realm, y el realm lo declara público", async () => {
+  it("the client is the realm's, and the realm declares it public", async () => {
     const realm = await import("../../../auth/realm.json");
     const claude = realm.clients.find(
       (client: { clientId: string }) => client.clientId === CLAUDE_CLIENT_ID,
@@ -36,7 +36,7 @@ describe("conectar Claude", () => {
 });
 
 describe("versiones", () => {
-  it("lista la de arga y la de cada app por separado", () => {
+  it("lists arga's and each app's separately", () => {
     const html = renderToStaticMarkup(
       <Versions
         platform="v0.42.0"
@@ -55,8 +55,8 @@ describe("versiones", () => {
   });
 });
 
-describe("la versión de arga en el escritorio", () => {
-  it("se pinta discreta, con su nombre y su número", () => {
+describe("arga's version on the desktop", () => {
+  it("renders discreetly, with its name and number", () => {
     const html = renderToStaticMarkup(<PlatformVersion version="v0.42.0" />);
 
     expect(html).toContain("arga");
@@ -64,18 +64,18 @@ describe("la versión de arga en el escritorio", () => {
     expect(html).toContain("desktop-version");
   });
 
-  it("sin versión todavía, no deja un hueco", () => {
+  it("with no version yet, it leaves no gap", () => {
     expect(renderToStaticMarkup(<PlatformVersion version="" />)).toBe("");
   });
 });
 
-describe("los nombres de las apps", () => {
+describe("app names", () => {
   const modules = [
     { id: "planner", name: "Planner", version: "1", enabled: true, api_prefix: "/api/planner", scopes: [], updated_at: "2026-09-30T00:00:00Z" },
     { id: "vitals", name: "Vitals", version: "1", enabled: true, api_prefix: "/api/vitals", scopes: [], updated_at: "2026-09-30T00:00:00Z" },
   ];
 
-  it("con un juego elegido enseña cómo queda cada una", () => {
+  it("with a set chosen it shows how each one looks", () => {
     const html = renderToStaticMarkup(
       <AppNames preferences={{ app_names: "greek" }} onChange={() => {}} modules={modules} />,
     );
@@ -84,7 +84,7 @@ describe("los nombres de las apps", () => {
     expect(html).not.toContain("<input");
   });
 
-  it("con los tuyos, un campo por app con lo que hayas escrito", () => {
+  it("with your own, one field per app with what you wrote", () => {
     const html = renderToStaticMarkup(
       <AppNames
         preferences={{ app_names: "custom", custom_app_names: { planner: "Agenda" } }}
@@ -98,18 +98,18 @@ describe("los nombres de las apps", () => {
   });
 });
 
-describe("el acabado de los iconos", () => {
-  it("ofrece los tres con tus apps de muestra, y marca el elegido (ADR-0170)", () => {
+describe("icon finish", () => {
+  it("offers the three with your sample apps, and marks the chosen one (ADR-0170)", () => {
     const app = (id: string) => ({ id, name: id, view: `/${id}`, updated_at: "2026-11-01T10:00:00Z" }) as never;
     const html = renderToStaticMarkup(
       <IconStyles preferences={{ icon_style: "ink" }} onChange={() => undefined} modules={[app("planner"), app("training"), app("insights")]} />,
     );
 
-    expect(html).toContain("Color");
-    expect(html).toContain("Tinta");
-    expect(html).toContain("Papel");
+    expect(html).toContain("Colour");
+    expect(html).toContain("Ink");
+    expect(html).toContain("Paper");
     expect(html).toContain('src="/planner/icon-paper.svg?v=');
-    expect(html).toMatch(/aria-checked="true"[^>]*>(<[^>]+>)*.*Tinta/);
+    expect(html).toMatch(/aria-checked="true"[^>]*>(<[^>]+>)*.*Ink/);
   });
 });
 

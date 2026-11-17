@@ -17,7 +17,7 @@ vi.mock("../lib/kernel", () => ({
 
 const { GET } = await import("./route");
 
-it("pide los puntos de los módulos habilitados que los declaran, y calla los que no contestan", async () => {
+it("asks for the dots of the enabled modules that declare them, and silences those that do not answer", async () => {
   expect(await (await GET()).json()).toEqual({ insights: 3 });
   expect(asked).toEqual(["/api/insights/badge", "/api/callada/badge"]);
 });

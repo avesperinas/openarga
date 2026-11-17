@@ -19,38 +19,38 @@ const app = (id: string, name: string): ModuleSummary => ({
 
 const installed = [app("training", "Training"), app("notebook", "Notas"), app("money", "Money"), app("macros", "Macros")];
 
-describe("la búsqueda global", () => {
-  it("encuentra las apps por su nombre, sin tildes, primero las que empiezan así", () => {
+describe("global search", () => {
+  it("finds apps by name, ignoring accents, those that start that way first", () => {
     expect(appMatches(installed, "training").map((m) => m.id)).toEqual(["training"]);
     expect(appMatches(installed, "os").map((m) => m.id)).toEqual(["macros"]);
     expect(appMatches(installed, "on").map((m) => m.id)).toEqual(["money"]);
     expect(appMatches(installed, "  ")).toEqual([]);
   });
 
-  it("funciona sin ninguna app que declare `ui.search`: solo las apps por nombre", () => {
+  it("works with no app declaring `ui.search`: only the apps by name", () => {
     const groups = searchGroups(installed, "notas", []);
 
     expect(groups.map((g) => [g.label, g.items.map((i) => i.label)])).toEqual([["Apps", ["Notas"]]]);
   });
 
-  it("lo de cada app sale con el nombre que le has puesto", () => {
+  it("each app's results show with the name you gave it", () => {
     const groups = searchGroups(installed, "proteina", [
-      { app: "notebook", name: "Notebook", results: [{ title: "Proteína", detail: "Nutrición", href: "/notebook/n/1" }] },
+      { app: "notebook", name: "Notebook", results: [{ title: "Protein", detail: "Nutrition", href: "/notebook/n/1" }] },
     ]);
 
     expect(groups.map((g) => g.label)).toEqual(["Apps", "Notas"]);
-    expect(groups[1]?.items[0]).toMatchObject({ label: "Proteína", detail: "Nutrición" });
+    expect(groups[1]?.items[0]).toMatchObject({ label: "Protein", detail: "Nutrition" });
   });
 
-  it("de lo que contesta una app solo se fía de lo que tiene forma y lleva dentro de arga", () => {
+  it("of what an app answers it trusts only what is well formed and stays inside arga", () => {
     const found = readFound({
       results: [
         { title: "Bien", href: "/notebook/n/1", detail: "Carpeta" },
         { title: "Fuera", href: "https://otro.ejemplo.com/" },
         { title: "Protocolo", href: "//otro.ejemplo.com/" },
         { title: "Script", href: "javascript:alert(1)" },
-        { title: "", href: "/sin-titulo" },
-        { href: "/sin-nada" },
+        { title: "", href: "/untitled" },
+        { href: "/nothing" },
         "basura",
       ],
     });
@@ -60,15 +60,15 @@ describe("la búsqueda global", () => {
     expect(readFound({ results: "no" })).toEqual([]);
   });
 
-  it("no enseña más de ocho por app", () => {
+  it("shows no more than eight per app", () => {
     const many = Array.from({ length: 20 }, (_, n) => ({ title: `N${n}`, href: `/notebook/${n}` }));
     expect(readFound({ results: many })).toHaveLength(8);
   });
 
-  it("la lupa de Módulos es solo el icono, y se llama como lo que hace", () => {
+  it("the Modules search glass is only the icon, and is named for what it does", () => {
     const html = renderToStaticMarkup(<SearchField onOpen={() => undefined} />);
-    expect(html).toContain('aria-label="Buscar en arga"');
+    expect(html).toContain('aria-label="Search arga"');
     expect(html).toContain("<button");
-    expect(html).not.toMatch(/>Buscar en arga</);
+    expect(html).not.toMatch(/>Search arga</);
   });
 });

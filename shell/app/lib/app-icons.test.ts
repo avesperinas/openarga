@@ -5,8 +5,8 @@ import type { ModuleSummary } from "./kernel";
 
 const vitals = { id: "vitals", name: "Vitals", view: "/vitals", updated_at: "2026-11-01T10:00:00Z" } as ModuleSummary;
 
-describe("los iconos de las apps", () => {
-  it("la firma de cada tarjeta va en el acabado elegido (ADR-0170)", () => {
+describe("app icons", () => {
+  it("each card's signature uses the chosen finish (ADR-0170)", () => {
     const at = Date.parse(vitals.updated_at);
     expect(appIconOf(vitals)).toBe(`/vitals/icon.svg?v=${at}`);
     expect(appIcons([vitals], "paper")).toEqual({ vitals: `/vitals/icon-paper.svg?v=${at}` });

@@ -8,7 +8,7 @@ import { WidgetCard } from "./WidgetCard";
 const NEXT: CatalogueEntry = {
   source: "training",
   id: "next",
-  title: "Siguiente sesión",
+  title: "Next session",
   hue: 1,
   kind: "kpi",
   shape: "number",
@@ -19,7 +19,7 @@ const NEXT: CatalogueEntry = {
 };
 
 const item: LayoutItem = {
-  instance_id: "una",
+  instance_id: "one",
   source: "training",
   widget: "next",
   x: 0,
@@ -32,14 +32,14 @@ const render = (body: EnvelopeBody) => {
   return renderToStaticMarkup(<WidgetCard item={item} entry={NEXT} envelope={envelope} />);
 };
 
-describe("el símbolo de la tarjeta", () => {
-  it("sale del tono que manda el módulo, que es el del entreno que toca", () => {
+describe("the card's symbol", () => {
+  it("comes from the tone the module sends, the one of the workout due", () => {
     expect(render({ value: "Pull", icon: "pull", icon_hue: 2 })).toContain(
       'class="icon-badge" data-hue="2"',
     );
   });
 
-  it("sin tono propio, el de la tarjeta", () => {
+  it("without its own tone, the card's", () => {
     expect(render({ value: "Pull", icon: "pull" })).toContain('class="icon-badge" data-hue="1"');
   });
 });

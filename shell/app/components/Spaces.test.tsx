@@ -9,9 +9,9 @@ const ANA = "0a0a0a0a-0000-4000-8000-00000000000a";
 const LUIS = "0b0b0b0b-0000-4000-8000-00000000000b";
 const EVA = "0e0e0e0e-0000-4000-8000-00000000000e";
 
-const casa: Space = {
+const home: Space = {
   id: "0c0c0c0c-0000-4000-8000-00000000c0c0",
-  name: "Casa",
+  name: "Home",
   role: "owner",
   me: ANA,
   members: [
@@ -21,53 +21,53 @@ const casa: Space = {
   ],
 };
 
-describe("quién está en un espacio", () => {
-  it("tú eres Tú aunque tengas nombre, y quien no lo puso sale sin nombre", () => {
-    expect(casa.members.map((member) => memberLabel(casa, member))).toEqual(["Tú", "Luis", "Sin nombre"]);
+describe("who is in a space", () => {
+  it("you are You even with a name, and whoever set none shows as unnamed", () => {
+    expect(home.members.map((member) => memberLabel(home, member))).toEqual(["You", "Luis", "No name"]);
   });
 
-  it("se dice en una línea, contigo primero", () => {
-    expect(membersLine(casa)).toBe("Tú, Luis y Sin nombre");
-    expect(membersLine({ ...casa, members: casa.members.slice(0, 2) })).toBe("Tú y Luis");
-    expect(membersLine({ ...casa, members: casa.members.slice(0, 1) })).toBe("Solo tú, de momento");
+  it("it reads as one line, you first", () => {
+    expect(membersLine(home)).toBe("You, Luis and No name");
+    expect(membersLine({ ...home, members: home.members.slice(0, 2) })).toBe("You and Luis");
+    expect(membersLine({ ...home, members: home.members.slice(0, 1) })).toBe("Only you, for now");
   });
 
-  it("tu nombre es el que pusiste en ese espacio", () => {
-    expect(myName(casa)).toBe("Ana");
-    expect(myName({ ...casa, me: EVA })).toBe("");
+  it("your name is the one you set in that space", () => {
+    expect(myName(home)).toBe("Ana");
+    expect(myName({ ...home, me: EVA })).toBe("");
   });
 });
 
-describe("un código", () => {
-  it("vale con guiones, espacios o minúsculas, y no con menos de doce", () => {
+describe("a code", () => {
+  it("works with dashes, spaces or lowercase, and not with fewer than twelve", () => {
     expect(looksLikeCode("abcd efgh jkmn")).toBe(true);
     expect(looksLikeCode("ABCD-EFGH-JKMN")).toBe(true);
     expect(looksLikeCode("ABCD-EFGH")).toBe(false);
   });
 });
 
-describe("los espacios en Ajustes", () => {
-  it("lista cada espacio con quién está, y deja crear uno o entrar con un código", () => {
-    const html = renderToStaticMarkup(<SpacesView spaces={[casa]} />);
+describe("spaces in Settings", () => {
+  it("lists each space with who is in it, and lets you create one or join with a code", () => {
+    const html = renderToStaticMarkup(<SpacesView spaces={[home]} />);
 
-    expect(html).toContain("Espacios");
-    expect(html).toContain("Casa");
-    expect(html).toContain("Tú, Luis y Sin nombre");
-    expect(html).toContain("Nuevo espacio");
-    expect(html).toContain("Tengo un código");
+    expect(html).toContain("Spaces");
+    expect(html).toContain("Home");
+    expect(html).toContain("You, Luis and No name");
+    expect(html).toContain("New space");
+    expect(html).toContain("I have a code");
   });
 
-  it("sin espacios, dice qué es uno y cómo se entra", () => {
+  it("without spaces, it says what one is and how to join", () => {
     const html = renderToStaticMarkup(<SpacesView spaces={[]} />);
 
-    expect(html).toContain("nadie puede encontrarte");
+    expect(html).toContain("nobody can find you");
     expect(html).not.toContain('class="list"');
   });
 
-  it("si el kernel no contesta, lo dice en vez de enseñar que no tienes ninguno", () => {
+  it("if the kernel does not answer, it says so instead of showing you have none", () => {
     const html = renderToStaticMarkup(<SpacesView spaces={null} failed onRetry={() => {}} />);
 
-    expect(html).toContain("No se han podido traer tus espacios");
-    expect(html).toContain("Reintentar");
+    expect(html).toContain("Your spaces could not be loaded");
+    expect(html).toContain("Try again");
   });
 });

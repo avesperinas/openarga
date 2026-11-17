@@ -15,10 +15,10 @@ const money: Contributor = {
   name: "Money",
   panel: {
     area: "money",
-    headlines: [{ text: "Llegas a fin de mes con 420 € de margen", emphasis: "420 €", tone: "positive", status: "+420 €" }],
+    headlines: [{ text: "You reach the end of the month with 420 € to spare", emphasis: "420 €", tone: "positive", status: "+420 €" }],
     tabs: [
       { id: "resumen", label: "Resumen", blocks: [{ type: "figure", label: "Patrimonio", value: "48.200 €" }] },
-      { id: "gasto", label: "Gasto", blocks: [{ type: "figure", label: "Este mes", value: "1.240 €" }] },
+      { id: "spending", label: "Spending", blocks: [{ type: "figure", label: "This month", value: "1.240 €" }] },
     ],
   },
 };
@@ -52,21 +52,21 @@ const stream = (element: React.ReactElement, arrive: () => void) =>
     });
   });
 
-describe("los paneles como páginas", () => {
-  it("un panel es un widget más: comparte pantalla con los otros y da nombre a su pestaña", async () => {
+describe("panels as pages", () => {
+  it("a panel is one more widget: it shares a page with the others and names its tab", async () => {
     let arrive!: (found: Contributor[]) => void;
     const pending = new Promise<Contributor[]>((resolve) => (arrive = resolve));
     const mixed: DesktopLayout = {
       ...layout,
       pages: [
         {
-          id: "dinero",
+          id: "money",
           items: [
             { instance_id: "p", source: "panel", widget: "money", size: "4x6" },
-            { instance_id: "t", source: "panel", widget: "money.tab", size: "2x2", option: "money.gasto" },
+            { instance_id: "t", source: "panel", widget: "money.tab", size: "2x2", option: "money.spending" },
           ],
         },
-        { id: "otra", items: [] },
+        { id: "other", items: [] },
       ],
     };
     const { first, all } = await stream(
@@ -76,15 +76,15 @@ describe("los paneles como páginas", () => {
       () => arrive([money]),
     );
     const tabs = [...first.matchAll(/class="page-tab"[^>]*>(?:<span[^>]*>.*?<\/span>)?([^<]+)<\/button>/g)].map((match) => match[1]);
-    expect(tabs).toEqual(["Dinero", "Widgets"]);
+    expect(tabs).toEqual(["Money", "Widgets"]);
     expect(first).toContain('aria-busy="true"');
     expect(first).not.toContain("420 €");
-    expect(all).toContain("Llegas a fin de mes con");
+    expect(all).toContain("You reach the end of the month with");
     expect(all).toContain("1.240 €");
     expect((all.match(/data-single=""/g) ?? []).length).toBe(1);
   });
 
-  it("en el móvil, una pestaña cada vez; en el ordenador, todas a la vez en columnas", async () => {
+  it("on the phone, one tab at a time; on the computer, all at once in columns", async () => {
     const ready = Promise.resolve([money]);
     const mobile = await stream(<PanelPage area="money" initial={ready} board={false} />, () => {});
     const desktop = await stream(<PanelPage area="money" initial={ready} board />, () => {});
@@ -96,31 +96,31 @@ describe("los paneles como páginas", () => {
     expect(desktop.all).toContain("1.240 €");
   });
 
-  it("en edición, cada página de panel se mueve y se quita", () => {
+  it("while editing, each panel page moves and is removed", () => {
     const html = renderToStaticMarkup(<PanelPage area="health" board={false} editing first />);
-    expect(html).toContain("Quitar el panel de Salud");
-    expect(html).toMatch(/disabled=""[^>]*aria-label="Mover Salud a la izquierda"/);
+    expect(html).toContain("Remove the Health panel");
+    expect(html).toMatch(/disabled=""[^>]*aria-label="Move Health to the left"/);
   });
 
-  it("la pregunta sale arriba sin pedir nada al abrir", () => {
+  it("the question shows at the top without requesting anything on open", () => {
     const html = renderToStaticMarkup(
       <HomeProvider>
         <Ask />
       </HomeProvider>,
     );
-    expect(html).toContain('aria-label="Pregunta a tus apps"');
+    expect(html).toContain('aria-label="Ask your apps"');
   });
 });
 
-describe("ajustes del inicio", () => {
-  it("las siete áreas en el orden guardado; sin elegir, encendidas solo las de partida", () => {
+describe("home settings", () => {
+  it("the seven areas in the saved order; without a choice, only the starting ones on", () => {
     const chosen = renderToStaticMarkup(
       <HomePanelsSettings
         preferences={{ theme: "system", wallpaper: "", glass_opacity: 1, home_panels: { order: ["money"], hidden: ["mind"] } }}
         onChange={() => {}}
       />,
     );
-    expect(chosen.indexOf("Dinero")).toBeLessThan(chosen.indexOf("Día"));
+    expect(chosen.indexOf("Money")).toBeLessThan(chosen.indexOf("Day"));
     expect((chosen.match(/role="switch"/g) ?? []).length).toBe(7);
     expect((chosen.match(/aria-checked="true"/g) ?? []).length).toBe(6);
 

@@ -4,6 +4,7 @@ import { Icon, PageTabs, type PageTab } from "@openarga/ui";
 import * as React from "react";
 
 import { keyDirection, type PageSpan, positionOf, trackHeight, wheelPager } from "../lib/paging";
+import { say } from "../words";
 
 const SCROLL_QUIET_MS = 120;
 
@@ -242,7 +243,7 @@ export function Pages({
             style={
               grouped ? ({ "--used": spans![index]!.used, "--group": spans![index]!.group } as React.CSSProperties) : undefined
             }
-            aria-label={`Pantalla ${index + 1}`}
+            aria-label={say("pages.page", { n: index + 1 })}
           >
             {page}
           </section>
@@ -255,7 +256,7 @@ export function Pages({
             type="button"
             className="glass pages-arrow"
             data-side="previous"
-            aria-label="Pantalla anterior"
+            aria-label={say("pages.previous")}
             disabled={starts[current] === 0}
             onClick={() => stepBy(-1)}
           >
@@ -265,7 +266,7 @@ export function Pages({
             type="button"
             className="glass pages-arrow"
             data-side="next"
-            aria-label="Pantalla siguiente"
+            aria-label={say("pages.next")}
             disabled={starts[current] === starts[count - 1]}
             onClick={() => stepBy(1)}
           >
@@ -274,7 +275,7 @@ export function Pages({
 
           <nav
             className="pages-dots"
-            aria-label="Pantallas"
+            aria-label={say("pages.all")}
             data-scrubbing={scrubbing || undefined}
             onPointerDown={onScrubStart}
             onPointerMove={onScrubMove}
@@ -287,7 +288,7 @@ export function Pages({
                 type="button"
                 className="pages-dot"
                 data-active={starts[index] === starts[current] || undefined}
-                aria-label={`Ir a la pantalla ${index + 1}`}
+                aria-label={say("pages.go", { n: index + 1 })}
                 aria-current={index === current}
                 onClick={() => goTo(index)}
               />

@@ -10,7 +10,7 @@ import { Dashboard } from "./Dashboard";
 const NEXT: CatalogueEntry = {
   source: "training",
   id: "next",
-  title: "Siguiente sesión",
+  title: "Next session",
   hue: 1,
   kind: "kpi",
   shape: "number",
@@ -27,7 +27,7 @@ const layout: DesktopLayout = {
   pages: [
     {
       id: "pantalla",
-      items: [{ instance_id: "una", source: "training", widget: "next", size: "2x2" }],
+      items: [{ instance_id: "one", source: "training", widget: "next", size: "2x2" }],
     },
   ],
 };
@@ -48,25 +48,25 @@ const render = (entry: CatalogueEntry) =>
     />,
   );
 
-describe("la tarjeta que abre su app", () => {
-  it("lleva el enlace en el HTML del servidor, no en un manejador de click", () => {
+describe("the card that opens its app", () => {
+  it("carries the link in the server HTML, not in a click handler", () => {
     const html = render(NEXT);
 
     expect(html).toContain('href="/training/siguiente"');
     expect(html).toContain('class="grid-open"');
   });
 
-  it("dice a dónde lleva, porque el enlace en sí está vacío", () => {
-    expect(render(NEXT)).toContain('aria-label="Abrir Siguiente sesión"');
+  it("says where it leads, because the link itself is empty", () => {
+    expect(render(NEXT)).toContain('aria-label="Open Next session"');
   });
 
-  it("un widget que no lleva a ningún sitio no pinta enlace", () => {
+  it("a widget that leads nowhere renders no link", () => {
     expect(render({ ...NEXT, link: null })).not.toContain("grid-open");
   });
 });
 
-describe("un escritorio para el móvil y otro para el ordenador", () => {
-  const LAST: CatalogueEntry = { ...NEXT, id: "last", title: "Última sesión", link: null };
+describe("one desktop for the phone and another for the computer", () => {
+  const LAST: CatalogueEntry = { ...NEXT, id: "last", title: "Last session", link: null };
   const phone: DesktopLayout = {
     ...layout,
     pages: [{ id: "m", items: [{ instance_id: "m1", source: "training", widget: "next", size: "2x2" }] }],
@@ -85,7 +85,7 @@ describe("un escritorio para el móvil y otro para el ordenador", () => {
       />,
     );
 
-  it("el servidor pinta el del dispositivo que adivina, y solo ese", () => {
+  it("the server renders the one of the device it guesses, and only that one", () => {
     expect(on("mobile")).toContain('data-instance="m1"');
     expect(on("mobile")).not.toContain('data-instance="d1"');
     expect(on("desktop")).toContain('data-instance="d1"');
@@ -93,7 +93,7 @@ describe("un escritorio para el móvil y otro para el ordenador", () => {
   });
 });
 
-describe("dentro de un dispositivo, cada ancho con su sitio", () => {
+describe("within a device, each width with its place", () => {
   const dos: DesktopLayout = {
     ...layout,
     pages: [
@@ -108,7 +108,7 @@ describe("dentro de un dispositivo, cada ancho con su sitio", () => {
     placements: { desktop: { pantalla: { b: [8, 0] } } },
   };
 
-  it("cada tarjeta sale del servidor con su sitio en los tres formatos", () => {
+  it("each card leaves the server with its place in the three formats", () => {
     const html = renderToStaticMarkup(
       <Dashboard
         desks={{ mobile: dos, desktop: dos }}
@@ -124,7 +124,7 @@ describe("dentro de un dispositivo, cada ancho con su sitio", () => {
   });
 });
 
-describe("la portada no espera a ningún widget (T-V06)", () => {
+describe("the home page waits for no widget (T-V06)", () => {
   const stream = (element: React.ReactElement, arrive: () => void) =>
     new Promise<{ first: string; all: string }>((resolve, reject) => {
       let html = "";
@@ -152,7 +152,7 @@ describe("la portada no espera a ningún widget (T-V06)", () => {
       });
     });
 
-  it("manda la página con la tarjeta en su esqueleto y la completa cuando llega su sobre", async () => {
+  it("sends the page with the card as a skeleton and completes it when its envelope arrives", async () => {
     let arrive!: (envelope: Envelope) => void;
     const slow = new Promise<Envelope | null>((resolve) => (arrive = resolve));
 
