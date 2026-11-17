@@ -18,6 +18,7 @@ import {
   support,
   testSaid,
 } from "../lib/notifications";
+import { say } from "../words";
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => {
   const value = `${String(hour).padStart(2, "0")}:00`;
@@ -50,7 +51,7 @@ export function Notifications() {
       if (done) setSaid(typeof done === "string" ? done : done(result));
       await reload();
     } catch (error) {
-      setProblem(error instanceof NotificationError ? error.message : "No se ha podido hacer.");
+      setProblem(error instanceof NotificationError ? error.message : say("spaces.error"));
     } finally {
       setBusy(false);
     }
@@ -58,8 +59,8 @@ export function Notifications() {
 
   if (!settings) {
     return (
-      <Section title="Avisos">
-        <Hint>{problem ?? "Cargando…"}</Hint>
+      <Section title={say("notifications.title")}>
+        <Hint>{problem ?? say("notifications.loading")}</Hint>
       </Section>
     );
   }
@@ -69,31 +70,28 @@ export function Notifications() {
   const quietTo = settings.quiet_to?.slice(0, 5) ?? "08:00";
 
   return (
-    <Section title="Avisos">
-      {!settings.configured && <Hint tone="warning">Los avisos aún no están configurados en el servidor.</Hint>}
+    <Section title={say("notifications.title")}>
+      {!settings.configured && <Hint tone="warning">{say("notifications.unconfigured")}</Hint>}
       {problem && <Notice tone="warning">{problem}</Notice>}
       {!!settings.late && (
         <Notice tone="warning">
-          {settings.late === 1 ? "Hay un aviso" : `Hay ${settings.late} avisos`} sin salir desde hace más de una hora.
+          {settings.late === 1 ? say("notifications.late.one") : say("notifications.late", { n: settings.late })}
         </Notice>
       )}
       {said && <Hint>{said}</Hint>}
 
       {here === "install" && (
-        <Hint>
-          En el iPhone los avisos solo llegan con arga instalada: en Safari, Compartir → Añadir a pantalla de inicio,
-          y vuelve aquí desde el icono.
-        </Hint>
+        <Hint>{say("notifications.install")}</Hint>
       )}
-      {here === "none" && <Hint>Este navegador no recibe avisos.</Hint>}
+      {here === "none" && <Hint>{say("notifications.unsupported")}</Hint>}
       {settings.configured && settings.public_key && here === "ready" && (
         <div className="settings-fields">
           <Button
             variant="tinted"
             disabled={busy}
-            onClick={() => run(() => enableHere(settings.public_key as string), "Activados en este dispositivo.")}
+            onClick={() => run(() => enableHere(settings.public_key as string), say("notifications.enabled"))}
           >
-            Activar en este dispositivo
+            {say("notifications.enable")}
           </Button>
         </div>
       )}
@@ -113,7 +111,7 @@ export function Notifications() {
           </List>
           <div className="settings-fields">
             <Button disabled={busy || !settings.configured} onClick={() => run(sendTest, testSaid)}>
-              Probar
+              {say("notifications.test")}
             </Button>
           </div>
         </>
@@ -138,20 +136,20 @@ export function Notifications() {
 
       <div className="settings-fields">
         <SelectField
-          label="Silencio desde"
-          options={[{ value: NONE, label: "Sin silencio" }, ...HOURS]}
+          label={say("notifications.quiet.from")}
+          options={[{ value: NONE, label: say("notifications.quiet.none") }, ...HOURS]}
           value={quietFrom}
           onChange={(from) => run(() => (from === NONE ? setQuiet(null, null) : setQuiet(from, quietTo)))}
         />
         {quietFrom !== NONE && (
-          <SelectField label="Hasta" options={HOURS} value={quietTo} onChange={(to) => run(() => setQuiet(quietFrom, to))} />
+          <SelectField label={say("notifications.quiet.to")} options={HOURS} value={quietTo} onChange={(to) => run(() => setQuiet(quietFrom, to))} />
         )}
       </div>
-      <Hint>Lo que caiga en el silencio llega al acabar, no se pierde.</Hint>
+      <Hint>{say("notifications.quiet.hint")}</Hint>
 
       {!!settings.recent?.length && (
         <div className="settings-fields">
-          <Hint>Lo último</Hint>
+          <Hint>{say("notifications.recent")}</Hint>
           <List>
             {settings.recent.map((one, index) => (
               <ListRow key={`${one.app}-${one.due_at}-${index}`} title={one.title} detail={recentDetail(one)} />
@@ -162,10 +160,10 @@ export function Notifications() {
 
       {removing && (
         <ConfirmDelete
-          title="¿Dejar de avisar en este dispositivo?"
+          title={say("notifications.remove.title")}
           subject={removing.name}
-          consequence="Se puede volver a activar desde él cuando quieras."
-          action="Dejar de avisar"
+          consequence={say("notifications.remove.consequence")}
+          action={say("notifications.remove.action")}
           onConfirm={() => run(() => removeDevice(removing.id)).then(() => setRemoving(null))}
           onCancel={() => setRemoving(null)}
         />

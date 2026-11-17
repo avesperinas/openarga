@@ -1,6 +1,7 @@
 import { type PanelBlock, type PanelHeadline, type PanelHue, type PanelTab, type PanelTone, spanOf } from "@openarga/ui";
 
 import type { CatalogueEntry, DeskItem } from "./kernel";
+import { say } from "../words";
 
 export type AreaKey = "day" | "money" | "health" | "work" | "home" | "leisure" | "mind";
 
@@ -38,14 +39,23 @@ export interface Area {
   answers: Answer[];
 }
 
+const area = (key: AreaKey, hue: PanelHue, icon: string) => ({
+  key,
+  hue,
+  icon,
+  get label() {
+    return say(`area.${key}`);
+  },
+});
+
 export const AREAS: { key: AreaKey; label: string; hue: PanelHue; icon: string }[] = [
-  { key: "day", label: "Día", hue: 6, icon: "calendar" },
-  { key: "money", label: "Dinero", hue: 2, icon: "wallet" },
-  { key: "health", label: "Salud", hue: 5, icon: "heart" },
-  { key: "work", label: "Trabajo", hue: 4, icon: "contract" },
-  { key: "home", label: "Casa", hue: 1, icon: "home" },
-  { key: "leisure", label: "Ocio", hue: 7, icon: "plane" },
-  { key: "mind", label: "Mente", hue: 3, icon: "note" },
+  area("day", 6, "calendar"),
+  area("money", 2, "wallet"),
+  area("health", 5, "heart"),
+  area("work", 4, "contract"),
+  area("home", 1, "home"),
+  area("leisure", 7, "plane"),
+  area("mind", 3, "note"),
 ];
 
 export const AREA_APPS: Record<AreaKey, string[]> = {
@@ -116,7 +126,7 @@ export function panelEntries(): CatalogueEntry[] {
     {
       source: PANEL_SOURCE,
       id: `${area.key}${TAB}`,
-      title: `Pestaña de ${area.label}`,
+      title: say("area.tab.title", { name: area.label }),
       hue: area.hue,
       kind: "list",
       shape: "list",
@@ -124,7 +134,7 @@ export function panelEntries(): CatalogueEntry[] {
       endpoint: "",
       refresh: 0,
       link: null,
-      option: { label: "Pestaña", endpoint: `/panels/choices?area=${area.key}` },
+      option: { label: say("area.tab"), endpoint: `/panels/choices?area=${area.key}` },
     },
   ]);
 }

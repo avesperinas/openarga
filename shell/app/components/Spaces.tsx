@@ -29,6 +29,7 @@ import {
   removeMember,
   renameMe,
 } from "../lib/spaces";
+import { say } from "../words";
 
 type Open =
   | { kind: "create" }
@@ -124,14 +125,11 @@ export function SpacesView({
   children?: React.ReactNode;
 }) {
   return (
-    <Section title="Espacios">
-      <Hint>
-        Un espacio es un grupo de personas que ven lo mismo, como la lista de la compra de casa.
-        Se entra con un código que das tú: nadie puede encontrarte sin él.
-      </Hint>
+    <Section title={say("spaces.title")}>
+      <Hint>{say("spaces.hint")}</Hint>
       {failed ? (
-        <Notice tone="negative" action={onRetry && { label: "Reintentar", onClick: onRetry }}>
-          No se han podido traer tus espacios.
+        <Notice tone="negative" action={onRetry && { label: say("spaces.retry"), onClick: onRetry }}>
+          {say("spaces.failed")}
         </Notice>
       ) : spaces && spaces.length > 0 ? (
         <List>
@@ -149,9 +147,9 @@ export function SpacesView({
       ) : null}
       <div className="settings-actions">
         <Button icon="plus" onClick={onCreate}>
-          Nuevo espacio
+          {say("spaces.new")}
         </Button>
-        <Button onClick={onJoin}>Tengo un código</Button>
+        <Button onClick={onJoin}>{say("spaces.have_code")}</Button>
       </div>
       {children}
     </Section>
@@ -167,7 +165,7 @@ function useBusy() {
     try {
       await work();
     } catch (problem) {
-      setError(problem instanceof Error ? problem.message : "No se ha podido hacer.");
+      setError(problem instanceof Error ? problem.message : say("spaces.error"));
     } finally {
       setBusy(false);
     }
@@ -179,8 +177,6 @@ function Problem({ error }: { error: string | null }) {
   return error ? <Notice tone="negative">{error}</Notice> : null;
 }
 
-const NAME_HINT = "Lo ven solo los de este espacio. Puede ser distinto en cada uno.";
-
 function NewSpaceSheet({ onClose, onDone }: { onClose: () => void; onDone: (space: Space) => void }) {
   const [name, setName] = React.useState("");
   const [me, setMe] = React.useState("");
@@ -188,10 +184,10 @@ function NewSpaceSheet({ onClose, onDone }: { onClose: () => void; onDone: (spac
   const ready = name.trim() !== "" && me.trim() !== "" && !busy;
   const submit = () => ready && void run(async () => onDone(await createSpace(name, me)));
   return (
-    <Sheet title="Nuevo espacio" onClose={onClose} action={{ label: "Crear", onClick: submit, disabled: !ready }}>
+    <Sheet title={say("spaces.new")} onClose={onClose} action={{ label: say("spaces.create"), onClick: submit, disabled: !ready }}>
       <div className="settings-fields">
-        <TextField label="Nombre del espacio" value={name} placeholder="Casa" autoFocus onChange={setName} />
-        <TextField label="Cómo te llaman ahí" value={me} hint={NAME_HINT} onChange={setMe} onSubmit={submit} />
+        <TextField label={say("spaces.name")} value={name} placeholder={say("spaces.name.placeholder")} autoFocus onChange={setName} />
+        <TextField label={say("spaces.me")} value={me} hint={say("spaces.name.hint")} onChange={setMe} onSubmit={submit} />
       </div>
       <Problem error={error} />
     </Sheet>
@@ -205,10 +201,10 @@ function JoinSheet({ onClose, onDone }: { onClose: () => void; onDone: (space: S
   const ready = looksLikeCode(code) && me.trim() !== "" && !busy;
   const submit = () => ready && void run(async () => onDone(await joinSpace(code, me)));
   return (
-    <Sheet title="Entrar con un código" onClose={onClose} action={{ label: "Entrar", onClick: submit, disabled: !ready }}>
+    <Sheet title={say("spaces.join")} onClose={onClose} action={{ label: say("spaces.join.action"), onClick: submit, disabled: !ready }}>
       <div className="settings-fields">
-        <TextField label="Código" value={code} placeholder="ABCD-EFGH-JKMN" autoFocus onChange={setCode} />
-        <TextField label="Cómo te llaman ahí" value={me} hint={NAME_HINT} onChange={setMe} onSubmit={submit} />
+        <TextField label={say("spaces.code")} value={code} placeholder="ABCD-EFGH-JKMN" autoFocus onChange={setCode} />
+        <TextField label={say("spaces.me")} value={me} hint={say("spaces.name.hint")} onChange={setMe} onSubmit={submit} />
       </div>
       <Problem error={error} />
     </Sheet>
@@ -242,17 +238,17 @@ export function SpaceSheet({
     <Sheet title={space.name} onClose={onClose}>
       <div className="settings-fields">
         <TextField
-          label="Tu nombre en este espacio"
+          label={say("spaces.my_name")}
           value={me}
-          placeholder="Sin nombre"
-          hint={NAME_HINT}
+          placeholder={say("spaces.unnamed")}
+          hint={say("spaces.name.hint")}
           onChange={setMe}
           onBlur={saveName}
           onSubmit={saveName}
         />
       </div>
 
-      <h3 className="sheet-group">Quién está</h3>
+      <h3 className="sheet-group">{say("spaces.members")}</h3>
       <List>
         {space.members.map((member) => {
           const self = member.user_id === space.me;
@@ -260,10 +256,10 @@ export function SpaceSheet({
             <ListRow
               key={member.user_id}
               title={memberLabel(space, member)}
-              detail={member.role === "owner" ? "Dueño" : undefined}
+              detail={member.role === "owner" ? say("spaces.owner") : undefined}
               action={
                 owner && !self
-                  ? { icon: "minus", label: `Quitar a ${memberLabel(space, member)}`, onClick: () => setRemoving(member) }
+                  ? { icon: "minus", label: say("spaces.remove", { name: memberLabel(space, member) }), onClick: () => setRemoving(member) }
                   : undefined
               }
             />
@@ -275,8 +271,8 @@ export function SpaceSheet({
         <>
           {invite ? (
             <>
-              <CopyField label="Código para entrar" value={invite.code} />
-              <Hint>Sirve una vez y caduca en 48 horas. Dáselo a quien quieras que entre.</Hint>
+              <CopyField label={say("spaces.invite.code")} value={invite.code} />
+              <Hint>{say("spaces.invite.hint")}</Hint>
             </>
           ) : (
             <Button
@@ -285,17 +281,17 @@ export function SpaceSheet({
               disabled={busy}
               onClick={() => void run(async () => setInvite(await inviteTo(space.id)))}
             >
-              Invitar a alguien
+              {say("spaces.invite")}
             </Button>
           )}
         </>
       )}
 
       {alone ? (
-        <Hint>Eres la única persona del espacio, así que no puedes salir: se quedaría sin nadie.</Hint>
+        <Hint>{say("spaces.alone")}</Hint>
       ) : (
         <Button variant="destructive" block disabled={busy} onClick={() => setRemoving(space.members.find((m) => m.user_id === space.me) ?? null)}>
-          Salir del espacio
+          {say("spaces.leave")}
         </Button>
       )}
 
@@ -303,13 +299,13 @@ export function SpaceSheet({
 
       {removing && (
         <ConfirmDelete
-          title={removing.user_id === space.me ? `¿Salir de ${space.name}?` : `¿Quitar a ${memberLabel(space, removing)}?`}
+          title={removing.user_id === space.me ? say("spaces.leave.title", { space: space.name }) : say("spaces.remove.title", { name: memberLabel(space, removing) })}
           consequence={
             removing.user_id === space.me
-              ? "Dejarás de ver lo que hay en el espacio, también lo de antes. Los demás lo conservan. Para volver te tendrán que invitar."
-              : "Dejará de ver lo que hay en el espacio, también lo de antes. Para volver le tendrás que invitar."
+              ? say("spaces.leave.consequence")
+              : say("spaces.remove.consequence")
           }
-          action={removing.user_id === space.me ? "Salir" : "Quitar"}
+          action={removing.user_id === space.me ? say("spaces.leave.action") : say("spaces.remove.action")}
           onCancel={() => setRemoving(null)}
           onConfirm={async () => {
             await removeMember(space.id, removing.user_id);

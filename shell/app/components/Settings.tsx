@@ -29,11 +29,12 @@ import { Spaces } from "./Spaces";
 import { StartingDesk } from "./StartingDesk";
 import { usePlatformVersion } from "./Version";
 import { WallpaperSheet } from "./Desktop";
+import { say } from "../words";
 
-const THEMES: SegmentedOption<UiPreferences["theme"]>[] = [
-  { value: "system", label: "Sistema", icon: "system" },
-  { value: "light", label: "Claro", icon: "sun" },
-  { value: "dark", label: "Oscuro", icon: "moon" },
+const themes = (): SegmentedOption<UiPreferences["theme"]>[] => [
+  { value: "system", label: say("settings.theme.system"), icon: "system" },
+  { value: "light", label: say("settings.theme.light"), icon: "sun" },
+  { value: "dark", label: say("settings.theme.dark"), icon: "moon" },
 ];
 
 export const CLAUDE_CLIENT_ID = "claude";
@@ -53,15 +54,15 @@ export function Settings({
     <div className="settings">
       <RegionSettings locale={locale} />
 
-      <Section title="Transparencia">
+      <Section title={say("settings.glass.title")}>
         <div className="settings-row">
           <Slider
-            label="Transparencia del cristal"
+            label={say("settings.glass")}
             min={OPACITY_RANGE.min}
             max={OPACITY_RANGE.max}
             step={OPACITY_RANGE.step}
             value={preferences.glass_opacity}
-            valueText={`${Math.round(preferences.glass_opacity * 100)} por ciento`}
+            valueText={say("settings.glass.percent", { n: Math.round(preferences.glass_opacity * 100) })}
             onChange={(glass_opacity) => onChange({ glass_opacity })}
           />
           <output className="settings-value">
@@ -70,15 +71,15 @@ export function Settings({
         </div>
         <Hint>
           {preferences.glass_opacity >= 1
-            ? "Al máximo la barra es opaca y el desenfoque se apaga del todo."
-            : "El efecto es inmediato y viaja al resto de tus dispositivos."}
+            ? say("settings.glass.opaque")
+            : say("settings.glass.hint")}
         </Hint>
       </Section>
 
-      <Section title="Tema">
+      <Section title={say("settings.theme")}>
         <SegmentedControl
-          label="Tema"
-          options={THEMES}
+          label={say("settings.theme")}
+          options={themes()}
           value={preferences.theme}
           onChange={(theme) => onChange({ theme })}
         />
@@ -118,9 +119,9 @@ export function IconStyles({
     .filter((module): module is ModuleSummary => Boolean(module))
     .slice(0, 3);
   return (
-    <Section title="Iconos">
+    <Section title={say("settings.icons")}>
       <PreviewChoices
-        label="Acabado de los iconos"
+        label={say("settings.icons.finish")}
         value={preferences.icon_style ?? "solid"}
         onChange={(icon_style) => onChange({ icon_style })}
         options={ICON_STYLES.map((style) => ({
@@ -128,7 +129,7 @@ export function IconStyles({
           preview: shown.map((module) => <img key={module.id} src={styledIcon(appIconOf(module)!, style.value)} alt="" />),
         }))}
       />
-      <Hint>La app instalada en el móvil lleva siempre el de color: ese lo fija el sistema al instalarla.</Hint>
+      <Hint>{say("settings.icons.hint")}</Hint>
     </Section>
   );
 }
@@ -160,8 +161,8 @@ export function AppNames({
   };
 
   return (
-    <Section title="Nombres de las apps">
-      <SelectField label="Nombres de las apps" hideLabel options={APP_NAME_SETS} value={set} onChange={choose} />
+    <Section title={say("settings.names")}>
+      <SelectField label={say("settings.names")} hideLabel options={APP_NAME_SETS} value={set} onChange={choose} />
       {set === "custom" ? (
         <div className="settings-fields">
           {modules.map((module) => (
@@ -177,7 +178,7 @@ export function AppNames({
       ) : (
         <Hint>{modules.map((module) => appNameOf(module.id, module.name, preferences)).join(" · ")}</Hint>
       )}
-      <Hint>Es el nombre con el que salen en Módulos. Dentro de cada app sigue el de siempre.</Hint>
+      <Hint>{say("settings.names.hint")}</Hint>
     </Section>
   );
 }
@@ -186,7 +187,7 @@ export function Versions({ modules, platform }: { modules: ModuleSummary[]; plat
   const version = usePlatformVersion(platform);
 
   return (
-    <Section title="Versiones">
+    <Section title={say("settings.versions")}>
       <ul className="version-list">
         <li>
           <VersionTag name="arga" version={version || "…"} />
@@ -197,9 +198,7 @@ export function Versions({ modules, platform }: { modules: ModuleSummary[]; plat
           </li>
         ))}
       </ul>
-      <Hint>
-        Cada app se despliega por su cuenta: sus números no tienen por qué coincidir con el de arga.
-      </Hint>
+      <Hint>{say("settings.versions.hint")}</Hint>
     </Section>
   );
 }
@@ -210,31 +209,22 @@ export function ConnectClaude({ origin }: { origin?: string }) {
     if (!origin) setHere(window.location.origin);
   }, [origin]);
   return (
-    <Section title="Conectar Claude">
-      <Hint>
-        Conecta tu propio Claude a tu cuenta de arga. Lo que Claude consulte o
-        haga, lo hace con tus datos y solo con los tuyos.
-      </Hint>
+    <Section title={say("settings.claude")}>
+      <Hint>{say("settings.claude.hint")}</Hint>
       <ol className="settings-steps">
-        <li>
-          En Claude, abre Ajustes → Hub y añade un conector
-          personalizado.
-        </li>
-        <li>
-          Pega la URL del servidor. En las opciones avanzadas, pon el ID de
-          cliente y deja el secreto vacío.
-        </li>
-        <li>Pulsa Conectar y entra con tu cuenta de Google.</li>
+        <li>{say("settings.claude.step1")}</li>
+        <li>{say("settings.claude.step2")}</li>
+        <li>{say("settings.claude.step3")}</li>
       </ol>
       <div className="settings-fields">
-        <CopyField label="URL del servidor" value={here ? `${here}/mcp` : ""} />
-        <CopyField label="ID de cliente" value={CLAUDE_CLIENT_ID} />
+        <CopyField label={say("settings.claude.url")} value={here ? `${here}/mcp` : ""} />
+        <CopyField label={say("settings.claude.client")} value={CLAUDE_CLIENT_ID} />
       </div>
       <Hint>
         <a className="settings-link" href="/auth/realms/arga/account">
-          Ver tus sesiones y los accesos que has dado
+          {say("settings.claude.sessions")}
         </a>
-        , y quitarle el acceso a Claude cuando quieras.
+        {say("settings.claude.revoke")}
       </Hint>
     </Section>
   );
@@ -259,7 +249,7 @@ export function HomePanelsSettings({
     save({ order: next });
   };
   return (
-    <Section title="Inicio">
+    <Section title={say("settings.home")}>
       <ul className="settings-panels">
         {order.map((key, index) => {
           const area = AREAS.find((one) => one.key === key)!;
@@ -270,13 +260,13 @@ export function HomePanelsSettings({
                 checked={!hidden.has(key)}
                 onChange={(on) => save({ hidden: on ? [...hidden].filter((one) => one !== key) : [...hidden, key] })}
               />
-              <IconButton icon="chevron-up" label={`Subir ${area.label}`} size="small" variant="plain" disabled={index === 0} onClick={() => move(index, -1)} />
-              <IconButton icon="chevron-down" label={`Bajar ${area.label}`} size="small" variant="plain" disabled={index === order.length - 1} onClick={() => move(index, 1)} />
+              <IconButton icon="chevron-up" label={say("settings.home.up", { name: area.label })} size="small" variant="plain" disabled={index === 0} onClick={() => move(index, -1)} />
+              <IconButton icon="chevron-down" label={say("settings.home.down", { name: area.label })} size="small" variant="plain" disabled={index === order.length - 1} onClick={() => move(index, 1)} />
             </li>
           );
         })}
       </ul>
-      <Hint>Cada panel encendido es una página del inicio, en este orden y delante de las de widgets. También se ponen y se quitan editando el inicio.</Hint>
+      <Hint>{say("settings.home.hint")}</Hint>
     </Section>
   );
 }

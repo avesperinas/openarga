@@ -1,4 +1,7 @@
+import { regional } from "@openarga/ui";
+
 import { request } from "./session";
+import { say } from "../words";
 
 export interface SpaceMember {
   user_id: string;
@@ -35,7 +38,7 @@ async function call<T>(path: string, init?: RequestInit & { json?: unknown }): P
       .json()
       .then((body: { detail?: unknown }) => (typeof body.detail === "string" ? body.detail : null))
       .catch(() => null);
-    throw new SpaceError(detail ?? "No se ha podido hacer. Prueba otra vez en un momento.");
+    throw new SpaceError(detail ?? say("spaces.error.retry"));
   }
   return (response.status === 204 ? undefined : await response.json()) as T;
 }
@@ -52,15 +55,15 @@ export const removeMember = (space: string, member: string) =>
   call<void>(`/${space}/members/${member}`, { method: "DELETE" });
 
 export function memberLabel(space: Space, member: SpaceMember): string {
-  if (member.user_id === space.me) return "Tú";
-  return member.name ?? "Sin nombre";
+  if (member.user_id === space.me) return say("spaces.you");
+  return member.name ?? say("spaces.unnamed");
 }
 
 export function membersLine(space: Space): string {
-  if (space.members.length === 1) return "Solo tú, de momento";
+  if (space.members.length === 1) return say("spaces.only_you");
   const others = space.members.filter((member) => member.user_id !== space.me);
-  const names = ["Tú", ...others.map((member) => member.name ?? "Sin nombre")];
-  return `${names.slice(0, -1).join(", ")} y ${names[names.length - 1]}`;
+  const names = [say("spaces.you"), ...others.map((member) => member.name ?? say("spaces.unnamed"))];
+  return new Intl.ListFormat(regional().locale, { type: "conjunction" }).format(names);
 }
 
 export function myName(space: Space): string {

@@ -21,6 +21,7 @@ import {
   resize,
   spanOf,
 } from "../lib/layout";
+import { say } from "../words";
 
 const SAVE_DEBOUNCE = 800;
 const UNDO_MS = 5000;
@@ -126,7 +127,7 @@ export function useEditableDesk(initial: DesktopLayout, device: Device) {
           placements: fresh.placements ?? {},
         }),
       );
-      setNotice("Había cambios de otro dispositivo. Los tuyos van encima.");
+      setNotice(say("desk.merged"));
       save();
     }, SAVE_DEBOUNCE);
   }, [commit, device]);

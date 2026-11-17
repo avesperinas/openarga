@@ -1,6 +1,7 @@
 import { zonedDates } from "@openarga/ui";
 
 import { request } from "./session";
+import { say } from "../words";
 
 export interface NotificationKind {
   app: string;
@@ -61,7 +62,7 @@ async function call<T>(path: string, init?: RequestInit & { json?: unknown }): P
       .json()
       .then((body: { detail?: unknown }) => (typeof body.detail === "string" ? body.detail : null))
       .catch(() => null);
-    throw new NotificationError(detail ?? "No se ha podido hacer. Prueba otra vez en un momento.");
+    throw new NotificationError(detail ?? say("spaces.error.retry"));
   }
   return (response.status === 204 ? undefined : await response.json()) as T;
 }
@@ -78,23 +79,25 @@ const when = (iso: string) =>
   zonedDates({ day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
 export function deviceDetail(device: Device): string {
-  const sent = device.last_sent ? `último aviso ${when(device.last_sent)}` : "aún sin avisos";
+  const sent = device.last_sent
+    ? say("notifications.device.last", { when: when(device.last_sent) })
+    : say("notifications.device.none");
   const failedLater =
     device.last_error && device.last_error_at && (!device.last_sent || device.last_error_at > device.last_sent);
-  return failedLater ? `${sent} · falló ${when(device.last_error_at as string)}: ${device.last_error}` : sent;
+  return failedLater ? `${sent} · ${say("notifications.device.failed", { when: when(device.last_error_at as string), error: device.last_error ?? "" })}` : sent;
 }
 
 export function testSaid(result: TestResult): string {
   const failed = result.failed ?? [];
-  if (result.sent && !failed.length) return "Enviado un aviso de prueba.";
-  const head = result.sent ? `Enviado a ${result.sent}.` : "No ha llegado a ningún dispositivo.";
+  if (result.sent && !failed.length) return say("notifications.test.sent");
+  const head = result.sent ? say("notifications.test.sent_to", { n: result.sent }) : say("notifications.test.nowhere");
   return [head, ...failed.map((one) => `${one.device}: ${one.reason}.`)].join(" ");
 }
 
 export function recentDetail(one: RecentNotification): string {
   const at = when(one.sent_at ?? one.due_at);
-  if (!one.sent_at) return one.outcome ? `${at} · reintentando: ${one.outcome}` : `${at} · esperando`;
-  return `${at} · ${one.outcome ?? "enviado"}`;
+  if (!one.sent_at) return one.outcome ? `${at} · ${say("notifications.retrying", { outcome: one.outcome })}` : `${at} · ${say("notifications.waiting")}`;
+  return `${at} · ${one.outcome ?? say("notifications.sent")}`;
 }
 
 export type Support = "none" | "ready" | "install";
@@ -127,13 +130,13 @@ export function deviceName(agent: string = typeof navigator === "undefined" ? ""
   if (/Macintosh/.test(agent)) return "Mac";
   if (/Windows/.test(agent)) return "Windows";
   if (/Linux/.test(agent)) return "Linux";
-  return "Este dispositivo";
+  return say("notifications.this_device");
 }
 
 export async function enableHere(publicKey: string): Promise<Device> {
   const permission = await Notification.requestPermission();
   if (permission !== "granted") {
-    throw new NotificationError("Sin permiso no hay avisos. Se cambia en los ajustes del navegador.");
+    throw new NotificationError(say("notifications.denied"));
   }
   const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
   await navigator.serviceWorker.ready;

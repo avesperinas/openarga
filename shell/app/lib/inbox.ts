@@ -1,6 +1,7 @@
 import { dates, regional } from "@openarga/ui";
 
 import { request } from "./session";
+import { say } from "../words";
 
 export interface Notice {
   id: string;
@@ -47,7 +48,7 @@ export function byDay(notices: Notice[], now: Date = new Date()): Day[] {
     const key = dayKey(at);
     let day = days.at(-1);
     if (!day || day.key !== key) {
-      const label = key === today ? "Hoy" : key === yesterday ? "Ayer" : long.format(at);
+      const label = key === today ? say("inbox.today") : key === yesterday ? say("inbox.yesterday") : long.format(at);
       day = { key, label: label.charAt(0).toLocaleUpperCase(regional().locale) + label.slice(1), notices: [] };
       days.push(day);
     }
