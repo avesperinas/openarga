@@ -172,9 +172,11 @@ async def access(client: httpx.AsyncClient, app: App, refresh: str) -> str:
             timeout=30.0,
         )
     except httpx.HTTPError as error:
-        raise SourceError(f"Google no contesta ({type(error).__name__})", transient=True) from error
+        raise SourceError(
+            f"Google does not answer ({type(error).__name__})", transient=True
+        ) from error
     if response.status_code != 200:
-        raise _oauth_error(response, "renovar el acceso")
+        raise _oauth_error(response, "renew access")
     return str(response.json()["access_token"])
 
 
@@ -190,7 +192,7 @@ class Health:
             )
         except httpx.HTTPError as error:
             raise SourceError(
-                f"Google Health no contesta ({type(error).__name__})", transient=True
+                f"Google Health does not answer ({type(error).__name__})", transient=True
             ) from error
         if response.status_code == 200:
             return response.json()
@@ -216,7 +218,7 @@ class Health:
                 code="consent_over",
             )
         if response.status_code == 429:
-            raise SourceError("Google Health pide esperar.", rate_limited=True)
+            raise SourceError("Google Health asks to wait.", rate_limited=True)
         raise SourceError(
             f"Google Health contesta {response.status_code} en {where}: "
             f"{error.get('message', '')}".rstrip(": "),
@@ -1057,7 +1059,9 @@ async def sync(
         raise missing[0]
     note = None
     if missing:
-        note = "Google no dio todo: " + "; ".join(dict.fromkeys(str(one) for one in missing))
+        note = "Google did not give everything: " + "; ".join(
+            dict.fromkeys(str(one) for one in missing)
+        )
     return Fetched(events, note=note)
 
 

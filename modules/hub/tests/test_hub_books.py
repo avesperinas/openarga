@@ -16,8 +16,8 @@ WORK = {
     "docs": [
         {
             "key": "/works/OL1W",
-            "title": "Un libro sintético",
-            "author_name": ["Autora Sintética"],
+            "title": "A synthetic book",
+            "author_name": ["Synthetic Author"],
             "number_of_pages_median": 432,
             "first_publish_year": 1967,
             "subject": ["Fiction", "Magic realism", "Novela"],
@@ -26,7 +26,7 @@ WORK = {
                 "docs": [
                     {
                         "key": "/books/OL2M",
-                        "title": "Un libro sintético",
+                        "title": "A synthetic book",
                         "isbn": ["8420471836", "9788420471839"],
                         "language": ["spa"],
                         "publish_year": [2007],
@@ -43,7 +43,7 @@ VOLUME = {
         {
             "id": "AbCdEf123",
             "volumeInfo": {
-                "title": "Otro libro sintético",
+                "title": "Another synthetic book",
                 "authors": ["Autor Inventado"],
                 "pageCount": 200,
                 "language": "es",
@@ -76,7 +76,7 @@ class Sources:
             if self.cover is None:
                 return httpx.Response(404)
             return httpx.Response(200, content=self.cover)
-        raise AssertionError(f"nadie debería pedir {request.url}")
+        raise AssertionError(f"nobody should ask for {request.url}")
 
 
 @pytest.fixture
@@ -100,15 +100,15 @@ async def by_provider(api) -> dict:
 
 
 async def test_open_library_is_asked_in_spanish_and_connects_itself(api, sources) -> None:
-    answer = (await ask(api, "books.search", {"query": "libro sintético"})).json()
+    answer = (await ask(api, "books.search", {"query": "synthetic book"})).json()
 
     [found] = answer["candidates"]
     assert found == {
         "source": "openlibrary",
         "source_ref": "OL2M",
-        "title": "Un libro sintético",
+        "title": "A synthetic book",
         "subtitle": None,
-        "authors": ["Autora Sintética"],
+        "authors": ["Synthetic Author"],
         "isbn13": "9788420471839",
         "pages": 432,
         "language": "es",
@@ -120,7 +120,7 @@ async def test_open_library_is_asked_in_spanish_and_connects_itself(api, sources
         {"source": "google_books", "reason": "no Google Books key: add it in Hub"}
     ]
     [url] = sources.asked
-    assert (url.params["q"], url.params["lang"]) == ("libro sintético", "es")
+    assert (url.params["q"], url.params["lang"]) == ("synthetic book", "es")
     connected = await by_provider(api)
     assert set(connected) == {"openlibrary"}
     ficha = (await api.get(f"/connections/{connected['openlibrary']['id']}")).json()
@@ -178,7 +178,7 @@ async def test_a_cover_comes_back_as_an_image(api, sources) -> None:
 async def test_without_a_cover_or_with_something_else_there_is_none(api, sources) -> None:
     sources.cover = None
     missing = (await ask(api, "books.cover", {"source": "openlibrary", "ref": "222"})).json()
-    sources.cover = b"<html>no soy una imagen</html>" * 100
+    sources.cover = b"<html>not an image</html>" * 100
     html = (await ask(api, "books.cover", {"source": "google_books", "ref": "AbCdEf123"})).json()
 
     assert missing == {"cover": None, "type": None, "failed": None}
@@ -195,5 +195,5 @@ async def test_a_cover_is_never_asked_to_an_address_from_outside(api, sources) -
 def test_isbn_and_language_are_normalised() -> None:
     assert books.isbn13("0-306-40615-2") == "9780306406157"
     assert books.isbn13("9780306406158") is None
-    assert books.looks_like_isbn("cien años") is None
+    assert books.looks_like_isbn("one hundred years") is None
     assert books._language("spa") == "es" and books._language("xxx") is None

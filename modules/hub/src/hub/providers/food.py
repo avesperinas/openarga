@@ -187,9 +187,9 @@ def _grams(value: Any, unit: Any = "g") -> float | None:
 def portions(package: float | None, serving: float | None) -> list[dict[str, Any]]:
     found = []
     if package:
-        found.append({"name": "envase", "grams": package})
+        found.append({"name": "package", "grams": package})
     if serving and serving != package:
-        found.append({"name": "ración", "grams": serving})
+        found.append({"name": "serving", "grams": serving})
     return found
 
 

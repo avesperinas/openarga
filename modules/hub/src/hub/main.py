@@ -235,7 +235,7 @@ async def new_token(connection_id: UUID) -> dict:
 async def receive(source: str, request: Request, authorization: str | None = Header(None)) -> dict:
     receiver = push.RECEIVERS.get(source)
     if receiver is None:
-        raise HTTPException(status_code=404, detail="no existe")
+        raise HTTPException(status_code=404, detail="it does not exist")
     provider_id, read = receiver
     unauthorised = HTTPException(
         status_code=401,
@@ -455,7 +455,7 @@ async def capability(
     try:
         body = await request.json()
     except ValueError as error:
-        raise HTTPException(status_code=422, detail="el cuerpo no es JSON") from error
+        raise HTTPException(status_code=422, detail="the body is not JSON") from error
     try:
         return await handler(x_arga_module, body)
     except ValidationError as error:

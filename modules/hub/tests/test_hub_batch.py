@@ -121,7 +121,7 @@ async def test_a_pass_that_breaks_does_not_stop_the_others(monkeypatch) -> None:
 
     async def run(connection, **_):
         if connection.label == "rota":
-            raise RuntimeError("se rompió")
+            raise RuntimeError("it broke")
         await asyncio.sleep(0.01)
         return SimpleNamespace(outcome="ok")
 

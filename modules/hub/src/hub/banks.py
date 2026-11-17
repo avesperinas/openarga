@@ -91,7 +91,7 @@ async def banks(
 async def _bank(client: httpx.AsyncClient, app: dict[str, str], bank: str, country: str) -> dict:
     found = next((b for b in await api(client, app).banks(country) if b["name"] == bank), None)
     if found is None:
-        raise Refused(f"Enable Banking no conoce '{bank}' en {country}", 404)
+        raise Refused(f"Enable Banking does not know '{bank}' in {country}", 404)
     return found
 
 

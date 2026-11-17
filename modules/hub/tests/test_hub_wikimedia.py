@@ -20,7 +20,7 @@ class Sources:
         self.osm_entity: str | None = "Q1"
         self.near_entity: str | None = "Q2"
         self.near_file: str | None = "Commons cerca.jpg"
-        self.named: tuple[str, str] | None = ("Q3", "Vía Verde del Sitio")
+        self.named: tuple[str, str] | None = ("Q3", "Green Way")
         self.around: list[str] = ["Mapa.svg", "Alrededor.jpg"]
         self.image_address = THUMB
         self.down = False
@@ -69,7 +69,7 @@ class Sources:
             return httpx.Response(200, json={"query": {"pages": {"1": {"imageinfo": [info]}}}})
         if url.host in wikimedia.UPLOADS:
             return httpx.Response(200, content=JPEG)
-        raise AssertionError(f"nadie debería pedir {request.url}")
+        raise AssertionError(f"nobody should ask for {request.url}")
 
     def searched(self, host: str) -> list[str]:
         return [
@@ -132,7 +132,7 @@ async def test_what_the_wish_names_is_looked_for_near_its_place(api, sources) ->
 
 
 async def test_a_wish_named_as_its_place_takes_the_image_osm_links(api, sources) -> None:
-    body = GETAWAY | {"name": "Sos del Rey Católico", "place": "Sos del Rey Católico"}
+    body = GETAWAY | {"name": "Old Town", "place": "Old Town"}
 
     answer = (await ask(api, body)).json()
 
@@ -151,10 +151,10 @@ async def test_without_an_entity_a_photo_taken_nearby(api, sources) -> None:
 
 async def test_an_entity_without_coordinates_only_with_exactly_that_name(api, sources) -> None:
     sources.osm_entity = sources.near_entity = sources.near_file = None
-    body = GETAWAY | {"name": "La vía verde del Sitio en bici", "place": "Vía Verde del Sitio"}
+    body = GETAWAY | {"name": "The Green Way by bike", "place": "Green Way"}
 
     named = (await ask(api, body)).json()
-    sources.named = ("Q3", "Vía Verde de Otro Sitio")
+    sources.named = ("Q3", "Green Way of Another Place")
     other = (await ask(api, body)).json()
 
     assert named["photo"]["page"].endswith("File:Con nombre.jpg")

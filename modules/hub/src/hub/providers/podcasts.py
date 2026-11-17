@@ -74,7 +74,9 @@ async def search(
                 timeout=timeout(),
             )
         except httpx.HTTPError as error:
-            raise SourceFailed(f"Apple Podcasts no contesta ({type(error).__name__})") from error
+            raise SourceFailed(
+                f"Apple Podcasts does not answer ({type(error).__name__})"
+            ) from error
         if response.status_code != 200:
             raise SourceFailed(f"Apple Podcasts contesta {response.status_code}")
         try:

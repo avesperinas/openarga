@@ -105,10 +105,10 @@ async def season(client: httpx.AsyncClient, year: int) -> list[dict[str, Any]]:
         response = await client.get(f"{BASE}/{year}/races/", params={"limit": 100}, timeout=20.0)
     except httpx.HTTPError as error:
         raise SourceError(
-            f"Jolpica no contesta ({type(error).__name__})", transient=True
+            f"Jolpica does not answer ({type(error).__name__})", transient=True
         ) from error
     if response.status_code == 429:
-        raise SourceError("Jolpica pide esperar", rate_limited=True)
+        raise SourceError("Jolpica asks to wait", rate_limited=True)
     if response.status_code >= 500:
         raise SourceError(f"Jolpica falla ({response.status_code})", transient=True)
     if response.status_code >= 400:

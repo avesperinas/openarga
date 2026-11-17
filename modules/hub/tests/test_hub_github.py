@@ -59,7 +59,7 @@ class GitHub:
         if request.method == "PATCH" and path == "/git/refs/heads/main":
             self.head = payload["sha"]
             return httpx.Response(200, json={"object": {"sha": self.head}})
-        raise AssertionError(f"nadie debería pedir {request.method} {request.url}")
+        raise AssertionError(f"nobody should ask for {request.method} {request.url}")
 
 
 @pytest.fixture
@@ -118,7 +118,7 @@ async def test_an_empty_repo_starts_itself_and_a_batch_is_one_commit(api, hub) -
             "key": "tanda-1",
             "message": "Notebook: 2 notas",
             "files": [
-                {"path": "Study/Alemán/DE 1.1 Kasus.md", "text": "# Kasus\n"},
+                {"path": "Study/German/DE 1.1 Kasus.md", "text": "# Kasus\n"},
                 {"path": "Adjuntos/tabla.png", "base64": base64.b64encode(b"\x89PNG").decode()},
             ],
             "deletes": ["Vieja.md"],
@@ -133,7 +133,7 @@ async def test_an_empty_repo_starts_itself_and_a_batch_is_one_commit(api, hub) -
     assert tree["base_tree"] == "t0"
     assert tree["tree"] == [
         {
-            "path": "Study/Alemán/DE 1.1 Kasus.md",
+            "path": "Study/German/DE 1.1 Kasus.md",
             "mode": "100644",
             "type": "blob",
             "content": "# Kasus\n",

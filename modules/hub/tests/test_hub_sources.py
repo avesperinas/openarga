@@ -33,7 +33,7 @@ MANIFEST = {
 def test_every_source_produces_only_known_contracts() -> None:
     for provider in catalogue.PROVIDERS:
         unknown = set(provider.emits) - sources.SOURCE_CONTRACTS
-        assert not unknown, f"{provider.id} produce {unknown}, que no son contratos"
+        assert not unknown, f"{provider.id} produces {unknown}, which are not contracts"
 
 
 def test_every_question_that_searches_has_a_search() -> None:
@@ -41,7 +41,7 @@ def test_every_question_that_searches_has_a_search() -> None:
         assert provider.offer is not None
         for ask in provider.offer.asks:
             if ask.kind in ("lookup", "pick") and not ask.choices:
-                assert provider.search_for(ask.key), f"{provider.id}.{ask.key} no busca nada"
+                assert provider.search_for(ask.key), f"{provider.id}.{ask.key} searches nothing"
 
 
 def test_every_offer_goes_in_a_group_the_menu_knows() -> None:
@@ -221,7 +221,7 @@ async def test_an_app_plugs_a_source_with_what_its_inlet_asks(api, schema, hub) 
         "sources.plug",
         {
             "provider": "formula1",
-            "label": "Fórmula 1",
+            "label": "Formula 1",
             "params": {"sessions": ["race"]},
             "settings": {"name": "La F1", "tone": 3, "invented": "no"},
         },
@@ -371,7 +371,7 @@ def test_every_capability_but_the_generic_ones_is_served_by_a_source() -> None:
 
     generic = {name for name in capabilities.CAPABILITIES if name.startswith(("sources.", "ai."))}
     for name in set(capabilities.CAPABILITIES) - generic:
-        assert apps.serving(name), f"ninguna fuente sirve {name}"
+        assert apps.serving(name), f"no source serves {name}"
     for provider in catalogue.PROVIDERS:
         assert set(provider.serves) <= set(capabilities.CAPABILITIES), provider.id
 
@@ -388,7 +388,7 @@ def test_each_app_gets_what_reaches_its_inlets_and_what_serves_what_it_asks() ->
             "enabled": True,
             "uses": ["books.search"],
         },
-        {"id": "nada", "name": "Nada", "view": "/nada", "enabled": True, "uses": ["agenda.move"]},
+        {"id": "none", "name": "None", "view": "/none", "enabled": True, "uses": ["agenda.move"]},
         {"id": "hub", "name": "Hub", "enabled": True, "uses": []},
     ]
     inlets = [{"key": "planner.calendar", "module": "planner", **CALENDAR}]

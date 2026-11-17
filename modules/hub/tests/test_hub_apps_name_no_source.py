@@ -43,12 +43,12 @@ def test_no_app_names_a_source_that_reaches_it_through_its_inlets() -> None:
             for hit in named.finditer(path.read_text(errors="ignore")):
                 found.add((str(path.relative_to(ROOT)), hit.group(1)))
     new = sorted(found - KNOWN)
-    assert not new, f"una app nombra una fuente que le llega por su toma: {new}"
+    assert not new, f"an app names a source that reaches it through its inlet: {new}"
 
 
 def test_the_known_leftovers_are_still_there() -> None:
     for relative, provider in sorted(KNOWN):
         path = ROOT / relative
-        assert path.exists(), f"{relative} ya no existe: quítalo de KNOWN"
+        assert path.exists(), f"{relative} no longer exists: remove it from KNOWN"
         text = path.read_text()
         assert re.search(rf"""["'`]{provider}["'`]""", text), f"{relative} ya no nombra {provider}"

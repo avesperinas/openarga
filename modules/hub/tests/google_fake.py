@@ -407,7 +407,7 @@ class FakeGoogle:
                     "samplingFrequencyHertz": 250,
                     "millivoltsScalingFactor": 1000,
                     "leadNumber": 1,
-                    "medicalDeviceInfo": {"deviceModel": "Pulsera sintética"},
+                    "medicalDeviceInfo": {"deviceModel": "Synthetic band"},
                 },
             },
             "irregular-rhythm-notification": {
@@ -439,7 +439,7 @@ class FakeGoogle:
         return {
             "name": "users/me/pairedDevices/pulsera-sintetica",
             "deviceType": "TRACKER",
-            "deviceVersion": "Pulsera sintética",
+            "deviceVersion": "Synthetic band",
             "batteryStatus": "High",
             "batteryLevel": 82,
             "lastSyncTime": "2026-10-20T17:40:00Z",

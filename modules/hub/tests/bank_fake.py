@@ -56,7 +56,7 @@ class FakeEnableBanking:
         self.calls.append(f"{request.method} {path}")
         if self.failure and path.startswith("/accounts"):
             status, code = self.failure
-            return httpx.Response(status, json={"error": code, "message": "sintético"})
+            return httpx.Response(status, json={"error": code, "message": "synthetic"})
         if path == "/aspsps":
             return httpx.Response(
                 200,
@@ -70,7 +70,7 @@ class FakeEnableBanking:
             body = json.loads(request.content)
             if self.refusal:
                 status, code = self.refusal
-                return httpx.Response(status, json={"error": code, "message": "sintético"})
+                return httpx.Response(status, json={"error": code, "message": "synthetic"})
             self.states.append(body["state"])
             assert body["redirect_url"].endswith("/hub/callback")
             return httpx.Response(200, json={"url": f"https://banco.invalid/sca?s={body['state']}"})
@@ -106,9 +106,9 @@ class FakeEnableBanking:
             if self.no_accounts
             else [
                 {
-                    "uid": "uid-de-esta-sesion",
+                    "uid": "uid-of-this-session",
                     "identification_hash": ACCOUNT,
-                    "name": "Cuenta nómina",
+                    "name": "Payroll account",
                     "currency": "EUR",
                     "cash_account_type": "CACC",
                     "account_id": {"iban": "ES00 0000 0000 0000 0000 1234"},
