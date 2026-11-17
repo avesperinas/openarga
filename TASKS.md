@@ -53,7 +53,7 @@ P9; then P5, P10, P11. Answer `needs-platform` issues before starting a new task
 | A1.3 | **Preferences**: no hardcoded time zone, locale or currency | Tests in two time zones and two currencies | `done` |
 | A1.4 | **Finance simplified** (`money`): bank by API, CSV and OFX import, holdings snapshots, base currency, shared expenses kept; tax, fund certificates, crypto and mail inlets removed | Import a synthetic CSV; isolation tests | `doing` (Carrera income source removed) |
 | A1.5 | **Bilingual catalogues**: exercises (training), nutrients (macros), shopping sections, recipe categories | Parity test | `done` |
-| A1.6 | **Demo seeds**: `demo.py` per module for Alex and Sam, coherent over 18 months | Seeds run twice without duplicates | `todo` |
+| A1.6 | **Demo seeds**: `demo.py` per module for Alex and Sam, coherent over 18 months | Seeds run twice without duplicates | `doing` (goals, recipes, shopping done) |
 | A1.7 | **App docs** in `docs/apps/<id>.md` | Links resolve | `todo` |
 
 Suggested order: per module, A1.1 then A1.2 then A1.3; A1.4 when `money` is reached; A1.6 last.
