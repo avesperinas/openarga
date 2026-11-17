@@ -15,26 +15,11 @@ for (const name of ["ne_10m_admin_0_countries", "ne_10m_admin_1_states_provinces
   execFileSync("unzip", ["-oq", join(work, `${name}.zip`), "-d", work]);
 }
 
-const SPAIN = {
-  AN: ["ES-AN", "Andalucía"], AR: ["ES-AR", "Aragón"], AS: ["ES-AS", "Asturias"],
-  CN: ["ES-CN", "Canarias"], CB: ["ES-CB", "Cantabria"], CL: ["ES-CL", "Castilla y León"],
-  CM: ["ES-CM", "Castilla-La Mancha"], CT: ["ES-CT", "Cataluña"], EX: ["ES-EX", "Extremadura"],
-  GA: ["ES-GA", "Galicia"], MD: ["ES-MD", "Madrid"], MU: ["ES-MC", "Murcia"],
-  PV: ["ES-PV", "País Vasco"], VC: ["ES-VC", "Comunidad Valenciana"], NA: ["ES-NC", "Navarra"],
-  PM: ["ES-IB", "Islas Baleares"], LO: ["ES-RI", "La Rioja"],
-};
-const BELGIUM = {
-  "Capital Region": ["BE-BRU", "Bruselas"],
-  Flemish: ["BE-VLG", "Flandes"],
-  Walloon: ["BE-WAL", "Valonia"],
-};
-const BRITAIN = {
-  England: ["GB-ENG", "Inglaterra"],
-  Scotland: ["GB-SCT", "Escocia"],
-  Wales: ["GB-WLS", "Gales"],
-  "Northern Ireland": ["GB-NIR", "Irlanda del Norte"],
-};
-const ITALY = { Sicily: "Sicilia", Apulia: "Puglia" };
+const NAMES = JSON.parse(readFileSync(join(OUT, "names.json"), "utf8"));
+const SPAIN = NAMES.spain;
+const BELGIUM = NAMES.belgium;
+const BRITAIN = NAMES.britain;
+const ITALY = NAMES.italy;
 
 function regionOf(p) {
   const clean = (value) => String(value ?? "").trim();
@@ -98,4 +83,4 @@ execFileSync("npx", [
   "-o", "format=topojson", "quantization=100000", join(OUT, "regions.json"),
 ], { stdio: ["ignore", "ignore", "inherit"] });
 
-console.log(`geometrías en ${OUT}`);
+console.log(`geometries in ${OUT}`);

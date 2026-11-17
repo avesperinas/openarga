@@ -32,7 +32,7 @@ case ${BUILD_CACHE:-} in
     CACHE=(--cache-from "type=local,src=$DIR" --cache-to "type=local,dest=$DIR,mode=max")
     ;;
   *)
-    echo "BUILD_CACHE desconocido: $BUILD_CACHE (vacío, gha o local:<carpeta>)" >&2
+    echo "unknown BUILD_CACHE: $BUILD_CACHE (empty, gha or local:<folder>)" >&2
     exit 2
     ;;
 esac

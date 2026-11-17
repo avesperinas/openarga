@@ -7,7 +7,7 @@ IMAGE=postgres:16-alpine
 ROOT=/srv/backups/arga
 
 usage() {
-  echo "uso: $0 dump|verify <etiqueta> | rehearse <etiqueta> <imagen del kernel>" >&2
+  echo "usage: $0 dump|verify <label> | rehearse <label> <kernel image>" >&2
   exit 2
 }
 
@@ -15,7 +15,7 @@ usage() {
 command=$1
 label=$2
 rehearsal_image=${3:-}
-[[ $label =~ ^[a-z0-9][a-z0-9-]{0,62}$ ]] || { echo "etiqueta inválida: $label" >&2; exit 2; }
+[[ $label =~ ^[a-z0-9][a-z0-9-]{0,62}$ ]] || { echo "invalid label: $label" >&2; exit 2; }
 dir="$ROOT/$label"
 
 FINGERPRINT_SQL=$(cat "$(dirname "${BASH_SOURCE[0]}")/../backup/fingerprint.sql")
@@ -38,7 +38,7 @@ summarize() {
 
 dump() {
   if remote "sudo test -e '$dir'"; then
-    echo "ya existe $dir: una etiqueta no se sobrescribe" >&2
+    echo "$dir already exists: a label is never overwritten" >&2
     exit 1
   fi
 
@@ -89,23 +89,23 @@ EOF
     chown -R root:root '$dir'
     chmod 600 '$dir'/*\""
 
-  echo "dump '$label' en $SERVER:$dir ($((SECONDS - started)) s)"
+  echo "dump '$label' at $SERVER:$dir ($((SECONDS - started)) s)"
   remote "sudo sh -c 'cd $dir && grep -v ^snapshot= meta.env && stat -c \"%s bytes  %n\" globals.sql database.dump'"
   remote "sudo cat '$dir/fingerprint.tsv'" | summarize
 }
 
 verify() {
-  remote "sudo test -s '$dir/database.dump'" || { echo "no hay dump en $dir" >&2; exit 1; }
+  remote "sudo test -s '$dir/database.dump'" || { echo "there is no dump in $dir" >&2; exit 1; }
   remote "sudo sh -c 'cd $dir && sha256sum --quiet -c SHA256SUMS'" \
-    || { echo "los ficheros de $dir no coinciden con su SHA256SUMS" >&2; exit 1; }
+    || { echo "the files in $dir do not match their SHA256SUMS" >&2; exit 1; }
 
   local meta database bootstrap tag
   meta=$(remote "sudo cat '$dir/meta.env'")
   database=$(sed -n 's/^database=//p' <<<"$meta")
   bootstrap=$(sed -n 's/^bootstrap=//p' <<<"$meta")
   tag=$(sed -n 's/^IMAGE_TAG=//p' <<<"$meta")
-  [[ $bootstrap =~ ^[a-z_][a-z0-9_]*$ ]] || { echo "meta.env sin superusuario de arranque" >&2; exit 1; }
-  [[ $tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "meta.env sin IMAGE_TAG" >&2; exit 1; }
+  [[ $bootstrap =~ ^[a-z_][a-z0-9_]*$ ]] || { echo "meta.env has no bootstrap superuser" >&2; exit 1; }
+  [[ $tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "meta.env has no IMAGE_TAG" >&2; exit 1; }
 
   net="arga-restore-$label" pg="arga-restore-$label-pg" kernel="arga-restore-$label-kernel"
   cleanup() {
@@ -121,7 +121,7 @@ verify() {
   until remote "sudo docker logs '$pg' 2>&1 | grep -q 'init process complete' \
       && sudo docker exec '$pg' pg_isready -U '$bootstrap' -q"; do
     tries=$((tries + 1))
-    [[ $tries -lt 60 ]] || { echo "el Postgres desechable no arrancó" >&2; exit 1; }
+    [[ $tries -lt 60 ]] || { echo "the throwaway Postgres did not start" >&2; exit 1; }
     remote "sleep 1"
   done
 
@@ -142,7 +142,7 @@ verify() {
     -f /tmp/fingerprint.sql -c commit")
   original=$(remote "sudo cat '$dir/fingerprint.tsv'")
 
-  echo "restaurado '$label' en un Postgres aislado ($restore_seconds s)"
+  echo "restored '$label' into an isolated Postgres ($restore_seconds s)"
   echo "origen:"
   summarize <<<"$original"
   echo "restaurado:"
@@ -156,12 +156,12 @@ verify() {
     diff <(echo "$original") <(echo "$restored") | grep '^[<>]' | cut -f1,2 >&2
     exit 1
   fi
-  echo "OK: $tables tablas con el mismo recuento y el mismo hash, y $sequences secuencias en la misma posición"
+  echo "OK: $tables tables with the same count and the same hash, and $sequences sequences at the same position"
 
   local kernel_image="${IMAGE_PREFIX:-ghcr.io/avesperinas/openarga}-kernel:$tag"
   if [[ -n $rehearsal_image ]]; then
     kernel_image="arga-kernel:ensayo-$label"
-    echo "llevando $rehearsal_image al servidor como $kernel_image (no se despliega: solo se arranca aquí)"
+    echo "taking $rehearsal_image to the server as $kernel_image (not deployed: only started here)"
     docker save "$rehearsal_image" | gzip -1 | remote "gunzip | sudo docker load -q >/dev/null && sudo docker tag $rehearsal_image $kernel_image"
     tag="$rehearsal_image"
   fi
@@ -179,9 +179,9 @@ verify() {
     [[ $state == "running healthy" || $state == exited* ]] && break
     remote "sleep 2"
   done
-  echo "kernel $tag contra la copia: $state ($((SECONDS - started)) s)"
+  echo "kernel $tag against the copy: $state ($((SECONDS - started)) s)"
   remote "sudo docker logs '$kernel' 2>&1 | grep -iv password | tail -n 8 | sed 's/^/  /'"
-  [[ $state == "running healthy" ]] || { echo "el kernel no arrancó contra la copia restaurada" >&2; exit 1; }
+  [[ $state == "running healthy" ]] || { echo "the kernel did not start against the restored copy" >&2; exit 1; }
   remote "sudo docker exec '$kernel' python -c '
 import json, urllib.request as u
 for path in (\"/healthz\", \"/readyz\", \"/modules\"):
@@ -191,13 +191,13 @@ for path in (\"/healthz\", \"/readyz\", \"/modules\"):
         body = sorted((m[\"id\"], m.get(\"enabled\")) for m in body)
     print(\" \", path, r.status, body)
 '"
-  echo "OK: la copia restaurada sirve"
+  echo "OK: the restored copy works"
   [[ -z $rehearsal_image ]] || rehearsal_report
 }
 
 rehearsal_report() {
-  echo "ensayo: lo que dejó la migración"
-  remote "sudo docker logs '$kernel' 2>&1 | grep -E 'dueño|migra|revisi' | sed 's/^/  kernel | /'" || true
+  echo "rehearsal: what the migration left"
+  remote "sudo docker logs '$kernel' 2>&1 | grep -E 'owner|migrat|revision' | sed 's/^/  kernel | /'" || true
   local after
   after=$(remote "sudo docker exec -i '$pg' psql -X -q -At -F '	' -U '$bootstrap' -d '$database'" <<'SQL'
 select 'revision', version_num from alembic_version;
@@ -213,19 +213,19 @@ SQL
 )
   local original
   original=$(remote "sudo cat '$dir/fingerprint.tsv'")
-  printf '  %-40s %-13s %8s %8s %9s %s\n' tabla clase antes después sin-dueño obligatorio
+  printf '  %-40s %-13s %8s %8s %9s %s\n' table class before after ownerless required
   local problems=0
   while IFS=$'\t' read -r name class count orphans required; do
-    [[ $name == revision ]] && { echo "  revisión: $class"; continue; }
+    [[ $name == revision ]] && { echo "  revision: $class"; continue; }
     local before
     before=$(awk -F '\t' -v t="$name" '$1 == t { print $2 }' <<<"$original")
     local mark=""
-    if [[ $class == arga:person && ( $orphans != 0 || $required != true ) ]]; then mark="  <-- FALLA"; problems=$((problems + 1)); fi
-    if [[ -n $before && $before != "$count" ]]; then mark="$mark  <-- cambió el recuento"; problems=$((problems + 1)); fi
+    if [[ $class == arga:person && ( $orphans != 0 || $required != true ) ]]; then mark="  <-- FAIL"; problems=$((problems + 1)); fi
+    if [[ -n $before && $before != "$count" ]]; then mark="$mark  <-- the count changed"; problems=$((problems + 1)); fi
     printf '  %-40s %-13s %8s %8s %9s %s%s\n' "$name" "$class" "${before:--}" "$count" "$orphans" "$required" "$mark"
   done <<<"$after"
   [[ $problems -eq 0 ]] || { echo "ENSAYO FALLIDO: $problems problema(s)" >&2; exit 1; }
-  echo "OK: ninguna fila de alguien sin dueño, dueño obligatorio, y ningún recuento cambiado"
+  echo "OK: no person row without an owner, owner required, and no count changed"
   rehearsal_rls
 }
 
@@ -240,7 +240,7 @@ declare
     total bigint; mine bigint; theirs bigint; nobody bigint;
 begin
     if (select count(*) from kernel.users) <> 1 then
-        raise notice 'sin una sola persona: no se comprueba la visibilidad';
+        raise notice 'not a single person: visibility is not checked';
         return;
     end if;
     select id into owner from kernel.users;
@@ -259,8 +259,8 @@ begin
         order by 1
     loop
         if not t.rls then continue; end if;
-        -- Una vista de eventos es del kernel y filtra con la RLS de kernel.events: su total se cuenta
-        -- en la tabla, porque contarla sin persona es, precisamente, no ver nada.
+        -- An events view belongs to the kernel and filters with kernel.events' RLS: its total is
+        -- counted on the table, because counting it without a person is, precisely, seeing nothing.
         if t.name like '%.events' and t.name <> 'kernel.events' then
             execute format('select count(*) from kernel.events where module = %L', split_part(t.name, '.', 1)) into total;
         else
@@ -280,20 +280,20 @@ end $$;
 select * from rls_report order by name;
 SQL
 )
-  [[ -n $report ]] || { echo "ensayo RLS: no hay nada que comprobar"; return 0; }
-  echo "ensayo RLS: lo que ve el rol que consulta"
-  printf '  %-40s %-16s %7s %9s %8s %7s\n' tabla rol total "la-dueña" "otra" nadie
+  [[ -n $report ]] || { echo "RLS rehearsal: nothing to check"; return 0; }
+  echo "RLS rehearsal: what the querying role sees"
+  printf '  %-40s %-16s %7s %9s %8s %7s\n' table role total "the-owner" "another" nobody
   local problems=0
   while IFS=$'\t' read -r name role total mine theirs nobody; do
     local mark=""
     if [[ $mine != "$total" || $theirs != 0 || $nobody != 0 ]]; then
-      mark="  <-- FALLA"
+      mark="  <-- FAIL"
       problems=$((problems + 1))
     fi
     printf '  %-40s %-16s %7s %9s %8s %7s%s\n' "$name" "$role" "$total" "$mine" "$theirs" "$nobody" "$mark"
   done <<<"$report"
   [[ $problems -eq 0 ]] || { echo "ENSAYO RLS FALLIDO: $problems problema(s)" >&2; exit 1; }
-  echo "OK: la persona ve todo lo suyo, otra persona no ve nada, y sin persona no se ve nada"
+  echo "OK: the person sees all of theirs, another person sees nothing, and without a person nothing is seen"
 }
 
 case $command in

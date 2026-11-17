@@ -15,10 +15,11 @@ COOKIE = os.environ["E2E_COOKIE"].strip()
 OUT = Path(os.environ["E2E_OUT"])
 TZ = "Europe/Madrid"
 SESSION = {"cookie": f"{COOKIE_NAME}={COOKIE}"}
+TODAY = '[data-widget="goals/today"]'
 
 
 def fail(message: str) -> None:
-    print(f"FALLA: {message}", file=sys.stderr)
+    print(f"FAIL: {message}", file=sys.stderr)
     sys.exit(1)
 
 
@@ -35,15 +36,15 @@ def seed(client: httpx.Client) -> str:
     today = date.today()
     categories = client.get("/api/goals/categories")
     if categories.status_code != 200:
-        fail(f"goals por el gateway: {categories.status_code} {categories.text[:200]}")
+        fail(f"goals through the gateway: {categories.status_code} {categories.text[:200]}")
     by_name = {one["name"]: one["id"] for one in categories.json()}
     home = by_name.get("Casa") or next(iter(by_name.values()))
     work = by_name.get("Trabajo") or home
     tasks = [
-        (work, "Enviar la factura del taller", today - timedelta(days=2), None),
+        (work, "Send the garage invoice", today - timedelta(days=2), None),
         (home, "Llamar al fontanero", today, "18:00"),
-        (home, "Regar las plantas", today, None),
-        (home, "Renovar el seguro", today + timedelta(days=3), None),
+        (home, "Water the plants", today, None),
+        (home, "Renew the insurance", today + timedelta(days=3), None),
     ]
     first = None
     for category, title, due, at in tasks:
@@ -57,12 +58,12 @@ def seed(client: httpx.Client) -> str:
 
     calendars = client.get("/api/planner/calendars")
     if calendars.status_code != 200:
-        fail(f"planner por el gateway: {calendars.status_code}")
+        fail(f"planner through the gateway: {calendars.status_code}")
     now = datetime.now()
     events = [
         (0, now.hour + 1, 1, "Dentista"),
-        (0, min(now.hour + 3, 21), 1, "Pádel"),
-        (1, 9, 1, "Reunión de equipo"),
+        (0, min(now.hour + 3, 21), 1, "Padel"),
+        (1, 9, 1, "Team meeting"),
         (2, 13, 1, "Comida con amigos"),
         (4, 19, 2, "Cine"),
     ]
@@ -87,7 +88,7 @@ def seed(client: httpx.Client) -> str:
         json={"items": [{"name": "Leche", "quantity": "2"}, {"name": "Pan"}, {"name": "Tomates"}]},
     )
     if added.status_code != 201:
-        fail(f"la compra: {added.status_code} {added.text[:200]}")
+        fail(f"shopping: {added.status_code} {added.text[:200]}")
     assert first is not None
     return first
 
@@ -99,9 +100,9 @@ def shoot(browser, name: str, **context) -> None:
     tab.wait_for_timeout(1500)
     tab.screenshot(path=str(OUT / f"{name}.png"), full_page=True)
     titles = tab.locator(".widget-title").all_inner_texts()
-    print(f"  {name}: {len(titles)} tarjetas · {', '.join(titles[:8])}")
-    if "Para hoy" not in titles:
-        fail(f"{name}: el escritorio de partida no trae Para hoy")
+    print(f"  {name}: {len(titles)} cards · {', '.join(titles[:8])}")
+    if not tab.locator(TODAY).count():
+        fail(f"{name}: the starting desktop has no Goals today card")
     page.close()
 
 
@@ -109,22 +110,22 @@ def tick(browser, client: httpx.Client, task_id: str) -> None:
     page = browser.new_context(extra_http_headers=SESSION, viewport={"width": 1440, "height": 900})
     tab = page.new_page()
     tab.goto(URL + "/", wait_until="networkidle")
-    card = tab.locator(".widget", has=tab.locator(".widget-title", has_text="Para hoy")).first
+    card = tab.locator(TODAY).first
     box = card.locator("button.task-check", has_text="").first
     label = box.get_attribute("aria-label")
     with tab.expect_response(lambda r: r.url.endswith("/widgets/today/act")) as answered:
         box.click()
     if answered.value.status != 200:
-        fail(f"tachar: {answered.value.status}")
+        fail(f"ticking: {answered.value.status}")
     tab.wait_for_timeout(800)
-    tab.screenshot(path=str(OUT / "tachada.png"))
+    tab.screenshot(path=str(OUT / "ticked.png"))
     if "/goals" in tab.url:
-        fail("el clic abrió la app en vez de tachar")
-    print(f"  tachada desde la tarjeta: {label}")
+        fail("the click opened the app instead of ticking")
+    print(f"  ticked from the card: {label}")
     done = client.get("/api/goals/tasks", params={"state": "done"}).json()
     if not done:
-        fail("Goals no da ninguna tarea por hecha")
-    print(f"  Goals la da por hecha: {done[0]['title']}")
+        fail("Goals marks no task as done")
+    print(f"  Goals marks it done: {done[0]['title']}")
     page.close()
 
 
@@ -132,7 +133,7 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     with api() as client:
         task_id = seed(client)
-        print("  sembrado: 4 tareas, 5 eventos, 3 cosas en la compra")
+        print("  seeded: 4 tasks, 5 events, 3 shopping items")
         with sync_playwright() as p:
             browser = p.chromium.launch()
             iphone = p.devices["iPhone 13"]

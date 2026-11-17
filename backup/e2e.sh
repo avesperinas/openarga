@@ -10,10 +10,10 @@ TAG=backup-e2e-$RUN_ID
 PG=$NET-pg
 ADMIN=argaadmin
 DB=arga
-PG_PASSWORD=postgres-de-prueba
-KERNEL_PASSWORD=kernel-de-prueba
-BACKUP_PASSWORD=backup-de-prueba
-RESTIC_PASSWORD=restic-de-prueba
+PG_PASSWORD=postgres-test
+KERNEL_PASSWORD=kernel-test
+BACKUP_PASSWORD=backup-test
+RESTIC_PASSWORD=restic-test
 
 cleanup() {
   [[ -n ${KEEP:-} ]] && return 0
@@ -25,15 +25,15 @@ trap 'cleanup; [[ -n ${KEEP:-} ]] || docker rmi "arga-kernel:$TAG" "arga-backup:
 cleanup
 
 say() { printf '\n== %s\n' "$*"; }
-fail() { echo "FALLA: $*" >&2; exit 1; }
+fail() { echo "FAIL: $*" >&2; exit 1; }
 
-say "imágenes de este árbol"
+say "images of this tree"
 "$ROOT/scripts/build-image.sh" kernel/Dockerfile "arga-kernel:$TAG"
 "$ROOT/scripts/build-image.sh" backup/Dockerfile "arga-backup:$TAG"
 docker network create --internal "$NET" >/dev/null
 docker volume create "$NET-backups" >/dev/null
 
-say "Postgres, el login de las copias y el esquema del kernel"
+say "Postgres, the backup login and the kernel schema"
 docker run -d --name "$PG" --network "$NET" --network-alias postgres \
   -e POSTGRES_USER=$ADMIN -e POSTGRES_PASSWORD=$PG_PASSWORD -e POSTGRES_DB=$DB \
   postgres:16-alpine >/dev/null
@@ -80,42 +80,42 @@ BACKUP=(docker run --rm "${CAPS[@]}" --network "$NET" -v "$NET-backups:/backups"
   -e "PGDATABASE=$DB" -e "PGPASSWORD=$BACKUP_PASSWORD" -e "RESTIC_PASSWORD=$RESTIC_PASSWORD"
   -e OFFSITE_REPOSITORY=/backups/offsite -e APP_VERSION=v9.9.9)
 
-say "la copia no ve menos por la RLS y no puede escribir"
+say "the backup does not see less because of RLS and cannot write"
 seen=$(docker run --rm --network "$NET" -e PGPASSWORD=$BACKUP_PASSWORD --entrypoint psql "arga-backup:$TAG" \
   -X -At -h postgres -U arga_backup -d $DB -c 'select count(*) from probe.readings')
-[[ $seen == 5000 ]] || fail "arga_backup ve $seen filas de 5000"
+[[ $seen == 5000 ]] || fail "arga_backup sees $seen rows of 5000"
 refused=$(docker run --rm --network "$NET" -e PGPASSWORD=$BACKUP_PASSWORD --entrypoint psql "arga-backup:$TAG" \
   -X -At -h postgres -U arga_backup -d $DB -c 'delete from probe.readings' 2>&1 || true)
 echo "$refused"
 grep -q 'permission denied' <<<"$refused" || fail "arga_backup ha podido borrar"
-echo "OK: ve las 5000 filas y un delete da permission denied"
+echo "OK: it sees the 5000 rows and a delete gives permission denied"
 
-say "una copia, a los dos repositorios"
+say "a backup, to both repositories"
 "${BACKUP[@]}" "arga-backup:$TAG" once
 
-say "restauración de prueba desde el de fuera"
+say "test restore from the offsite one"
 "${BACKUP[@]}" "arga-backup:$TAG" verify
 
-say "otra copia tras cambiar datos: deduplica y sigue restaurando la última"
+say "another backup after changing data: it deduplicates and still restores the latest"
 psql -c "update probe.readings set note = 'cambiada' where id <= 10"
 "${BACKUP[@]}" "arga-backup:$TAG" once
 "${BACKUP[@]}" "arga-backup:$TAG" status
 "${BACKUP[@]}" "arga-backup:$TAG" verify
 
-say "si el de fuera está mal configurado, la copia local se hace igual"
+say "if the offsite one is misconfigured, the local backup still happens"
 latest() { "${BACKUP[@]}" --entrypoint sh "arga-backup:$TAG" -c 'restic -r /backups/restic snapshots latest --host arga --json | grep -o "\"time\":\"[^\"]*\""'; }
 before=$(latest)
 if "${BACKUP[@]}" -e OFFSITE_REPOSITORY=s3:https://r2.invalid "arga-backup:$TAG" once; then
-  fail "once dio por buena una subida imposible"
+  fail "once accepted an impossible upload"
 fi
 after=$(latest)
-[[ $after != "$before" ]] || fail "sin la de fuera tampoco hubo copia local"
-echo "OK: falla la subida y hay copia local nueva ($before -> $after)"
+[[ $after != "$before" ]] || fail "without the offsite one there was no local backup either"
+echo "OK: the upload fails and there is a new local backup ($before -> $after)"
 
-say "check de los dos repositorios"
+say "check of both repositories"
 "${BACKUP[@]}" "arga-backup:$TAG" check
 
-say "la poda: lo que ya no usa ninguna copia se borra, aunque la copia de la hora ya la haya olvidado"
+say "the prune: what no backup uses any more is deleted, even if the hourly backup already forgot it"
 "${BACKUP[@]}" --entrypoint bash "arga-backup:$TAG" -c '
   set -euo pipefail
   mkdir -p /backups/work/dump && head -c 20000000 /dev/urandom > /backups/work/dump/ruido
@@ -126,32 +126,32 @@ say "la poda: lo que ya no usa ninguna copia se borra, aunque la copia de la hor
   rm -rf /backups/work/dump
 '
 sizes() { "${BACKUP[@]}" --entrypoint sh "arga-backup:$TAG" -c 'du -sm /backups/restic /backups/offsite | cut -f1 | paste -sd " "'; }
-measured() { "${BACKUP[@]}" "arga-backup:$TAG" space 2>&1 | sed -n 's/.*fuera ocupa \([0-9]*\)\..* MB de.*/\1/p'; }
+measured() { "${BACKUP[@]}" "arga-backup:$TAG" space 2>&1 | sed -n 's/.*offsite uses \([0-9]*\)\..* MB of.*/\1/p'; }
 read -r local_before offsite_before <<<"$(sizes)"
 space_before=$(measured)
-echo "antes de la poda: local $local_before MB, fuera $offsite_before MB; space dice $space_before MB"
-((space_before >= 20)) || fail "space no cuenta lo que espera a la poda ($space_before MB)"
+echo "before the prune: local $local_before MB, offsite $offsite_before MB; space says $space_before MB"
+((space_before >= 20)) || fail "space does not count what waits for the prune ($space_before MB)"
 "${BACKUP[@]}" "arga-backup:$TAG" daily
 read -r local_after offsite_after <<<"$(sizes)"
 space_after=$(measured)
-echo "después: local $local_after MB, fuera $offsite_after MB; space dice $space_after MB"
-((local_before - local_after >= 15)) || fail "la poda no ha borrado nada en el local"
-((offsite_before - offsite_after >= 15)) || fail "la poda no ha borrado nada fuera"
-((space_before - space_after >= 15)) || fail "space no ve que la poda ha liberado sitio"
-echo "OK: la poda borra lo olvidado en los dos, y space lo ve"
+echo "after: local $local_after MB, offsite $offsite_after MB; space says $space_after MB"
+((local_before - local_after >= 15)) || fail "the prune deleted nothing locally"
+((offsite_before - offsite_after >= 15)) || fail "the prune deleted nothing offsite"
+((space_before - space_after >= 15)) || fail "space does not see that the prune freed room"
+echo "OK: the prune deletes what was forgotten in both, and space sees it"
 
-say "el espacio de fuera en un S3 de verdad, como R2: los objetos del bucket, página a página"
+say "the offsite space on a real S3, like R2: the bucket's objects, page by page"
 docker run -d --name "$NET-s3" --network "$NET" --network-alias s3 rclone/rclone:1.71 \
-  serve s3 --addr :9000 --auth-key clave-de-prueba,secreto-de-prueba /data >/dev/null
+  serve s3 --addr :9000 --auth-key test-key,test-secret /data >/dev/null
 S3=(-e OFFSITE_REPOSITORY=s3:http://s3:9000/arga-e2e/copias
-  -e AWS_ACCESS_KEY_ID=clave-de-prueba -e AWS_SECRET_ACCESS_KEY=secreto-de-prueba)
+  -e AWS_ACCESS_KEY_ID=test-key -e AWS_SECRET_ACCESS_KEY=test-secret)
 for _ in $(seq 1 30); do
   "${BACKUP[@]}" "${S3[@]}" --entrypoint sh "arga-backup:$TAG" -c 'curl -s -o /dev/null http://s3:9000' && break
   sleep 1
 done
 "${BACKUP[@]}" "${S3[@]}" "arga-backup:$TAG" once
 stored=$(docker exec "$NET-s3" sh -c 'find /data/arga-e2e/copias -type f -exec stat -c %s {} + | awk "{s += \$1} END {print s}"')
-echo "en el bucket: $stored bytes"
+echo "in the bucket: $stored bytes"
 at() {
   "${BACKUP[@]}" "${S3[@]}" -e OFFSITE_ALERT_PERCENT=100 -e "OFFSITE_QUOTA_BYTES=$1" "${@:2}" \
     "arga-backup:$TAG" space 2>&1
@@ -159,28 +159,28 @@ at() {
 for page in 1000 3; do
   exact=$(at "$stored" -e "OFFSITE_LIST_PAGE=$page")
   short=$(at "$((stored - 1))" -e "OFFSITE_LIST_PAGE=$page")
-  echo "de $page en $page: $exact"
-  ! grep -q AVISO <<<"$exact" || fail "de $page en $page mide más de lo que hay en el bucket"
-  grep -q AVISO <<<"$short" || fail "de $page en $page mide menos de lo que hay en el bucket"
+  echo "$page at a time: $exact"
+  ! grep -q WARNING <<<"$exact" || fail "$page at a time it measures more than what is in the bucket"
+  grep -q WARNING <<<"$short" || fail "$page at a time it measures less than what is in the bucket"
 done
-echo "OK: mide lo que hay en el bucket, con y sin páginas"
+echo "OK: it measures what is in the bucket, with and without pages"
 
-say "espacio de fuera: por debajo del umbral no avisa; por encima, avisa"
+say "offsite space: below the threshold it does not warn; above, it warns"
 docker run --rm -v "$NET-backups:/backups" --entrypoint sh "arga-backup:$TAG" -c \
-  'printf "TELEGRAM_BOT_TOKEN=de-prueba\nTELEGRAM_CHAT_ID=1\n" > /backups/notify-space.env'
+  'printf "TELEGRAM_BOT_TOKEN=test\nTELEGRAM_CHAT_ID=1\n" > /backups/notify-space.env'
 below=$("${BACKUP[@]}" -e NOTIFY_ENV_FILE=/backups/notify-space.env "arga-backup:$TAG" space 2>&1)
 echo "$below"
-grep -q 'fuera ocupa .* de 10.00 GB (0 %)' <<<"$below" || fail "no dijo lo que ocupa fuera"
-! grep -q -e AVISO -e 'aviso por Telegram' <<<"$below" || fail "avisó por debajo del umbral"
+grep -q 'offsite uses .* of 10.00 GB (0 %)' <<<"$below" || fail "it did not say the offsite size"
+! grep -q -e WARNING -e 'Telegram notification' <<<"$below" || fail "it warned below the threshold"
 above=$("${BACKUP[@]}" -e NOTIFY_ENV_FILE=/backups/notify-space.env -e OFFSITE_QUOTA_BYTES=50000 \
   "arga-backup:$TAG" space 2>&1)
 echo "$above"
-grep -q 'AVISO: fuera ocupa .* por encima del 75 %' <<<"$above" || fail "no vio que pasa del umbral"
-grep -q 'aviso por Telegram no salió' <<<"$above" || fail "no intentó avisar"
-"${BACKUP[@]}" "arga-backup:$TAG" status | grep 'fuera ocupa' || fail "status no dice lo que ocupa fuera"
-echo "OK: mide, calla por debajo y avisa por encima"
+grep -q 'WARNING: offsite uses .* above 75 %' <<<"$above" || fail "it did not see it is over the threshold"
+grep -q 'Telegram notification did not go out' <<<"$above" || fail "it did not try to notify"
+"${BACKUP[@]}" "arga-backup:$TAG" status | grep 'offsite uses' || fail "status does not say the offsite size"
+echo "OK: it measures, stays quiet below and warns above"
 
-say "retención: copias cada hora durante dos días, cada día durante 70"
+say "retention: hourly backups for two days, daily for 70"
 "${BACKUP[@]}" --entrypoint bash "arga-backup:$TAG" -c '
   set -euo pipefail
   mkdir -p /backups/work/dump && echo sintetico > /backups/work/dump/meta.env
@@ -191,7 +191,7 @@ say "retención: copias cada hora durante dos días, cada día durante 70"
     restic --quiet -r /backups/restic backup --host arga --time "$(date -u -d @$t "+%F %T")" /backups/work/dump
   done
   rm -rf /backups/work/dump
-  echo "antes: $(restic -r /backups/restic snapshots --host arga --json | grep -o "\"short_id\"" | wc -l) copias"
+  echo "before: $(restic -r /backups/restic snapshots --host arga --json | grep -o "\"short_id\"" | wc -l) backups"
 '
 "${BACKUP[@]}" -e OFFSITE_REPOSITORY= --entrypoint bash "arga-backup:$TAG" -c '
   set -euo pipefail
@@ -199,14 +199,14 @@ say "retención: copias cada hora durante dos días, cada día durante 70"
   restic -r /backups/restic snapshots --host arga --json > /tmp/s.json
   total=$(grep -o "\"short_id\"" /tmp/s.json | wc -l)
   oldest=$(grep -o "\"time\":\"[^\"]*\"" /tmp/s.json | sort | sed -n 1p)
-  echo "después: $total copias; la más vieja $oldest"
-  (( total >= 30 && total <= 40 )) || { echo "FALLA: la retención dejó $total"; exit 1; }
+  echo "after: $total backups; the oldest $oldest"
+  (( total >= 30 && total <= 40 )) || { echo "FAIL: the retention left $total"; exit 1; }
   old=$(date -u -d @$(( $(date -u +%s) - 60 * 86400 )) +%F)
-  [[ ${oldest:8:10} < $old ]] || { echo "FALLA: no queda la mensual de hace dos meses"; exit 1; }
+  [[ ${oldest:8:10} < $old ]] || { echo "FAIL: the monthly one from two months ago is gone"; exit 1; }
 '
 "${BACKUP[@]}" "arga-backup:$TAG" verify
 
-say "rompo a posta los ficheros de datos del repositorio de fuera"
+say "breaking the offsite repository data files on purpose"
 "${BACKUP[@]}" --entrypoint sh "arga-backup:$TAG" -c '
   for pack in $(find /backups/offsite/data -type f); do
     chmod u+w "$pack"
@@ -215,43 +215,43 @@ say "rompo a posta los ficheros de datos del repositorio de fuera"
   echo "rotos: $(find /backups/offsite/data -type f | wc -l)"
 '
 if "${BACKUP[@]}" -e CHECK_OFFSITE_SUBSET=1/1 "arga-backup:$TAG" check; then
-  fail "check no ha visto el fichero roto"
+  fail "check did not see the broken file"
 fi
 echo "OK: check lo ha visto"
 if "${BACKUP[@]}" "arga-backup:$TAG" verify; then
-  fail "la restauración de prueba ha dado por buena una copia rota"
+  fail "the test restore accepted a broken backup"
 fi
-echo "OK: la restauración de prueba no la da por buena"
+echo "OK: the test restore does not accept it"
 "${BACKUP[@]}" -e OFFSITE_REPOSITORY= "arga-backup:$TAG" verify
-echo "OK: el repositorio local sigue restaurando"
+echo "OK: the local repository still restores"
 
-say "el servicio: arranca, hace su copia y late"
+say "the service: it starts, makes its backup and beats"
 docker run -d --name "$NET-serve" "${CAPS[@]}" --network "$NET" -v "$NET-backups:/backups" \
   -e PGDATABASE=$DB -e PGPASSWORD=$BACKUP_PASSWORD -e RESTIC_PASSWORD=$RESTIC_PASSWORD \
   -e STARTUP_DELAY=1 "arga-backup:$TAG" >/dev/null
 for _ in $(seq 1 60); do
-  docker logs "$NET-serve" 2>&1 | grep 'copia local hecha' >/dev/null && break
+  docker logs "$NET-serve" 2>&1 | grep 'local backup done' >/dev/null && break
   sleep 1
 done
 docker logs "$NET-serve" 2>&1 | sed 's/^/  | /'
-docker logs "$NET-serve" 2>&1 | grep 'copia local hecha' >/dev/null || fail "el servicio no hizo su copia"
-docker exec "$NET-serve" find /backups/state/heartbeat -mmin -1 | grep . >/dev/null || fail "el servicio no late"
+docker logs "$NET-serve" 2>&1 | grep 'local backup done' >/dev/null || fail "the service did not make its backup"
+docker exec "$NET-serve" find /backups/state/heartbeat -mmin -1 | grep . >/dev/null || fail "the service does not beat"
 
-say "si la copia falla, avisa una vez y el servicio sigue"
+say "if the backup fails, it notifies once and the service goes on"
 docker run --rm -v "$NET-backups:/backups" --entrypoint sh "arga-backup:$TAG" -c \
-  'printf "TELEGRAM_BOT_TOKEN=de-prueba\nTELEGRAM_CHAT_ID=1\n" > /backups/notify.env'
+  'printf "TELEGRAM_BOT_TOKEN=test\nTELEGRAM_CHAT_ID=1\n" > /backups/notify.env'
 docker run -d --name "$NET-broken" "${CAPS[@]}" --network "$NET" -v "$NET-backups:/backups" \
-  -e PGDATABASE=$DB -e PGPASSWORD=no-es-la-buena -e RESTIC_PASSWORD=$RESTIC_PASSWORD \
+  -e PGDATABASE=$DB -e PGPASSWORD=not-the-right-one -e RESTIC_PASSWORD=$RESTIC_PASSWORD \
   -e STATE_DIR=/backups/state-broken -e NOTIFY_ENV_FILE=/backups/notify.env \
   -e STARTUP_DELAY=1 "arga-backup:$TAG" >/dev/null
 for _ in $(seq 1 60); do
-  docker logs "$NET-broken" 2>&1 | grep 'aviso por Telegram no salió' >/dev/null && break
+  docker logs "$NET-broken" 2>&1 | grep 'Telegram notification did not go out' >/dev/null && break
   sleep 1
 done
 docker logs "$NET-broken" 2>&1 | sed 's/^/  | /'
-docker logs "$NET-broken" 2>&1 | grep 'aviso por Telegram no salió' >/dev/null || fail "no intentó avisar"
-[[ $(docker inspect -f '{{.State.Status}}' "$NET-broken") == running ]] || fail "el servicio se cayó"
-docker exec "$NET-broken" test -f /backups/state-broken/failing-once || fail "no apuntó el fallo"
-echo "OK: intentó avisar, apuntó el fallo y sigue en pie"
+docker logs "$NET-broken" 2>&1 | grep 'Telegram notification did not go out' >/dev/null || fail "it did not try to notify"
+[[ $(docker inspect -f '{{.State.Status}}' "$NET-broken") == running ]] || fail "the service went down"
+docker exec "$NET-broken" test -f /backups/state-broken/failing-once || fail "it did not record the failure"
+echo "OK: it tried to notify, recorded the failure and is still up"
 
-say "todo en orden"
+say "all in order"

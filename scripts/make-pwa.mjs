@@ -754,4 +754,4 @@ if (check && stale.length > 0) {
   );
   process.exit(1);
 }
-if (check) console.log(`pwa ok · ${assets.length} asset(s) al día con tokens.css`);
+if (check) console.log(`pwa ok · ${assets.length} asset(s) up to date with tokens.css`);

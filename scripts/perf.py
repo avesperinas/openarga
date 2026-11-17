@@ -143,14 +143,14 @@ def main() -> int:
     )
     parser.add_argument("what", choices=["bundles", "times"])
     parser.add_argument("--base", default="http://localhost:8000")
-    parser.add_argument("--cookie", help="el valor de la cookie de sesión del navegador")
+    parser.add_argument("--cookie", help="the value of the browser session cookie")
     parser.add_argument("--runs", type=int, default=20)
     args = parser.parse_args()
 
     if args.what == "bundles":
         rows = bundles()
         if not rows:
-            print("No hay nada construido: `pnpm -r build` antes.", file=sys.stderr)
+            print("Nothing is built: run `pnpm -r build` first.", file=sys.stderr)
             return 1
         for row in rows:
             for key in ("js_initial_gz", "css_initial_gz", "js_total_gz"):
@@ -159,7 +159,7 @@ def main() -> int:
         return 0
 
     if not args.cookie:
-        print("Sin --cookie el gateway contesta 401 a todo lo que tiene datos.", file=sys.stderr)
+        print("Without --cookie the gateway answers 401 to everything with data.", file=sys.stderr)
         return 1
     rows = times(args.base.rstrip("/"), args.cookie, args.runs)
     print(table(rows, ["what", "status", "p50", "p95", "db", "app", "gw"]))

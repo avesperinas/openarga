@@ -448,6 +448,7 @@ function DeviceDashboard({
                       key={item.instance_id}
                       className="grid-cell widget-enter"
                       data-instance={item.instance_id}
+                      data-widget={`${item.source}/${item.widget}`}
                       data-dragging={grid.dragging === item.instance_id || undefined}
                       style={
                         {
