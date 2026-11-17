@@ -18,8 +18,8 @@ from travel.tools.reading import GetTrip, _pick
 
 class UpdateTraveller(BaseModel):
     trip_id: str
-    traveller: str = Field(description="El viajero: su nombre actual o «yo».")
-    name: str = Field(min_length=1, max_length=60, description="Cómo se llama ahora.")
+    traveller: str = Field(description='The traveller: their current name or "me".')
+    name: str = Field(min_length=1, max_length=60, description="What they are called now.")
 
 
 async def update_traveller(
@@ -85,15 +85,15 @@ async def get_trip_balance(connection: AsyncConnection, arguments: GetTrip) -> d
             "transfers": [],
             "settlements": [],
             "unassigned_eur": 0.0,
-            "note": "nadie ha pagado nada con nombre todavía",
+            "note": "nobody has paid anything with a name yet",
         }
     return _balance(await money.balance(connection, picked["trip"].id))
 
 
 class RecordSettlement(BaseModel):
     trip_id: str
-    from_traveller: str = Field(description="Quién devolvió: el nombre de un viajero o «yo».")
-    to_traveller: str = Field(description="A quién.")
+    from_traveller: str = Field(description='Who paid back: a traveller\'s name or "me".')
+    to_traveller: str = Field(description="To whom.")
     amount_eur: Decimal = Field(gt=0, decimal_places=2)
     settled_on: date | None = None
     note: str | None = Field(default=None, max_length=300)

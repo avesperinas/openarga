@@ -37,7 +37,7 @@ class AddStay(StayArgs):
     trip_id: str
     place: PlaceArgument
     arrives_on: date
-    leaves_on: date = Field(description="El día que se sale. Las noches son la diferencia.")
+    leaves_on: date = Field(description="The day of leaving. The nights are the difference.")
     accommodation: str | None = Field(default=None, max_length=200)
 
 
@@ -60,11 +60,15 @@ class UpdateStay(StayArgs):
     stay_id: UUID
     arrives_on: date | None = None
     leaves_on: date | None = None
-    accommodation: str | None = Field(default=None, max_length=200, description="`null` lo borra.")
+    accommodation: str | None = Field(
+        default=None, max_length=200, description="`null` deletes it."
+    )
     place: PlaceArgument | None = Field(
         default=None,
-        description="Otro lugar: un candidato de find_place o un place_id. Los trayectos que "
-        "salían o llegaban aquí pasan al lugar nuevo.",
+        description=(
+            "Another place: a find_place candidate or a place_id. The legs leaving or arriving "
+            "here move to the new place."
+        ),
     )
     dry_run: bool = DRY_RUN
 
@@ -106,9 +110,11 @@ class RemoveStay(BaseModel):
     stay_id: UUID
     on_dependents: travel.OnDependents = Field(
         default="reject",
-        description="Qué hacer con las visitas y los trayectos que cuelgan de él: reject no quita "
-        "nada y dice cuáles; detach deja las visitas sin lugar principal y los trayectos yendo a "
-        "ese lugar; delete los quita con él.",
+        description=(
+            "What to do with the visits and legs hanging from it: reject removes nothing and says "
+            "which; detach leaves the visits without a main place and the legs going to that "
+            "place; delete removes them with it."
+        ),
     )
     dry_run: bool = DRY_RUN
 
@@ -137,7 +143,9 @@ class AddVisit(BaseModel):
     visited_on: date | None = None
     stay_id: str | None = Field(
         default=None,
-        description="Desde qué lugar principal. Sin él, el que cubra ese día, si hay uno.",
+        description=(
+            "From which main place. Without it, the one covering that day, if there is one."
+        ),
     )
     note: str | None = Field(default=None, max_length=500)
 
@@ -161,11 +169,15 @@ class UpdateVisit(BaseModel):
     place: PlaceArgument | None = None
     visited_on: date | None = Field(
         default=None,
-        description="Con otro día, pasa al lugar principal que cubra ese día si no se da stay_id. "
-        "`null` borra el día.",
+        description=(
+            "With another day, it moves to the main place covering that day if no stay_id is "
+            "given. `null` deletes the day."
+        ),
     )
-    stay_id: UUID | None = Field(default=None, description="`null` la suelta del lugar principal.")
-    note: str | None = Field(default=None, max_length=500, description="`null` la borra.")
+    stay_id: UUID | None = Field(
+        default=None, description="`null` releases it from the main place."
+    )
+    note: str | None = Field(default=None, max_length=500, description="`null` deletes it.")
 
 
 async def update_visit(connection: AsyncConnection, arguments: UpdateVisit) -> dict[str, Any]:
@@ -224,10 +236,10 @@ async def remove_visit(connection: AsyncConnection, arguments: VisitRef) -> dict
 
 class AddLeg(TicketArgs):
     trip_id: str
-    mode: travel.Mode = Field(description="plane, train, car, bus o boat.")
-    from_stay_id: str | None = Field(default=None, description="Sale de este lugar principal.")
+    mode: travel.Mode = Field(description="plane, train, car, bus or boat.")
+    from_stay_id: str | None = Field(default=None, description="Leaves from this main place.")
     from_place: PlaceArgument | None = Field(
-        default=None, description="O de otro sitio, como casa: un candidato de find_place."
+        default=None, description="Or from somewhere else, like home: a find_place candidate."
     )
     to_stay_id: str | None = None
     to_place: PlaceArgument | None = None
@@ -235,16 +247,18 @@ class AddLeg(TicketArgs):
     note: str | None = Field(default=None, max_length=500)
     on_map: bool | None = Field(
         default=None,
-        description="Si sale en las miniaturas, el mapa del viaje y el recorrido. Sin darlo, o "
-        "`null`, se deduce: fuera la ida desde casa y la vuelta.",
+        description=(
+            "Whether it shows in the thumbnails, the trip map and the route. If not given, or "
+            "`null`, it is deduced: the way out from home and the way back are left out."
+        ),
     )
 
     @model_validator(mode="after")
     def ends(self) -> AddLeg:
         if (self.from_stay_id is None) == (self.from_place is None):
-            raise ValueError("el origen es from_stay_id o from_place, uno de los dos")
+            raise ValueError("the origin is from_stay_id or from_place, one of the two")
         if (self.to_stay_id is None) == (self.to_place is None):
-            raise ValueError("el destino es to_stay_id o to_place, uno de los dos")
+            raise ValueError("the destination is to_stay_id or to_place, one of the two")
         return self
 
 
@@ -259,7 +273,7 @@ async def _end(
     )
     if found is None:
         raise travel.Conflict(
-            "ese lugar principal no es de este viaje", "NOT_FOUND", [{"stay_id": stay_id}]
+            "that main place is not from this trip", "NOT_FOUND", [{"stay_id": stay_id}]
         )
     return found
 
@@ -285,27 +299,29 @@ async def add_leg(connection: AsyncConnection, arguments: AddLeg) -> dict[str, A
 
 class UpdateLeg(TicketArgs):
     leg_id: UUID
-    mode: travel.Mode | None = Field(default=None, description="plane, train, car, bus o boat.")
-    from_stay_id: UUID | None = Field(default=None, description="Sale de este lugar principal.")
+    mode: travel.Mode | None = Field(default=None, description="plane, train, car, bus or boat.")
+    from_stay_id: UUID | None = Field(default=None, description="Leaves from this main place.")
     from_place: PlaceArgument | None = Field(
-        default=None, description="O de otro sitio: un candidato de find_place o un place_id."
+        default=None, description="Or from somewhere else: a find_place candidate or a place_id."
     )
     to_stay_id: UUID | None = None
     to_place: PlaceArgument | None = None
-    travelled_on: date | None = Field(default=None, description="`null` borra el día.")
-    note: str | None = Field(default=None, max_length=500, description="`null` la borra.")
+    travelled_on: date | None = Field(default=None, description="`null` deletes the day.")
+    note: str | None = Field(default=None, max_length=500, description="`null` deletes it.")
     on_map: bool | None = Field(
         default=None,
-        description="Si sale en las miniaturas, el mapa del viaje y el recorrido; `null` lo vuelve "
-        "a deducir: fuera la ida desde casa y la vuelta.",
+        description=(
+            "Whether it shows in the thumbnails, the trip map and the route; `null` deduces it "
+            "again: the way out from home and the way back are left out."
+        ),
     )
 
     @model_validator(mode="after")
     def ends(self) -> UpdateLeg:
         if self.from_stay_id is not None and self.from_place is not None:
-            raise ValueError("el origen es from_stay_id o from_place, no los dos")
+            raise ValueError("the origin is from_stay_id or from_place, not both")
         if self.to_stay_id is not None and self.to_place is not None:
-            raise ValueError("el destino es to_stay_id o to_place, no los dos")
+            raise ValueError("the destination is to_stay_id or to_place, not both")
         return self
 
 
@@ -349,26 +365,35 @@ async def remove_leg(connection: AsyncConnection, arguments: LegRef) -> dict[str
 
 class PaidArgs(BaseModel):
     amount: Decimal | None = Field(
-        default=None, ge=0, decimal_places=2, description="Lo que se pagó, en su moneda: el total."
+        default=None,
+        ge=0,
+        decimal_places=2,
+        description="What was paid, in its currency: the total.",
     )
     currency: str | None = Field(
         default=None, pattern=r"^[A-Za-z]{3}$", description="EUR, JPY, USD, GBP…"
     )
     paid_by: str | None = Field(
         default=None,
-        description="Quién pagó: el nombre de un viajero, o «yo». Los viajeros salen en get_trip.",
+        description='Who paid: a traveller\'s name, or "me". The travellers are in get_trip.',
     )
-    spent_on: date | None = Field(default=None, description="El día del gasto; sin darlo, hoy.")
+    spent_on: date | None = Field(
+        default=None, description="The day of the expense; if not given, today."
+    )
     fx_rate: Decimal | None = Field(
         default=None,
         gt=0,
-        description="Euros por unidad, solo para una moneda que el BCE no publica: si no se sabe "
-        "el cambio, el gasto no se apunta y lo dice.",
+        description=(
+            "Euros per unit, only for a currency the ECB does not publish: if the rate is unknown,"
+            " the expense is not noted and it says so."
+        ),
     )
     shares: dict[str, Decimal] | None = Field(
         default=None,
-        description="Reparto a medida: {nombre del viajero o «yo»: su parte en la moneda del "
-        "gasto}, que sume lo pagado. Sin darlo, a partes iguales; {} vuelve a partes iguales.",
+        description=(
+            "Custom split: {traveller's name or \"me\": their share in the expense's currency}, "
+            "adding up to what was paid. If not given, equal shares; {} goes back to equal shares."
+        ),
     )
 
 
@@ -393,16 +418,18 @@ async def _payer(connection: AsyncConnection, trip_id: str, who: str | None) -> 
 class RecordTripExpense(PaidArgs):
     trip_id: str
     category: travel.Category = Field(
-        description="transport (vuelos, coche, gasolina y parking, ferry, tren, bus), lodging "
-        "(hotel, apartamento) u other (efectivo, excursiones, seguro y vacunas, otros)."
+        description=(
+            "transport (flights, car, fuel and parking, ferry, train, bus), lodging (hotel, "
+            "apartment) or other (cash, excursions, insurance and vaccines, other)."
+        )
     )
-    concept: str = Field(min_length=1, max_length=60, description="Vuelos, Hotel, Excursiones…")
+    concept: str = Field(min_length=1, max_length=60, description="Flights, Hotel, Excursions…")
     amount_eur_per_person: Decimal | None = Field(
         default=None,
         ge=0,
         le=Decimal("99999999"),
         decimal_places=2,
-        description="Por persona y ya en euros, como en la hoja. O amount y currency.",
+        description="Per person and already in euros, as in the sheet. Or amount and currency.",
     )
     note: str | None = Field(default=None, max_length=300)
 
@@ -444,13 +471,13 @@ class UpdateExpense(PaidArgs):
         ge=0,
         le=Decimal("99999999"),
         decimal_places=2,
-        description="Por persona y ya en euros.",
+        description="Per person and already in euros.",
     )
     category: travel.Category | None = Field(
         default=None, description="transport, lodging u other."
     )
     concept: str | None = Field(default=None, min_length=1, max_length=60)
-    note: str | None = Field(default=None, max_length=300, description="`null` la borra.")
+    note: str | None = Field(default=None, max_length=300, description="`null` deletes it.")
 
 
 async def update_expense(connection: AsyncConnection, arguments: UpdateExpense) -> dict[str, Any]:
@@ -507,7 +534,9 @@ async def remove_expense(connection: AsyncConnection, arguments: ExpenseRef) -> 
 class AddOtherPlace(BaseModel):
     place: PlaceArgument
     note: str | None = Field(
-        default=None, max_length=300, description="Lo que se recuerde: con quién, hacia qué año."
+        default=None,
+        max_length=300,
+        description="What is remembered: with whom, around which year.",
     )
 
 
@@ -524,20 +553,20 @@ async def add_other_place(connection: AsyncConnection, arguments: AddOtherPlace)
 
 class OtherPlaceRef(BaseModel):
     other_place_id: UUID = Field(
-        description="El que dan get_travel (other_places) y add_other_place."
+        description="The one given by get_travel (other_places) and add_other_place."
     )
 
 
 async def _current_other(connection: AsyncConnection, other_id: str) -> travel.OtherPlace:
     found = next((one for one in await travel.other_places(connection) if one.id == other_id), None)
     if found is None:
-        raise travel.NotFound(f"lugar sin viaje {other_id}")
+        raise travel.NotFound(f"place without a trip {other_id}")
     return found
 
 
 class UpdateOtherPlace(OtherPlaceRef):
     place: PlaceArgument | None = None
-    note: str | None = Field(default=None, max_length=300, description="`null` la borra.")
+    note: str | None = Field(default=None, max_length=300, description="`null` deletes it.")
 
 
 async def update_other_place(
@@ -570,19 +599,23 @@ async def remove_other_place(connection: AsyncConnection, arguments: OtherPlaceR
 
 
 CATEGORY_HELP = (
-    "El tipo de sitio: restaurant, nightlife (bares y noche), cafe, market, beach, nature "
-    "(naturaleza y senderos), viewpoint (mirador), culture (museos, iglesias, monumentos), castle "
-    "(castillos y ruinas), town (pueblo o ciudad), shopping, parking, lodging u other."
+    "The kind of place: restaurant, nightlife (bars and night), cafe, market, beach, nature "
+    "(nature and trails), viewpoint, culture (museums, churches, monuments), castle (castles and "
+    "ruins), town (village or city), shopping, parking, lodging or other."
 )
 
 
 class UpdatePlace(BaseModel):
     place_id: UUID
-    name: str | None = Field(default=None, min_length=1, max_length=120, description="Otro nombre.")
+    name: str | None = Field(
+        default=None, min_length=1, max_length=120, description="Another name."
+    )
     candidate: travel.PlaceIn | None = Field(
         default=None,
-        description="Un candidato de find_place tal cual, para volver a resolverlo: coordenadas, "
-        "país, región y kilómetros se rehacen. Con name, el nombre es ese y no el del candidato.",
+        description=(
+            "A find_place candidate as is, to resolve it again: coordinates, country, region and "
+            "kilometres are redone. With name, the name is that one and not the candidate's."
+        ),
     )
     category: travel.PlaceCategory | None = Field(default=None, description=CATEGORY_HELP)
     dry_run: bool = DRY_RUN
@@ -590,7 +623,7 @@ class UpdatePlace(BaseModel):
     @model_validator(mode="after")
     def something(self) -> UpdatePlace:
         if self.name is None and self.candidate is None and self.category is None:
-            raise ValueError("hace falta un nombre nuevo, un candidato de find_place o un tipo")
+            raise ValueError("a new name, a find_place candidate or a kind is needed")
         return self
 
 

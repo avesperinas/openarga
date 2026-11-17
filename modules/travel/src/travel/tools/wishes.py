@@ -25,18 +25,18 @@ from travel.tools.common import (
 from travel.tools.trips import _spaces
 
 MONTH_NAMES = (
-    "enero",
-    "febrero",
-    "marzo",
-    "abril",
-    "mayo",
-    "junio",
-    "julio",
-    "agosto",
-    "septiembre",
-    "octubre",
-    "noviembre",
-    "diciembre",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
 )
 
 
@@ -83,14 +83,14 @@ async def get_ideas(connection: AsyncConnection, arguments: GetIdeas) -> dict[st
 
 MONTHS = Field(
     default=None,
-    description="Los meses buenos para ir, del 1 al 12: [4, 5, 10] es abril, mayo y octubre.",
+    description="The good months to go, from 1 to 12: [4, 5, 10] is April, May and October.",
 )
 
 
 class CreateIdea(BaseModel):
     title: str = Field(min_length=1, max_length=120)
     destinations: list[PlaceArgument] = Field(
-        default=[], max_length=30, description="Candidatos de find_place o place_id guardados."
+        default=[], max_length=30, description="find_place candidates or stored place_ids."
     )
     budget_eur_per_person: Decimal | None = Field(default=None, ge=0, decimal_places=2)
     days_min: int | None = Field(default=None, ge=1, le=365)
@@ -132,9 +132,9 @@ class UpdateIdea(IdeaRef):
     budget_eur_per_person: Decimal | None = Field(default=None, ge=0, decimal_places=2)
     days_min: int | None = Field(default=None, ge=1, le=365)
     days_max: int | None = Field(default=None, ge=1, le=365)
-    months: list[int] | None = Field(default=None, description="La lista entera, del 1 al 12.")
+    months: list[int] | None = Field(default=None, description="The whole list, from 1 to 12.")
     tags: list[str] | None = Field(default=None, max_length=20)
-    notes: str | None = Field(default=None, max_length=4000, description="`null` las borra.")
+    notes: str | None = Field(default=None, max_length=4000, description="`null` deletes them.")
 
 
 async def update_idea(connection: AsyncConnection, arguments: UpdateIdea) -> dict[str, Any]:
@@ -213,7 +213,9 @@ async def unarchive_idea(connection: AsyncConnection, arguments: IdeaRef) -> dic
 
 class DeleteIdea(IdeaRef):
     title: str = Field(
-        min_length=1, max_length=120, description="El título exacto: si no coincide, no se borra."
+        min_length=1,
+        max_length=120,
+        description="The exact title: if it does not match, it is not deleted.",
     )
     dry_run: bool = DRY_RUN
 
@@ -225,7 +227,8 @@ async def delete_idea(connection: AsyncConnection, arguments: DeleteIdea) -> dic
         found = await ideas.idea(connection, idea_id)
         if arguments.title != found.title:
             raise travel.Conflict(
-                f"esa idea se llama «{found.title}», no «{arguments.title}»; no he borrado nada",
+                f'that idea is called "{found.title}", not "{arguments.title}"; '
+                "nothing was deleted",
                 "TITLE_MISMATCH",
                 [{"idea_id": found.id, "title": found.title}],
             )
@@ -245,7 +248,7 @@ class PlanIdea(IdeaRef):
     starts_on: date
     ends_on: date
     title: str | None = Field(
-        default=None, min_length=1, max_length=120, description="Sin darlo, el de la idea."
+        default=None, min_length=1, max_length=120, description="If not given, the idea's."
     )
     travellers: int = Field(default=1, ge=1, le=50)
 
@@ -253,7 +256,7 @@ class PlanIdea(IdeaRef):
 async def plan_idea(connection: AsyncConnection, arguments: PlanIdea) -> dict[str, Any]:
     async def run() -> travel.Trip:
         if arguments.ends_on < arguments.starts_on:
-            raise travel.Conflict("el viaje no puede acabar antes de empezar", "INVALID")
+            raise travel.Conflict("a trip cannot end before it starts", "INVALID")
         return await ideas.plan_idea(
             connection,
             str(arguments.idea_id),
@@ -270,7 +273,7 @@ class ShareIdea(IdeaRef):
     space: str | None = Field(
         min_length=1,
         max_length=80,
-        description="El nombre del espacio de arga, o null para que vuelva a ser solo tuya.",
+        description="The name of the arga space, or null to make it only yours again.",
     )
 
 
@@ -283,7 +286,7 @@ async def share_idea(connection: AsyncConnection, arguments: ShareIdea) -> dict[
             match = [one for one in mine if one["name"].strip().lower() == wanted]
             if not match:
                 raise travel.Conflict(
-                    f"no estás en ningún espacio llamado «{arguments.space}»",
+                    f'you are in no space called "{arguments.space}"',
                     "NOT_FOUND",
                     [{"space": one["name"]} for one in mine],
                 )

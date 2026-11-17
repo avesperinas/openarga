@@ -40,6 +40,7 @@ from travel import (
 )
 from travel import panel as home_panel
 from travel.db import SCHEMA, engine
+from travel.words import words
 
 MODULE_ID = "travel"
 UI_ROOT = f"/{MODULE_ID}"
@@ -68,19 +69,21 @@ async def readyz() -> dict:
                 text("select 1 from information_schema.schemata where schema_name = :schema"),
                 {"schema": SCHEMA},
             )
-    except Exception as error:  # noqa: BLE001 -- cualquier fallo de conexión es "no listo"
-        raise HTTPException(status_code=503, detail=f"sin base de datos: {error}") from error
+    except Exception as error:  # noqa: BLE001 -- any connection failure is "not ready"
+        raise HTTPException(status_code=503, detail=f"no database: {error}") from error
 
     if not found:
         raise HTTPException(
             status_code=503,
-            detail=f"el schema '{SCHEMA}' no existe todavía; lo aprovisiona el kernel al "
-            f"registrar el manifiesto",
+            detail=f"the schema '{SCHEMA}' does not exist yet; the kernel provisions it when "
+            f"it registers the manifest",
         )
     if not (ui_dist() / "index.html").is_file():
-        raise HTTPException(status_code=503, detail=f"la app no está construida en {ui_dist()}")
+        raise HTTPException(status_code=503, detail=f"the app is not built in {ui_dist()}")
     if not all((geo.geo_dir() / name).is_file() for name in GEO_FILES):
-        raise HTTPException(status_code=503, detail=f"faltan las geometrías en {geo.geo_dir()}")
+        raise HTTPException(
+            status_code=503, detail=f"the geometries are missing in {geo.geo_dir()}"
+        )
     return {"status": "ready", "module": MODULE_ID, "schema": SCHEMA}
 
 
@@ -146,7 +149,7 @@ async def clear_home() -> Response:
 
 @app.get("/concepts")
 async def concepts() -> dict[str, list[str]]:
-    return {category: list(names) for category, names in travel.CATEGORIES.items()}
+    return {category: words(f"concepts.{category}") for category in travel.CATEGORIES}
 
 
 @app.get("/trips/{trip_id}")
@@ -206,7 +209,7 @@ class SpaceIn(BaseModel):
 async def share_trip(trip_id: UUID, request: SpaceIn) -> travel.Trip:
     found = await fresh_spaces()
     if request.space_id is not None and str(request.space_id) not in {s["id"] for s in found}:
-        raise HTTPException(status_code=404, detail="no estás en ese espacio")
+        raise HTTPException(status_code=404, detail="you are not in that space")
     space = str(request.space_id) if request.space_id else None
     return await _edit(travel.share_trip, str(trip_id), space)
 
@@ -259,7 +262,7 @@ async def read_bookings(trip_id: UUID) -> list[bookings.Booking]:
 @app.get("/tiles/{z}/{x}/{y}")
 async def read_tile(z: int, x: int, y: int) -> Response:
     if not 0 <= z <= 15 or not (0 <= x < 1 << z and 0 <= y < 1 << z):
-        raise HTTPException(status_code=404, detail="esa tesela no existe")
+        raise HTTPException(status_code=404, detail="that tile does not exist")
     try:
         data = await _edit(streets.tile, z, x, y)
     except streets.Unavailable as error:
@@ -326,7 +329,7 @@ class PlanIn(BaseModel):
 @app.post("/ideas/{idea_id}/plan", status_code=201)
 async def plan_idea(idea_id: UUID, request: PlanIn) -> travel.Trip:
     if request.ends_on < request.starts_on:
-        raise HTTPException(status_code=422, detail="el viaje no puede acabar antes de empezar")
+        raise HTTPException(status_code=422, detail="a trip cannot end before it starts")
     return await _edit(
         ideas.plan_idea,
         str(idea_id),
@@ -341,7 +344,7 @@ async def plan_idea(idea_id: UUID, request: PlanIn) -> travel.Trip:
 async def share_idea(idea_id: UUID, request: SpaceIn) -> ideas.Idea:
     found = await fresh_spaces()
     if request.space_id is not None and str(request.space_id) not in {s["id"] for s in found}:
-        raise HTTPException(status_code=404, detail="no estás en ese espacio")
+        raise HTTPException(status_code=404, detail="you are not in that space")
     space = str(request.space_id) if request.space_id else None
     return await _edit(ideas.share_idea, str(idea_id), space)
 
@@ -527,25 +530,25 @@ async def capability(
 ) -> dict:
     expected = os.environ.get("MODULE_REGISTRATION_TOKEN", "")
     if not expected:
-        raise HTTPException(status_code=503, detail="Travel no tiene MODULE_REGISTRATION_TOKEN")
+        raise HTTPException(status_code=503, detail="Travel has no MODULE_REGISTRATION_TOKEN")
     if not hmac.compare_digest(x_module_token, expected):
-        raise HTTPException(status_code=401, detail="solo el kernel pide cosas a Travel")
+        raise HTTPException(status_code=401, detail="only the kernel asks Travel for things")
     if capability != contracts.TRIPS_IDEA:
-        raise HTTPException(status_code=404, detail=f"Travel no sabe hacer '{capability}'")
+        raise HTTPException(status_code=404, detail=f"Travel cannot do '{capability}'")
     require_person()
     try:
         asked = contracts.TripIdea.model_validate(await request.json())
     except (ValidationError, ValueError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     made = await _edit(plans.make_idea, asked)
-    print(f"idea       pedida por {x_arga_module}", flush=True)
+    print(f"idea       asked by {x_arga_module}", flush=True)
     return made
 
 
 @app.put("/trips/{trip_id}/cover")
 async def upload_cover(trip_id: UUID, request: Request) -> travel.Trip:
     if int(request.headers.get("content-length") or 0) > covers.LIMIT:
-        raise HTTPException(status_code=413, detail="la foto pasa de 12 MB")
+        raise HTTPException(status_code=413, detail="the photo is over 12 MB")
     try:
         cover = await covers.prepare(await request.body())
     except travel.Conflict as error:
@@ -578,7 +581,7 @@ async def upload_document(
 ) -> list[documents.Document]:
     declared = int(request.headers.get("content-length") or 0)
     if declared > documents.LIMIT:
-        raise HTTPException(status_code=413, detail="el fichero pasa de 20 MB")
+        raise HTTPException(status_code=413, detail="the file is over 20 MB")
     body = await request.body()
     kind = request.headers.get("content-type", "application/octet-stream").split(";")[0].strip()
     return await _edit(
@@ -620,7 +623,7 @@ async def remove_document(trip_id: UUID, document_id: UUID) -> list[documents.Do
 @app.delete("/trips/{trip_id}/{part}/{part_id}")
 async def delete_part(trip_id: UUID, part: str, part_id: UUID) -> travel.Trip:
     if part not in travel.PARTS:
-        raise HTTPException(status_code=404, detail=f"un viaje no tiene '{part}'")
+        raise HTTPException(status_code=404, detail=f"a trip has no '{part}'")
     return await _edit(travel.delete_part, str(trip_id), part, str(part_id))
 
 
@@ -656,7 +659,7 @@ async def set_place_category(place_id: UUID, request: CategoryIn) -> travel.Plac
 @app.get(UI_ROOT + "/geo/{name}")
 async def geometry(name: str) -> FileResponse:
     if name not in GEO_FILES:
-        raise HTTPException(status_code=404, detail=f"no hay geometría '{name}'")
+        raise HTTPException(status_code=404, detail=f"there is no geometry '{name}'")
     return FileResponse(
         geo.geo_dir() / name,
         media_type="application/json",
@@ -664,7 +667,7 @@ async def geometry(name: str) -> FileResponse:
     )
 
 
-TRIP_APP = re.compile(r"viaje/[0-9a-f-]{36}/?")
+TRIP_APP = re.compile(r"(trip|viaje)/[0-9a-f-]{36}/?")
 MANIFEST_LINK = re.compile(r'\s*<link rel="manifest"[^>]*>')
 
 
@@ -672,14 +675,16 @@ def trip_app_page(html: str) -> str:
     return MANIFEST_LINK.sub("", html)
 
 
+@app.get(UI_ROOT + "/trip/{trip_id}")
+@app.get(UI_ROOT + "/trip/{trip_id}/")
 @app.get(UI_ROOT + "/viaje/{trip_id}")
 @app.get(UI_ROOT + "/viaje/{trip_id}/")
 async def trip_app(trip_id: str) -> HTMLResponse:
-    if not TRIP_APP.fullmatch(f"viaje/{trip_id}"):
-        raise HTTPException(status_code=404, detail=f"no existe: {trip_id}")
+    if not TRIP_APP.fullmatch(f"trip/{trip_id}"):
+        raise HTTPException(status_code=404, detail=f"does not exist: {trip_id}")
     index = ui_dist() / "index.html"
     if not index.is_file():
-        raise HTTPException(status_code=503, detail="la app no está construida")
+        raise HTTPException(status_code=503, detail="the app is not built")
     return HTMLResponse(trip_app_page(index.read_text()), headers={"cache-control": "no-cache"})
 
 

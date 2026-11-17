@@ -26,7 +26,7 @@ async def agenda(schema) -> list[dict]:
 
 
 async def test_a_plan_stays_out_of_the_calendar_until_it_is_confirmed(api, schema) -> None:
-    plan = await make_trip(api, "Japón", ahead(0), ahead(14), status="plan")
+    plan = await make_trip(api, "Japan", ahead(0), ahead(14), status="plan")
     assert plan["status"] == "plan" and plan["phase"] == "plan"
     await stay(api, plan["id"], BRUGES, ahead(0), ahead(3))
     assert await agenda(schema) == []
@@ -58,9 +58,9 @@ async def test_a_plan_that_was_never_confirmed_leaves_no_trace_when_deleted(api,
 async def test_after_a_rollback_the_plans_published_by_the_old_code_are_withdrawn(
     api, schema
 ) -> None:
-    plan = await make_trip(api, "Japón", ahead(0), ahead(14), status="plan")
+    plan = await make_trip(api, "Japan", ahead(0), ahead(14), status="plan")
     kept = await make_trip(api, "Flandes", "2025-04-10", "2025-04-15")
-    old = travel._agenda(plan["id"], "Japón", SOON, SOON + timedelta(days=14))
+    old = travel._agenda(plan["id"], "Japan", SOON, SOON + timedelta(days=14))
     async with schema.begin() as connection:
         await connection.execute(text('set local role "mod_travel"'))
         await connection.execute(
@@ -68,7 +68,7 @@ async def test_after_a_rollback_the_plans_published_by_the_old_code_are_withdraw
                 "insert into travel.travel_outbox (type, payload, dedup_hash) "
                 "values ('travel.trip', cast(:payload as jsonb), 'old-code')"
             ),
-            {"payload": json.dumps({"trip_id": plan["id"], "title": "Japón", "agenda": old})},
+            {"payload": json.dumps({"trip_id": plan["id"], "title": "Japan", "agenda": old})},
         )
 
     for _ in range(2):
@@ -107,7 +107,7 @@ async def test_what_has_not_happened_does_not_count(api) -> None:
 
 
 async def test_moving_a_plan_moves_everything_with_a_date(api) -> None:
-    plan = await make_trip(api, "Japón", ahead(0), ahead(6), status="plan")
+    plan = await make_trip(api, "Japan", ahead(0), ahead(6), status="plan")
     bruges = await place(api, BRUGES)
     ghent = await place(api, GHENT)
     await api.post(
@@ -118,7 +118,7 @@ async def test_moving_a_plan_moves_everything_with_a_date(api) -> None:
         f"/trips/{plan['id']}/visits", json={"place_id": ghent["id"], "visited_on": ahead(2)}
     )
 
-    body = {"title": "Japón", "starts_on": ahead(30), "ends_on": ahead(36)}
+    body = {"title": "Japan", "starts_on": ahead(30), "ends_on": ahead(36)}
     refused = await api.put(f"/trips/{plan['id']}", json=body)
     assert refused.status_code == 409
 

@@ -76,7 +76,7 @@ async def test_claude_notes_an_idea_and_plans_it(api) -> None:
     created = await api.post(
         "/tools/create_idea",
         json={
-            "title": "Japón en otoño",
+            "title": "Japan in autumn",
             "destinations": [BRUGES],
             "months": [11],
             "days_min": 12,
@@ -93,13 +93,13 @@ async def test_claude_notes_an_idea_and_plans_it(api) -> None:
     )
     rehearsed = await api.post(
         "/tools/delete_idea",
-        json={"idea_id": idea["idea_id"], "title": "Japón en otoño", "dry_run": True},
+        json={"idea_id": idea["idea_id"], "title": "Japan in autumn", "dry_run": True},
         headers=WRITE,
     )
     listed = await api.post("/tools/get_ideas", json={}, headers=WRITE)
 
     assert created.status_code == 200, created.text
-    assert (idea["months"], idea["days"]) == (["noviembre"], {"min": 12, "max": 15})
+    assert (idea["months"], idea["days"]) == (["November"], {"min": 12, "max": 15})
     assert planned.json()["content"]["trip"]["phase"] == "plan"
     assert rehearsed.json()["content"]["dry_run"] is True
     assert listed.json()["content"]["ideas"][0]["trips"][0]["phase"] == "plan"

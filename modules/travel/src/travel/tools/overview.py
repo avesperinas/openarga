@@ -39,11 +39,13 @@ PARTS: dict[str, Callable[[AsyncConnection, GetTrip], Awaitable[dict[str, Any]]]
 class GetTripWith(GetTrip):
     include: list[Part] = Field(
         default_factory=list,
-        description="Lo que se quiere además del viaje: itinerary (los días con sus bloques y lo "
-        "guardado sin día), bookings (alojamientos, trayectos y bloques con su reserva), balance "
-        "(quién debe a quién), notes (las notas, en trip_notes), checklist (la maleta y lo que "
-        "hay que hacer) y documents (los billetes y papeles guardados, sin su contenido). Sin "
-        "nada, solo el viaje con sus lugares, trayectos, gastos y el diario.",
+        description=(
+            "What is wanted besides the trip: itinerary (the days with their blocks and what is "
+            "kept without a day), bookings (lodgings, legs and blocks with their booking), balance"
+            " (who owes whom), notes (the notes, in trip_notes), checklist (the suitcase and what "
+            "has to be done) and documents (the tickets and papers stored, without their content)."
+            " With nothing, only the trip with its places, legs, expenses and the journal."
+        ),
     )
 
 
@@ -69,12 +71,16 @@ async def get_trip(connection: AsyncConnection, arguments: GetTripWith) -> dict[
 class GetTravel(BaseModel):
     view: Literal["places", "summary"] = Field(
         default="places",
-        description="places: los países o regiones donde se ha estado, con noches y fechas, y los "
-        "otros lugares (los que no tienen viaje). summary: las cifras de lo vivido, agrupadas por "
-        "año, país o modo de transporte.",
+        description=(
+            "places: the countries or regions visited, with nights and dates, and the other places"
+            " (those without a trip). summary: the figures of what was lived, grouped by year, "
+            "country or mode of transport."
+        ),
     )
-    level: Literal["country", "region"] = Field(default="country", description="Con places.")
-    group_by: Literal["year", "country", "mode"] = Field(default="year", description="Con summary.")
+    level: Literal["country", "region"] = Field(default="country", description="With places.")
+    group_by: Literal["year", "country", "mode"] = Field(
+        default="year", description="With summary."
+    )
     since: date | None = None
     until: date | None = None
 

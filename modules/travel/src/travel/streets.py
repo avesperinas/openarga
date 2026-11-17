@@ -72,7 +72,7 @@ async def day_route(
     found = await itinerary.itinerary(connection, trip_id)
     today = next((one for one in found.days if one.day == day), None)
     if today is None:
-        raise itinerary.travel.NotFound(f"el día {day.isoformat()} del viaje")
+        raise itinerary.travel.NotFound(f"day {day.isoformat()} of the trip")
     stops: list[Stop] = []
     previous = next((one for one in found.days if one.number == today.number - 1), None)
     woke = previous.sleeping if previous else None
@@ -132,7 +132,7 @@ async def day_route(
     answer = await hub.directions(profile, [(one.lon, one.lat) for one in stops][:25])
     route = answer.get("route")
     if not route:
-        return empty.model_copy(update={"failed": answer.get("failed") or "sin ruta"})
+        return empty.model_copy(update={"failed": answer.get("failed") or "no route"})
     return empty.model_copy(
         update={
             "line": route["geometry"],

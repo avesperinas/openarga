@@ -24,7 +24,7 @@ class ItemIn(BaseModel):
     def tidy(cls, value: str) -> str:
         cleaned = " ".join(value.split())
         if not cleaned:
-            raise ValueError("una cosa de la lista no puede estar vacía")
+            raise ValueError("a list item cannot be empty")
         return cleaned
 
 
@@ -67,7 +67,7 @@ async def _traveller(connection: AsyncConnection, trip_id: str, traveller_id: UU
         {"id": str(traveller_id), "trip": trip_id},
     )
     if found is None:
-        raise travel.NotFound("ese viajero no es de este viaje")
+        raise travel.NotFound("that traveller is not from this trip")
 
 
 async def _insert(connection: AsyncConnection, trip_id: str, request: ItemIn) -> None:
@@ -130,7 +130,7 @@ async def change_item(
         },
     )
     if updated.rowcount == 0:
-        raise travel.NotFound(f"cosa de la lista {item_id}")
+        raise travel.NotFound(f"list item {item_id}")
     await travel._touch(connection, trip_id)
     return await items(connection, trip_id)
 
@@ -141,7 +141,7 @@ async def remove_item(connection: AsyncConnection, trip_id: str, item_id: str) -
         {"id": item_id, "trip": trip_id},
     )
     if deleted.rowcount == 0:
-        raise travel.NotFound(f"cosa de la lista {item_id}")
+        raise travel.NotFound(f"list item {item_id}")
     await travel._touch(connection, trip_id)
     return await items(connection, trip_id)
 
@@ -150,7 +150,7 @@ async def copy_from(
     connection: AsyncConnection, trip_id: str, source_id: str, kind: ListKind | None = None
 ) -> list[Item]:
     if source_id == trip_id:
-        raise travel.Conflict("un viaje no copia sus propias listas", "INVALID")
+        raise travel.Conflict("a trip does not copy its own lists", "INVALID")
     await travel.trip(connection, trip_id)
     source = await items(connection, source_id)
     if (
@@ -160,7 +160,7 @@ async def copy_from(
         )
         is None
     ):
-        raise travel.NotFound(f"viaje {source_id}")
+        raise travel.NotFound(f"trip {source_id}")
     have = {(one.list, one.text.lower()) for one in await items(connection, trip_id)}
     for one in source:
         if kind is not None and one.list != kind:
@@ -178,5 +178,5 @@ async def trip_of(connection: AsyncConnection, item_id: str) -> str:
         text("select trip_id::text from travel.travel_check_item where id = :id"), {"id": item_id}
     )
     if found is None:
-        raise travel.NotFound(f"cosa de la lista {item_id}")
+        raise travel.NotFound(f"list item {item_id}")
     return found

@@ -28,7 +28,7 @@ class TripIn(BaseModel):
     @model_validator(mode="after")
     def in_order(self) -> TripIn:
         if self.ends_on < self.starts_on:
-            raise ValueError("el viaje no puede acabar antes de empezar")
+            raise ValueError("a trip cannot end before it starts")
         return self
 
 
@@ -54,7 +54,7 @@ class StayIn(BookingIn):
     @model_validator(mode="after")
     def in_order(self) -> StayIn:
         if self.leaves_on < self.arrives_on:
-            raise ValueError("no se puede salir de un sitio antes de llegar")
+            raise ValueError("you cannot leave a place before arriving")
         return self
 
 
@@ -86,9 +86,9 @@ class LegIn(BookingIn):
     @model_validator(mode="after")
     def somewhere(self) -> LegIn:
         if self.from_place_id == self.to_place_id:
-            raise ValueError("un trayecto va de un sitio a otro distinto")
+            raise ValueError("a leg goes from one place to a different one")
         if self.arrives_on and self.travelled_on and self.arrives_on < self.travelled_on:
-            raise ValueError("un trayecto no llega antes de salir")
+            raise ValueError("a leg does not arrive before it leaves")
         return self
 
 
@@ -118,10 +118,10 @@ class ExpenseIn(BaseModel):
     def some_amount(self) -> ExpenseIn:
         if self.amount is None and self.amount_eur is None:
             raise ValueError(
-                "hace falta el importe: por persona en euros, o lo pagado en su moneda"
+                "the amount is needed: per person in euros, or what was paid in its currency"
             )
         if self.amount is not None and self.currency is None:
-            raise ValueError("lo pagado va con su moneda: EUR, JPY, USD…")
+            raise ValueError("what was paid goes with its currency: EUR, JPY, USD…")
         return self
 
     @field_validator("concept")
@@ -129,7 +129,7 @@ class ExpenseIn(BaseModel):
     def tidy(cls, value: str) -> str:
         cleaned = " ".join(value.split())
         if not cleaned:
-            raise ValueError("el concepto no puede estar vacío")
+            raise ValueError("the concept cannot be empty")
         return cleaned
 
 

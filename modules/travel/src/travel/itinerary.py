@@ -30,13 +30,13 @@ class BlockIn(travel.BookingIn):
     def tidy(cls, value: str) -> str:
         cleaned = " ".join(value.split())
         if not cleaned:
-            raise ValueError("el título no puede estar vacío")
+            raise ValueError("the title cannot be empty")
         return cleaned
 
     @model_validator(mode="after")
     def in_order(self) -> BlockIn:
         if self.starts_at and self.ends_at and self.ends_at < self.starts_at:
-            raise ValueError("un bloque no puede acabar antes de empezar")
+            raise ValueError("a block cannot end before it starts")
         return self
 
 
@@ -196,7 +196,7 @@ async def set_day_title(
     await travel._check_dates(connection, trip_id, day)
     cleaned = " ".join((title or "").split())
     if len(cleaned) > 80:
-        raise travel.Conflict("el título de un día tiene como mucho 80 caracteres", "TOO_LONG")
+        raise travel.Conflict("a day's title has at most 80 characters", "TOO_LONG")
     await connection.execute(
         text("delete from travel.travel_day where trip_id = :trip and day = :day"),
         {"trip": trip_id, "day": day},
@@ -222,7 +222,7 @@ async def _row(connection: AsyncConnection, block_id: str):
         )
     ).one_or_none()
     if row is None:
-        raise travel.NotFound(f"bloque {block_id}")
+        raise travel.NotFound(f"block {block_id}")
     return row
 
 
@@ -415,7 +415,7 @@ async def update_block(
 ) -> Itinerary:
     current = await _row(connection, block_id)
     if current.trip_id != trip_id:
-        raise travel.NotFound(f"bloque {block_id}")
+        raise travel.NotFound(f"block {block_id}")
     await travel._check_dates(connection, trip_id, request.day)
     if request.place_id:
         await travel.place_by_id(connection, request.place_id)
@@ -454,7 +454,7 @@ async def move_block(
 ) -> Itinerary:
     current = await _row(connection, block_id)
     if current.trip_id != trip_id:
-        raise travel.NotFound(f"bloque {block_id}")
+        raise travel.NotFound(f"block {block_id}")
     await travel._check_dates(connection, trip_id, day)
     target = [one for one in await _order(connection, trip_id, day) if one != block_id]
     target.insert(max(0, min(position, len(target))), block_id)
@@ -473,7 +473,7 @@ async def move_block(
 async def remove_block(connection: AsyncConnection, trip_id: str, block_id: str) -> Itinerary:
     current = await _row(connection, block_id)
     if current.trip_id != trip_id:
-        raise travel.NotFound(f"bloque {block_id}")
+        raise travel.NotFound(f"block {block_id}")
     if current.visit_id:
         await connection.execute(
             text("delete from travel.travel_visit where id = :id"), {"id": current.visit_id}

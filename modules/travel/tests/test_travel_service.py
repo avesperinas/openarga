@@ -86,7 +86,7 @@ async def test_the_suggested_concepts_are_those_of_the_sheet(bare) -> None:
     concepts = (await bare.get("/concepts")).json()
 
     assert list(concepts) == ["transport", "lodging", "other"]
-    assert "Gasolina y parking" in concepts["transport"]
+    assert "Fuel and parking" in concepts["transport"]
 
 
 async def test_every_widget_answers_its_kind_empty_and_full(api) -> None:
@@ -104,11 +104,11 @@ async def test_every_widget_answers_its_kind_empty_and_full(api) -> None:
         assert body["state"] == "ready", widget_id
         validate(kind, body["body"])
     countries = (await api.get("/widgets/countries")).json()["body"]
-    assert (countries["value"], countries["detail"]) == (1, "1 de 44 de Europa")
+    assert (countries["value"], countries["detail"]) == (1, "1 of 44 in Europe")
     last = (await api.get("/widgets/last_trip")).json()["body"]["events"][0]
-    assert (last["title"], last["detail"]) == ("Flandes", "2 noches · Brujas")
+    assert (last["title"], last["detail"]) == ("Flandes", "2 nights · Brujas")
     upcoming = (await api.get("/widgets/next_trip")).json()["body"]["events"][0]
-    assert (upcoming["title"], upcoming["detail"]) == ("Lille", "plan · 1 día · Lille")
+    assert (upcoming["title"], upcoming["detail"]) == ("Lille", "plan · 1 day · Lille")
 
     await api.put(f"/trips/{trip['id']}/archived", json={"archived": True})
     assert (await api.get("/widgets/last_trip")).json()["state"] == "empty"

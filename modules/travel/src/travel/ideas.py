@@ -28,13 +28,13 @@ class IdeaIn(BaseModel):
     def tidy(cls, value: str) -> str:
         cleaned = " ".join(value.split())
         if not cleaned:
-            raise ValueError("el título no puede estar vacío")
+            raise ValueError("the title cannot be empty")
         return cleaned
 
     @model_validator(mode="after")
     def in_order(self) -> IdeaIn:
         if self.days_min and self.days_max and self.days_max < self.days_min:
-            raise ValueError("los días como mucho no pueden ser menos que como poco")
+            raise ValueError("the most days cannot be fewer than the fewest")
         self.months = sorted(set(self.months))
         return self
 
@@ -249,9 +249,7 @@ async def archive_idea(connection: AsyncConnection, idea_id: str, archived: bool
 async def delete_idea(connection: AsyncConnection, idea_id: str) -> None:
     found = await idea(connection, idea_id)
     if not found.mine:
-        raise travel.Conflict(
-            "esta idea la compartió otra persona: solo ella la borra", "NOT_OWNER"
-        )
+        raise travel.Conflict("another person shared this idea: only they delete it", "NOT_OWNER")
     await connection.execute(text("delete from travel.travel_idea where id = :id"), {"id": idea_id})
 
 
@@ -281,7 +279,7 @@ async def remove_place(connection: AsyncConnection, idea_id: str, idea_place_id:
         {"id": idea_place_id, "idea": idea_id},
     )
     if deleted.rowcount == 0:
-        raise travel.NotFound(f"destino {idea_place_id}")
+        raise travel.NotFound(f"destination {idea_place_id}")
     await _touch(connection, idea_id)
     return await idea(connection, idea_id)
 
@@ -326,9 +324,7 @@ async def plan_idea(
 async def share_idea(connection: AsyncConnection, idea_id: str, space_id: str | None) -> Idea:
     found = await idea(connection, idea_id)
     if not found.mine:
-        raise travel.Conflict(
-            "solo quien creó la idea la comparte o deja de compartirla", "NOT_OWNER"
-        )
+        raise travel.Conflict("only whoever created the idea shares or unshares it", "NOT_OWNER")
     if found.space_id == space_id:
         return found
     if found.space_id is not None:

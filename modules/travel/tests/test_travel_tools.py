@@ -15,7 +15,7 @@ BRUGES = {
     "lon": "3.2267720",
     "addresstype": "city",
     "name": "Brujas",
-    "display_name": "Brujas, Flandes Occidental, Flandes, Bélgica",
+    "display_name": "Brujas, Flandes Occidental, Flandes, B\u00e9lgica",
     "address": {"ISO3166-2-lvl4": "BE-VLG", "country_code": "be"},
 }
 HOME = {
@@ -25,7 +25,7 @@ HOME = {
     "lon": "-3.7033",
     "addresstype": "city",
     "name": "Madrid",
-    "display_name": "Madrid, Comunidad de Madrid, España",
+    "display_name": "Madrid, Comunidad de Madrid, Espa\u00f1a",
     "address": {"ISO3166-2-lvl4": "ES-MD", "country_code": "es"},
 }
 
@@ -227,7 +227,7 @@ async def test_a_stay_outside_the_trip_is_said_and_nothing_is_saved(api) -> None
         },
     )
 
-    assert "fuera del viaje" in answer["error"]
+    assert "outside the trip" in answer["error"]
     detail = await content(api, "get_trip", {"title": "opor"}, READ)
     assert detail["stays"] == []
 
@@ -292,7 +292,7 @@ async def test_the_summary_groups_by_year_country_and_mode(api) -> None:
     by_year = await content(api, "get_travel", {"view": "summary", "group_by": "year"}, READ)
     by_country = await content(api, "get_travel", {"view": "summary", "group_by": "country"}, READ)
 
-    assert by_year["totals"]["europe_visited"] == "1 de 44"
+    assert by_year["totals"]["europe_visited"] == "1 of 44"
     assert by_year["groups"][0]["year"] == 2025
     assert by_country["groups"][0]["spend_per_night_eur"] == 75.0
 
@@ -301,10 +301,10 @@ async def test_an_old_trip_without_dates_is_told_as_an_other_place(api, hub) -> 
     hub.places = [BRUGES]
     [bruges] = (await content(api, "find_place", {"query": "Brujas"}, READ))["candidates"]
 
-    added = await content(api, "add_other_place", {"place": bruges, "note": "de niño"})
+    added = await content(api, "add_other_place", {"place": bruges, "note": "as a child"})
     again = await content(api, "add_other_place", {"place": {"place_id": added["place_id"]}})
 
-    assert (added["country"], added["region"], added["note"]) == ("BE", "BE-VLG", "de niño")
+    assert (added["country"], added["region"], added["note"]) == ("BE", "BE-VLG", "as a child")
     assert again["other_place_id"] == added["other_place_id"]
     visited = await content(api, "get_travel", {}, READ)
     assert [(a["code"], a["trips"], a["first_visit"], a["places"]) for a in visited["areas"]] == [
@@ -321,7 +321,7 @@ async def test_an_other_place_that_does_not_exist_is_said(api) -> None:
 
     answer = await content(api, "add_other_place", {"place": missing})
 
-    assert "no existe" in answer["error"]
+    assert "does not exist" in answer["error"]
 
 
 async def test_an_other_place_with_only_the_read_scope_is_refused_by_postgres(api) -> None:

@@ -7,10 +7,10 @@ export const setLock = (id: string | null) => {
   current = id;
 };
 export const lock = () => current;
-const PREFIX = "/travel/viaje/";
+const PREFIX = "/travel/trip/";
 
 export function tripOfPath(pathname: string): string | null {
-  const found = /^\/travel\/viaje\/([0-9a-f-]{36})\/?$/.exec(pathname);
+  const found = /^\/travel\/(?:trip|viaje)\/([0-9a-f-]{36})\/?$/.exec(pathname);
   return found ? found[1]! : null;
 }
 

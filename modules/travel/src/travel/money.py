@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_tenancy import CURRENT_USER_SQL as ME
 from travel import hub, travel
+from travel.words import say
 
 CENT = Decimal("0.01")
 
@@ -68,22 +69,22 @@ async def update_traveller(
         )
     ).one_or_none()
     if trip is None:
-        raise travel.NotFound(f"viaje {trip_id}")
+        raise travel.NotFound(f"trip {trip_id}")
     current = next(
         (one for one in await ensure_travellers(connection, trip_id) if one.id == traveller_id),
         None,
     )
     if current is None:
-        raise travel.NotFound(f"viajero {traveller_id}")
+        raise travel.NotFound(f"traveller {traveller_id}")
     if "member_user_id" in change.model_fields_set:
         member = str(change.member_user_id) if change.member_user_id else None
         if member is not None:
             if trip.space_id is None:
                 raise travel.Conflict(
-                    "solo se enlaza a alguien en un viaje compartido con un espacio", "NOT_SHARED"
+                    "someone can only be linked in a trip shared with a space", "NOT_SHARED"
                 )
             if member not in members_by_space.get(trip.space_id, set()):
-                raise travel.Conflict("esa persona no está en el espacio del viaje", "NOT_MEMBER")
+                raise travel.Conflict("that person is not in the trip's space", "NOT_MEMBER")
             await connection.execute(
                 text("""
                     update travel.travel_traveller set member_user_id = null
@@ -109,7 +110,7 @@ async def update_traveller(
             {"trip": trip_id, "name": name, "id": traveller_id},
         )
         if taken:
-            raise travel.Conflict(f"ya hay un viajero que se llama {name}", "DUPLICATE")
+            raise travel.Conflict(f"there is already a traveller called {name}", "DUPLICATE")
         await connection.execute(
             text("update travel.travel_traveller set name = :name where id = :id"),
             {"id": traveller_id, "name": name},
@@ -128,10 +129,14 @@ async def resolve_traveller(connection: AsyncConnection, trip_id: str, who: str)
     found = await ensure_travellers(connection, trip_id)
     wanted = " ".join(who.split()).lower()
     for one in found:
-        if one.id == who or one.name.lower() == wanted or (one.me and wanted in ("yo", "tú", "tu")):
+        if (
+            one.id == who
+            or one.name.lower() == wanted
+            or (one.me and wanted in ("me", "i", "yo", "tu", "t\u00fa"))
+        ):
             return one.id
     raise travel.Conflict(
-        f"no hay ningún viajero llamado «{who}»",
+        f'there is no traveller called "{who}"',
         "NOT_FOUND",
         [{"traveller": one.name} for one in found],
     )
@@ -148,12 +153,12 @@ async def ensure_travellers(connection: AsyncConnection, trip_id: str) -> list[T
         )
     ).one_or_none()
     if trip is None:
-        raise travel.NotFound(f"viaje {trip_id}")
+        raise travel.NotFound(f"trip {trip_id}")
     found = await travellers(connection, trip_id)
     names = {one.name.lower() for one in found}
     wanted: list[tuple[str, str | None]] = []
     if not found:
-        wanted.append(("Yo", trip.owner))
+        wanted.append((say("traveller.me"), trip.owner))
     for companion in trip.companions:
         if companion.lower() not in names:
             wanted.append((companion, None))
@@ -161,7 +166,7 @@ async def ensure_travellers(connection: AsyncConnection, trip_id: str) -> list[T
     number = count
     while count < trip.travellers:
         number += 1
-        name = f"Viajero {number}"
+        name = say("traveller.n", number=number)
         if name.lower() not in names:
             wanted.append((name, None))
             count += 1
@@ -197,8 +202,8 @@ async def convert(
         found = await hub.fx(currency, day.isoformat())
         if found.get("rate") is None:
             raise travel.Conflict(
-                f"no sé el cambio de {currency}: {found.get('failed') or 'sin respuesta'}. "
-                "Dalo tú (euros por unidad).",
+                f"the rate of {currency} is unknown: {found.get('failed') or 'no answer'}. "
+                "Give it yourself (euros per unit).",
                 "FX_UNKNOWN",
             )
         rate, on = Decimal(str(found["rate"])), date.fromisoformat(found["date"])
@@ -222,19 +227,20 @@ async def save_shares(
         return
     if request.amount is None:
         raise travel.Conflict(
-            "el reparto a medida va con lo pagado en su moneda, no por persona", "INVALID"
+            "a custom split goes with the amount paid in its currency, not per person", "INVALID"
         )
     people = {one.id for one in await travellers(connection, trip_id)}
     total = Decimal(0)
     for share in request.shares:
         if share.traveller_id not in people:
             raise travel.Conflict(
-                "una parte es de alguien que no es viajero del viaje", "NOT_FOUND"
+                "a share belongs to someone who is not a traveller of the trip", "NOT_FOUND"
             )
         total += share.amount
     if abs(total - request.amount) > CENT:
         raise travel.Conflict(
-            f"las partes suman {total} y lo pagado es {request.amount}: tienen que coincidir",
+            f"the shares add up to {total} and the amount paid is {request.amount}: "
+            "they must match",
             "SHARES_MISMATCH",
         )
     for share in request.shares:
@@ -395,11 +401,13 @@ class SettlementIn(BaseModel):
 async def settle(connection: AsyncConnection, trip_id: str, request: SettlementIn) -> Balance:
     people = {one.id for one in await ensure_travellers(connection, trip_id)}
     if request.from_traveller not in people or request.to_traveller not in people:
-        raise travel.Conflict("quien paga o quien cobra no es viajero del viaje", "NOT_FOUND")
+        raise travel.Conflict(
+            "whoever pays or receives is not a traveller of the trip", "NOT_FOUND"
+        )
     if request.from_traveller == request.to_traveller:
-        raise travel.Conflict("una devolución va de una persona a otra", "INVALID")
+        raise travel.Conflict("a settlement goes from one person to another", "INVALID")
     if request.amount_eur <= 0:
-        raise travel.Conflict("lo devuelto tiene que ser más que nada", "INVALID")
+        raise travel.Conflict("what is paid back has to be more than nothing", "INVALID")
     await connection.execute(
         text("""
             insert into travel.travel_settlement
@@ -425,6 +433,6 @@ async def unsettle(connection: AsyncConnection, trip_id: str, settlement_id: str
         {"id": settlement_id, "trip": trip_id},
     )
     if deleted.rowcount == 0:
-        raise travel.NotFound(f"devolución {settlement_id}")
+        raise travel.NotFound(f"settlement {settlement_id}")
     await travel._touch(connection, trip_id)
     return await balance(connection, trip_id)

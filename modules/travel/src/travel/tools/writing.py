@@ -31,8 +31,10 @@ async def get_trip_notes(connection: AsyncConnection, arguments: GetTrip) -> dic
 
 NOTE_CATEGORY = Field(
     default="general",
-    description="general, visa (visados y documentos), culture (costumbres), tips (consejos), "
-    "health (vacunas, seguro, salud) u other.",
+    description=(
+        "general, visa (visas and documents), culture (customs), tips, health (vaccines, "
+        "insurance, health) or other."
+    ),
 )
 
 
@@ -56,7 +58,7 @@ async def add_trip_note(connection: AsyncConnection, arguments: AddTripNote) -> 
 class UpdateTripNote(BaseModel):
     note_id: UUID
     title: str | None = Field(default=None, min_length=1, max_length=120)
-    body: str | None = Field(default=None, max_length=20000, description="Entera, en Markdown.")
+    body: str | None = Field(default=None, max_length=20000, description="Whole, in Markdown.")
     category: notes.Category | None = None
 
 
@@ -104,18 +106,22 @@ class WriteJournal(BaseModel):
     trip_id: str
     day: date | None = Field(
         default=None,
-        description="El día del viaje del que se escribe. Sin darlo, el de hoy del viaje en curso, "
-        "en España: de viaje lejos, dilo si allí ya es otro día.",
+        description=(
+            "The day of the trip being written about. If not given, today in the ongoing trip, in "
+            "the person's zone: when travelling far, say it if it is already another day there."
+        ),
     )
     text: str = Field(
         min_length=1,
         max_length=journal.LIMIT,
-        description="Lo que pasó, en sus palabras: lo que la persona te dicta o te pide poner.",
+        description="What happened, in their words: what the person dictates or asks you to write.",
     )
     mode: Literal["append", "replace"] = Field(
         default="append",
-        description="append añade un párrafo a lo que ya hay ese día; replace pone el día entero y "
-        "pisa lo que hubiera (solo si te lo pide).",
+        description=(
+            "append adds a paragraph to what is already there that day; replace sets the whole day"
+            " and overwrites what was there (only if asked)."
+        ),
     )
 
 

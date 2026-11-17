@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 import arga_contracts as contracts
 from travel import ideas, travel
+from travel.words import counted, say, words
 
-MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 LIVE = ("plan", "upcoming", "ongoing")
 
 OUT = text("""
@@ -23,30 +23,35 @@ OUT = text("""
 
 
 def _trip(found: travel.Trip) -> dict:
-    people = f"{found.travellers} viajero{'s' if found.travellers != 1 else ''}"
+    people = counted("plan.travellers", found.travellers)
     return contracts.trip(
         id=f"trip:{found.id}",
         title=found.title,
         phase=found.phase,
-        href=f"/travel/viajes/{found.id}",
+        href=f"/travel/trips/{found.id}",
         starts_on=found.starts_on,
         ends_on=found.ends_on,
         image=f"/api/travel/trips/{found.id}/cover?size=thumb&v={found.cover.version}"
         if found.cover
         else None,
-        detail=f"{found.days} días · {people}",
+        detail=f"{counted('widget.days', found.days)} · {people}",
     )
 
 
 def _idea(found: ideas.Idea) -> dict:
     parts = []
     if found.months:
-        parts.append(" o ".join(MONTHS[month - 1] for month in found.months[:3]))
+        months = words("months.short")
+        parts.append(say("plan.or").join(months[month - 1] for month in found.months[:3]))
     if found.days_min or found.days_max:
         low, high = found.days_min or found.days_max, found.days_max or found.days_min
-        parts.append(f"{low} días" if low == high else f"{low}–{high} días")
+        parts.append(
+            counted("widget.days", low)
+            if low == high
+            else say("plan.days_range", low=low, high=high)
+        )
     if found.budget_eur is not None:
-        parts.append(f"{round(found.budget_eur)} € por persona")
+        parts.append(say("plan.per_person", amount=round(found.budget_eur)))
     return contracts.trip(
         id=f"idea:{found.id}",
         title=found.title,

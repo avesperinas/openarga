@@ -32,7 +32,7 @@ def _open(content: bytes):
             image = ImageOps.exif_transpose(opened)
             image.load()
     except (UnidentifiedImageError, OSError) as error:
-        raise travel.Conflict("eso no es una foto que se pueda leer", "INVALID_PHOTO") from error
+        raise travel.Conflict("that is not a photo that can be read", "INVALID_PHOTO") from error
     if image.mode not in ("RGB", "L"):
         from PIL import Image as Img
 
@@ -73,9 +73,9 @@ def _prepare(content: bytes) -> Prepared:
 
 async def prepare(content: bytes) -> Prepared:
     if not content:
-        raise travel.Conflict("la foto llegó vacía", "INVALID_PHOTO")
+        raise travel.Conflict("the photo arrived empty", "INVALID_PHOTO")
     if len(content) > LIMIT:
-        raise travel.Conflict("la foto pasa de 12 MB", "PHOTO_TOO_LARGE")
+        raise travel.Conflict("the photo is over 12 MB", "PHOTO_TOO_LARGE")
     return await asyncio.to_thread(_prepare, content)
 
 
@@ -131,7 +131,7 @@ async def content(connection: AsyncConnection, trip_id: str, size: str = "full")
         {"id": trip_id},
     )
     if found is None:
-        raise travel.NotFound(f"portada del viaje {trip_id}")
+        raise travel.NotFound(f"cover of trip {trip_id}")
     return bytes(found)
 
 

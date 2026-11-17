@@ -33,7 +33,7 @@ async def test_who_owes_whom_with_an_equal_and_a_custom_split_and_what_was_paid_
             "concept": "Hotel",
             "amount": "90",
             "currency": "EUR",
-            "paid_by": people["Yo"],
+            "paid_by": people["Me"],
         },
     )
     await api.post(
@@ -55,19 +55,19 @@ async def test_who_owes_whom_with_an_equal_and_a_custom_split_and_what_was_paid_
     before = (await api.get(f"/trips/{trip['id']}/balance")).json()
     paid_back = await api.post(
         f"/trips/{trip['id']}/settlements",
-        json={"from_traveller": people["Eva"], "to_traveller": people["Yo"], "amount_eur": "30"},
+        json={"from_traveller": people["Eva"], "to_traveller": people["Me"], "amount_eur": "30"},
     )
 
     nets = {one["traveller"]["name"]: one["net_eur"] for one in before["people"]}
-    assert nets == {"Yo": 60.0, "Luis": -30.0, "Eva": -30.0}
+    assert nets == {"Me": 60.0, "Luis": -30.0, "Eva": -30.0}
     assert [
         (t["from_traveller"]["name"], t["to_traveller"]["name"], t["amount_eur"])
         for t in before["transfers"]
-    ] == [("Luis", "Yo", 30.0), ("Eva", "Yo", 30.0)]
+    ] == [("Luis", "Me", 30.0), ("Eva", "Me", 30.0)]
     assert before["unassigned_eur"] == 15.0
     after = paid_back.json()
     assert {one["traveller"]["name"]: one["net_eur"] for one in after["people"]} == {
-        "Yo": 30.0,
+        "Me": 30.0,
         "Luis": -30.0,
         "Eva": 0.0,
     }
@@ -89,9 +89,9 @@ async def test_parts_that_do_not_add_up_are_refused(api) -> None:
             "concept": "Cena",
             "amount": "50",
             "currency": "EUR",
-            "paid_by": people["Yo"],
+            "paid_by": people["Me"],
             "shares": [
-                {"traveller_id": people["Yo"], "amount": "10"},
+                {"traveller_id": people["Me"], "amount": "10"},
                 {"traveller_id": people["Luis"], "amount": "10"},
             ],
         },

@@ -6,7 +6,7 @@ WRITE = {"x-arga-scopes": "travel:read travel:write"}
 
 
 async def test_a_plan_from_an_idea_inherits_its_budget_and_says_what_is_left(api) -> None:
-    idea = (await api.post("/ideas", json={"title": "Japón", "budget_eur": "3000"})).json()
+    idea = (await api.post("/ideas", json={"title": "Japan", "budget_eur": "3000"})).json()
     trip = (
         await api.post(
             f"/ideas/{idea['id']}/plan", json={"starts_on": "2027-11-01", "ends_on": "2027-11-14"}

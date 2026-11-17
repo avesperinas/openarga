@@ -23,7 +23,7 @@ async def test_a_trip_is_a_run_of_whole_days(api, schema) -> None:
     assert item["uid"] == f"travel:trip:{trip['id']}"
     assert item["all_day"] is True
     assert (item["start"], item["end"]) == ("2025-04-10", "2025-04-16")
-    assert item["href"] == f"/travel/viajes/{trip['id']}"
+    assert item["href"] == f"/travel/trips/{trip['id']}"
 
 
 async def test_deleting_a_trip_takes_it_out_of_the_calendar(api, schema) -> None:

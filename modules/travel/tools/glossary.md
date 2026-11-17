@@ -1,85 +1,88 @@
-# Diccionario de Travel
+# Travel glossary
 
-Los términos del dominio y cómo se calculan. Se inyecta en el contexto del agente: es lo que
-separa que acierte de que invente.
+The domain's terms and how they are computed. It is put in the agent's context: it is what
+separates getting it right from making it up.
 
-**Viaje.** Con título, primer y último día, cuántos sois, con quién y etiquetas. Uno
-**archivado** (`archived`) no sale en la lista de la app
-ni en el recorrido, pero cuenta como cualquier otro en países, noches y cifras.
+**Trip.** With a title, a first and a last day, how many you are, with whom and tags. An
+**archived** one (`archived`) does not show in the app's list or in the route, but it counts like
+any other in countries, nights and figures.
 
-**Idea.** Un viaje que se quiere hacer y aún no tiene fechas: destinos, presupuesto por persona,
-de cuántos a cuántos días y los meses buenos para ir. No es un viaje ni cuenta en nada de lo
-visitado. Cuando se decide, `plan_idea` crea un plan con fechas y sus destinos esperan en «Sin día»;
-la idea se queda y recuerda los viajes que salieron de ella.
+**Idea.** A trip one wants to make that has no dates yet: destinations, budget per person, from
+how many to how many days and the good months to go. It is not a trip and counts in nothing that
+was visited. When it is decided, `plan_idea` creates a plan with dates and its destinations wait
+in "No day"; the idea stays and remembers the trips that came out of it.
 
-**Plan y confirmado.** Un viaje es un **plan** (`status: plan`) mientras no está decidido: sus
-fechas pueden moverse, vive solo en Travel y no sale en el calendario. **Confirmado**
-(`confirmed`) sale en el calendario. La fase (`phase`) se deduce de eso y de las fechas: `plan`,
-`upcoming` (confirmado y por llegar), `ongoing` (en curso) y `done` (hecho). Solo lo que está en
-curso o hecho cuenta en países, regiones, noches, kilómetros, gasto y cifras: lo que no ha pasado
-no se ha visitado.
+**Plan and confirmed.** A trip is a **plan** (`status: plan`) while it is not decided: its dates
+can move, it lives only in Travel and does not show in the calendar. **Confirmed** (`confirmed`)
+shows in the calendar. The phase (`phase`) follows from that and from the dates: `plan`,
+`upcoming` (confirmed and still to come), `ongoing` and `done`. Only what is ongoing or done counts
+in countries, regions, nights, kilometres, spend and figures: what has not happened has not been
+visited.
 
-**Lugar principal.** Donde se duerme, con el día de llegada y el de salida. Un viaje es la
-secuencia de los suyos. Sus noches son los días entre llegar y salir.
+**Main place.** Where one sleeps, with the arrival day and the departure day. A trip is the
+sequence of its main places. Its nights are the days between arriving and leaving.
 
-**Lugar visitado.** Lo que se ve desde un lugar principal sin dormir allí: una ciudad de excursión,
-un museo, una playa. En el mapa pinta en tono suave; lo dormido, en intenso.
+**Visited place.** What is seen from a main place without sleeping there: a city on a day trip, a
+museum, a beach. On the map it is painted in a soft tone; where one slept, in a strong one.
 
-**Itinerario y bloque.** El itinerario es el viaje día a día: de qué alojamiento se sale, los
-trayectos, adónde se llega y los **bloques**, lo que se hace, en el orden que se les da. Un bloque
-tiene tipo (`activity`, `transport`, `meal`, `accommodation`, `free_time`, `other`), y si se sabe,
-día, horas, lugar y notas. Sin día es un sitio guardado que espera hueco. Un bloque `activity` con
-lugar es una visita: cuenta como visitado y sale en el mapa. Toda visita tiene su bloque.
+**Itinerary and block.** The itinerary is the trip day by day: which lodging one leaves, the legs,
+where one arrives and the **blocks**, what one does, in the order given to them. A block has a kind
+(`activity`, `transport`, `meal`, `accommodation`, `free_time`, `other`) and, if known, a day,
+times, a place and notes. Without a day it is a place kept, waiting for room. An `activity` block
+with a place is a visit: it counts as visited and shows on the map. Every visit has its block.
 
-**Reserva.** No es una pieza aparte: es lo que se sabe de algo del viaje. La de un alojamiento va
-en su lugar principal (entrada, salida, dirección), la de un vuelo o un tren en su trayecto (horas,
-compañía, número, códigos, terminal, asiento) y la de una entrada o una mesa en su bloque. Todas
-llevan localizador, dónde se reservó y enlace. Su `cost_eur` es lo que costó al grupo: se apunta
-como un gasto del viaje, por persona entre los viajeros, y si la reserva se quita, el gasto se
-queda.
+**Booking.** It is not a piece apart: it is what is known about something of the trip. A lodging's
+goes in its main place (check-in, check-out, address), a flight's or a train's in its leg (times,
+company, number, codes, terminal, seat) and a ticket's or a table's in its block. All carry a
+booking code, where it was booked and a link. Its `cost_eur` is what it cost the group: it is noted
+as an expense of the trip, per person among the travellers, and if the booking is removed, the
+expense stays.
 
-**Lo que hay cerca.** `find_nearby` pregunta a OpenStreetMap qué hay alrededor de un lugar del
-viaje o de un punto, de una clase: qué ver, dónde comer, naturaleza, compras o salir de noche, a
-como mucho 3 km. El candidato elegido se guarda con `add_block`: sin día espera hueco; con día, entra
-en él. Una comida es `meal`; lo que se ve, `activity`.
+**What is nearby.** `find_nearby` asks OpenStreetMap what is around a place of the trip or a
+point, of one class: what to see, where to eat, nature, shopping or going out at night, within
+3 km at most. The chosen candidate is kept with `add_block`: without a day it waits for room; with
+a day, it goes in it. A meal is `meal`; something seen, `activity`.
 
-**Hoy.** Durante un viaje, `get_today` da lo de ese día en su orden: de qué alojamiento se sale,
-los trayectos con su billete, adónde se llega y lo que se hace, con horas y dónde es. El día es el
-de España salvo que se diga otro.
+**Today.** During a trip, `get_today` gives that day's things in their order: which lodging one
+leaves, the legs with their ticket, where one arrives and what one does, with times and where it
+is. The day is today in the person's zone unless another is said.
 
-**Tiempo.** `get_weather` da la previsión de los próximos 16 días de un sitio, en su hora, o su
-clima de cada mes de media de diez años. El clima es lo que dice qué meses son buenos para una idea;
-la previsión, qué llevar mañana.
+**Weather.** `get_weather` gives the forecast for the next 16 days of a place, in its local time,
+or its climate, each month's average over ten years. The climate is what says which months are
+good for an idea; the forecast, what to pack for tomorrow.
 
-**Trayecto.** Un viaje de un sitio a otro con su medio: avión, tren, coche, bus o barco. Son las
-rutas del mapa. La ida sale de casa, que no es un lugar principal. Cada uno dice si se pinta en
-las miniaturas, el mapa del viaje y el recorrido (`on_map`); sin decirlo, la ida desde casa y la
-vuelta no, porque taparían el viaje, y el resto sí. Los kilómetros del avión son la
-línea recta; los del resto, una estimación sobre ella, porque no se traza la carretera.
+**Leg.** A journey from one place to another with its mode: plane, train, car, bus or boat. They
+are the map's routes. The way out leaves from home, which is not a main place. Each one says
+whether it is painted in the thumbnails, the trip map and the route (`on_map`); if not said, the
+way out from home and the way back are not, because they would cover the trip, and the rest are.
+A plane's kilometres are the straight line; the rest, an estimate on it, because the road is not
+traced.
 
-**País y región.** ISO 3166-1 y 3166-2, calculados al guardar el lugar contra los polígonos del
-mapa. La región es la de primer nivel de quien viaja: comunidad autónoma, région, regione, Land,
-nación del Reino Unido.
+**Country and region.** ISO 3166-1 and 3166-2, computed on saving the place against the map's
+polygons. The region is the traveller's first-level one: a Spanish autonomous community, a French
+or Italian region, a German Land, a nation of the United Kingdom.
 
-**Gasto en otra moneda.** Un gasto puede guardar lo que se pagó (el total) en su moneda, quién lo
-pagó (un viajero) y el día. Se pasa a euros con el cambio de referencia del BCE de ese día (el del
-último día hábil si ese día no hay), y de ese total sale el importe por persona. Los viajeros son
-las personas del viaje: «Yo», los acompañantes y «Viajero N» hasta el número de viajeros.
+**Expense in another currency.** An expense can keep what was paid (the total) in its currency,
+who paid it (a traveller) and the day. It is converted to euros at the ECB reference rate of that
+day (the last working day's if there is none that day), and the amount per person comes from that
+total. The travellers are the people on the trip: "Me", the companions and "Traveller N" up to the
+number of travellers.
 
-**Cuentas.** Un gasto con quién pagó se reparte entre los viajeros, a partes iguales o a medida
-(`shares`). El saldo de cada uno es lo que pagó menos lo que le tocaba, más lo que ha devuelto y
-menos lo que le han devuelto: positivo, le deben. `get_trip` con `include: [balance]` da también las transferencias
-mínimas para quedar en paz. Lo gastado sin quién pagó no cuenta en las cuentas.
+**Accounts.** An expense with who paid is split among the travellers, in equal shares or custom
+ones (`shares`). Each one's balance is what they paid minus what was theirs, plus what they paid
+back and minus what was paid back to them: positive, they are owed. `get_trip` with
+`include: [balance]` also gives the fewest transfers to settle up. What was spent without who paid
+does not count in the accounts.
 
-**Gasto.** Por persona y en euros, en tres categorías fijas: transporte (vuelos, coche, gasolina y
-parking, ferry, tren, bus), alojamiento (hotel, apartamento) y otros (efectivo, excursiones, seguro
-y vacunas, otros). El total del grupo es por persona por el número de viajeros.
+**Expense.** Per person and in euros, in three fixed categories: transport (flights, car, fuel and
+parking, ferry, train, bus), lodging (hotel, apartment) and other (cash, excursions, insurance and
+vaccines, other). The group's total is per person times the number of travellers.
 
-**Presupuesto.** Lo que se quiere gastar por persona en un viaje, en euros; un plan que sale de una
-idea lo hereda de ella. `budget_left_per_person_eur` es lo que queda: el presupuesto menos el gasto
-por persona apuntado.
+**Budget.** What one means to spend per person on a trip, in euros; a plan that comes from an idea
+inherits it. `budget_left_per_person_eur` is what is left: the budget minus the spend per person
+noted.
 
-**Días y coste por día.** Los días de un viaje cuentan el primero y el último: de viernes a domingo
-son tres, con dos noches. El coste por día es el gasto por persona entre esos días.
+**Days and cost per day.** A trip's days count the first and the last: Friday to Sunday is three,
+with two nights. The cost per day is the spend per person over those days.
 
-**Europa.** Los 44 estados de Europa de la ONU. "Países de Europa" es cuántos de esos 44.
+**Europe.** The UN's 44 states of Europe. "Countries of Europe" is how many of those 44.

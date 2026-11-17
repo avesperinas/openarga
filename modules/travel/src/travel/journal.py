@@ -91,5 +91,5 @@ async def append(connection: AsyncConnection, trip_id: str, day: date, more: str
     found = await entry(connection, trip_id, day)
     body = f"{found.body}\n\n{more.strip()}" if found else more
     if len(body) > LIMIT:
-        raise travel.Conflict(f"el diario de un día no pasa de {LIMIT} caracteres", "TOO_LONG")
+        raise travel.Conflict(f"a day's journal is at most {LIMIT} characters", "TOO_LONG")
     return await write(connection, trip_id, day, JournalIn(body=body))

@@ -67,13 +67,13 @@ async def test_today_is_the_day_of_the_trip_in_order_with_how_to_get_there(api) 
     )
     assert found["sleeping"] == "Gante"
     assert [(e["type"], e["title"], e["starts_at"]) for e in found["entries"]] == [
-        ("check_out", "Sales de Hotel Navarra", "11:00:00"),
+        ("check_out", "Leaving Hotel Navarra", "11:00:00"),
         ("leg", "Brujas → Gante", "12:05:00"),
-        ("check_in", "Llegas a Gante", "15:00:00"),
+        ("check_in", "Arriving at Gante", "15:00:00"),
         ("block", "Castillo de los Condes", "16:30:00"),
     ]
     leg = found["entries"][1]
-    assert leg["detail"] == "SNCB · asiento 42"
+    assert leg["detail"] == "SNCB · seat 42"
     assert "travelmode=transit" in leg["where"]["google"]
     castle = found["entries"][3]["where"]
     assert castle["google"].startswith("https://www.google.com/maps/dir/?api=1&destination=51.")
@@ -124,6 +124,6 @@ async def test_today_goes_by_the_clock_and_what_has_no_time_stays_after_the_one_
     assert [e["title"] for e in found["entries"]] == [
         "Palacio",
         "Paseo",
-        "Llegas a Brujas",
+        "Arriving at Brujas",
         "Cena",
     ]

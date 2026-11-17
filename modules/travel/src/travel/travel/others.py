@@ -65,7 +65,7 @@ async def delete_other_place(connection: AsyncConnection, other_id: str) -> None
         text("delete from travel.travel_other_place where id = :id"), {"id": other_id}
     )
     if deleted.rowcount == 0:
-        raise NotFound(f"lugar sin viaje {other_id}")
+        raise NotFound(f"place without a trip {other_id}")
 
 
 async def update_other_place(
@@ -80,7 +80,7 @@ async def update_other_place(
     )
     if clash:
         raise Conflict(
-            "ese lugar ya está entre los otros lugares",
+            "that place is already among the other places",
             "DUPLICATE_PLACE",
             [{"other_place_id": clash}],
         )
@@ -93,7 +93,7 @@ async def update_other_place(
         },
     )
     if updated.rowcount == 0:
-        raise NotFound(f"lugar sin viaje {other_id}")
+        raise NotFound(f"place without a trip {other_id}")
     return next(one for one in await other_places(connection) if one.id == other_id)
 
 

@@ -17,13 +17,13 @@ async def test_a_renamed_companion_is_not_created_again(api) -> None:
         f"/trips/{trip['id']}/travellers/{before['Luis']}", json={"name": "Luis G."}
     )
     taken = await api.patch(
-        f"/trips/{trip['id']}/travellers/{before['Viajero 3']}", json={"name": "luis g."}
+        f"/trips/{trip['id']}/travellers/{before['Traveller 3']}", json={"name": "luis g."}
     )
     again = (await api.get(f"/trips/{trip['id']}/travellers")).json()
 
     assert renamed.status_code == 200, renamed.text
     assert taken.status_code == 409
-    assert [one["name"] for one in again] == ["Yo", "Luis G.", "Viajero 3"]
+    assert [one["name"] for one in again] == ["Me", "Luis G.", "Traveller 3"]
     assert (await api.get(f"/trips/{trip['id']}")).json()["companions"] == ["Luis G."]
 
 

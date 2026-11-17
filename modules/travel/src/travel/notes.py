@@ -25,7 +25,7 @@ class NoteIn(BaseModel):
     def tidy(cls, value: str) -> str:
         cleaned = " ".join(value.split())
         if not cleaned:
-            raise ValueError("el título no puede estar vacío")
+            raise ValueError("the title cannot be empty")
         return cleaned
 
 
@@ -98,7 +98,7 @@ async def update_note(
         },
     )
     if updated.rowcount == 0:
-        raise travel.NotFound(f"nota {note_id}")
+        raise travel.NotFound(f"note {note_id}")
     await travel._touch(connection, trip_id)
     return await notes(connection, trip_id)
 
@@ -109,7 +109,7 @@ async def remove_note(connection: AsyncConnection, trip_id: str, note_id: str) -
         {"id": note_id, "trip": trip_id},
     )
     if deleted.rowcount == 0:
-        raise travel.NotFound(f"nota {note_id}")
+        raise travel.NotFound(f"note {note_id}")
     await travel._touch(connection, trip_id)
     return await notes(connection, trip_id)
 
@@ -119,5 +119,5 @@ async def trip_of(connection: AsyncConnection, note_id: str) -> str:
         text("select trip_id::text from travel.travel_note where id = :id"), {"id": note_id}
     )
     if found is None:
-        raise travel.NotFound(f"nota {note_id}")
+        raise travel.NotFound(f"note {note_id}")
     return found

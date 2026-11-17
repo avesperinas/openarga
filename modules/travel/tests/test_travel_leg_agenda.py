@@ -72,23 +72,23 @@ async def test_a_flight_goes_from_its_local_departure_to_its_local_arrival(api, 
     )
 
     out = (await legs_out(schema))[-1]
-    assert out["layer"] == "Trayectos"
+    assert out["layer"] == "Legs"
     item = arga_agenda.check_event(out)
     assert item["uid"] == f"travel:leg:{leg['id']}"
-    assert item["title"] == "Vuelo Iberia IB3102 · Madrid → Lisboa"
+    assert item["title"] == "Flight Iberia IB3102 · Madrid → Lisboa"
     assert item["location"] == "Madrid (MAD) · terminal 4"
     assert item["all_day"] is False and item["tz"] == "Europe/Madrid"
     start, end = datetime.fromisoformat(item["start"]), datetime.fromisoformat(item["end"])
     assert start.isoformat() == "2025-04-10T07:15:00+02:00"
     assert end.isoformat() == "2025-04-10T07:40:00+01:00"
     assert (end - start).total_seconds() == 85 * 60
-    assert item["href"] == f"/travel/viajes/{trip['id']}/dias/2025-04-10"
+    assert item["href"] == f"/travel/trips/{trip['id']}/days/2025-04-10"
 
 
 async def test_an_arrival_earlier_than_the_departure_without_a_day_is_the_next_day(
     api, schema
 ) -> None:
-    trip = await make_trip(api, "Japón", "2025-04-10", "2025-04-20")
+    trip = await make_trip(api, "Japan", "2025-04-10", "2025-04-20")
     await a_leg(
         api,
         trip["id"],
@@ -107,19 +107,19 @@ async def test_an_arrival_earlier_than_the_departure_without_a_day_is_the_next_d
 async def test_a_leg_without_a_time_is_a_whole_day_and_one_without_a_date_is_not_out(
     api, schema
 ) -> None:
-    trip = await make_trip(api, "Andalucía", "2025-04-10", "2025-04-13")
+    trip = await make_trip(api, "Andalusia", "2025-04-10", "2025-04-13")
     await a_leg(api, trip["id"], MADRID, SEVILLE, mode="train", travelled_on="2025-04-10")
     await a_leg(api, trip["id"], SEVILLE, MADRID, mode="car")
 
     out = await legs_out(schema)
     assert len(out) == 1
     item = arga_agenda.check_event(out[0])
-    assert item["title"] == "Tren · Madrid → Sevilla"
+    assert item["title"] == "Train · Madrid → Sevilla"
     assert (item["all_day"], item["start"], item["end"]) == (True, "2025-04-10", "2025-04-11")
 
 
 async def test_a_leg_leaves_the_calendar_when_removed_or_left_without_a_date(api, schema) -> None:
-    trip = await make_trip(api, "Andalucía", "2025-04-10", "2025-04-13")
+    trip = await make_trip(api, "Andalusia", "2025-04-10", "2025-04-13")
     going = await a_leg(api, trip["id"], MADRID, SEVILLE, mode="train", travelled_on="2025-04-10")
     back = await a_leg(api, trip["id"], SEVILLE, MADRID, mode="train", travelled_on="2025-04-13")
 
@@ -168,7 +168,7 @@ async def test_a_plan_keeps_its_legs_out_and_a_deleted_trip_takes_them_away(api,
 
 
 async def test_editing_something_else_of_the_trip_publishes_nothing_new(api, schema) -> None:
-    trip = await make_trip(api, "Andalucía", "2025-04-10", "2025-04-13")
+    trip = await make_trip(api, "Andalusia", "2025-04-10", "2025-04-13")
     await a_leg(api, trip["id"], MADRID, SEVILLE, mode="train", travelled_on="2025-04-10")
     await api.put(
         f"/trips/{trip['id']}",

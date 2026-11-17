@@ -106,9 +106,9 @@ class PlaceIn(BaseModel):
     @model_validator(mode="after")
     def whole(self) -> PlaceIn:
         if (self.lat is None) != (self.lon is None):
-            raise ValueError("un lugar lleva latitud y longitud, o ninguna de las dos")
+            raise ValueError("a place has latitude and longitude, or neither")
         if (self.osm_type is None) != (self.osm_id is None):
-            raise ValueError("el id de OpenStreetMap va con su tipo: node, way o relation")
+            raise ValueError("the OpenStreetMap id goes with its type: node, way or relation")
         return self
 
 
@@ -222,7 +222,7 @@ async def set_category(connection: AsyncConnection, place_id: str, category: str
         {"id": place_id, "category": category},
     )
     if updated.rowcount == 0:
-        raise NotFound(f"lugar {place_id}")
+        raise NotFound(f"place {place_id}")
     return await place_by_id(connection, place_id)
 
 
@@ -234,5 +234,5 @@ async def place_by_id(connection: AsyncConnection, place_id: str) -> Place:
         )
     ).one_or_none()
     if row is None:
-        raise NotFound(f"lugar {place_id}")
+        raise NotFound(f"place {place_id}")
     return _place(row)

@@ -182,7 +182,7 @@ def _in_range(one: travel.Trip, since: date | None, until: date | None) -> bool:
 
 
 def _error(error: travel.NotFound | travel.Conflict) -> dict[str, Any]:
-    message = f"no existe: {error}" if isinstance(error, travel.NotFound) else str(error)
+    message = f"does not exist: {error}" if isinstance(error, travel.NotFound) else str(error)
     answer: dict[str, Any] = {"error": message, "code": error.code}
     if error.conflicts:
         answer["conflicts"] = error.conflicts
@@ -228,11 +228,12 @@ def _given(arguments: BaseModel, *names: str) -> dict[str, Any]:
 def _no_null(arguments: BaseModel, *names: str) -> None:
     for name in names:
         if name in arguments.model_fields_set and getattr(arguments, name) is None:
-            raise travel.Conflict(f"{name} no se puede vaciar", "INVALID")
+            raise travel.Conflict(f"{name} cannot be emptied", "INVALID")
 
 
 DRY_RUN = Field(
-    default=False, description="Ensayo: devuelve lo que pasaría, igual que de verdad, sin escribir."
+    default=False,
+    description="Dry run: returns what would happen, exactly as for real, without writing.",
 )
 
 
@@ -243,7 +244,7 @@ class PlaceArgument(travel.PlaceIn):
     @model_validator(mode="after")
     def something(self) -> PlaceArgument:
         if not self.place_id and not self.name.strip():
-            raise ValueError("hace falta un place_id o un candidato de find_place con su nombre")
+            raise ValueError("a place_id or a find_place candidate with its name is needed")
         return self
 
 
@@ -258,15 +259,15 @@ async def _resolve(connection: AsyncConnection, place: PlaceArgument) -> travel.
 
 
 SUMMARY_HELP = (
-    "Un párrafo que cuenta el viaje, el de su portada: «Cuatro días en pareja: termas, ruin bars y "
-    "el Danubio de noche». Hasta 1000 caracteres."
+    'A paragraph that tells the trip, the one on its cover: "Four days as a couple: baths, '
+    'ruin bars and the Danube at night". Up to 1000 characters.'
 )
 
 
 class BookingArgs(BaseModel):
-    confirmation: str | None = Field(default=None, max_length=60, description="El localizador.")
+    confirmation: str | None = Field(default=None, max_length=60, description="The booking code.")
     provider: str | None = Field(
-        default=None, max_length=80, description="Dónde se reservó: Booking, Renfe, la aerolínea…"
+        default=None, max_length=80, description="Where it was booked: Booking, Renfe, the airline…"
     )
     booking_url: str | None = Field(default=None, max_length=500, pattern=r"^https?://")
     cost_eur: Decimal | None = Field(
@@ -274,14 +275,18 @@ class BookingArgs(BaseModel):
         ge=0,
         le=Decimal("99999999"),
         decimal_places=2,
-        description="Lo que costó al grupo, en euros. Se apunta como gasto de la reserva, por "
-        "persona entre los viajeros; null lo quita.",
+        description=(
+            "What it cost the group, in euros. It is noted as the booking's expense, per person "
+            "among the travellers; null removes it."
+        ),
     )
     paid_by: str | None = Field(
         default=None,
         max_length=60,
-        description="Quién la pagó: el nombre de un viajero o «yo». Va con cost_eur y entra en el "
-        "reparto como cualquier gasto.",
+        description=(
+            'Who paid it: a traveller\'s name or "me". It goes with cost_eur and enters the '
+            "split like any expense."
+        ),
     )
 
 
@@ -308,28 +313,31 @@ class StayArgs(BookingArgs):
 
 
 class TicketArgs(BookingArgs):
-    departs_at: time | None = Field(default=None, description="HH:MM, hora local de salida.")
+    departs_at: time | None = Field(default=None, description="HH:MM, local departure time.")
     arrives_on: date | None = Field(
-        default=None, description="El día que llega, si no es el de salida: un vuelo de noche."
+        default=None,
+        description="The day it arrives, if it is not the departure day: an overnight flight.",
     )
-    arrives_at: time | None = Field(default=None, description="HH:MM, hora local de llegada.")
-    carrier: str | None = Field(default=None, max_length=80, description="Aerolínea, Renfe…")
+    arrives_at: time | None = Field(default=None, description="HH:MM, local arrival time.")
+    carrier: str | None = Field(default=None, max_length=80, description="Airline, Renfe…")
     number: str | None = Field(
-        default=None, max_length=40, description="IB3166, AVE 03071… Hasta 40 caracteres."
+        default=None, max_length=40, description="IB3166, AVE 03071… Up to 40 characters."
     )
     from_code: str | None = Field(
-        default=None, max_length=40, description="MAD, KIX, Madrid-Atocha… Hasta 40."
+        default=None, max_length=40, description="MAD, KIX, Madrid-Atocha… Up to 40."
     )
-    to_code: str | None = Field(default=None, max_length=40, description="Hasta 40.")
-    terminal: str | None = Field(default=None, max_length=40, description="T4, 2B… Hasta 40.")
+    to_code: str | None = Field(default=None, max_length=40, description="Up to 40.")
+    terminal: str | None = Field(default=None, max_length=40, description="T4, 2B… Up to 40.")
     seat: str | None = Field(
-        default=None, max_length=80, description="18A, 18B o los de todo el grupo. Hasta 80."
+        default=None, max_length=80, description="18A, 18B or the whole group's. Up to 80."
     )
     ticket_leg_id: str | None = Field(
         default=None,
-        description="El leg_id del trayecto que lleva el billete, si este va en el mismo: la "
-        "vuelta de un ida y vuelta o el segundo tren de un transbordo. El localizador y el coste "
-        "van solo en aquel; los dos lo enseñan. null lo suelta.",
+        description=(
+            "The leg_id of the leg holding the ticket, if this one goes on the same: the return of"
+            " a round trip or the second train of a connection. The booking code and the cost go "
+            "only on that one; both show them. null releases it."
+        ),
     )
 
 

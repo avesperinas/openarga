@@ -61,7 +61,7 @@ async def test_an_activity_added_by_claude_where_a_visit_already_is_comes_out_on
             "day": "2027-11-12",
             "starts_at": "10:00",
             "place": PARLIAMENT,
-            "notes": "Tour en español",
+            "notes": "Tour in Spanish",
         },
     )
 
@@ -69,7 +69,7 @@ async def test_an_activity_added_by_claude_where_a_visit_already_is_comes_out_on
     assert (one["title"], one["starts_at"], one["notes"]) == (
         "Visita guiada al Parlamento",
         "10:00",
-        "Tour en español",
+        "Tour in Spanish",
     )
     assert one["place"]["category"] == "culture"
     trip_now = await content(api, "get_trip", {"trip_id": trip["id"]})
