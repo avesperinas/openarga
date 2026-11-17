@@ -1,4 +1,4 @@
-import type { Vars } from "./i18n";
+import type { Vars } from "./i18n-core";
 import { say } from "./words";
 
 export type Freq = "daily" | "weekly" | "monthly" | "yearly";

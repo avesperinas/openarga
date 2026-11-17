@@ -500,8 +500,9 @@ export type {
   QuestionOption,
   TraitRowProps,
 } from "./knowing";
-export { I18nProvider, LOCALES, SOURCE_LOCALE, createT, missingKeys, resolveLocale, useLocale, useT } from "./i18n";
-export type { Catalog, Catalogs, Locale, Translate, Vars } from "./i18n";
+export { I18nProvider, useLocale, useT } from "./i18n";
+export { LOCALES, SOURCE_LOCALE, createT, missingKeys, resolveLocale } from "./i18n-core";
+export type { Catalog, Catalogs, Locale, Translate, Vars } from "./i18n-core";
 
 export {
   type Regional,
