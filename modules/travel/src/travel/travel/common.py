@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import date
 from typing import Literal
-from zoneinfo import ZoneInfo
+
+from travel import clock
 
 Mode = Literal["plane", "train", "car", "bus", "boat"]
 Category = Literal["transport", "lodging", "other"]
@@ -18,11 +19,8 @@ CATEGORIES: dict[Category, tuple[str, ...]] = {
 }
 
 
-MADRID = ZoneInfo("Europe/Madrid")
-
-
 def today() -> date:
-    return datetime.now(UTC).astimezone(MADRID).date()
+    return clock.today()
 
 
 def phase_of(status: str, starts_on: date, ends_on: date, on: date | None = None) -> Phase:

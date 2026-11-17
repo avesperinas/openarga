@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from travel.travel.common import (
     CATEGORIES,
-    MADRID,
     MODES,
     Category,
     Conflict,
@@ -151,7 +150,6 @@ __all__ = [
     "Phase",
     "MODES",
     "CATEGORIES",
-    "MADRID",
     "today",
     "phase_of",
     "NotFound",

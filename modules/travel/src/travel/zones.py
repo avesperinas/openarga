@@ -6,7 +6,8 @@ from functools import cache
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-DEFAULT = "Europe/Madrid"
+from travel import clock
+
 TABLE = Path("/usr/share/zoneinfo/zone.tab")
 
 _COORDS = re.compile(r"^([+-]\d{4,6})([+-]\d{5,7})$")
@@ -60,8 +61,8 @@ def zone_of(country_code: str | None, lat: float | None, lon: float | None) -> s
     country = (country_code or "").upper()
     candidates = [row for row in rows if row[0] == country] if country else []
     if lat is None or lon is None:
-        return candidates[0][3] if len(candidates) == 1 else DEFAULT
+        return candidates[0][3] if len(candidates) == 1 else clock.zone().key
     candidates = candidates or list(rows)
     if not candidates:
-        return DEFAULT
+        return clock.zone().key
     return min(candidates, key=lambda row: _distance(lat, lon, row[1], row[2]))[3]
