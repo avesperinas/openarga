@@ -81,3 +81,14 @@ jobs:
         run: |
           eval "$(scripts/test-databases.sh up 4)"
           uv run pytest -n 4 -p no:cacheprovider
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: login, with the fake IdP and with a local user
+        run: scripts/login-e2e.sh
+      - name: an empty account goes through the first run to the desktop
+        run: scripts/desktop-e2e.sh

@@ -157,7 +157,7 @@ drive() {
 }
 
 say "the browser"
-drive uno
+drive one
 
 say "what was left in the realm and in the kernel"
 known=$(docker exec e2e-postgres psql -At -U arga -d arga -c "select count(*) from kernel.users where subject = '$owner_id'")
@@ -179,6 +179,20 @@ done
 
 say "the person is disabled in the realm"
 kc update "users/$owner_id" -r arga -s enabled=false
-drive dos
+drive two
+
+say "a local user signs in with the realm's own form, where no provider is hinted"
+kc update "clients/$web_id" -r arga \
+  -s 'redirectUris=["http://gateway:8000/login/callback","http://gateway-local:8000/login/callback"]'
+docker run -d --name e2e-gateway-local --network "$NET" --network-alias gateway-local \
+  -e KERNEL_URL=http://kernel:8000 -e SHELL_URL=http://kernel:8000 -e AUTH_URL=http://auth:8080 \
+  -e OAUTH_ISSUER=http://auth:8080/auth/realms/arga \
+  -e OAUTH_JWKS_URL=http://auth:8080/auth/realms/arga/protocol/openid-connect/certs \
+  -e MCP_RESOURCE_URL=http://localhost:8000/mcp \
+  -e OIDC_INTERNAL_URL=http://auth:8080/auth/realms/arga -e OIDC_CLIENT_ID=arga-web \
+  -e OIDC_CLIENT_SECRET=$WEB_SECRET -e PUBLIC_URL=http://gateway-local:8000 \
+  -e SESSION_SECRET=$SESSION_SECRET "arga-gateway:$TAG" >/dev/null
+wait_healthy e2e-gateway-local
+drive local
 
 say "all in order"
