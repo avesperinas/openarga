@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from arga_tenancy import current_user
 from training import bodyweight, strength
 from training.strength import epley
+from training.text import shown, shown_names
 
 __all__ = ["epley"]
 
@@ -142,8 +143,9 @@ VERDICTS = text("""
     select cast(session_exercise_id as text) as id, verdict from training.training_point_review
 """)
 
-NAMES = text("""
-    select cast(v.id as text) as variant_id, e.name as exercise, v.name as variant,
+NAMES = text(f"""
+    select cast(v.id as text) as variant_id, {shown("exercise", "e")} as exercise,
+           {shown("variant", "v")} as variant,
            v.implement, v.min_increment, e.load_type, pm.muscle_id as muscle
     from training.training_variant v
     join training.training_exercise e on e.id = v.exercise_id
@@ -242,7 +244,7 @@ async def analyse(connection: AsyncConnection, today: date) -> Analysis:
     weight_rows = (await connection.execute(bodyweight.DAYS)).all()
     mark_rows = (await connection.execute(MARKS)).all()
     verdict_rows = (await connection.execute(VERDICTS)).all()
-    name_rows = (await connection.execute(NAMES)).all()
+    name_rows = (await connection.execute(NAMES, {"names": shown_names()})).all()
     gym_rows = (await connection.execute(GYMS)).all()
     key = (
         current_user.get(),

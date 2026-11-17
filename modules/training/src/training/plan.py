@@ -8,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from training import bodyweight as weights
+from training.text import shown, shown_names
 
 DayKind = Literal["push", "pull", "leg", "full", "other"]
 
@@ -57,12 +58,13 @@ CURRENT_VERSION = text("""
     limit 1
 """)
 
-STRUCTURE = text("""
+STRUCTURE = text(f"""
     select d.id as day_id, d.name as day_name, d.kind, d.position as day_position,
            s.id as slot_id, s.position as slot_position, s.target_sets, s.rep_min, s.rep_max,
            s.allow_both,
-           o.variant_id, o.priority, va.name as variant_name, va.implement, va.min_increment,
-           e.name as exercise
+           o.variant_id, o.priority, {shown("variant", "va")} as variant_name, va.implement,
+           va.min_increment,
+           {shown("exercise", "e")} as exercise
     from training.training_plan_day d
     left join training.training_plan_slot s on s.plan_day_id = d.id
     left join training.training_plan_slot_option o on o.plan_slot_id = s.id
@@ -81,7 +83,9 @@ async def day_slots(connection: AsyncConnection, version_id: str, day_id: str) -
 async def version_days(connection: AsyncConnection, version_id: str) -> list[Day]:
     days: dict[str, Day] = {}
     slots: dict[str, Slot] = {}
-    for row in (await connection.execute(STRUCTURE, {"version_id": version_id})).all():
+    for row in (
+        await connection.execute(STRUCTURE, {"version_id": version_id, "names": shown_names()})
+    ).all():
         day = days.setdefault(
             str(row.day_id),
             Day(
