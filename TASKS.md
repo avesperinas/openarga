@@ -69,7 +69,7 @@ Suggested order: per module, A1.1 then A1.2 then A1.3; A1.4 when `money` is reac
 | A2.5 | **Calendar settings** (`planner`): holidays by country and region plus local ones; subscription catalogue UI | Tests with two countries | `done` |
 | A2.6 | **Insights and Outings on `ai.run`** instead of `claude.run` | End to end with the fake provider | `done` |
 | A2.7 | **Demo seeds**, as A1.6 | Seeds run twice without duplicates | `done` |
-| A2.8 | **App docs**, as A1.7 | Links resolve | `doing` |
+| A2.8 | **App docs**, as A1.7 | Links resolve | `done` |
 
 Suggested order: A2.4 and outings first (it is the most visible app), then the rest per module.
 
