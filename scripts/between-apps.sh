@@ -22,7 +22,7 @@ cleanup
 "$ROOT/scripts/stale-ci.sh"
 
 say() { printf '\n== %s\n' "$*"; }
-fail() { echo "FALLA: $*" >&2; exit 1; }
+fail() { echo "FAIL: $*" >&2; exit 1; }
 
 healthy() {
   local name=$1

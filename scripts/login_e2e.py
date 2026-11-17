@@ -23,7 +23,7 @@ failures: list[str] = []
 
 
 def check(name: str, ok: bool, detail: str = "") -> None:
-    print(f"{'ok  ' if ok else 'FALLA'}  {name}{f'  ({detail})' if detail and not ok else ''}")
+    print(f"{'ok  ' if ok else 'FAIL'}  {name}{f'  ({detail})' if detail and not ok else ''}")
     if not ok:
         failures.append(name)
 
@@ -79,7 +79,7 @@ class Browser:
 
     def submit_login(self, page: httpx.Response, username: str, password: str):
         match = re.search(r'<form[^>]*id="kc-form-login"[^>]*action="([^"]+)"', page.text)
-        assert match, "no hay formulario de login en la página"
+        assert match, "there is no login form on the page"
         action = unescape(match.group(1))
         return self.follow(
             "POST",
@@ -92,65 +92,69 @@ class Browser:
 def log_in(browser: Browser, username: str, next_path: str = "/api/kernel/ui/preferences"):
     page, hops = browser.follow("GET", f"{GATEWAY}/login?next={next_path}", headers=NAVIGATE)
     check(
-        "el login lleva al IdP sin pasar por la pantalla del realm",
+        "the login goes to the IdP without the realm's screen",
         "/realms/fake/" in hops[-1],
         f"{page.status_code} " + " → ".join(hops),
     )
-    return browser.submit_login(page, username, "contraseña-de-prueba-1")
+    return browser.submit_login(page, username, "test-password-1")
 
 
 def phase_one(state: Path) -> None:
     anonymous = Browser()
     api = anonymous.request("GET", f"{GATEWAY}/api/kernel/ui/preferences", headers=JSON)
     check(
-        "sin sesión, la API contesta 401 y JSON",
+        "without a session, the API answers 401 and JSON",
         api.status_code == 401 and api.headers["content-type"].startswith("application/json"),
         f"{api.status_code} {api.headers.get('content-type')}",
     )
     page = anonymous.request("GET", f"{GATEWAY}/training/hoy", headers=NAVIGATE)
     check(
-        "sin sesión, una página va al login",
+        "without a session, a page goes to the login",
         page.status_code == 302 and page.headers["location"] == "/login?next=%2Ftraining%2Fhoy",
         f"{page.status_code} {page.headers.get('location')}",
     )
     for path, expected in (("/healthz", 200), ("/version", 200), ("/mcp", 401)):
         status = anonymous.request("GET", f"{GATEWAY}{path}").status_code
-        check(f"{path} sigue dando {expected} sin sesión", status == expected, str(status))
+        check(f"{path} still gives {expected} without a session", status == expected, str(status))
 
     owner = Browser()
-    final, hops = log_in(owner, "dueno@ejemplo.com")
+    final, hops = log_in(owner, "owner@example.com")
     check(
-        "la persona de la lista blanca vuelve al gateway con sesión",
+        "the allowlisted person comes back to the gateway with a session",
         SESSION in owner.cookies(f"{GATEWAY}/")
         and hops[-1] == f"{GATEWAY}/api/kernel/ui/preferences",
         " → ".join(urlparse(h).netloc + urlparse(h).path for h in hops),
     )
-    check("y el kernel le contesta", final.status_code == 200, str(final.status_code))
+    check("and the kernel answers them", final.status_code == 200, str(final.status_code))
     written = owner.request(
         "PUT",
         f"{GATEWAY}/api/kernel/ui/desktops/mobile",
         json={"pages": [{"id": "p1", "items": []}], "updated_at": None},
         headers=JSON,
     )
-    check("y lo que escribe llega al kernel", written.status_code == 200, str(written.status_code))
+    check(
+        "and what they write reaches the kernel",
+        written.status_code == 200,
+        str(written.status_code),
+    )
     internal = owner.request(
         "POST",
         f"{GATEWAY}/api/kernel/internal/users",
         json={"subject": "otro-sub"},
         headers=JSON,
     )
-    check("con sesión, la API interna del kernel no se alcanza", internal.status_code == 404)
+    check("with a session, the kernel's internal API is not reachable", internal.status_code == 404)
 
     intruder = Browser()
-    final, hops = log_in(intruder, "intruso@ejemplo.com")
+    final, hops = log_in(intruder, "intruder@example.com")
     check(
-        "una cuenta del IdP fuera de la lista blanca no llega al gateway",
+        "an IdP account outside the allowlist does not reach the gateway",
         SESSION not in intruder.cookies(f"{GATEWAY}/")
         and not any("/login/callback" in hop for hop in hops),
         " → ".join(hops),
     )
     check(
-        "y el realm se lo dice",
+        "and the realm tells them",
         final.status_code in (200, 400, 401) and urlparse(hops[-1]).netloc == "auth:8080",
         f"{final.status_code} {hops[-1]}",
     )
@@ -158,7 +162,7 @@ def phase_one(state: Path) -> None:
     logout = owner.request("POST", f"{GATEWAY}/logout")
     after = owner.request("GET", f"{GATEWAY}/api/kernel/ui/preferences", headers=JSON)
     check(
-        "salir borra la sesión",
+        "logging out deletes the session",
         logout.status_code == 200
         and SESSION not in owner.cookies(f"{GATEWAY}/")
         and after.status_code == 401,
@@ -166,9 +170,9 @@ def phase_one(state: Path) -> None:
     )
 
     again = Browser()
-    log_in(again, "dueno@ejemplo.com")
+    log_in(again, "owner@example.com")
     ok = again.request("GET", f"{GATEWAY}/api/kernel/ui/preferences", headers=JSON)
-    check("se puede volver a entrar", ok.status_code == 200, str(ok.status_code))
+    check("one can sign in again", ok.status_code == 200, str(ok.status_code))
     (state / "jar.json").write_text(json.dumps(again.jar))
     claude(again)
 
@@ -181,9 +185,9 @@ def phase_one(state: Path) -> None:
     _, hops = google.follow("GET", f"{REALM}/protocol/openid-connect/auth?{params}")
     to_google = [h for h in hops if urlparse(h).netloc == "accounts.google.com"]
     check(
-        "con Google configurado, el realm manda a accounts.google.com",
+        "with Google configured, the realm sends to accounts.google.com",
         bool(to_google)
-        and parse_qs(urlparse(to_google[0]).query).get("client_id") == ["id-de-google-de-prueba"],
+        and parse_qs(urlparse(to_google[0]).query).get("client_id") == ["test-google-id"],
         " → ".join(hops),
     )
 
@@ -208,7 +212,7 @@ def claude(browser: Browser) -> None:
     )
     code = parse_qs(urlparse(hops[-1]).query).get("code", [""])[0]
     check(
-        "Claude recibe su código sin volver a pedir login",
+        "Claude gets its code without asking for a login again",
         hops[-1].startswith(callback) and bool(code),
         " → ".join(hops),
     )
@@ -222,7 +226,7 @@ def claude(browser: Browser) -> None:
     }
     without_pkce = httpx.post(token_url, data=form)
     check(
-        "sin el verificador de PKCE no hay token",
+        "without the PKCE verifier there is no token",
         without_pkce.status_code == 400,
         str(without_pkce.status_code),
     )
@@ -233,14 +237,16 @@ def claude(browser: Browser) -> None:
     form["code"] = parse_qs(urlparse(hops[-1]).query).get("code", [""])[0]
     issued = httpx.post(token_url, data={**form, "code_verifier": verifier})
     check(
-        "con PKCE y sin secreto, Claude tiene su token",
+        "with PKCE and no secret, Claude gets its token",
         issued.status_code == 200,
         issued.text[:200],
     )
     token = issued.json().get("access_token", "") if issued.status_code == 200 else ""
     response = httpx.get(f"{GATEWAY}/mcp", headers={"authorization": f"Bearer {token}"})
     check(
-        "y el gateway lo deja pasar a /mcp", response.status_code != 401, str(response.status_code)
+        "and the gateway lets it through to /mcp",
+        response.status_code != 401,
+        str(response.status_code),
     )
 
 
@@ -249,7 +255,7 @@ def phase_two(state: Path) -> None:
     time.sleep(40)
     response = browser.request("GET", f"{GATEWAY}/api/kernel/ui/preferences", headers=JSON)
     check(
-        "deshabilitada en el realm, la sesión muere en el siguiente refresco",
+        "disabled in the realm, the session dies at the next refresh",
         response.status_code == 401,
         str(response.status_code),
     )
@@ -259,5 +265,5 @@ if __name__ == "__main__":
     phase, directory = sys.argv[1], Path(sys.argv[2])
     {"uno": phase_one, "dos": phase_two}[phase](directory)
     if failures:
-        print(f"{len(failures)} comprobación(es) fallida(s)")
+        print(f"{len(failures)} failed check(s)")
         sys.exit(1)

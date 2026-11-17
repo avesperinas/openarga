@@ -292,7 +292,7 @@ def send(found: Collected, token: str, url: str) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Send Apple Health step counts to OpenArga.")
     parser.add_argument("export", type=Path, help="export.zip o export.xml de Apple Salud")
-    parser.add_argument("--dry-run", action="store_true", help="no manda nada")
+    parser.add_argument("--dry-run", action="store_true", help="send nothing")
     parser.add_argument("--url", default=URL)
     arguments = parser.parse_args()
 
@@ -300,13 +300,13 @@ def main() -> int:
         found = collect(source)
     days = found.days()
     if not days:
-        print("el export no trae nada que Vitals guarde", file=sys.stderr)
+        print("the export has nothing Vitals stores", file=sys.stderr)
         return 1
     stepped = [day for day, values in days.items() if "steps" in values]
-    print(f"{len(days)} días, del {min(days)} al {max(days)}; {len(stepped)} con pasos")
+    print(f"{len(days)} days, from {min(days)} to {max(days)}; {len(stepped)} with steps")
     keys = sorted({key for values in days.values() for key in values})
     print(f"cifras: {', '.join(keys)}")
-    print(f"ficha: {', '.join(sorted(found.profile)) or 'nada'}")
+    print(f"profile: {', '.join(sorted(found.profile)) or 'nothing'}")
     if arguments.dry_run:
         return 0
     token = os.environ.get("ARGA_INGEST_TOKEN", "").strip()

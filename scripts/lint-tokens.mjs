@@ -19,40 +19,40 @@ const RULES = [
   {
     id: "hex-color",
     pattern: /#[0-9a-fA-F]{3,8}\b/g,
-    message: "color hex literal; usa una variable de packages/ui/tokens.css",
+    message: "hex colour literal; use a variable from packages/ui/tokens.css",
   },
   {
     id: "inline-style",
     pattern: /style=\{\{(?!\s*(?:"--|'--|\[))/g,
-    message: "estilo inline; el estilo vive en packages/ui (solo se permiten variables CSS)",
+    message: "inline style; style lives in packages/ui (only CSS variables are allowed)",
   },
   {
     id: "font-size-px",
     pattern: /font-size:\s*[\d.]+px/g,
-    message: "tamaño de letra en px; usa un paso de la escala (--text-*)",
+    message: "font size in px; use a step of the scale (--text-*)",
   },
   {
     id: "raw-color",
     pattern: /\b(?:rgba?|hsla?)\((?!\s*var\()/g,
-    message: "color rgb()/hsl() literal; usa una variable de packages/ui/tokens.css",
+    message: "rgb()/hsl() colour literal; use a variable from packages/ui/tokens.css",
   },
   {
     id: "own-piece",
     pattern:
       /<(?:p|h[1-4]|div|section|main|button)\b[^>]*className="(?:[^"]*\s)?(?!widget-)[a-z]+-(?:screen|empty|empty-title|empty-detail|section-title|group-title|panel-title|block-title|note|hint|warning|fab|toast|toast-host)(?:\s[^"]*)?"/g,
-    message: "pieza propia que ya existe en packages/ui (Screen, EmptyState, Section, Heading, GroupLabel, Hint, Notice, CreateButton)",
+    message: "own piece that already exists in packages/ui (Screen, EmptyState, Section, Heading, GroupLabel, Hint, Notice, CreateButton)",
     only: /\.tsx$/,
   },
   {
     id: "arbitrary-class",
     pattern: /\b[a-z-]+-\[[^\]]+\]/g,
-    message: "clase arbitraria de Tailwind; usa un token",
+    message: "arbitrary Tailwind class; use a token",
   },
   {
     id: "spacing-literal",
     pattern:
       /(?:^|[\s{;])(?:gap|row-gap|column-gap|padding(?:-[a-z]+)?|margin(?:-[a-z]+)?|inset(?:-[a-z]+)?)\s*:[^;]*?(?<![\w.-])(?!1px\b)(?:\d*\.)?\d+(?:px|rem|em)\b/g,
-    message: "espacio escrito a mano; usa un paso de --space-*",
+    message: "hand-written spacing; use a step of --space-*",
     only: /\.s?css$/,
     report: true,
   },
@@ -66,28 +66,28 @@ const RULES = [
   {
     id: "z-index-literal",
     pattern: /z-index\s*:\s*(?:[2-9]|\d{2,})\b/g,
-    message: "capa escrita a mano; usa una de --z-*",
+    message: "hand-written layer; use one of --z-*",
     only: /\.s?css$/,
     report: true,
   },
   {
     id: "own-base",
     pattern: /^\s*(?:html|body|::selection|:focus-visible)\s*[,{]/g,
-    message: "base propia; ya la pone packages/ui/tokens.css",
+    message: "own base; packages/ui/tokens.css already sets it",
     only: /\.s?css$/,
     report: true,
   },
   {
     id: "own-button",
     pattern: /<button\b[^>]*className="([a-z]+-[a-z-]*(?:btn|button))\b/g,
-    message: "botón propio; usa Button, IconButton o CreateButton de packages/ui",
+    message: "own button; use Button, IconButton or CreateButton from packages/ui",
     only: /\.tsx$/,
     report: true,
   },
   {
     id: "own-title",
     pattern: /<h[1-4]\b[^>]*className="((?!widget-)[a-z]+-[a-z0-9-]*)/g,
-    message: "título propio; usa Heading, Section o GroupLabel de packages/ui",
+    message: "own heading; use Heading, Section or GroupLabel from packages/ui",
     only: /\.tsx$/,
     report: true,
   },
@@ -159,7 +159,7 @@ for (const [file, text] of sources) {
         violations.push({
           rel,
           line: i + 1,
-          rule: { id: "unknown-token", message: "variable que no declara nadie; el navegador ignora la regla" },
+          rule: { id: "unknown-token", message: "variable nobody declares; the browser ignores the rule" },
           match: match[1],
         });
       }
@@ -192,7 +192,7 @@ for (const file of appCss) {
       violations.push({
         rel,
         line: one.line,
-        rule: { id: "app-css-placement", message: `aspecto en la app; va en packages/ui (la base admite ${allowed.appearance}, hay ${looks.length})` },
+        rule: { id: "app-css-placement", message: `appearance in the app; it belongs in packages/ui (the baseline allows ${allowed.appearance}, there are ${looks.length})` },
         match: one.property,
       });
     }
@@ -202,7 +202,7 @@ for (const file of appCss) {
       violations.push({
         rel,
         line: one.line,
-        rule: { id: "app-css-unused", message: `clase que no usa nadie en la app (la base admite ${allowed.unused}, hay ${dead.length})` },
+        rule: { id: "app-css-unused", message: `class nobody uses in the app (the baseline allows ${allowed.unused}, there are ${dead.length})` },
         match: `.${one.name}`,
       });
     }
@@ -216,9 +216,9 @@ if (UPDATE) {
       .sort(([a], [b]) => a.localeCompare(b)),
   );
   writeFileSync(BASELINE_FILE, `${JSON.stringify(next, null, 2)}\n`);
-  console.log(`app-css-baseline.json al día: ${Object.keys(next).length} fichero(s) con deuda.`);
+  console.log(`app-css-baseline.json up to date: ${Object.keys(next).length} file(s) with debt.`);
 } else if (lowered.length > 0) {
-  console.log(`El CSS de ${lowered.join(", ")} tiene menos deuda que su base: baja el número con --update-baseline.\n`);
+  console.log(`The CSS of ${lowered.join(", ")} has less debt than its baseline: lower the number with --update-baseline.\n`);
 }
 
 const blocking = violations.filter((v) => !v.rule.report || ONE_ZERO.includes(appOf(v.rel)));
@@ -239,10 +239,10 @@ if (debt.length > 0) {
   const header = ["app", ...reportIds, "total"];
   const widths = header.map((h, i) => Math.max(h.length, ...rows.map((r) => String(r[i]).length)));
   const line = (cells) => cells.map((c, i) => (i === 0 ? String(c).padEnd(widths[i]) : String(c).padStart(widths[i]))).join("  ");
-  console.log("Deuda de diseño por app (informe, no bloquea hasta su 1.0; --verbose para el detalle):\n");
+  console.log("Design debt per app (report, it does not block until its 1.0; --verbose for the detail):\n");
   console.log(line(header));
   for (const row of rows) console.log(line(row));
-  console.log(`\n${debt.length} caso(s) en ${rows.length} app(s).\n`);
+  console.log(`\n${debt.length} case(s) in ${rows.length} app(s).\n`);
   if (VERBOSE) {
     for (const v of debt) console.log(`${v.rel}:${v.line}  ${v.rule.id}  "${v.match.trim()}"  ${v.rule.message}`);
     console.log("");
@@ -253,8 +253,8 @@ if (blocking.length > 0) {
   for (const v of blocking) {
     console.error(`${v.rel}:${v.line}  ${v.rule.id}  "${v.match.trim()}"  ${v.rule.message}`);
   }
-  console.error(`\n${blocking.length} violación(es) de tokens. Ver docs/design-system.md.`);
+  console.error(`\n${blocking.length} token violation(s). See docs/design-system.md.`);
   process.exit(1);
 }
 
-console.log(`lint:tokens ok · ${files.length} fichero(s) revisado(s) fuera de packages/ui`);
+console.log(`lint:tokens ok · ${files.length} file(s) checked outside packages/ui`);

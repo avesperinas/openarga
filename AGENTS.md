@@ -24,14 +24,16 @@ not change without a new ADR. The ones that bite every day:
 During the v0.1 push three agents work in parallel. Each owns a set of paths and **never edits a
 path it does not own**. If you need a change outside your paths, open a GitHub issue labelled
 `needs-platform`, `needs-apps-1` or `needs-apps-2`, and keep going with a stub or a workaround
-inside your own paths.
+inside your own paths. Platform runs as two agents, **Platform** and **Platform Hub**; `needs-platform`
+reaches both.
 
 | Path | Owner |
 |---|---|
 | `kernel/`, `gateway/`, `shell/`, `mcp/`, `auth/` | **Platform** |
 | `packages/**` (ui, app, contracts, module, tenancy, testing, all of them) | **Platform** |
-| `modules/hub/**`, `modules/_template/**` | **Platform** |
-| `scripts/**`, `tests/` (root), `.github/**`, `backup/**`, `demo/**` | **Platform** |
+| `modules/_template/**` | **Platform** |
+| `modules/hub/**`, `demo/**`, `scripts/demo.py` | **Platform Hub** |
+| `scripts/**` (except `scripts/demo.py`), `tests/` (root), `.github/**`, `backup/**` | **Platform** |
 | `docker-compose*.yml`, `Makefile`, `.env.example`, root `pyproject.toml`, `package.json`, `pnpm-workspace.yaml`, `uv.lock`, `pnpm-lock.yaml`, `eslint.config.mjs` | **Platform** |
 | `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `docs/platform/**` | **Platform** |
 | `modules/{training,vitals,macros,recipes,shopping,money,goals}/**` | **Apps-1** |

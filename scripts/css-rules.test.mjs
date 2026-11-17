@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { appearanceDeclarations, declaredClasses, isPlacement, unusedClasses } from "./css-rules.mjs";
 
-test("colocar está permitido; el aspecto, no", () => {
+test("placement is allowed; appearance is not", () => {
   const css = `
 .app-grid {
   display: grid;
@@ -23,22 +23,22 @@ test("colocar está permitido; el aspecto, no", () => {
   );
 });
 
-test("un comentario con dos puntos no es una declaración", () => {
+test("a comment with a colon is not a declaration", () => {
   assert.deepEqual(appearanceDeclarations(".a { /* color: rojo */ display: flex; }"), []);
 });
 
-test("las propiedades personalizadas y la de colocación pasan", () => {
+test("custom properties and the placement one pass", () => {
   assert.equal(isPlacement("--x"), true);
   assert.equal(isPlacement("padding-inline"), true);
   assert.equal(isPlacement("border-radius"), false);
 });
 
-test("las clases de un selector, y solo de selectores", () => {
+test("the classes of a selector, and only of selectors", () => {
   const classes = declaredClasses(".a, .b:hover {\n  width: 1.5rem;\n}\n.c .d { display: none }");
   assert.deepEqual([...classes.keys()], ["a", "b", "c", "d"]);
 });
 
-test("una clase sin uso se ve; una usada o de plantilla, no", () => {
+test("an unused class shows; a used or template one does not", () => {
   const css = ".app-used {} .app-dead {} .app-kind-strength {}";
   const sources = ['<div className="app-used" />', "const k = `app-kind-${kind}`;"];
   assert.deepEqual(unusedClasses(css, sources).map((one) => one.name), ["app-dead"]);

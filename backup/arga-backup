@@ -54,14 +54,14 @@ ensure_local() {
   if ! r local cat config >/dev/null 2>&1; then
     mkdir -p "$LOCAL_REPO"
     r local init
-    log "repositorio local creado en $LOCAL_REPO"
+    log "local repository created at $LOCAL_REPO"
   fi
 }
 
 ensure_offsite() {
   if ! r offsite cat config >/dev/null 2>&1; then
     r offsite init --from-repo "$LOCAL_REPO" --copy-chunker-params
-    log "repositorio de fuera creado"
+    log "offsite repository created"
   fi
 }
 
@@ -73,7 +73,7 @@ dump() {
   local to=${SESSION[1]} from=${SESSION[0]} pid=$SESSION_PID
   printf '%s\n' "begin isolation level repeatable read, read only;" "select pg_export_snapshot();" >&"$to"
   local snapshot
-  read -r -t 30 snapshot <&"$from" || die "psql no exportó la instantánea"
+  read -r -t 30 snapshot <&"$from" || die "psql did not export the snapshot"
   [[ $snapshot =~ ^[0-9A-F-]+$ ]] || die "psql: $snapshot"
 
   pg_dumpall --globals-only --no-role-passwords -l "$PGDATABASE" -f "$DUMP/globals.sql"
@@ -82,7 +82,7 @@ dump() {
   exec {to}>&-
   local rest
   rest=$(cat <&"$from")
-  wait "$pid" || die "la huella falló: $rest"
+  wait "$pid" || die "the fingerprint failed: $rest"
   [[ -z $rest ]] || die "psql: $rest"
 
   {
@@ -117,11 +117,11 @@ once() {
   r local backup --host "$HOST" "$DUMP"
   forget local
   record backup "ok $what"
-  log "copia local hecha: $what, $(du -sh "$DUMP" | cut -f1) sin comprimir ($((SECONDS - started)) s)"
+  log "local backup done: $what, $(du -sh "$DUMP" | cut -f1) uncompressed ($((SECONDS - started)) s)"
   rm -rf "$DUMP"
 
   if [[ -z $OFFSITE_REPOSITORY ]]; then
-    log "AVISO: sin OFFSITE_REPOSITORY, la copia solo está en este servidor"
+    log "WARNING: without OFFSITE_REPOSITORY, the backup is only on this server"
     return 0
   fi
   started=$SECONDS
@@ -129,7 +129,7 @@ once() {
   r offsite copy --from-repo "$LOCAL_REPO" --host "$HOST"
   forget offsite
   record offsite "ok"
-  log "copia subida fuera ($((SECONDS - started)) s)"
+  log "backup uploaded offsite ($((SECONDS - started)) s)"
 }
 
 check() {
@@ -165,12 +165,12 @@ verify() {
   local started=$SECONDS
   r "$source" restore "$snapshot" --host "$HOST" --target "$files"
   local copy="$files$DUMP"
-  (cd "$copy" && sha256sum -c -s SHA256SUMS) || die "los ficheros de la copia no coinciden con su SHA256SUMS"
+  (cd "$copy" && sha256sum -c -s SHA256SUMS) || die "the backup files do not match their SHA256SUMS"
   local bootstrap database taken
   bootstrap=$(sed -n 's/^bootstrap=//p' "$copy/meta.env")
   database=$(sed -n 's/^database=//p' "$copy/meta.env")
   taken=$(sed -n 's/^taken_at=//p' "$copy/meta.env")
-  [[ $bootstrap =~ ^[a-z_][a-z0-9_]*$ ]] || die "meta.env sin superusuario de arranque"
+  [[ $bootstrap =~ ^[a-z_][a-z0-9_]*$ ]] || die "meta.env has no bootstrap superuser"
 
   su-exec postgres initdb -D "$data" -U "$bootstrap" --auth=trust >/dev/null
   su-exec postgres pg_ctl -D "$data" -w -l "$socket/postgres.log" \
@@ -186,12 +186,12 @@ verify() {
     log "DISTINTO: estas tablas no coinciden (nombre, recuento o hash):"
     diff <(cat "$copy/fingerprint.tsv") <(echo "$restored") | grep '^[<>]' | cut -f1,2 || true
     record verify "fail $taken"
-    die "la copia restaurada no es igual a producción"
+    die "the restored copy is not equal to production"
   fi
   local what
   what=$(summary "$copy/fingerprint.tsv")
   record verify "ok $taken $source: $what"
-  log "restauración de prueba OK: copia de $taken ($source), $what, iguales a producción ($((SECONDS - started)) s)"
+  log "test restore OK: backup from $taken ($source), $what, equal to production ($((SECONDS - started)) s)"
 }
 
 daily() {
@@ -205,9 +205,9 @@ daily() {
 }
 
 restore_files() {
-  local snapshot=${1:?falta la copia} target=${2:?falta el directorio}
+  local snapshot=${1:?the backup is missing} target=${2:?the directory is missing}
   r "$(repos | tail -n 1)" restore "$snapshot" --host "$HOST" --target "$target"
-  log "copia $snapshot en $target$DUMP: globals.sql, database.sql, fingerprint.tsv y meta.env"
+  log "backup $snapshot in $target$DUMP: globals.sql, database.sql, fingerprint.tsv and meta.env"
 }
 
 offsite_bytes() {
@@ -219,7 +219,7 @@ offsite_bytes() {
   local path=${url#*://}
   local host=${url%%://*}://${path%%/*}
   local rest=${path#*/}
-  [[ $rest != "$path" && -n $rest ]] || die "OFFSITE_REPOSITORY sin bucket"
+  [[ $rest != "$path" && -n $rest ]] || die "OFFSITE_REPOSITORY has no bucket"
   local bucket=${rest%%/*} prefix=""
   [[ $rest != */* ]] || prefix=${rest#*/}/
   local token="" total=0 xml size
@@ -244,25 +244,25 @@ human() {
 }
 
 space_text() {
-  echo "fuera ocupa $(human "$1") de $(human "$OFFSITE_QUOTA_BYTES") ($(($1 * 100 / OFFSITE_QUOTA_BYTES)) %)"
+  echo "offsite uses $(human "$1") of $(human "$OFFSITE_QUOTA_BYTES") ($(($1 * 100 / OFFSITE_QUOTA_BYTES)) %)"
 }
 
 space() {
   if [[ -z $OFFSITE_REPOSITORY ]]; then
-    log "sin OFFSITE_REPOSITORY, no hay espacio de fuera que medir"
+    log "without OFFSITE_REPOSITORY, there is no offsite space to measure"
     return 0
   fi
   local used
   used=$(offsite_bytes)
-  [[ $used =~ ^[0-9]+$ ]] || die "no se pudo medir lo que ocupa el repositorio de fuera"
+  [[ $used =~ ^[0-9]+$ ]] || die "the offsite repository size could not be measured"
   local text
   text=$(space_text "$used")
   if ((used * 100 <= OFFSITE_QUOTA_BYTES * OFFSITE_ALERT_PERCENT)); then
     log "$text"
     return 0
   fi
-  log "AVISO: $text, por encima del $OFFSITE_ALERT_PERCENT %"
-  notify "$(printf 'arga · copias: R2 por encima del %s %%\n\n%s.\n\nLas mensuales no se borran nunca, así que no bajará sola. Pasado el límite, R2 cobra lo que exceda.' \
+  log "WARNING: $text, above $OFFSITE_ALERT_PERCENT %"
+  notify "$(printf 'arga · backups: R2 above %s %%\n\n%s.\n\nMonthly backups are never deleted, so it will not go down on its own. Past the limit, R2 charges for the excess.' \
     "$OFFSITE_ALERT_PERCENT" "$text")"
 }
 
@@ -270,12 +270,12 @@ ago() {
   local then=$1 now minutes
   now=$(date -u +%s)
   minutes=$(((now - then) / 60))
-  if ((minutes < 120)); then echo "hace $minutes min"; else echo "hace $((minutes / 60)) h"; fi
+  if ((minutes < 120)); then echo "$minutes min ago"; else echo "$((minutes / 60)) h ago"; fi
 }
 
 describe() {
   local file="$STATE/$1"
-  [[ -f $file ]] || { echo "nunca"; return; }
+  [[ -f $file ]] || { echo "never"; return; }
   local when rest
   read -r when rest < "$file"
   echo "$rest, $(ago "$when")"
@@ -286,32 +286,32 @@ status_text() {
   for name in $(repos); do
     local count
     count=$(r "$name" snapshots --host "$HOST" --json 2>/dev/null | grep -o '"short_id"' | wc -l) || count="?"
-    echo "$name: $count copias"
+    echo "$name: $count backups"
   done
-  [[ -n $OFFSITE_REPOSITORY ]] || echo "fuera: SIN CONFIGURAR, la copia solo está en este servidor"
+  [[ -n $OFFSITE_REPOSITORY ]] || echo "offsite: NOT CONFIGURED, the backup is only on this server"
   if [[ -n $OFFSITE_REPOSITORY ]]; then
     local used
     used=$(offsite_bytes 2>/dev/null) || true
-    if [[ $used =~ ^[0-9]+$ ]]; then space_text "$used"; else echo "fuera: no se pudo medir lo que ocupa"; fi
+    if [[ $used =~ ^[0-9]+$ ]]; then space_text "$used"; else echo "offsite: its size could not be measured"; fi
   fi
-  echo "última copia: $(describe backup)"
-  [[ -z $OFFSITE_REPOSITORY ]] || echo "última subida: $(describe offsite)"
-  echo "última restauración de prueba: $(describe verify)"
+  echo "last backup: $(describe backup)"
+  [[ -z $OFFSITE_REPOSITORY ]] || echo "last upload: $(describe offsite)"
+  echo "last test restore: $(describe verify)"
 }
 
 notify() {
   local text=$1
   if [[ ! -r $NOTIFY_ENV_FILE ]]; then
-    log "sin avisar: no hay $NOTIFY_ENV_FILE"
+    log "not notifying: there is no $NOTIFY_ENV_FILE"
     return 0
   fi
   local TELEGRAM_BOT_TOKEN="" TELEGRAM_CHAT_ID=""
   # shellcheck disable=SC1090
   . "$NOTIFY_ENV_FILE"
-  [[ -n $TELEGRAM_BOT_TOKEN && -n $TELEGRAM_CHAT_ID ]] || { log "sin avisar: faltan las variables de Telegram"; return 0; }
+  [[ -n $TELEGRAM_BOT_TOKEN && -n $TELEGRAM_CHAT_ID ]] || { log "not notifying: the Telegram variables are missing"; return 0; }
   curl -fsS --max-time 10 -d "chat_id=$TELEGRAM_CHAT_ID" --data-urlencode "text=$text" \
     "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" >/dev/null 2>&1 \
-    || log "el aviso por Telegram no salió"
+    || log "the Telegram notification did not go out"
 }
 
 step() {
@@ -320,14 +320,14 @@ step() {
   if "$0" "$name" 2>&1 | tee "$STATE/last-$name.log"; then
     if [[ -f $STATE/failing-$name ]]; then
       rm -f "$STATE/failing-$name"
-      notify "$(printf 'arga · copias\n\n"%s" vuelve a funcionar.\n\n%s' "$name" "$(status_text)")"
+      notify "$(printf 'arga · backups\n\n"%s" works again.\n\n%s' "$name" "$(status_text)")"
     fi
     return 0
   fi
   if [[ ! -f $STATE/failing-$name ]]; then
     touch "$STATE/failing-$name"
     output=$(tail -n 8 "$STATE/last-$name.log")
-    notify "$(printf 'arga · copias: FALLA "%s"\n\n%s\n\n%s' "$name" "$output" "$(status_text)")"
+    notify "$(printf 'arga · backups: FAILING "%s"\n\n%s\n\n%s' "$name" "$output" "$(status_text)")"
   fi
   return 1
 }
@@ -344,8 +344,8 @@ sleep_until_minute() {
 
 serve() {
   set -o pipefail
-  log "servicio de copias: cada hora a los :$BACKUP_MINUTE, la pasada diaria a las $DAILY_HOUR UTC"
-  [[ -n $OFFSITE_REPOSITORY ]] || log "AVISO: sin OFFSITE_REPOSITORY, las copias solo quedarán en este servidor"
+  log "backup service: every hour at :$BACKUP_MINUTE, the daily run at $DAILY_HOUR UTC"
+  [[ -n $OFFSITE_REPOSITORY ]] || log "WARNING: without OFFSITE_REPOSITORY, backups will only stay on this server"
   heartbeat
   sleep "$STARTUP_DELAY"
   step once || true
@@ -360,7 +360,7 @@ serve() {
       step space || true
     fi
     if ((weekday == 1 && hour == WEEKLY_HOUR)); then
-      notify "$(printf 'arga · copias, la semana\n\n%s' "$(status_text)")"
+      notify "$(printf 'arga · backups, the week\n\n%s' "$(status_text)")"
     fi
     sleep 60
   done
@@ -375,6 +375,6 @@ case ${1:-} in
   status) status_text ;;
   space) space ;;
   restore) restore_files "${2:-}" "${3:-}" ;;
-  notify-test) notify "$(printf 'arga · copias: prueba de aviso\n\n%s' "$(status_text)")" ;;
+  notify-test) notify "$(printf 'arga · backups: test notification\n\n%s' "$(status_text)")" ;;
   *) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
 esac

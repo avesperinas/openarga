@@ -34,7 +34,7 @@ def client_scope(name: str) -> dict:
         "attributes": {"include.in.token.scope": "true", "display.on.consent.screen": "false"},
         "protocolMappers": [
             {
-                "name": "audiencia del servidor MCP",
+                "name": "MCP server audience",
                 "protocol": "openid-connect",
                 "protocolMapper": "oidc-audience-mapper",
                 "config": {

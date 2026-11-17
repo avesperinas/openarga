@@ -76,19 +76,19 @@ if (checking) {
   }
   for (const [name, content] of files) {
     if (!onDisk.has(name)) stale.push(`falta ${name}`);
-    else if (readFileSync(join(IMAGES, name), "utf8") !== content) stale.push(`cambió ${name}`);
+    else if (readFileSync(join(IMAGES, name), "utf8") !== content) stale.push(`${name} changed`);
   }
   for (const name of onDisk) if (!files.has(name)) stale.push(`sobra ${name}`);
-  if (readFileSync(MANIFEST, "utf8") !== manifest) stale.push("cambió wallpapers.json");
+  if (readFileSync(MANIFEST, "utf8") !== manifest) stale.push("wallpapers.json changed");
 
   if (stale.length) {
     console.error(`fondos desfasados: ${stale.join(", ")}. Corre \`node scripts/make-wallpapers.mjs\`.`);
     process.exit(1);
   }
-  console.log(`fondos ok · ${COLLECTION.length} fondo(s), velo calculado y al día`);
+  console.log(`wallpapers ok · ${COLLECTION.length} wallpaper(s), scrim computed and up to date`);
 } else {
   mkdirSync(IMAGES, { recursive: true });
   for (const [name, content] of files) writeFileSync(join(IMAGES, name), content);
   writeFileSync(MANIFEST, manifest);
-  console.log(`fondos escritos · ${COLLECTION.length} fondo(s) en shell/public/wallpapers`);
+  console.log(`wallpapers written · ${COLLECTION.length} wallpaper(s) in shell/public/wallpapers`);
 }
