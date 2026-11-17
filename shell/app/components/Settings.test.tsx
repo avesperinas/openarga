@@ -2,7 +2,7 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { AppNames, CLAUDE_CLIENT_ID, ConnectClaude, IconStyles, Versions } from "./Settings";
+import { AppNames, CLAUDE_CLIENT_ID, ConnectClaude, IconStyles, ShownApps, Versions } from "./Settings";
 import { PlatformVersion } from "./Version";
 
 describe("conectar Claude", () => {
@@ -113,3 +113,29 @@ describe("icon finish", () => {
   });
 });
 
+
+describe("the apps a person sees", () => {
+  it("lists every app with a view, hidden ones unticked", () => {
+    const app = (id: string, name: string, view: string | null) => ({
+      id,
+      name,
+      version: "1.0.0",
+      enabled: true,
+      api_prefix: `/api/${id}`,
+      view,
+      scopes: [],
+      updated_at: "2026-09-17T08:00:00Z",
+    });
+    const html = renderToStaticMarkup(
+      <ShownApps
+        preferences={{ hidden_apps: ["study"] }}
+        onChange={() => undefined}
+        modules={[app("study", "Study", "/study"), app("library", "Books", "/library"), app("hub", "Connections", null)]}
+      />,
+    );
+
+    expect(html).toContain('aria-label="Show Study"');
+    expect(html).toContain('aria-label="Hide Books"');
+    expect(html).not.toContain("Connections");
+  });
+});

@@ -46,7 +46,7 @@ docker build -q -f "$ROOT/shell/Dockerfile" -t "arga-shell:$TAG" "$ROOT" >/dev/n
 for module in "${MODULES[@]}"; do
   docker build -q -f "$ROOT/modules/$module/Dockerfile" -t "arga-$module:$TAG" "$ROOT" >/dev/null
 done
-echo "  kernel, gateway, shell y ${MODULES[*]}"
+echo "  kernel, gateway, shell and ${MODULES[*]}"
 
 say "Postgres and the logins"
 docker network create "$NET" >/dev/null
@@ -76,9 +76,9 @@ for module in "${MODULES[@]}"; do
     -e "${module^^}_CREDENTIALS_KEY=$(openssl rand -hex 32)" \
     "${READY[@]}" "arga-$module:$TAG" >/dev/null
 done
-for module in "${MODULES[@]}"; do healthy "e2e-desk-$module"; echo "  $module listo"; done
+for module in "${MODULES[@]}"; do healthy "e2e-desk-$module"; echo "  $module ready"; done
 
-say "shell y gateway"
+say "shell and gateway"
 docker run -d --name e2e-desk-shell --network "$NET" --network-alias shell \
   -e KERNEL_URL=http://kernel:8000 "arga-shell:$TAG" >/dev/null
 for _ in $(seq 1 60); do
@@ -99,7 +99,7 @@ import os, time
 from dataclasses import asdict
 from gateway.session import COOKIE, Sealer, Session
 far = int(time.time()) + 86400
-print(Sealer(os.environ['SESSION_SECRET']).seal(COOKIE, asdict(Session('desktop-e2e-sintetico', far, 'r', far))))
+print(Sealer(os.environ['SESSION_SECRET']).seal(COOKIE, asdict(Session('desktop-e2e-synthetic', far, 'r', far))))
 ")
 cookie_name=$(docker run --rm "arga-gateway:$TAG" python -c "from gateway.session import COOKIE; print(COOKIE)")
 
@@ -108,4 +108,4 @@ mkdir -p "$OUT"
 E2E_URL="http://localhost:$PORT" E2E_COOKIE_NAME="$cookie_name" E2E_COOKIE="$cookie" E2E_OUT="$OUT" \
   uv run -q --with playwright --with httpx python "$ROOT/scripts/desktop_e2e.py"
 
-say "OK: the desktop shows the real apps and the checkbox ticks through the gateway"
+say "OK: an empty account goes through the first run to the desktop, which shows the real apps, and the checkbox ticks through the gateway"

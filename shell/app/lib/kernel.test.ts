@@ -32,6 +32,7 @@ describe("what the launcher shows", () => {
     });
 
     expect(launchable([module("travel", false), module("library", true)]).map((m) => m.id)).toEqual(["library"]);
+    expect(launchable([module("study", true), module("library", true)], ["study"]).map((m) => m.id)).toEqual(["library"]);
   });
 });
 

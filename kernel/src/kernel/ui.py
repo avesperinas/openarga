@@ -85,6 +85,7 @@ class Preferences(BaseModel):
     custom_app_names: Annotated[dict[AppId, AppName], Field(max_length=64)] = {}
     icon_style: Literal["solid", "ink", "paper"] = "solid"
     home_panels: HomePanels = HomePanels()
+    hidden_apps: Annotated[list[AppId], Field(max_length=64)] = []
 
 
 @router.get("/ui/preferences")

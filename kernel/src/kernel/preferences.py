@@ -142,3 +142,15 @@ async def change_preferences(body: PreferencesIn) -> Preferences:
             merged["region"] = None
         await connection.execute(WRITE, merged)
         return effective(merged)
+
+
+class FirstRun(BaseModel):
+    pending: bool
+
+
+@router.get("/me/first-run")
+async def first_run() -> FirstRun:
+    if current_user.get() is None:
+        return FirstRun(pending=False)
+    async with engine().connect() as connection:
+        return FirstRun(pending=await stored_of(connection) is None)

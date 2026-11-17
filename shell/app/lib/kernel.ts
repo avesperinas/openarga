@@ -176,6 +176,7 @@ export interface Preferences {
   wallpaper: string;
   icon_style?: "solid" | "ink" | "paper";
   home_panels?: { order?: string[]; hidden?: string[]; placed?: string[] };
+  hidden_apps?: string[];
 }
 
 export interface ModuleSummary {
@@ -207,7 +208,10 @@ export const readWallpapers = () =>
     }[]
   >("/ui/wallpapers");
 
-export const launchable = (modules: ModuleSummary[]) => modules.filter((module) => module.enabled);
+export const launchable = (modules: ModuleSummary[], hidden: readonly string[] = []) =>
+  modules.filter((module) => module.enabled && !hidden.includes(module.id));
+
+export const readFirstRun = () => get<{ pending: boolean }>("/me/first-run");
 
 export const readModules = () => get<ModuleSummary[]>("/modules");
 export const readPreferences = () => get<Preferences>("/ui/preferences");

@@ -152,3 +152,20 @@ async def test_rows_are_separated_by_postgres(kernel, people) -> None:
             await connection.execute(text(f"set local role {like}"))
             seen = await connection.scalar(text("select count(*) from kernel.person_preferences"))
     assert seen == 0
+
+
+async def test_the_first_run_is_pending_until_a_person_saves_their_preferences(
+    kernel, people
+) -> None:
+    alex, sam = people
+    assert (await kernel.get("/me/first-run", headers=alex)).json() == {"pending": True}
+
+    await kernel.patch("/me/preferences", json={}, headers=alex)
+
+    assert (await kernel.get("/me/first-run", headers=alex)).json() == {"pending": False}
+    assert (await kernel.get("/me/first-run", headers=sam)).json() == {"pending": True}
+
+
+async def test_without_a_person_there_is_no_first_run_to_show() -> None:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://kernel") as client:
+        assert (await client.get("/me/first-run")).json() == {"pending": False}

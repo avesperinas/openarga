@@ -25,7 +25,10 @@ export function TabBar({ modules }: { modules: ModuleSummary[] }) {
   const [searching, setSearching] = React.useState(false);
   const desktop = useDesktop();
   const named = React.useMemo(
-    () => modules.map((module) => ({ ...module, name: appNameOf(module.id, module.name, desktop?.preferences) })),
+    () =>
+      modules
+        .filter((module) => !desktop?.preferences.hidden_apps?.includes(module.id))
+        .map((module) => ({ ...module, name: appNameOf(module.id, module.name, desktop?.preferences) })),
     [modules, desktop?.preferences],
   );
 

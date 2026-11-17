@@ -35,31 +35,31 @@ describe("the main part and its support", () => {
 
 describe("the rows that show or not", () => {
   it("the row says what it does, carries its tone and, when disabled, says so", () => {
-    const html = renderToStaticMarkup(<ToggleRow name="Plan" tone={2} checked={false} onChange={() => undefined} detail="De fondo" />);
-    expect(html).toContain('aria-label="Mostrar Plan"');
+    const html = renderToStaticMarkup(<ToggleRow name="Plan" tone={2} checked={false} onChange={() => undefined} detail="In the background" />);
+    expect(html).toContain('aria-label="Show Plan"');
     expect(html).toContain('data-tone="2"');
     expect(html).toContain('data-state="off"');
-    expect(html).toContain("De fondo");
+    expect(html).toContain("In the background");
   });
 
   it("a partly chosen group carries a mixed checkbox, and closed it renders no rows", () => {
     const html = renderToStaticMarkup(
-      <ToggleGroup name="Viajes" count="1 de 3" state="mixed" onChange={() => undefined} open={false} onOpen={() => undefined}>
+      <ToggleGroup name="Trips" count="1 of 3" state="mixed" onChange={() => undefined} open={false} onOpen={() => undefined}>
         <li>fila</li>
       </ToggleGroup>,
     );
     expect(html).toContain('aria-checked="mixed"');
-    expect(html).toContain("1 de 3");
+    expect(html).toContain("1 of 3");
     expect(html).not.toContain("fila");
   });
 
   it("partly shown, the checkbox offers to show everything", () => {
     const html = renderToStaticMarkup(
-      <ToggleGroup name="Viajes" state="mixed" onChange={() => undefined} open onOpen={() => undefined}>
+      <ToggleGroup name="Trips" state="mixed" onChange={() => undefined} open onOpen={() => undefined}>
         <li>fila</li>
       </ToggleGroup>,
     );
-    expect(html).toContain('aria-label="Mostrar todo Viajes"');
+    expect(html).toContain('aria-label="Show all of Trips"');
     expect(html).toContain("fila");
   });
 });

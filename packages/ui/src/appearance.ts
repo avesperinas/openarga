@@ -130,6 +130,7 @@ export interface UiPreferences {
   custom_app_names?: Record<string, string>;
   icon_style?: IconStyle;
   home_panels?: { order?: string[]; hidden?: string[]; placed?: string[] };
+  hidden_apps?: string[];
 }
 
 export type IconStyle = "solid" | "ink" | "paper";

@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { IconButton } from "./controls";
 import { Icon, type IconName } from "./icons";
+import { say } from "./words";
 
 export interface ToggleRowProps {
   name: string;
@@ -21,7 +22,7 @@ export function ToggleRow({ name, detail, tone, checked, onChange, failing = fal
         className="toggle-row-button"
         role="switch"
         aria-checked={checked}
-        aria-label={`${checked ? "Ocultar" : "Mostrar"} ${name}`}
+        aria-label={say(checked ? "toggle.hide" : "toggle.show", { name })}
         onClick={() => onChange(!checked)}
       >
         <span className="toggle-check" aria-hidden="true">
@@ -72,7 +73,7 @@ export function ToggleGroup({ name, count, tone, state, onChange, open, onOpen, 
           role="switch"
           data-state={state}
           aria-checked={state === "mixed" ? "mixed" : state === "on"}
-          aria-label={`${state === "on" ? "Ocultar" : "Mostrar"} todo ${name}`}
+          aria-label={say(state === "on" ? "toggle.all.hide" : "toggle.all.show", { name })}
           onClick={() => onChange(state !== "on")}
         >
           <Icon name={state === "mixed" ? "minus" : "done"} />

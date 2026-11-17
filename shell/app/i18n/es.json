@@ -121,6 +121,8 @@
   "search.none": "Nada con eso.",
   "search.open": "Abrir",
   "search.shortcut": "Buscar en arga (⌘K)",
+  "settings.apps": "Apps que ves",
+  "settings.apps.hint": "Una app oculta sigue instalada: sale del lanzador y de los paneles de inicio.",
   "settings.claude": "Conectar Claude",
   "settings.claude.client": "ID de cliente",
   "settings.claude.hint": "Conecta tu propio Claude a tu cuenta de arga. Lo que Claude consulte o haga, lo hace con tus datos y solo con los tuyos.",
@@ -211,5 +213,15 @@
   "wallpaper.scrim": "El sistema oscurece o aclara la foto lo justo para que lo que va encima se lea: en esta, hasta un {light}% en claro y un {dark}% en oscuro, y menos en el centro.",
   "wallpaper.title": "Fondo",
   "wallpaper.upload": "Subir la mía",
-  "wallpaper.uploading": "Subiendo…"
+  "wallpaper.uploading": "Subiendo…",
+  "welcome.apps.intro": "Elige las apps que quieres ver. Las demás siguen instaladas y no estorban.",
+  "welcome.apps.later": "Las apps ocultas vuelven desde Ajustes cuando quieras.",
+  "welcome.apps.title": "Tus apps",
+  "welcome.back": "Atrás",
+  "welcome.failed": "No se ha podido guardar. Inténtalo de nuevo en un momento.",
+  "welcome.finish": "Empezar",
+  "welcome.next": "Siguiente",
+  "welcome.region.intro": "Primero, cómo quieres ver fechas, horas e importes. Puedes cambiarlo luego en Ajustes.",
+  "welcome.saving": "Preparándolo…",
+  "welcome.title": "Bienvenida a OpenArga"
 }
