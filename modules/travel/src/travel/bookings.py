@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from travel import travel
+from travel.words import counted, say
 
 Kind = Literal["stay", "leg", "block"]
 
@@ -34,7 +35,11 @@ FIELDS: dict[str, tuple[str, tuple[str, ...]]] = {
     "block": ("travel_block", BOOKING),
 }
 
-TICKETS = {"plane": "Vuelo", "train": "Tren", "car": "Coche", "bus": "Bus", "boat": "Ferry"}
+TICKETS = ("plane", "train", "car", "bus", "boat")
+
+
+def ticket_name(mode: str) -> str:
+    return say(f"ticket.{mode}")
 
 
 def _tidy(value):
@@ -72,7 +77,7 @@ async def _check_ticket(
     if ticket_leg_id is None:
         return
     if ticket_leg_id == leg_id:
-        raise travel.Conflict("un trayecto no va en su propio billete", "INVALID")
+        raise travel.Conflict("a leg does not go on its own ticket", "INVALID")
     other = (
         await connection.execute(
             text("""
@@ -83,10 +88,10 @@ async def _check_ticket(
         )
     ).one_or_none()
     if other is None or other.trip_id != trip_id:
-        raise travel.NotFound(f"trayecto {ticket_leg_id}")
+        raise travel.NotFound(f"leg {ticket_leg_id}")
     if other.ticket_leg_id is not None:
         raise travel.Conflict(
-            "ese trayecto ya va en el billete de otro: apunta al que lleva el billete",
+            "that leg already goes on another's ticket: point to the one holding the ticket",
             "INVALID",
             [{"leg_id": other.ticket_leg_id}],
         )
@@ -95,9 +100,7 @@ async def _check_ticket(
         {"id": leg_id},
     )
     if riders:
-        raise travel.Conflict(
-            "este trayecto lleva el billete de otros: no puede ir en el de otro", "INVALID"
-        )
+        raise travel.Conflict("this leg holds others' ticket: it cannot go on another's", "INVALID")
 
 
 async def _payer(
@@ -112,7 +115,7 @@ async def _payer(
     if expense is None:
         if who is None:
             return
-        raise travel.Conflict("quién pagó va con lo que costó: falta cost_eur", "INVALID")
+        raise travel.Conflict("who paid goes with what it cost: cost_eur is missing", "INVALID")
     payer = await money.resolve_traveller(connection, trip_id, who) if who else None
     await connection.execute(
         text("update travel.travel_expense set paid_by = cast(:who as uuid) where id = :id"),
@@ -132,7 +135,9 @@ async def _what(connection: AsyncConnection, kind: str, part_id: str) -> tuple[s
                 {"id": part_id},
             )
         ).one()
-        return "lodging", (row.accommodation or row.provider or f"Alojamiento en {row.name}")
+        return "lodging", (
+            row.accommodation or row.provider or say("booking.lodging_in", name=row.name)
+        )
     if kind == "leg":
         row = (
             await connection.execute(
@@ -147,7 +152,7 @@ async def _what(connection: AsyncConnection, kind: str, part_id: str) -> tuple[s
             )
         ).one()
         named = " ".join(part for part in (row.carrier, row.number) if part)
-        return "transport", f"{TICKETS[row.mode]} {named or f'{row.a} → {row.b}'}"
+        return "transport", f"{ticket_name(row.mode)} {named or f'{row.a} → {row.b}'}"
     row = (
         await connection.execute(
             text("select kind, title from travel.travel_block where id = :id"), {"id": part_id}
@@ -241,7 +246,7 @@ async def bookings(connection: AsyncConnection, trip_id: str) -> list[Booking]:
                     for part in (
                         stay.place.name if stay.accommodation else None,
                         stay.address,
-                        f"{stay.nights} noche{'s' if stay.nights != 1 else ''}",
+                        counted("widget.nights", stay.nights),
                     )
                     if part
                 ),
@@ -269,10 +274,10 @@ async def bookings(connection: AsyncConnection, trip_id: str) -> list[Booking]:
                 detail=" · ".join(
                     part
                     for part in (
-                        TICKETS[leg.mode],
+                        ticket_name(leg.mode),
                         " ".join(p for p in (leg.carrier, leg.number) if p) or None,
-                        f"terminal {leg.terminal}" if leg.terminal else None,
-                        f"asiento {leg.seat}" if leg.seat else None,
+                        say("leg.terminal", terminal=leg.terminal) if leg.terminal else None,
+                        say("leg.seat", seat=leg.seat) if leg.seat else None,
                     )
                     if part
                 ),

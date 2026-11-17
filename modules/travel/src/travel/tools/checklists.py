@@ -48,13 +48,13 @@ Texts = list[str]
 class AddCheckItems(BaseModel):
     trip_id: str
     items: Texts = Field(
-        min_length=1, max_length=100, description="Lo que se añade, una cosa por elemento."
+        min_length=1, max_length=100, description="What is added, one item per element."
     )
     list: lists.ListKind = Field(
-        default="packing", description="packing (la maleta) o todo (lo que hay que hacer)."
+        default="packing", description="packing (the suitcase) or todo (what has to be done)."
     )
     for_traveller: str | None = Field(
-        default=None, description="A quién le tocan: el nombre de un viajero o «yo»."
+        default=None, description='Whose they are: a traveller\'s name or "me".'
     )
 
 
@@ -75,7 +75,7 @@ async def add_check_items(connection: AsyncConnection, arguments: AddCheckItems)
 
 class CheckItem(BaseModel):
     item_id: UUID
-    checked: bool = Field(default=True, description="false la desmarca.")
+    checked: bool = Field(default=True, description="false unchecks it.")
 
 
 async def check_item(connection: AsyncConnection, arguments: CheckItem) -> dict[str, Any]:
@@ -106,10 +106,10 @@ async def remove_check_item(connection: AsyncConnection, arguments: ItemRef) -> 
 
 
 class CopyChecklist(BaseModel):
-    trip_id: str = Field(description="El viaje al que se copia.")
-    from_trip_id: str = Field(description="El viaje del que se copia.")
+    trip_id: str = Field(description="The trip copied to.")
+    from_trip_id: str = Field(description="The trip copied from.")
     list: lists.ListKind | None = Field(
-        default=None, description="Solo esa lista; sin él, las dos."
+        default=None, description="Only that list; without it, both."
     )
 
 

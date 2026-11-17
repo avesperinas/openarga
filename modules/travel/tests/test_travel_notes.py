@@ -8,14 +8,14 @@ WRITE = {"x-arga-scopes": "travel:read travel:write"}
 
 
 async def test_notes_keep_their_order_category_and_markdown(api) -> None:
-    trip = await make_trip(api, "Japón", "2027-11-01", "2027-11-14", status="plan")
+    trip = await make_trip(api, "Japan", "2027-11-01", "2027-11-14", status="plan")
     same = str(uuid4())
     await api.post(
         f"/trips/{trip['id']}/notes",
-        json={"id": same, "title": "Visado", "category": "visa", "body": "Sin visado **90 días**."},
+        json={"id": same, "title": "Visa", "category": "visa", "body": "No visa for **90 days**."},
     )
     again = await api.post(
-        f"/trips/{trip['id']}/notes", json={"id": same, "title": "Visado", "category": "visa"}
+        f"/trips/{trip['id']}/notes", json={"id": same, "title": "Visa", "category": "visa"}
     )
     listed = (
         await api.post(
@@ -27,15 +27,15 @@ async def test_notes_keep_their_order_category_and_markdown(api) -> None:
 
     assert len(again.json()) == 1
     assert [(n["title"], n["category"], n["position"]) for n in listed] == [
-        ("Visado", "visa", 0),
+        ("Visa", "visa", 0),
         ("Propinas", "culture", 1),
     ]
-    assert listed[0]["body"] == "Sin visado **90 días**."
+    assert listed[0]["body"] == "No visa for **90 days**."
     assert wrong.status_code == 422
 
 
 async def test_claude_notes_and_corrects_only_what_it_says(api) -> None:
-    trip = await make_trip(api, "Japón", "2027-11-01", "2027-11-14", status="plan")
+    trip = await make_trip(api, "Japan", "2027-11-01", "2027-11-14", status="plan")
     added = await api.post(
         "/tools/add_trip_note",
         json={

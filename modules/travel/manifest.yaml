@@ -48,406 +48,412 @@ tools:
   - name: get_trips
     scope: travel:read
     description: >
-      Los viajes, del más reciente al más antiguo, filtrables por fechas, país, etiqueta,
-      compañía o fase: plan (aún por decidir, solo en Travel), upcoming (confirmado y por
-      llegar, ya en el calendario), ongoing o done. De cada uno, sus noches, sus países, dónde se durmió, los kilómetros y el gasto
-      por persona y por día. Un viaje es la secuencia de sus lugares principales (donde se
-      duerme); las noches son las del viaje entero. Los archivados no salen salvo con
-      include_archived, como en la lista de Viajes; en las cifras cuentan siempre.
+      The trips, from the most recent to the oldest, filtered by dates, country, tag, company or
+      phase: plan (still to decide, only in Travel), upcoming (confirmed and still to come, already
+      in the calendar), ongoing or done. For each, its nights, its countries, where it slept, the
+      kilometres and the spend per person and per day. A trip is the sequence of its main places
+      (where one sleeps); the nights are those of the whole trip. Archived ones are left out
+      unless include_archived, as in the Trips list; they always count in the figures.
   - name: get_trip
     scope: travel:read
     description: >
-      Un viaje completo, por su id o por parte de su título: los lugares principales con llegada,
-      salida y alojamiento, lo visitado desde cada uno, los trayectos con su medio y sus
-      kilómetros, el gasto por categoría y concepto, las personas y el diario de quien pregunta.
-      Cada pieza lleva su id (stay_id, visit_id, leg_id, expense_id), que es lo que piden las
-      tools que la editan o la quitan. Con include, además: itinerary (cada día con sus bloques,
-      cada uno con su block_id, y lo guardado sin día), bookings (alojamientos, trayectos y
-      bloques con su reserva, reservados o no), balance (quién pagó, quién debe a quién y lo
-      saldado), notes (las notas, con su note_id, en trip_notes), checklist (la maleta y lo que hay que hacer,
-      con su item_id) y documents (los billetes y papeles guardados, sin su contenido). Los
-      importes son por persona; el total del grupo es por persona por el número de viajeros.
+      A whole trip, by its id or by part of its title: the main places with arrival, departure and
+      lodging, what was visited from each, the legs with their mode and kilometres, the spend by
+      category and concept, the people and the journal of whoever asks. Each piece carries its id
+      (stay_id, visit_id, leg_id, expense_id), which is what the tools that edit or remove it ask
+      for. With include, also: itinerary (each day with its blocks, each with its block_id, and
+      what is kept without a day), bookings (lodgings, legs and blocks with their booking, booked
+      or not), balance (who paid, who owes whom and what was settled), notes (the notes, with
+      their note_id, in trip_notes), checklist (the suitcase and what has to be done, with their
+      item_id) and documents (the tickets and papers stored, without their content). Amounts are
+      per person; the group's total is per person times the number of travellers.
   - name: get_travel
     scope: travel:read
     description: >
-      Lo vivido de una vez (los planes y lo que está por llegar no cuentan). view=places: los
-      países o las regiones de primer nivel (comunidad autónoma, région, Land) donde se ha estado,
-      con viajes, noches y primera y última visita; `slept` distingue donde se durmió de lo solo
-      visitado de paso; los códigos son ISO 3166-1 y 3166-2; y other_places, los lugares donde se
-      ha estado sin viaje apuntado (los de add_other_place), con su other_place_id. Sin fechas,
-      esos cuentan también en lo visitado. view=summary: las cifras agrupadas por año, por país o
-      por medio de transporte (group_by): viajes, noches fuera, kilómetros, gasto y coste medio
-      por día, y cuántos de los 44 países de Europa. Los kilómetros de tren, coche, bus y barco
-      son una estimación sobre la línea recta.
+      What was lived, at once (plans and what is still to come do not count). view=places: the
+      countries or first-level regions (a Spanish autonomous community, a French region, a German
+      Land) visited, with trips,
+      nights and first and last visit; `slept` tells where one slept from what was only passed
+      through; codes are ISO 3166-1 and 3166-2; and other_places, the places visited without a
+      trip noted (those of add_other_place), with their other_place_id. Without dates, those count
+      in what was visited too. view=summary: the figures grouped by year, by country or by mode of
+      transport (group_by): trips, nights away, kilometres, spend and average cost per day, and
+      how many of the 44 countries of Europe. Kilometres by train, car, bus and boat are an
+      estimate on the straight line.
   - name: find_place
     scope: travel:read
     description: >
-      Busca un lugar por su nombre y devuelve candidatos con coordenadas, país y región: primero
-      los ya guardados (`saved`, con su place_id) y después los de OpenStreetMap. Añade el país si
-      el nombre puede confundirse. Cada uno lleva su tipo de sitio (`category`: restaurant,
-      beach, viewpoint…) si se deduce. Pasa el candidato elegido tal cual a add_stay, add_visit,
-      add_block o add_leg, con otro `category` si el deducido no vale; si OpenStreetMap no
-      contesta, un lugar solo con nombre se guarda sin resolver y no sale en el mapa.
+      Looks a place up by its name and returns candidates with coordinates, country and region:
+      first the stored ones (`saved`, with their place_id) and then those from OpenStreetMap. Add
+      the country if the name can be confused. Each carries its kind of place (`category`:
+      restaurant, beach, viewpoint…) when it can be deduced. Pass the chosen candidate as is to
+      add_stay, add_visit, add_block or add_leg, with another `category` if the deduced one does
+      not fit; if OpenStreetMap does not answer, a place with only a name is stored unresolved and
+      does not show on the map.
   - name: find_nearby
     scope: travel:read
     description: >
-      Lo que hay cerca de un lugar guardado (place_id de un lugar principal, una visita o un
-      bloque) o de un punto, en OpenStreetMap: qué ver (sights), dónde comer (food), naturaleza
-      (nature), compras (shopping) o salir de noche (nightlife), a como mucho 3 km, de lo más cerca
-      a lo más lejos con su distancia. El nombre va en español o en inglés si lo hay, y el local
-      aparte. Pasa el candidato elegido tal cual como place a add_block, con día o sin él. Sale a
-      Overpass (ADR-0129): si está saturada, lo dice en failed.
+      What is near a stored place (the place_id of a main place, a visit or a block) or a point,
+      in OpenStreetMap: what to see (sights), where to eat (food), nature (nature), shopping
+      (shopping) or going out at night (nightlife), within 3 km at most, from nearest to farthest
+      with its distance. The name is given in Spanish or English when there is one, and the local
+      one apart. Pass the chosen candidate as is as place to add_block, with or without a day. It
+      calls Overpass: if it is overloaded, it says so in failed.
   - name: get_today
     scope: travel:read
     description: >
-      Lo de hoy del viaje en curso: qué día del viaje es, dónde se duerme y, en el orden del día,
-      de dónde se sale, los trayectos con su billete, adónde se llega y lo que se hace, con sus
-      horas, dónde es y su localizador. Sin viaje en curso, cuál es el siguiente y cuánto falta.
-      El día es el de España salvo que se dé otro: de viaje lejos, puede ser ya otro día allí.
+      Today in the ongoing trip: which day of the trip it is, where one sleeps and, in the day's
+      order, where one leaves from, the legs with their ticket, where one arrives and what one
+      does, with their times, where it is and its booking code. Without an ongoing trip, which is
+      the next one and how long until it starts. The day is today in the person's zone unless
+      another is given: when travelling far, it may already be another day there.
   - name: get_ideas
     scope: travel:read
     description: >
-      Las ideas de viaje: viajes que se quieren hacer y aún no tienen fechas. De cada una, sus
-      destinos (con su idea_place_id y place_id), su presupuesto por persona, cuántos días más o
-      menos, los meses buenos para ir, sus etiquetas y los viajes que ya salieron de ella. Las
-      archivadas, solo con include_archived.
+      The trip ideas: trips one wants to make that have no dates yet. For each, its destinations
+      (with their idea_place_id and place_id), its budget per person, roughly how many days, the
+      good months to go, its tags and the trips that already came out of it. Archived ones only
+      with include_archived.
   - name: create_idea
     scope: travel:write
     description: >
-      Apunta una idea de viaje: título y, si se sabe, destinos (candidatos de find_place o
-      place_id), presupuesto por persona en euros, de cuántos a cuántos días, los meses buenos
-      (del 1 al 12) y etiquetas. Para cuando aún no hay fechas; con fechas, es un plan
-      (create_trip con status plan, o plan_idea).
+      Notes a trip idea: title and, if known, destinations (find_place candidates or place_ids),
+      budget per person in euros, from how many to how many days, the good months (1 to 12) and
+      tags. For when there are no dates yet; with dates, it is a plan (create_trip with status
+      plan, or plan_idea).
   - name: update_idea
     scope: travel:write
     description: >
-      Corrige una idea por su idea_id: título, presupuesto, días, meses, etiquetas o notas. Solo
-      cambia lo que se pasa; meses y etiquetas se sustituyen enteros.
+      Corrects an idea by its idea_id: title, budget, days, months, tags or notes. Only what is
+      passed changes; months and tags are replaced whole.
   - name: add_idea_place
     scope: travel:write
     description: >
-      Añade un destino a una idea: un candidato de find_place o un place_id, con una nota si se
-      quiere. El mismo destino dos veces es uno.
+      Adds a destination to an idea: a find_place candidate or a place_id, with a note if wanted.
+      The same destination twice is one.
   - name: remove_idea_place
     scope: travel:write
     description: >
-      Quita un destino de una idea por su idea_place_id. El lugar sigue guardado.
+      Removes a destination from an idea by its idea_place_id. The place stays stored.
   - name: archive_idea
     scope: travel:write
     description: >
-      Archiva una idea: sale de la lista y del globo, sin perder nada.
+      Archives an idea: it leaves the list and the globe, losing nothing.
   - name: unarchive_idea
     scope: travel:write
     description: >
-      Saca una idea del archivo.
+      Takes an idea out of the archive.
   - name: delete_idea
     scope: travel:write
     description: >
-      Borra una idea con sus destinos; los lugares guardados y los viajes que salieron de ella se
-      quedan. Pide el título exacto; prueba antes con dry_run. Una compartida solo la borra quien
-      la creó.
+      Deletes an idea with its destinations; the stored places and the trips that came out of it
+      stay. It asks for the exact title; try first with dry_run. A shared one can only be deleted
+      by whoever created it.
   - name: plan_idea
     scope: travel:write
     description: >
-      Pasa una idea a plan: crea un viaje en plan con esas fechas, con las notas y etiquetas de la
-      idea, y sus destinos esperando en el itinerario sin día. La idea se queda: de ella pueden
-      salir más viajes.
+      Turns an idea into a plan: creates a trip in plan with those dates, with the idea's notes and
+      tags, and its destinations waiting in the itinerary without a day. The idea stays: more
+      trips can come out of it.
   - name: share_idea
     scope: travel:write
     description: >
-      Comparte una idea con un espacio de arga, por su nombre, o con space null la deja otra vez
-      solo tuya. Solo quien la creó.
+      Shares an idea with an arga space, by its name, or with space null makes it only yours again.
+      Only whoever created it.
   - name: get_weather
     scope: travel:read
     description: >
-      El tiempo de un lugar guardado (place_id) o de un punto, con Open-Meteo: forecast da los
-      próximos 16 días en la hora de allí (cielo, máxima, mínima, probabilidad de lluvia);
-      climate da cada mes de media de los diez últimos años (máxima, mínima, lluvia y días de
-      lluvia), que es lo que dice qué meses son buenos para una idea. Sale fuera (ADR-0132).
+      The weather of a stored place (place_id) or a point, from Open-Meteo: forecast gives the next
+      16 days in the local time there (sky, high, low, chance of rain); climate gives each month's
+      average over the last ten years (high, low, rain and rainy days), which is what says which
+      months are good for an idea. It calls out to Open-Meteo.
   - name: update_traveller
     scope: travel:write
     description: >
-      Cambia el nombre de un viajero de un viaje («Viajero 3» es Marta), por su nombre actual o
-      «yo». Enlazarlo con una persona de arga se hace en la app.
+      Renames a traveller of a trip ("Traveller 3" is Marta), by their current name or "me".
+      Linking them to an arga person is done in the app.
   - name: record_settlement
     scope: travel:write
     description: >
-      Apunta lo que un viajero devolvió a otro, en euros: deja de deberse. Devuelve las cuentas.
+      Notes what a traveller paid back to another, in euros: it is no longer owed. Returns the
+      accounts.
   - name: remove_settlement
     scope: travel:write
     description: >
-      Quita una devolución apuntada por su settlement_id: vuelve a deberse.
+      Removes a noted settlement by its settlement_id: it is owed again.
   - name: add_trip_note
     scope: travel:write
     description: >
-      Añade una nota a un viaje, con su título, su texto en Markdown y su categoría: general, visa,
-      culture, tips, health u other.
+      Adds a note to a trip, with its title, its Markdown text and its category: general, visa,
+      culture, tips, health or other.
   - name: update_trip_note
     scope: travel:write
     description: >
-      Corrige una nota por su note_id: título, texto (entero) o categoría. Solo cambia lo que se
-      pasa.
+      Corrects a note by its note_id: title, text (whole) or category. Only what is passed
+      changes.
   - name: remove_trip_note
     scope: travel:write
     description: >
-      Quita una nota de un viaje.
+      Removes a note from a trip.
   - name: write_journal
     scope: travel:write
     description: >
-      Escribe en el diario del viaje lo que la persona cuenta de un día: por defecto añade un
-      párrafo al de hoy del viaje en curso. Es suyo (no lo ven los demás del viaje) y sale en su
-      nota del día. replace pisa el día entero: solo si lo pide.
+      Writes in the trip's journal what the person tells about a day: by default it adds a
+      paragraph to today in the ongoing trip. It is theirs (the others on the trip do not see it)
+      and it shows in their daily note. replace overwrites the whole day: only if they ask.
   - name: add_check_items
     scope: travel:write
     description: >
-      Añade cosas a una lista de un viaje, sin marcar: a packing (la maleta) o a todo. Con
-      for_traveller, le tocan a ese viajero.
+      Adds items to a trip's list, unchecked: to packing (the suitcase) or to todo. With
+      for_traveller, they belong to that traveller.
   - name: check_item
     scope: travel:write
     description: >
-      Marca una cosa de una lista como hecha o metida en la maleta; con checked false, la desmarca.
+      Marks a list item as done or packed; with checked false, unchecks it.
   - name: remove_check_item
     scope: travel:write
     description: >
-      Quita una cosa de una lista.
+      Removes an item from a list.
   - name: copy_checklist
     scope: travel:write
     description: >
-      Copia las listas de otro viaje a este, sin marcar y sin repetir lo que ya hay. Con list,
-      solo esa.
+      Copies another trip's lists to this one, unchecked and without repeating what is already
+      there. With list, only that one.
   - name: create_trip
     scope: travel:write
     description: >
-      Crea un viaje con su título, sus fechas y cuántos sois, y si se sabe, con quién y sus
-      etiquetas (escapada, trabajo, verano). Hecho o decidido, confirmed, y sale en el
-      calendario; si aún no está decidido o las fechas pueden moverse, status plan, y se queda
-      en Travel hasta confirm_trip. Con budget_eur_per_person, el presupuesto por persona; con
-      summary, el párrafo que lo cuenta en su portada. La foto de portada se sube desde la app;
-      sin ella, se busca sola la de su destino en Wikimedia. Lo que
-      no ha empezado no cuenta en lo visitado ni en las cifras. Uno con el mismo título y el mismo primer día no se crea dos veces: devuelve el que
-      había.
+      Creates a trip with its title, its dates and how many you are, and if known, with whom and
+      its tags (getaway, work, summer). Done or decided, confirmed, and it shows in the calendar;
+      if it is not decided yet or the dates can move, status plan, and it stays in Travel until
+      confirm_trip. With budget_eur_per_person, the budget per person; with summary, the
+      paragraph that tells it on its cover. The cover photo is uploaded from the app; without one,
+      its destination's photo is looked up on Wikimedia. What has not started does not count in
+      what was visited or in the figures. One with the same title and the same first day is not
+      created twice: it returns the one that was there.
   - name: update_trip
     scope: travel:write
     description: >
-      Corrige un viaje: título, fechas, viajeros, compañía, etiquetas, notas, presupuesto por
-      persona (budget_eur_per_person; null lo quita) o el párrafo que lo cuenta en su portada
-      (summary). Solo cambia lo que
-      se pasa; null vacía las notas, y compañía y etiquetas se sustituyen enteras. Si hay lugares,
-      visitas o trayectos que se quedarían fuera de las fechas nuevas, no cambia nada y dice
-      cuáles. Los importes son por persona: con keep_group_total, al cambiar los viajeros se
-      rehacen para que el total del grupo sea el mismo. Con shift_dates, cambiar starts_on
-      mueve el viaje entero: lo que tiene fecha se mueve los mismos días y, si no se da ends_on,
-      también el último día. dry_run enseña el resultado sin guardar.
+      Corrects a trip: title, dates, travellers, company, tags, notes, budget per person
+      (budget_eur_per_person; null removes it) or the paragraph that tells it on its cover
+      (summary). Only what is passed changes; null empties the notes, and company and tags are
+      replaced whole. If there are places, visits or legs that would fall outside the new dates,
+      it changes nothing and says which. Amounts are per person: with keep_group_total, changing
+      the travellers redoes them so the group's total stays the same. With shift_dates, changing
+      starts_on moves the whole trip: everything dated moves by the same days and, if ends_on is
+      not given, the last day too. dry_run shows the result without saving.
   - name: confirm_trip
     scope: travel:write
     description: >
-      Confirma un plan: el viaje está decidido y sale en el calendario como días completos.
+      Confirms a plan: the trip is decided and shows in the calendar as whole days.
   - name: unconfirm_trip
     scope: travel:write
     description: >
-      Devuelve un viaje a plan: sale del calendario y se queda solo en Travel, con todo lo que
-      tiene.
+      Turns a trip back into a plan: it leaves the calendar and stays only in Travel, with
+      everything it has.
   - name: archive_trip
     scope: travel:write
     description: >
-      Archiva un viaje: sale de la lista de Viajes y del recorrido, y sigue en el mapa y en las
-      cifras. Es la forma de quitarlo de en medio sin perder nada.
+      Archives a trip: it leaves the Trips list and the route, and stays on the map and in the
+      figures. It is the way to put it out of the way losing nothing.
   - name: unarchive_trip
     scope: travel:write
     description: >
-      Saca un viaje del archivo: vuelve a la lista de Viajes y al recorrido.
+      Takes a trip out of the archive: it is back in the Trips list and the route.
   - name: delete_trip
     scope: travel:write
     description: >
-      Borra un viaje para siempre, con sus lugares principales, visitas, trayectos y gastos; los
-      lugares guardados se quedan. Pide el id y además el título exacto, y no borra si no
-      coinciden. Prueba antes con dry_run, que dice cuánto se borraría. Si solo se quiere
-      quitar de en medio, mejor archive_trip. Un viaje que te ha compartido otra persona solo lo
-      borra ella.
+      Deletes a trip for good, with its main places, visits, legs and expenses; the stored places
+      stay. It asks for the id and also the exact title, and does not delete if they do not match.
+      Try first with dry_run, which says how much would be deleted. To only put it out of the way,
+      better archive_trip. A trip another person shared with you can only be deleted by them.
   - name: share_trip
     scope: travel:write
     description: >
-      Comparte un viaje entero con un espacio de arga, por su nombre, o con space null lo deja
-      otra vez solo tuyo. Compartido, los miembros del espacio lo ven y lo editan: lugares,
-      visitas, trayectos y gastos, y les sale en su mapa y su calendario. Solo quien creó el viaje
-      lo comparte; get_trip dice en `mine` si es tuyo y en `shared` si está compartido.
+      Shares a whole trip with an arga space, by its name, or with space null makes it only yours
+      again. Shared, the space's members see and edit it: places, visits, legs and expenses, and it
+      shows on their map and calendar. Only whoever created the trip shares it; get_trip says in
+      `mine` whether it is yours and in `shared` whether it is shared.
   - name: add_stay
     scope: travel:write
     description: >
-      Añade un lugar principal a un viaje: donde se durmió, con el día de llegada, el de salida y
-      el alojamiento si se sabe. Las fechas tienen que caer dentro del viaje. El lugar es un
-      candidato de find_place o el place_id de uno guardado. Es también la reserva del
-      alojamiento: horas de entrada y salida, dirección, localizador, dónde se reservó, enlace y
-      cost_eur, lo que costó al grupo, que se apunta como su gasto.
+      Adds a main place to a trip: where one slept, with the arrival day, the departure day and
+      the lodging if known. The dates have to fall within the trip. The place is a find_place
+      candidate or the place_id of a stored one. It is also the lodging's booking: check-in and
+      check-out times, address, booking code, where it was booked, link and cost_eur, what it cost
+      the group, which is noted as its expense.
   - name: update_stay
     scope: travel:write
     description: >
-      Corrige un lugar principal por su stay_id: llegada, salida, alojamiento o el lugar. Las
-      fechas tienen que caer dentro del viaje y no pueden compartir noche con otro lugar
-      principal (salir de uno y llegar a otro el mismo día sí vale). Si cambia el lugar, los
-      trayectos que salían o llegaban aquí pasan al nuevo y se rehacen sus kilómetros.
+      Corrects a main place by its stay_id: arrival, departure, lodging or the place. The dates
+      have to fall within the trip and cannot share a night with another main place (leaving one
+      and arriving at another the same day is fine). If the place changes, the legs leaving or
+      arriving here move to the new one and their kilometres are redone.
   - name: remove_stay
     scope: travel:write
     description: >
-      Quita un lugar principal. Si hay visitas o trayectos que cuelgan de él, on_dependents
-      decide: reject (por defecto) no quita nada y dice cuáles; detach deja las visitas sin
-      lugar principal y los trayectos yendo a ese lugar; delete los quita con él. Prueba antes
-      con dry_run.
+      Removes a main place. If there are visits or legs hanging from it, on_dependents decides:
+      reject (the default) removes nothing and says which; detach leaves the visits without a main
+      place and the legs going to that place; delete removes them with it. Try first with dry_run.
   - name: add_visit
     scope: travel:write
     description: >
-      Añade un lugar visitado sin dormir en él: una ciudad de excursión, un museo, una playa. Se
-      pinta en el mapa en tono suave. Con el día, se cuelga del lugar principal donde se dormía,
-      y sale en el itinerario como una actividad sin hora. Si ese día ya hay una actividad en ese
-      lugar, es la misma visita y no se añade otra. Para darle hora, mejor add_block.
+      Adds a place visited without sleeping there: a city on a day trip, a museum, a beach. It is
+      painted on the map in a soft tone. With the day, it hangs from the main place where one was
+      sleeping, and it shows in the itinerary as an activity without a time. If that day there is
+      already an activity in that place, it is the same visit and no other is added. To give it a
+      time, better add_block.
   - name: update_visit
     scope: travel:write
     description: >
-      Corrige una visita por su visit_id: el lugar, el día, el lugar principal o la nota. Con
-      otro día y sin stay_id, se cuelga del lugar principal donde se dormía ese día.
+      Corrects a visit by its visit_id: the place, the day, the main place or the note. With
+      another day and no stay_id, it hangs from the main place where one was sleeping that day.
   - name: remove_visit
     scope: travel:write
     description: >
-      Quita una visita de un viaje. El lugar sigue guardado.
+      Removes a visit from a trip. The place stays stored.
   - name: add_leg
     scope: travel:write
     description: >
-      Añade un trayecto con su medio (avión, tren, coche, bus o barco), entre dos lugares
-      principales del viaje o desde otro sitio, como casa. Son las rutas del mapa, y los
-      kilómetros se calculan al guardar. on_map dice si se pinta; sin darlo, la ida desde casa y
-      la vuelta no. Es también el billete: horas de salida y llegada (y el día de llegada si es
-      otro), compañía, número, códigos de aeropuerto o estación, terminal, asiento, localizador,
-      dónde se reservó, enlace y cost_eur, que se apunta como su gasto. Si el viaje está
-      confirmado y el trayecto tiene fecha, sale en el calendario a su hora local, o de todo el
-      día si no la tiene.
+      Adds a leg with its mode (plane, train, car, bus or boat), between two main places of the
+      trip or from somewhere else, like home. They are the map's routes, and the kilometres are
+      computed on saving. on_map says whether it is painted; if not given, the way out from home
+      and the way back are not. It is also the ticket: departure and arrival times (and the
+      arrival day if it is another), company, number, airport or station codes, terminal, seat,
+      booking code, where it was booked, link and cost_eur, which is noted as its expense. If the
+      trip is confirmed and the leg has a date, it shows in the calendar at its local time, or as
+      all day if it has none.
   - name: update_leg
     scope: travel:write
     description: >
-      Corrige un trayecto por su leg_id: el medio, el origen o el destino (un lugar principal o
-      un candidato de find_place), el día, la nota o si sale en el mapa (on_map). Los kilómetros
-      se vuelven a calcular.
+      Corrects a leg by its leg_id: the mode, the origin or the destination (a main place or a
+      find_place candidate), the day, the note or whether it shows on the map (on_map). The
+      kilometres are computed again.
   - name: remove_leg
     scope: travel:write
     description: >
-      Quita un trayecto de un viaje, y con él sus kilómetros.
+      Removes a leg from a trip, and its kilometres with it.
   - name: record_trip_expense
     scope: travel:write
     description: >
-      Apunta un gasto de un viaje en una de tres categorías —transporte, alojamiento u otros— con
-      su concepto. Lo mejor: lo que se pagó (amount) en su moneda (currency), quién pagó (paid_by,
-      el nombre de un viajero o «yo») y el día (spent_on); se pasa a euros con el cambio del BCE de
-      ese día, y si el BCE no publica esa moneda, lo dice y hace falta fx_rate. Se reparte a
-      partes iguales salvo que shares diga la parte de cada uno. O, como en la hoja,
-      amount_eur_per_person, ya por persona y en euros. Devuelve su expense_id.
+      Notes a trip expense in one of three categories (transport, lodging or other) with its
+      concept. Best: what was paid (amount) in its currency (currency), who paid (paid_by, a
+      traveller's name or "me") and the day (spent_on); it is converted to euros at the ECB rate of
+      that day, and if the ECB does not publish that currency, it says so and fx_rate is needed. It
+      is split in equal shares unless shares gives each one's part. Or, as in the sheet,
+      amount_eur_per_person, already per person and in euros. Returns its expense_id.
   - name: update_expense
     scope: travel:write
     description: >
-      Corrige un gasto por su expense_id: lo pagado, la moneda, quién pagó, el día, la categoría,
-      el concepto o la nota; o el importe por persona en euros, que lo deja como en la hoja. Solo
-      cambia lo que se pasa; con otra moneda u otro día, el cambio se vuelve a buscar.
+      Corrects an expense by its expense_id: what was paid, the currency, who paid, the day, the
+      category, the concept or the note; or the amount per person in euros, which leaves it as in
+      the sheet. Only what is passed changes; with another currency or day, the rate is looked up
+      again.
   - name: remove_expense
     scope: travel:write
     description: >
-      Quita un gasto de un viaje.
+      Removes an expense from a trip.
   - name: add_other_place
     scope: travel:write
     description: >
-      Apunta un lugar donde se ha estado sin crear un viaje: una escapada pequeña o un viaje tan
-      antiguo que no se saben las fechas. Cuenta en los países y regiones visitados, no en viajes
-      ni en noches. El lugar es un candidato de find_place o el place_id de uno guardado; el mismo
-      lugar dos veces es uno. Si se saben las fechas, mejor create_trip.
+      Notes a place visited without creating a trip: a small getaway or a trip so old its dates
+      are not known. It counts in the countries and regions visited, not in trips or nights. The
+      place is a find_place candidate or the place_id of a stored one; the same place twice is
+      one. If the dates are known, better create_trip.
   - name: update_other_place
     scope: travel:write
     description: >
-      Corrige un lugar sin viaje por su other_place_id: el lugar o la nota; null borra la nota.
+      Corrects a place without a trip by its other_place_id: the place or the note; null deletes
+      the note.
   - name: remove_other_place
     scope: travel:write
     description: >
-      Quita un lugar sin viaje: deja de contar en los países y regiones visitados, salvo que
-      también salga en un viaje.
+      Removes a place without a trip: it no longer counts in the countries and regions visited,
+      unless it also shows in a trip.
   - name: update_place
     scope: travel:write
     description: >
-      Renombra un lugar guardado, le cambia el tipo de sitio (`category`) o lo vuelve a resolver
-      con un candidato de find_place, en todos los viajes que lo usan a la vez. Al resolverlo de nuevo se rehacen el país, la región y
-      los kilómetros de sus trayectos. Devuelve los viajes afectados; dry_run los enseña sin
-      guardar.
+      Renames a stored place, changes its kind of place (`category`) or resolves it again with a
+      find_place candidate, in every trip using it at once. Resolving it again redoes the country,
+      the region and the kilometres of its legs. Returns the trips affected; dry_run shows them
+      without saving.
   - name: add_block
     scope: travel:write
     description: >
-      Añade algo al itinerario de un viaje: un bloque con título y tipo (activity, transport,
-      meal, accommodation, free_time u other), y si se sabe, día, hora y lugar. Sin día queda
-      guardado para cuando tenga hueco. Uno activity con lugar cuenta como visitado y sale en el
-      mapa; con hora, entra en su orden del día. Una activity en un lugar donde ese día ya hay
-      otra no se duplica: completa la que había con la hora, las notas y la reserva que lleve. El
-      lugar puede llevar su `category` (restaurant, cafe, market, nightlife, beach, nature,
-      viewpoint, culture, castle, town, shopping, parking, lodging, other). Una entrada, una mesa
-      o un tour lleva aquí su reserva: localizador, dónde, enlace y cost_eur.
-      Es lo que se usa para los planes de un viaje: salen solos en el calendario, en Travel ·
-      Plan. No los crees también con `create_event` de Planner.
+      Adds something to a trip's itinerary: a block with a title and a kind (activity, transport,
+      meal, accommodation, free_time or other), and if known, day, time and place. Without a day it
+      is kept for when there is room. An activity with a place counts as visited and shows on the
+      map; with a time, it goes in the day's order. An activity in a place where that day there is
+      already another is not duplicated: it completes the one there with the time, the notes and
+      the booking it carries. The place can carry its `category` (restaurant, cafe, market,
+      nightlife, beach, nature, viewpoint, culture, castle, town, shopping, parking, lodging,
+      other). A ticket, a table or a tour carries its booking here: booking code, where, link and
+      cost_eur. It is what is used for a trip's plans: they show in the calendar on their own, in
+      Travel · Plan. Do not create them as well with Planner's `create_event`.
   - name: update_block
     scope: travel:write
     description: >
-      Corrige un bloque por su block_id: título, tipo, día, horas, lugar o notas. Solo cambia lo
-      que se pasa; null vacía lo que puede estar vacío. Con otro día, pasa al final de ese día.
+      Corrects a block by its block_id: title, kind, day, times, place or notes. Only what is
+      passed changes; null empties what can be empty. With another day, it goes to the end of that
+      day.
   - name: move_block
     scope: travel:write
     description: >
-      Mueve un bloque a otro día, o a sin día, y a un puesto de ese día (desde 0). Es reordenar el
-      itinerario; lo visitado se mueve con él. Lo que tiene hora va siempre en el orden de las
-      horas: el puesto solo cuenta entre lo que no la tiene.
+      Moves a block to another day, or to no day, and to a position in that day (from 0). It is
+      reordering the itinerary; what was visited moves with it. What has a time always goes in
+      the order of the times: the position only counts among what has none.
   - name: plan_trip
     scope: travel:write
     description: >
-      Planea un viaje entero en una sola llamada: lo crea (title, starts_on, ends_on, viajeros,
-      summary; status plan por defecto) o completa uno con trip_id, y le añade de una vez sus
-      lugares principales (stays), sus trayectos (legs, con same_ticket_as para la vuelta de un ida y
-      vuelta), sus días (days: título y bloques con hora, lugar con su category, notas y reserva con
-      cost_eur y paid_by) y sus sitios guardados sin día (saved). Los lugares son candidatos de
-      find_place. O entra todo o no entra nada: si algo choca, no guarda y dice en qué pieza
-      («days[2].blocks[1]: …»). dry_run enseña el itinerario que quedaría sin guardar. Para
-      corregir después, las tools de siempre.
+      Plans a whole trip in one call: creates it (title, starts_on, ends_on, travellers, summary;
+      status plan by default) or completes one with trip_id, and adds at once its main places
+      (stays), its legs (legs, with same_ticket_as for the return of a round trip), its days (days:
+      title and blocks with time, place with its category, notes and booking with cost_eur and
+      paid_by) and its places kept without a day (saved). Places are find_place candidates.
+      Everything goes in or nothing does: if something clashes, it saves nothing and says in which
+      piece ("days[2].blocks[1]: …"). dry_run shows the itinerary that would result without saving.
+      To correct afterwards, the usual tools.
   - name: update_day
     scope: travel:write
     description: >
-      Pone el título de un día del viaje («Llegada y Old Fortress»), como mucho 80 caracteres; sin
-      título o vacío, se lo quita. Sale en el día a día, en Hoy y en get_trip con include itinerary.
+      Sets the title of a day of the trip ("Arrival and Old Fortress"), 80 characters at most;
+      without a title or empty, it removes it. It shows in the day by day, in Today and in
+      get_trip with include itinerary.
   - name: remove_block
     scope: travel:write
     description: >
-      Quita un bloque del itinerario, y con él la visita que llevaba si era una actividad con
-      lugar. El lugar sigue guardado.
+      Removes a block from the itinerary, and with it the visit it carried if it was an activity
+      with a place. The place stays stored.
 
 ui:
   widgets:
     - id: countries
-      title: Países
+      title: Countries
       kind: kpi
       sizes: ["1x1", "2x2", "2x1", "4x1", "1x2", "4x2"]
       endpoint: /api/travel/widgets/countries
       refresh: 3600
       link: /travel
     - id: last_trip
-      title: Último viaje
+      title: Last trip
       kind: upnext
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/travel/widgets/last_trip
       refresh: 3600
-      link: /travel/viajes
+      link: /travel/trips
     - id: next_trip
-      title: Próximo viaje
+      title: Next trip
       kind: upnext
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/travel/widgets/next_trip
       refresh: 3600
-      link: /travel/viajes
+      link: /travel/trips
     - id: by_year
-      title: Viajes por año
+      title: Trips per year
       kind: bars
       sizes: ["2x2", "2x1", "4x1", "4x2", "4x4"]
       endpoint: /api/travel/widgets/by_year
       refresh: 3600
-      link: /travel/estadisticas
+      link: /travel/stats
   view: /travel
   hue: 8
   family: wellbeing

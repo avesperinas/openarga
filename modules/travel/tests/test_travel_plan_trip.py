@@ -17,7 +17,7 @@ def four_days() -> dict:
         days.append(
             {
                 "day": day,
-                "title": f"Día {number + 1} en Budapest",
+                "title": f"Day {number + 1} in Budapest",
                 "blocks": [
                     {
                         "title": f"Visita {number}-{index}",
@@ -34,7 +34,7 @@ def four_days() -> dict:
         "ends_on": "2027-11-14",
         "travellers": 2,
         "companions": ["Luis"],
-        "summary": "Cuatro días de termas y Danubio.",
+        "summary": "Four days of baths and the Danube.",
         "stays": [
             {
                 "place": BUDAPEST,
@@ -66,7 +66,7 @@ def four_days() -> dict:
             },
         ],
         "days": days,
-        "saved": [{"title": "New York Café", "place": spot("New York Café", 47.498, "cafe")}],
+        "saved": [{"title": "New York Cafe", "place": spot("New York Cafe", 47.498, "cafe")}],
     }
 
 
@@ -76,7 +76,7 @@ async def test_claude_plans_four_days_with_twenty_blocks_in_one_call(api) -> Non
     assert made["created_trip"] is True
     assert made["added"] == {"stays": 1, "legs": 2, "day_titles": 4, "blocks": 20, "saved": 1}
     days = made["itinerary"]["days"]
-    assert [day["title"] for day in days] == [f"Día {n} en Budapest" for n in range(1, 5)]
+    assert [day["title"] for day in days] == [f"Day {n} in Budapest" for n in range(1, 5)]
     assert sum(1 for day in days for item in day["items"] if item["type"] == "block") == 20
     assert made["itinerary"]["unscheduled"][0]["place"]["category"] == "cafe"
     bookings = (

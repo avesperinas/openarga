@@ -16,7 +16,7 @@ TEMPLE = {
 
 async def test_claude_finds_what_is_near_the_hotel_and_keeps_it_for_later(api, hub) -> None:
     hub.near = [TEMPLE]
-    trip = await make_trip(api, "Japón", "2027-04-01", "2027-04-04", status="plan")
+    trip = await make_trip(api, "Japan", "2027-04-01", "2027-04-04", status="plan")
     hotel = await place(api, HOTEL)
 
     found = await api.post(

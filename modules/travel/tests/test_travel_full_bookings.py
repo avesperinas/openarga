@@ -31,7 +31,7 @@ async def budapest(api) -> tuple[str, str, str]:
             "travelled_on": "2027-11-11",
             "departs_at": "06:05",
             "carrier": "Lufthansa",
-            "number": "LH1825 vía Fráncfort (LH1338)",
+            "number": "LH1825 via Frankfurt (LH1338)",
             "seat": "18A, 18B, 18C, 18D, 19A, 19B",
             "terminal": "Terminal 2B Schengen",
             "confirmation": "7HQX2L",
@@ -67,7 +67,7 @@ async def test_a_return_ticket_is_one_expense_shown_on_both_legs(api) -> None:
     legs = {one["leg_id"]: one for one in found["bookings"]}
 
     assert [(e["concept"], e["paid"]["total_eur"]) for e in trip["expenses"]] == [
-        ("Vuelo Lufthansa LH1825 vía Fráncfort (LH1338)", 412.0)
+        ("Flight Lufthansa LH1825 via Frankfurt (LH1338)", 412.0)
     ]
     assert legs[leg_out]["cost_eur"] == 412.0
     assert legs[leg_out]["paid_by"] == "Luis"
@@ -109,7 +109,7 @@ async def test_who_paid_without_a_cost_is_refused(api) -> None:
         headers={"x-arga-scopes": "travel:read travel:write"},
     )
 
-    assert "falta cost_eur" in refused.text
+    assert "cost_eur is missing" in refused.text
 
 
 async def test_a_ticket_cannot_ride_on_one_that_rides_on_another(api) -> None:
@@ -128,4 +128,4 @@ async def test_a_ticket_cannot_ride_on_one_that_rides_on_another(api) -> None:
         headers={"x-arga-scopes": "travel:read travel:write"},
     )
 
-    assert "apunta al que lleva el billete" in refused.text
+    assert "point to the one holding the ticket" in refused.text

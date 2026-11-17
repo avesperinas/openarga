@@ -109,8 +109,10 @@ async def get_itinerary(connection: AsyncConnection, arguments: GetTrip) -> dict
 
 KIND = Field(
     default="activity",
-    description="activity (ver algo: con lugar, cuenta como visitado y sale en el mapa), "
-    "transport, meal, accommodation, free_time u other.",
+    description=(
+        "activity (seeing something: with a place, it counts as visited and shows on the map), "
+        "transport, meal, accommodation, free_time or other."
+    ),
 )
 
 
@@ -119,12 +121,14 @@ class AddBlock(BookingArgs):
     title: str = Field(min_length=1, max_length=120)
     kind: itinerary.Kind = KIND
     day: date | None = Field(
-        default=None, description="Sin día, queda guardado para cuando tenga hueco."
+        default=None, description="Without a day, it is kept for when there is room."
     )
-    starts_at: time | None = Field(default=None, description="HH:MM. Con hora, entra en su orden.")
+    starts_at: time | None = Field(
+        default=None, description="HH:MM. With a time, it goes in its order."
+    )
     ends_at: time | None = None
     place: PlaceArgument | None = Field(
-        default=None, description="Un candidato de find_place o el place_id de uno guardado."
+        default=None, description="A find_place candidate or the place_id of a stored one."
     )
     notes: str | None = Field(default=None, max_length=2000)
 
@@ -148,11 +152,11 @@ class BlockRef(BaseModel):
 class UpdateBlock(BlockRef, BookingArgs):
     title: str | None = Field(default=None, min_length=1, max_length=120)
     kind: itinerary.Kind | None = None
-    day: date | None = Field(default=None, description="null lo deja sin día.")
-    starts_at: time | None = Field(default=None, description="null quita la hora.")
+    day: date | None = Field(default=None, description="null leaves it without a day.")
+    starts_at: time | None = Field(default=None, description="null removes the time.")
     ends_at: time | None = None
-    place: PlaceArgument | None = Field(default=None, description="null quita el lugar.")
-    notes: str | None = Field(default=None, max_length=2000, description="null las borra.")
+    place: PlaceArgument | None = Field(default=None, description="null removes the place.")
+    notes: str | None = Field(default=None, max_length=2000, description="null deletes them.")
 
 
 async def _current_block(connection: AsyncConnection, block_id: str) -> tuple[str, itinerary.Block]:
@@ -197,9 +201,9 @@ async def update_block(connection: AsyncConnection, arguments: UpdateBlock) -> d
 
 
 class MoveBlock(BlockRef):
-    day: date | None = Field(description="El día al que va, o null para dejarlo sin día.")
+    day: date | None = Field(description="The day it goes to, or null to leave it without a day.")
     position: int = Field(
-        default=1000, ge=0, description="Su puesto en ese día, desde 0. Sin darlo, el último."
+        default=1000, ge=0, description="Its position in that day, from 0. If not given, the last."
     )
 
 
@@ -217,11 +221,11 @@ async def move_block(connection: AsyncConnection, arguments: MoveBlock) -> dict[
 
 class UpdateDay(BaseModel):
     trip_id: str
-    day: date = Field(description="Un día del viaje.")
+    day: date = Field(description="A day of the trip.")
     title: str | None = Field(
         default=None,
         max_length=80,
-        description="«Llegada y Old Fortress». Vacío o null se lo quita.",
+        description='"Arrival and Old Fortress". Empty or null removes it.',
     )
 
 

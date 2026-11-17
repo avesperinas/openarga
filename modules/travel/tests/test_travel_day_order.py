@@ -90,7 +90,7 @@ async def test_a_title_outside_the_trip_is_refused(api) -> None:
     refused = await api.put(f"/trips/{trip_id}/days/2025-04-20/title", json={"title": "Fuera"})
 
     assert refused.status_code == 409, refused.text
-    assert "fuera del viaje" in refused.json()["detail"]
+    assert "outside the trip" in refused.json()["detail"]
 
 
 async def test_moving_the_trip_takes_the_titles_with_it(api) -> None:

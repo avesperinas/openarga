@@ -35,7 +35,7 @@ async def test_a_flight_with_its_ticket_and_price_is_a_booking_and_an_expense(ap
     assert (leg["number"], leg["seat"], leg["confirmation"]) == ("IB3166", "14C", "ABC123")
     assert leg["cost_eur"] == 240.0
     assert [(e["concept"], e["amount_eur"], e["leg_id"]) for e in expenses] == [
-        ("Vuelo Iberia IB3166", 120.0, leg["id"])
+        ("Flight Iberia IB3166", 120.0, leg["id"])
     ]
     assert [(b["type"], b["booked"], b["at"]) for b in listed] == [("leg", True, "07:15:00")]
 
@@ -101,7 +101,7 @@ async def test_removing_a_booking_keeps_what_was_paid(api) -> None:
 
 
 async def test_what_is_not_booked_yet_is_said(api) -> None:
-    trip = await make_trip(api, "Japón", "2027-04-01", "2027-04-04", status="plan")
+    trip = await make_trip(api, "Japan", "2027-04-01", "2027-04-04", status="plan")
     bruges = await place(api, BRUGES)
     await api.post(
         f"/trips/{trip['id']}/stays",

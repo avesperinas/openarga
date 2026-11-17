@@ -22,12 +22,12 @@ async def _check_dates(connection: AsyncConnection, trip_id: str, *days: date | 
         )
     ).one_or_none()
     if span is None:
-        raise NotFound(f"viaje {trip_id}")
+        raise NotFound(f"trip {trip_id}")
     outside = [day for day in days if day is not None and not span.starts_on <= day <= span.ends_on]
     if outside:
         raise Conflict(
-            f"{outside[0].isoformat()} está fuera del viaje "
-            f"({span.starts_on.isoformat()} a {span.ends_on.isoformat()})",
+            f"{outside[0].isoformat()} is outside the trip "
+            f"({span.starts_on.isoformat()} to {span.ends_on.isoformat()})",
             "DATE_OUT_OF_RANGE",
             [
                 {
@@ -62,7 +62,7 @@ async def _check_overlap(
     ).all()
     if rows:
         raise Conflict(
-            f"esas noches ya son de {rows[0].name}: dos lugares principales no comparten noche",
+            f"those nights already belong to {rows[0].name}: two main places do not share a night",
             "STAY_OVERLAP",
             [
                 {
@@ -140,7 +140,7 @@ async def update_stay(
     before = await trip(connection, trip_id)
     old = next((one for one in before.stays if one.id == stay_id), None)
     if old is None:
-        raise NotFound(f"lugar principal {stay_id}")
+        raise NotFound(f"main place {stay_id}")
     await _check_overlap(connection, trip_id, request.arrives_on, request.leaves_on, stay_id)
     await place_by_id(connection, request.place_id)
     await connection.execute(
@@ -169,7 +169,7 @@ async def update_stay(
                 continue
             if start == end:
                 raise Conflict(
-                    "un trayecto quedaría yendo de un sitio al mismo",
+                    "a leg would go from a place to the same place",
                     "INVALID",
                     [{"kind": "leg", "leg_id": leg.id}],
                 )
@@ -207,9 +207,7 @@ async def _check_stay_of(connection: AsyncConnection, trip_id: str, stay_id: str
         {"id": stay_id, "trip": trip_id},
     )
     if not belongs:
-        raise Conflict(
-            "ese lugar principal no es de este viaje", "NOT_FOUND", [{"stay_id": stay_id}]
-        )
+        raise Conflict("that main place is not from this trip", "NOT_FOUND", [{"stay_id": stay_id}])
 
 
 async def add_visit(connection: AsyncConnection, trip_id: str, request: VisitIn) -> Trip:
@@ -259,7 +257,7 @@ async def update_visit(
         },
     )
     if updated.rowcount == 0:
-        raise NotFound(f"visita {visit_id}")
+        raise NotFound(f"visit {visit_id}")
     await connection.execute(
         text("""
             update travel.travel_block
@@ -327,7 +325,7 @@ async def update_leg(
         },
     )
     if updated.rowcount == 0:
-        raise NotFound(f"trayecto {leg_id}")
+        raise NotFound(f"leg {leg_id}")
     await _booked(connection, trip_id, "leg", leg_id, request)
     await _touch(connection, trip_id)
     return await trip(connection, trip_id)
@@ -340,7 +338,7 @@ async def record_expense(
         text("select 1 from travel.travel_trip where id = :id"), {"id": trip_id}
     )
     if not exists:
-        raise NotFound(f"viaje {trip_id}")
+        raise NotFound(f"trip {trip_id}")
     if request.id is not None:
         already = await connection.scalar(
             text("select id::text from travel.travel_expense where id = :id"), {"id": request.id}
@@ -398,7 +396,7 @@ async def _money(connection: AsyncConnection, trip_id: str, request: ExpenseIn) 
             {"id": request.paid_by, "trip": trip_id},
         )
         if not belongs:
-            raise Conflict("quien pagó no es viajero de este viaje", "NOT_FOUND")
+            raise Conflict("whoever paid is not a traveller of this trip", "NOT_FOUND")
     day = request.spent_on or today()
     done = await money.convert(request.amount, request.currency or "EUR", day, request.fx_rate)
     return {
@@ -427,7 +425,7 @@ async def update_expense(
         {"id": expense_id, "trip": trip_id},
     )
     if not exists:
-        raise NotFound(f"gasto {expense_id}")
+        raise NotFound(f"expense {expense_id}")
     money = await _money(connection, trip_id, request)
     updated = await connection.execute(
         text("""
@@ -447,7 +445,7 @@ async def update_expense(
         },
     )
     if updated.rowcount == 0:
-        raise NotFound(f"gasto {expense_id}")
+        raise NotFound(f"expense {expense_id}")
     from travel import money as split
 
     await split.save_shares(connection, trip_id, expense_id, request)
@@ -462,10 +460,10 @@ PARTS = {
     "expenses": "travel.travel_expense",
 }
 PART_NAMES = {
-    "stays": "lugar principal",
-    "visits": "visita",
-    "legs": "trayecto",
-    "expenses": "gasto",
+    "stays": "main place",
+    "visits": "visit",
+    "legs": "leg",
+    "expenses": "expense",
 }
 
 
@@ -501,7 +499,7 @@ async def stay_dependents(
 ) -> tuple[list[Visit], list[Leg]]:
     found = await trip(connection, trip_id)
     if not any(one.id == stay_id for one in found.stays):
-        raise NotFound(f"lugar principal {stay_id}")
+        raise NotFound(f"main place {stay_id}")
     visits = [one for one in found.visits if one.stay_id == stay_id]
     legs = [one for one in found.legs if stay_id in (one.from_stay_id, one.to_stay_id)]
     return visits, legs
@@ -516,7 +514,7 @@ async def remove_stay(
     visits, legs = await stay_dependents(connection, trip_id, stay_id)
     if (visits or legs) and on_dependents == "reject":
         raise Conflict(
-            "hay visitas o trayectos que cuelgan de este lugar principal",
+            "there are visits or legs hanging from this main place",
             "HAS_DEPENDENTS",
             [*(_visit_ref(one) for one in visits), *(_leg_ref(one) for one in legs)],
         )
@@ -545,7 +543,7 @@ async def delete_part(connection: AsyncConnection, trip_id: str, part: str, part
         _, legs = await stay_dependents(connection, trip_id, part_id)
         if legs:
             raise Conflict(
-                "hay trayectos que llegan o salen de aquí: quítalos antes",
+                "there are legs arriving or leaving here: remove them first",
                 "HAS_DEPENDENTS",
                 [_leg_ref(one) for one in legs],
             )
@@ -596,7 +594,7 @@ async def update_place(
             return await place_by_id(connection, place_id), affected
     new_name = " ".join((name or (candidate.name if candidate else "")).split())
     if not new_name:
-        raise Conflict("hace falta un nombre nuevo o un candidato de find_place", "INVALID")
+        raise Conflict("a new name or a candidate from find_place is needed", "INVALID")
     if candidate is None:
         await connection.execute(
             text("update travel.travel_place set name = :name where id = :id"),
@@ -614,7 +612,8 @@ async def update_place(
             )
             if clash:
                 raise Conflict(
-                    "ese lugar de OpenStreetMap ya está guardado con otro place_id: usa ese",
+                    "that OpenStreetMap place is already stored with another place_id: "
+                    "use that one",
                     "DUPLICATE_PLACE",
                     [{"place_id": clash}],
                 )

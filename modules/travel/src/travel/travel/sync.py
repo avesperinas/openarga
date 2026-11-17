@@ -14,6 +14,7 @@ from travel.travel.common import Conflict, NotFound
 from travel.travel.models import Leg, Trip
 from travel.travel.places import PLACE_COLUMNS, PlaceIn, save_place
 from travel.travel.read import trip
+from travel.words import say
 
 
 async def _touch(connection: AsyncConnection, trip_id: str) -> None:
@@ -21,7 +22,7 @@ async def _touch(connection: AsyncConnection, trip_id: str) -> None:
         text("update travel.travel_trip set updated_at = now() where id = :id"), {"id": trip_id}
     )
     if updated.rowcount == 0:
-        raise NotFound(f"viaje {trip_id}")
+        raise NotFound(f"trip {trip_id}")
     from travel import itinerary
 
     await itinerary.ensure_blocks(connection, trip_id)
@@ -83,9 +84,9 @@ async def share_trip(connection: AsyncConnection, trip_id: str, space_id: str | 
         )
     ).one_or_none()
     if found is None:
-        raise NotFound(f"viaje {trip_id}")
+        raise NotFound(f"trip {trip_id}")
     if not found.mine:
-        raise Conflict("solo quien creó el viaje lo comparte o deja de compartirlo", "NOT_OWNER")
+        raise Conflict("only whoever created the trip shares or unshares it", "NOT_OWNER")
     if found.space_id == space_id:
         return await trip(connection, trip_id)
     if found.space_id is not None:
@@ -170,7 +171,7 @@ def _agenda(trip_id: str, title: str, starts_on: date, ends_on: date, cancelled:
         all_day=True,
         tz="Europe/Madrid",
         status="cancelled" if cancelled else "confirmed",
-        href=f"/travel/viajes/{trip_id}",
+        href=f"/travel/trips/{trip_id}",
     )
 
 
@@ -218,7 +219,7 @@ def _leg_agenda(trip_id: str, leg: Leg) -> dict:
     from travel import bookings, zones
 
     named = " ".join(part for part in (leg.carrier, leg.number) if part)
-    title = " ".join(part for part in (bookings.TICKETS[leg.mode], named) if part)
+    title = " ".join(part for part in (bookings.ticket_name(leg.mode), named) if part)
     origin = leg.from_place
     where = f"{origin.name} ({leg.from_code})" if leg.from_code else origin.name
     if leg.terminal:
@@ -230,7 +231,7 @@ def _leg_agenda(trip_id: str, leg: Leg) -> dict:
         "tz": leaves,
         "location": where[:300],
         "status": "confirmed",
-        "href": f"/travel/viajes/{trip_id}/dias/{leg.travelled_on.isoformat()}",
+        "href": f"/travel/trips/{trip_id}/days/{leg.travelled_on.isoformat()}",
     }
     if leg.departs_at is None:
         return dated(
@@ -262,7 +263,7 @@ LEGS_OUT = text("""
 """)
 
 
-LEG_LAYER = "Trayectos"
+LEG_LAYER = "Legs"
 
 
 async def _sync_legs(connection: AsyncConnection, trip_id: str, legs: list[Leg]) -> None:
@@ -319,7 +320,9 @@ def _block_agenda(trip_id: str, block, zone: str) -> dict:
         end = max(start, datetime.combine(block.day, block.ends_at, ZoneInfo(zone)))
     location = block.place.name if block.place else None
     if block.confirmation:
-        location = " · ".join(part for part in (location, f"reserva {block.confirmation}") if part)
+        location = " · ".join(
+            part for part in (location, say("block.booking", code=block.confirmation)) if part
+        )
     return dated(
         uid=uid("travel", "block", block.id),
         title=block.title,
@@ -329,7 +332,7 @@ def _block_agenda(trip_id: str, block, zone: str) -> dict:
         tz=zone,
         location=(location or "")[:300] or None,
         status="confirmed",
-        href=f"/travel/viajes/{trip_id}/dias",
+        href=f"/travel/trips/{trip_id}/days",
     )
 
 

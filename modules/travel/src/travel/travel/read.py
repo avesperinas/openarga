@@ -293,5 +293,5 @@ def lived(trips: list[Trip]) -> list[Trip]:
 async def trip(connection: AsyncConnection, trip_id: str) -> Trip:
     rows = await _trip_rows(connection, trip_id)
     if not rows:
-        raise NotFound(f"viaje {trip_id}")
+        raise NotFound(f"trip {trip_id}")
     return _build(rows[0], *(await _children(connection, [trip_id])))

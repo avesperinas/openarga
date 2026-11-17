@@ -31,7 +31,8 @@ async def _check_unique(
     found = await find_duplicate(connection, title, starts_on, other_than)
     if found:
         raise Conflict(
-            f"ya hay un viaje «{' '.join(title.split())}» que empieza el {starts_on.isoformat()}",
+            f'there is already a trip "{" ".join(title.split())}" '
+            f"starting on {starts_on.isoformat()}",
             "DUPLICATE_TRIP",
             [{"trip_id": found}],
         )
@@ -140,7 +141,7 @@ async def update_trip(
         )
     ).one_or_none()
     if current is None:
-        raise NotFound(f"viaje {trip_id}")
+        raise NotFound(f"trip {trip_id}")
     before = current.travellers
     await _check_unique(connection, request.title, request.starts_on, trip_id)
     moved = (request.starts_on - current.starts_on).days
@@ -150,7 +151,7 @@ async def update_trip(
     outside = await _outside(connection, trip_id, request.starts_on, request.ends_on)
     if outside:
         raise Conflict(
-            "hay cosas del viaje fuera de esas fechas: cámbialas antes",
+            "there are things of the trip outside those dates: change them first",
             "DATE_OUT_OF_RANGE",
             outside,
         )
@@ -213,7 +214,7 @@ async def delete_trip(connection: AsyncConnection, trip_id: str) -> None:
         {"id": trip_id},
     )
     if shared_by_other:
-        raise Conflict("este viaje lo compartió otra persona: solo ella lo borra", "NOT_OWNER")
+        raise Conflict("another person shared this trip: only they delete it", "NOT_OWNER")
     gone = (
         await connection.execute(
             text(
@@ -223,7 +224,7 @@ async def delete_trip(connection: AsyncConnection, trip_id: str) -> None:
         )
     ).one_or_none()
     if gone is None:
-        raise NotFound(f"viaje {trip_id}")
+        raise NotFound(f"trip {trip_id}")
     await _withdraw(connection, trip_id, gone.title, gone.starts_on, gone.ends_on)
     await _sync_legs(connection, trip_id, [])
 
@@ -234,7 +235,7 @@ async def set_status(connection: AsyncConnection, trip_id: str, status: Status) 
         {"id": trip_id, "status": status},
     )
     if updated.rowcount == 0:
-        raise NotFound(f"viaje {trip_id}")
+        raise NotFound(f"trip {trip_id}")
     await _touch(connection, trip_id)
     return await trip(connection, trip_id)
 
@@ -250,5 +251,5 @@ async def archive_trip(connection: AsyncConnection, trip_id: str, archived: bool
         {"id": trip_id, "archived": archived},
     )
     if updated.rowcount == 0:
-        raise NotFound(f"viaje {trip_id}")
+        raise NotFound(f"trip {trip_id}")
     return await trip(connection, trip_id)

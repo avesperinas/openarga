@@ -148,7 +148,7 @@ async def test_only_whoever_created_it_shares_unshares_or_deletes_it(as_person, 
     )
 
     assert (unshare.status_code, delete.status_code) == (409, 409)
-    assert "solo" in unshare.json()["detail"]
+    assert "only" in unshare.json()["detail"]
     assert outsider.status_code == 404
     assert foreign.status_code == 404
     assert (await as_person("luis", "GET", f"/trips/{trip}")).status_code == 200
@@ -366,7 +366,7 @@ async def test_each_traveller_is_someone_of_the_space_and_both_see_the_same_bala
     assert outsider.status_code == 409
     assert linked.status_code == 200, linked.text
     luis_view = (await as_person("luis", "GET", f"/trips/{trip}/travellers")).json()
-    assert {one["name"]: one["me"] for one in luis_view} == {"Yo": False, "Luis": True}
+    assert {one["name"]: one["me"] for one in luis_view} == {"Me": False, "Luis": True}
     nets = {
         name: {one["traveller"]["id"]: one["net_eur"] for one in balance["people"]}
         for name, balance in seen_by.items()

@@ -99,7 +99,7 @@ async def test_the_summary_is_written_by_claude_and_kept_by_the_app(api) -> None
             "starts_on": "2027-11-11",
             "ends_on": "2027-11-14",
             "status": "plan",
-            "summary": "Cuatro días: termas, ruin bars y el Danubio de noche.",
+            "summary": "Four days: baths, ruin bars and the Danube at night.",
         },
     )
     trip_id = created["trip"]["trip_id"]
@@ -108,8 +108,8 @@ async def test_the_summary_is_written_by_claude_and_kept_by_the_app(api) -> None
         json={"title": "Budapest", "starts_on": "2027-11-11", "ends_on": "2027-11-15"},
     )
     changed = await content(
-        api, "update_trip", {"trip_id": trip_id, "summary": "Cinco días.", "dry_run": False}
+        api, "update_trip", {"trip_id": trip_id, "summary": "Five days.", "dry_run": False}
     )
 
-    assert edited.json()["summary"] == "Cuatro días: termas, ruin bars y el Danubio de noche."
-    assert changed["trip"]["summary"] == "Cinco días."
+    assert edited.json()["summary"] == "Four days: baths, ruin bars and the Danube at night."
+    assert changed["trip"]["summary"] == "Five days."

@@ -51,12 +51,12 @@ async def test_what_hangs_from_a_trip_falls_within_its_dates(api) -> None:
     )
 
     assert outside.status_code == 409
-    assert "fuera del viaje" in outside.json()["detail"]
+    assert "outside the trip" in outside.json()["detail"]
     assert backwards.status_code == 422
 
 
 async def test_legs_carry_their_mode_and_their_kilometres(api) -> None:
-    trip = await make_trip(api, "Andalucía", "2024-10-01", "2024-10-05")
+    trip = await make_trip(api, "Andalusia", "2024-10-01", "2024-10-05")
     madrid = await place(api, MADRID)
     seville = await place(api, SEVILLE)
 
@@ -79,7 +79,7 @@ async def test_legs_carry_their_mode_and_their_kilometres(api) -> None:
 
 
 async def test_a_leg_says_whether_it_is_drawn_and_keeps_it_when_corrected(api) -> None:
-    trip = await make_trip(api, "Andalucía", "2024-10-01", "2024-10-05")
+    trip = await make_trip(api, "Andalusia", "2024-10-01", "2024-10-05")
     madrid = await place(api, MADRID)
     seville = await place(api, SEVILLE)
     leg = {"from_place_id": madrid["id"], "to_place_id": seville["id"], "mode": "train"}

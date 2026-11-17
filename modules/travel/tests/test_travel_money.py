@@ -14,7 +14,7 @@ async def tool(api, name: str, body: dict) -> dict:
 
 async def test_yen_paid_by_me_is_in_euros_and_per_person(api, hub) -> None:
     trip = await make_trip(
-        api, "Japón", "2027-04-01", "2027-04-05", travellers=2, companions=["Luis"]
+        api, "Japan", "2027-04-01", "2027-04-05", travellers=2, companions=["Luis"]
     )
 
     told = await tool(
@@ -45,8 +45,8 @@ async def test_yen_paid_by_me_is_in_euros_and_per_person(api, hub) -> None:
         "paid_by": None,
     }
     people = {one["name"]: one for one in read["people"]}
-    assert set(people) == {"Yo", "Luis"} and people["Yo"]["me"] is True
-    assert expense["paid"]["paid_by"] == "Yo"
+    assert set(people) == {"Me", "Luis"} and people["Me"]["me"] is True
+    assert expense["paid"]["paid_by"] == "Me"
 
 
 async def test_a_currency_the_ecb_does_not_publish_needs_its_rate(api, hub) -> None:

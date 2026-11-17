@@ -17,8 +17,8 @@ from travel.tools.common import _detail, _hhmm, _in_range, _place, _summary
 
 
 class GetTrips(BaseModel):
-    since: date | None = Field(default=None, description="Solo los que acaban este día o después.")
-    until: date | None = Field(default=None, description="Solo los que empiezan hasta este día.")
+    since: date | None = Field(default=None, description="Only those ending on this day or later.")
+    until: date | None = Field(default=None, description="Only those starting up to this day.")
     country: str | None = Field(
         default=None, min_length=2, max_length=2, description="ISO 3166-1 alfa-2: `IT`, `BE`."
     )
@@ -26,13 +26,17 @@ class GetTrips(BaseModel):
     companion: str | None = Field(default=None, max_length=60)
     include_archived: bool = Field(
         default=False,
-        description="También los archivados, que la lista de Viajes esconde. Siguen contando en "
-        "las cifras y en lo visitado.",
+        description=(
+            "Also the archived ones, which the Trips list hides. They still count in the figures "
+            "and in what was visited."
+        ),
     )
     phase: list[travel.Phase] | None = Field(
         default=None,
-        description="Solo los de estas fases: plan, upcoming (confirmado, por llegar), ongoing, "
-        "done. Sin darlo, todos.",
+        description=(
+            "Only those in these phases: plan, upcoming (confirmed, still to come), ongoing, done."
+            " If not given, all."
+        ),
     )
     limit: int = Field(default=50, ge=1, le=300)
 
@@ -58,15 +62,15 @@ async def get_trips(connection: AsyncConnection, arguments: GetTrips) -> dict[st
 
 
 class GetTrip(BaseModel):
-    trip_id: str | None = Field(default=None, description="El id que da `get_trips`.")
+    trip_id: str | None = Field(default=None, description="The id `get_trips` gives.")
     title: str | None = Field(
-        default=None, max_length=120, description="O parte del título, si no se tiene el id."
+        default=None, max_length=120, description="Or part of the title, if the id is not known."
     )
 
     @model_validator(mode="after")
     def one_of(self) -> GetTrip:
         if not self.trip_id and not self.title:
-            raise ValueError("hace falta el id del viaje o parte de su título")
+            raise ValueError("the trip's id or part of its title is needed")
         return self
 
 
@@ -75,15 +79,15 @@ async def _pick(connection: AsyncConnection, trip_id: str | None, title: str | N
         try:
             return {"trip": await travel.trip(connection, trip_id)}
         except travel.NotFound:
-            return {"error": f"no hay ningún viaje con id {trip_id}", "code": "NOT_FOUND"}
+            return {"error": f"there is no trip with id {trip_id}", "code": "NOT_FOUND"}
     needle = (title or "").lower()
     matches = [one for one in await travel.all_trips(connection) if needle in one.title.lower()]
     if len(matches) == 1:
         return {"trip": matches[0]}
     if not matches:
-        return {"error": f"ningún viaje se llama como «{title}»", "code": "NOT_FOUND"}
+        return {"error": f'no trip is called "{title}"', "code": "NOT_FOUND"}
     return {
-        "error": "casan varios viajes; di cuál con su trip_id",
+        "error": "several trips match; say which with its trip_id",
         "code": "AMBIGUOUS",
         "candidates": [_summary(one) for one in matches[:10]],
     }
@@ -168,7 +172,7 @@ async def summarise_travel(
         "nights": figures.nights,
         "km": figures.km,
         "countries": figures.countries,
-        "europe_visited": f"{len(figures.europe_visited)} de {figures.europe_total}",
+        "europe_visited": f"{len(figures.europe_visited)} of {figures.europe_total}",
         "average_cost_per_day_eur": figures.average_cost_per_day,
     }
     if arguments.group_by == "year":
@@ -207,8 +211,10 @@ class FindPlace(BaseModel):
     query: str = Field(
         min_length=2,
         max_length=120,
-        description="El lugar como se diría, con el país si puede confundirse: `Brujas`, "
-        "`Santiago, Chile`, `Museo del Prado`.",
+        description=(
+            "The place as one would say it, with the country if it can be confused: `Bruges`, "
+            "`Santiago, Chile`, `Prado Museum`."
+        ),
     )
     limit: int = Field(default=5, ge=1, le=10)
 
@@ -245,23 +251,27 @@ async def find_place(connection: AsyncConnection, arguments: FindPlace) -> dict[
 class FindNearby(BaseModel):
     place_id: str | None = Field(
         default=None,
-        description="Cerca de este lugar guardado: el place_id de un lugar principal, una visita o "
-        "un bloque, como los da get_trip (con include itinerary).",
+        description=(
+            "Near this stored place: the place_id of a main place, a visit or a block, as get_trip"
+            " gives them (with include itinerary)."
+        ),
     )
-    lat: float | None = Field(default=None, ge=-90, le=90, description="O cerca de este punto.")
+    lat: float | None = Field(default=None, ge=-90, le=90, description="Or near this point.")
     lon: float | None = Field(default=None, ge=-180, le=180)
     kind: Literal["food", "sights", "nature", "shopping", "nightlife"] = Field(
         default="sights",
-        description="sights (qué ver), food (dónde comer), nature (parques, playas, miradores "
-        "naturales), shopping o nightlife.",
+        description=(
+            "sights (what to see), food (where to eat), nature (parks, beaches, natural "
+            "viewpoints), shopping or nightlife."
+        ),
     )
-    radius: int = Field(default=1000, ge=100, le=3000, description="En metros, hasta 3000.")
+    radius: int = Field(default=1000, ge=100, le=3000, description="In metres, up to 3000.")
     limit: int = Field(default=10, ge=1, le=20)
 
     @model_validator(mode="after")
     def somewhere(self) -> FindNearby:
         if self.place_id is None and (self.lat is None or self.lon is None):
-            raise ValueError("hace falta un place_id o lat y lon")
+            raise ValueError("a place_id or lat and lon is needed")
         return self
 
 
@@ -272,11 +282,11 @@ async def find_nearby(connection: AsyncConnection, arguments: FindNearby) -> dic
             place = await travel.place_by_id(connection, arguments.place_id)
         except travel.NotFound:
             return {
-                "error": f"no hay ningún lugar con id {arguments.place_id}",
+                "error": f"there is no place with id {arguments.place_id}",
                 "code": "NOT_FOUND",
             }
         if place.lat is None or place.lon is None:
-            return {"error": "ese lugar no está situado en el mapa", "code": "INVALID"}
+            return {"error": "that place is not located on the map", "code": "INVALID"}
         lat, lon = place.lat, place.lon
     assert lat is not None and lon is not None
     found = await hub.nearby(lat, lon, arguments.kind, arguments.radius, arguments.limit)
@@ -311,8 +321,10 @@ async def find_nearby(connection: AsyncConnection, arguments: FindNearby) -> dic
 class GetToday(BaseModel):
     day: date | None = Field(
         default=None,
-        description="El día que se pregunta, en el sitio donde se está. Sin darlo, el de hoy en "
-        "España: de viaje lejos, dilo si ya es otro día allí.",
+        description=(
+            "The day asked about, where the person is. If not given, today in the person's zone: "
+            "when travelling far, say it if it is already another day there."
+        ),
     )
 
 
@@ -363,18 +375,18 @@ async def get_today(connection: AsyncConnection, arguments: GetToday) -> dict[st
 
 
 class GetWeather(BaseModel):
-    place_id: str | None = Field(default=None, description="Un lugar guardado.")
-    lat: float | None = Field(default=None, ge=-90, le=90, description="O un punto.")
+    place_id: str | None = Field(default=None, description="A stored place.")
+    lat: float | None = Field(default=None, ge=-90, le=90, description="Or a point.")
     lon: float | None = Field(default=None, ge=-180, le=180)
     kind: Literal["forecast", "climate"] = Field(
         default="forecast",
-        description="forecast, los próximos 16 días; climate, cada mes de media.",
+        description="forecast, the next 16 days; climate, each month on average.",
     )
 
     @model_validator(mode="after")
     def somewhere(self) -> GetWeather:
         if self.place_id is None and (self.lat is None or self.lon is None):
-            raise ValueError("hace falta un place_id o lat y lon")
+            raise ValueError("a place_id or lat and lon is needed")
         return self
 
 
@@ -385,11 +397,11 @@ async def get_weather(connection: AsyncConnection, arguments: GetWeather) -> dic
             place = await travel.place_by_id(connection, arguments.place_id)
         except travel.NotFound:
             return {
-                "error": f"no hay ningún lugar con id {arguments.place_id}",
+                "error": f"there is no place with id {arguments.place_id}",
                 "code": "NOT_FOUND",
             }
         if place.lat is None or place.lon is None:
-            return {"error": "ese lugar no está situado en el mapa", "code": "INVALID"}
+            return {"error": "that place is not located on the map", "code": "INVALID"}
         lat, lon, name = place.lat, place.lon, place.name
     assert lat is not None and lon is not None
     found = await (

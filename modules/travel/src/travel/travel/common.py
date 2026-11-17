@@ -12,9 +12,9 @@ Phase = Literal["plan", "upcoming", "ongoing", "done"]
 
 MODES: tuple[Mode, ...] = ("plane", "train", "car", "bus", "boat")
 CATEGORIES: dict[Category, tuple[str, ...]] = {
-    "transport": ("Vuelos", "Coche", "Gasolina y parking", "Ferry", "Tren", "Bus"),
-    "lodging": ("Hotel", "Apartamento"),
-    "other": ("Efectivo", "Excursiones", "Seguro y vacunas", "Otros"),
+    "transport": ("Flights", "Car", "Fuel and parking", "Ferry", "Train", "Bus"),
+    "lodging": ("Hotel", "Apartment"),
+    "other": ("Cash", "Excursions", "Insurance and vaccines", "Other"),
 }
 
 

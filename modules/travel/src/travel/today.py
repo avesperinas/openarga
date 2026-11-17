@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from travel import itinerary, journal, travel
+from travel.words import say
 
 Kind = Literal["check_out", "leg", "check_in", "block"]
 TRAVEL_MODES = {"plane": "driving", "train": "transit", "car": "driving", "bus": "transit"}
@@ -86,7 +87,7 @@ def _entries(day: itinerary.Day) -> list[Entry]:
                 Entry(
                     type=item.type,
                     id=stay.id,
-                    title=f"{'Sales de' if leaving else 'Llegas a'} {name}",
+                    title=say("today.leaving" if leaving else "today.arriving", name=name),
                     detail=stay.address or (stay.place.name if stay.accommodation else None),
                     kind=None,
                     starts_at=stay.check_out_at if leaving else stay.check_in_at,
@@ -107,8 +108,8 @@ def _entries(day: itinerary.Day) -> list[Entry]:
                         part
                         for part in (
                             ticket or None,
-                            f"terminal {leg.terminal}" if leg.terminal else None,
-                            f"asiento {leg.seat}" if leg.seat else None,
+                            say("leg.terminal", terminal=leg.terminal) if leg.terminal else None,
+                            say("leg.seat", seat=leg.seat) if leg.seat else None,
                         )
                         if part
                     )

@@ -49,36 +49,56 @@ export type Route =
 
 type Tab = "today" | "map" | "plans" | "trips" | "stats" | "settings";
 
+const OLD: Record<string, string> = {
+  hoy: "today",
+  planes: "plans",
+  viajes: "trips",
+  viaje: "trip",
+  recorrido: "journey",
+  nuevo: "new",
+  estadisticas: "stats",
+  ajustes: "settings",
+  editar: "edit",
+  dias: "days",
+  dinero: "money",
+  notas: "notes",
+  diario: "journal",
+  mapa: "map",
+  reservas: "bookings",
+};
+
+const english = (path: string) => path.replace(/[a-z]+/g, (part) => OLD[part] ?? part);
+
 export function route(pathname: string): Route {
-  const path = pathname.replace(/\/+$/, "").slice(ROOT.length);
-  if (path === "/hoy") return { screen: "today" };
-  if (path === "/planes") return { screen: "plans" };
-  if (path === "/viajes") return { screen: "trips" };
+  const path = english(pathname.replace(/\/+$/, "").slice(ROOT.length));
+  if (path === "/today") return { screen: "today" };
+  if (path === "/plans") return { screen: "plans" };
+  if (path === "/trips") return { screen: "trips" };
   const idea = /^\/ideas\/([0-9a-f-]{36})$/.exec(path);
   if (idea) return { screen: "idea", id: idea[1]! };
-  if (path === "/recorrido") return { screen: "journey" };
-  if (path === "/nuevo") return { screen: "edit", id: null };
-  if (path === "/estadisticas") return { screen: "stats" };
-  if (path === "/ajustes") return { screen: "settings" };
-  const edit = /^\/viajes\/([0-9a-f-]{36})\/editar$/.exec(path);
+  if (path === "/journey") return { screen: "journey" };
+  if (path === "/new") return { screen: "edit", id: null };
+  if (path === "/stats") return { screen: "stats" };
+  if (path === "/settings") return { screen: "settings" };
+  const edit = /^\/trips\/([0-9a-f-]{36})\/edit$/.exec(path);
   if (edit) return { screen: "edit", id: edit[1]! };
-  const oneDay = /^\/viajes\/([0-9a-f-]{36})\/dias\/(\d{4}-\d{2}-\d{2})$/.exec(path);
+  const oneDay = /^\/trips\/([0-9a-f-]{36})\/days\/(\d{4}-\d{2}-\d{2})$/.exec(path);
   if (oneDay) return { screen: "day", id: oneDay[1]!, day: oneDay[2]! };
-  const days = /^\/viajes\/([0-9a-f-]{36})\/dias$/.exec(path);
+  const days = /^\/trips\/([0-9a-f-]{36})\/days$/.exec(path);
   if (days) return { screen: "days", id: days[1]! };
-  const app = /^\/viaje\/([0-9a-f-]{36})$/.exec(path);
+  const app = /^\/trip\/([0-9a-f-]{36})$/.exec(path);
   if (app) return { screen: "tripapp", id: app[1]! };
-  const section = /^\/viajes\/([0-9a-f-]{36})\/(dinero|notas|diario|ajustes)$/.exec(path);
+  const section = /^\/trips\/([0-9a-f-]{36})\/(money|notes|journal|settings)$/.exec(path);
   if (section) {
-    const screens = { dinero: "money", notas: "notes", diario: "journal", ajustes: "tripsettings" } as const;
+    const screens = { money: "money", notes: "notes", journal: "journal", settings: "tripsettings" } as const;
     const screen = screens[section[2] as keyof typeof screens];
     return { screen, id: section[1]! };
   }
-  const tripMap = /^\/viajes\/([0-9a-f-]{36})\/mapa$/.exec(path);
+  const tripMap = /^\/trips\/([0-9a-f-]{36})\/map$/.exec(path);
   if (tripMap) return { screen: "tripmap", id: tripMap[1]! };
-  const bookings = /^\/viajes\/([0-9a-f-]{36})\/reservas$/.exec(path);
+  const bookings = /^\/trips\/([0-9a-f-]{36})\/bookings$/.exec(path);
   if (bookings) return { screen: "bookings", id: bookings[1]! };
-  const trip = /^\/viajes\/([0-9a-f-]{36})$/.exec(path);
+  const trip = /^\/trips\/([0-9a-f-]{36})$/.exec(path);
   if (trip) return { screen: "trip", id: trip[1]! };
   return { screen: "map" };
 }
@@ -88,41 +108,41 @@ export function pathOf(to: Route): string {
     case "map":
       return `${ROOT}/`;
     case "today":
-      return `${ROOT}/hoy`;
+      return `${ROOT}/today`;
     case "plans":
-      return `${ROOT}/planes`;
+      return `${ROOT}/plans`;
     case "trips":
-      return `${ROOT}/viajes`;
+      return `${ROOT}/trips`;
     case "journey":
-      return `${ROOT}/recorrido`;
+      return `${ROOT}/journey`;
     case "trip":
-      return `${ROOT}/viajes/${to.id}`;
+      return `${ROOT}/trips/${to.id}`;
     case "idea":
       return `${ROOT}/ideas/${to.id}`;
     case "days":
-      return `${ROOT}/viajes/${to.id}/dias`;
+      return `${ROOT}/trips/${to.id}/days`;
     case "day":
-      return `${ROOT}/viajes/${to.id}/dias/${to.day}`;
+      return `${ROOT}/trips/${to.id}/days/${to.day}`;
     case "bookings":
-      return `${ROOT}/viajes/${to.id}/reservas`;
+      return `${ROOT}/trips/${to.id}/bookings`;
     case "tripmap":
-      return `${ROOT}/viajes/${to.id}/mapa`;
+      return `${ROOT}/trips/${to.id}/map`;
     case "money":
-      return `${ROOT}/viajes/${to.id}/dinero`;
+      return `${ROOT}/trips/${to.id}/money`;
     case "tripapp":
-      return `${ROOT}/viaje/${to.id}`;
+      return `${ROOT}/trip/${to.id}`;
     case "notes":
-      return `${ROOT}/viajes/${to.id}/notas`;
+      return `${ROOT}/trips/${to.id}/notes`;
     case "journal":
-      return `${ROOT}/viajes/${to.id}/diario`;
+      return `${ROOT}/trips/${to.id}/journal`;
     case "tripsettings":
-      return `${ROOT}/viajes/${to.id}/ajustes`;
+      return `${ROOT}/trips/${to.id}/settings`;
     case "edit":
-      return to.id ? `${ROOT}/viajes/${to.id}/editar` : `${ROOT}/nuevo`;
+      return to.id ? `${ROOT}/trips/${to.id}/edit` : `${ROOT}/new`;
     case "stats":
-      return `${ROOT}/estadisticas`;
+      return `${ROOT}/stats`;
     case "settings":
-      return `${ROOT}/ajustes`;
+      return `${ROOT}/settings`;
   }
 }
 

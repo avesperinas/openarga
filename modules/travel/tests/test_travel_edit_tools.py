@@ -149,11 +149,11 @@ async def test_updating_a_trip_touches_only_what_is_given(api) -> None:
     updated = await content(
         api,
         "update_trip",
-        {"trip_id": trip["trip_id"], "title": "Flandes en marzo", "notes": None, "tags": ["frío"]},
+        {"trip_id": trip["trip_id"], "title": "Flanders in March", "notes": None, "tags": ["cold"]},
     )
 
     after = updated["trip"]
-    assert (after["title"], after["notes"], after["tags"]) == ("Flandes en marzo", None, ["frío"])
+    assert (after["title"], after["notes"], after["tags"]) == ("Flanders in March", None, ["cold"])
     assert (after["starts_on"], after["travellers"], len(after["stays"])) == ("2025-03-07", 2, 2)
 
 
@@ -191,7 +191,7 @@ async def test_a_trip_that_ends_before_it_starts_is_refused(api) -> None:
     )
 
     assert answer["code"] == "INVALID"
-    assert "acabar antes de empezar" in answer["error"]
+    assert "end before it starts" in answer["error"]
 
 
 async def test_a_title_and_first_day_already_taken_is_a_duplicate(api) -> None:
@@ -328,7 +328,7 @@ async def test_a_new_stay_that_overlaps_is_refused_in_the_app_too(api) -> None:
     )
 
     assert refused.status_code == 409
-    assert "no comparten noche" in refused.json()["detail"]
+    assert "do not share a night" in refused.json()["detail"]
 
 
 async def test_a_stay_outside_the_trip_is_out_of_range(api) -> None:

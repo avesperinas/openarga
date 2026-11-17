@@ -38,7 +38,7 @@ class PlanStay(StayArgs):
 
 
 class PlanLeg(TicketArgs):
-    mode: travel.Mode = Field(description="plane, train, car, bus o boat.")
+    mode: travel.Mode = Field(description="plane, train, car, bus or boat.")
     from_place: PlaceArgument
     to_place: PlaceArgument
     travelled_on: date | None = None
@@ -47,8 +47,10 @@ class PlanLeg(TicketArgs):
     same_ticket_as: int | None = Field(
         default=None,
         ge=0,
-        description="El puesto (desde 0) en `legs` del trayecto que lleva el billete de este: la "
-        "vuelta de un ida y vuelta. Va antes en la lista.",
+        description=(
+            "The position (from 0) in `legs` of the leg holding this one's ticket: the return of a"
+            " round trip. It goes earlier in the list."
+        ),
     )
 
 
@@ -58,7 +60,7 @@ class PlanBlock(BookingArgs):
     starts_at: time | None = Field(default=None, description="HH:MM.")
     ends_at: time | None = None
     place: PlaceArgument | None = Field(
-        default=None, description="Un candidato de find_place, con su `category` si se sabe."
+        default=None, description="A find_place candidate, with its `category` if known."
     )
     notes: str | None = Field(default=None, max_length=2000)
 
@@ -71,7 +73,8 @@ class PlanDay(BaseModel):
 
 class PlanTrip(BaseModel):
     trip_id: str | None = Field(
-        default=None, description="Un viaje que ya existe; sin él, se crea con lo de abajo."
+        default=None,
+        description="A trip that already exists; without it, one is created with what follows.",
     )
     title: str | None = Field(default=None, min_length=1, max_length=120)
     starts_on: date | None = None
@@ -81,21 +84,21 @@ class PlanTrip(BaseModel):
     tags: list[str] = Field(default=[], max_length=20)
     summary: str | None = Field(default=None, max_length=1000, description=SUMMARY_HELP)
     status: travel.Status = Field(
-        default="plan", description="plan por defecto: no sale en Planner."
+        default="plan", description="plan by default: it does not show in Planner."
     )
     budget_eur_per_person: Decimal | None = Field(default=None, ge=0, decimal_places=2)
     stays: list[PlanStay] = Field(default=[], max_length=40)
     legs: list[PlanLeg] = Field(default=[], max_length=40)
     days: list[PlanDay] = Field(default=[], max_length=120)
     saved: list[PlanBlock] = Field(
-        default=[], max_length=100, description="Sitios guardados sin día, para cuando haya hueco."
+        default=[], max_length=100, description="Places kept without a day, for when there is room."
     )
     dry_run: bool = DRY_RUN
 
     @model_validator(mode="after")
     def which(self) -> PlanTrip:
         if self.trip_id is None and not (self.title and self.starts_on and self.ends_on):
-            raise ValueError("hace falta trip_id, o title, starts_on y ends_on para crearlo")
+            raise ValueError("trip_id is needed, or title, starts_on and ends_on to create it")
         return self
 
 
@@ -164,7 +167,7 @@ async def plan_trip(connection: AsyncConnection, arguments: PlanTrip) -> dict[st
             async def add_one_leg(leg: PlanLeg = leg) -> str:
                 if leg.same_ticket_as is not None and leg.same_ticket_as >= len(leg_ids):
                     raise travel.Conflict(
-                        "same_ticket_as apunta a un trayecto que no va antes en la lista",
+                        "same_ticket_as points to a leg that is not earlier in the list",
                         "INVALID",
                     )
                 before = {one.id for one in (await travel.trip(connection, trip_id)).legs}

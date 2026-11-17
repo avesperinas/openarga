@@ -68,7 +68,7 @@ async def test_someone_elses_trip_cannot_be_hung_from(two_travellers) -> None:
         two_travellers,
         WRITE,
         ANA,
-        "update travel.travel_trip set title = 'Mío' where id = :id",
+        "update travel.travel_trip set title = 'Mine' where id = :id",
         id=luis_trip.id,
     )
 

@@ -7,7 +7,7 @@ from travel_kit import make_trip
 
 async def test_an_expense_sent_twice_with_its_id_is_one(api) -> None:
     trip = await make_trip(api, "Flandes", "2025-04-10", "2025-04-12")
-    body = {"id": str(uuid4()), "category": "other", "concept": "Café", "amount_eur": "3.50"}
+    body = {"id": str(uuid4()), "category": "other", "concept": "Coffee", "amount_eur": "3.50"}
 
     first = await api.post(f"/trips/{trip['id']}/expenses", json=body)
     again = await api.post(f"/trips/{trip['id']}/expenses", json=body)

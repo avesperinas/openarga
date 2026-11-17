@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 import arga_contracts as contracts
 from arga_contracts import metrics as cifras
 from travel import travel
+from travel.words import say
 
 APP = "travel"
 MADRID = ZoneInfo("Europe/Madrid")
@@ -26,10 +27,18 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
     trips_per_day: dict[date, int] = {}
     for trip in trips:
         trips_per_day[trip.ends_on] = trips_per_day.get(trip.ends_on, 0) + 1
-    found += [_point("trips", "Viajes", "amount", day, n) for day, n in trips_per_day.items()]
+    found += [
+        _point("trips", say("metric.trips"), "amount", day, n) for day, n in trips_per_day.items()
+    ]
     for trip in trips:
         found += [
-            _point("days_away", "Días de viaje", "amount", trip.starts_on + timedelta(days=n), 1)
+            _point(
+                "days_away",
+                say("metric.trip_days"),
+                "amount",
+                trip.starts_on + timedelta(days=n),
+                1,
+            )
             for n in range(travel.days_of(trip.starts_on, trip.ends_on))
         ]
 
@@ -45,11 +54,13 @@ async def build(connection: AsyncConnection) -> list[dict[str, Any]]:
         if len(seen) != last:
             counted[trip.ends_on] = last = len(seen)
     found += [
-        _point("countries", "Países visitados", "level", day, n) for day, n in counted.items()
+        _point("countries", say("metric.countries"), "level", day, n) for day, n in counted.items()
     ]
     if not trips and seen:
         today = datetime.now(UTC).astimezone(MADRID).date()
         found += await cifras.steady(
-            connection, APP, [_point("countries", "Países visitados", "level", today, len(seen))]
+            connection,
+            APP,
+            [_point("countries", say("metric.countries"), "level", today, len(seen))],
         )
     return found

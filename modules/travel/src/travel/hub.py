@@ -31,7 +31,7 @@ async def search(query: str, limit: int = 5) -> dict[str, Any]:
             answer = {
                 "candidates": [],
                 "failed": [
-                    {"source": "nominatim", "reason": f"Hub contesta {response.status_code}"}
+                    {"source": "nominatim", "reason": f"Hub answers {response.status_code}"}
                 ],
             }
     except httpx.HTTPError as error:
@@ -40,7 +40,7 @@ async def search(query: str, limit: int = 5) -> dict[str, Any]:
             "failed": [
                 {
                     "source": "nominatim",
-                    "reason": f"Hub no contesta ({type(error).__name__})",
+                    "reason": f"Hub does not answer ({type(error).__name__})",
                 }
             ],
         }
@@ -63,9 +63,9 @@ async def _ask(capability: str, body: dict[str, Any], seconds: float) -> dict[st
         async with httpx.AsyncClient(transport=transport()) as client:
             response = await ask(client, MODULE, capability, body, seconds)
     except httpx.HTTPError as error:
-        return {"failed": f"Hub no contesta ({type(error).__name__})"}
+        return {"failed": f"Hub does not answer ({type(error).__name__})"}
     if response.status_code != 200:
-        return {"failed": f"Hub contesta {response.status_code}"}
+        return {"failed": f"Hub answers {response.status_code}"}
     return response.json()
 
 

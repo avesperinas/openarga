@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_tenancy import CURRENT_USER_SQL as ME
 from travel import travel
+from travel.words import say
 
 LIMIT = 20 * 1024 * 1024
 LinkKind = Literal["stay", "leg", "block"]
@@ -52,7 +53,7 @@ def _document(row) -> Document:
     if row.stay_id:
         link = Link(type="stay", id=row.stay_id, title=row.stay_title)
     elif row.leg_id:
-        link = Link(type="leg", id=row.leg_id, title=row.leg_title or "Trayecto")
+        link = Link(type="leg", id=row.leg_id, title=row.leg_title or say("document.leg"))
     elif row.block_id:
         link = Link(type="block", id=row.block_id, title=row.block_title or "Plan")
     return Document(
@@ -75,7 +76,7 @@ async def documents(connection: AsyncConnection, trip_id: str) -> list[Document]
 
 def clean_name(name: str) -> str:
     kept = "".join(ch for ch in name if ch.isprintable() and ch not in '"\\/')
-    return kept.strip()[:200] or "documento"
+    return kept.strip()[:200] or "document"
 
 
 async def _check_link(
@@ -84,14 +85,14 @@ async def _check_link(
     if kind is None and link_id is None:
         return
     if kind is None or link_id is None:
-        raise travel.Conflict("un enlace lleva su tipo y su id", "INVALID")
+        raise travel.Conflict("a link carries its kind and its id", "INVALID")
     table = {"stay": "travel_stay", "leg": "travel_leg", "block": "travel_block"}[kind]
     found = await connection.scalar(
         text(f"select 1 from travel.{table} where id = cast(:id as uuid) and trip_id = :trip"),
         {"id": link_id, "trip": trip_id},
     )
     if found is None:
-        raise travel.NotFound("esa reserva no es de este viaje")
+        raise travel.NotFound("that booking is not from this trip")
 
 
 async def attach(
@@ -104,9 +105,9 @@ async def attach(
     link_id: str | None = None,
 ) -> list[Document]:
     if not content:
-        raise travel.Conflict("el fichero está vacío", "INVALID")
+        raise travel.Conflict("the file is empty", "INVALID")
     if len(content) > LIMIT:
-        raise travel.Conflict("el fichero pasa de 20 MB", "TOO_LARGE")
+        raise travel.Conflict("the file is over 20 MB", "TOO_LARGE")
     await travel.trip(connection, trip_id)
     await _check_link(connection, trip_id, kind, link_id)
     columns = {column: None for column in COLUMN.values()}
@@ -143,7 +144,7 @@ async def change(
     connection: AsyncConnection, trip_id: str, document_id: str, request: DocumentChange
 ) -> list[Document]:
     if request.name is not None and not request.name.strip():
-        raise travel.Conflict("el nombre no puede estar vacío", "INVALID")
+        raise travel.Conflict("the name cannot be empty", "INVALID")
     relink = request.unlink or request.link_type is not None
     if request.link_type is not None:
         await _check_link(connection, trip_id, request.link_type, request.link_id)
@@ -168,7 +169,7 @@ async def change(
         },
     )
     if updated.rowcount == 0:
-        raise travel.NotFound(f"documento {document_id}")
+        raise travel.NotFound(f"document {document_id}")
     await travel._touch(connection, trip_id)
     return await documents(connection, trip_id)
 
@@ -186,7 +187,7 @@ async def content(
         )
     ).first()
     if row is None:
-        raise travel.NotFound(f"documento {document_id}")
+        raise travel.NotFound(f"document {document_id}")
     return row.name, row.content_type, bytes(row.content)
 
 
@@ -196,6 +197,6 @@ async def remove(connection: AsyncConnection, trip_id: str, document_id: str) ->
         {"id": document_id, "trip": trip_id},
     )
     if deleted.rowcount == 0:
-        raise travel.NotFound(f"documento {document_id}")
+        raise travel.NotFound(f"document {document_id}")
     await travel._touch(connection, trip_id)
     return await documents(connection, trip_id)

@@ -11,8 +11,8 @@ from arga_contracts import records as write
 from travel import journal, travel
 
 APP = "travel"
-MODES = {"plane": "avión", "train": "tren", "car": "coche", "bus": "bus", "boat": "barco"}
-CATEGORIES = {"transport": "Transporte", "lodging": "Alojamiento", "other": "Otros"}
+MODES = {"plane": "plane", "train": "train", "car": "car", "bus": "bus", "boat": "boat"}
+CATEGORIES = {"transport": "Transport", "lodging": "Lodging", "other": "Other"}
 
 
 def _trip_id(trip: travel.Trip) -> str:
@@ -33,31 +33,31 @@ def _upper_first(text: str) -> str:
 
 def _span(first: date, last: date) -> str:
     if first == last:
-        return f"el {write.long_date(first)}"
-    return f"del {write.long_date(first)} al {write.long_date(last)}"
+        return f"on {write.long_date(first)}"
+    return f"from {write.long_date(first)} to {write.long_date(last)}"
 
 
 def trip(one: travel.Trip, countries: dict[str, str]) -> dict[str, Any]:
     lead = [
         _upper_first(_span(one.starts_on, one.ends_on)),
-        f"{one.days} {'día' if one.days == 1 else 'días'}, "
-        f"{one.nights} {'noche' if one.nights == 1 else 'noches'}",
+        f"{one.days} {'day' if one.days == 1 else 'days'}, "
+        f"{one.nights} {'night' if one.nights == 1 else 'nights'}",
     ]
     if one.travellers > 1:
-        lead.append(f"{one.travellers} personas")
+        lead.append(f"{one.travellers} people")
     if one.companions:
-        lead.append("con " + ", ".join(one.companions))
+        lead.append("with " + ", ".join(one.companions))
     codes = list(one.countries)
     places = []
     if codes:
         places.append(
-            "Países: " + ", ".join(_country(code, countries.get(code, code)) for code in codes)
+            "Countries: " + ", ".join(_country(code, countries.get(code, code)) for code in codes)
         )
     stays = "\n".join(
         f"- {stay.place.name}"
         + (f", {stay.place.country}" if stay.place.country else "")
         + f": {_span(stay.arrives_on, stay.leaves_on)}, {stay.nights} "
-        + ("noche" if stay.nights == 1 else "noches")
+        + ("night" if stay.nights == 1 else "nights")
         + (f" · {stay.accommodation}" if stay.accommodation else "")
         for stay in one.stays
     )
@@ -68,7 +68,7 @@ def trip(one: travel.Trip, countries: dict[str, str]) -> dict[str, Any]:
         for visit in one.visits
     )
     legs = write.table(
-        ["Día", "Trayecto", "Cómo", "Km"],
+        ["Day", "Leg", "How", "Km"],
         [
             [
                 leg.travelled_on.isoformat() if leg.travelled_on else "",
@@ -80,7 +80,7 @@ def trip(one: travel.Trip, countries: dict[str, str]) -> dict[str, Any]:
         ],
     )
     expenses = write.table(
-        ["Categoría", "Concepto", "Por persona"],
+        ["Category", "Concept", "Per person"],
         [
             [CATEGORIES[expense.category], expense.concept, write.euros(expense.amount_eur)]
             for expense in one.expenses
@@ -88,44 +88,44 @@ def trip(one: travel.Trip, countries: dict[str, str]) -> dict[str, Any]:
     )
     spend = None
     if one.expenses:
-        spend = f"{write.euros(one.spend.per_person)} por persona"
+        spend = f"{write.euros(one.spend.per_person)} per person"
         if one.travellers > 1:
-            spend += f", {write.euros(one.spend.group)} el grupo"
+            spend += f", {write.euros(one.spend.group)} the group"
         if one.spend.per_day is not None:
-            spend += f", {write.euros(one.spend.per_day)} al día"
+            spend += f", {write.euros(one.spend.per_day)} a day"
         spend += "."
     properties: dict[str, Any] = {
-        "inicio": one.starts_on.isoformat(),
-        "fin": one.ends_on.isoformat(),
-        "dias": one.days,
-        "noches": one.nights,
-        "viajeros": one.travellers,
-        "paises": [countries.get(code, code) for code in one.countries],
+        "start": one.starts_on.isoformat(),
+        "end": one.ends_on.isoformat(),
+        "days": one.days,
+        "nights": one.nights,
+        "travellers": one.travellers,
+        "countries": [countries.get(code, code) for code in one.countries],
         "km": round(one.km),
     }
     if one.companions:
-        properties["acompanantes"] = one.companions
+        properties["companions"] = one.companions
     if one.expenses:
-        properties["gasto_persona_eur"] = one.spend.per_person
+        properties["spend_per_person_eur"] = one.spend.per_person
     if one.tags:
         properties["tags"] = one.tags
     if one.archived:
-        properties["archivado"] = True
+        properties["archived"] = True
     return contracts.record(
         id=_trip_id(one),
         title=_title(one),
-        kind="Viaje",
-        href=f"/travel/viajes/{one.id}",
-        folder="Viajes",
+        kind="Trip",
+        href=f"/travel/trips/{one.id}",
+        folder="Trips",
         properties=properties,
         body=write.sections(
             " · ".join(lead) + ".",
             "\n".join(places) if places else None,
-            f"## Dónde dormiste\n\n{stays}" if stays else None,
-            f"## Qué visitaste\n\n{visits}" if visits else None,
-            f"## Trayectos\n\n{legs}" if legs else None,
-            f"## Gastos\n\n{spend}\n\n{expenses}" if spend else None,
-            f"## Notas\n\n{one.notes}" if one.notes else None,
+            f"## Where you slept\n\n{stays}" if stays else None,
+            f"## What you visited\n\n{visits}" if visits else None,
+            f"## Legs\n\n{legs}" if legs else None,
+            f"## Expenses\n\n{spend}\n\n{expenses}" if spend else None,
+            f"## Notes\n\n{one.notes}" if one.notes else None,
         ),
     )
 
@@ -136,30 +136,30 @@ def country(area: travel.AreaVisited, trips: list[travel.Trip]) -> dict[str, Any
         f"- {write.link(APP, _trip_id(one), _title(one))}"
         for one in sorted(mine, key=lambda one: one.starts_on)
     )
-    lead = f"{area.trips} {'viaje' if area.trips == 1 else 'viajes'}"
+    lead = f"{area.trips} {'trip' if area.trips == 1 else 'trips'}"
     if area.nights:
-        lead += f", {area.nights} {'noche' if area.nights == 1 else 'noches'}"
+        lead += f", {area.nights} {'night' if area.nights == 1 else 'nights'}"
     properties: dict[str, Any] = {
-        "codigo": area.code,
-        "viajes": area.trips,
-        "noches": area.nights,
-        "dormido": area.slept,
+        "code": area.code,
+        "trips": area.trips,
+        "nights": area.nights,
+        "slept": area.slept,
     }
     if area.first:
-        properties["primera_vez"] = area.first.isoformat()
+        properties["first_time"] = area.first.isoformat()
     if area.last:
-        properties["ultima_vez"] = area.last.isoformat()
+        properties["last_time"] = area.last.isoformat()
     return contracts.record(
         id=f"country:{area.code}",
         title=area.name,
-        kind="País",
+        kind="Country",
         href="/travel/",
-        folder="Países",
+        folder="Countries",
         properties=properties,
         body=write.sections(
             lead + ".",
-            "Lugares: " + ", ".join(area.places) + "." if area.places else None,
-            f"## Viajes\n\n{lines}" if lines else None,
+            "Places: " + ", ".join(area.places) + "." if area.places else None,
+            f"## Trips\n\n{lines}" if lines else None,
         ),
     )
 
@@ -174,9 +174,9 @@ def days(trips: list[travel.Trip]) -> list[dict[str, Any]]:
                 None,
             )
             shown = write.link(APP, _trip_id(one), one.title)
-            line = f"- De viaje: {shown} (día {index + 1} de {one.days})"
+            line = f"- Travelling: {shown} (day {index + 1} of {one.days})"
             if where:
-                line += f" · durmiendo en {where}"
+                line += f" · sleeping in {where}"
             lines[day].append(line)
         for leg in one.legs:
             if leg.travelled_on is not None:
@@ -186,9 +186,9 @@ def days(trips: list[travel.Trip]) -> list[dict[str, Any]]:
     return [
         contracts.record(
             id=f"day:{day.isoformat()}",
-            title="Viajes",
-            kind="Día",
-            href="/travel/viajes",
+            title="Travel",
+            kind="Day",
+            href="/travel/trips",
             day=day,
             body="\n".join(found),
         )
@@ -200,9 +200,9 @@ def journal_days(entries: list[journal.Entry], titles: dict[str, str]) -> list[d
     return [
         contracts.record(
             id=f"journal:{one.trip_id}:{one.day.isoformat()}",
-            title=f"Diario · {titles.get(one.trip_id, 'Viaje')}",
-            kind="Diario",
-            href=f"/travel/viajes/{one.trip_id}/diario",
+            title=f"Journal · {titles.get(one.trip_id, 'Trip')}",
+            kind="Journal",
+            href=f"/travel/trips/{one.trip_id}/journal",
             day=one.day,
             body=one.body,
         )

@@ -24,7 +24,7 @@ async def refresh() -> tuple[int, list[dict]]:
 
 async def test_ideas_and_plans_go_out_once_and_what_is_done_is_withdrawn(api) -> None:
     trip = await make_trip(api, "Budapest", "2027-11-11", "2027-11-14", status="plan")
-    idea = await api.post("/ideas", json={"title": "Japón en sakura", "months": [3, 4]})
+    idea = await api.post("/ideas", json={"title": "Japan in sakura", "months": [3, 4]})
     assert idea.status_code == 201, idea.text
     await make_trip(api, "Flandes", "2025-04-10", "2025-04-12")
 
@@ -34,8 +34,8 @@ async def test_ideas_and_plans_go_out_once_and_what_is_done_is_withdrawn(api) ->
     assert first == 2 and again == 0
     by_id = {one["id"]: one for one in out}
     assert by_id[f"trip:{trip['id']}"]["phase"] == "plan"
-    assert by_id[f"trip:{trip['id']}"]["href"] == f"/travel/viajes/{trip['id']}"
-    assert by_id[f"idea:{idea.json()['id']}"]["detail"] == "mar o abr"
+    assert by_id[f"trip:{trip['id']}"]["href"] == f"/travel/trips/{trip['id']}"
+    assert by_id[f"idea:{idea.json()['id']}"]["detail"] == "Mar or Apr"
 
     await api.put(f"/trips/{trip['id']}/archived", json={"archived": True})
     withdrawn, out = await refresh()

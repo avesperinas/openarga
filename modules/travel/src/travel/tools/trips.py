@@ -22,20 +22,20 @@ class CreateTrip(BaseModel):
     starts_on: date
     ends_on: date
     travellers: int = Field(
-        default=1, ge=1, le=50, description="Cuántos erais. Los gastos se apuntan por persona."
+        default=1, ge=1, le=50, description="How many you were. Expenses are noted per person."
     )
-    companions: list[str] = Field(default=[], max_length=30, description="Con quién.")
-    tags: list[str] = Field(
-        default=[], max_length=20, description="Escapada, trabajo, verano, esquí…"
-    )
+    companions: list[str] = Field(default=[], max_length=30, description="With whom.")
+    tags: list[str] = Field(default=[], max_length=20, description="Getaway, work, summer, skiing…")
     notes: str | None = Field(default=None, max_length=4000)
     status: travel.Status = Field(
         default="confirmed",
-        description="plan si aún no está decidido o las fechas pueden moverse: se queda en Travel "
-        "y no sale en el calendario. confirmed si es un viaje hecho o decidido.",
+        description=(
+            "plan if it is not decided yet or the dates can move: it stays in Travel and does not "
+            "show in the calendar. confirmed if it is a trip done or decided."
+        ),
     )
     budget_eur_per_person: Decimal | None = Field(
-        default=None, ge=0, decimal_places=2, description="Lo que se quiere gastar por persona."
+        default=None, ge=0, decimal_places=2, description="What is meant to be spent per person."
     )
     summary: str | None = Field(default=None, max_length=1000, description=SUMMARY_HELP)
 
@@ -68,30 +68,34 @@ class UpdateTrip(TripRef):
     ends_on: date | None = None
     travellers: int | None = Field(default=None, ge=1, le=50)
     companions: list[str] | None = Field(
-        default=None, max_length=30, description="La lista entera, que sustituye a la de antes."
+        default=None, max_length=30, description="The whole list, replacing the one before."
     )
     tags: list[str] | None = Field(
-        default=None, max_length=20, description="La lista entera, que sustituye a la de antes."
+        default=None, max_length=20, description="The whole list, replacing the one before."
     )
-    notes: str | None = Field(default=None, max_length=4000, description="`null` las borra.")
+    notes: str | None = Field(default=None, max_length=4000, description="`null` deletes them.")
     summary: str | None = Field(
-        default=None, max_length=1000, description=SUMMARY_HELP + " `null` lo quita."
+        default=None, max_length=1000, description=SUMMARY_HELP + " `null` removes it."
     )
     keep_group_total: bool = Field(
         default=False,
-        description="Al cambiar los viajeros, rehace los importes por persona para que el total "
-        "del grupo sea el mismo. Sin esto, los importes por persona se quedan como estaban.",
+        description=(
+            "When the travellers change, redo the per-person amounts so the group's total stays "
+            "the same. Without it, the per-person amounts stay as they were."
+        ),
     )
     budget_eur_per_person: Decimal | None = Field(
         default=None,
         ge=0,
         decimal_places=2,
-        description="El presupuesto por persona; null lo quita.",
+        description="The budget per person; null removes it.",
     )
     shift_dates: bool = Field(
         default=False,
-        description="Al cambiar starts_on, mueve con él los mismos días todo lo que tiene fecha: "
-        "lugares principales, visitas y trayectos.",
+        description=(
+            "When starts_on changes, move by the same days everything dated: main places, visits "
+            "and legs."
+        ),
     )
     dry_run: bool = DRY_RUN
 
@@ -166,8 +170,10 @@ class DeleteTrip(TripRef):
     title: str = Field(
         min_length=1,
         max_length=120,
-        description="El título exacto del viaje, como lo da get_trip. Si no coincide, no se borra "
-        "nada.",
+        description=(
+            "The exact title of the trip, as get_trip gives it. If it does not match, nothing is "
+            "deleted."
+        ),
     )
     dry_run: bool = DRY_RUN
 
@@ -179,7 +185,8 @@ async def delete_trip(connection: AsyncConnection, arguments: DeleteTrip) -> dic
         found = await travel.trip(connection, trip_id)
         if arguments.title != found.title:
             raise travel.Conflict(
-                f"ese viaje se llama «{found.title}», no «{arguments.title}»; no he borrado nada",
+                f'that trip is called "{found.title}", not "{arguments.title}"; '
+                "nothing was deleted",
                 "TITLE_MISMATCH",
                 [{"trip_id": found.id, "title": found.title}],
             )
@@ -202,8 +209,9 @@ class ShareTrip(TripRef):
     space: str | None = Field(
         min_length=1,
         max_length=80,
-        description="El nombre del espacio de arga con el que compartirlo, o null para que vuelva "
-        "a ser solo tuyo.",
+        description=(
+            "The name of the arga space to share it with, or null to make it only yours again."
+        ),
     )
 
 
@@ -211,7 +219,7 @@ async def _spaces(connection: AsyncConnection) -> list[dict]:
     try:
         found = await spaces.of_caller()
     except spaces.Unavailable as error:
-        raise travel.Conflict(f"no sé tus espacios: {error}", "UNAVAILABLE") from error
+        raise travel.Conflict(f"your spaces are unknown: {error}", "UNAVAILABLE") from error
     ids = tuple(UUID(space["id"]) for space in found)
     await connection.execute(
         text("select set_config(:guc, :spaces, true)"),
@@ -229,7 +237,7 @@ async def share_trip(connection: AsyncConnection, arguments: ShareTrip) -> dict[
             match = [one for one in mine if one["name"].strip().lower() == wanted]
             if not match:
                 raise travel.Conflict(
-                    f"no estás en ningún espacio llamado «{arguments.space}»",
+                    f'you are in no space called "{arguments.space}"',
                     "NOT_FOUND",
                     [{"space": one["name"]} for one in mine],
                 )
