@@ -1,4 +1,4 @@
-import { createT, resolveLocale, type Catalogs, type Vars } from "./i18n";
+import { createT, resolveLocale, type Catalogs, type Vars } from "./i18n-core";
 import en from "./i18n/en.json";
 import es from "./i18n/es.json";
 import { locale } from "./regional";
