@@ -38,6 +38,8 @@ jobs:
       - run: pnpm -r --no-bail lint
       - run: pnpm -r --no-bail test
       - run: pnpm run lint:tokens
+      - name: the shell builds for production
+        run: pnpm --filter @openarga/shell build
 
   secrets:
     runs-on: ubuntu-latest
