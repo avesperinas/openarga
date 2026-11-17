@@ -1,0 +1,22 @@
+# Names of the regions under each country, as their governments write them.
+
+[ES]
+ES-AN = "Andalucía"
+ES-AR = "Aragón"
+ES-AS = "Asturias"
+ES-CB = "Cantabria"
+ES-CE = "Ceuta"
+ES-CL = "Castilla y León"
+ES-CM = "Castilla-La Mancha"
+ES-CN = "Canarias"
+ES-CT = "Cataluña"
+ES-EX = "Extremadura"
+ES-GA = "Galicia"
+ES-IB = "Illes Balears"
+ES-MC = "Región de Murcia"
+ES-MD = "Comunidad de Madrid"
+ES-ML = "Melilla"
+ES-NC = "Navarra"
+ES-PV = "País Vasco"
+ES-RI = "La Rioja"
+ES-VC = "Comunitat Valenciana"

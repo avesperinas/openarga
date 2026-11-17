@@ -1,0 +1,13 @@
+# Web searches for the events no agenda lists, in the language of the place they are about.
+
+months = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+]
+queries = [
+  "jornadas gastronómicas Navarra {month} {year}",
+  "semana gastronómica Navarra {month} {year}",
+  "fiestas de los pueblos de Navarra {month} {year}",
+  "ferias en Navarra {month} {year}",
+]
+recurring = "{title} {year} fechas"

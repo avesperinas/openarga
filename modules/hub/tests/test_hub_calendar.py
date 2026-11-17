@@ -154,7 +154,7 @@ def test_a_region_brings_the_national_ones_and_its_own() -> None:
     assert [item.title for item in holidays.items_of(NAGER, "ES", None)] == ["Año Nuevo"]
     [easter] = [i for i in holidays.items_of(NAGER, "ES", "ES-NC") if i.title == "Lunes de Pascua"]
     assert (easter.all_day, easter.start, easter.end) == (True, "2026-04-06", "2026-04-07")
-    assert easter.description == "Festivo en Navarra, País Vasco"
+    assert easter.description == "Holiday in Navarra, País Vasco"
 
 
 @pytest.mark.parametrize(

@@ -14,6 +14,8 @@
   "connection.reason.missing": "{label} is missing its credential: paste it in its page.",
   "connection.reason.no_accounts": "{label} has not given any account. If your Enable Banking application is in restricted mode, link this bank's accounts in its dashboard and then reconnect it.",
   "connection.reason.pending": "{label} is waiting for you to finish authorising it.",
+  "holiday": "Holiday",
+  "holiday.in": "Holiday in {regions}",
   "mailbox.missing_password": "The mailbox's app password is missing",
   "notice.failing.body": "Three passes in a row with an error.",
   "notice.failing.title": "{label} brings no data",

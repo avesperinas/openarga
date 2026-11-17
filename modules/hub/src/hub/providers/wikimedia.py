@@ -3,7 +3,9 @@ from __future__ import annotations
 import html
 import os
 import re
+import tomllib
 from dataclasses import dataclass
+from pathlib import Path
 
 import httpx
 
@@ -24,7 +26,9 @@ BITMAP = re.compile(r"\.(jpe?g|png|webp)$", re.IGNORECASE)
 OSM_REF = re.compile(r"^(node|way|relation)/[0-9]+$")
 QID = re.compile(r"^Q[0-9]+$")
 FILLER = frozenset(
-    "el la los las lo de del y e en con sus su a al por un una unos unas the".split()  # noqa: SIM905
+    tomllib.loads(
+        (Path(__file__).resolve().parent.parent / "catalogs" / "filler.toml").read_text()
+    )["words"]
 )
 SIGNATURES = ((b"\xff\xd8\xff", "image/jpeg"), (b"\x89PNG\r\n\x1a\n", "image/png"))
 

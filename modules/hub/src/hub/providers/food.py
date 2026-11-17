@@ -3,8 +3,10 @@ from __future__ import annotations
 import asyncio
 import os
 import time
+import tomllib
 from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -57,7 +59,7 @@ async def send(client: httpx.AsyncClient, method: str, url: str, **kwargs: Any) 
         wait = backoff() * 2**attempt
         if time.monotonic() + wait >= deadline:
             if response is None:
-                raise httpx.ConnectTimeout("sin plazo para otro intento")
+                raise httpx.ConnectTimeout("no time left for another attempt")
             return response
         await asyncio.sleep(wait)
     raise AssertionError("unreachable")
@@ -126,19 +128,19 @@ MAX_MACROS_100G = 110.0
 
 def implausible(candidate: Candidate) -> str | None:
     if candidate.kcal_100g > MAX_KCAL_100G:
-        return f"{candidate.kcal_100g:g} kcal por 100 g"
+        return f"{candidate.kcal_100g:g} kcal per 100 g"
     grams = {
-        "proteína": candidate.protein_100g,
-        "grasa": candidate.fat_100g,
-        "hidratos": candidate.carbs_100g,
-        "fibra": candidate.fiber_100g,
-        "sal": candidate.salt_100g,
+        "protein": candidate.protein_100g,
+        "fat": candidate.fat_100g,
+        "carbohydrates": candidate.carbs_100g,
+        "fibre": candidate.fiber_100g,
+        "salt": candidate.salt_100g,
     }
     if candidate.kcal_100g < 0:
-        return f"{candidate.kcal_100g:g} kcal por 100 g"
+        return f"{candidate.kcal_100g:g} kcal per 100 g"
     for name, value in grams.items():
         if value is not None and not 0 <= value <= 100:
-            return f"{value:g} g de {name} por 100 g"
+            return f"{value:g} g of {name} per 100 g"
     if candidate.protein_100g + candidate.fat_100g + candidate.carbs_100g > MAX_MACROS_100G:
         return "its macros add up to more than 100 g per 100 g"
     return None
@@ -156,19 +158,9 @@ def sieve(candidates: list[Candidate]) -> tuple[list[Candidate], list[dict[str, 
     return kept, dropped
 
 
-HINTS = {
-    "vegetable": ("vegetable", "légume", "verdura", "legumbres-y-verduras"),
-    "fruit": ("fruit", "fruta", "berries"),
-    "protein": ("poultry", "beef", "pork", "sausage", "lamb", "meat", "carne", "embutido"),
-    "fish": ("fish", "seafood", "shellfish", "pescado", "marisco", "poisson"),
-    "dairy": ("dairy", "cheese", "yogurt", "milk", "egg", "lácteo", "queso", "huevo", "leche"),
-    "grain": ("cereal", "grain", "pasta", "bread", "rice", "pan", "arroz", "harina"),
-    "legume": ("legume", "bean", "lentil", "chickpea", "legumbre", "garbanzo", "lenteja"),
-    "fat": ("fat", "oil", "butter", "aceite", "mantequilla", "grasa"),
-    "spice": ("spice", "herb", "condiment", "sauce", "especia", "salsa", "condimento"),
-    "sweet": ("sweet", "sugar", "candy", "chocolate", "dessert", "azúcar", "dulce", "postre"),
-    "liquid": ("beverage", "drink", "broth", "soup", "bebida", "caldo", "zumo", "juice"),
-}
+HINTS: dict[str, list[str]] = tomllib.loads(
+    (Path(__file__).resolve().parent.parent / "catalogs" / "food_hints.toml").read_text()
+)
 
 
 def category_hint(*texts: str | None) -> str:
