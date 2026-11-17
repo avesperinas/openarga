@@ -3,6 +3,7 @@ import {
   Card,
   ConfirmDelete,
   CredentialField,
+  DateField,
   Hint,
   List,
   ListRow,
@@ -31,6 +32,7 @@ import {
   resumeConnection,
   signIn,
   syncNow,
+  typePrice,
 } from "./api";
 import { TokenSheet } from "./Add";
 import { ScreenHeader } from "./Header";
@@ -227,6 +229,7 @@ export function ConnectionScreen({ id, onBack }: { id: string; onBack: () => voi
         </Card>
       )}
 
+      {connection.provider === "prices" && <TypedPrice />}
       {(calendarLine(connection) || landsIn(connection)) && (
         <Card title={say("brings")}>
           {calendarLine(connection) && <Hint>{calendarLine(connection)}</Hint>}
@@ -321,6 +324,59 @@ export function ConnectionScreen({ id, onBack }: { id: string; onBack: () => voi
         />
       )}
     </Screen>
+  );
+}
+
+export function priceProblem(instrument: string, price: string): string | null {
+  if (!instrument.trim()) return say("price.missing.instrument");
+  const value = Number(price.replace(",", "."));
+  if (!Number.isFinite(value) || value <= 0) return say("price.missing.price");
+  return null;
+}
+
+function TypedPrice() {
+  const [instrument, setInstrument] = useState("");
+  const [on, setOn] = useState(new Date().toISOString().slice(0, 10));
+  const [price, setPrice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [said, setSaid] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  const save = () => {
+    const wrong = priceProblem(instrument, price);
+    if (wrong) return setProblem(wrong);
+    setBusy(true);
+    setProblem(null);
+    typePrice({ instrument: instrument.trim(), on, price: price.replace(",", ".") })
+      .then((done) => {
+        setSaid(say(done.new ? "price.saved" : "price.known", { symbol: done.symbol, on: done.on }));
+        setPrice("");
+      })
+      .catch((error: unknown) => {
+        if (error instanceof Unauthorised) return signIn();
+        setProblem(error instanceof Refused ? error.message : say("save.failed"));
+      })
+      .finally(() => setBusy(false));
+  };
+
+  return (
+    <Card title={say("price.title")}>
+      <Hint>{say("price.hint")}</Hint>
+      <TextField label={say("price.instrument")} value={instrument} onChange={setInstrument} placeholder="IE00B4L5Y983, VWCE.DE" />
+      <DateField label={say("price.on")} value={on} onChange={(day) => day && setOn(day)} />
+      <TextField
+        label={say("price.value")}
+        value={price}
+        onChange={setPrice}
+        onSubmit={save}
+        inputMode="decimal"
+        hint={problem ?? said ?? undefined}
+        invalid={problem !== null}
+      />
+      <Button onClick={save} disabled={busy}>
+        {say("price.save")}
+      </Button>
+    </Card>
   );
 }
 

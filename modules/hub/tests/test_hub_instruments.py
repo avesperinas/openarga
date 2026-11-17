@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from datetime import date, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
@@ -13,7 +14,6 @@ from sqlalchemy import text
 
 from arga_contracts import sources
 from hub import capabilities, connections, instruments, sync
-from hub.funds import Fund
 from hub.instruments import Line, Unresolved
 from hub.providers import prices
 
@@ -92,10 +92,14 @@ def target(*lines: Line, filled: dict | None = None) -> SimpleNamespace:
     return SimpleNamespace(config=config)
 
 
+VANGUARD = "ticker:0P00011HBK.F"
+ALSO: list[Line] = []
+
+
 @pytest.fixture
 def vanguard(monkeypatch):
-    fund = Fund("Vanguard US 500 Index Inst Plus", "0P00011HBK.F", "EUR", "IE00BFPM9V94")
-    monkeypatch.setattr(prices, "catalogue", lambda: (fund,))
+    fund = instruments.ticker_line("0P00011HBK.F", "Vanguard US 500 Index Inst Plus", D[0])
+    monkeypatch.setattr(sys.modules[__name__], "ALSO", [fund])
     return fund
 
 
@@ -103,7 +107,7 @@ async def run(found: Markets, connection) -> prices.Fetched:
     async with httpx.AsyncClient(transport=httpx.MockTransport(found)) as client:
         return await prices.fetch(
             client,
-            instruments.stored(connection.config),
+            [*ALSO, *instruments.stored(connection.config)],
             connection.config.get("filled"),
             today=TODAY,
         )
@@ -150,7 +154,7 @@ async def test_the_xetra_line_is_priced_from_its_photo_and_onvista_fills_what_ya
     assert int(asked.url.params["period1"]) <= int(
         prices.datetime.combine(PHOTO, prices.datetime.min.time(), prices.UTC).timestamp()
     )
-    assert got.state == {"filled": {XETRA: PHOTO.isoformat()}}
+    assert got.state == {"filled": {VANGUARD: D[0].isoformat(), XETRA: PHOTO.isoformat()}}
 
 
 async def test_a_filled_line_is_asked_only_for_the_last_months(vanguard) -> None:
@@ -208,30 +212,25 @@ async def test_when_yahoo_is_down_onvista_prices_the_line(vanguard) -> None:
     assert by_day(got, XETRA) == {D[0].isoformat(): "28.500000", D[1].isoformat(): "29.000000"}
 
 
-async def test_the_funds_that_already_worked_go_out_as_before(vanguard) -> None:
+async def test_a_fund_known_by_its_ticker_is_priced_by_it(vanguard) -> None:
     found = markets()
     found.yahoo["0P00011HBK.F"] = ("EUR", [(D[0], 600.0), (D[1], 606.0)])
 
     got = await run(found, target())
 
+    common = {
+        "symbol": VANGUARD,
+        "currency": "EUR",
+        "name": "Vanguard US 500 Index Inst Plus",
+        "kind": "listed",
+        "quote_currency": "EUR",
+    }
     assert [e["payload"] for e in got.events] == [
-        {
-            "symbol": "0P00011HBK.F",
-            "on": D[0].isoformat(),
-            "price": "600.000000",
-            "currency": "EUR",
-            "name": "Vanguard US 500 Index Inst Plus",
-        },
-        {
-            "symbol": "0P00011HBK.F",
-            "on": D[1].isoformat(),
-            "price": "606.000000",
-            "currency": "EUR",
-            "name": "Vanguard US 500 Index Inst Plus",
-        },
+        {**common, "on": D[0].isoformat(), "price": "600.000000"},
+        {**common, "on": D[1].isoformat(), "price": "606.000000"},
     ]
-    assert got.events[0]["dedup_hash"] == f"prices:0P00011HBK.F:{D[0].isoformat()}:600.000000"
-    assert (got.problem, got.state) == (None, None)
+    assert got.events[0]["dedup_hash"] == f"prices:{VANGUARD}:{D[0].isoformat()}:600.000000"
+    assert got.problem is None
 
 
 async def test_a_line_without_price_does_not_stop_the_funds_but_is_said(vanguard) -> None:
@@ -241,10 +240,10 @@ async def test_a_line_without_price_does_not_stop_the_funds_but_is_said(vanguard
 
     got = await run(found, target(line))
 
-    assert by_day(got, "0P00011HBK.F") == {D[0].isoformat(): "600.000000"}
+    assert by_day(got, VANGUARD) == {D[0].isoformat(): "600.000000"}
     assert by_day(got, XETRA) == {}
     assert QUANTUM in got.problem and "Xetra" in got.problem
-    assert got.state == {"filled": {}}
+    assert got.state == {"filled": {VANGUARD: D[0].isoformat()}}
 
 
 @pytest.fixture
@@ -379,10 +378,10 @@ async def test_without_a_prices_connection_the_tool_says_how_to_value_it(
 
     said = recorded.json()["content"]
     assert said["recorded"]
-    assert any("connect 'Fund prices'" in why for why in said["without_price"])
+    assert any("connect 'Prices'" in why for why in said["without_price"])
 
 
-async def test_a_catalogue_fund_given_by_its_isin_keeps_its_symbol_whatever_its_name(
+async def test_a_fund_given_by_its_ticker_is_not_looked_up(
     api, kernel, schema, monkeypatch
 ) -> None:
     found = markets()
@@ -390,7 +389,7 @@ async def test_a_catalogue_fund_given_by_its_isin_keeps_its_symbol_whatever_its_
     shot = {
         **SHOT,
         "funds": [
-            {"name": "VANGUARD US 500 STK IDX INS PL", "isin": "IE00BFPM9V94", "value": "990"},
+            {"name": "VANGUARD US 500 STK IDX INS PL", "ticker": "0p00011hbk.f", "value": "990"},
             {"name": "Liquidez", "value": "10"},
         ],
     }
@@ -400,7 +399,55 @@ async def test_a_catalogue_fund_given_by_its_isin_keeps_its_symbol_whatever_its_
     )
 
     said = recorded.json()["content"]
-    assert said["recorded"] and said["without_price"] == [] and said["priced_by_isin"] == []
+    assert said["recorded"]
     held = {h["symbol"] for h in await events_of(schema, "finance.holding")}
-    assert held == {"0P00011HBK.F", "EUR"}
+    assert held == {VANGUARD, "EUR"}
     assert found.asked == []
+
+
+async def test_a_price_no_source_gives_is_typed_by_hand_on_its_known_line(
+    api, kernel, schema, monkeypatch
+) -> None:
+    found = markets()
+    monkeypatch.setattr(capabilities, "source_transport", lambda: httpx.MockTransport(found))
+    await api.post("/connections", json={"provider": "prices", "label": "Prices"})
+    await api.post("/tools/record_portfolio", json=SHOT, headers={"x-arga-scopes": "hub:write"})
+    yesterday = date.today() - timedelta(days=1)
+
+    typed = await api.post(
+        "/prices",
+        json={"instrument": QUANTUM.lower(), "on": yesterday.isoformat(), "price": "31.5"},
+    )
+    again = await api.post(
+        "/prices", json={"instrument": QUANTUM, "on": yesterday.isoformat(), "price": "31.5"}
+    )
+
+    assert typed.status_code == 200, typed.text
+    assert typed.json() == {"symbol": XETRA, "on": yesterday.isoformat(), "new": True}
+    assert again.json()["new"] is False
+    [price] = [p for p in await events_of(schema, "finance.price") if p["on"] == str(yesterday)]
+    assert (price["symbol"], price["price"], price["isin"], price["mic"]) == (
+        XETRA,
+        "31.500000",
+        QUANTUM,
+        "XETR",
+    )
+
+
+async def test_a_typed_price_needs_an_isin_or_a_ticker_and_a_past_day(api, kernel) -> None:
+    today = date.today()
+
+    by_ticker = await api.post(
+        "/prices", json={"instrument": "vwce.de", "on": today.isoformat(), "price": "120"}
+    )
+    nonsense = await api.post(
+        "/prices", json={"instrument": "not one", "on": today.isoformat(), "price": "1"}
+    )
+    future = await api.post(
+        "/prices",
+        json={"instrument": "VWCE.DE", "on": (today + timedelta(days=2)).isoformat(), "price": "1"},
+    )
+
+    assert by_ticker.json()["symbol"] == "ticker:VWCE.DE"
+    assert nonsense.status_code == 422 and "nor an ISIN" in nonsense.json()["detail"]
+    assert future.status_code == 422

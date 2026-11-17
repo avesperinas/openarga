@@ -153,5 +153,15 @@
   "yours.connect": "Conectar una fuente",
   "yours.empty": "Nada conectado aquí todavía",
   "yours.empty.hint": "Este es el sitio de todo lo que entra de fuera: tus bancos, tus exchanges, tu correo y tus calendarios. Conéctalos desde Configurar, o desde la app que los usa.",
-  "yours.title": "Tus conexiones"
+  "yours.title": "Tus conexiones",
+  "price.title": "Escribir un precio",
+  "price.hint": "Cuando ninguna fuente da el precio de un valor, escribe aquí su cierre en euros. Money lo usa como cualquier otro.",
+  "price.instrument": "ISIN o ticker",
+  "price.on": "Día",
+  "price.value": "Precio en euros",
+  "price.save": "Guardar precio",
+  "price.saved": "Guardado: {symbol} el {on}.",
+  "price.known": "Ese precio ya estaba: {symbol} el {on}.",
+  "price.missing.instrument": "Escribe su ISIN o su ticker.",
+  "price.missing.price": "Escribe un precio mayor que cero."
 }

@@ -4,6 +4,7 @@ import hmac
 import os
 from contextlib import asynccontextmanager
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 from typing import Annotated, Any
 from uuid import UUID
@@ -26,6 +27,7 @@ from hub import (
     connections,
     credentials,
     google_auth,
+    instruments,
     plugs,
     push,
     statements,
@@ -33,6 +35,7 @@ from hub import (
 )
 from hub.capabilities import CAPABILITIES
 from hub.db import as_module
+from hub.providers import prices
 from hub.tools import TOOLS, role_for_scopes
 from hub.widgets import RENDERERS
 from hub.words import say
@@ -510,6 +513,42 @@ async def upload_statements(body: StatementsIn) -> dict[str, Any]:
                 }
             )
     return {"files": results}
+
+
+class TypedPriceIn(BaseModel):
+    instrument: Annotated[str, Field(min_length=1, max_length=20)]
+    on: date
+    price: Annotated[Decimal, Field(gt=0, max_digits=18, decimal_places=6)]
+    name: Annotated[str | None, Field(max_length=120)] = None
+
+
+@app.post("/prices")
+async def type_price(body: TypedPriceIn) -> dict[str, Any]:
+    require_person()
+    wanted = body.instrument.strip().upper()
+    if body.on > date.today():
+        raise HTTPException(status_code=422, detail="a price cannot be from the future")
+    async with as_app() as connection:
+        row = (await connection.execute(instruments.FIND, {"provider": prices.PROVIDER})).first()
+    known = instruments.stored(row.config if row else None)
+    line = next((one for one in known if wanted in (one.isin, one.yahoo)), None)
+    if line is None and not instruments.valid_isin(wanted):
+        try:
+            line = instruments.ticker_line(wanted, body.name or wanted, body.on)
+        except instruments.Unresolved as error:
+            raise HTTPException(status_code=422, detail=f"{error}, nor an ISIN") from error
+    symbol = line.symbol if line else wanted
+    name = body.name or (line.name if line else wanted)
+    event = prices.typed(symbol, name, body.on, body.price, line)
+    outcome = sync.Outcome(UUID(int=0), "ok")
+    async with httpx.AsyncClient(
+        base_url=kernel_url(), transport=capabilities.kernel_transport(), timeout=30.0
+    ) as kernel:
+        try:
+            await sync.publish_all(kernel, prices.PROVIDER, [event], outcome)
+        except httpx.HTTPError as error:
+            raise HTTPException(status_code=502, detail="the kernel did not take it") from error
+    return {"symbol": symbol, "on": body.on.isoformat(), "new": outcome.emitted == 1}
 
 
 @app.get(UI_ROOT + "/callback")
