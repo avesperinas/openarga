@@ -27,5 +27,8 @@
   deposit). **Snapshot**: which funds a product held on a day; between snapshots each fund moves
   with its price. **Composition**: the portfolio split by asset class, region, fund or product;
   what cannot be split is "no breakdown".
+- **Position**: what was bought of one ISIN or ticker: units and total cost. A product with
+  positions is valued by them, at the latest price from Hub, the one written down, or what was
+  paid.
 - **Deposit**: your money held elsewhere that comes back (a rent deposit); neither savings nor
   spending.

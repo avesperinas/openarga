@@ -11,7 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_tenancy import current_spaces
-from money import catalog, common, source
+from money import catalog, common, positions, source, texts
 from money.history import Flow, Valuation
 from money.interpret import Interpreter, Label, Rule, fold
 from money.model import OTHER, Account, Balance, Book, Category, Fact, Holding, Imputation
@@ -341,6 +341,17 @@ async def load(connection: AsyncConnection, user: UUID | None) -> Loaded:
     holdings = [h for h in loaded.holdings if (h.account, h.on) not in typed_shots] + [
         Holding(r.account, r.on_date, r.symbol, Decimal(str(r.value)), name=r.name) for r in typed
     ]
+    owned = await positions.load(connection)
+    if owned:
+        taken = {p.account for p in owned}
+        held = positions.holdings(owned, loaded.prices, texts.today())
+        holdings = [h for h in holdings if h.account not in taken] + held
+        balances = [b for b in balances if b.account not in taken]
+        for account in taken:
+            mine = [h for h in held if h.account == account]
+            balances.append(
+                Balance(account, max(h.on for h in mine), sum((h.value for h in mine), Decimal(0)))
+            )
     funds = {
         r.symbol: {"asset": r.asset, "regions": r.regions}
         for r in (

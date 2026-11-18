@@ -22,6 +22,8 @@ async def test_the_server_lists_every_tool_of_the_manifest(book) -> None:  # noq
         "update_product",
         "record_composition",
         "record_value",
+        "get_positions",
+        "record_position",
         "classify_fund",
         "delete_rule",
     }

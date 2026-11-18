@@ -128,6 +128,19 @@ tools:
     description: >
       Records what a product is worth on a day (today if not said): a property, a deposit or a
       product without a source. Use it only when asked.
+  - name: get_positions
+    scope: money:read
+    description: >
+      What an investment product holds, as a snapshot of what was bought: each position with its
+      ISIN or ticker, units, cost, latest price (from Hub, or the one written down, or what was paid),
+      value and gain, plus the totals. The product, by its name or key.
+  - name: record_position
+    scope: money:write
+    description: >
+      Writes down a position of an investment product: its ISIN or ticker, units bought and what
+      they cost in total. The price comes from Hub when it publishes one for that ISIN or ticker;
+      without one, pass `price` (and `price_on`). Writing the same symbol again replaces it. A
+      product with positions is valued by them. Use it only when asked.
   - name: classify_fund
     scope: money:write
     description: >
