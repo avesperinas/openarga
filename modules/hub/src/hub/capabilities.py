@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import text
 
 from arga_tenancy import kernel_url
-from hub import ai, banks, catalogue, connections, credentials, plugs, sync
+from hub import ai, banks, catalogue, connections, credentials, fake, plugs, sync
 from hub.db import as_module
 from hub.providers import (
     SourceError,
@@ -36,7 +36,7 @@ Handler = Callable[[str, dict[str, Any]], Awaitable[dict[str, Any]]]
 
 
 def source_transport() -> httpx.AsyncBaseTransport | None:
-    return None
+    return fake.transport() if fake.enabled() else None
 
 
 def kernel_transport() -> httpx.AsyncBaseTransport | None:

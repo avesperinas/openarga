@@ -131,7 +131,7 @@ async def tick(
 
 async def serve() -> None:
     async with (
-        httpx.AsyncClient(timeout=30.0) as source,
+        httpx.AsyncClient(timeout=30.0, transport=capabilities.source_transport()) as source,
         httpx.AsyncClient(base_url=kernel_url(), timeout=30.0) as kernel,
     ):
 
@@ -159,7 +159,9 @@ AI_EVERY_SECONDS = float(os.environ.get("AI_RUN_EVERY_SECONDS", "15"))
 
 
 async def ai_runs(kernel: httpx.AsyncClient) -> None:
-    async with httpx.AsyncClient(timeout=60.0) as outside:
+    async with httpx.AsyncClient(
+        timeout=60.0, transport=capabilities.source_transport()
+    ) as outside:
         web = ai_tools.Web(outside)
         while True:
             try:
