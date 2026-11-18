@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, date, datetime, timedelta
-from decimal import Decimal
 
 from money_people import PERSON
 from sqlalchemy import text
