@@ -12,10 +12,11 @@ from test_money_products import READ, WRITE, publish
 
 from arga_tenancy import current_user
 from money import book as books
+from money.texts import today
 
 ISIN = "IE000W8WMSL2"
 LINE = f"{ISIN}:XETR:EUR"
-TODAY = date.today()
+TODAY = today()
 
 
 @pytest.fixture(autouse=True)

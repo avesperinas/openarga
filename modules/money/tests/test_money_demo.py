@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -11,9 +11,10 @@ from arga_tenancy import current_spaces, current_user
 from money import book as books
 from money import demo
 from money.api import as_app
+from money.texts import today
 
 CAST = cast_of.load(Path(__file__).resolve().parents[3] / "demo" / "personas.yaml")
-TODAY = date.today()
+TODAY = today()
 TABLES = (
     "money_v1_account",
     "money_v1_category",

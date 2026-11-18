@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from money_people import PERSON
 from sqlalchemy import text
@@ -12,11 +12,13 @@ from test_money_api import (
     movement,
 )
 
+from money.texts import today
+
 READ = {"x-arga-scopes": "money:read"}
 WRITE = {"x-arga-scopes": "money:write"}
 PLAN = "statement:entidad:plan-uno"
-SHOT = (date.today() - timedelta(days=3)).isoformat()
-LATER = (date.today() - timedelta(days=1)).isoformat()
+SHOT = (today() - timedelta(days=3)).isoformat()
+LATER = (today() - timedelta(days=1)).isoformat()
 
 
 async def publish(schema, events: list[dict]) -> None:
@@ -77,8 +79,8 @@ async def with_plan(book, schema, holdings: list[dict]) -> None:  # noqa: F811
 
 
 def period() -> dict:
-    today = date.today()
-    return {"from": today.replace(day=1).isoformat(), "to": today.isoformat()}
+    now = today()
+    return {"from": now.replace(day=1).isoformat(), "to": now.isoformat()}
 
 
 async def test_a_new_photo_of_the_same_day_replaces_the_one_before(book, schema) -> None:  # noqa: F811
@@ -263,7 +265,7 @@ async def test_a_product_is_created_changed_and_given_its_ibans(book) -> None:  
     assert wrong.status_code == 422
 
     valued = await book.put(
-        "/accounts/flat_deposit/value", json={"on": date.today().isoformat(), "value": "900"}
+        "/accounts/flat_deposit/value", json={"on": today().isoformat(), "value": "900"}
     )
     assert valued.json()["value"] == 900.0 and valued.json()["value_how"]
 
