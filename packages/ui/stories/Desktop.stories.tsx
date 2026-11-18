@@ -54,7 +54,7 @@ function Cell({ size, children }: { size: WidgetSize; children: React.ReactNode 
 const CONNECTIONS = [
   { label: "BBVA", value: "Caducada", tone: "negative" },
   { label: "Santander", value: "A medias", tone: "warning" },
-  { label: "Bitvavo", value: "Up to date", tone: "positive" },
+  { label: "Example Bank", value: "Up to date", tone: "positive" },
   { label: "Correo", value: "Up to date", tone: "positive" },
   { label: "Claude", value: "Paused", tone: "neutral" },
 ] as const;

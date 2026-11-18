@@ -56,7 +56,7 @@ async def test_without_its_app_built_it_is_not_ready(api, tmp_path, monkeypatch)
 async def test_the_app_opens_at_its_view_and_any_screen_is_the_app(built) -> None:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://c") as client:
         root = await client.get("/hub")
-        screen = await client.get("/hub/bitvavo")
+        screen = await client.get("/hub/setup")
         asset = await client.get("/hub/assets/index-abc.js")
         outside = await client.get("/hub/%2e%2e/%2e%2e/pyproject.toml")
 
@@ -101,7 +101,6 @@ async def test_the_catalogue_comes_in_its_categories_in_order(api) -> None:
     ]
     assert [p["id"] for p in listed[0]["providers"]] == [
         "enable_banking",
-        "bitvavo",
         "frankfurter",
         "prices",
     ]
@@ -131,17 +130,17 @@ async def test_every_source_is_configured_here_now(api) -> None:
     assert all(p["available"] for p in providers.values())
 
 
-async def test_bitvavo_is_connected_here_now_and_says_what_it_asks_for(api) -> None:
+async def test_usda_is_connected_here_now_and_says_what_it_asks_for(api) -> None:
     providers = {
         p["id"]: p
         for category in (await api.get("/catalogue")).json()
         for p in category["providers"]
     }
 
-    assert providers["bitvavo"]["available"] is True
-    assert providers["bitvavo"]["lives_in"] is None
-    assert providers["bitvavo"]["single"] is True
-    assert [s["key"] for s in providers["bitvavo"]["secrets"]] == ["api_key", "api_secret"]
+    assert providers["usda"]["available"] is True
+    assert providers["usda"]["lives_in"] is None
+    assert providers["usda"]["single"] is True
+    assert [s["key"] for s in providers["usda"]["secrets"]] == ["api_key"]
 
 
 async def test_a_connection_is_renamed(api) -> None:

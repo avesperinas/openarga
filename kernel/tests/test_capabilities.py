@@ -31,7 +31,7 @@ async def declared(database_url: str, monkeypatch):
     monkeypatch.setattr(capabilities, "hub_transport", lambda: httpx.MockTransport(hub))
     async with engine().begin() as connection:
         for module, uses, enabled in (
-            (ASKS, ["bitvavo.handoff"], True),
+            (ASKS, ["usda.handoff"], True),
             (SILENT, [], True),
         ):
             await connection.execute(
@@ -46,7 +46,7 @@ async def declared(database_url: str, monkeypatch):
     await engine().dispose()
 
 
-async def ask(module: str, capability: str = "bitvavo.handoff") -> httpx.Response:
+async def ask(module: str, capability: str = "usda.handoff") -> httpx.Response:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://kernel") as kernel:
         return await kernel.post(
             f"/internal/capabilities/{capability}",
@@ -60,7 +60,7 @@ async def test_what_the_manifest_declares_goes_to_the_hub_with_who_asks(declared
 
     assert response.status_code == 200
     [request] = declared
-    assert request.url.path == "/capabilities/bitvavo.handoff"
+    assert request.url.path == "/capabilities/usda.handoff"
     assert request.headers["x-module-token"] == "probe-token"
     assert request.headers["x-arga-module"] == ASKS
     assert request.headers["x-arga-user"]
@@ -102,7 +102,7 @@ async def served(declared, monkeypatch):
             {
                 "id": ASKS,
                 "enabled": True,
-                "manifest": json.dumps({"uses": ["bitvavo.handoff", "shopping.add"]}),
+                "manifest": json.dumps({"uses": ["usda.handoff", "shopping.add"]}),
             },
         )
         await connection.execute(

@@ -109,7 +109,7 @@ def test_a_price_is_of_a_symbol_on_a_day() -> None:
 
 def test_a_trade_says_what_moved_and_a_sale_says_at_how_much() -> None:
     sale = {
-        "account": "bitvavo",
+        "account": "broker",
         "id": "t-1",
         "at": "2026-10-05T10:00:00+00:00",
         "side": "sell",

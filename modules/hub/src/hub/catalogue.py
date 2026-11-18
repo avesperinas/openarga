@@ -15,7 +15,6 @@ from hub.declare import (
 from hub.providers import (
     agendas,
     apple_health,
-    bitvavo,
     books,
     enable_banking,
     films,
@@ -81,7 +80,6 @@ MODULES = (
     apple_health,
     google_health,
     enable_banking,
-    bitvavo,
     fx,
     food,
     books,

@@ -8,8 +8,8 @@ import type { Connection, Provider } from "./api";
 beforeAll(() => configureRegional({ locale: "en-GB" }));
 
 const provider = (overrides: Partial<Provider>): Provider => ({
-  id: "bitvavo",
-  name: "Bitvavo",
+  id: "exchange",
+  name: "Example Exchange",
   description: "",
   capabilities: ["sync"],
   available: false,
@@ -21,8 +21,8 @@ const provider = (overrides: Partial<Provider>): Provider => ({
 
 const connection = (overrides: Partial<Connection>): Connection => ({
   id: "c1",
-  provider: "bitvavo",
-  label: "Bitvavo",
+  provider: "exchange",
+  label: "Example Exchange",
   category: "finance",
   state: "active",
   brief: "Up to date",
@@ -34,10 +34,10 @@ const connection = (overrides: Partial<Connection>): Connection => ({
 });
 
 test("what is still set up in its app says so and leads there", () => {
-  const bitvavo = provider({ lives_in: "Money" });
+  const exchange = provider({ lives_in: "Money" });
 
-  expect(whereItLives(bitvavo)).toBe("In Money");
-  expect(appPath(bitvavo)).toBe("/money");
+  expect(whereItLives(exchange)).toBe("In Money");
+  expect(appPath(exchange)).toBe("/money");
 });
 
 test("an app name leads to its route", () => {
@@ -97,17 +97,17 @@ test("each section shows its providers and where they are", () => {
 });
 
 test("what is already in the hub is added here", () => {
-  const bitvavo = provider({ available: true, single: true });
+  const exchange = provider({ available: true, single: true });
 
-  expect(whereItLives(bitvavo)).toBe("Add");
-  expect(providerAction(bitvavo, [])).toEqual({ kind: "add" });
+  expect(whereItLives(exchange)).toBe("Add");
+  expect(providerAction(exchange, [])).toEqual({ kind: "add" });
 });
 
 test("a single connection already connected opens its page instead of adding another", () => {
-  const bitvavo = provider({ available: true, single: true });
+  const exchange = provider({ available: true, single: true });
 
-  expect(whereItLives(bitvavo, true)).toBe("Connected");
-  expect(providerAction(bitvavo, [connection({ id: "c9" })])).toEqual({ kind: "open", id: "c9" });
+  expect(whereItLives(exchange, true)).toBe("Connected");
+  expect(providerAction(exchange, [connection({ id: "c9" })])).toEqual({ kind: "open", id: "c9" });
 });
 
 test("what still lives in its app leads there, and what does not exist does nothing", () => {
@@ -130,7 +130,7 @@ test("setup shows the accounts you have, and below them the row to add another",
       connections={[
         connection({ id: "c1", provider: "claude", label: "Personal" }),
         connection({ id: "c2", provider: "claude", label: "Work", brief: "Caducada", tone: "negative" }),
-        connection({ id: "c3", provider: "bitvavo", label: "Bitvavo" }),
+        connection({ id: "c3", provider: "exchange", label: "Example Exchange" }),
       ]}
     />,
   );
@@ -138,7 +138,7 @@ test("setup shows the accounts you have, and below them the row to add another",
   expect(html).toContain("Personal");
   expect(html).toContain("Work");
   expect(html).toContain('data-tone="negative"');
-  expect(html).not.toContain("Bitvavo");
+  expect(html).not.toContain("Example Exchange");
   expect(html.indexOf("Work")).toBeLessThan(html.indexOf(">Add<"));
 });
 
@@ -147,11 +147,11 @@ test("a single connection already connected is only its connection, with no add 
     <ProviderSection
       title="Money"
       providers={[provider({ available: true, single: true })]}
-      connections={[connection({ label: "My Bitvavo" })]}
+      connections={[connection({ label: "My Example Exchange" })]}
     />,
   );
 
-  expect(html).toContain("My Bitvavo");
+  expect(html).toContain("My Example Exchange");
   expect(html).toContain("Up to date");
   expect(html).not.toContain(">Add<");
 });

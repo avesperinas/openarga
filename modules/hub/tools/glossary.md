@@ -3,7 +3,7 @@
 **Connection.** An outside source set up for you: a bank, a calendar, a price source.
 You can have several from the same provider, each with its own name.
 
-**Provider.** The source itself (Enable Banking, Bitvavo, Google Health...). Each belongs to a
+**Provider.** The source itself (Enable Banking, Google Health...). Each belongs to a
 category, such as Finance, Health, Calendars or Food.
 
 **State of a connection.** It is computed, not stored:
