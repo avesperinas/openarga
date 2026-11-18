@@ -47,7 +47,7 @@ class Kind:
 
 
 def kind_of(lo: Loaded, account: Account, symbol: str) -> Kind:
-    own = lo.funds.get(symbol)
+    own = lo.funds.get(symbol) or lo.funds.get(symbol.split(":")[0])
     if own is not None:
         return Kind(own["asset"], _regions(own.get("regions")), "yours")
     if symbol in texts.SYMBOLS:
