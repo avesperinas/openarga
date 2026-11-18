@@ -18,13 +18,13 @@ TODAY = date(2026, 10, 2)
 SEARCH = "http://search.example"
 
 PAGE = """
-<html><head><title>Agenda · Auditorio Sintético</title><script>var x = "no";</script></head>
+<html><head><title>Agenda · Synthetic Auditorium</title><script>var x = "no";</script></head>
 <body>
 <nav><a href="/">Inicio</a> <a href="/entradas">Entradas</a></nav>
 <ul>
-  <li><a href="/evento/orquesta">Orquesta Sintética</a> Sala | sáb 3 de octubre | 19:30</li>
-  <li><a href="/evento/croqueta">Semana de la Croqueta Inventada</a> del 2 al 11 oct · 90 bares</li>
-  <li><a href="https://otra.example/expo">Paisajes de mentira</a> 25/09/2026 - 31/10/2026</li>
+  <li><a href="/evento/orquesta">Synthetic Orchestra</a> Sala | sab 3 de octubre | 19:30</li>
+  <li><a href="/evento/croqueta">Invented Croquette Week</a> 2 al 11 oct · 90 bars</li>
+  <li><a href="https://otra.example/expo">Make-believe Landscapes</a> 25/09/2026 - 31/10/2026</li>
 </ul>
 </body></html>
 """
@@ -39,7 +39,7 @@ TOO_LONG = Refused("the answer did not fit", 502)
 
 
 ORCHESTRA = {
-    "title": "Orquesta Sintética",
+    "title": "Synthetic Orchestra",
     "starts_on": "2026-10-03",
     "ends_on": "2026-10-03",
     "time": "19:30",
@@ -50,7 +50,7 @@ ORCHESTRA = {
     "link": 3,
 }
 CROQUETA = {
-    "title": "Semana de la Croqueta Inventada",
+    "title": "Invented Croquette Week",
     "starts_on": "2026-10-02",
     "ends_on": "2026-10-11",
     "category": "eat",
@@ -58,7 +58,7 @@ CROQUETA = {
     "recurring": True,
 }
 EXPO = {
-    "title": "Paisajes de mentira",
+    "title": "Make-believe Landscapes",
     "starts_on": "2026-09-25",
     "ends_on": "2026-10-31",
     "category": "culture",
@@ -67,14 +67,14 @@ EXPO = {
 
 
 def page() -> agendas.Read:
-    return agendas.parse(URL, "Auditorio Sintético", PAGE)
+    return agendas.parse(URL, "Synthetic Auditorium", PAGE)
 
 
 def test_the_page_is_its_text_with_numbered_links_and_no_scripts() -> None:
     read = page()
 
     assert "var x" not in read.text
-    assert "Orquesta Sintética ⟨3⟩" in read.text
+    assert "Synthetic Orchestra ⟨3⟩" in read.text
     assert read.links[:3] == [
         "https://agenda.example/",
         "https://agenda.example/entradas",
@@ -87,8 +87,8 @@ def test_the_page_is_its_text_with_numbered_links_and_no_scripts() -> None:
     ("day", "written"),
     [
         (date(2026, 10, 3), "sabado 3 de octubre"),
-        (date(2026, 10, 2), "del 2 al 11 oct"),
-        (date(2026, 10, 11), "del 2 al 11 oct"),
+        (date(2026, 10, 2), "2 al 11 oct"),
+        (date(2026, 10, 11), "2 al 11 oct"),
         (date(2026, 10, 3), "oct 3 4815 euskadiko"),
         (date(2026, 10, 9), "oct 8 9 quien teme"),
         (date(2026, 9, 25), "25 09 2026 31 10 2026"),
@@ -118,11 +118,11 @@ def test_what_is_on_the_page_goes_in_with_its_link() -> None:
 
     assert checked.discarded == {}
     by_title = {event["title"]: event for event in checked.events}
-    orchestra = by_title["Orquesta Sintética"]
+    orchestra = by_title["Synthetic Orchestra"]
     assert orchestra["link"] == "https://agenda.example/evento/orquesta"
     assert orchestra["time"] == "19:30" and orchestra["category"] == "stage"
-    assert orchestra["source_page"] == URL and orchestra["source_name"] == "Auditorio Sintético"
-    assert by_title["Semana de la Croqueta Inventada"]["recurring"] is True
+    assert orchestra["source_page"] == URL and orchestra["source_name"] == "Synthetic Auditorium"
+    assert by_title["Invented Croquette Week"]["recurring"] is True
     for event in checked.events:
         sources.check("leisure.event", event)
 
@@ -130,7 +130,7 @@ def test_what_is_on_the_page_goes_in_with_its_link() -> None:
 @pytest.mark.parametrize(
     ("invented", "reason"),
     [
-        ({**ORCHESTRA, "title": "Concierto que no existe"}, "the title is not on the page"),
+        ({**ORCHESTRA, "title": "A concert that does not exist"}, "the title is not on the page"),
         ({**ORCHESTRA, "starts_on": "2026-10-05", "ends_on": "2026-10-05"}, "the date is not"),
         ({**ORCHESTRA, "link": 99}, "a link that is not on the page"),
         ({**ORCHESTRA, "category": "concierto"}, "unknown category"),
@@ -140,7 +140,7 @@ def test_what_is_on_the_page_goes_in_with_its_link() -> None:
 def test_what_the_model_invents_does_not_go_in_and_is_counted(invented: dict, reason: str) -> None:
     checked = agendas.check([invented, CROQUETA], page(), "c1", TODAY)
 
-    assert [event["title"] for event in checked.events] == ["Semana de la Croqueta Inventada"]
+    assert [event["title"] for event in checked.events] == ["Invented Croquette Week"]
     assert any(said.startswith(reason) for said in checked.discarded)
 
 
@@ -238,27 +238,27 @@ def target(config: dict) -> SimpleNamespace:
 
 
 async def test_a_page_that_has_not_changed_does_not_call_the_model(web) -> None:
-    config = {"pages": [{"url": URL, "name": "Auditorio Sintético"}]}
+    config = {"pages": [{"url": URL, "name": "Synthetic Auditorium"}]}
     async with httpx.AsyncClient(transport=httpx.MockTransport(web)) as client:
         first = await agendas.sync(client, {}, target(config))
         again = await agendas.sync(client, {}, target({**config, **first.state}))
 
     assert len(web.model_calls) == 1
     assert [event["payload"]["title"] for event in first.events] == [
-        "Orquesta Sintética",
-        "Semana de la Croqueta Inventada",
+        "Synthetic Orchestra",
+        "Invented Croquette Week",
     ]
     assert again.events == [] and again.problem is None
     assert "1 unchanged" in again.note
     asked = web.model_calls[0]
-    assert "Orquesta Sintética ⟨3⟩" in asked["input"] and "Today is 2026-10-02" in asked["input"]
+    assert "Synthetic Orchestra ⟨3⟩" in asked["input"] and "Today is 2026-10-02" in asked["input"]
     assert (asked["module"], asked["role"]) == ("hub", "fast")
     assert asked["output_schema"] == agendas.SCHEMA
 
 
 async def test_the_daily_budget_stops_the_pass_and_says_so(web) -> None:
     other = "https://agenda.example/otra"
-    web.pages[other] = PAGE.replace("Sintética", "Distinta")
+    web.pages[other] = PAGE.replace("Synthetic Orchestra", "Different Orchestra")
     config = {
         "pages": [{"url": URL, "name": "Una"}, {"url": other, "name": "Otra"}],
         "daily_calls": 1,
@@ -274,11 +274,11 @@ async def test_the_daily_budget_stops_the_pass_and_says_so(web) -> None:
 async def test_a_dead_page_does_not_lose_what_the_others_brought(web) -> None:
     dead = "https://agenda.example/caida"
     web.down.add(dead)
-    config = {"pages": [{"url": dead, "name": "Caída"}, {"url": URL, "name": "Buena"}]}
+    config = {"pages": [{"url": dead, "name": "Down"}, {"url": URL, "name": "Buena"}]}
     async with httpx.AsyncClient(transport=httpx.MockTransport(web)) as client:
         got = await agendas.sync(client, {}, target(config))
 
-    assert "Caída answers 503" in got.problem
+    assert "Down answers 503" in got.problem
     assert len(got.events) == 2 and URL in got.state["seen"]
 
 
@@ -380,18 +380,18 @@ async def test_the_log_gets_the_events_and_an_unchanged_page_costs_nothing(
             .scalars()
             .all()
         )
-    assert titles == ["Orquesta Sintética", "Semana de la Croqueta Inventada"]
+    assert titles == ["Invented Croquette Week", "Synthetic Orchestra"]
 
 
 FOUND = "https://prensa.example/jornadas-de-la-alcachofa"
 JORNADAS = """
 <html><body><article>
-<h1>Jornadas Sintéticas de la Alcachofa</h1>
-<p>Del 9 al 18 de octubre, quince bares de Tudela. XX edición.</p>
+<h1>Synthetic Artichoke Days</h1>
+<p>Del 9 al 18 de octubre, fifteen bars in Tudela. 20th year.</p>
 </article></body></html>
 """
 ALCACHOFA = {
-    "title": "Jornadas Sintéticas de la Alcachofa",
+    "title": "Synthetic Artichoke Days",
     "starts_on": "2026-10-09",
     "ends_on": "2026-10-18",
     "town": "Tudela",
@@ -429,7 +429,7 @@ async def test_the_weekly_search_brings_what_no_fixed_agenda_has_with_its_page(s
     assert len(web.searched) == 3
     assert all("Navarra octubre 2026" in query for query in web.searched)
     [event] = [one["payload"] for one in got.events]
-    assert event["title"] == "Jornadas Sintéticas de la Alcachofa"
+    assert event["title"] == "Synthetic Artichoke Days"
     assert event["source_page"] == FOUND and event["source_name"] == "prensa.example"
     assert event["recurring"] is True
     assert "search budget" in got.problem
@@ -461,14 +461,17 @@ async def test_the_search_only_runs_when_asked(searching) -> None:
 def test_what_comes_back_every_year_is_searched_near_its_month() -> None:
     found = agendas.queries(
         date(2026, 10, 2),
-        [{"title": "Vinofest", "month": 4}, {"title": "Exaltación del Piquillo", "month": 11}],
+        [{"title": "Vinofest", "month": 4}, {"title": "Piquillo Festival", "month": 11}],
     )
 
-    assert "jornadas gastronómicas Navarra octubre 2026" in found
-    assert "fiestas de los pueblos de Navarra noviembre 2026" in found
-    assert "Exaltación del Piquillo 2026 fechas" in found
+    october, november = agendas.SEARCHES["months"][9], agendas.SEARCHES["months"][10]
+    assert any(query.endswith(f"{october} 2026") for query in found)
+    assert any(query.endswith(f"{november} 2026") for query in found)
+    assert any(query.startswith("Piquillo Festival 2026") for query in found)
     assert not any("Vinofest" in query for query in found)
-    assert agendas.queries(date(2026, 12, 20), [])[-1] == "ferias en Navarra enero 2027"
+    assert agendas.queries(date(2026, 12, 20), [])[-1].endswith(
+        f"{agendas.SEARCHES['months'][0]} 2027"
+    )
 
 
 def test_it_is_offered_with_the_four_agendas_and_no_automatic_search() -> None:
@@ -502,32 +505,32 @@ async def test_it_remembers_what_it_published_that_comes_back_every_year(
     async with as_module() as database:
         recalled = await agendas.recall(database, await row_of(api, str(created)))
 
-    assert recalled == {"recurring": [{"title": "Semana de la Croqueta Inventada", "month": 10}]}
+    assert recalled == {"recurring": [{"title": "Invented Croquette Week", "month": 10}]}
 
 
 async def test_a_page_whose_answer_does_not_fit_is_read_in_pieces(web) -> None:
     def long(body: dict) -> dict | Exception:
         content = body["input"]
-        if "Orquesta" in content and "Croqueta" in content:
+        if "Orchestra" in content and "Croquette" in content:
             return TOO_LONG
-        return said(ORCHESTRA) if "Orquesta" in content else said(CROQUETA)
+        return said(ORCHESTRA) if "Orchestra" in content else said(CROQUETA)
 
     web.answer = long
-    config = {"pages": [{"url": URL, "name": "Larga"}]}
+    config = {"pages": [{"url": URL, "name": "Long"}]}
     async with httpx.AsyncClient(transport=httpx.MockTransport(web)) as client:
         got = await agendas.sync(client, {}, target(config))
 
     assert len(web.model_calls) == 3
     assert {one["payload"]["title"] for one in got.events} == {
-        "Orquesta Sintética",
-        "Semana de la Croqueta Inventada",
+        "Synthetic Orchestra",
+        "Invented Croquette Week",
     }
     assert URL in got.state["seen"] and got.problem is None
 
 
 async def test_a_page_that_never_fits_is_not_marked_as_read(web) -> None:
     web.answers = [TOO_LONG]
-    config = {"pages": [{"url": URL, "name": "Larga"}], "daily_calls": 50}
+    config = {"pages": [{"url": URL, "name": "Long"}], "daily_calls": 50}
     async with httpx.AsyncClient(transport=httpx.MockTransport(web)) as client:
         got = await agendas.sync(client, {}, target(config))
 

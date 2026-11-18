@@ -14,8 +14,8 @@ EPISODES = {
         {
             "trackId": 11,
             "collectionId": 1,
-            "trackName": "La caída de Constantinopla",
-            "collectionName": "Un podcast sintético",
+            "trackName": "The fall of Constantinople",
+            "collectionName": "A synthetic podcast",
             "trackViewUrl": "https://podcasts.apple.com/es/podcast/x/id1?i=11",
             "collectionViewUrl": "https://podcasts.apple.com/es/podcast/x/id1",
             "trackTimeMillis": 3_540_000,
@@ -27,7 +27,7 @@ SHOWS = {
     "results": [
         {
             "collectionId": 2,
-            "collectionName": "Otro podcast sintético",
+            "collectionName": "Another synthetic podcast",
             "artistName": "Una autora",
             "collectionViewUrl": "http://insecure.example/x",
             "trackCount": 40,
@@ -44,18 +44,18 @@ ENTITIES = {
     "entities": {
         "Q100": {
             "id": "Q100",
-            "labels": {"es": {"value": "Una película sintética"}},
+            "labels": {"es": {"value": "A synthetic film"}},
             "claims": {
                 "P31": [claim({"id": "Q11424"})],
                 "P577": [claim({"time": "+2009-10-09T00:00:00Z"})],
                 "P57": [claim({"id": "Q900"})],
                 "P2047": [claim({"amount": "+127"})],
             },
-            "sitelinks": {"eswiki": {"title": "Una película sintética"}},
+            "sitelinks": {"eswiki": {"title": "A synthetic film"}},
         },
         "Q200": {
             "id": "Q200",
-            "labels": {"es": {"value": "Una novela con el mismo nombre"}},
+            "labels": {"es": {"value": "A novel with the same name"}},
             "claims": {"P31": [claim({"id": "Q7725634"})]},
             "sitelinks": {},
         },
@@ -67,7 +67,7 @@ ENTITIES = {
         },
     }
 }
-PEOPLE = {"entities": {"Q900": {"labels": {"es": {"value": "Una directora"}}}}}
+PEOPLE = {"entities": {"Q900": {"labels": {"es": {"value": "A director"}}}}}
 
 
 class Sources:
@@ -95,7 +95,7 @@ class Sources:
             if request.url.params["props"] == "labels":
                 return httpx.Response(200, json=PEOPLE)
             return httpx.Response(200, json=ENTITIES)
-        raise AssertionError(f"nadie debería pedir {request.url}")
+        raise AssertionError(f"nobody should ask for {request.url}")
 
 
 @pytest.fixture
@@ -120,8 +120,8 @@ async def test_an_episode_is_looked_for_in_spain_and_then_in_the_us(api, sources
     ).json()
 
     [found] = answer["candidates"]
-    assert found["title"] == "La caída de Constantinopla"
-    assert found["show"] == "Un podcast sintético"
+    assert found["title"] == "The fall of Constantinople"
+    assert found["show"] == "A synthetic podcast"
     assert found["minutes"] == 59 and found["year"] == 2024 and found["store"] == "us"
     assert found["url"] == "https://podcasts.apple.com/es/podcast/x/id1?i=11"
     assert [url.params["country"] for url in sources.asked] == ["es", "us"]
@@ -134,7 +134,7 @@ async def test_a_show_without_https_comes_without_link(api, sources) -> None:
 
     [found] = answer["candidates"]
     assert (found["title"], found["show"], found["episodes"]) == (
-        "Otro podcast sintético",
+        "Another synthetic podcast",
         "Una autora",
         40,
     )
@@ -142,18 +142,18 @@ async def test_a_show_without_https_comes_without_link(api, sources) -> None:
 
 
 async def test_only_films_come_from_wikidata_with_who_made_them(api, sources) -> None:
-    films = (await ask(api, "films.search", {"query": "sintética", "kind": "film"})).json()
-    series = (await ask(api, "films.search", {"query": "sintética", "kind": "series"})).json()
+    films = (await ask(api, "films.search", {"query": "synthetic", "kind": "film"})).json()
+    series = (await ask(api, "films.search", {"query": "synthetic", "kind": "series"})).json()
 
     [film] = films["candidates"]
     assert film == {
         "id": "Q100",
-        "title": "Una película sintética",
+        "title": "A synthetic film",
         "year": 2009,
-        "creators": ["Una directora"],
+        "creators": ["A director"],
         "minutes": 127,
         "seasons": None,
-        "wikipedia": "https://es.wikipedia.org/wiki/Una_pel%C3%ADcula_sint%C3%A9tica",
+        "wikipedia": "https://es.wikipedia.org/wiki/A_synthetic_film",
     }
     assert [one["title"] for one in series["candidates"]] == ["A synthetic series"]
     assert series["candidates"][0]["seasons"] == 3

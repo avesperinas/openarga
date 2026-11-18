@@ -13,6 +13,10 @@ TODAY = date(2026, 9, 25)
 IBAN = "ES00 0000 0000 0000 0000 1234"
 
 
+R = statements.RENAULT_PAGE
+F = statements.FINIZENS_PAGE
+
+
 def p(*texts: str) -> str:
     return "".join(f"<p>{one}</p>" for one in texts)
 
@@ -21,14 +25,14 @@ def renault_page(rows: list[tuple[str, str, str, str, str]]) -> str:
     body = "".join(
         f'<div class="table__body__section">{p(on)}<div class="table__body__row">'
         f"{p(on, '', kind, f'{amount}&nbsp;€', f'{after}&nbsp;€')}"
-        f"<div hidden>{p('Fecha Valor:', on, 'Concepto:', concept)}</div></div></div>"
+        f"<div hidden>{p(R['value_date'], on, R['concept'], concept)}</div></div></div>"
         for on, kind, amount, after, concept in rows
     )
     return (
-        "<html><head><title>Renault Bank - Área Privada</title>"
-        "<script>var nada = '1,00 €';</script></head><body>"
-        f"{p('Buscador de movimientos', 'Cuenta Contigo', IBAN, '100,00 €')}"
-        f"{p('Fecha', 'Descripción', 'Importe', 'Saldo')}{body}</body></html>"
+        "<html><head><title>Renault Bank - Private Area</title>"
+        "<script>var noise = '1,00 €';</script></head><body>"
+        f"{p('Movement search', R['product'], IBAN, '100,00 €')}"
+        f"{p('Date', 'Description', 'Amount', R['balance'])}{body}</body></html>"
     )
 
 
@@ -42,14 +46,14 @@ RENAULT_ROWS = [
 
 def finizens_position(plans: list[tuple[str, str, str, str]]) -> str:
     blocks = "".join(
-        p(profile, "Global", name, f"{value} €", "Aportado neto", "Aportado", f"{given} €")
-        + p("Rentabilidad", "+1,00 €", "Ver este plan")
+        p(profile, "Global", name, f"{value} €", F["contributed"], "Paid in", f"{given} €")
+        + p("Return", "+1,00 €", F["see_plan"])
         for profile, name, value, given in plans
     )
     return (
         "<html><head><title>Finizens</title></head><body>"
-        f"{p('Consentimiento', 'Mis productos', 'Posición global', '4 planes activos')}"
-        f"{p('Mis planes')}{blocks}{p('Nuevo producto')}</body></html>"
+        f"{p('Consent', 'My products', F['overview'], '4 active plans')}"
+        f"{p(F['plans'])}{blocks}{p(F['new_product'])}</body></html>"
     )
 
 
@@ -57,8 +61,8 @@ def finizens_movements(name: str, profile: str, entries: list[tuple[str, ...]]) 
     listed = "".join(p(*entry) for entry in entries)
     return (
         "<html><head><title>Finizens</title></head><body>"
-        f"{p('Producto seleccionado', name, profile, 'Consulta')}"
-        f"{p('Últimos movimientos')}{listed}{p('Tu cartera', 'Productos')}</body></html>"
+        f"{p(F['selected'], name, profile, 'Query')}"
+        f"{p(F['latest'])}{listed}{p(F['own_portfolio'], 'Products')}</body></html>"
     )
 
 
@@ -96,7 +100,7 @@ def test_renault_stops_if_a_movement_is_missing() -> None:
 def test_finizens_keeps_each_product_by_its_name() -> None:
     page = finizens_position(
         [
-            ("6 - Agresivo", "Plan de Inversión - 6", "1.500,00", "1.000,00"),
+            ("6 - Agresivo", "Plan de Inversion - 6", "1.500,00", "1.000,00"),
             ("6 - Agresivo", "Plan de Pensiones", "520,00", "500,00"),
             ("5 - Atrevido", "Plan de Pensiones", "0,00", "-100,00"),
         ]
@@ -114,7 +118,7 @@ def test_finizens_keeps_each_product_by_its_name() -> None:
         "statement:finizens:plan-de-pensiones": (Decimal("520.00"), Decimal("400.00"), TODAY),
     }
     kinds = {a.name: a.kind for a in found.accounts}
-    assert kinds == {"Plan de Inversión - 6": "roboadvisor", "Plan de Pensiones": "pension"}
+    assert kinds == {"Plan de Inversion - 6": "roboadvisor", "Plan de Pensiones": "pension"}
 
 
 def test_finizens_movements_are_capital_and_the_fees_stay_in_the_value() -> None:
@@ -123,10 +127,10 @@ def test_finizens_movements_are_capital_and_the_fees_stay_in_the_value() -> None
         "5 - Atrevido",
         [
             ("Traspaso de Plan de Pensiones", "-400,00 €", "15/09/2026", "Se ha realizado"),
-            ("Aportación mensual", "+100,00 €", "09/09/2026", "Se ha recibido"),
-            ("Aportación mensual", "+100,00 €", "09/09/2026", "Se ha recibido"),
-            ("Operación de inversión", "Completado", "08/09/2026", "Completada"),
-            ("Comisión de gestión", "-0,71 €", "08/07/2026", "Se ha cargado"),
+            (F["capital"][1], "+100,00 €", "09/09/2026", "Received"),
+            (F["capital"][1], "+100,00 €", "09/09/2026", "Received"),
+            (F["without_amount"][0], "Done", "08/09/2026", "Done"),
+            (F["in_value"][0], "-0,71 €", "08/07/2026", "Charged"),
         ],
     )
     new = finizens_movements(
@@ -142,7 +146,7 @@ def test_finizens_movements_are_capital_and_the_fees_stay_in_the_value() -> None
     assert {m.nature for m in moved} == {"contribution"}
     assert sum(m.amount for m in moved) == Decimal("200.00")
     assert len({m.reference for m in moved}) == 4
-    assert fees == ["Comisión de gestión of 08/07/2026: already in the plan's value"]
+    assert fees == [f"{F['in_value'][0]} of 08/07/2026: already in the plan's value"]
 
 
 def test_a_page_nobody_reads_says_so() -> None:
