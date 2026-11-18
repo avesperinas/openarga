@@ -16,17 +16,21 @@ async def built() -> list[dict]:
 
 
 async def test_three_errors_in_a_row_say_a_source_fails(schema) -> None:
-    broken = await connect(schema, "Bitvavo")
+    broken = await connect(schema, "Example Bank")
     await ran(schema, broken, "ok", timedelta(hours=4))
     await ran(schema, broken, "error", timedelta(hours=3))
     await ran(schema, broken, "error", timedelta(hours=2))
     assert await built() == []
 
     await ran(
-        schema, broken, "error", timedelta(hours=1), detail="Bitvavo 403 305: No active API key."
+        schema,
+        broken,
+        "error",
+        timedelta(hours=1),
+        detail="Example Bank 403 305: No active API key.",
     )
     [notice] = await built()
-    assert notice["kind"] == "failing" and notice["title"] == "Bitvavo brings no data"
+    assert notice["kind"] == "failing" and notice["title"] == "Example Bank brings no data"
     assert "No active API key" in notice["body"] and notice["href"] == "/hub"
 
 

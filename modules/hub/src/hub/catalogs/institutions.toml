@@ -16,6 +16,3 @@ merchant = ["Bizum payment (?:to|from): (.+)$", "^Refund from (.+)$"]
 ["Renault Bank"]
 
 [Finizens]
-
-[Bitvavo]
-aliases = ["Stichting Bitvavo"]

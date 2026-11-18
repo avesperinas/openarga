@@ -38,14 +38,14 @@ def test_the_reason_names_the_connection_and_the_date() -> None:
     assert connections.reason_of("BBVA", "expiring", NOW + timedelta(days=1), None, NOW) == (
         "Access to BBVA expires in 1 day."
     )
-    assert connections.reason_of("Bitvavo", "failing", None, "403 key revoked", NOW) == (
-        "Bitvavo is failing: 403 key revoked"
+    assert connections.reason_of("USDA", "failing", None, "403 key revoked", NOW) == (
+        "USDA is failing: 403 key revoked"
     )
-    assert connections.reason_of("Bitvavo", "active", None, None, NOW) is None
+    assert connections.reason_of("USDA", "active", None, None, NOW) is None
 
 
 async def connect(
-    schema, label: str, provider: str = "bitvavo", with_credentials: bool = True, **extra
+    schema, label: str, provider: str = "usda", with_credentials: bool = True, **extra
 ) -> str:
     columns = ", ".join(["provider", "label", *extra])
     values = ", ".join([":provider", ":label", *(f":{key}" for key in extra)])
@@ -85,7 +85,7 @@ async def ran(schema, connection_id, outcome: str, ago: timedelta, emitted=0, de
 
 
 async def test_the_listing_reads_the_runs(schema) -> None:
-    good = await connect(schema, "Bitvavo")
+    good = await connect(schema, "USDA")
     await ran(schema, good, "ok", timedelta(days=9), emitted=100)
     await ran(schema, good, "ok", timedelta(hours=3), emitted=4)
     broken = await connect(schema, "Claude", provider="claude")
@@ -95,17 +95,17 @@ async def test_the_listing_reads_the_runs(schema) -> None:
     async with schema.connect() as connection:
         found = {item.label: item for item in await connections.listed(connection, NOW)}
 
-    assert found["Bitvavo"].state == "active"
-    assert found["Bitvavo"].last_ok_at == NOW - timedelta(hours=3)
-    assert found["Bitvavo"].emitted_week == 4
-    assert found["Bitvavo"].category == "finance"
+    assert found["USDA"].state == "active"
+    assert found["USDA"].last_ok_at == NOW - timedelta(hours=3)
+    assert found["USDA"].emitted_week == 4
+    assert found["USDA"].category == "food"
     assert found["Claude"].state == "failing"
     assert found["Claude"].reason == "Claude is failing: 401 token expired"
     assert found["Claude"].last_ok_at is None
 
 
 async def test_the_widget_puts_what_needs_you_first(schema) -> None:
-    await connect(schema, "Bitvavo")
+    await connect(schema, "USDA")
     await connect(schema, "Santander", provider="enable_banking", status="pending")
 
     async with schema.connect() as connection:
@@ -115,13 +115,13 @@ async def test_the_widget_puts_what_needs_you_first(schema) -> None:
     assert body["state"] == "ready"
     assert body["body"]["rows"] == [
         {"label": "Santander", "value": "Unfinished", "tone": "warning"},
-        {"label": "Bitvavo", "value": "Up to date", "tone": "positive"},
+        {"label": "USDA", "value": "Up to date", "tone": "positive"},
     ]
     assert body["body"]["detail"] == "Santander is waiting for you to finish authorising it."
 
 
 async def test_an_expired_connection_shows_in_red_without_hiding_the_rest(schema) -> None:
-    await connect(schema, "Bitvavo")
+    await connect(schema, "USDA")
     await connect(
         schema,
         "BBVA",
@@ -135,12 +135,12 @@ async def test_an_expired_connection_shows_in_red_without_hiding_the_rest(schema
     validate("list", body["body"], body["state"])
     assert body["state"] == "ready"
     assert body["body"]["rows"][0] == {"label": "BBVA", "value": "Expired", "tone": "negative"}
-    assert [row["label"] for row in body["body"]["rows"]] == ["BBVA", "Bitvavo"]
+    assert [row["label"] for row in body["body"]["rows"]] == ["BBVA", "USDA"]
     assert body["body"]["detail"] == "Access to BBVA expired on 2026-09-20; it needs reconnecting."
 
 
 async def test_all_well_says_so(schema) -> None:
-    good = await connect(schema, "Bitvavo")
+    good = await connect(schema, "USDA")
     await ran(schema, good, "ok", timedelta(hours=1))
 
     async with schema.connect() as connection:
@@ -150,19 +150,19 @@ async def test_all_well_says_so(schema) -> None:
 
 
 async def test_the_tool_tells_what_is_connected_and_what_still_lives_in_its_app(schema) -> None:
-    await connect(schema, "Bitvavo")
+    await connect(schema, "USDA")
 
     async with schema.connect() as connection:
         content = await get_connections(connection, NoArguments())
 
     assert [(c["name"], c["provider"], c["category"]) for c in content["connections"]] == [
-        ("Bitvavo", "Bitvavo", "Finance")
+        ("USDA", "USDA FoodData Central", "Food")
     ]
     assert content["configured_elsewhere"] == []
 
 
 async def test_the_tool_runs_as_the_read_role_and_refuses_without_a_scope(schema, api) -> None:
-    await connect(schema, "Bitvavo")
+    await connect(schema, "USDA")
 
     read = await api.post("/tools/get_connections", json={}, headers={"x-arga-scopes": "hub:read"})
     refused = await api.post("/tools/get_connections", json={}, headers={"x-arga-scopes": ""})
@@ -171,7 +171,7 @@ async def test_the_tool_runs_as_the_read_role_and_refuses_without_a_scope(schema
     )
 
     assert read.status_code == 200, read.text
-    assert [c["name"] for c in read.json()["content"]["connections"]] == ["Bitvavo"]
+    assert [c["name"] for c in read.json()["content"]["connections"]] == ["USDA"]
     assert refused.status_code == 403
     assert unknown.status_code == 422
 

@@ -159,7 +159,7 @@ describe("the lists", () => {
     const html = render(
       <WidgetRows>
         <WidgetRow label="BBVA" value="Caducada" tone="negative" />
-        <WidgetRow label="Bitvavo" value="Up to date" />
+        <WidgetRow label="Example Bank" value="Up to date" />
       </WidgetRows>,
     );
 

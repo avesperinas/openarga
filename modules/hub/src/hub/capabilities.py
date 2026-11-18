@@ -936,7 +936,6 @@ CAPABILITIES: dict[str, Handler] = {
     "ai.extract": ai.extract,
     "ai.run": ai.run,
     "ai.status": ai.status,
-    "bitvavo.handoff": handoff("bitvavo"),
     "enable_banking.handoff": handoff("enable_banking"),
     "food.search": food_search,
     "food.get": food_get,
