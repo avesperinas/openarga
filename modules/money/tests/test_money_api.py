@@ -10,6 +10,7 @@ from sqlalchemy import text
 
 from arga_tenancy import SPACES_HEADER, USER_HEADER, current_user
 from money import tools
+from money.texts import today
 
 BANK = "Bank One"
 MAIN, JOINT = "src-main", "src-joint"
@@ -659,8 +660,8 @@ async def test_a_category_can_be_added_from_settings(book) -> None:
 
 async def test_a_portfolio_photo_moves_with_its_fund_prices_until_the_next(book, schema) -> None:
     plan = "statement:finizens:plan-de-pensiones"
-    shot = (date.today() - timedelta(days=3)).isoformat()
-    later = (date.today() - timedelta(days=1)).isoformat()
+    shot = (today() - timedelta(days=3)).isoformat()
+    later = (today() - timedelta(days=1)).isoformat()
     found = [
         event(
             "finance.account",
