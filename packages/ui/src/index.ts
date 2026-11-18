@@ -429,6 +429,7 @@ export type {
 export { useBodyHost, useEscape, useFocusTrap } from "./focus";
 export { Dialog, Menu, Popover, Tooltip, placeNear } from "./overlays";
 export type { DialogProps, MenuItem, PopoverProps } from "./overlays";
+export { FilePreview, fileSize, type FilePreviewProps } from "./file-preview";
 export { Avatar, Badge, Combobox, DateRangeField, FileField, Tabs, initials, rangeProblem, toneOf } from "./pieces";
 export type { ComboboxOption, DateRange, ScreenTab } from "./pieces";
 export { PullToRefresh, SwipeArea, SwipeRow, pageSwipe, pullDistance, swipeEnd } from "./gestures";
