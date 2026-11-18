@@ -11,6 +11,8 @@ from hub import capabilities, statements
 from hub.instruments import is_cash
 from hub.tools import TOOLS
 
+F = statements.FINIZENS_PAGE
+
 
 def p(*texts: str) -> str:
     return "".join(f"<p>{one}</p>" for one in texts)
@@ -19,11 +21,11 @@ def p(*texts: str) -> str:
 def header(name: str, day: str, total: str, given: str) -> str:
     return (
         "<html><head><title>Finizens</title></head><body>"
-        f"{p('Producto seleccionado', name, '6 - Agresivo', 'Tu cartera', 'Movimientos')}"
-        f"{p('Plan de Inversión - 1', '9,99 €', 'Aportado neto', 'Aportado', '9,99 €')}"
-        f"{p('Total', 'Total de tu cartera', 'Rent. €', 'Histórico acumulado', f'A {day}')}"
-        f"{p('Total', 'Total de tu cartera', f'{total} €', 'Aportado neto', f'{given} €')}"
-        f"{p('Rentabilidad', '+1,00 €', 'Composición de la Cartera', 'Renta variable', '99,00%')}"
+        f"{p(F['selected'], name, '6 - Bold', F['own_portfolio'], 'Movements')}"
+        f"{p('Plan de Inversion - 1', '9,99 €', F['contributed'], 'Paid in', '9,99 €')}"
+        f"{p('Total', 'Portfolio total', 'Ret. €', 'All time', f'A {day}')}"
+        f"{p('Total', 'Portfolio total', f'{total} €', F['contributed'], f'{given} €')}"
+        f"{p('Return', '+1,00 €', F['portfolio'], 'Equity', '99,00%')}"
     )
 
 
@@ -33,11 +35,11 @@ def investment_page(rows: list[tuple[str, str, str, str]], total: str = "1.000,0
         for name, value, units, nav in rows
     )
     return (
-        header("Plan de Inversión - 1", "05/10/2030", total, "900,00")
-        + p("Fondos", "Ocultar detalle", "Fondo", "Valor", "Rendimiento", "Distribución")
-        + p("Objetivo", "Participaciones", "V. Liqd.")
+        header("Plan de Inversion - 1", "05/10/2030", total, "900,00")
+        + p("Funds", "Hide detail", F["fund"], "Value", "Return", F["distribution"])
+        + p("Target", "Units", F["net_asset_value"])
         + table
-        + p("Los Folletos Explicativos de los Fondos", "Fondos", "Ver detalle")
+        + p(F["prospectus"] + " of the funds", "Funds", "See detail")
         + "</body></html>"
     )
 
@@ -53,10 +55,10 @@ def pension_page(weights: list[tuple[str, str]]) -> str:
     listed = "".join(p(name, weight) for name, weight in weights)
     return (
         header("Plan de Pensiones", "04/10/2030", "2.000,00", "1.950,00")
-        + p("Participaciones", "190,0000", "Valor liquidativo", "10,5263 €")
-        + p("Fondos", "Ocultar detalle", "Fondo", "Distribución")
+        + p("Units", "190,0000", "Net asset value", "10,5263 €")
+        + p("Funds", "Hide detail", F["fund"], F["distribution"])
         + listed
-        + p("Los Folletos Explicativos de los Fondos", "Fondos", "Ver detalle")
+        + p(F["prospectus"] + " of the funds", "Funds", "See detail")
         + "</body></html>"
     )
 
@@ -162,7 +164,7 @@ def test_two_spellings_of_the_same_fund_are_one_fund() -> None:
     with pytest.raises(statements.StatementError, match="is twice"):
         statements.portfolio(
             "Finizens",
-            "Plan de Inversión - 1",
+            "Plan de Inversion - 1",
             date(2030, 10, 6),
             Decimal("200"),
             None,

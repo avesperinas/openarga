@@ -114,7 +114,7 @@ def test_something_that_is_not_a_calendar_is_said() -> None:
 NAGER = [
     {
         "date": "2026-01-01",
-        "localName": "Año Nuevo",
+        "localName": "New Year",
         "name": "New Year",
         "global": True,
         "counties": None,
@@ -122,7 +122,7 @@ NAGER = [
     },
     {
         "date": "2026-04-06",
-        "localName": "Lunes de Pascua",
+        "localName": "Easter Monday",
         "name": "Easter Monday",
         "global": False,
         "counties": ["ES-NC", "ES-PV"],
@@ -150,11 +150,13 @@ NAGER = [
 def test_a_region_brings_the_national_ones_and_its_own() -> None:
     titles = [item.title for item in holidays.items_of(NAGER, "ES", "ES-NC")]
 
-    assert titles == ["Año Nuevo", "Lunes de Pascua"]
-    assert [item.title for item in holidays.items_of(NAGER, "ES", None)] == ["Año Nuevo"]
-    [easter] = [i for i in holidays.items_of(NAGER, "ES", "ES-NC") if i.title == "Lunes de Pascua"]
+    assert titles == ["New Year", "Easter Monday"]
+    assert [item.title for item in holidays.items_of(NAGER, "ES", None)] == ["New Year"]
+    [easter] = [i for i in holidays.items_of(NAGER, "ES", "ES-NC") if i.title == "Easter Monday"]
     assert (easter.all_day, easter.start, easter.end) == (True, "2026-04-06", "2026-04-07")
-    assert easter.description == "Holiday in Navarra, País Vasco"
+    assert easter.description == "Holiday in " + ", ".join(
+        holidays.region_name("ES", code) for code in ("ES-NC", "ES-PV")
+    )
 
 
 @pytest.mark.parametrize(
@@ -168,7 +170,7 @@ def test_holiday_parameters(raw, clean) -> None:
     assert holidays.clean_settings(raw) == clean
 
 
-@pytest.mark.parametrize("raw", [{}, {"country": "España"}, {"country": "ES", "region": "FR-X"}])
+@pytest.mark.parametrize("raw", [{}, {"country": "Spain"}, {"country": "ES", "region": "FR-X"}])
 def test_holiday_parameters_that_make_no_sense(raw) -> None:
     with pytest.raises(ValueError):
         holidays.clean_settings(raw)
@@ -194,7 +196,7 @@ async def test_a_pass_of_holidays_also_lists_them_by_day_before_the_feed() -> No
     assert [one["type"] for one in found][-2:] == ["calendar.holidays", "calendar.feed"]
     listed = found[-2]["payload"]
     sources.check("calendar.holidays", listed)
-    assert listed["days"] == {"2026-01-01": "Año Nuevo", "2026-04-06": "Lunes de Pascua"}
+    assert listed["days"] == {"2026-01-01": "New Year", "2026-04-06": "Easter Monday"}
     assert (listed["country"], listed["region"]) == ("ES", "ES-NC")
 
 
@@ -348,7 +350,7 @@ async def test_a_team_is_found_by_its_name_without_accents() -> None:
             return httpx.Response(200, json={"sports": [{"leagues": [{"teams": teams}]}]})
         if request.url.path.endswith("/soccer/esp.1/teams"):
             teams = [
-                {"team": {"id": "11", "displayName": "Club Atlético Inventado"}},
+                {"team": {"id": "11", "displayName": "Club Atletico Invented"}},
                 {"team": {"id": "12", "displayName": "Otro Club"}},
             ]
             return httpx.Response(200, json={"sports": [{"leagues": [{"teams": teams}]}]})
@@ -362,7 +364,7 @@ async def test_a_team_is_found_by_its_name_without_accents() -> None:
     assert found == [
         {
             "code": "11",
-            "name": "Club Atlético Inventado",
+            "name": "Club Atletico Invented",
             "league": "esp.1",
             "league_name": "LaLiga",
             "detail": "LaLiga",
@@ -526,7 +528,7 @@ async def test_a_failing_pass_never_empties_a_calendar(api, schema, kernel, sour
 
 async def test_what_is_not_an_address_is_refused_on_connecting(api) -> None:
     response = await api.post(
-        "/connections", json={"provider": "ical", "settings": {"url": "no es una dirección"}}
+        "/connections", json={"provider": "ical", "settings": {"url": "not an address"}}
     )
     assert response.status_code == 422
 
@@ -604,7 +606,7 @@ async def test_an_app_subscribes_with_parameters_and_no_credential(api, schema, 
 
 async def test_a_subscription_with_parameters_that_make_no_sense_is_refused(api, hub) -> None:
     answer = await ask(
-        api, "sources.plug", {"provider": "ical", "label": "X", "params": {"url": "nada"}}
+        api, "sources.plug", {"provider": "ical", "label": "X", "params": {"url": "nothing"}}
     )
     assert answer.status_code == 422
     assert "https://" in answer.json()["detail"]
@@ -643,7 +645,7 @@ async def test_unsubscribing_removes_the_connection_and_says_so_in_the_log(
         await ask(
             api,
             "sources.plug",
-            {"provider": "formula1", "label": "Fórmula 1", "params": {"sessions": ["race"]}},
+            {"provider": "formula1", "label": "Formula 1", "params": {"sessions": ["race"]}},
         )
     ).json()["connection"]
 

@@ -1,8 +1,3 @@
-modules/hub/tests/test_hub_agendas.py
-modules/hub/tests/test_hub_calendar.py
-modules/hub/tests/test_hub_portfolio.py
-modules/hub/tests/test_hub_recommended.py
-modules/hub/tests/test_hub_statements.py
 modules/hub/ui/src/Add.test.tsx
 modules/hub/ui/src/Connection.test.tsx
 modules/hub/ui/src/Home.test.tsx
