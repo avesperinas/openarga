@@ -82,7 +82,7 @@ export function fromRRule(text: string): RecurrenceRule {
   }
   const freq = fields.get("FREQ")?.toLowerCase();
   if (freq !== "daily" && freq !== "weekly" && freq !== "monthly" && freq !== "yearly") {
-    throw new Error(`frecuencia desconocida: ${fields.get("FREQ")}`);
+    throw new Error(`unknown frequency: ${fields.get("FREQ")}`);
   }
   const list = (key: string) => (fields.get(key) ?? "").split(",").filter(Boolean);
   const byDay = list("BYDAY").map((item): RecurrenceDay => {

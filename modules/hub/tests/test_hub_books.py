@@ -68,7 +68,7 @@ class Sources:
         host = request.url.host
         if host == "openlibrary.org":
             if self.library_down:
-                raise httpx.ConnectError("sin red", request=request)
+                raise httpx.ConnectError("no network", request=request)
             return httpx.Response(200, json=WORK)
         if host == "www.googleapis.com":
             return httpx.Response(200, json=VOLUME)

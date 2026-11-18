@@ -130,7 +130,7 @@ describe("reading to learn", () => {
 
   it("a recommendation card without a cover carries its glyph and kind", () => {
     const html = render(
-      <Carousel label="Para ti esta semana">
+      <Carousel label="For you this week">
         <PickCard icon="film" hue={7} kind="Film" title="Agora" detail="2009" why="Hypatia" />
       </Carousel>,
     );
@@ -193,7 +193,7 @@ describe("conocer a alguien", () => {
       <QuestionCard
         kind="one"
         text="At what time?"
-        why="Para avisarte"
+        why="To notify you"
         options={[
           { value: "9", label: "9:00" },
           { value: "21", label: "21:30" },
@@ -205,7 +205,7 @@ describe("conocer a alguien", () => {
       />,
     );
     expect(html).toContain("<h2");
-    expect(html).toContain("Para avisarte");
+    expect(html).toContain("To notify you");
     expect(html).toContain("3 de 12");
     expect(html).toContain("Not now");
     expect(html).not.toContain("Continue");
@@ -244,7 +244,7 @@ describe("conocer a alguien", () => {
     const composer = render(<Composer label="Ask it" value="" onChange={() => {}} onSend={() => {}} />);
     expect(composer).toContain('aria-label="Ask it"');
     expect(composer).toContain("disabled");
-    expect(render(<ChatFab label="Hablar con Insights" onClick={() => {}} />)).toContain("Hablar con Insights");
+    expect(render(<ChatFab label="Talk to Insights" onClick={() => {}} />)).toContain("Talk to Insights");
     const field = render(<TextAreaField label="De ti" value="x" onChange={() => {}} hint="Lo lee en cada pasada" />);
     expect(field).toContain("Lo lee en cada pasada");
   });

@@ -189,8 +189,8 @@ def normalise(raw: bytes) -> Image.Image:
         raise HTTPException(
             status_code=415,
             detail=(
-                f"formato {image.format or 'desconocido'} no aceptado; "
-                f"se aceptan {', '.join(sorted(FORMATS))}"
+                f"format {image.format or 'unknown'} not accepted; "
+                f"accepted: {', '.join(sorted(FORMATS))}"
             ),
         )
 
@@ -388,7 +388,7 @@ async def backfill(entry: Uploaded, who: str) -> None:
                 COMPLETE, {"id": entry.id, "subject": who, "extra": json.dumps(extra)}
             )
     except Exception as error:  # noqa: BLE001 - a failing fill does not break the list
-        print(f"fondo {entry.id} sin variantes: {type(error).__name__}", flush=True)
+        print(f"wallpaper {entry.id} has no variants: {type(error).__name__}", flush=True)
     finally:
         BACKFILLS.pop(entry.id, None)
 
@@ -465,7 +465,7 @@ async def frame(
             )
         ).all()
     if not rows:
-        raise HTTPException(status_code=404, detail="ese fondo no existe")
+        raise HTTPException(status_code=404, detail="no such wallpaper")
     return completed(Uploaded.model_validate(rows[0].measured), None)
 
 
@@ -482,7 +482,7 @@ async def serve(
         ).first()
 
     if row is None:
-        raise HTTPException(status_code=404, detail="ese fondo no existe")
+        raise HTTPException(status_code=404, detail="no such wallpaper")
 
     return Response(
         content=row.bytes,

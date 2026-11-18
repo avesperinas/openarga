@@ -38,7 +38,7 @@ def failure(error: eb.BankError) -> Refused:
             409,
         )
     return Refused(
-        f"El banco contesta {error.status} {error.code}: {error.message}",
+        f"The bank answers {error.status} {error.code}: {error.message}",
         503 if error.transient else 409,
     )
 

@@ -174,12 +174,12 @@ def main(argv: list[str] | None = None) -> int:
         best = (
             f"closest: {skipped.best_name!r} ({skipped.best_confidence})"
             if skipped.best_name
-            else "nada parecido"
+            else "nothing close"
         )
-        print(f"se abstiene {skipped.name!r}  · {best} · {skipped.reason}")
+        print(f"abstains {skipped.name!r}  · {best} · {skipped.reason}")
     print(
-        f"{outcome.examined} candidata(s) · {len(outcome.merged)} fusionada(s) · "
-        f"{len(outcome.abstained)} sin resolver · umbral {AUTO_MERGE_CONFIDENCE}"
+        f"{outcome.examined} candidate(s) · {len(outcome.merged)} merged · "
+        f"{len(outcome.abstained)} unresolved · threshold {AUTO_MERGE_CONFIDENCE}"
     )
     return 0
 

@@ -89,7 +89,7 @@ def contract(service: Any, manifest_path: Path) -> dict[str, Callable]:
         root = service.ui_root
 
         async with client() as bare:
-            screen = await bare.get(f"{root}/una/pantalla")
+            screen = await bare.get(f"{root}/one/screen")
             asset = await bare.get(f"{root}/assets/index-abc123.js")
             outside = await bare.get(f"{root}/%2E%2E/secreto.txt")
             gone = await bare.get(f"{root}/assets/index-viejo.js")

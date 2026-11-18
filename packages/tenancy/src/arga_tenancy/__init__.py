@@ -154,7 +154,7 @@ def require_person() -> UUID:
     if user is None:
         raise HTTPException(
             status_code=422,
-            detail=f"falta {USER_HEADER}: todo lo que se escribe es de alguien (ADR-0028)",
+            detail=f"{USER_HEADER} is missing: everything written belongs to someone (ADR-0028)",
         )
     return user
 

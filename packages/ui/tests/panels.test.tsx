@@ -24,10 +24,10 @@ describe("an area's panel", () => {
 
   it("says how it is going, the sentence with its highlighted part, the tabs, their blocks and buttons", () => {
     const html = render(
-      <AreaPanel area={area} headline={{ text: "Llegas a fin de mes con unos 420 €", emphasis: "unos 420 €", tone: "positive", status: "On track" }} tabs={tabs} onExpand={() => undefined} />,
+      <AreaPanel area={area} headline={{ text: "You reach the end of the month with about 420 €", emphasis: "about 420 €", tone: "positive", status: "On track" }} tabs={tabs} onExpand={() => undefined} />,
     );
     expect(html).toContain("On track");
-    expect(html).toContain("<em>unos 420 €</em>");
+    expect(html).toContain("<em>about 420 €</em>");
     expect(html.match(/role="tab"/g)).toHaveLength(2);
     expect(html).toContain("48.320 €");
     expect(html).toContain('href="/money/movimientos"');

@@ -190,6 +190,6 @@ def from_environment(oidc: Oidc) -> Sessions:
     secret = os.environ.get("SESSION_SECRET", "").strip()
     if not secret:
         raise NotConfigured(
-            "falta SESSION_SECRET. El gateway no arranca sin poder cifrar sesiones."
+            "SESSION_SECRET is missing. The gateway cannot start without a way to encrypt sessions."
         )
     return Sessions(Sealer(secret), oidc)

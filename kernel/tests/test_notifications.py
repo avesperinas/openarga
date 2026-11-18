@@ -350,7 +350,7 @@ async def test_a_push_service_that_does_not_answer_is_tried_again_and_stops_no_o
     assert found["sent"] == 1 and found["retrying"] == 1
     assert [endpoint for endpoint, _ in pushed] == ["https://push.example.com/2"]
     why, gone, attempts = await outcome_of("de-ana")
-    assert not gone and attempts == 1 and "sin respuesta" in why
+    assert not gone and attempts == 1 and "no response" in why
 
     assert (await send("2026-10-06T07:04:00+00:00"))["retrying"] == 0
     del pushed.refuse["https://push.example.com/1"]
@@ -401,7 +401,7 @@ def test_each_push_has_a_time_limit_and_a_network_error_is_said(monkeypatch) -> 
 
     def hanging(**kwargs):
         asked.update(kwargs)
-        raise requests.exceptions.ConnectTimeout("no contesta")
+        raise requests.exceptions.ConnectTimeout("no answer")
 
     monkeypatch.setattr(pywebpush, "webpush", hanging)
 

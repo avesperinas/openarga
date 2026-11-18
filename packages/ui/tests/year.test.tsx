@@ -14,7 +14,7 @@ describe("the year", () => {
     expect(cells).toHaveLength(52 * 7 + 5);
   });
 
-  it("pone cada mes donde empieza", () => {
+  it("puts each month where it starts", () => {
     const months = monthStarts(yearCells([], "2026-09-25"));
 
     expect(months.at(-1)).toMatchObject({ label: "sep" });

@@ -225,7 +225,7 @@ async def entities_by_volume(connection: AsyncConnection, limit: int = 5) -> dic
     if labels:
         uncertainty = {
             "summary": (
-                f"puede faltar: {missing} {'entidad' if missing == 1 else 'entidades'} sin unir"
+                f"may be missing: {missing} {'entity' if missing == 1 else 'entities'} not merged"
             ),
             "candidates": labels[:limit],
         }

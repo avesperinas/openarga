@@ -131,7 +131,7 @@ async def entity(api):
 
 async def test_listing_filters_by_entity(api, entity) -> None:
     with_entity = await api.post("/events", json=event(entity_id=str(entity)))
-    await api.post("/events", json=event(dedup_hash="sin-entidad"))
+    await api.post("/events", json=event(dedup_hash="no-entity"))
 
     listed = (await api.get("/events", params={"entity_id": str(entity)})).json()["events"]
 
@@ -222,7 +222,7 @@ async def test_the_last_page_has_no_cursor(api) -> None:
 
 
 async def test_a_broken_cursor_is_rejected(api) -> None:
-    response = await api.get("/events", params={"cursor": "no-es-un-cursor"})
+    response = await api.get("/events", params={"cursor": "not-a-cursor"})
 
     assert response.status_code == 422
     assert response.json()["detail"] == "invalid cursor"

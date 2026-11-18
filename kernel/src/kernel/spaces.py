@@ -152,7 +152,7 @@ async def invite(space_id: UUID) -> InviteOut:
     async with engine().begin() as connection:
         space = await describe(connection, user, space_id)
         if space is None:
-            raise HTTPException(status_code=404, detail="no existe ese espacio")
+            raise HTTPException(status_code=404, detail="no such space")
         if space.role != "owner":
             raise HTTPException(status_code=403, detail="only the space's owner can invite")
         code = new_code()
@@ -221,7 +221,7 @@ async def rename_me(space_id: UUID, body: NameIn) -> SpaceOut:
             {"name": body.name, "space": space_id, "user": user},
         )
         if changed.rowcount == 0:
-            raise HTTPException(status_code=404, detail="no existe ese espacio")
+            raise HTTPException(status_code=404, detail="no such space")
         return await describe(connection, user, space_id)
 
 
@@ -236,7 +236,7 @@ async def leave(space_id: UUID, member_id: UUID) -> None:
         )
         space = await describe(connection, user, space_id)
         if space is None:
-            raise HTTPException(status_code=404, detail="no existe ese espacio")
+            raise HTTPException(status_code=404, detail="no such space")
         target = next((m for m in space.members if m.user_id == member_id), None)
         if target is None:
             raise HTTPException(status_code=404, detail="that person is not in the space")

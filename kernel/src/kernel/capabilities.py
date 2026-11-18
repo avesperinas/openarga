@@ -86,7 +86,7 @@ async def ask_for(
     addressed = capability in ADDRESSED
     if addressed and not x_arga_target:
         raise HTTPException(
-            status_code=422, detail=f"'{capability}' se pide a una app: falta {TARGET_HEADER}"
+            status_code=422, detail=f"'{capability}' is asked of an app: missing {TARGET_HEADER}"
         )
     async with engine().connect() as connection:
         declared = await connection.scalar(
@@ -111,7 +111,7 @@ async def ask_for(
         return JSONResponse(answer)
     token = os.environ.get("MODULE_REGISTRATION_TOKEN", "")
     if not token:
-        raise HTTPException(status_code=503, detail="el kernel no tiene MODULE_REGISTRATION_TOKEN")
+        raise HTTPException(status_code=503, detail="the kernel has no MODULE_REGISTRATION_TOKEN")
 
     if provider is None:
         base, transport, who = hub_url(), hub_transport(), "Hub"

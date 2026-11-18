@@ -52,7 +52,7 @@ async def _get(client: httpx.AsyncClient, path: str) -> Any:
     if response.status_code == 404:
         return None
     if response.status_code >= 400:
-        raise SourceError(f"Nager.Date contesta {response.status_code}")
+        raise SourceError(f"Nager.Date answers {response.status_code}")
     if response.status_code == 204 or not response.content:
         return []
     return response.json()

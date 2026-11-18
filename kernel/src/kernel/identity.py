@@ -101,7 +101,7 @@ def match(left: Normalised, right: Normalised) -> Match | None:
     if shared_distinctive:
         short, long = sorted((left.text, right.text), key=len)
         if len(short) >= MIN_TRUNCATION and long.startswith(short):
-            return Match("truncated", 0.9, f"'{long}' empieza por '{short}'")
+            return Match("truncated", 0.9, f"'{long}' starts with '{short}'")
 
         if store:
             return Match(

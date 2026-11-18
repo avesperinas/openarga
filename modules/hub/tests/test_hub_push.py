@@ -120,7 +120,7 @@ async def test_each_push_is_a_run_on_the_card(api, connected, outside) -> None:
         None,
         "Bearer ",
         "Basic abc",
-        "Bearer no-es-un-token",
+        "Bearer not-a-token",
         "Bearer a.b.c",
     ],
 )
@@ -398,7 +398,7 @@ def test_another_app_only_counts_where_neither_device_did() -> None:
     counts = push.as_health_counts(
         [
             sample("10:00:00", "10:10:00", 1000, "iPhone de Alguien"),
-            sample("10:00:00", "10:20:00", 2000, "Una app"),
+            sample("10:00:00", "10:20:00", 2000, "An app"),
         ]
     )
 

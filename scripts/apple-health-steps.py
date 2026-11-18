@@ -311,7 +311,7 @@ def main() -> int:
         return 0
     token = os.environ.get("ARGA_INGEST_TOKEN", "").strip()
     if not token:
-        print("falta ARGA_INGEST_TOKEN: el token de Apple Salud en Hub", file=sys.stderr)
+        print("ARGA_INGEST_TOKEN is missing: the Apple Health token from Hub", file=sys.stderr)
         return 1
     send(found, token, arguments.url)
     return 0

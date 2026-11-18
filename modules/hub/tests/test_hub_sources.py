@@ -129,7 +129,7 @@ def test_an_own_transfer_is_said_and_a_bank_is_known_by_its_alias() -> None:
 
 
 def test_a_bank_without_rules_is_left_as_it_came() -> None:
-    events = [movement("Algo sin reglas")]
+    events = [movement("Something without rules")]
     assert finance.enrich(events, "Banco de Prueba") == events
 
 

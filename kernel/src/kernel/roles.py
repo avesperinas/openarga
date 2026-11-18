@@ -304,7 +304,7 @@ def main(argv: list[str] | None = None) -> int:
         if not value
     ]
     if missing:
-        print(f"roles: faltan {', '.join(missing)}", file=sys.stderr)
+        print(f"roles: missing {', '.join(missing)}", file=sys.stderr)
         return 1
 
     try:

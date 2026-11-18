@@ -78,7 +78,7 @@ async def search(
                 f"Apple Podcasts does not answer ({type(error).__name__})"
             ) from error
         if response.status_code != 200:
-            raise SourceFailed(f"Apple Podcasts contesta {response.status_code}")
+            raise SourceFailed(f"Apple Podcasts answers {response.status_code}")
         try:
             results = response.json().get("results") or []
         except ValueError as error:

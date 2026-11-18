@@ -186,7 +186,7 @@ def several(item: Any) -> list[Any]:
         elif len(values) == 1:
             days[latest][key] = values[0]
         else:
-            raise ValueError(f"{key}: {len(values)} valores para {len(dates)} fechas")
+            raise ValueError(f"{key}: {len(values)} values for {len(dates)} dates")
     return [day for day in days if set(day) != {"date"}]
 
 

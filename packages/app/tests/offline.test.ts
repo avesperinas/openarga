@@ -20,7 +20,7 @@ function network(...replies: Reply[]) {
 }
 
 const ok = () => new Response(JSON.stringify({ ok: true }), { status: 200 });
-const down = () => new TypeError("sin red");
+const down = () => new TypeError("no network");
 
 beforeEach(() => {
   localStorage.clear();

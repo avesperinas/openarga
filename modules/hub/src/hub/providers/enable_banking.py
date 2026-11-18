@@ -71,7 +71,7 @@ class BankError(Exception):
 
     def as_source_error(self) -> SourceError:
         return SourceError(
-            f"El banco contesta {self.status} {self.code}: {self.message}",
+            f"The bank answers {self.status} {self.code}: {self.message}",
             transient=self.transient and self.status != 429,
             rate_limited=self.status == 429,
             code="consent_over" if self.consent_over else None,

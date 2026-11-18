@@ -14,7 +14,7 @@ def test_a_panel_with_every_block_seals_and_says_when():
         order=10,
         headlines=[
             {
-                "text": "Llegas a fin de mes con unos 420 €",
+                "text": "You reach the end of the month with about 420 €",
                 "emphasis": "unos 420 €",
                 "tone": "positive",
                 "status": "Vas bien",

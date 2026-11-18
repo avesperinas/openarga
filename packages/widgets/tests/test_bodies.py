@@ -23,7 +23,7 @@ def test_a_ready_body_without_its_data_is_rejected() -> None:
 
 def test_the_other_states_may_carry_only_the_reason() -> None:
     assert validate("chart", {"detail": "no data yet"}, state="empty") == {"detail": "no data yet"}
-    assert validate("upnext", {"detail": "Google Calendar no contesta"}, state="disconnected")
+    assert validate("upnext", {"detail": "Google Calendar does not answer"}, state="disconnected")
 
 
 def test_each_kind_takes_its_own_shape() -> None:

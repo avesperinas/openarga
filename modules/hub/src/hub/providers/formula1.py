@@ -112,7 +112,7 @@ async def season(client: httpx.AsyncClient, year: int) -> list[dict[str, Any]]:
     if response.status_code >= 500:
         raise SourceError(f"Jolpica falla ({response.status_code})", transient=True)
     if response.status_code >= 400:
-        raise SourceError(f"Jolpica contesta {response.status_code}")
+        raise SourceError(f"Jolpica answers {response.status_code}")
     return response.json().get("MRData", {}).get("RaceTable", {}).get("Races", [])
 
 

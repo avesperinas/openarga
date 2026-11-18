@@ -50,7 +50,7 @@ describe("the card with a cover", () => {
   });
 
   it("without a link it is a button, and without a figure it draws no gap", () => {
-    const html = renderToStaticMarkup(<Tile title="Sin cifra" hue={1} onOpen={() => undefined} />);
+    const html = renderToStaticMarkup(<Tile title="No figure" hue={1} onOpen={() => undefined} />);
     expect(html).toContain('<button type="button" class="surface tile"');
     expect(html).not.toContain("tile-figure");
   });

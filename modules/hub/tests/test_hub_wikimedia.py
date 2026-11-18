@@ -28,7 +28,7 @@ class Sources:
     def __call__(self, request: httpx.Request) -> httpx.Response:
         self.asked.append(request.url)
         if self.down:
-            raise httpx.ConnectError("sin red", request=request)
+            raise httpx.ConnectError("no network", request=request)
         url, params = request.url, request.url.params
         if url.host == "www.openstreetmap.org":
             tags = {"name": "Sitio"} | ({"wikidata": self.osm_entity} if self.osm_entity else {})
@@ -44,7 +44,7 @@ class Sources:
             hits = [{"title": self.near_entity}] if self.near_entity else []
             return httpx.Response(200, json={"query": {"search": hits}})
         if url.host == "www.wikidata.org" and params.get("action") == "wbgetclaims":
-            image = {"Q1": "De OSM.jpg", "Q2": "Cerca.jpg", "Q3": "Con nombre.jpg"}.get(
+            image = {"Q1": "De OSM.jpg", "Q2": "Cerca.jpg", "Q3": "With name.jpg"}.get(
                 params["entity"]
             )
             claims = [{"mainsnak": {"datavalue": {"value": image}}}] if image else []
@@ -157,8 +157,8 @@ async def test_an_entity_without_coordinates_only_with_exactly_that_name(api, so
     sources.named = ("Q3", "Green Way of Another Place")
     other = (await ask(api, body)).json()
 
-    assert named["photo"]["page"].endswith("File:Con nombre.jpg")
-    assert not other["photo"]["page"].endswith("File:Con nombre.jpg")
+    assert named["photo"]["page"].endswith("File:With name.jpg")
+    assert not other["photo"]["page"].endswith("File:With name.jpg")
 
 
 async def test_last_the_closest_photo_and_with_nothing_around_none(api, sources) -> None:
