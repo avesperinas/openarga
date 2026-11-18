@@ -93,6 +93,20 @@ Secrets never go in `openarga.yaml`. `.env` holds the database passwords (one pe
 session and client secrets, the Keycloak admin password, the first admin, and the keys of Google,
 your OIDC provider and your AI provider.
 
+### The demo
+
+With `demo: true` the sign-in page offers the cast of `demo/personas.yaml` (Alex and Sam, who share
+a space). Once the stack is up (the apps create their tables when they boot), `scripts/demo.py`
+fills the instance with their data. It needs `DATABASE_URL`, the owner's connection to the
+database:
+
+```bash
+uv run python scripts/demo.py list    # who and which apps, nothing written
+uv run python scripts/demo.py         # seed: the cast and every app's `demo.py`
+uv run python scripts/demo.py day     # one more simulated day
+uv run python scripts/demo.py reset   # wipe the apps' data and seed again (demo instances only)
+```
+
 ## AI
 
 The AI does not use the apps; it uses tools. Every module declares its tools in its manifest with a
