@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
 from pathlib import Path
 
 from sqlalchemy import text
@@ -8,10 +7,11 @@ from sqlalchemy import text
 from arga_module import demo as cast_of
 from arga_tenancy import current_spaces, current_user
 from goals import demo
+from goals.common import today
 
 CAST = cast_of.load(Path(__file__).resolve().parents[3] / "demo" / "personas.yaml")
 TABLES = ("goals_category", "goals_task", "goals_goal", "goals_goal_check", "goals_person")
-TODAY = date.today()
+TODAY = today()
 
 
 async def counts() -> dict[str, int]:
