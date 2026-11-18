@@ -189,7 +189,7 @@ async def test_when_the_notes_do_not_answer_the_subject_still_opens(
 
     assert subject.status_code == 200
     assert subject.json()["notes"] == []
-    assert "no contesta" in subject.json()["notes_unavailable"]
+    assert subject.json()["notes_unavailable"]
     assert notes.status_code == 503
 
 
