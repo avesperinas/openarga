@@ -30,3 +30,22 @@ async def test_the_catalogue_speaks_the_person_language(api) -> None:  # noqa: F
     assert "Bench press" in {one["name"] for one in english["exercises"]}
     variants = {variant["name"] for one in spanish["exercises"] for variant in one["variants"]}
     assert "Prensa de piernas" in variants
+
+
+async def test_a_second_person_gets_the_same_keyed_catalogue(setup) -> None:  # noqa: F811
+    from uuid import uuid4
+
+    from sqlalchemy import text
+
+    from arga_tenancy import as_user
+
+    with as_user(uuid4()):
+        async with setup.begin() as connection:
+            await connection.execute(text('set local role "mod_training"'))
+            await seed.seed(connection)
+            keys = (
+                await connection.execute(
+                    text("select key from training.training_exercise where key is not null")
+                )
+            ).scalars()
+            assert sorted(keys) == sorted(seed.key_of(one[0]) for one in seed.EXERCISES)
