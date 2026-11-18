@@ -171,7 +171,7 @@ def _canonical(name: str) -> str:
 
 
 def known_funds(lo: Loaded) -> dict[str, str]:
-    out = {symbol: data["name"] for symbol, data in catalog.funds().items()}
+    out: dict[str, str] = {}
     for h in lo.book.holdings:
         if h.name and not h.symbol.startswith("name:"):
             out.setdefault(h.symbol, h.name)
@@ -248,11 +248,7 @@ async def set_composition(
         )
     await _valuation(connection, key, on, total if total is not None else held)
     await bump(connection)
-    unknown = [
-        name
-        for symbol, (name, _) in rows.items()
-        if symbol not in catalog.funds() and symbol not in lo.funds
-    ]
+    unknown = [name for symbol, (name, _) in rows.items() if symbol not in lo.funds]
     return {
         "funds": len(rows),
         "value": total if total is not None else held,

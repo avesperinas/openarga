@@ -133,7 +133,7 @@ tools:
     description: >
       Says what a fund is for the person: its asset class (`equity`, `bond`, `real_estate`, `cash`,
       `other`) and its split by region in % adding up to 100 (`us`, `europe`, `japan`,
-      `pacific`, `other_developed`, `emerging`). It overrides the catalogue. The fund, by its name or
+      `pacific`, `other_developed`, `emerging`). The fund, by its name or
       symbol.
   - name: delete_rule
     scope: money:write

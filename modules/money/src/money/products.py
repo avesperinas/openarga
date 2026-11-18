@@ -7,7 +7,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
-from money import analysis, catalog
+from money import analysis, catalog, texts
 from money.book import Loaded, rule_of
 from money.model import Account, Holding
 from money.texts import t
@@ -50,9 +50,8 @@ def kind_of(lo: Loaded, account: Account, symbol: str) -> Kind:
     own = lo.funds.get(symbol)
     if own is not None:
         return Kind(own["asset"], _regions(own.get("regions")), "yours")
-    known = catalog.funds().get(symbol)
-    if known is not None:
-        return Kind(known["asset"], _regions(known.get("regions")), "catalog")
+    if symbol in texts.SYMBOLS:
+        return Kind("cash", {}, "built-in")
     return Kind("other", {}, UNKNOWN)
 
 
