@@ -485,7 +485,7 @@ def test_a_connector_can_declare_the_credential_each_person_gives_it(tmp_path: P
     credential = {
         "key": "withings_token",
         "label": "Token de Withings",
-        "help": "Lo generas en la web de Withings.",
+        "help": "You generate it on the Withings website.",
     }
     manifest = load_manifest(
         write(
@@ -500,12 +500,17 @@ def test_a_connector_can_declare_the_credential_each_person_gives_it(tmp_path: P
 @pytest.mark.parametrize(
     "credential",
     [
-        {"key": "Con Espacios", "label": "Token", "help": "Lo generas en la web."},
-        {"key": "token", "label": "", "help": "Lo generas en la web."},
+        {"key": "With Spaces", "label": "Token", "help": "You generate it on the website."},
+        {"key": "token", "label": "", "help": "You generate it on the website."},
         {"key": "token", "label": "Token", "help": "corta"},
-        {"key": "token", "label": "Token", "help": "Lo generas en la web.", "value": "no"},
+        {
+            "key": "token",
+            "label": "Token",
+            "help": "You generate it on the website.",
+            "value": "no",
+        },
     ],
-    ids=["clave", "etiqueta", "ayuda", "campo-de-mas"],
+    ids=["key", "label", "help", "extra-field"],
 )
 def test_a_credential_that_cannot_be_shown_is_refused(tmp_path: Path, credential: dict) -> None:
     with pytest.raises(InvalidManifest):

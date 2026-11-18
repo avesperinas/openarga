@@ -56,13 +56,13 @@ def clean_settings(inlet: dict[str, Any], raw: dict[str, Any] | None, label: str
             except (TypeError, ValueError):
                 tone = None
             if tone is not None and tone not in TONES:
-                raise Refused(f"{setting['label']}: un tono del 1 al {TONES[-1]}")
+                raise Refused(f"{setting['label']}: a tone from 1 to {TONES[-1]}")
             if tone is not None:
                 out[key] = tone
         elif kind == "choice":
             allowed = {choice["value"] for choice in setting.get("choices") or []}
             if value is not None and value not in allowed:
-                raise Refused(f"{setting['label']}: elige una de {', '.join(sorted(allowed))}")
+                raise Refused(f"{setting['label']}: choose one of {', '.join(sorted(allowed))}")
             if value is not None:
                 out[key] = value
     return out

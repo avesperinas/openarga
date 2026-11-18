@@ -36,8 +36,8 @@ describe("a goal's row", () => {
   });
 
   it("without a track there is no mark", () => {
-    const html = renderToStaticMarkup(<GoalRow title="El B2" status="Sin empezar" />);
+    const html = renderToStaticMarkup(<GoalRow title="El B2" status="Not started" />);
     expect(html).not.toContain("goal-row-track");
-    expect(html).toContain("Sin empezar");
+    expect(html).toContain("Not started");
   });
 });

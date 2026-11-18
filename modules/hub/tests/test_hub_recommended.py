@@ -28,7 +28,7 @@ SHOWS = {
         {
             "collectionId": 2,
             "collectionName": "Another synthetic podcast",
-            "artistName": "Una autora",
+            "artistName": "An author",
             "collectionViewUrl": "http://insecure.example/x",
             "trackCount": 40,
         }
@@ -78,7 +78,7 @@ class Sources:
     def __call__(self, request: httpx.Request) -> httpx.Response:
         self.asked.append(request.url)
         if self.down:
-            raise httpx.ConnectError("sin red", request=request)
+            raise httpx.ConnectError("no network", request=request)
         assert request.headers["user-agent"].startswith("OpenArga")
         if request.url.host == "itunes.apple.com":
             if request.url.params["entity"] == "podcastEpisode":
@@ -135,7 +135,7 @@ async def test_a_show_without_https_comes_without_link(api, sources) -> None:
     [found] = answer["candidates"]
     assert (found["title"], found["show"], found["episodes"]) == (
         "Another synthetic podcast",
-        "Una autora",
+        "An author",
         40,
     )
     assert found["url"] is None

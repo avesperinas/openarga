@@ -125,7 +125,7 @@ describe("the waterfall", () => {
   it("each bar says its figure, signed for the steps; a negative result draws zero", () => {
     const html = render(
       <Waterfall
-        label="De la cuota al resultado"
+        label="From the fee to the result"
         format={(value) => `${value} €`}
         steps={[
           { key: "due", label: "Cuota", value: 1000, kind: "total" },

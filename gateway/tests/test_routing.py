@@ -268,7 +268,7 @@ async def test_with_the_kernel_unable_to_say_who_it_is_the_request_still_goes_th
     main.app.state.people.kernel_url = "http://nadie:1"
 
     async def down(url, *args, **kwargs):
-        raise httpx.ConnectError("el kernel no contesta")
+        raise httpx.ConnectError("the kernel does not answer")
 
     main.app.state.people.client = type("Down", (), {"post": staticmethod(down)})()
     response = await api.get("/api/kernel/ui/layouts")

@@ -131,7 +131,7 @@ async def test_without_anyone_nothing_is_given_and_nothing_breaks(module) -> Non
 
 
 async def test_with_several_people_it_refuses_to_guess(module) -> None:
-    await reset_people("una", "otra")
+    await reset_people("one", "other")
 
     with pytest.raises(AmbiguousOwner, match="several people"):
         await run()
@@ -139,7 +139,7 @@ async def test_with_several_people_it_refuses_to_guess(module) -> None:
 
 
 async def test_with_several_people_the_catalogue_of_everyone_does_not_stop_the_boot(module) -> None:
-    await reset_people("una", "otra")
+    await reset_people("one", "other")
     async with engine().begin() as connection:
         await connection.execute(text(f"delete from {MODULE}.{MODULE}_cosas"))
 

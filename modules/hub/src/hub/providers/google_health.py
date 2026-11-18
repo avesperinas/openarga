@@ -126,7 +126,7 @@ def _oauth_error(response: httpx.Response, doing: str) -> SourceError:
         )
     detail = body.get("error_description") or ""
     return SourceError(
-        f"Google contesta {error} al {doing}{': ' + detail if detail else ''}",
+        f"Google answers {error} when trying to {doing}{': ' + detail if detail else ''}",
         transient=response.status_code >= 500,
     )
 
@@ -144,14 +144,14 @@ async def exchange(client: httpx.AsyncClient, app: App, code: str, redirect: str
         timeout=30.0,
     )
     if response.status_code != 200:
-        raise _oauth_error(response, "autorizar")
+        raise _oauth_error(response, "authorise")
     body = response.json()
     granted = set(str(body.get("scope") or "").split())
     missing = [scope.rsplit(".", 2)[-2] for scope in SCOPES if scope not in granted]
     if granted and missing:
         raise SourceError(
-            f"Faltan permisos al autorizar ({', '.join(missing)}): vuelve a conectar y marca "
-            "todas las casillas."
+            f"Permissions are missing from the authorisation ({', '.join(missing)}): connect "
+            "again and tick every box."
         )
     refresh = body.get("refresh_token")
     if not refresh:
@@ -220,7 +220,7 @@ class Health:
         if response.status_code == 429:
             raise SourceError("Google Health asks to wait.", rate_limited=True)
         raise SourceError(
-            f"Google Health contesta {response.status_code} en {where}: "
+            f"Google Health answers {response.status_code} for {where}: "
             f"{error.get('message', '')}".rstrip(": "),
             transient=response.status_code >= 500,
         )

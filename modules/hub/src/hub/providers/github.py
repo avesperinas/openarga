@@ -69,7 +69,9 @@ def _fail(response: httpx.Response, doing: str) -> SourceError:
     detail = ""
     with contextlib.suppress(ValueError):
         detail = str(response.json().get("message") or "")
-    return SourceError(f"GitHub contesta {response.status_code} al {doing}: {detail}".strip(": "))
+    return SourceError(
+        f"GitHub answers {response.status_code} when trying to {doing}: {detail}".strip(": ")
+    )
 
 
 async def _call(client: httpx.AsyncClient, method: str, url: str, token: str, doing: str, **kw):
@@ -82,16 +84,18 @@ async def _call(client: httpx.AsyncClient, method: str, url: str, token: str, do
 
 async def _head(client: httpx.AsyncClient, token: str, repo: str, branch: str) -> str | None:
     got = await _call(
-        client, "GET", f"{API}/repos/{repo}/git/ref/heads/{branch}", token, "leer la rama"
+        client, "GET", f"{API}/repos/{repo}/git/ref/heads/{branch}", token, "read the branch"
     )
     if got.status_code == 200:
         return got.json()["object"]["sha"]
     if got.status_code in (404, 409):
-        repo_info = await _call(client, "GET", f"{API}/repos/{repo}", token, "ver el repo")
+        repo_info = await _call(
+            client, "GET", f"{API}/repos/{repo}", token, "look at the repository"
+        )
         if repo_info.status_code != 200:
-            raise _fail(repo_info, "ver el repo")
+            raise _fail(repo_info, "look at the repository")
         return None
-    raise _fail(got, "leer la rama")
+    raise _fail(got, "read the branch")
 
 
 async def _first_commit(client: httpx.AsyncClient, token: str, repo: str, branch: str) -> str:
@@ -101,15 +105,15 @@ async def _first_commit(client: httpx.AsyncClient, token: str, repo: str, branch
         "PUT",
         f"{API}/repos/{repo}/contents/README.md",
         token,
-        "empezar el repo",
+        "start the repository",
         json={
-            "message": "Notebook empieza la copia",
+            "message": "Notebook starts the copy",
             "content": base64.b64encode(readme.encode()).decode(),
             "branch": branch,
         },
     )
     if made.status_code not in (200, 201):
-        raise _fail(made, "empezar el repo")
+        raise _fail(made, "start the repository")
     return made.json()["commit"]["sha"]
 
 
@@ -136,11 +140,11 @@ async def push(
             "POST",
             f"{API}/repos/{repo}/git/blobs",
             token,
-            "subir un fichero",
+            "upload a file",
             json={"content": encoded, "encoding": "base64"},
         )
         if blob.status_code != 201:
-            raise _fail(blob, "subir un fichero")
+            raise _fail(blob, "upload a file")
         entries.append({"path": path, "mode": "100644", "type": "blob", "sha": blob.json()["sha"]})
     entries.extend(
         {"path": path, "mode": "100644", "type": "blob", "sha": None} for path in change.deletes
@@ -161,22 +165,22 @@ async def push(
         "POST",
         f"{API}/repos/{repo}/git/commits",
         token,
-        "hacer el commit",
+        "make the commit",
         json={"message": message, "tree": tree.json()["sha"], "parents": [head]},
     )
     if made.status_code != 201:
-        raise _fail(made, "hacer el commit")
+        raise _fail(made, "make the commit")
     sha = made.json()["sha"]
     moved = await _call(
         client,
         "PATCH",
         f"{API}/repos/{repo}/git/refs/heads/{branch}",
         token,
-        "mover la rama",
+        "move the branch",
         json={"sha": sha, "force": False},
     )
     if moved.status_code != 200:
-        raise _fail(moved, "mover la rama")
+        raise _fail(moved, "move the branch")
     return Pushed(commit=sha, url=f"https://github.com/{repo}/commit/{sha}")
 
 

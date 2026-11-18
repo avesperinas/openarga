@@ -223,7 +223,7 @@ def validate(kind: str, body: dict[str, Any], state: State = "ready") -> dict[st
         missing = [field for field in REQUIRED[kind] if body.get(field) is None]
         if missing:
             raise BadBody(
-                f"{kind} con state 'ready' necesita {', '.join(missing)}. "
+                f"{kind} with state 'ready' needs {', '.join(missing)}. "
                 "Without data yet, the state is 'empty'."
             )
     return body

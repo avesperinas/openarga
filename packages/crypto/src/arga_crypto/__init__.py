@@ -63,7 +63,7 @@ class Vault:
     def open(self, person: UUID, name: str, blob: bytes) -> str:
         blob = bytes(blob)
         if len(blob) < 1 + KEY_ID_BYTES + NONCE_BYTES or blob[0] != FORMAT:
-            raise Undecipherable("formato desconocido")
+            raise Undecipherable("unknown format")
         wanted = blob[1 : 1 + KEY_ID_BYTES]
         nonce = blob[1 + KEY_ID_BYTES : 1 + KEY_ID_BYTES + NONCE_BYTES]
         sealed = blob[1 + KEY_ID_BYTES + NONCE_BYTES :]

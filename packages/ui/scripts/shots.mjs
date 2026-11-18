@@ -71,6 +71,6 @@ server.close();
 console.log(`capturas: ${stories.length} historia(s) × 2 temas en ${out}`);
 if (failed.length) {
   for (const { name, errors: found } of failed) console.error(`  ${name}: ${found.join(" | ")}`);
-  console.error(`${failed.length} captura(s) con error`);
+  console.error(`${failed.length} screenshot(s) failed`);
   process.exit(1);
 }

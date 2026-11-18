@@ -64,7 +64,7 @@ def test_its_python_compiles(generated: Path) -> None:
     with redirect_stdout(io.StringIO()):
         ok = compileall.compile_dir(str(generated), quiet=2, force=True)
 
-    assert ok, "la plantilla genera Python que no compila"
+    assert ok, "the template generates Python that does not compile"
 
 
 def test_it_brings_its_schema_and_its_first_file_is_the_init(generated: Path) -> None:

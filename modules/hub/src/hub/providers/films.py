@@ -68,7 +68,7 @@ async def _get(client: httpx.AsyncClient, params: dict[str, str]) -> dict[str, A
     except httpx.HTTPError as error:
         raise SourceFailed(f"Wikidata does not answer ({type(error).__name__})") from error
     if response.status_code != 200:
-        raise SourceFailed(f"Wikidata contesta {response.status_code}")
+        raise SourceFailed(f"Wikidata answers {response.status_code}")
     try:
         return response.json()
     except ValueError as error:

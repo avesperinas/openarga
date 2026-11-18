@@ -257,7 +257,7 @@ async def set_pref(body: PrefIn) -> Response:
     async with engine().begin() as connection:
         known = {(one.app, one.kind) for one in await kinds(connection)}
         if (body.app, body.kind) not in known:
-            raise HTTPException(status_code=404, detail="esa app no declara ese aviso")
+            raise HTTPException(status_code=404, detail="that app does not declare that notice")
         await connection.execute(
             text("""
                 insert into kernel.notification_pref (app, kind, enabled)
@@ -488,7 +488,7 @@ class Refused:
         return self.status is None or self.status in PASSING
 
     def said(self) -> str:
-        code = str(self.status) if self.status is not None else "sin respuesta"
+        code = str(self.status) if self.status is not None else "no response"
         return f"{code} {self.reason}".strip()[:200]
 
 

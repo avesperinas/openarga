@@ -56,7 +56,7 @@ async def test_a_mistyped_isin_or_an_unknown_name_asks_for_the_isin() -> None:
     with pytest.raises(Unresolved, match="is not an ISIN"):
         await resolve(markets(), name="x", isin="IE000W8WMSL3")
     with pytest.raises(Unresolved, match="dime su ISIN"):
-        await resolve(markets(), name="Un ETF que nadie conoce")
+        await resolve(markets(), name="An ETF nobody knows")
 
 
 async def test_a_fund_is_valued_by_its_nav_and_has_no_line() -> None:

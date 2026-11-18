@@ -63,7 +63,7 @@ describe("the four states", () => {
 });
 
 describe("doubt is a modifier, not a state", () => {
-  const uncertainty = { summary: "puede faltar: 2 eventos en 1 entidad sin unir" };
+  const uncertainty = { summary: "may be missing: 2 events in 1 entity not merged" };
 
   it("marks the number with the dotted line", () => {
     const html = render(

@@ -16,7 +16,7 @@ upstream = FastAPI()
 asked: dict[str, int] = {}
 received: list[dict] = []
 
-PAGE = ("<p>Hoy, sin nada pendiente.</p>" * 200).encode()
+PAGE = ("<p>Today, nothing pending.</p>" * 200).encode()
 PHOTO = bytes(range(256)) * 16
 TILE = b'\x1a\x8b\x01\n\x05roads\x12\x0c\x18\x02"\x08\t\x00\x00\x1a\x00\x00' * 200
 

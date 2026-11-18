@@ -307,7 +307,7 @@ def test_solo_se_aceptan_los_formatos_de_la_lista() -> None:
     assert raised.value.status_code == 415
 
     with pytest.raises(HTTPException) as raised:
-        normalise(b"esto no es una imagen")
+        normalise(b"this is not an image")
     assert raised.value.status_code == 415
 
 

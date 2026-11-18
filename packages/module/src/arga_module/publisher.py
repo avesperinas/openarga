@@ -152,7 +152,7 @@ class Publisher:
                 await lost.wait()
             except Exception as error:  # noqa: BLE001 - without notices the safety pass still runs
                 print(
-                    f"publisher · sin avisos: {type(error).__name__}: {error}",
+                    f"publisher · no notices: {type(error).__name__}: {error}",
                     file=sys.stderr,
                     flush=True,
                 )

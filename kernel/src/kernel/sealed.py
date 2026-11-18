@@ -101,9 +101,9 @@ def main(database_url: str) -> int:
     try:
         sealed = asyncio.run(seal_everything(database_url))
     except Exception as error:  # noqa: BLE001 - se traduce a un exit code, no se traga
-        print(f"no se pudieron sellar las tablas de secretos: {error}", file=sys.stderr)
+        print(f"could not seal the secret tables: {error}", file=sys.stderr)
         return 1
     for module, tables in sealed.items():
         if tables:
-            print(f"sellado    {module}: {', '.join(tables)} solo para mod_{module}")
+            print(f"sealed     {module}: {', '.join(tables)} only for mod_{module}")
     return 0

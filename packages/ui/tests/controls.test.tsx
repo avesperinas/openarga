@@ -525,7 +525,7 @@ describe("CopyField", () => {
 describe("CredentialField", () => {
   const props = {
     label: "Token de Claude Code",
-    help: "Lo generas con claude setup-token.",
+    help: "You generate it with claude setup-token.",
     value: "",
     onChange: () => undefined,
     onSave: () => undefined,
@@ -553,7 +553,7 @@ describe("CredentialField", () => {
     const html = renderToStaticMarkup(<CredentialField {...props} configured={false} />);
 
     expect(html).toContain("Paste it here");
-    expect(html).toContain("Lo generas con claude setup-token.");
+    expect(html).toContain("You generate it with claude setup-token.");
     expect(html).not.toContain("Remove");
   });
 

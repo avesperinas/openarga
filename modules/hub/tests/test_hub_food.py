@@ -71,7 +71,7 @@ class Sources:
         if "nal.usda.gov" in request.url.host:
             self.keys.append(request.url.params["api_key"])
             if self.usda_down:
-                raise httpx.ConnectError("sin red", request=request)
+                raise httpx.ConnectError("no network", request=request)
             if self.usda_errors:
                 return httpx.Response(self.usda_errors.pop(0))
             if request.method == "POST":

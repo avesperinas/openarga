@@ -134,7 +134,7 @@ describe("place and highlight", () => {
       <MediaCard
         media={<Cover title="A book" />}
         title="A book"
-        lines={["Alguien", "Desde el 1 oct"]}
+        lines={["Alguien", "Since 1 Oct"]}
         onOpen={noop}
         action={{ label: "Terminado hoy", icon: "done", onClick: noop }}
       />,

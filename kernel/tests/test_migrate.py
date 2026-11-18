@@ -5,7 +5,7 @@ from sqlalchemy import text
 
 from kernel import db, migrate
 
-FUTURO = "0099_del_futuro"
+FUTURO = "0099_from_the_future"
 
 
 async def _stamp(revision: str) -> None:

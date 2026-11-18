@@ -43,7 +43,7 @@ class OpenMeteo:
     def __call__(self, request: httpx.Request) -> httpx.Response:
         self.asked.append(request)
         if self.down:
-            raise httpx.ConnectError("sin red", request=request)
+            raise httpx.ConnectError("no network", request=request)
         if request.url.host == "archive-api.open-meteo.com":
             return httpx.Response(200, json=archive())
         return httpx.Response(

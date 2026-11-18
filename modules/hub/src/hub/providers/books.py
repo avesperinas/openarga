@@ -288,7 +288,7 @@ async def fetch_cover(client: httpx.AsyncClient, source: str, ref: str) -> tuple
         raise SourceFailed(f"the cover did not arrive: {type(error).__name__}") from error
     body = response.content
     if len(body) > COVER_MAX_BYTES:
-        raise SourceFailed("la portada pesa demasiado")
+        raise SourceFailed("the cover is too large")
     kind = image_type(body)
     if kind is None or len(body) < 1000:
         return None

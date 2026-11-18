@@ -70,12 +70,12 @@ const button = (label: string) =>
 
 describe("splitting what is read", () => {
   it("in whole sentences of about 220 characters, remembering which part each piece comes from", () => {
-    const long = "Una frase corta. ".repeat(30);
+    const long = "A short sentence. ".repeat(30);
     const chunks = chunksOf(["Titular", long, ""]);
     expect(chunks[0]).toEqual({ text: "Titular", part: 0 });
     expect(chunks.slice(1).every((one) => one.part === 1 && one.text.length <= 220)).toBe(true);
     expect(chunks.slice(1).every((one) => one.text.endsWith("."))).toBe(true);
-    expect(chunks.map((one) => one.text).join(" ")).toContain("Una frase corta.");
+    expect(chunks.map((one) => one.text).join(" ")).toContain("A short sentence.");
   });
 
   it("a sentence without full stops longer than a piece splits by words", () => {

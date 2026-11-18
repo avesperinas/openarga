@@ -91,7 +91,7 @@ describe("CredentialField, when removing it", () => {
     mount(
       <CredentialField
         label="Token for Claude Code"
-        help="Lo generas con claude setup-token."
+        help="You generate it with claude setup-token."
         configured
         hint="…a3f9"
         value=""

@@ -144,17 +144,17 @@ def parse(text: str) -> Rule:
             continue
         key, sep, value = part.partition("=")
         if not sep:
-            raise ValueError(f"parte sin valor: {part!r}")
+            raise ValueError(f"part without a value: {part!r}")
         fields[key.upper()] = value
     known = {"FREQ", "INTERVAL", "BYDAY", "BYMONTHDAY", "BYMONTH", "COUNT", "UNTIL", "WKST"}
     unknown = set(fields) - known
     if unknown:
-        raise ValueError(f"fuera del subconjunto: {', '.join(sorted(unknown))}")
+        raise ValueError(f"outside the supported subset: {', '.join(sorted(unknown))}")
     if fields.get("WKST", "MO") != "MO":
         raise ValueError("the week starts on Monday")
     freq = fields.get("FREQ", "").lower()
     if freq not in _FREQS:
-        raise ValueError(f"frecuencia desconocida: {fields.get('FREQ')!r}")
+        raise ValueError(f"unknown frequency: {fields.get('FREQ')!r}")
     return Rule(
         freq=freq,  # type: ignore[arg-type]
         interval=int(fields.get("INTERVAL", "1")),

@@ -50,7 +50,7 @@ def events(
         if inside(item, first, last):
             kept[item.uid] = item
     if len(kept) > LIMIT:
-        raise ValueError(f"la fuente trae {len(kept)} eventos; arga refleja como mucho {LIMIT}")
+        raise ValueError(f"the source has {len(kept)} events; at most {LIMIT} are mirrored")
     out: list[dict[str, Any]] = []
     prints: dict[str, str] = {}
     for item in kept.values():

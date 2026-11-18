@@ -193,7 +193,7 @@ def test_a_code_is_read_however_it_is_typed() -> None:
 
 async def test_the_spaces_header_is_read_by_the_kernel(kernel, people) -> None:
     response = await kernel.get(
-        "/internal/spaces", headers={**people["ana"], SPACES_HEADER: "no-es-un-id"}
+        "/internal/spaces", headers={**people["ana"], SPACES_HEADER: "not-an-id"}
     )
 
     assert response.status_code == 400
