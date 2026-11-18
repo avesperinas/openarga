@@ -20,13 +20,16 @@ INSERT = text(
 )
 
 
+FORGET = text("delete from kernel.events where source = 'test' or module in ('training', 'vitals')")
+
+
 @pytest.fixture
 async def publishers(schema, world):
     from arga_tenancy import current_user
     from arga_testing import fresh_modules
 
     async with schema.begin() as connection:
-        await connection.execute(text("delete from kernel.events where source = 'test'"))
+        await connection.execute(FORGET)
         await fresh_modules(
             connection, "training", "vitals", "macros", fresh=["training", "vitals"]
         )
@@ -47,7 +50,7 @@ async def publishers(schema, world):
 
     yield publish
     async with schema.begin() as connection:
-        await connection.execute(text("delete from kernel.events where source = 'test'"))
+        await connection.execute(FORGET)
         await connection.execute(
             text("delete from kernel.modules where id in ('training', 'vitals')")
         )
