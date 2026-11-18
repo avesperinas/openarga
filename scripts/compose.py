@@ -125,6 +125,18 @@ def module_service(module_id: str, folder: str, instance: dict[str, str]) -> dic
     }
 
 
+MODULE_KEYS = {"hub": ["HUB_CREDENTIALS_KEY"]}
+CALLS_AI = {"hub"}
+HOST_GATEWAY = ["host.docker.internal:host-gateway"]
+
+
+def configure_module_service(module_id: str, service: dict[str, Any]) -> None:
+    for name in MODULE_KEYS.get(module_id, []):
+        service["environment"][name] = f"${{{name}}}"
+    if module_id in CALLS_AI:
+        service["extra_hosts"] = list(HOST_GATEWAY)
+
+
 def worker_service(module_id: str, folder: str, instance: dict[str, str]) -> dict[str, Any]:
     service = module_service(module_id, folder, instance)
     del service["build"]
@@ -213,6 +225,7 @@ def generate(config: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
             "image": "openarga/auth:local",
             "build": {"context": ".", "dockerfile": "auth/Dockerfile"},
             "environment": {
+                "PUBLIC_URL": instance["PUBLIC_URL"],
                 "KC_DB_URL": "jdbc:postgresql://postgres:5432/${POSTGRES_DB}",
                 "KC_DB_USERNAME": "arga_auth",
                 "KC_DB_PASSWORD": "${AUTH_DB_PASSWORD}",
@@ -283,6 +296,7 @@ def generate(config: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
     for module_id in modules:
         folder = folders[module_id]
         services[module_id] = module_service(module_id, folder, instance)
+        configure_module_service(module_id, services[module_id])
         if has_worker(root, folder, module_id):
             services[f"{module_id}-worker"] = worker_service(module_id, folder, instance)
     return {"name": "openarga", "services": services, "volumes": {"pgdata": {}}}

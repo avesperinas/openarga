@@ -72,7 +72,8 @@ from `.env`, and the first-run wizard asks for your language, region, time zone,
 area and the apps you want to see.
 
 `scripts/stack-check.sh` boots the same stack with throwaway secrets and checks that every service
-answers `/healthz`. To fill a value in `.env`: `openssl rand -hex 24`.
+answers `/healthz`. To fill a value in `.env`: `openssl rand -hex 24`. `HUB_CREDENTIALS_KEY`
+is the exception: it must be 32 bytes in hex, so use `openssl rand -hex 32`.
 
 ## Configuration
 

@@ -106,3 +106,26 @@ def test_a_demo_instance_tells_the_gateway_and_mcp():
     services = compose.generate(with_changes(demo=True))["services"]
     for name in ("gateway", "mcp", "kernel"):
         assert services[name]["environment"].get("OPENARGA_DEMO") == "true", name
+
+
+def test_keycloak_gets_the_public_url_the_realm_import_needs():
+    services = compose.generate(EXAMPLE)["services"]
+    assert services["auth"]["environment"]["PUBLIC_URL"] == "http://localhost:8000"
+    assert "${PUBLIC_URL}" in (ROOT / "auth/realm.json").read_text(encoding="utf-8")
+    domain = compose.generate(with_changes(domain="arga.example.org"))["services"]
+    assert domain["auth"]["environment"]["PUBLIC_URL"] == "https://arga.example.org"
+
+
+def test_the_hub_gets_its_credentials_key_from_the_env_file():
+    services = compose.generate(EXAMPLE)["services"]
+    assert services["hub"]["environment"]["HUB_CREDENTIALS_KEY"] == "${HUB_CREDENTIALS_KEY}"
+    assert "HUB_CREDENTIALS_KEY=\n" in (ROOT / ".env.example").read_text(encoding="utf-8")
+    for name, service in services.items():
+        if name != "hub":
+            assert "HUB_CREDENTIALS_KEY" not in service.get("environment", {})
+
+
+def test_the_services_that_call_the_ai_can_reach_a_model_on_the_docker_host():
+    services = compose.generate(EXAMPLE)["services"]
+    assert services["hub"]["extra_hosts"] == ["host.docker.internal:host-gateway"]
+    assert "extra_hosts" not in services["kernel"]

@@ -53,6 +53,12 @@ their key included, in Connections (`GET/PUT /api/hub/ai/settings`, `PUT/DELETE 
 | `OPENARGA_AI_MONTHLY_TOKENS` | Tokens (input plus output) each person may spend per calendar month. Unset: no limit. |
 | `OPENARGA_AI_KEY` | A shared key, used only by people who have not set their own. Not needed for Ollama. |
 
+With Ollama (or any server) running on the Docker host, use
+`OPENARGA_AI_BASE_URL=http://host.docker.internal:11434/v1`. The generated compose file gives the
+`hub` service `extra_hosts: ["host.docker.internal:host-gateway"]`, so the name resolves on Linux as
+it does on Docker Desktop. The server must listen on an address the bridge can reach (for Ollama,
+`OLLAMA_HOST=0.0.0.0`).
+
 A person's key is stored encrypted with `HUB_CREDENTIALS_KEY` and never returned by the API.
 
 Every call is an **attempt** in `hub.ai_attempt`: app, capability, role, provider, model, tokens,

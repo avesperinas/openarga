@@ -73,6 +73,7 @@ services:
       context: .
       dockerfile: auth/Dockerfile
     environment:
+      PUBLIC_URL: http://localhost:8000
       KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       KC_DB_USERNAME: arga_auth
       KC_DB_PASSWORD: ${AUTH_DB_PASSWORD}
@@ -235,10 +236,13 @@ services:
       OPENARGA_AI_PROVIDER: none
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
+      HUB_CREDENTIALS_KEY: ${HUB_CREDENTIALS_KEY}
     depends_on:
       kernel:
         condition: service_healthy
     restart: unless-stopped
+    extra_hosts:
+    - host.docker.internal:host-gateway
   insights:
     image: openarga/insights:local
     build:
