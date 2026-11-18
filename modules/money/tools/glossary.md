@@ -23,7 +23,7 @@
   without what is not living expense (Work). **Basic spending**: the same without what is not basic
   (Travel, Leisure).
 - **Carried**: an account's value that comes from its last valuation, not from today.
-- **Product**: any account of yours (current, savings, fund, pension plan, crypto, property,
+- **Product**: any account of yours (current, savings, fund, pension plan, property,
   deposit). **Snapshot**: which funds a product held on a day; between snapshots each fund moves
   with its price. **Composition**: the portfolio split by asset class, region, fund or product;
   what cannot be split is "no breakdown".

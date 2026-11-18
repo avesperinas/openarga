@@ -503,7 +503,7 @@ async def test_every_analysis_endpoint_answers_on_an_empty_book(api) -> None:
     assert detail.status_code == 200
     narrowed = await api.get(
         "/analysis/investments",
-        params={**period, "group": ["Funds", "Crypto"], "account": ["fondo"]},
+        params={**period, "group": ["Funds", "Stocks"], "account": ["fondo"]},
     )
     assert narrowed.status_code == 200 and narrowed.json()["rows"] == []
     wrong = await api.get("/analysis/worth", params={"from": "2030-02-01", "to": "2030-01-01"})

@@ -15,7 +15,6 @@ GROUP_HUES = {
     "Funds": 1,
     "Stocks": 6,
     "Pension": 5,
-    "Crypto": 3,
     "Property": 4,
     "Deposits": 8,
 }

@@ -16,7 +16,7 @@ from money.value import price_on, start_price
 ZERO = Decimal(0)
 HUNDRED = Decimal(100)
 
-ASSETS = ("equity", "bond", "real_estate", "cash", "crypto", "other")
+ASSETS = ("equity", "bond", "real_estate", "cash", "other")
 REGIONS = ("us", "europe", "japan", "pacific", "other_developed", "emerging")
 UNKNOWN = "unknown"
 CASH_REGION = "cash"
@@ -53,8 +53,6 @@ def kind_of(lo: Loaded, account: Account, symbol: str) -> Kind:
     known = catalog.funds().get(symbol)
     if known is not None:
         return Kind(known["asset"], _regions(known.get("regions")), "catalog")
-    if account.type == "crypto":
-        return Kind("crypto", {}, "product")
     return Kind("other", {}, UNKNOWN)
 
 
@@ -177,9 +175,7 @@ def composition(
         _add(by_product, a.id, value)
         photo = photo_of(lo, a, last, analysis.part(a, whole))
         if photo is None:
-            asset = {"real_estate": "real_estate", "crypto": "crypto"}.get(
-                a.asset_class if a.asset_class == "real_estate" else a.type, UNKNOWN
-            )
+            asset = "real_estate" if a.asset_class == "real_estate" else UNKNOWN
             _add(by_asset, asset, value)
             _add(by_region, UNKNOWN, value)
             unknown_region += value

@@ -68,8 +68,8 @@ export function monthTitle(year: number, month: number): string {
   return capital(dates({ month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(year, month - 1, 1))));
 }
 
-const TYPES = new Set(["current", "savings", "fund", "etf", "pension", "crypto", "real_estate", "deposit"]);
-const GROUPS = new Set(["Cash", "Funds", "Stocks", "Pension", "Crypto", "Property", "Deposits"]);
+const TYPES = new Set(["current", "savings", "fund", "etf", "pension", "real_estate", "deposit"]);
+const GROUPS = new Set(["Cash", "Funds", "Stocks", "Pension", "Property", "Deposits"]);
 
 export const typeName = (type: string, fallback = type): string => (TYPES.has(type) ? say(`type.${type}`) : fallback);
 export const groupName = (group: string): string => (GROUPS.has(group) ? say(`group.${group}`) : group);
