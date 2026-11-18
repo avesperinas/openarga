@@ -151,12 +151,15 @@ async function get<T>(path: string): Promise<T> {
   return absolute<T>(`${base}${path}`);
 }
 
+export class SignInRequired extends Error {}
+
 async function absolute<T>(url: string, limitMs?: number): Promise<T> {
   const response = await fetch(url, {
     cache: "no-store",
     headers: identity(await headers()),
     ...(limitMs ? { signal: AbortSignal.timeout(limitMs) } : {}),
   });
+  if (response.status === 401) throw new SignInRequired(`${url} answered 401`);
   if (!response.ok) throw new Error(`${url} answered ${response.status}`);
   return (await response.json()) as T;
 }
