@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
 from pathlib import Path
 
 from sqlalchemy import text
@@ -8,9 +7,10 @@ from sqlalchemy import text
 from arga_module import demo as cast_of
 from arga_tenancy import current_spaces, current_user
 from insights import demo
+from insights.clock import today
 
 CAST = cast_of.load(Path(__file__).resolve().parents[3] / "demo" / "personas.yaml")
-TODAY = date.today()
+TODAY = today()
 COUNTS = """
     select (select count(*) from insights.insights_insight) as insights,
            (select count(*) from insights.insights_pill) as pills,
