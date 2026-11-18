@@ -181,20 +181,20 @@ async def refresh(
 
 
 MONTHS = (
-    "enero",
-    "febrero",
-    "marzo",
-    "abril",
-    "mayo",
-    "junio",
-    "julio",
-    "agosto",
-    "septiembre",
-    "octubre",
-    "noviembre",
-    "diciembre",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
 )
-WEEKDAYS = ("lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo")
+WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 
 
 def number(value: float | int, decimals: int = 0) -> str:
@@ -214,11 +214,11 @@ def euros(value: float | int) -> str:
 
 
 def long_date(day: date) -> str:
-    return f"{day.day} de {MONTHS[day.month - 1]} de {day.year}"
+    return f"{day.day} {MONTHS[day.month - 1]} {day.year}"
 
 
 def month_name(year: int, month: int) -> str:
-    return f"{MONTHS[month - 1]} de {year}"
+    return f"{MONTHS[month - 1]} {year}"
 
 
 def weekday(day: date) -> str:

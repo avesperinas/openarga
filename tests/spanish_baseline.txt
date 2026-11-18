@@ -1,4 +1,0 @@
-packages/contracts/src/arga_contracts/records.py
-packages/contracts/tests/test_records.py
-packages/module/tests/test_service.py
-scripts/between-apps.sh

@@ -142,7 +142,7 @@ class Service:
     def _error_handler(self, status: int):
         async def handle(request: Request, error: Exception) -> JSONResponse:
             del request
-            detail = f"no existe: {error}" if status == 404 else str(error)
+            detail = f"not found: {error}" if status == 404 else str(error)
             return JSONResponse(status_code=status, content={"detail": detail})
 
         return handle
@@ -272,7 +272,7 @@ class Service:
                     candidate, headers={"cache-control": IMMUTABLE if immutable else REVALIDATE}
                 )
             if path.startswith("assets/") or "." in path.rsplit("/", 1)[-1]:
-                raise HTTPException(status_code=404, detail=f"no existe: {path}")
+                raise HTTPException(status_code=404, detail=f"not found: {path}")
             index = root / "index.html"
             if not index.is_file():
                 raise HTTPException(status_code=503, detail="the app is not built")
