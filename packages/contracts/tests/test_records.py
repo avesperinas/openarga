@@ -22,7 +22,7 @@ def book(**changes) -> dict:
     return contracts.record(
         **{
             "id": "reading:1",
-            "title": "El nombre del viento",
+            "title": "The Name of the Wind",
             "kind": "Libro",
             "href": "/library/libro/1",
             "folder": "Libros",
@@ -40,7 +40,7 @@ def test_a_record_is_a_note_of_an_app_or_a_day() -> None:
     day = contracts.record(
         id="day:2026-09-30",
         title="Comidas",
-        kind="Día",
+        kind="Day",
         href="/macros/",
         day=date(2026, 9, 30),
         properties={"kcal": 2150, "proteina_g": 160.5},
@@ -52,7 +52,7 @@ def test_a_record_is_a_note_of_an_app_or_a_day() -> None:
 @pytest.mark.parametrize(
     ("changes", "where"),
     [
-        ({"properties": {"Valoración": 4}}, "properties"),
+        ({"properties": {"Rating": 4}}, "properties"),
         ({"properties": {"arga": "otro:1"}}, "whoever writes"),
         ({"properties": {"tipo": "Otro"}}, "whoever writes"),
         ({"properties": {"type": "Other"}}, "whoever writes"),
@@ -75,15 +75,15 @@ def test_how_things_are_written_is_the_same_in_every_app() -> None:
     assert records.euros(-45.2) == "-45,20 €"
     assert records.trimmed(78.20) == "78,2"
     assert records.trimmed(80.0) == "80"
-    assert records.long_date(date(2026, 1, 2)) == "2 de enero de 2026"
+    assert records.long_date(date(2026, 1, 2)) == "2 January 2026"
     assert records.link("training", "variant:1", "Press [banca] | plano") == (
         "[[training:variant:1|Press (banca) - plano]]"
     )
     assert records.table(["A", "B"], [["x|y", None]]) == "| A | B |\n| --- | --- |\n| x\\|y |  |"
     assert records.sections("a", "", None, "b\n") == "a\n\nb"
-    assert records.property_name("Primera matriculación") == "primera_matriculacion"
-    assert records.property_name("Kilómetros a fecha de") == "kilometros_a_fecha_de"
-    assert records.property_name("2º titular") == "c_2o_titular"
+    assert records.property_name("Smörgåsbord size") == "smorgasbord_size"
+    assert records.property_name("Façade width") == "facade_width"
+    assert records.property_name("2º owner") == "c_2o_owner"
     assert records.property_name("Tipo") == "tipo_"
     assert records.property_name("Type") == "type_"
 

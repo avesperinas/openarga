@@ -26,10 +26,10 @@ def demo(tmp_path: Path) -> Service:
 
     @service.app.get("/things/{name}")
     async def thing(name: str) -> dict:
-        if name == "nada":
+        if name == "missing":
             raise Missing(name)
-        if name == "doble":
-            raise Clash("ya hay una")
+        if name == "twin":
+            raise Clash("already there")
         return {"name": name}
 
     service.serve_ui()
@@ -49,23 +49,23 @@ async def test_it_lives_and_says_its_version(client) -> None:
 
 
 async def test_the_errors_of_the_domain_are_404_and_409_with_their_reason(client) -> None:
-    missing = await client.get("/things/nada")
-    clash = await client.get("/things/doble")
+    missing = await client.get("/things/missing")
+    clash = await client.get("/things/twin")
 
-    assert (missing.status_code, missing.json()["detail"]) == (404, "no existe: nada")
-    assert (clash.status_code, clash.json()["detail"]) == (409, "ya hay una")
-    assert (await client.get("/things/una")).json() == {"name": "una"}
+    assert (missing.status_code, missing.json()["detail"]) == (404, "not found: missing")
+    assert (clash.status_code, clash.json()["detail"]) == (409, "already there")
+    assert (await client.get("/things/one")).json() == {"name": "one"}
 
 
 async def test_the_routes_of_the_module_come_before_the_app(client) -> None:
-    assert (await client.get("/demo/una/pantalla")).text == "<div id=root></div>"
+    assert (await client.get("/demo/one/screen")).text == "<div id=root></div>"
     assert (await client.get("/things/x")).json() == {"name": "x"}
 
 
 async def test_a_missing_file_of_the_app_is_404_and_not_the_page(client) -> None:
-    assert (await client.get("/demo/libro/1")).status_code == 200
-    assert (await client.get("/demo/assets/index-viejo.js")).status_code == 404
-    assert (await client.get("/demo/icono.svg")).status_code == 404
+    assert (await client.get("/demo/book/1")).status_code == 200
+    assert (await client.get("/demo/assets/index-old.js")).status_code == 404
+    assert (await client.get("/demo/icon.svg")).status_code == 404
 
 
 async def test_it_says_who_is_looking(client) -> None:
