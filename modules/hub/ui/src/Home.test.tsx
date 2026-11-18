@@ -1,7 +1,11 @@
+import { configureRegional } from "@openarga/ui";
 import { renderToString } from "react-dom/server";
+import { beforeAll } from "vitest";
 
 import { ByApp, ProviderSection, Yours, appPath, providerAction, whereItLives } from "./Home";
 import type { Connection, Provider } from "./api";
+
+beforeAll(() => configureRegional({ locale: "en-GB" }));
 
 const provider = (overrides: Partial<Provider>): Provider => ({
   id: "bitvavo",
@@ -21,7 +25,7 @@ const connection = (overrides: Partial<Connection>): Connection => ({
   label: "Bitvavo",
   category: "finance",
   state: "active",
-  brief: "Al día",
+  brief: "Up to date",
   tone: "positive",
   reason: null,
   last_ok_at: null,
@@ -29,32 +33,32 @@ const connection = (overrides: Partial<Connection>): Connection => ({
   ...overrides,
 });
 
-test("lo que aún se configura en su app lo dice y lleva hasta allí", () => {
+test("what is still set up in its app says so and leads there", () => {
   const bitvavo = provider({ lives_in: "Money" });
 
-  expect(whereItLives(bitvavo)).toBe("En Money");
+  expect(whereItLives(bitvavo)).toBe("In Money");
   expect(appPath(bitvavo)).toBe("/money");
 });
 
-test("el nombre de la app con tilde lleva a su ruta sin ella", () => {
+test("an app name leads to its route", () => {
   expect(appPath(provider({ lives_in: "Recipes" }))).toBe("/recipes");
 });
 
-test("lo que no existe en ningún sitio todavía no finge estar", () => {
-  const later = provider({ id: "later", name: "Pronto" });
+test("what exists nowhere yet does not pretend to", () => {
+  const later = provider({ id: "later", name: "Soon" });
 
-  expect(whereItLives(later)).toBe("Próximamente");
+  expect(whereItLives(later)).toBe("Coming soon");
   expect(appPath(later)).toBeNull();
 });
 
-test("sin nada conectado se explica qué es esto, no se enseña una lista vacía", () => {
+test("with nothing connected it explains what this is instead of an empty list", () => {
   const html = renderToString(<Yours connections={[]} />);
 
-  expect(html).toContain("Nada conectado aquí todavía");
-  expect(html).toContain("tus calendarios");
+  expect(html).toContain("Nothing connected here yet");
+  expect(html).toContain("your calendars");
 });
 
-test("una conexión que pide algo dice qué, con su nombre", () => {
+test("a connection that needs something says what, with its name", () => {
   const html = renderToString(
     <Yours
       connections={[
@@ -64,9 +68,9 @@ test("una conexión que pide algo dice qué, con su nombre", () => {
           label: "BBVA",
           category: "finance",
           state: "expiring",
-          brief: "Por caducar",
+          brief: "About to expire",
           tone: "warning",
-          reason: "El acceso a BBVA caduca en 3 días.",
+          reason: "Access to BBVA expires in 3 days.",
           last_ok_at: null,
           emitted_week: 0,
         },
@@ -74,96 +78,96 @@ test("una conexión que pide algo dice qué, con su nombre", () => {
     />,
   );
 
-  expect(html).toContain("Por caducar");
+  expect(html).toContain("About to expire");
   expect(html).toContain('data-tone="warning"');
-  expect(html).toContain("El acceso a BBVA caduca en 3 días.");
+  expect(html).toContain("Access to BBVA expires in 3 days.");
 });
 
-test("cada trozo enseña sus proveedores y dónde están", () => {
+test("each section shows its providers and where they are", () => {
   const html = renderToString(
     <ProviderSection
-      title="Otras fuentes"
-      providers={[provider({ lives_in: "Money" }), provider({ id: "later", name: "Pronto" })]}
+      title="Other sources"
+      providers={[provider({ lives_in: "Money" }), provider({ id: "later", name: "Soon" })]}
     />,
   );
 
-  expect(html).toContain("Otras fuentes");
-  expect(html).toContain("En Money");
-  expect(html).toContain("Próximamente");
+  expect(html).toContain("Other sources");
+  expect(html).toContain("In Money");
+  expect(html).toContain("Coming soon");
 });
 
-test("lo que ya está en el hub se añade aquí", () => {
+test("what is already in the hub is added here", () => {
   const bitvavo = provider({ available: true, single: true });
 
-  expect(whereItLives(bitvavo)).toBe("Añadir");
+  expect(whereItLives(bitvavo)).toBe("Add");
   expect(providerAction(bitvavo, [])).toEqual({ kind: "add" });
 });
 
-test("lo que se tiene una vez y ya está conectado abre su ficha en vez de añadir otro", () => {
+test("a single connection already connected opens its page instead of adding another", () => {
   const bitvavo = provider({ available: true, single: true });
 
-  expect(whereItLives(bitvavo, true)).toBe("Conectado");
+  expect(whereItLives(bitvavo, true)).toBe("Connected");
   expect(providerAction(bitvavo, [connection({ id: "c9" })])).toEqual({ kind: "open", id: "c9" });
 });
 
-test("lo que aún vive en su app lleva allí, y lo que no existe no hace nada", () => {
+test("what still lives in its app leads there, and what does not exist does nothing", () => {
   expect(providerAction(provider({ lives_in: "Money" }), [])).toEqual({ kind: "app", path: "/money" });
   expect(providerAction(provider({ id: "later" }), [])).toBeNull();
 });
 
-test("lo que crea otra app se ve aquí pero se añade allí: una cuenta de Claude, desde Chuping", () => {
+test("what another app creates shows here but is added there: a Claude account, from Chuping", () => {
   const claude = provider({ id: "claude", available: true, created_in: "Chuping" });
 
-  expect(whereItLives(claude)).toBe("Desde Chuping");
+  expect(whereItLives(claude)).toBe("From Chuping");
   expect(providerAction(claude, [])).toEqual({ kind: "app", path: "/chuping" });
 });
 
-test("en Configurar se ven las cuentas que ya tienes, y debajo la fila para añadir otra", () => {
+test("setup shows the accounts you have, and below them the row to add another", () => {
   const html = renderToString(
     <ProviderSection
       title="Chuping"
       providers={[provider({ id: "claude", name: "Claude", available: true })]}
       connections={[
         connection({ id: "c1", provider: "claude", label: "Personal" }),
-        connection({ id: "c2", provider: "claude", label: "Trabajo", brief: "Caducada", tone: "negative" }),
+        connection({ id: "c2", provider: "claude", label: "Work", brief: "Caducada", tone: "negative" }),
         connection({ id: "c3", provider: "bitvavo", label: "Bitvavo" }),
       ]}
     />,
   );
 
   expect(html).toContain("Personal");
-  expect(html).toContain("Trabajo");
+  expect(html).toContain("Work");
   expect(html).toContain('data-tone="negative"');
   expect(html).not.toContain("Bitvavo");
-  expect(html.indexOf("Trabajo")).toBeLessThan(html.indexOf("Añadir"));
+  expect(html.indexOf("Work")).toBeLessThan(html.indexOf(">Add<"));
 });
 
-test("lo que se tiene una vez y ya está conectado es solo su conexión, sin fila de añadir", () => {
+test("a single connection already connected is only its connection, with no add row", () => {
   const html = renderToString(
     <ProviderSection
       title="Money"
       providers={[provider({ available: true, single: true })]}
-      connections={[connection({ label: "Mi Bitvavo" })]}
+      connections={[connection({ label: "My Bitvavo" })]}
     />,
   );
 
-  expect(html).toContain("Mi Bitvavo");
-  expect(html).toContain("Al día");
-  expect(html).not.toContain("Añadir");
+  expect(html).toContain("My Bitvavo");
+  expect(html).toContain("Up to date");
+  expect(html).not.toContain(">Add<");
 });
 
-describe("por app (ADR-0103)", () => {
+describe("by app (ADR-0103)", () => {
   const catalogue = [
     {
       id: "finance",
-      name: "Finanzas",
+      name: "Finance",
       providers: [
-        provider({ id: "enable_banking", name: "Bancos (PSD2)", available: true }),
-        provider({ id: "prices", name: "Cotizaciones", available: true }),
+        provider({ id: "enable_banking", name: "Banks (PSD2)", available: true }),
+        provider({ id: "prices", name: "Quotes", available: true }),
       ],
     },
-    { id: "books", name: "Libros", providers: [provider({ id: "openlibrary", name: "Open Library", available: true })] },
-    { id: "weather", name: "Tiempo", providers: [provider({ id: "open_meteo", name: "Open-Meteo", available: true })] },
+    { id: "books", name: "Books", providers: [provider({ id: "openlibrary", name: "Open Library", available: true })] },
+    { id: "weather", name: "Weather", providers: [provider({ id: "open_meteo", name: "Open-Meteo", available: true })] },
   ];
   const apps = {
     apps: [
@@ -171,7 +175,7 @@ describe("por app (ADR-0103)", () => {
         module: "money",
         name: "Money",
         view: "/money",
-        inlets: [{ key: "money.accounts", title: "Cuentas", providers: ["enable_banking", "prices"] }],
+        inlets: [{ key: "money.accounts", title: "Accounts", providers: ["enable_banking", "prices"] }],
         services: [],
       },
       {
@@ -185,18 +189,18 @@ describe("por app (ADR-0103)", () => {
     others: ["open_meteo"],
   };
 
-  it("cada app con lo que le llega, sus conexiones encima, y aparte lo que no llega a ninguna", () => {
+  it("each app with what reaches it, its connections on top, and apart what reaches none", () => {
     const html = renderToString(
-      <ByApp apps={apps} catalogue={catalogue} connections={[connection({ id: "b1", provider: "enable_banking", label: "Banco de prueba" })]} />,
+      <ByApp apps={apps} catalogue={catalogue} connections={[connection({ id: "b1", provider: "enable_banking", label: "Test Bank" })]} />,
     );
 
     expect(html).toContain("Money");
-    expect(html).toContain("Banco de prueba");
-    expect(html).toContain("Cotizaciones");
+    expect(html).toContain("Test Bank");
+    expect(html).toContain("Quotes");
     expect(html).toContain("Library");
     expect(html).toContain("Open Library");
-    expect(html.indexOf("Library")).toBeLessThan(html.indexOf("Otras fuentes"));
+    expect(html.indexOf("Library")).toBeLessThan(html.indexOf("Other sources"));
     expect(html).toContain("Open-Meteo");
-    expect(html.indexOf("Money")).toBeLessThan(html.indexOf("Banco de prueba"));
+    expect(html.indexOf("Money")).toBeLessThan(html.indexOf("Test Bank"));
   });
 });

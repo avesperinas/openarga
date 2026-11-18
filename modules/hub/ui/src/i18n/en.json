@@ -152,7 +152,7 @@
   "where.soon": "Coming soon",
   "yours.connect": "Connect a source",
   "yours.empty": "Nothing connected here yet",
-  "yours.empty.hint": "This is the place for everything that comes in from outside: your banks, your exchanges, your email and your calendars. Connect them from Set up, or from the app that uses them.",
+  "yours.empty.hint": "This is the place for everything that comes in from outside: your banks, your exchanges and your calendars. Connect them from Set up, or from the app that uses them.",
   "yours.title": "Your connections",
   "price.title": "Type a price",
   "price.hint": "When no source prices an instrument, type its close in euros here. Money uses it like any other.",

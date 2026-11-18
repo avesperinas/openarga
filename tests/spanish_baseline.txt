@@ -1,8 +1,3 @@
-modules/hub/ui/src/Add.test.tsx
-modules/hub/ui/src/Connection.test.tsx
-modules/hub/ui/src/Home.test.tsx
-modules/hub/ui/src/Statements.test.tsx
-modules/hub/ui/src/states.test.tsx
 packages/contracts/src/arga_contracts/records.py
 packages/contracts/tests/test_records.py
 packages/module/tests/test_service.py

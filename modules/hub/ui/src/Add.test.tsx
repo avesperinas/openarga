@@ -1,21 +1,25 @@
+import { configureRegional } from "@openarga/ui";
 import { renderToString } from "react-dom/server";
+import { beforeAll } from "vitest";
 
 import { missing, PlugSheet, plugsOf, PUSH_URL, TokenSheet } from "./Add";
 import type { Provider } from "./api";
 
-describe("una fuente que llama", () => {
-  it("enseña el token y la dirección una vez, para copiarlos al atajo", () => {
-    const html = renderToString(<TokenSheet token="aaa.bbb.el-secreto" onDone={() => undefined} />);
+beforeAll(() => configureRegional({ locale: "en-GB" }));
 
-    expect(html).toContain("aaa.bbb.el-secreto");
+describe("a source that calls in", () => {
+  it("shows the token and the address once, to copy them into the shortcut", () => {
+    const html = renderToString(<TokenSheet token="aaa.bbb.the-secret" onDone={() => undefined} />);
+
+    expect(html).toContain("aaa.bbb.the-secret");
     expect(html).toContain(PUSH_URL);
-    expect(html).toContain("no se vuelve a enseñar");
+    expect(html).toContain("it is not shown again");
   });
 
-  it("no pide ninguna clave para conectarse", () => {
+  it("asks for no key to connect", () => {
     const apple: Provider = {
       id: "apple_health",
-      name: "Apple Salud",
+      name: "Apple Health",
       description: "",
       capabilities: ["push"],
       available: true,
@@ -28,7 +32,7 @@ describe("una fuente que llama", () => {
   });
 });
 
-describe("enchufar una fuente que se ofrece", () => {
+describe("plugging in a source on offer", () => {
   const ical: Provider = {
     id: "ical",
     name: "Calendario publicado",
@@ -52,16 +56,16 @@ describe("enchufar una fuente que se ofrece", () => {
     ],
   };
 
-  it("contesta a cada toma lo elegido, o lo que propone la fuente", () => {
+  it("answers each inlet with the choice, or what the source proposes", () => {
 
     expect(plugsOf(ical, {}, "Pruebas")).toEqual({ "planner.calendar": { name: "Pruebas", tone: 7 } });
     expect(plugsOf(ical, { "planner.calendar": { tone: 2 } }, "Pruebas")).toEqual({ "planner.calendar": { name: "Pruebas", tone: 2 } });
   });
 
-  it("pinta lo que pregunta cada app a la que llega", () => {
+  it("draws what each app it reaches asks", () => {
     const html = renderToString(<PlugSheet provider={ical} onClose={() => undefined} onCreated={() => undefined} />);
 
-    expect(html).toContain("En Planner");
+    expect(html).toContain("In Planner");
     expect(html).toContain("Otro calendario");
   });
 });

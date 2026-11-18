@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { reset } from "@openarga/app";
+import { configureRegional } from "@openarga/ui";
 import axe from "axe-core";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -20,6 +21,7 @@ function json(body: unknown, status = 200): Response {
 }
 
 beforeAll(() => {
+  configureRegional({ locale: "en-GB" });
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   window.scrollTo = () => undefined;
   window.matchMedia = (query: string) =>
@@ -93,58 +95,58 @@ async function serious(): Promise<string[]> {
     .map((one) => `${one.id}: ${one.nodes.map((node) => node.target.join(" ")).join(", ")}`);
 }
 
-describe("la portada", () => {
-  it("mientras llega, el esqueleto", async () => {
+describe("the front page", () => {
+  it("while it arrives, the skeleton", async () => {
     replies["GET /api/hub/connections"] = () => new Promise(() => undefined);
     await open();
     expect(host.querySelector(".skeleton")).not.toBeNull();
   });
 
-  it("sin nada conectado, el botón lleva a conectar una fuente", async () => {
+  it("with nothing connected, the button leads to connecting a source", async () => {
     await open();
-    expect(host.textContent).toContain("Nada conectado aquí todavía");
-    act(() => button("Conectar una fuente")!.click());
+    expect(host.textContent).toContain("Nothing connected here yet");
+    act(() => button("Connect a source")!.click());
     await settle();
     expect(window.location.pathname).toBe("/hub/setup");
     expect(host.textContent).toContain("Planner");
   });
 
-  it("si falla, lo dice y reintentar lo trae", async () => {
-    replies["GET /api/hub/connections"] = () => json({ detail: "la base no contesta" }, 503);
+  it("when it fails it says so, and trying again brings it", async () => {
+    replies["GET /api/hub/connections"] = () => json({ detail: "the database is not answering" }, 503);
     await open();
-    expect(host.textContent).toContain("Hub no contesta");
-    expect(host.textContent).toContain("la base no contesta");
+    expect(host.textContent).toContain("Hub is not answering");
+    expect(host.textContent).toContain("the database is not answering");
 
     replies["GET /api/hub/connections"] = () => [];
-    act(() => button("Reintentar")!.click());
+    act(() => button("Try again")!.click());
     await settle();
-    expect(host.textContent).toContain("Nada conectado aquí todavía");
+    expect(host.textContent).toContain("Nothing connected here yet");
   });
 
-  it("sin red, lo dice arriba", async () => {
+  it("offline, it says so at the top", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
     await open();
-    expect(host.textContent).toContain("Sin conexión");
+    expect(host.textContent).toContain("Offline");
   });
 });
 
-describe("una conexión", () => {
-  it("si no existe lo dice; otro fallo se reintenta", async () => {
+describe("a connection", () => {
+  it("when it does not exist it says so; another failure can be retried", async () => {
     await open(`/hub/${CONNECTION}`);
-    expect(host.textContent).toContain("Ya no está");
-    expect(button("Reintentar")).toBeUndefined();
+    expect(host.textContent).toContain("It is no longer here");
+    expect(button("Try again")).toBeUndefined();
 
     act(() => root.unmount());
     root = createRoot(host);
     void reset();
-    replies[`GET /api/hub/connections/${CONNECTION}`] = () => json({ detail: "la base no contesta" }, 503);
+    replies[`GET /api/hub/connections/${CONNECTION}`] = () => json({ detail: "the database is not answering" }, 503);
     await open(`/hub/${CONNECTION}`);
-    expect(host.textContent).toContain("la base no contesta");
-    expect(button("Reintentar")).toBeDefined();
+    expect(host.textContent).toContain("the database is not answering");
+    expect(button("Try again")).toBeDefined();
   });
 });
 
-describe("axe-core sin errores graves", () => {
+describe("axe-core without serious errors", () => {
   it.each(["/hub/", "/hub/setup", "/hub/settings"])("%s", async (path) => {
     await open(path);
     expect(await serious()).toEqual([]);
