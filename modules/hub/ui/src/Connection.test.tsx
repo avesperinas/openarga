@@ -1,6 +1,10 @@
+import { configureRegional } from "@openarga/ui";
 import { renderToString } from "react-dom/server";
+import { beforeAll } from "vitest";
 
 import { route } from "./App";
+
+beforeAll(() => configureRegional({ locale: "en-GB" }));
 import { budgetLine, calendarLine, landsIn, priceProblem, removeConsequence, RenameSheet, runLine } from "./Connection";
 import { AddSheet, missing } from "./Add";
 import type { ConnectionDetail, Provider, Run } from "./api";
@@ -16,144 +20,144 @@ const run = (overrides: Partial<Run>): Run => ({
   ...overrides,
 });
 
-test("cada pasada dice cómo fue, y un fallo con las palabras de la fuente", () => {
-  expect(runLine(run({ emitted: 3 }))).toBe("Bien, 3 datos nuevos");
-  expect(runLine(run({ emitted: 1 }))).toBe("Bien, 1 dato nuevo");
-  expect(runLine(run({}))).toBe("Bien, sin nada nuevo");
+test("each pass says how it went, and a failure in the source's words", () => {
+  expect(runLine(run({ emitted: 3 }))).toBe("Fine, 3 new items");
+  expect(runLine(run({ emitted: 1 }))).toBe("Fine, 1 new item");
+  expect(runLine(run({}))).toBe("Fine, nothing new");
   expect(runLine(run({ outcome: "error", detail: "Bitvavo 403 305: No active API key." }))).toBe(
-    "Falló: Bitvavo 403 305: No active API key.",
+    "Failed: Bitvavo 403 305: No active API key.",
   );
-  expect(runLine(run({ outcome: "rate_limited" }))).toBe("La fuente pidió esperar");
-  expect(runLine(run({ outcome: "running", finished_at: null }))).toBe("En marcha");
-  expect(runLine(run({ operation: "search" }))).toBe("Contestó");
-  expect(runLine(run({ operation: "run", detail: "Hecho en 4 turnos con claude-opus-5-5. Listo" }))).toBe(
-    "Hecho en 4 turnos con claude-opus-5-5. Listo",
+  expect(runLine(run({ outcome: "rate_limited" }))).toBe("The source asked to wait");
+  expect(runLine(run({ outcome: "running", finished_at: null }))).toBe("Running");
+  expect(runLine(run({ operation: "search" }))).toBe("Answered");
+  expect(runLine(run({ operation: "run", detail: "Done in 4 turns with claude-opus-5-5. Ready" }))).toBe(
+    "Done in 4 turns with claude-opus-5-5. Ready",
   );
 });
 
-test("quitar una conexión dice que lo ya traído se queda", () => {
+test("removing a connection says what it brought stays", () => {
   const connection = { provider_name: "Bitvavo" } as ConnectionDetail;
 
-  expect(removeConsequence(connection)).toContain("Lo que ya trajo se queda en tus apps.");
+  expect(removeConsequence(connection)).toContain("What it already brought stays in your apps.");
 });
 
-test("cambiar el nombre parte del que tiene", () => {
+test("renaming starts from the current name", () => {
   const html = renderToString(
     <RenameSheet
-      connection={{ id: "x", provider: "ical_private", provider_name: "Calendario privado", label: "Trabajo" } as ConnectionDetail}
+      connection={{ id: "x", provider: "ical_private", provider_name: "Private calendar", label: "Work" } as ConnectionDetail}
       onClose={() => undefined}
       onSaved={() => undefined}
     />,
   );
 
-  expect(html).toContain("Cambiar nombre");
-  expect(html).toContain('value="Trabajo"');
+  expect(html).toContain("Rename");
+  expect(html).toContain('value="Work"');
 });
 
-test("una conexión tiene su dirección, para recargar o llegar desde otra app", () => {
+test("a connection has its address, to reload or come from another app", () => {
   const id = "0b7c2f1e-1b1a-4c55-9d1e-8a6f4a3c2b10";
 
   expect(route(`/hub/${id}`)).toEqual({ screen: "connection", id });
   expect(route("/hub/")).toEqual({ screen: "status" });
-  expect(route("/hub/otra-cosa")).toEqual({ screen: "status" });
+  expect(route("/hub/something-else")).toEqual({ screen: "status" });
 });
 
-test("el estado y el catálogo son dos pestañas, cada una con su dirección", () => {
+test("status and catalogue are two tabs, each with its address", () => {
   expect(route("/hub")).toEqual({ screen: "status" });
   expect(route("/hub/setup")).toEqual({ screen: "setup" });
   expect(route("/hub/setup/")).toEqual({ screen: "setup" });
 });
 
-test("no se conecta hasta tener todo lo que pide", () => {
+test("it does not connect until it has all it asks for", () => {
   const bitvavo = {
     secrets: [
-      { key: "api_key", label: "Clave de API", help: "", multiline: false },
-      { key: "api_secret", label: "Secreto", help: "", multiline: false },
+      { key: "api_key", label: "API key", help: "", multiline: false },
+      { key: "api_secret", label: "Secret", help: "", multiline: false },
     ],
   } as Provider;
 
-  expect(missing(bitvavo, { api_key: "abc" })).toEqual(["Secreto"]);
-  expect(missing(bitvavo, { api_key: "abc", api_secret: "  " })).toEqual(["Secreto"]);
+  expect(missing(bitvavo, { api_key: "abc" })).toEqual(["Secret"]);
+  expect(missing(bitvavo, { api_key: "abc", api_secret: "  " })).toEqual(["Secret"]);
   expect(missing(bitvavo, { api_key: "abc", api_secret: "def" })).toEqual([]);
 });
 
-test("la hoja de añadir dice dónde se consigue cada cosa y no enseña lo pegado", () => {
+test("the add sheet says where to get each thing and hides what is pasted", () => {
   const html = renderToString(
     <AddSheet
       provider={{
         id: "bitvavo",
         name: "Bitvavo",
-        description: "Tu cripto.",
+        description: "Your crypto.",
         capabilities: ["sync"],
         available: true,
         single: true,
         lives_in: null,
-        secrets: [{ key: "api_key", label: "Clave de API", help: "En Bitvavo, Ajustes → API.", multiline: false }],
+        secrets: [{ key: "api_key", label: "API key", help: "In Bitvavo, Settings → API.", multiline: false }],
       }}
       onClose={() => undefined}
       onCreated={() => undefined}
     />,
   );
 
-  expect(html).toContain("Conectar Bitvavo");
-  expect(html).toContain("En Bitvavo, Ajustes → API.");
+  expect(html).toContain("Connect Bitvavo");
+  expect(html).toContain("In Bitvavo, Settings → API.");
   expect(html).toContain('type="password"');
 });
 
-test("los accesos del día se dicen, y cuando no queda ninguno también", () => {
+test("the day's accesses are told, and so is running out", () => {
 
-  expect(budgetLine({ limit: 4, used: 1, remaining: 3 })).toBe("Quedan 3 de 4 accesos hoy.");
-  expect(budgetLine({ limit: 4, used: 4, remaining: 0 })).toContain("ya no quedan accesos");
+  expect(budgetLine({ limit: 4, used: 1, remaining: 3 })).toBe("3 of 4 accesses left today.");
+  expect(budgetLine({ limit: 4, used: 4, remaining: 0 })).toContain("No accesses left today");
 });
 
-test("la lista de bancos se busca sin tildes ni mayúsculas, y un toque doble no abre dos", () => {
+test("the bank list is searched without accents or case, and a double tap opens one", () => {
   let calls = 0;
   const once = oneAtATime(() => {
     calls += 1;
     return new Promise<string>(() => undefined);
   });
 
-  expect(matching(["Banco Inventado", "Caja Rural", "Ibercaja"], "CAJA")).toEqual(["Caja Rural", "Ibercaja"]);
-  expect(matching(["Banco Añil"], "anil")).toEqual(["Banco Añil"]);
+  expect(matching(["Invented Bank", "Caja Rural", "Ibercaja"], "CAJA")).toEqual(["Caja Rural", "Ibercaja"]);
+  expect(matching(["Banco A\u00f1il"], "anil")).toEqual(["Banco A\u00f1il"]);
   expect(once()).not.toBeNull();
   expect(once()).toBeNull();
   expect(calls).toBe(1);
 });
 
-test("una suscripción de calendario dice qué trae con sus parámetros", () => {
+test("a calendar subscription says what it brings with its settings", () => {
 
   expect(calendarLine({ provider: "holidays", settings: { country: "ES", region: "ES-NC" } })).toBe(
-    "Los festivos nacionales de ES y los de ES-NC.",
+    "The national public holidays of ES and those of ES-NC.",
   );
   expect(calendarLine({ provider: "formula1", settings: { sessions: ["race", "qualifying", "sprint"] } })).toBe(
-    "Cada Gran Premio con la carrera, la clasificación y el sprint.",
+    "Each Grand Prix with the race, qualifying and the sprint.",
   );
-  expect(calendarLine({ provider: "ical", settings: { url: "https://example.org/equipo.ics" } })).toBe(
-    "El calendario de example.org, cada día.",
+  expect(calendarLine({ provider: "ical", settings: { url: "https://example.org/team.ics" } })).toBe(
+    "The calendar from example.org, every day.",
   );
-  expect(calendarLine({ provider: "football", settings: { team: "11", team_name: "Equipo de prueba" } })).toBe(
-    "Los partidos de Equipo de prueba, cada seis horas.",
+  expect(calendarLine({ provider: "football", settings: { team: "11", team_name: "Test Team" } })).toBe(
+    "The games of Test Team, every six hours.",
   );
   expect(calendarLine({ provider: "prices", settings: {} })).toBeNull();
 });
 
-test("una conexión dice a qué apps llega por las tomas que declaran, sin nombrarlas aquí", () => {
+test("a connection says which apps it reaches through the inlets they declare", () => {
 
   expect(landsIn({ inlets: [] })).toBeNull();
-  expect(landsIn({ inlets: [{ key: "planner.calendar", app: "Planner", title: "Calendario", settings: [] }] })).toBe("Llega a Planner.");
+  expect(landsIn({ inlets: [{ key: "planner.calendar", app: "Planner", title: "Calendar", settings: [] }] })).toBe("It lands in Planner.");
   expect(
     landsIn({
       inlets: [
-        { key: "money.accounts", app: "Money", title: "Cuentas", settings: [] },
-        { key: "carrera.movements", app: "Carrera", title: "Movimientos", settings: [] },
+        { key: "money.accounts", app: "Money", title: "Accounts", settings: [] },
+        { key: "carrera.movements", app: "Career", title: "Movements", settings: [] },
       ],
     }),
-  ).toBe("Llega a Money y Carrera.");
+  ).toBe("It lands in Money and Career.");
 });
 
 test("a typed price asks for what identifies it and a price above zero", () => {
-  expect(priceProblem("  ", "10")).toBe("Escribe su ISIN o su ticker.");
-  expect(priceProblem("VWCE.DE", "0")).toBe("Escribe un precio mayor que cero.");
-  expect(priceProblem("VWCE.DE", "abc")).toBe("Escribe un precio mayor que cero.");
+  expect(priceProblem("  ", "10")).toBe("Type its ISIN or its ticker.");
+  expect(priceProblem("VWCE.DE", "0")).toBe("Type a price above zero.");
+  expect(priceProblem("VWCE.DE", "abc")).toBe("Type a price above zero.");
   expect(priceProblem("VWCE.DE", "101,25")).toBeNull();
 });
