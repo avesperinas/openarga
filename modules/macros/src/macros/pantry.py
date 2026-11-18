@@ -42,7 +42,7 @@ async def ask(client: httpx.AsyncClient, service: str, body: dict[str, Any]) -> 
             detail = response.json().get("detail")
         except ValueError:
             detail = None
-        raise Unavailable(f"Recipes no contesta: {detail or response.status_code}")
+        raise Unavailable(f"Recipes is not answering: {detail or response.status_code}")
     return response.json()
 
 
@@ -51,9 +51,9 @@ def _said(response: httpx.Response) -> str:
         detail = response.json().get("detail")
     except (ValueError, AttributeError):
         detail = None
-    if not isinstance(detail, str) or not detail.strip() or "contesta" in detail:
+    if response.status_code == 503 or not isinstance(detail, str) or not detail.strip():
         return DOWN
-    return f"Recipes no puede ahora: {re.sub(r' *[(][A-Za-z]+[)]', '', detail).strip()}"
+    return f"Recipes cannot do that now: {re.sub(r' *[(][A-Za-z]+[)]', '', detail).strip()}"
 
 
 async def search(client: httpx.AsyncClient, query: str, outside: bool = True) -> dict[str, Any]:
