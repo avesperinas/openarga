@@ -6,11 +6,11 @@ from uuid import UUID
 
 import httpx
 import pytest
-from bank_fake import ACCOUNT, APP_ID, BANK, IBAN, OTHER_IBAN, PEM, FakeEnableBanking
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from hub import banks, capabilities, worker
+from hub.fakes.bank import ACCOUNT, APP_ID, BANK, IBAN, OTHER_IBAN, PEM, FakeEnableBanking
 
 APP = {"app_id": APP_ID, "private_key": PEM}
 

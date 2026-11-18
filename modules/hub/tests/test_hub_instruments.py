@@ -9,11 +9,11 @@ from uuid import UUID
 import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient
-from markets_fake import QUANTUM, SP500, Markets, markets
 from sqlalchemy import text
 
 from arga_contracts import sources
 from hub import capabilities, connections, instruments, sync
+from hub.fakes.markets import QUANTUM, SP500, Markets, markets
 from hub.instruments import Line, Unresolved
 from hub.providers import prices
 

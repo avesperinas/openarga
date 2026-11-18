@@ -6,11 +6,11 @@ from uuid import UUID
 
 import httpx
 import pytest
-from google_fake import CLIENT_ID, CLIENT_SECRET, REFRESH, FakeGoogle
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from hub import capabilities, worker
+from hub.fakes.google import CLIENT_ID, CLIENT_SECRET, REFRESH, FakeGoogle
 from hub.providers import google_health
 
 SECRETS = {"client_id": CLIENT_ID, "client_secret": CLIENT_SECRET}

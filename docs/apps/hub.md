@@ -58,3 +58,17 @@ ice hockey. A football league is stored as its ESPN slug (`esp.1`), any other as
 
 Formula 1 (sessions to choose), any iCal address, and public holidays by country and region
 (Nager.Date) are the other calendar subscriptions; Planner subscribes to all of them.
+
+## Fake mode
+
+`CONNECTIONS_MODE=fake` sends every outside request of Hub (syncs, capabilities, the worker and
+the AI tools) to `hub.fake.transport()` instead of the network. It answers from deterministic
+doubles in [`hub/fakes`](../../modules/hub/src/hub/fakes): banks (Enable Banking), Google Health,
+holidays, ESPN, Formula 1, any iCal address, prices and exchange rates, weather, books and covers,
+food, films, places, nearby, routes, photos, podcasts, agendas, the notes backup on GitHub and web
+search. Dates are relative to today, so the data is fresh every day. A request with no double gets
+a 503 and is listed in `hub.fake.UNANSWERED`; `tests/test_hub_fake.py` fails if any request leaves
+the machine or goes unanswered.
+
+For a fake bank connection use `hub.fakes.bank.APP_ID` and `PEM` as its secrets; for Google Health,
+`hub.fakes.google.CLIENT_ID`, `CLIENT_SECRET` and `REFRESH`.
