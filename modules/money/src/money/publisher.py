@@ -59,3 +59,14 @@ async def publish_pending(connection: AsyncConnection, client: httpx.AsyncClient
         published += 1
     await fichas.prune(connection, "money")
     return {"published": published, "pending": len(rows) - published}
+
+
+def main() -> int:
+    from money import worker
+
+    worker.main()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
