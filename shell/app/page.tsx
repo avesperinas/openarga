@@ -20,6 +20,7 @@ import {
   readWallpapers,
   readArea,
   readWidget,
+  SignInRequired,
   envelopeKey,
   widgetUrl,
 } from "./lib/kernel";
@@ -58,7 +59,10 @@ export default async function Today() {
     readPreferences(),
     readModules(),
     readWallpapers().catch(() => []),
-  ]);
+  ]).catch((error: unknown) => {
+    if (error instanceof SignInRequired) redirect("/login?next=%2F");
+    throw error;
+  });
 
   const endpoints = new Map(
     catalogue.map((entry) => [`${entry.source}/${entry.id}`, entry.endpoint]),
