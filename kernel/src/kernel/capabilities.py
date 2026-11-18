@@ -137,7 +137,7 @@ async def ask_for(
                 answer = await target.post(f"/capabilities/{capability}", **sent)
     except httpx.HTTPError as error:
         raise HTTPException(
-            status_code=503, detail=f"{who} no contesta ({type(error).__name__})"
+            status_code=503, detail=f"{who} does not answer ({type(error).__name__})"
         ) from error
     return Response(
         content=answer.content,

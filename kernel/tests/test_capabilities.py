@@ -158,7 +158,7 @@ async def test_when_the_app_is_down_the_answer_says_which(declared, served, monk
     response = await ask(ASKS, "shopping.add")
 
     assert response.status_code == 503
-    assert SERVES in response.json()["detail"]
+    assert response.json()["detail"] == f"{SERVES} does not answer (ConnectError)"
 
 
 MOVES_A = "probe_moves_a"
