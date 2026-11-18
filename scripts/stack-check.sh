@@ -18,13 +18,7 @@ cleanup() {
 trap cleanup EXIT
 
 uv run python "$ROOT/scripts/compose.py" --config "$CONFIG" --output "$FILE"
-while IFS= read -r line; do
-  if [[ "$line" =~ ^([A-Z0-9_]+)=$ ]] && [[ "${BASH_REMATCH[1]}" =~ (PASSWORD|SECRET|TOKEN)$ ]]; then
-    echo "${BASH_REMATCH[1]}=$(openssl rand -hex 24)"
-  else
-    echo "$line"
-  fi
-done <"$ROOT/.env.example" >"$WORK/.env"
+"$ROOT/scripts/stack-env.sh" >"$WORK/.env"
 grep -q '^OPENARGA_ADMIN_PASSWORD=.' "$WORK/.env"
 
 compose up -d --build --wait --wait-timeout 600
