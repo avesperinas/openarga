@@ -30,7 +30,7 @@ describe("FilePreview", () => {
     expect(renderToStaticMarkup(<FilePreview name="a.csv" rows={rows} total={10} />)).toContain("8 more rows not shown");
     configureRegional({ locale: "es-ES" });
     const html = renderToStaticMarkup(<FilePreview name="a.csv" rows={rows} total={10} onRemove={() => undefined} />);
-    expect(html).toContain("8 filas más sin mostrar");
+    expect(html).toContain(es["file_preview.more"].replace("{count}", "8"));
     expect(html).toContain(`aria-label="${es["file_preview.remove"]}"`);
   });
 
