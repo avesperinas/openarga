@@ -168,5 +168,6 @@ ui:
       refresh: 1800
       link: /goals/goals
   view: /goals
+  panels: [day]
   hue: 3
   family: goals

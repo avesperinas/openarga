@@ -309,5 +309,6 @@ ui:
       refresh: 900
       link: /vitals/settings
   view: /vitals
+  panels: [health]
   hue: 5
   family: health

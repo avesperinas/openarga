@@ -194,5 +194,6 @@ ui:
       refresh: 900
       link: /recipes
   view: /recipes
+  panels: [home]
   hue: 7
   family: health
