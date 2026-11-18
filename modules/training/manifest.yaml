@@ -103,5 +103,6 @@ ui:
       refresh: 300
       link: /training/next
   view: /training
+  panels: [health]
   hue: 4
   family: health

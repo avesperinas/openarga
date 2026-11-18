@@ -72,5 +72,6 @@ ui:
       refresh: 900
       link: /shopping
   view: /shopping
+  panels: [home]
   hue: 1
   family: goals

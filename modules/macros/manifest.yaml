@@ -256,5 +256,6 @@ ui:
       refresh: 1800
       link: /macros/week
   view: /macros
+  panels: [health]
   hue: 4
   family: health
