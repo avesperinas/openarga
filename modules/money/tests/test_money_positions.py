@@ -109,6 +109,22 @@ async def test_a_position_is_replaced_and_deleted(book) -> None:  # noqa: F811
     assert (await book.delete(f"{path}/{ISIN}")).status_code == 404
 
 
+async def test_fractional_units_and_prices_are_not_rounded_to_cents(book) -> None:  # noqa: F811
+    key = await brokerage(book)
+    put = await book.put(
+        f"/accounts/{key}/positions",
+        json={
+            "symbol": ISIN,
+            "units": "10.1234",
+            "cost": "800",
+            "price": "90.1234",
+            "price_on": (TODAY - timedelta(days=1)).isoformat(),
+        },
+    )
+    [one] = put.json()["positions"]
+    assert (one["units"], one["price"]) == (10.1234, 90.1234)
+
+
 async def test_what_is_held_is_only_the_persons(book) -> None:  # noqa: F811
     key = await brokerage(book)
     await book.put(f"/accounts/{key}/positions", json={"symbol": ISIN, "units": "1", "cost": "10"})

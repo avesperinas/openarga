@@ -135,6 +135,49 @@ export interface ProductDetail {
   photo: { on: string; typed: boolean; funds: FundRow[] } | null;
 }
 
+export interface PositionRow {
+  symbol: string;
+  name: string;
+  units: number;
+  cost: number;
+  price: number;
+  price_on: string;
+  price_source: "hub" | "manual" | "cost";
+  value: number;
+  gain: number;
+  gain_pct: number | null;
+}
+
+export interface PositionsCard {
+  product: string;
+  currency: string;
+  positions: PositionRow[];
+  cost: number;
+  value: number;
+  gain: number;
+}
+
+export interface PositionBody {
+  symbol: string;
+  name: string;
+  units: string;
+  cost: string;
+  price?: string;
+  price_on?: string;
+}
+
+export interface StatementResult {
+  lines: number;
+  new: number;
+  balance: boolean;
+}
+
+export interface StatementBody {
+  content: string;
+  format: "csv" | "ofx";
+  columns?: Record<string, string>;
+}
+
 export interface ProductChange {
   name?: string;
   type?: string;
@@ -497,6 +540,13 @@ export const api = {
     call<ProductDetail>("DELETE", `/accounts/${encodeURIComponent(key)}/composition?on=${on}`),
   setValue: (key: string, on: string, value: string) =>
     call<ProductDetail>("PUT", `/accounts/${encodeURIComponent(key)}/value`, { on, value }),
+  importStatement: (key: string, body: StatementBody) =>
+    call<StatementResult>("POST", `/accounts/${encodeURIComponent(key)}/statement`, body),
+  positions: (key: string) => call<PositionsCard>("GET", `/accounts/${encodeURIComponent(key)}/positions`),
+  setPosition: (key: string, body: PositionBody) =>
+    call<PositionsCard>("PUT", `/accounts/${encodeURIComponent(key)}/positions`, body),
+  removePosition: (key: string, symbol: string) =>
+    call<PositionsCard>("DELETE", `/accounts/${encodeURIComponent(key)}/positions/${encodeURIComponent(symbol)}`),
   funds: () => call<FundOption[]>("GET", "/funds"),
   classifyFund: (symbol: string, asset: string, regions: Record<string, number>) =>
     call<unknown>("PUT", `/funds/${encodeURIComponent(symbol)}`, { asset, regions }),

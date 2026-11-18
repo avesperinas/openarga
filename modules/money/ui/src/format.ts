@@ -145,7 +145,7 @@ export function categoryLabel(c: Category): string {
   return say("category.label", { name: c.name, nature: natureName(c.nature).toLowerCase(), ownership: ownershipName(c.ownership).toLowerCase() });
 }
 
-function decimalMark(): string {
+export function decimalMark(): string {
   return numbers().formatToParts(1.5).find((one) => one.type === "decimal")?.value ?? ".";
 }
 

@@ -19,6 +19,12 @@ Module id `money`, schema `money`, role `mod_money`. Code in
 | `/money/analysis` | Worth, investments, composition, spending by category, income against spending, and the monthly circuit |
 | `/money/settings` | Accounts and products, categories, rules, incomes and the space you share with |
 
+Two things are done from a product's sheet in Settings. On a current or savings account, **Import a
+file** takes a CSV or OFX, shows its first rows, says how many lines it has and imports it; if a CSV's
+columns are not recognised it asks which hold the date, the description and the amount. On an
+investment product, **Edit positions** lists what was bought with its value and gain, and adds, edits
+or removes a position (ISIN or ticker, units, total cost, and optionally a price and its day).
+
 The UI is in English and Spanish (`ui/src/i18n/{en,es}.json`) and follows the person's locale and
 time zone. Server texts come from `src/money/i18n/{en,es}.json`. Amounts are shown in the
 **base currency**, which comes from the person's preferences (`arga_module.preferences.current()`);
