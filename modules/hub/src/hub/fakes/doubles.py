@@ -80,7 +80,7 @@ def overpass(request: httpx.Request) -> httpx.Response:
     query = request.content.decode()
     around = re.search(r"around:\d+,(-?[\d.]+),(-?[\d.]+)", query)
     lat, lon = (float(around.group(1)), float(around.group(2))) if around else (42.81, -1.64)
-    names = ["Example Café", "Sample Bistro", "Example Museum"]
+    names = ["Example Cafe", "Sample Bistro", "Example Museum"]
     return json(
         {
             "elements": [
