@@ -435,7 +435,7 @@ function FundEditor({ fund, state, onBack, onSaved }: { fund: FundRow; state: St
   );
   const [problem, setProblem] = useState<string | null>(null);
   const sum = Object.values(weights).reduce<number>((s, w) => s + (w ?? 0), 0);
-  const splits = asset !== "cash" && asset !== "crypto";
+  const splits = asset !== "cash";
   const ready = !splits || sum === 0 || Math.abs(sum - 100) < 0.5;
 
   const save = async () => {

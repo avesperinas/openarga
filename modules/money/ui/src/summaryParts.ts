@@ -60,7 +60,6 @@ const GROUP_HUES: Record<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8> = {
   Funds: 5,
   Stocks: 7,
   Pension: 6,
-  Crypto: 3,
   Property: 4,
   Deposits: 2,
 };

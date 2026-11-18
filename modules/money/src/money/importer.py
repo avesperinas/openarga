@@ -111,7 +111,7 @@ class HoldingIn(BaseModel):
 
 class FundIn(BaseModel):
     symbol: str = Field(min_length=1, max_length=160)
-    asset: Literal["equity", "bond", "real_estate", "cash", "crypto", "other"]
+    asset: Literal["equity", "bond", "real_estate", "cash", "other"]
     regions: dict[str, Decimal] = Field(default_factory=dict)
 
 

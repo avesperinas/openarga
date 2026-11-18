@@ -299,41 +299,6 @@ async def test_an_unassigned_source_account_becomes_a_product(book, schema) -> N
     assert twice.status_code == 422
 
 
-async def test_what_bitvavo_brings_is_the_value_of_its_product(book, schema) -> None:  # noqa: F811
-    from hub.providers import bitvavo
-
-    day = date.today()
-    brought = [
-        bitvavo.account_event(day),
-        *bitvavo.events(
-            {"BTC": Decimal("0.5"), "EUR": Decimal("100")}, {"BTC": Decimal("40000")}, day
-        ),
-    ]
-    await publish(
-        schema,
-        [
-            {
-                **event(e["type"], e["payload"], e["dedup_hash"]),
-                "ts": datetime.fromisoformat(e["ts"]),
-            }
-            for e in brought
-        ],
-    )
-    state = (await book.get("/state")).json()
-    assert [u["key"] for u in state["unmapped"]] == ["bitvavo"]
-
-    created = await book.post(
-        "/accounts", json={"name": "Crypto", "type": "crypto", "institution": "Bitvavo"}
-    )
-    assert created.status_code == 201, created.text
-    assert created.json()["value"] is None
-    assigned = await book.patch(f"/accounts/{created.json()['key']}", json={"source": "bitvavo"})
-    assert assigned.status_code == 200, assigned.text
-    product = assigned.json()
-    assert product["source"]["bank"] == "Bitvavo"
-    assert (product["value"], product["value_since"]) == (20100.0, day.isoformat())
-
-
 async def test_a_typed_composition_wins_over_the_source_and_sets_the_value(
     book,  # noqa: F811
     schema,
@@ -417,16 +382,16 @@ async def test_the_product_tools_read_and_write_with_their_roles(book, schema) -
 
     refused = await book.post(
         "/tools/create_product",
-        json={"name": "Crypto", "type": "crypto", "institution": "Exchange"},
+        json={"name": "Brokerage", "type": "etf", "institution": "Exchange"},
         headers=READ,
     )
     assert refused.status_code == 403
     created = await book.post(
         "/tools/create_product",
-        json={"name": "Crypto", "type": "crypto", "institution": "Exchange", "ownership": 100},
+        json={"name": "Brokerage", "type": "etf", "institution": "Exchange", "ownership": 100},
         headers=WRITE,
     )
-    assert created.json()["content"]["created"] == "crypto"
+    assert created.json()["content"]["created"] == "brokerage"
     renamed = await book.post(
         "/tools/update_product",
         json={"product": "Plan One", "name": "Plan Global", "ownership": 50},

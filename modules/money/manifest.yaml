@@ -83,7 +83,7 @@ tools:
   - name: get_products
     scope: money:read
     description: >
-      Your products (accounts, funds, plans, crypto, real estate, deposits) with today's value, and
+      Your products (accounts, funds, plans, real estate, deposits) with today's value, and
       the accounts of your sources that are not a product yet. With `product` (its name or key), the
       whole card of one: what it is, where its data comes from, how it is valued, what was
       contributed, its IBANs, the rules that name it and its funds with their value, asset class and
@@ -92,7 +92,7 @@ tools:
     scope: money:read
     description: >
       What your portfolio is invested in today, by your share: by asset class (equity, bonds, real
-      estate, cash, crypto), by fund, by region and by product, and the funds of each product.
+      estate, cash), by fund, by region and by product, and the funds of each product.
       `products` limits it to those. What cannot be split shows as "No breakdown" with how much it
       is.
   - name: get_rules
@@ -104,7 +104,7 @@ tools:
     scope: money:write
     description: >
       Creates a product: name, `type` (one of get_products: `current`, `savings`, `fund`, `etf`,
-      `pension`, `crypto`, `real_estate`, `deposit`), institution, your share in % and whether it is
+      `pension`, `real_estate`, `deposit`), institution, your share in % and whether it is
       the shared account. An ETF or a share at a broker is `etf`, not `fund`. With `source` (the key
       of an unassigned account of your sources) its data comes from it; without it, from the
       transfers from your other accounts, and its IBANs recognise them. Use it only when asked.
@@ -132,7 +132,7 @@ tools:
     scope: money:write
     description: >
       Says what a fund is for the person: its asset class (`equity`, `bond`, `real_estate`, `cash`,
-      `crypto`, `other`) and its split by region in % adding up to 100 (`us`, `europe`, `japan`,
+      `other`) and its split by region in % adding up to 100 (`us`, `europe`, `japan`,
       `pacific`, `other_developed`, `emerging`). It overrides the catalogue. The fund, by its name or
       symbol.
   - name: delete_rule
