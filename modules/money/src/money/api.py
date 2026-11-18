@@ -22,6 +22,7 @@ from money import (
     history,
     importer,
     kpis,
+    positions,
     products,
     statements,
     texts,
@@ -739,6 +740,66 @@ async def import_statement(key: str, request: StatementIn) -> dict:
         counts = await statements.store(connection, key, parsed)
         await books.bump(connection)
     return counts
+
+
+class PositionIn(BaseModel):
+    symbol: str = Field(min_length=1, max_length=160)
+    name: str = Field(default="", max_length=120)
+    units: Decimal = Field(gt=0)
+    cost: Decimal = Field(ge=0)
+    price: Decimal | None = Field(default=None, ge=0)
+    price_on: date | None = None
+
+
+async def positions_card(connection: AsyncConnection, key: str) -> dict:
+    lo = await loaded(connection)
+    stored = await positions.load(connection)
+    out = positions.card(stored, lo.book.prices, key, texts.today())
+    out["currency"] = texts.currency()
+    return plain(out)
+
+
+@router.get("/accounts/{key}/positions")
+async def get_positions(key: str) -> dict:
+    async with as_app() as connection:
+        lo = await loaded(connection)
+        try:
+            positions.check(lo.book.accounts, key)
+        except positions.Refused as error:
+            raise HTTPException(status_code=404, detail=str(error)) from error
+        return await positions_card(connection, key)
+
+
+@router.put("/accounts/{key}/positions")
+async def put_position(key: str, request: PositionIn) -> dict:
+    async with as_app() as connection:
+        lo = await loaded(connection)
+        try:
+            await positions.record(
+                connection,
+                lo.book.accounts,
+                key,
+                request.symbol,
+                request.units,
+                request.cost,
+                request.name,
+                request.price,
+                request.price_on,
+                texts.today(),
+            )
+        except positions.Refused as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        await books.bump(connection)
+        return await positions_card(connection, key)
+
+
+@router.delete("/accounts/{key}/positions/{symbol}")
+async def delete_position(key: str, symbol: str) -> dict:
+    async with as_app() as connection:
+        if not await positions.remove(connection, key, symbol):
+            raise HTTPException(status_code=404, detail="no such position")
+        await books.bump(connection)
+        return await positions_card(connection, key)
 
 
 @router.get("/export")

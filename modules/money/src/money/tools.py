@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_tenancy import current_user
 from money import book as books
-from money import common, configure, kpis, products, texts
+from money import common, configure, kpis, positions, products, texts
 from money.interpret import fold
 from money.shared import totals, year_balance
 from money.texts import currency
@@ -520,6 +520,53 @@ async def record_value(connection: AsyncConnection, arguments: RecordValue) -> d
     return {"product": key, "value": float(arguments.value)}
 
 
+class GetPositions(Arguments):
+    product: str = Field(min_length=1, max_length=80)
+
+
+async def get_positions(connection: AsyncConnection, arguments: GetPositions) -> dict[str, Any]:
+    lo = await loaded(connection)
+    try:
+        key = product_named(lo, arguments.product)
+        positions.check(lo.book.accounts, key)
+    except (configure.Refused, positions.Refused) as error:
+        return {"error": str(error)}
+    card = positions.card(await positions.load(connection), lo.book.prices, key, texts.today())
+    return plain({**card, "currency": texts.currency()})
+
+
+class RecordPosition(Arguments):
+    product: str = Field(min_length=1, max_length=80)
+    symbol: str = Field(min_length=1, max_length=160)
+    units: Decimal = Field(gt=0)
+    cost: Decimal = Field(ge=0)
+    name: str = Field(default="", max_length=120)
+    price: Decimal | None = Field(default=None, ge=0)
+    price_on: date | None = None
+
+
+async def record_position(connection: AsyncConnection, arguments: RecordPosition) -> dict[str, Any]:
+    lo = await loaded(connection)
+    try:
+        key = product_named(lo, arguments.product)
+        await positions.record(
+            connection,
+            lo.book.accounts,
+            key,
+            arguments.symbol,
+            arguments.units,
+            arguments.cost,
+            arguments.name,
+            arguments.price,
+            arguments.price_on,
+            texts.today(),
+        )
+        await books.bump(connection)
+    except (configure.Refused, positions.Refused) as error:
+        return {"error": str(error)}
+    return {"product": key, "symbol": arguments.symbol.strip()}
+
+
 class ClassifyFund(Arguments):
     fund: str = Field(min_length=1, max_length=160)
     asset: Literal["equity", "bond", "real_estate", "cash", "other"]
@@ -569,6 +616,8 @@ TOOLS: dict[str, Tool] = {
     "update_product": Tool(UpdateProduct, update_product),
     "record_composition": Tool(RecordComposition, record_composition),
     "record_value": Tool(RecordValue, record_value),
+    "get_positions": Tool(GetPositions, get_positions),
+    "record_position": Tool(RecordPosition, record_position),
     "classify_fund": Tool(ClassifyFund, classify_fund),
     "delete_rule": Tool(DeleteRule, delete_rule),
 }
