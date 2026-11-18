@@ -3,11 +3,13 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
+import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from hub import capabilities, statements
+from hub.fakes.markets import markets
 from hub.instruments import is_cash
 from hub.tools import TOOLS
 
@@ -185,6 +187,11 @@ def migrated(database_url: str) -> None:
 
 
 @pytest.fixture
+def offline(monkeypatch) -> None:
+    monkeypatch.setattr(capabilities, "source_transport", lambda: httpx.MockTransport(markets()))
+
+
+@pytest.fixture
 async def kernel(migrated, schema, monkeypatch):
     from kernel import db as kernel_db
     from kernel.main import app as kernel_app
@@ -227,7 +234,7 @@ SHOT = {
 
 
 async def test_a_screenshot_told_by_the_model_is_published_like_the_page(
-    api, kernel, schema
+    api, kernel, schema, offline
 ) -> None:
     first = await api.post(
         "/tools/record_portfolio", json=SHOT, headers={"x-arga-scopes": "hub:write"}
@@ -249,7 +256,9 @@ async def test_a_screenshot_told_by_the_model_is_published_like_the_page(
     assert balance["amount"] == "2000"
 
 
-async def test_a_screenshot_that_does_not_add_up_is_not_recorded(api, kernel, schema) -> None:
+async def test_a_screenshot_that_does_not_add_up_is_not_recorded(
+    api, kernel, schema, offline
+) -> None:
     wrong = {**SHOT, "funds": [{"name": "SPDR S&P 500 ETF", "weight": "50"}]}
     response = await api.post(
         "/tools/record_portfolio", json=wrong, headers={"x-arga-scopes": "hub:write"}
