@@ -30,7 +30,7 @@ if it were a connection.
 | Id | Task | Verify | Status |
 |---|---|---|---|
 | P1 | **Local login.** Keycloak realm with local users and a first admin created on boot; Google and generic OIDC optional by config. Realm and auth texts in English | Login e2e with a local user in CI | `doing` (realm, first admin and optional OIDC done and tested; needs Docker: login e2e with a local user) |
-| P2 | **Instance config and compose.** `openarga.yaml`: domain, enabled modules, default locale, time zone and currency, auth providers, AI defaults. `scripts/compose.py` generates `docker-compose.yml` (Postgres, Keycloak, gateway, shell, MCP, one service per enabled module) and the gateway routes from it and the manifests. A CI job boots the stack and checks every `/healthz` | Disable two modules, regenerate, the stack boots without them | `doing` (config, generator and module disabling done and tested; needs Docker: `scripts/stack-check.sh` boots the stack) |
+| P2 | **Instance config and compose.** `openarga.yaml`: domain, enabled modules, default locale, time zone and currency, auth providers, AI defaults. `scripts/compose.py` generates `docker-compose.yml` (Postgres, Keycloak, gateway, shell, MCP, one service per enabled module) and the gateway routes from it and the manifests. A CI job boots the stack and checks every `/healthz` | Disable two modules, regenerate, the stack boots without them | `doing` (config, generator and module disabling done and tested. First Docker run found six faults, fixed in #181 to #184: `.env` names, `PUBLIC_URL` for auth, `HUB_CREDENTIALS_KEY`, money worker entry point, shell health check, `host.docker.internal` for the hub. Needs a second `scripts/stack-check.sh` run on Docker) |
 | P3 | **Person preferences.** Storage, API and Settings screen in the shell; the gateway sends `x-arga-locale`, `x-arga-timezone`, `x-arga-currency`, `x-arga-country`, `x-arga-region`, `x-arga-area`. Remove hardcoded `Europe/Madrid`, `es-ES` and `EUR` from kernel, gateway, shell and `packages/**` | The same data rendered in two locales and two time zones | `done` |
 | P4 | **i18n of the platform.** Shell, `packages/**`, kernel, gateway, MCP and hub in en and es; Storybook stories in both languages. Empty the baseline for every Platform file | Their lines gone from `tests/spanish_baseline.txt` | `done` |
 | P5 | **First-run wizard.** Language, country and region, time zone, currency, home area, apps to enable | Playwright from empty database to dashboard | `doing` (wizard built and unit-tested; needs Docker: Playwright from an empty database in `scripts/desktop-e2e.sh`) |
@@ -79,6 +79,6 @@ Suggested order: A2.4 and outings first (it is the most visible app), then the r
 
 | Id | Task | Status |
 |---|---|---|
-| R1 | Fresh clone, `make demo`, every app opened in both languages, AI layer with a real key and with Ollama, `tests/spanish_baseline.txt` empty | `todo` |
+| R1 | Fresh clone, `make demo`, every app opened in both languages, AI layer with a real key and with Ollama, `tests/spanish_baseline.txt` empty | `doing` (first Docker run done, its faults fixed, see P2; rerun the stack, then the rest) |
 | R2 | Tag `v0.1.0`, public images, release notes, README screenshots | `todo` |
 | R3 | Public demo (where it is hosted is the owner's decision) | `todo` |
