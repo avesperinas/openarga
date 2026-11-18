@@ -14,7 +14,18 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_tenancy import current_spaces, current_user
 from arga_widgets import envelope
-from money import analysis, catalog, common, configure, history, importer, kpis, products, texts
+from money import (
+    analysis,
+    catalog,
+    common,
+    configure,
+    history,
+    importer,
+    kpis,
+    products,
+    statements,
+    texts,
+)
 from money import book as books
 from money.db import engine
 from money.interpret import merchant_key
@@ -705,6 +716,27 @@ async def import_bundle(request: importer.Bundle) -> dict:
             counts = await importer.apply(connection, request)
         except importer.Refused as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
+        await books.bump(connection)
+    return counts
+
+
+class StatementIn(BaseModel):
+    content: str = Field(min_length=1, max_length=5_000_000)
+    format: Literal["csv", "ofx"] | None = None
+    columns: dict[str, str] | None = None
+
+
+@router.post("/accounts/{key}/statement")
+async def import_statement(key: str, request: StatementIn) -> dict:
+    try:
+        parsed = statements.parse(request.content, request.format, request.columns)
+    except statements.Unreadable as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    async with as_app() as connection:
+        lo = await loaded(connection)
+        if key not in lo.book.accounts:
+            raise HTTPException(status_code=404, detail="no such account")
+        counts = await statements.store(connection, key, parsed)
         await books.bump(connection)
     return counts
 

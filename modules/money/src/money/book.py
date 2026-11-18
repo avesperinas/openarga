@@ -14,7 +14,7 @@ from arga_tenancy import current_spaces
 from money import catalog, common, source
 from money.history import Flow, Valuation
 from money.interpret import Interpreter, Label, Rule, fold
-from money.model import OTHER, Account, Book, Category, Fact, Holding, Imputation
+from money.model import OTHER, Account, Balance, Book, Category, Fact, Holding, Imputation
 from money.shared import HistoryRow, Income, ratio
 from money.texts import t
 
@@ -230,6 +230,39 @@ async def load(connection: AsyncConnection, user: UUID | None) -> Loaded:
             accs[k] = Account(**{**a.__dict__, "ibans": a.ibans + (iban,)})
 
     facts = list(loaded.facts)
+    balances = list(loaded.balances)
+    for r in (
+        await connection.execute(
+            text(
+                "select account, reference, booked_on, value_on, amount, description, counterparty "
+                "from money.money_v1_statement_line"
+            )
+        )
+    ).all():
+        if r.account not in accs:
+            continue
+        fact = Fact(
+            f"{r.account}:{r.reference}",
+            r.account,
+            r.booked_on,
+            Decimal(str(r.amount)),
+            r.description,
+            "statement",
+            counterparty=r.counterparty,
+            value_on=r.value_on,
+        )
+        facts.append(fact)
+        loaded.merchant_of[fact.id] = source.merchant(
+            accs[r.account].institution, r.description, r.counterparty, conf.holders
+        )
+    for r in (
+        await connection.execute(
+            text("select account, on_date, amount from money.money_v1_statement_balance")
+        )
+    ).all():
+        if r.account in accs:
+            balances = [b for b in balances if (b.account, b.on) != (r.account, r.on_date)]
+            balances.append(Balance(r.account, r.on_date, Decimal(str(r.amount))))
     labels: list[Label] = []
     entries: dict[str, dict] = {}
     keeps = conf.space_id is not None and any(a.shared_space for a in accs.values())
@@ -327,7 +360,7 @@ async def load(connection: AsyncConnection, user: UUID | None) -> Loaded:
             accs,
             cats,
             facts,
-            loaded.balances,
+            balances,
             holdings=holdings,
             prices=loaded.prices,
         )
