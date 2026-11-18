@@ -24,8 +24,8 @@ test("each pass says how it went, and a failure in the source's words", () => {
   expect(runLine(run({ emitted: 3 }))).toBe("Fine, 3 new items");
   expect(runLine(run({ emitted: 1 }))).toBe("Fine, 1 new item");
   expect(runLine(run({}))).toBe("Fine, nothing new");
-  expect(runLine(run({ outcome: "error", detail: "Bitvavo 403 305: No active API key." }))).toBe(
-    "Failed: Bitvavo 403 305: No active API key.",
+  expect(runLine(run({ outcome: "error", detail: "Example Exchange 403 305: No active API key." }))).toBe(
+    "Failed: Example Exchange 403 305: No active API key.",
   );
   expect(runLine(run({ outcome: "rate_limited" }))).toBe("The source asked to wait");
   expect(runLine(run({ outcome: "running", finished_at: null }))).toBe("Running");
@@ -36,7 +36,7 @@ test("each pass says how it went, and a failure in the source's words", () => {
 });
 
 test("removing a connection says what it brought stays", () => {
-  const connection = { provider_name: "Bitvavo" } as ConnectionDetail;
+  const connection = { provider_name: "Example Exchange" } as ConnectionDetail;
 
   expect(removeConsequence(connection)).toContain("What it already brought stays in your apps.");
 });
@@ -69,38 +69,38 @@ test("status and catalogue are two tabs, each with its address", () => {
 });
 
 test("it does not connect until it has all it asks for", () => {
-  const bitvavo = {
+  const exchange = {
     secrets: [
       { key: "api_key", label: "API key", help: "", multiline: false },
       { key: "api_secret", label: "Secret", help: "", multiline: false },
     ],
   } as Provider;
 
-  expect(missing(bitvavo, { api_key: "abc" })).toEqual(["Secret"]);
-  expect(missing(bitvavo, { api_key: "abc", api_secret: "  " })).toEqual(["Secret"]);
-  expect(missing(bitvavo, { api_key: "abc", api_secret: "def" })).toEqual([]);
+  expect(missing(exchange, { api_key: "abc" })).toEqual(["Secret"]);
+  expect(missing(exchange, { api_key: "abc", api_secret: "  " })).toEqual(["Secret"]);
+  expect(missing(exchange, { api_key: "abc", api_secret: "def" })).toEqual([]);
 });
 
 test("the add sheet says where to get each thing and hides what is pasted", () => {
   const html = renderToString(
     <AddSheet
       provider={{
-        id: "bitvavo",
-        name: "Bitvavo",
+        id: "exchange",
+        name: "Example Exchange",
         description: "Your crypto.",
         capabilities: ["sync"],
         available: true,
         single: true,
         lives_in: null,
-        secrets: [{ key: "api_key", label: "API key", help: "In Bitvavo, Settings → API.", multiline: false }],
+        secrets: [{ key: "api_key", label: "API key", help: "In Example Exchange, Settings → API.", multiline: false }],
       }}
       onClose={() => undefined}
       onCreated={() => undefined}
     />,
   );
 
-  expect(html).toContain("Connect Bitvavo");
-  expect(html).toContain("In Bitvavo, Settings → API.");
+  expect(html).toContain("Connect Example Exchange");
+  expect(html).toContain("In Example Exchange, Settings → API.");
   expect(html).toContain('type="password"');
 });
 

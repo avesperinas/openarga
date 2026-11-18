@@ -29,7 +29,7 @@ CONNECT = "insert into hub.hub_connection (provider, label) values (:provider, :
 
 @pytest.fixture
 async def two_people(schema):
-    ana = (await as_role(schema, WRITE, ANA, CONNECT, provider="bitvavo", label="Bitvavo"))[0].id
+    ana = (await as_role(schema, WRITE, ANA, CONNECT, provider="usda", label="USDA"))[0].id
     eva = (await as_role(schema, WRITE, EVA, CONNECT, provider="claude", label="Claude"))[0].id
     for person, connection in ((ANA, ana), (EVA, eva)):
         await as_role(
@@ -50,7 +50,7 @@ async def test_each_person_sees_only_their_connections_and_runs(two_people, role
     ana = await as_role(schema, role, ANA, "select label from hub.hub_connection")
     eva_runs = await as_role(schema, role, EVA, "select 1 from hub.hub_run")
 
-    assert [row.label for row in ana] == ["Bitvavo"]
+    assert [row.label for row in ana] == ["USDA"]
     assert len(eva_runs) == 1
 
 
@@ -65,7 +65,7 @@ async def test_the_read_role_cannot_write(two_people) -> None:
     schema, _, _ = two_people
 
     with pytest.raises(DBAPIError, match="permission denied"):
-        await as_role(schema, READ, ANA, CONNECT, provider="bitvavo", label="Otra")
+        await as_role(schema, READ, ANA, CONNECT, provider="usda", label="Other")
 
 
 async def test_the_read_role_sees_that_a_credential_exists_but_not_the_secret(two_people) -> None:
@@ -73,7 +73,7 @@ async def test_the_read_role_sees_that_a_credential_exists_but_not_the_secret(tw
     with as_user(ANA):
         async with schema.begin() as connection:
             await connection.execute(text(f'set local role "{WRITE}"'))
-            await credentials.store(connection, "bitvavo", ana, "api_key", "clave-de-prueba-1234")
+            await credentials.store(connection, "usda", ana, "api_key", "test-key-1234")
 
     keys = await as_role(schema, READ, ANA, "select key from hub.hub_credential")
     with pytest.raises(DBAPIError, match="permission denied"):
@@ -94,13 +94,13 @@ async def test_the_value_goes_in_encrypted_and_opens_only_for_its_person(two_peo
     with as_user(ANA):
         async with schema.begin() as connection:
             await connection.execute(text(f'set local role "{WRITE}"'))
-            await credentials.store(connection, "bitvavo", ana, "api_key", "clave-de-prueba-1234")
+            await credentials.store(connection, "usda", ana, "api_key", "test-key-1234")
             raw = await connection.scalar(text("select ciphertext from hub.hub_credential"))
-            opened = await credentials.use(connection, "bitvavo", ana, "api_key")
+            opened = await credentials.use(connection, "usda", ana, "api_key")
             listed = await credentials.status(connection, ana, ("api_key", "api_secret"))
 
     assert b"clave-de-prueba" not in bytes(raw)
-    assert opened == "clave-de-prueba-1234"
+    assert opened == "test-key-1234"
     assert [(s.key, s.configured, s.hint) for s in listed] == [
         ("api_key", True, "…1234"),
         ("api_secret", False, None),
@@ -108,15 +108,15 @@ async def test_the_value_goes_in_encrypted_and_opens_only_for_its_person(two_peo
 
 
 def test_a_secret_sealed_for_one_provider_does_not_open_with_another() -> None:
-    sealed = credentials.vault("enable_banking").seal(ANA, "c:key", "secreto-de-prueba")
+    sealed = credentials.vault("enable_banking").seal(ANA, "c:key", "test-secret")
 
     with pytest.raises(Undecipherable):
         credentials.vault("claude").open(ANA, "c:key", sealed)
 
 
 def test_a_secret_copied_to_another_connection_or_person_does_not_open() -> None:
-    box = credentials.vault("bitvavo")
-    sealed = box.seal(ANA, "una:api_key", "secreto-de-prueba")
+    box = credentials.vault("usda")
+    sealed = box.seal(ANA, "una:api_key", "test-secret")
 
     with pytest.raises(Undecipherable):
         box.open(ANA, "otra:api_key", sealed)
@@ -128,14 +128,14 @@ def test_what_was_sealed_with_the_previous_key_still_opens(monkeypatch) -> None:
     import os
 
     old = os.environ["HUB_CREDENTIALS_KEY"]
-    sealed = credentials.vault("bitvavo").seal(ANA, "c:key", "secreto-de-prueba")
+    sealed = credentials.vault("usda").seal(ANA, "c:key", "test-secret")
 
     monkeypatch.setenv("HUB_CREDENTIALS_KEY", os.urandom(32).hex())
     monkeypatch.setenv("HUB_CREDENTIALS_KEY_PREVIOUS", old)
     credentials.masters.cache_clear()
     try:
-        box = credentials.vault("bitvavo")
-        assert box.open(ANA, "c:key", sealed) == "secreto-de-prueba"
+        box = credentials.vault("usda")
+        assert box.open(ANA, "c:key", sealed) == "test-secret"
         assert box.stale(sealed)
     finally:
         monkeypatch.undo()
