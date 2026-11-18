@@ -1349,7 +1349,7 @@ async def account_widget(option: Annotated[str | None, Query(max_length=40)] = N
     )
 
 
-FINE = {"share", "simple", "period_return", "rate", "ownership", "change"}
+FINE = {"share", "simple", "period_return", "rate", "ownership", "change", "units", "price"}
 
 
 def plain(value, key: str | None = None):

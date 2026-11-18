@@ -19,6 +19,8 @@ import {
 } from "@openarga/ui";
 import { useEffect, useState } from "react";
 
+import { PositionsSheet } from "./Positions";
+import { StatementSheet } from "./StatementSheet";
 import { signedPercent } from "./analysisParts";
 import { type FundRow, type ProductChange, type ProductDetail, Refused, type State, type TypedFund, api } from "./api";
 import { amountText, capital, currencySymbol, isoDay, money, parseAmount, percentText, say, shortDay, typeName } from "./format";
@@ -52,7 +54,13 @@ export function FundListRow({ fund, onClick }: { fund: FundRow; onClick?: () => 
   );
 }
 
-type Mode = { kind: "detail" } | { kind: "composition" } | { kind: "fund"; fund: FundRow } | { kind: "value" };
+type Mode =
+  | { kind: "detail" }
+  | { kind: "composition" }
+  | { kind: "fund"; fund: FundRow }
+  | { kind: "value" }
+  | { kind: "statement" }
+  | { kind: "positions" };
 
 export function ProductSheet({
   productKey,
@@ -103,6 +111,27 @@ export function ProductSheet({
         state={state}
         onBack={back}
         onSaved={async () => saved(await api.product(product.key), t("product.fund_saved"))}
+      />
+    );
+  if (mode.kind === "statement")
+    return (
+      <StatementSheet
+        product={product}
+        onBack={back}
+        onImported={async (result) => {
+          saved(await api.product(product.key), t("statement.done", { new: result.new, lines: result.lines }));
+        }}
+      />
+    );
+  if (mode.kind === "positions")
+    return (
+      <PositionsSheet
+        product={product}
+        onBack={async () => {
+          back();
+          setProduct(await api.product(product.key));
+        }}
+        onChanged={onChanged}
       />
     );
   if (mode.kind === "value")
@@ -232,6 +261,22 @@ function DetailEditor({
               {t("product.remove_typed")}
             </Button>
           )}
+        </Section>
+      )}
+
+      {invested ? (
+        <Section title={t("product.positions")}>
+          <Hint>{t("product.positions_hint")}</Hint>
+          <Button variant="tinted" size="small" onClick={() => onMode({ kind: "positions" })}>
+            {t("product.edit_positions")}
+          </Button>
+        </Section>
+      ) : (
+        <Section title={t("product.statement")}>
+          <Hint>{t("product.statement_hint")}</Hint>
+          <Button variant="tinted" size="small" onClick={() => onMode({ kind: "statement" })}>
+            {t("product.import_file")}
+          </Button>
         </Section>
       )}
 
