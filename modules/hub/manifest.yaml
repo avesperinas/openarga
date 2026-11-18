@@ -63,5 +63,6 @@ ui:
       refresh: 900
       link: /hub
   view: /hub
+  panels: []
   hue: 6
   family: system
