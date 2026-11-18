@@ -98,6 +98,8 @@ async def test_a_new_photo_of_the_same_day_replaces_the_one_before(book, schema)
             held("0P0001I704.F", "400.00", "iShares Emerging Gov Bond Index", "b"),
         ],
     )
+    said = await book.put("/funds/SPY", json={"asset": "equity", "regions": {"us": 100}})
+    assert said.status_code == 200, said.text
     product = (await book.get("/products/plan")).json()
     funds = {f["symbol"]: f for f in product["photo"]["funds"]}
     assert set(funds) == {"SPY", "0P0001I704.F"}
@@ -155,6 +157,9 @@ async def test_the_composition_by_asset_region_and_fund_and_what_cannot_be_split
             held("EUR", "100.00", "Cash", "a"),
         ],
     )
+    for symbol, regions in (("SPY", {"us": 100}), ("VPL", {"japan": 58, "pacific": 42})):
+        said = await book.put(f"/funds/{symbol}", json={"asset": "equity", "regions": regions})
+        assert said.status_code == 200, said.text
     comp = (await book.get("/analysis/composition", params=period())).json()
     assets = {r["key"]: r["value"] for r in comp["by_asset"]}
     assert assets == {"equity": 700.0, "unknown": 200.0, "cash": 100.0}
@@ -214,11 +219,13 @@ async def test_an_etf_valued_by_its_isin_moves_with_the_price_of_its_line(
             event("finance.price", {"symbol": symbol, "on": LATER, "price": "33", **line}, "p2"),
         ],
     )
+    said = await book.put(f"/funds/{symbol}", json={"asset": "equity", "regions": {"europe": 100}})
+    assert said.status_code == 200, said.text
     product = (await book.get("/products/plan")).json()
     assert product["value"] == 1090.0
     funds = {f["symbol"]: f for f in product["photo"]["funds"]}
     assert funds[symbol]["value"] == 990.0 and funds[symbol]["change"] == 0.1
-    assert (funds[symbol]["asset"], funds[symbol]["classified"]) == ("equity", "catalog")
+    assert (funds[symbol]["asset"], funds[symbol]["classified"]) == ("equity", "yours")
 
 
 async def test_a_product_is_created_changed_and_given_its_ibans(book) -> None:  # noqa: F811
@@ -317,7 +324,7 @@ async def test_a_typed_composition_wins_over_the_source_and_sets_the_value(
     assert typed.status_code == 200, typed.text
     photo = typed.json()["photo"]
     assert photo["typed"]
-    assert {f["symbol"] for f in photo["funds"]} == {"SPY", "0P00012NJE.F"}
+    assert {f["symbol"] for f in photo["funds"]} == {"SPY", "name:vanguard-global-short-bond-index"}
     assert sum(f["value"] for f in photo["funds"]) == 1000.0
     wrong = await book.put(
         "/accounts/plan/composition",
@@ -376,6 +383,7 @@ async def test_the_product_tools_read_and_write_with_their_roles(book, schema) -
     assert "plan" in {p["key"] for p in listed["products"]}
     one = await book.post("/tools/get_products", json={"product": "plan one"}, headers=READ)
     assert one.json()["content"]["photo"]["funds"][0]["symbol"] == "SPY"
+    await book.put("/funds/SPY", json={"asset": "equity", "regions": {"us": 100}})
     comp = (await book.post("/tools/get_composition", json={}, headers=READ)).json()["content"]
     assert {r["key"] for r in comp["by_asset"]} >= {"equity", "cash"}
 

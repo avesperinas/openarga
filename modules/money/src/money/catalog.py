@@ -26,8 +26,3 @@ def institution(name: str) -> dict:
         if key.lower() == folded or folded in (a.lower() for a in data.get("aliases", ())):
             return data
     return {}
-
-
-@cache
-def funds() -> dict[str, dict]:
-    return tomllib.loads((HERE / "funds.toml").read_text())
