@@ -38,7 +38,7 @@ if it were a connection.
 | P7 | **Fake mode for every provider.** Deterministic fixtures for bank, health, calendars, weather, books, food, places, routes, photos, agendas | The demo boots with no network | `done` |
 | P8 | **Hub clean-up.** Out: INE, Bitvavo, IMAP, the Spanish funds catalogue. Prices by ISIN or ticker from a configurable source. `institutions.toml` documented for contributors. Calendar subscription catalogue: any ESPN team, Formula 1, any iCal; holidays by country and region | Tests of the remaining providers | `in progress` |
 | P9 | **Fork-friendly.** App icons, names, families and launcher read from manifests (today: `scripts/make-pwa.mjs`, `packages/ui/src/appearance.ts`, `shell/app/lib/panels.ts`, `kernel/src/kernel/desktop.py`); modules discovered also in `modules/custom/`; `new-module` produces a module that passes CI | Generate a module into `modules/custom/`, CI green with it | `doing` |
-| P10 | **Demo mode.** `scripts/demo.py` runs every module seed for the cast; daily simulated life; nightly reset; "Try the demo" login; MCP read-only in demo | Empty database to populated demo in one command, in CI | `todo` |
+| P10 | **Demo mode.** `scripts/demo.py` runs every module seed for the cast; daily simulated life; nightly reset; "Try the demo" login; MCP read-only in demo | Empty database to populated demo in one command, in CI | `done` |
 | P11 | **Platform docs.** README with screenshots, install, configuration, architecture, AI, connections, security, build your own app; CONTRIBUTING, SECURITY, CODE_OF_CONDUCT | Every command in them run once | `doing` |
 
 Suggested order: P3, P4 (start), P6 and P1 first, because the apps consume them; then P2, P7, P8,
