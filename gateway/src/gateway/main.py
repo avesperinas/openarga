@@ -389,6 +389,8 @@ def page(
 
 DEMO_SECONDS = 12 * 3600
 DEMO_SUBJECT = "demo-{person}"
+DEMO_DOOR = "/demo"
+DEMO_ASSETS = ("/_next/static/", "/wallpapers/")
 
 
 def demo_people() -> tuple[str, ...]:
@@ -398,29 +400,54 @@ def demo_people() -> tuple[str, ...]:
     return tuple(name.strip() for name in names if name.strip())
 
 
+DEMO_LOCALES = frozenset({"en", "es"})
+
+
 @app.get("/login/demo", include_in_schema=False)
 async def demo_login(
     request: Request,
     who: str | None = Query(default=None, alias="as"),
+    locale: str | None = None,
     next: str | None = None,
 ) -> Response:
     people = demo_people()
     if not people:
         return JSONResponse(status_code=404, content={"detail": "not found"})
-    chosen = who if who in people else people[0]
+    if who not in people:
+        door = httpx.URL("/demo", params={"next": session_module.safe_next(next)})
+        return RedirectResponse(str(door), status_code=302)
+    subject = DEMO_SUBJECT.format(person=who)
+    if locale in DEMO_LOCALES:
+        await speak(request, subject, locale)
     until = int(time.time()) + DEMO_SECONDS
-    session = Session(DEMO_SUBJECT.format(person=chosen), until, "", until)
+    session = Session(subject, until, "", until)
     response = RedirectResponse(session_module.safe_next(next), status_code=302)
     response.headers["cache-control"] = "no-store"
     return with_cookie(response, request.app.state.sessions.issue(session))
+
+
+async def speak(request: Request, subject: str, locale: str) -> None:
+    people = request.app.state.people
+    person = await people.person_for(subject)
+    if person is None:
+        return
+    try:
+        await client().patch(
+            f"{kernel_url()}/me/preferences",
+            json={"locale": locale},
+            headers=[(SUBJECT_HEADER.encode(), subject.encode()), *person.headers()],
+        )
+    except httpx.HTTPError:
+        return
+    people.forget(subject)
 
 
 @app.get("/login", include_in_schema=False)
 async def login(request: Request, next: str | None = None) -> Response:
     target = session_module.safe_next(next)
     if demo_people():
-        demo = httpx.URL("/login/demo", params={"next": target})
-        return RedirectResponse(str(demo), status_code=302)
+        door = httpx.URL("/demo", params={"next": target})
+        return RedirectResponse(str(door), status_code=302)
     sessions = request.app.state.sessions
     if sessions.read(request.cookies.get(COOKIE)) is not None:
         try:
@@ -573,7 +600,11 @@ async def shell(request: Request, path: str) -> Response:
     if owner is not None:
         return await module_app(request, owner, path, f"/{rest}")
 
-    if request.method in ("GET", "HEAD") and request.url.path in INSTALL_ASSETS:
+    public = request.url.path in INSTALL_ASSETS or (
+        (request.url.path == DEMO_DOOR or request.url.path.startswith(DEMO_ASSETS))
+        and bool(demo_people())
+    )
+    if request.method in ("GET", "HEAD") and public:
         return await forward(request, shell_url(), path, None)
     try:
         who = await person(request)
