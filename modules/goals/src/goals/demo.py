@@ -312,7 +312,7 @@ def _checks(persona: Persona, today: date) -> list[dict]:
         if (back + shift) % 7 in (2, 5) or (back + shift) % 23 == 0:
             continue
         found.append(
-            {"id": _id(persona, f"check-reading-{back}"), "goal_id": goal, "day": day, "done": True}
+            {"id": _id(persona, f"check-reading-{day}"), "goal_id": goal, "day": day, "done": True}
         )
     weekly = _id(persona, "goal-running")
     for back in range(1, 200):
@@ -321,7 +321,7 @@ def _checks(persona: Persona, today: date) -> list[dict]:
         distance = (6.5 if persona.key == "alex" else 1.0) + (back % 5) * 0.4
         found.append(
             {
-                "id": _id(persona, f"check-running-{back}"),
+                "id": _id(persona, f"check-running-{today - timedelta(days=back)}"),
                 "goal_id": weekly,
                 "day": today - timedelta(days=back),
                 "done": None,
@@ -329,12 +329,14 @@ def _checks(persona: Persona, today: date) -> list[dict]:
             }
         )
     savings = _id(persona, "goal-savings")
+    first = today.replace(day=1)
     for month in range(3):
+        day = first - timedelta(days=30 * (3 - month) + 1)
         found.append(
             {
-                "id": _id(persona, f"check-savings-{month}"),
+                "id": _id(persona, f"check-savings-{day}"),
                 "goal_id": savings,
-                "day": today - timedelta(days=90 - month * 30 - 1),
+                "day": day,
                 "done": None,
                 "value": 450 * (month + 1) + (150 if persona.key == "alex" else 0),
             }
