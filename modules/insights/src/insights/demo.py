@@ -19,10 +19,30 @@ ABOUT = {
 TRAITS = {
     "alex": [
         ("topic", "Ancient history", 2),
+        ("topic", "Quantum computing", 2),
+        ("topic", "Data engineering", 2),
+        ("topic", "Space exploration", 1),
+        ("topic", "Learning German", 1),
+        ("topic", "Running science", 1),
         ("genre", "Historical novels", 1),
-        ("avoid", "Football", -2),
+        ("genre", "Science fiction", 1),
+        ("format", "Podcasts", 1),
+        ("format", "Long reads", 1),
+        ("avoid", "Celebrity gossip", -2),
+        ("avoid", "Cryptocurrency hype", -2),
     ],
-    "sam": [("topic", "Oceans", 2), ("format", "Podcasts", 1), ("topic", "Food science", 1)],
+    "sam": [
+        ("topic", "Oceans", 2),
+        ("topic", "Food science", 1),
+        ("topic", "Nutrition", 2),
+        ("topic", "Ceramics", 2),
+        ("topic", "Poetry", 1),
+        ("topic", "Travel stories", 1),
+        ("genre", "Essays", 1),
+        ("format", "Podcasts", 1),
+        ("format", "Short articles", 1),
+        ("avoid", "Reality TV", -2),
+    ],
 }
 
 

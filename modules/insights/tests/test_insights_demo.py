@@ -39,7 +39,7 @@ async def test_the_seed_runs_twice_without_duplicates(schema) -> None:
     first = await seed_everyone()
     again = await seed_everyone()
 
-    assert first == again == {"alex": (2, 2, 3), "sam": (2, 2, 3)}
+    assert first == again == {"alex": (2, 2, 12), "sam": (2, 2, 10)}
 
 
 async def test_alex_has_advice_a_week_and_today_s_pill(api) -> None:
