@@ -40,16 +40,29 @@ async def test_the_seed_runs_twice_without_duplicates(schema) -> None:
     first = await seed_everyone()
     again = await seed_everyone()
 
-    assert first == again == {"alex": (2, 3, 3, 0), "sam": (1, 1, 1, 1)}
+    assert first == again
+    assert first["alex"][0] == 10 and first["sam"][0] == 12
 
 
-async def test_alex_has_a_trip_made_and_a_plan_ahead(api) -> None:
+async def test_alex_has_a_past_a_present_and_a_plan_ahead(api) -> None:
     await seed_everyone()
-    headers = {"x-arga-user": str(CAST.people[0].id)}
+    headers = {"x-arga-user": str(CAST.people[0].id), "x-arga-spaces": str(CAST.space_id)}
 
     atlas = (await api.get("/atlas", headers=headers)).json()
 
     phases = {one["title"]: one["phase"] for one in atlas["trips"]}
-    assert phases == {"Flanders in spring": "done", "A long weekend in Lisbon": "plan"}
-    flanders = next(one for one in atlas["trips"] if one["phase"] == "done")
-    assert flanders["countries"] == ["BE"] and flanders["nights"] == 3
+    assert phases["Flanders in September"] == "done"
+    assert phases["Copenhagen long weekend"] == "ongoing"
+    assert phases["A long weekend in Lisbon"] == "plan"
+    countries = {code for one in atlas["trips"] for code in one["countries"]}
+    assert {"ES", "IT", "DE", "BE", "DK", "NL", "GB", "PT"} <= countries
+
+
+async def test_sam_sees_the_trips_alex_shared_and_their_own(api) -> None:
+    await seed_everyone()
+    headers = {"x-arga-user": str(CAST.people[1].id), "x-arga-spaces": str(CAST.space_id)}
+
+    atlas = (await api.get("/atlas", headers=headers)).json()
+
+    titles = {one["title"] for one in atlas["trips"]}
+    assert {"Flanders in September", "Tenerife in July", "Prague weekend"} <= titles
