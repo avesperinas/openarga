@@ -63,6 +63,7 @@ ui:
   widgets:
     - id: weight
       title: Weight
+      titles: {en: Weight, es: Peso}   # what the home shows in each language; else title
       kind: kpi
       sizes: ["2x1", "2x2"]
       endpoint: /api/vitals/widgets/weight

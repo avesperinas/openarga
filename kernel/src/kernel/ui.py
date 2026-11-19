@@ -10,7 +10,7 @@ from arga_tenancy import require_person
 from kernel.db import engine
 from kernel.subject import SUBJECT_HEADER, subject_of
 from kernel.widgets import BY_ID, CATALOGUE, KERNEL, KINDS, LIST_LIKE, RENDERERS
-from kernel.words import say
+from kernel.words import locale, say
 
 router = APIRouter(tags=["ui"])
 
@@ -36,7 +36,7 @@ FALLBACK_SIZE = "2x2"
 MODULE_WIDGETS = text("""
     select m.id as module,
            w.value->>'id' as id,
-           w.value->>'title' as title,
+           coalesce(w.value->'titles'->>:language, w.value->>'title') as title,
            w.value->>'kind' as kind,
            w.value->'sizes' as sizes,
            w.value->>'endpoint' as endpoint,
@@ -147,7 +147,7 @@ async def widget_catalogue() -> list[CatalogueEntry]:
     ]
 
     async with engine().connect() as connection:
-        rows = (await connection.execute(MODULE_WIDGETS)).all()
+        rows = (await connection.execute(MODULE_WIDGETS, {"language": locale()})).all()
 
     catalogue.extend(
         CatalogueEntry(

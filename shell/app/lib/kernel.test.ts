@@ -61,6 +61,12 @@ describe("who is looking, when the shell requests from the server", () => {
     expect(identity(incoming)["x-arga-spaces"]).toBe(spaces);
   });
 
+  it("also forwards their language, so the names of the apps arrive in it", () => {
+    const incoming = new Headers({ "x-arga-subject": "sub-sintetico", "x-arga-locale": "es" });
+
+    expect(identity(incoming)["x-arga-locale"]).toBe("es");
+  });
+
   it("without headers it invents nobody", () => {
     expect(identity(new Headers())).toEqual({});
   });
