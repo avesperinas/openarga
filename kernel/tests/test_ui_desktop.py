@@ -145,3 +145,9 @@ async def test_what_was_chosen_when_placing_a_widget_survives_a_reload(api) -> N
         ("saldo-b", "cuenta_b"),
         ("i-events", None),
     ]
+
+
+def test_every_starting_desktop_page_fills_its_screen_without_holes() -> None:
+    for name, placed in STARTING["desktop"]:
+        cells = sum(int(w) * int(h) for _, _, size, _ in placed for w, h in [size.split("x")])
+        assert cells == 12 * 6, name

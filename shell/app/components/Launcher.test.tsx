@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import type { ModuleSummary } from "../lib/kernel";
-import { Launcher, groupModules, placeBlocks } from "./Launcher";
+import { Launcher, orderModules } from "./Launcher";
 
 const app = (id: string, name: string, family?: string): ModuleSummary => ({
   id,
@@ -30,62 +30,50 @@ const installed = [
 ];
 
 describe("the launcher by families", () => {
-  it("puts the calendar apart, the families in their order and Finance and System as fillers", () => {
-    const groups = groupModules(installed);
+  const names = (html: string) => [...html.matchAll(/launcher-name">([^<]+)</g)].map((match) => match[1]);
 
-    expect(groups.pinned.map((m) => m.id)).toEqual(["planner"]);
-    expect(groups.families.map((f) => [f.label, f.modules.map((m) => m.id)])).toEqual([
-      ["Health", ["training", "vitals"]],
-      ["Goals", ["shopping"]],
-      ["Growth", ["study"]],
-      ["Wellbeing", ["travel"]],
+  it("one grid, family after family, with the calendar first and System last", () => {
+    expect(orderModules(installed).map((m) => m.id)).toEqual([
+      "planner",
+      "training",
+      "vitals",
+      "shopping",
+      "money",
+      "study",
+      "travel",
+      "newcomer",
+      "hub",
     ]);
-    expect(groups.fillers.map((m) => m.id)).toEqual(["money", "hub", "newcomer"]);
   });
 
-  it("an app with an old family is not lost: it fills after the others", () => {
-    const groups = groupModules([...installed, app("library", "Library", "world")]);
+  it("inside a family, what is used every day goes first, whatever the language", () => {
+    const health = [app("recipes", "Recetas", "health"), app("vitals", "Constantes", "health"), app("macros", "Macros", "health")];
 
-    expect(groups.fillers.map((m) => m.id)).toEqual(["money", "hub", "library", "newcomer"]);
+    expect(orderModules(health).map((m) => m.id)).toEqual(["macros", "vitals", "recipes"]);
   });
 
-  it("the calendar in its band, with the date, and not in the grid", () => {
-    const html = renderToStaticMarkup(<Launcher modules={installed} />);
+  it("an app with an unknown family is not lost: it goes before System", () => {
+    const ids = orderModules([...installed, app("atlas", "Atlas", "world")]).map((m) => m.id);
 
-    expect(html).toMatch(/launcher-band".*launcher-band-name">Planner</);
-    expect(html).toContain("launcher-band-date");
-    const grid = html.slice(html.indexOf("launcher-all"));
-    expect(grid).not.toContain(">Planner<");
+    expect(ids.slice(-3)).toEqual(["atlas", "newcomer", "hub"]);
   });
 
-  it("a companion goes on the right of the band, icon only, and not in the grid", () => {
+  it("the companion is one more app in the grid, with its dot when there is something unseen", () => {
     const insights = { ...app("insights", "Insights", "companion"), badge: "/api/insights/badge" };
-    const groups = groupModules([...installed, insights]);
-    expect(groups.companions.map((m) => m.id)).toEqual(["insights"]);
-    expect(groups.fillers.map((m) => m.id)).not.toContain("insights");
-
     const html = renderToStaticMarkup(<Launcher modules={[...installed, insights]} />);
-    const top = html.slice(html.indexOf("launcher-top"), html.indexOf("launcher-all"));
-    expect(top).toMatch(/launcher-band".*launcher-companion"[^>]*href="\/insights"[^>]*aria-label="Insights"/);
-    expect(top).not.toContain(">Insights<");
-    expect(top).not.toContain("launcher-companion-dot");
+
+    expect(names(html)).toContain("Insights");
+    expect(names(html).indexOf("Insights")).toBeGreaterThan(names(html).indexOf("Travel"));
+    expect(html).not.toContain("launcher-dot");
   });
 
-  it("the search glass goes in the band, between the calendar and the companion", () => {
-    const insights = app("insights", "Insights", "companion");
+  it("the search sits alone above the grid", () => {
     const html = renderToStaticMarkup(
-      <Launcher modules={[...installed, insights]} search={<button className="launcher-search" aria-label="Buscar en arga" />} />,
+      <Launcher modules={installed} search={<button className="launcher-search" aria-label="Buscar en arga" />} />,
     );
-    const top = html.slice(html.indexOf("launcher-top"), html.indexOf("launcher-all"));
-    expect(top).toMatch(/launcher-band".*launcher-search".*launcher-companion"/);
-  });
 
-  it("a single grid without titles: each family in its block, gaps filled", () => {
-    const html = renderToStaticMarkup(<Launcher modules={installed} />);
-
-    const order = ["Training", "Vitals", "Money", "Hub", "Shopping", "Newcomer", "Study", "Travel"];
-    const found = [...html.matchAll(/launcher-name">([^<]+)</g)].map((match) => match[1]);
-    expect(found).toEqual(order);
+    expect(html).toMatch(/launcher-top"><button class="launcher-search".*launcher-all/);
+    expect(names(html)[0]).toBe("Planner");
     expect(html).not.toContain("<h3");
   });
 
@@ -96,53 +84,5 @@ describe("the launcher by families", () => {
     expect(html).toContain('src="/vitals/icon-solid.svg?v=');
     expect(ink).toContain('src="/vitals/icon-ink.svg?v=');
     expect(ink).not.toContain("icon-solid.svg");
-  });
-
-  it("today's: 4 × 4 on the phone and 8 × 2 on the computer, with a gap for Outings", () => {
-    const named = (family: string, ...names: string[]) => names.map((name) => app(name, name, family));
-    const { pinned, families, fillers } = groupModules([
-      ...named("calendar", "Planner"),
-      ...named("health", "Macros", "Vitals", "Training", "Recipes"),
-      ...named("goals", "Pantry", "Goals", "Shopping"),
-      ...named("growth", "Career", "Study", "Notebook"),
-      ...named("wellbeing", "Travel", "Library"),
-      ...named("finance", "Money"),
-      ...named("system", "Pings", "Hub"),
-    ]);
-
-    const { order, placed } = placeBlocks(families.map((family) => family.modules), fillers);
-
-    expect(pinned.map((m) => m.id)).toEqual(["Planner"]);
-    expect(order.map((m) => m.id)).toEqual([
-      "Macros", "Recipes", "Training", "Vitals",
-      "Goals", "Pantry", "Shopping", "Money",
-      "Career", "Notebook", "Study", "Hub",
-      "Library", "Travel", "Pings",
-    ]);
-    expect(placed.get("Money")).toEqual({ phone: [4, 2], desktop: [8, 1] });
-    expect(placed.get("Hub")).toEqual({ phone: [4, 3], desktop: [4, 2] });
-  });
-
-  it("with Outings, Wellbeing fills its row and Hub stays in its gap", () => {
-    const named = (family: string, ...names: string[]) => names.map((name) => app(name, name, family));
-    const { families, fillers } = groupModules([
-      ...named("calendar", "Planner"),
-      ...named("health", "Macros", "Vitals", "Training", "Recipes"),
-      ...named("goals", "Pantry", "Goals", "Shopping"),
-      ...named("growth", "Career", "Study", "Notebook"),
-      ...named("wellbeing", "Travel", "Library", "Outings"),
-      ...named("finance", "Money"),
-      ...named("system", "Pings", "Hub"),
-    ]);
-
-    const { order } = placeBlocks(families.map((family) => family.modules), fillers);
-
-    expect(order.map((m) => m.id).slice(-4)).toEqual(["Library", "Outings", "Travel", "Pings"]);
-  });
-
-  it("what does not fit in a gap opens a block at the end", () => {
-    const { placed } = placeBlocks([[app("a", "A", "health"), app("b", "B", "health"), app("c", "C", "health"), app("d", "D", "health")]], [app("x", "X", "system")]);
-
-    expect(placed.get("x")).toEqual({ phone: [1, 2], desktop: [5, 1] });
   });
 });

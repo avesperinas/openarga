@@ -1,6 +1,5 @@
 "use client";
 
-import { VersionTag } from "@openarga/ui";
 import * as React from "react";
 
 export function usePlatformVersion(given?: string): string {
@@ -13,14 +12,4 @@ export function usePlatformVersion(given?: string): string {
       .catch(() => undefined);
   }, [given]);
   return version;
-}
-
-export function PlatformVersion({ version }: { version?: string }) {
-  const shown = usePlatformVersion(version);
-  if (!shown) return null;
-  return (
-    <div className="desktop-version">
-      <VersionTag name="arga" version={shown} />
-    </div>
-  );
 }
