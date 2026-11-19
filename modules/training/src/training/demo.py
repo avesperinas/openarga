@@ -8,10 +8,37 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_module.demo import Persona
+from training import agenda, workouts
 from training import seed as catalogue
 
 NAMESPACE = UUID("0b7c0de5-0000-4000-8000-000000071a17")
 WEEKS = 78
+GYMS = {"alex": "Iron Yard Gym", "sam": "Pulse Fitness Studio"}
+ANCHOR = date(2024, 1, 1)
+
+ACTIVITIES = {
+    "alex": (
+        (1, "RUNNING", "Running", 18 * 60 + 30, 42, lambda week: week % 3 != 2),
+        (5, "PADEL", "Padel", 10 * 60, 75, lambda week: week % 2 == 0),
+    ),
+    "sam": (
+        (0, "YOGA", "Yoga", 19 * 60, 55, lambda week: True),
+        (3, "SWIMMING", "Swimming", 7 * 60 + 30, 40, lambda week: week % 2 == 1),
+    ),
+}
+
+ACTIVITY_TYPE = text("""
+    insert into training.training_activity_type (id, name, band_kinds)
+    values (:id, :name, :kinds)
+    on conflict do nothing
+""")
+
+ACTIVITY = text("""
+    insert into training.training_activity
+        (id, activity_type_id, day, start_time, duration_seconds, band_id, notes)
+    values (:id, :type, :day, :start, :seconds, :band, :notes)
+    on conflict do nothing
+""")
 
 GYM = text("""
     insert into training.training_gym (id, name) values (:id, :name)
@@ -76,6 +103,12 @@ OPTION = text("""
     on conflict do nothing
 """)
 
+OPEN_ROTATION = text("""
+    insert into training.training_rotation (id, plan_version_id, number, status, opened_at)
+    values (:id, :version, :number, 'open', :opened_at)
+    on conflict do nothing
+""")
+
 ROTATION = text("""
     insert into training.training_rotation
         (id, plan_version_id, number, status, opened_at, closed_at)
@@ -133,7 +166,7 @@ def _load(key: str, week: int, persona: Persona, increment: float) -> float:
 
 async def _catalogue(connection: AsyncConnection, persona: Persona) -> tuple[UUID, dict]:
     gym = _id(persona, "gym")
-    await connection.execute(GYM, {"id": gym, "name": catalogue.GYM})
+    await connection.execute(GYM, {"id": gym, "name": GYMS[persona.key]})
     exercises = {}
     for name, pattern, load_type, factor, muscles in catalogue.EXERCISES:
         key = catalogue.key_of(name)
@@ -230,28 +263,44 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
         },
     )
     offsets = (0, 2, 4) if alex else (1, 3, 5)
-    for week in range(WEEKS):
+    for week in range(WEEKS + 1):
         monday = start + timedelta(weeks=week)
-        if monday + timedelta(days=offsets[-1]) >= today:
+        if monday > today:
             break
+        current = monday + timedelta(days=6) >= today
         rotation = _id(persona, f"rotation-{week}")
         opened = datetime.combine(monday, time(7), zone)
-        await connection.execute(
-            ROTATION,
-            {
-                "id": rotation,
-                "version": version,
-                "number": week + 1,
-                "opened_at": opened,
-                "closed_at": opened + timedelta(days=offsets[-1], hours=12),
-            },
-        )
+        if current:
+            await connection.execute(
+                OPEN_ROTATION,
+                {"id": rotation, "version": version, "number": week + 1, "opened_at": opened},
+            )
+        else:
+            await connection.execute(
+                ROTATION,
+                {
+                    "id": rotation,
+                    "version": version,
+                    "number": week + 1,
+                    "opened_at": opened,
+                    "closed_at": opened + timedelta(days=offsets[-1], hours=12),
+                },
+            )
         for (day_id, kind, planned), offset in zip(days, offsets, strict=True):
             day = monday + timedelta(days=offset)
+            if day >= today:
+                continue
             if not alex and week % 9 == 4 and kind == "leg":
+                continue
+            if week % 13 == 6 and kind == "push":
                 continue
             await _session(connection, persona, zone, version, rotation, gym, day_id, kind,
                            planned, day, week)  # fmt: skip
+
+    await _activities(connection, persona, zone, start, today)
+    await agenda.backfill(connection)
+    await agenda.backfill_activities(connection)
+    await workouts.backfill(connection)
 
 
 async def _session(
@@ -305,3 +354,28 @@ async def _session(
                     "confirmed_at": at,
                 },
             )
+
+
+async def _activities(connection, persona, zone, start: date, today: date) -> None:
+    types = {}
+    for _, kind, name, _, _, _ in ACTIVITIES[persona.key]:
+        types[kind] = _id(persona, f"activity-type-{kind}")
+        await connection.execute(ACTIVITY_TYPE, {"id": types[kind], "name": name, "kinds": [kind]})
+    day = start
+    while day < today:
+        for weekday, kind, _name, minute, length, when in ACTIVITIES[persona.key]:
+            if day.weekday() != weekday or not when((day - ANCHOR).days // 7):
+                continue
+            await connection.execute(
+                ACTIVITY,
+                {
+                    "id": _id(persona, f"activity-{kind}-{day}"),
+                    "type": types[kind],
+                    "day": day,
+                    "start": time(minute // 60, minute % 60),
+                    "seconds": length * 60,
+                    "band": f"band-{kind.lower()}-{day.isoformat()}",
+                    "notes": None,
+                },
+            )
+        day += timedelta(days=1)

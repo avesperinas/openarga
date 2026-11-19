@@ -62,6 +62,4 @@ training. Their descriptions are in the [manifest](../../modules/training/manife
 ## Demo
 
 [`src/training/demo.py`](../../modules/training/src/training/demo.py) seeds Alex and Sam from
-[`demo/personas.yaml`](../../demo/personas.yaml): each one's catalogue and gym, a Push Pull Leg plan
-published eighteen months ago, and a rotation a week with three sessions whose loads go up every
-three weeks. It can run any number of times.
+[`demo/personas.yaml`](../../demo/personas.yaml): each one's catalogue and gym, a Push Pull Leg plan, seventy-eight weeks of sessions with progressing loads, an open rotation for this week with the sessions done so far, and weekly activities (running and padel, yoga and swimming) with band ids that match the heart data in Health. Sessions and activities reach Health and the planner through the usual outbox.
