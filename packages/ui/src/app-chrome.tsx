@@ -96,7 +96,7 @@ export function AppHeader({
   const [plain, setPlain] = React.useState(false);
   const chosen = safeRemembered();
   const src = plain ? app.icon : styledIcon(app.icon, chosen.icon_style);
-  const name = appNameOf(app.id, standardAppName(app.id, app.name, regional().locale), chosen);
+  const name = displayName(app, chosen);
   return (
     <header className="app-header">
       <div className="app-brand">
@@ -116,6 +116,10 @@ export function AppHeader({
       {title && <h1 className="app-title">{title}</h1>}
     </header>
   );
+}
+
+function displayName(app: AppIdentity, chosen = safeRemembered()): string {
+  return appNameOf(app.id, standardAppName(app.id, app.name, regional().locale), chosen);
 }
 
 export const SETTINGS_TAB: { readonly id: "settings"; readonly label: string; readonly icon: IconName } = {
@@ -164,7 +168,7 @@ export function AppBackgroundPicker({ app }: { app: AppIdentity }) {
   if (!backdrop) return null;
   return (
     <Section title={say("chrome.background")}>
-      <ul className="background-grid" aria-label={say("chrome.background_of", { app: app.name })}>
+      <ul className="background-grid" aria-label={say("chrome.background_of", { app: displayName(app) })}>
         {APP_BACKGROUNDS.map((option) => {
           const active = backdrop.background === option.value;
           return (
@@ -185,7 +189,7 @@ export function AppBackgroundPicker({ app }: { app: AppIdentity }) {
         })}
       </ul>
       <Hint>
-        {say("chrome.background_hint", { app: app.name })}
+        {say("chrome.background_hint", { app: displayName(app) })}
       </Hint>
     </Section>
   );
@@ -220,7 +224,7 @@ export function AppAbout({ app }: { app: AppIdentity }) {
   return (
     <Section title={say("chrome.about")}>
       <List>
-        <ListRow title={app.name} value={version || "…"} />
+        <ListRow title={displayName(app)} value={version || "…"} />
         <ListRow
           title={say("chrome.settings")}
           subtitle={say("chrome.settings_hint")}
