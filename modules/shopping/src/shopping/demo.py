@@ -59,9 +59,32 @@ PRODUCTS = (
     ("Sparkling water", "drinks", "6"),
     ("Washing-up liquid", "cleaning", None),
     ("Toothpaste", "hygiene", None),
+    ("Onions", "produce", "1 kg"),
+    ("Potatoes", "produce", "2 kg"),
+    ("Carrots", "produce", "1 kg"),
+    ("Lemons", "produce", None),
+    ("Spinach", "produce", "200 g"),
+    ("Baguette", "bakery", None),
+    ("Minced beef", "meat", "500 g"),
+    ("Chorizo", "deli", None),
+    ("Mozzarella", "deli", None),
+    ("Butter", "dairy", None),
+    ("Orange juice", "drinks", "1 l"),
+    ("Beer", "drinks", "6"),
+    ("Red wine", "drinks", None),
+    ("Cereal", "breakfast", None),
+    ("Dark chocolate", "breakfast", None),
+    ("Ice cream", "frozen", None),
+    ("Chickpeas", "pantry", "2 jars"),
+    ("Tuna cans", "pantry", "3"),
+    ("Toilet paper", "hygiene", "12"),
+    ("Shampoo", "hygiene", None),
+    ("Dishwasher tablets", "cleaning", None),
+    ("Hake", "fish", None),
 )
 WEEKLY = (0, 2, 3, 4, 13)
-PENDING = (0, 2, 5, 9, 16)
+PENDING = (0, 2, 5, 9, 16, 18, 22, 24, 27, 34, 36, 39)
+IN_CART = (1, 13, 28)
 
 
 def _id(key: str) -> UUID:
@@ -140,6 +163,21 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
                 "status": "pending",
                 "added_at": now - timedelta(days=index % 3),
                 "checked_at": None,
+                "closed_at": None,
+                "trip_id": None,
+                "space_id": space,
+            },
+        )
+    for index in IN_CART:
+        await connection.execute(
+            ITEM,
+            {
+                "id": _id(f"{scope}:cart-{index}"),
+                "product_id": _product(scope, index),
+                "quantity": PRODUCTS[index][2],
+                "status": "in_cart",
+                "added_at": now - timedelta(days=1),
+                "checked_at": now,
                 "closed_at": None,
                 "trip_id": None,
                 "space_id": space,

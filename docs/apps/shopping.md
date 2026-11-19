@@ -50,6 +50,4 @@ Write (`shopping:write`): `add_to_list`, `remove_from_list`. Their descriptions 
 ## Demo
 
 [`src/shopping/demo.py`](../../modules/shopping/src/shopping/demo.py) seeds Alex and Sam from
-[`demo/personas.yaml`](../../demo/personas.yaml): one list shared in their space, eighteen
-products, a weekly trip over eighteen months that alternates between them, and five items pending
-today. It can run any number of times.
+[`demo/personas.yaml`](../../demo/personas.yaml): one list shared in their space with eighteen months of weekly trips, a long list of products across every aisle, a dozen pending items and three already in the cart.
