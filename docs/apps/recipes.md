@@ -60,6 +60,4 @@ the [manifest](../../modules/recipes/manifest.yaml).
 ## Demo
 
 [`src/recipes/demo.py`](../../modules/recipes/src/recipes/demo.py) seeds Alex and Sam from
-[`demo/personas.yaml`](../../demo/personas.yaml) through the module's own `recipes.create`: four
-recipes for Alex and three for Sam, with steps, and one shared by each with their space. It can
-run any number of times.
+[`demo/personas.yaml`](../../demo/personas.yaml): a recipe book of about twenty recipes each, across weekday, batch cooking, breakfast, baking, summer, winter, vegetarian and quick tags, with steps that feed the diagram, and a few shared in their space.

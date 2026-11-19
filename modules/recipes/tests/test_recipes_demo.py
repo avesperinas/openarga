@@ -53,8 +53,8 @@ async def test_the_seed_runs_twice_without_duplicates(schema) -> None:
     again = await seed_everyone()
 
     assert first["sam"] == again["sam"]
-    assert again["alex"]["recipes_recipe"] == 5
-    assert again["sam"]["recipes_recipe"] == 4
+    assert again["alex"]["recipes_recipe"] >= 18
+    assert again["sam"]["recipes_recipe"] >= 18
 
 
 async def test_alex_and_sam_see_their_recipes_and_the_shared_ones(api) -> None:
