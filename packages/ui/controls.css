@@ -2443,6 +2443,12 @@ body:not(:has(.tab-bar)) .toast-host {
   .app-shell .screen { padding-bottom: calc(env(safe-area-inset-bottom) + var(--space-12)); }
   .app-shell .create-button { bottom: calc(env(safe-area-inset-bottom) + var(--space-6)); }
   .app-shell[data-detail] .app-shell-main .create-button { right: calc(var(--app-detail) + var(--space-4)); }
+  .app-shell:not([data-bare]) .app-shell-main .create-button {
+    left: var(--space-4);
+    right: auto;
+    width: calc(var(--app-rail) - var(--space-4));
+    justify-content: center;
+  }
 
   .app-shell-detail .app-brand { display: none; }
 }
