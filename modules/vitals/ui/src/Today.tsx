@@ -19,6 +19,7 @@ import {
   type Translate,
   useLocale,
   useT,
+  regional,
 } from "@openarga/ui";
 import { useTick } from "@openarga/app/fresh";
 import { useEffect, useState } from "react";
@@ -226,7 +227,7 @@ export function TodayScreen({ go }: { go?: Go } = {}) {
   return (
     <Screen wide>
       <ScreenHeader
-        eyebrow={capital(new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" }).format(now))}
+        eyebrow={capital(new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", timeZone: regional().timeZone }).format(now))}
         title={t("tabs.today")}
       />
       {problem && <Hint tone="warning">{problem}</Hint>}
