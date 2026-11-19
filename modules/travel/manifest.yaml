@@ -428,6 +428,9 @@ ui:
   widgets:
     - id: countries
       title: Countries
+      titles:
+        en: Countries
+        es: Países
       kind: kpi
       sizes: ["1x1", "2x2", "2x1", "4x1", "1x2", "4x2"]
       endpoint: /api/travel/widgets/countries
@@ -435,6 +438,9 @@ ui:
       link: /travel
     - id: last_trip
       title: Last trip
+      titles:
+        en: Last trip
+        es: Último viaje
       kind: upnext
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/travel/widgets/last_trip
@@ -442,6 +448,9 @@ ui:
       link: /travel/trips
     - id: next_trip
       title: Next trip
+      titles:
+        en: Next trip
+        es: Próximo viaje
       kind: upnext
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/travel/widgets/next_trip
@@ -449,6 +458,9 @@ ui:
       link: /travel/trips
     - id: by_year
       title: Trips per year
+      titles:
+        en: Trips per year
+        es: Viajes por año
       kind: bars
       sizes: ["2x2", "2x1", "4x1", "4x2", "4x4"]
       endpoint: /api/travel/widgets/by_year

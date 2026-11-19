@@ -71,6 +71,9 @@ ui:
   widgets:
     - id: reading
       title: Reading
+      titles:
+        en: Reading
+        es: Leyendo
       kind: list
       sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/library/widgets/reading
@@ -78,6 +81,9 @@ ui:
       link: /library
     - id: goal
       title: Goal of the year
+      titles:
+        en: Goal of the year
+        es: Objetivo del año
       kind: ring
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/library/widgets/goal
@@ -85,6 +91,9 @@ ui:
       link: /library/stats
     - id: pages
       title: Pages per month
+      titles:
+        en: Pages per month
+        es: Páginas al mes
       kind: bars
       sizes: ["2x2", "2x1", "4x1", "4x2", "4x4"]
       endpoint: /api/library/widgets/pages
