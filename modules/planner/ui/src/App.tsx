@@ -533,14 +533,14 @@ export function App() {
                   <Button size="small" variant="secondary" onClick={goToday}>
                     {t("day.today")}
                   </Button>
-                  <IconButton icon="search" label="Buscar" variant="plain" onClick={() => setPalette(true)} />
+                  <IconButton icon="search" label={t("palette.open")} variant="plain" onClick={() => setPalette(true)} />
                   <AppHome app="planner" className="cr-home" />
                 </>
               ) : (
                 <>
                   <button type="button" className="cr-search" onClick={() => setPalette(true)}>
                     <Icon name="search" />
-                    <span>Buscar</span>
+                    <span>{t("palette.open")}</span>
                     <kbd className="palette-key">⌘K</kbd>
                   </button>
                   <SegmentedControl label={t("app.view")} options={viewOptions} value={view} onChange={changeView} />

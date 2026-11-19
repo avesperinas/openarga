@@ -3,7 +3,6 @@ import { Button, Card, ErrorState, Hint, Skeleton, TextAreaField, TextField } fr
 import { useEffect, useState } from "react";
 
 import { PROFILE, type Profile, Unauthorised, readProfile, saveProfile, signIn } from "./api";
-import { NAME } from "./Header";
 import { t } from "./lang";
 
 export function ProfileSettings({ onSaved }: { onSaved: (profile: Profile) => void }) {
@@ -59,7 +58,7 @@ export function ProfileSettings({ onSaved }: { onSaved: (profile: Profile) => vo
       <TextField
         label={t("profile.name")}
         value={name}
-        placeholder={NAME}
+        placeholder={t("profile.default_name")}
         hint={t("profile.name_hint")}
         onChange={(value) => {
           setName(value);

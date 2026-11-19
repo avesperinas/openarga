@@ -105,7 +105,7 @@ export function CourseScreen({ id, section }: { id: string; section: CourseTab }
   if (!data) {
     return (
       <Screen>
-        <ScreenHeader back={{ label: "Study", onClick: () => navigate({ tab: "home" }) }} />
+        <ScreenHeader back={{ label: t("app.name"), onClick: () => navigate({ tab: "home" }) }} />
         <OfflineNotice />
         <Problem text={problem} />
         <Pending found={found} />

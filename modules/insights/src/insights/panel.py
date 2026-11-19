@@ -28,7 +28,7 @@ async def build(connection: AsyncConnection) -> dict:
     if rows:
         headlines.append(
             {
-                "text": f"Insights: {rows[0]['label']}"[:200],
+                "text": f"{say('profile.default_name')}: {rows[0]['label']}"[:200],
                 "status": say("panel.new"),
                 "priority": 30,
             }
@@ -36,7 +36,7 @@ async def build(connection: AsyncConnection) -> dict:
     tabs = [
         {
             "id": "insights",
-            "label": "Insights",
+            "label": say("profile.default_name"),
             "blocks": blocks,
             "actions": [{"label": say("panel.open"), "href": "/insights/"}],
         }

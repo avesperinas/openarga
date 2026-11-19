@@ -8,14 +8,14 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from insights.words import say
+
 Kind = Literal["alert", "weekly"]
 Domain = Literal["money", "body", "time", "leisure", "cross"]
 Rating = Literal["useful", "known", "not_applicable"]
 
 QUIET = timedelta(days=30)
 CHANGED = 0.05
-
-NAME = "Insights"
 
 
 class NotFound(Exception):
@@ -159,7 +159,9 @@ async def profile(connection: AsyncConnection) -> Profile:
         await connection.execute(text("select name, about from insights.insights_profile"))
     ).first()
     name = (row.name or "").strip() if row else ""
-    return Profile(name=name or NAME, about=row.about if row else "", named=bool(name))
+    return Profile(
+        name=name or say("profile.default_name"), about=row.about if row else "", named=bool(name)
+    )
 
 
 async def save_profile(connection: AsyncConnection, wanted: ProfileIn) -> Profile:

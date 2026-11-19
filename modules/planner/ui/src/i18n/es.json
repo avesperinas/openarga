@@ -70,6 +70,7 @@
   "layer.subscription": "Suscripción",
   "palette.commands": "Comandos",
   "palette.events": "Eventos",
+  "palette.open": "Buscar",
   "palette.label": "Buscar y comandos",
   "palette.nothing": "Nada con «{words}»",
   "palette.placeholder": "Buscar eventos o escribir un comando",

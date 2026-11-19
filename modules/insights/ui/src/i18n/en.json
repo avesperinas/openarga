@@ -140,6 +140,7 @@
   "pill.writing_branch": "{name} is writing “{branch}”: it arrives in a minute or two and lets you know",
   "profile.about": "What you want it to know about you",
   "profile.about_placeholder": "What matters to you now, your goals, your context and what you do not want it to talk about.",
+  "profile.default_name": "Insights",
   "profile.failed": "Your profile could not be read",
   "profile.loading": "Loading what it knows about you",
   "profile.name": "Its name",

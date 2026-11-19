@@ -44,7 +44,8 @@
   "when.in_days": "en {days} días",
   "when.today": "hoy",
   "when.tomorrow": "mañana",
-  "widget.countries_unit": "países",
+  "widget.countries_unit.one": "país",
+  "widget.countries_unit.other": "países",
   "widget.days.one": "{count} día",
   "widget.days.other": "{count} días",
   "widget.nights.one": "{count} noche",
@@ -53,5 +54,6 @@
   "widget.no_trips": "aún no hay viajes",
   "widget.of_europe": "{count} de {total} de Europa",
   "widget.trips_nights": "{trips} viajes · {nights} noches fuera",
-  "widget.trips_unit": "viajes"
+  "widget.trips_unit.one": "viaje",
+  "widget.trips_unit.other": "viajes"
 }
