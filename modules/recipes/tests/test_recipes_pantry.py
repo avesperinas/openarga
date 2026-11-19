@@ -261,3 +261,36 @@ async def test_an_app_that_does_not_declare_it_is_refused(api, kernel) -> None:
 async def test_nobody_reaches_the_pantry_skipping_the_kernel(api) -> None:
     response = await api.post("/capabilities/pantry.search", json={"query": "lentejas"})
     assert response.status_code in (401, 503)
+
+
+async def test_the_refill_of_a_shared_food_runs_with_the_spaces_of_the_person(
+    api, schema, with_sources, monkeypatch
+) -> None:
+    from uuid import uuid4
+
+    from arga_contracts import records as fichas
+    from arga_tenancy import current_user
+    from recipes import publisher
+    from recipes.main import app
+
+    lentils = await import_lentils(api)
+    home = uuid4()
+    async with schema.begin() as connection:
+        await connection.execute(
+            text(
+                "update recipes.recipes_food set nutrients = null, nutrients_checked_at = null, "
+                "space_id = :home where id = cast(:id as uuid)"
+            ),
+            {"id": lentils["id"], "home": home},
+        )
+
+    async def spaces(client):
+        return (home,)
+
+    monkeypatch.setattr(publisher, "RECORDS", fichas.Never())
+    monkeypatch.setattr(publisher, "HANDED", {"done": True})
+    monkeypatch.setattr(fichas, "spaces", spaces)
+    await publisher.refresh(app.state.client, current_user.get(), True)
+
+    [again] = (await api.get("/foods", params={"query": "lentejas"})).json()
+    assert again["nutrients"]["iron"] == 6.5

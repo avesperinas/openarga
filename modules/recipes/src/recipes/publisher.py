@@ -40,9 +40,10 @@ async def refresh(client: httpx.AsyncClient, user: UUID, fresh: bool) -> None:
         RECORDS.forget(user)
     await fichas.refresh(client, engine, MODULE, records.build, RECORDS, user)
     try:
-        async with PUBLISHER.as_module() as connection:
-            if filled := await pantry.refill(connection, client):
-                print(f"publisher · micros for {filled} food(s)", flush=True)
+        with as_user(user, await fichas.spaces(client)):
+            async with PUBLISHER.as_module() as connection:
+                if filled := await pantry.refill(connection, client):
+                    print(f"publisher · micros for {filled} food(s)", flush=True)
     except pantry.Unavailable as error:
         print(f"publisher · micros: {error}", file=sys.stderr, flush=True)
     except Exception as error:  # noqa: BLE001 - micros do not stop what is published
