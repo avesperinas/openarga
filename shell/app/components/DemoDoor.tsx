@@ -55,8 +55,8 @@ export function DemoDoor({ initial, next }: { initial: DemoLanguage; next: strin
             value={language}
             onChange={setLanguage}
             options={[
-              { value: "en", label: "English" },
-              { value: "es", label: "Español" },
+              { value: "en", label: t("demo.english") },
+              { value: "es", label: t("demo.spanish") },
             ]}
           />
         </div>
