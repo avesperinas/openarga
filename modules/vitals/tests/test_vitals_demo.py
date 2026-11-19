@@ -62,7 +62,7 @@ async def test_the_seed_runs_twice_without_duplicates(schema) -> None:
 
     assert first["sam"] == again["sam"]
     assert again["alex"]["vitals_checkup"] == 4
-    assert again["alex"]["vitals_lab_result"] == 32
+    assert again["alex"]["vitals_lab_result"] == 68
 
 
 async def test_each_person_sees_their_weight_going_down_and_their_labs(api) -> None:

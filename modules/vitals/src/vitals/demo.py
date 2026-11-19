@@ -46,6 +46,15 @@ ANALYTES = (
     ("hemoglobin", "g/dL", 13, 17),
     ("creatinine", "mg/dL", 0.7, 1.2),
     ("alt", "U/L", None, 41),
+    ("rbc", "10^6/µL", 4.5, 5.9),
+    ("hematocrit", "%", 40, 52),
+    ("wbc", "10^3/µL", 4, 11),
+    ("platelets", "10^3/µL", 150, 400),
+    ("urea", "mg/dL", 15, 45),
+    ("uric_acid", "mg/dL", 3.5, 7.2),
+    ("ast", "U/L", None, 40),
+    ("ggt", "U/L", None, 60),
+    ("vldl", "mg/dL", None, 30),
 )
 
 
@@ -73,6 +82,15 @@ def _results(persona: Persona, visit: int) -> list[tuple[str, float]]:
         ("hemoglobin", 15.1 if alex else 13.4),
         ("creatinine", 1.0 if alex else 0.8),
         ("alt", (38 if alex else 21) - visit * 2),
+        ("rbc", 5.1 if alex else 4.6),
+        ("hematocrit", (45 if alex else 40.5) + visit * 0.2),
+        ("wbc", (7.2 if alex else 6.1) + (0.9 if visit == 1 else 0)),
+        ("platelets", (232 if alex else 268) + visit * 4),
+        ("urea", (34 if alex else 27) + visit),
+        ("uric_acid", (6.4 if alex else 4.2) - visit * 0.1),
+        ("ast", (31 if alex else 19) - visit),
+        ("ggt", (44 if alex else 17) - visit * 2),
+        ("vldl", round(((160 if alex else 90) - better) / 5, 1)),
     ]
 
 
@@ -86,8 +104,8 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
             "high": 80 if alex else 64,
         },
     )
-    for back in range(DAYS, 0, -1):
-        if back % 7 not in ((0, 3, 5) if alex else (1, 4)):
+    for back in range(DAYS, -1, -1):
+        if back > 3 and back % 7 not in ((0, 3, 5) if alex else (1, 4)):
             continue
         await connection.execute(
             WEIGHT,

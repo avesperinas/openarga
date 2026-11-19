@@ -60,6 +60,11 @@ descriptions are in the [manifest](../../modules/vitals/manifest.yaml).
 ## Demo
 
 [`src/vitals/demo.py`](../../modules/vitals/src/vitals/demo.py) seeds Alex and Sam from
-[`demo/personas.yaml`](../../demo/personas.yaml): goals, eighteen months of weigh-ins trending down,
-and four check-ups with eight analytes each, Alex's lipids improving. Steps, sleep and heart rate
-come from the health provider's fake mode through the hub. It can run any number of times.
+[`demo/personas.yaml`](../../demo/personas.yaml): goals, eighteen months of weigh-ins trending down
+(the last ones from today), and four check-ups with seventeen analytes each, Alex's lipids
+improving. Steps, daily metrics, sleep, heart rate, band exercises and devices come from
+[`demo/health_feed.py`](../../demo/health_feed.py), which `scripts/demo.py` runs after the seeds: it
+writes the same events the health provider would send, for eighteen months up to today, with
+trends the charts show (resting heart rate falling, HRV rising, more steps). Training sessions and
+activities reach Health through the outbox, and the band exercises carry the ids the activities
+refer to. It can run any number of times.
