@@ -72,3 +72,11 @@ the machine or goes unanswered.
 
 For a fake bank connection use `hub.fakes.bank.APP_ID` and `PEM` as its secrets; for Google Health,
 `hub.fakes.google.CLIENT_ID`, `CLIENT_SECRET` and `REFRESH`.
+
+## Demo
+
+[`src/hub/demo.py`](../../modules/hub/src/hub/demo.py) gives Alex and Sam connections in several
+states: up to date (holidays, football, prices, podcasts, Formula 1), failing with a recoverable
+error and its recent runs (Alex's work calendar), paused (Sam's birthdays calendar) and about to
+expire (Sam's studio timetable). The health data of the demo does not go through a connection: see
+the Health app.

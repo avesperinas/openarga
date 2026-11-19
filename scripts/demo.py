@@ -17,6 +17,10 @@ from arga_module import demo
 from arga_tenancy import as_user, install
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "demo"))
+
+import health_feed  # noqa: E402
+
 SUBJECT = "demo-{username}"
 
 USER = text("""
@@ -28,9 +32,9 @@ SPACE = text("""
     on conflict (id) do update set name = excluded.name
 """)
 MEMBER = text("""
-    insert into kernel.space_members (space_id, user_id, role, status)
-    values (:space, :user, :role, 'accepted')
-    on conflict (space_id, user_id) do update set status = 'accepted'
+    insert into kernel.space_members (space_id, user_id, role, status, display_name)
+    values (:space, :user, :role, 'accepted', :name)
+    on conflict (space_id, user_id) do update set status = 'accepted', display_name = :name
 """)
 PREFERENCES = text("""
     insert into kernel.person_preferences
@@ -77,7 +81,8 @@ async def cast_in_kernel(engine: AsyncEngine, cast: demo.Cast) -> None:
             await connection.execute(USER, {"id": person.id, "subject": subject})
             role = "owner" if index == 0 else "member"
             await connection.execute(
-                MEMBER, {"space": cast.space_id, "user": person.id, "role": role}
+                MEMBER,
+                {"space": cast.space_id, "user": person.id, "role": role, "name": person.name},
             )
     for person in cast.people:
         with as_user(person.id, (cast.space_id,)):
@@ -151,6 +156,9 @@ async def run(command: str, today: date, url: str, root: Path = ROOT) -> Report:
         await cast_in_kernel(engine, cast)
         chosen = daily(root / "modules") if command == "day" else seeds
         await run_seeds(engine, cast, chosen, today, report)
+        async with engine.begin() as connection:
+            for person in cast.people:
+                await health_feed.feed(connection, person, today)
     finally:
         await engine.dispose()
     return report

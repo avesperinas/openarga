@@ -39,8 +39,8 @@ async def test_alex_and_sam_get_their_connections_once_each(schema) -> None:
     seen = await seed_everyone(schema)
 
     assert seen == {
-        "alex": ["football", "holidays", "prices"],
-        "sam": ["formula1", "holidays"],
+        "alex": ["apple_podcasts", "football", "holidays", "ical", "prices"],
+        "sam": ["formula1", "holidays", "ical", "ical"],
     }
 
 
