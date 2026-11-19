@@ -52,7 +52,7 @@ describe("the task list (ADR-0086 §4)", () => {
   it("in a 1x1, how many are left and how many overdue", () => {
     const html = card("1x1");
     expect(html).toContain(">5<");
-    expect(html).toContain("1 vencida<");
+    expect(html).toContain("1 overdue<");
   });
 
   it("in a strip, the first undone and how many more", () => {

@@ -110,15 +110,23 @@ function Row({
   done,
   onToggle,
   now,
+  hidden,
 }: {
   task: TaskData;
   done: boolean;
   onToggle?: () => void;
   now: Date;
+  hidden?: boolean;
 }) {
   const when = task.due ? dueLabel(task.due, now) : "";
   return (
-    <li className="task" data-done={done || undefined} data-overdue={task.overdue || undefined}>
+    <li
+      className="task"
+      data-done={done || undefined}
+      data-overdue={task.overdue || undefined}
+      data-clipped={hidden || undefined}
+      aria-hidden={hidden || undefined}
+    >
       <Check task={task} done={done} onToggle={onToggle} />
       <span className="task-body">
         <span className="task-title">{task.title}</span>
@@ -132,6 +140,27 @@ function Row({
     </li>
   );
 }
+
+function useWholeRows(list: React.RefObject<HTMLUListElement | null>, count: number): number {
+  const [fit, setFit] = React.useState(count);
+  React.useLayoutEffect(() => {
+    const element = list.current;
+    if (!element) return;
+    const measure = () => {
+      const bottom = element.getBoundingClientRect().bottom + 0.5;
+      const rows = Array.from(element.children) as HTMLElement[];
+      const cut = rows.findIndex((row) => row.getBoundingClientRect().bottom > bottom);
+      setFit(cut === -1 ? rows.length : cut);
+    };
+    measure();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    observer?.observe(element);
+    return () => observer?.disconnect();
+  }, [list, count]);
+  return Math.min(fit, count);
+}
+
+const GROUP_ORDER = ["overdue", "today", "later", "undated"];
 
 const ROWS = { narrow: 3, square: 3, tall: 8, wide: 6, large: 14 } as const;
 
@@ -149,7 +178,9 @@ export function WidgetTasks({ tasks, count, onToggle, now: given }: WidgetTasksP
     return (
       <div className="list-count" data-tone={overdue ? "warning" : undefined}>
         <p className="widget-value kpi-figure">{total}</p>
-        <p className="list-count-first">{overdue ? `${overdue} ${overdue === 1 ? "vencida" : "vencidas"}` : "por hacer"}</p>
+        <p className="list-count-first">
+          {overdue ? say(`tasks.overdue.${overdue === 1 ? "one" : "other"}`, { count: overdue }) : say("tasks.to_do")}
+        </p>
       </div>
     );
   }
@@ -168,7 +199,6 @@ export function WidgetTasks({ tasks, count, onToggle, now: given }: WidgetTasksP
   }
 
   const shown = tasks.slice(0, ROWS[layout]);
-  const more = total - shown.length;
 
   if (layout === "large") {
     const groups: { key: string; label: string; items: TaskData[] }[] = [];
@@ -181,10 +211,11 @@ export function WidgetTasks({ tasks, count, onToggle, now: given }: WidgetTasksP
           : midnight(new Date(task.due.length === 10 ? `${task.due}T00:00` : task.due)).getTime() === today
             ? "today"
             : "later";
-      const last = groups[groups.length - 1];
-      if (last?.key === key) last.items.push(task);
+      const group = groups.find((one) => one.key === key);
+      if (group) group.items.push(task);
       else groups.push({ key, label: say(`tasks.group.${key}`), items: [task] });
     }
+    groups.sort((a, b) => GROUP_ORDER.indexOf(a.key) - GROUP_ORDER.indexOf(b.key));
     return (
       <div className="tasks-groups">
         {groups.map((group) => (
@@ -197,19 +228,42 @@ export function WidgetTasks({ tasks, count, onToggle, now: given }: WidgetTasksP
             </ul>
           </section>
         ))}
-        {more > 0 && <p className="widget-footnote">{say("tasks.more", { count: more })}</p>}
+        {total > shown.length && <p className="widget-footnote">{say("tasks.more", { count: total - shown.length })}</p>}
       </div>
     );
   }
 
+  return <TaskRows tasks={shown} total={total} layout={layout} isDone={isDone} toggle={toggle} now={now} />;
+}
+
+function TaskRows({
+  tasks,
+  total,
+  layout,
+  isDone,
+  toggle,
+  now,
+}: {
+  tasks: TaskData[];
+  total: number;
+  layout: string;
+  isDone: (task: TaskData) => boolean;
+  toggle: (task: TaskData) => (() => void) | undefined;
+  now: Date;
+}) {
+  const list = React.useRef<HTMLUListElement>(null);
+  const fit = useWholeRows(list, tasks.length);
+  const more = total - fit;
   return (
     <>
-      <ul className="tasks" data-columns={layout === "wide" || undefined}>
-        {shown.map((task) => (
-          <Row key={task.id} task={task} done={isDone(task)} onToggle={toggle(task)} now={now} />
+      <ul ref={list} className="tasks" data-columns={layout === "wide" || undefined}>
+        {tasks.map((task, index) => (
+          <Row key={task.id} task={task} done={isDone(task)} onToggle={toggle(task)} now={now} hidden={index >= fit} />
         ))}
       </ul>
-      {more > 0 && layout !== "square" && <p className="widget-footnote">{say("tasks.more", { count: more })}</p>}
+      {more > 0 && (layout !== "square" || fit < tasks.length) && (
+        <p className="widget-footnote">{say("tasks.more", { count: more })}</p>
+      )}
     </>
   );
 }
