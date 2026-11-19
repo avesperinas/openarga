@@ -510,6 +510,39 @@ export interface AreaInfo {
   icon: React.ReactNode;
 }
 
+function clippingBottom(element: HTMLElement): number {
+  for (let node: HTMLElement | null = element; node; node = node.parentElement) {
+    if (getComputedStyle(node).overflowY !== "visible") return node.getBoundingClientRect().bottom;
+  }
+  return Number.POSITIVE_INFINITY;
+}
+
+// Lines that the card cuts are hidden whole, so no row shows half its text.
+function useWholeLines(blocks: React.RefObject<HTMLDivElement | null>, key: unknown) {
+  React.useLayoutEffect(() => {
+    const element = blocks.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      const bottom = clippingBottom(element) + 0.5;
+      const lines = Array.from(element.querySelectorAll<HTMLElement>("li, .panel-label"));
+      for (const line of lines) line.removeAttribute("data-clipped");
+      for (const line of lines) {
+        if (line.getBoundingClientRect().bottom > bottom) line.setAttribute("data-clipped", "");
+      }
+      for (const label of lines.filter((line) => line.classList.contains("panel-label"))) {
+        const rows = Array.from(label.nextElementSibling?.querySelectorAll("li") ?? []);
+        if (rows.length > 0 && rows.every((row) => row.hasAttribute("data-clipped"))) {
+          label.setAttribute("data-clipped", "");
+        }
+      }
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [blocks, key]);
+}
+
 export function AreaPanel({
   area,
   headline,
@@ -542,6 +575,8 @@ export function AreaPanel({
     onTab?.(id);
   };
   const blocks = (active?.blocks ?? []).filter((block) => focus || !block.detail);
+  const blocksRef = React.useRef<HTMLDivElement>(null);
+  useWholeLines(blocksRef, `${active?.id}:${blocks.length}`);
   const actions = (list: PanelTab["actions"]) =>
     list && list.length > 0 ? (
       <nav className="area-panel-actions" aria-label={say("panel.actions", { area: area.label })}>
@@ -617,7 +652,7 @@ export function AreaPanel({
           ))}
         </div>
       )}
-      <div className="area-panel-blocks" role={tabs.length > 1 ? "tabpanel" : undefined}>
+      <div ref={blocksRef} className="area-panel-blocks" role={tabs.length > 1 ? "tabpanel" : undefined}>
         {blocks.length === 0 ? (
           <p className="panel-foot">{say("panel.empty")}</p>
         ) : (
