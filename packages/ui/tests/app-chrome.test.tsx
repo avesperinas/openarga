@@ -152,3 +152,20 @@ describe("an app's background", () => {
     }
   });
 });
+
+describe("the name in an app's header", () => {
+  const money = { id: "money", name: "Money", icon: "/money/icon.svg" };
+
+  it("is the name the launcher uses, in the person's language", async () => {
+    const { configureRegional } = await import("../src/regional");
+    configureRegional({ locale: "es-ES" });
+    expect(renderToStaticMarkup(<AppHeader app={money} />)).toContain("Finanzas");
+    configureRegional({ locale: "en-GB" });
+    expect(renderToStaticMarkup(<AppHeader app={money} />)).toContain("Finance");
+    configureRegional({ locale: "es-ES" });
+  });
+
+  it("an app the platform does not know keeps its own name", () => {
+    expect(renderToStaticMarkup(<AppHeader app={{ ...money, id: "atlas", name: "Atlas" }} />)).toContain("Atlas");
+  });
+});

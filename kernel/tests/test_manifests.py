@@ -811,3 +811,33 @@ async def test_the_registry_says_what_each_app_asks_for(api, tmp_path: Path) -> 
     [listed] = (await api.get("/modules")).json()
 
     assert listed["uses"] == ["books.search"]
+
+
+async def test_the_registry_names_each_module_in_the_language_of_who_asks(
+    api, tmp_path: Path
+) -> None:
+    manifest = VALID | {"names": {"en": "Health", "es": "Salud"}}
+    async with engine().begin() as connection:
+        await sync(connection, load_all(write(tmp_path, manifest).parent.parent))
+
+    spanish = (await api.get("/modules", headers={"x-arga-locale": "es-ES"})).json()[0]
+    english = (await api.get("/modules", headers={"x-arga-locale": "en"})).json()[0]
+    german = (await api.get("/modules", headers={"x-arga-locale": "de"})).json()[0]
+
+    assert (spanish["name"], english["name"]) == ("Salud", "Health")
+    assert german["name"] == VALID["name"]
+
+
+async def test_a_widget_is_titled_in_the_language_of_who_asks(api, tmp_path: Path) -> None:
+    widget = VALID["ui"]["widgets"][0] | {"titles": {"es": "Title in es"}}
+    manifest = VALID | {"ui": {**VALID["ui"], "widgets": [widget]}}
+    async with engine().begin() as connection:
+        await sync(connection, load_all(write(tmp_path, manifest).parent.parent))
+
+    def title(found: list[dict]) -> str:
+        return next(w["title"] for w in found if w["id"] == widget["id"])
+
+    spanish = (await api.get("/ui/widgets", headers={"x-arga-locale": "es"})).json()
+    english = (await api.get("/ui/widgets", headers={"x-arga-locale": "en"})).json()
+    assert title(spanish) == "Title in es"
+    assert title(english) == widget["title"]

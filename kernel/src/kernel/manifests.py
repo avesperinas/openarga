@@ -178,6 +178,7 @@ class WidgetOption(Strict):
 class Widget(Strict):
     id: Annotated[str, Field(pattern=NAME_PATTERN)]
     title: Annotated[str, Field(min_length=1)]
+    titles: dict[Locale, Annotated[str, Field(min_length=1, max_length=40)]] = {}
     kind: Literal[
         "kpi",
         "kpi-delta",

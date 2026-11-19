@@ -6,6 +6,7 @@ import { type AreaKey, type Contributor, type PanelContribution } from "./panels
 const SUBJECT = "x-arga-subject";
 const USER = "x-arga-user";
 const SPACES = "x-arga-spaces";
+const LOCALE = "x-arga-locale";
 
 export type Breakpoint = "mobile" | "tablet" | "desktop";
 export type Device = "mobile" | "desktop";
@@ -166,7 +167,7 @@ async function absolute<T>(url: string, limitMs?: number): Promise<T> {
 
 export function identity(incoming: Pick<Headers, "get">): Record<string, string> {
   const forwarded: Record<string, string> = {};
-  for (const name of [SUBJECT, USER, SPACES]) {
+  for (const name of [SUBJECT, USER, SPACES, LOCALE]) {
     const value = incoming.get(name);
     if (value) forwarded[name] = value;
   }

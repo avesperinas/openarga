@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from kernel import isolation, rls, schemas
+from kernel import isolation, rls, schemas, words
 from kernel.backfill import backfill_module
 from kernel.db import engine
 from kernel.isolation import Isolation, ModuleNotProvisioned
@@ -53,7 +53,7 @@ DISABLE_MISSING = text("""
 
 LIST_MODULES = text("""
     select id, version, enabled, updated_at,
-           manifest->>'name' as name,
+           coalesce(manifest->'names'->>:language, manifest->>'name') as name,
            manifest->'database'->>'schema' as db_schema,
            manifest->'database'->>'role' as role,
            manifest->'api'->>'prefix' as api_prefix,
@@ -212,7 +212,7 @@ async def sync(
 @router.get("/modules")
 async def list_modules() -> list[ModuleSummary]:
     async with engine().connect() as connection:
-        rows = (await connection.execute(LIST_MODULES)).all()
+        rows = (await connection.execute(LIST_MODULES, {"language": words.locale()})).all()
     return [
         ModuleSummary(
             id=row.id,

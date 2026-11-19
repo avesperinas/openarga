@@ -2,7 +2,9 @@
 
 import * as React from "react";
 
+import { appNameOf, standardAppName } from "./app-names";
 import { CrashBoundary } from "./crash";
+import { regional } from "./regional";
 
 import {
   APP_BACKGROUNDS,
@@ -92,14 +94,15 @@ export function AppHeader({
   back?: AppBack;
 }) {
   const [plain, setPlain] = React.useState(false);
-  const style = typeof window === "undefined" ? undefined : safeRemembered().icon_style;
-  const src = plain ? app.icon : styledIcon(app.icon, style);
+  const chosen = safeRemembered();
+  const src = plain ? app.icon : styledIcon(app.icon, chosen.icon_style);
+  const name = appNameOf(app.id, standardAppName(app.id, app.name, regional().locale), chosen);
   return (
     <header className="app-header">
       <div className="app-brand">
         <span className="app-mark">
           <img className="app-logo" src={src} alt="" width="28" height="28" onError={() => setPlain(true)} />
-          {app.name}
+          {name}
         </span>
         <AppHome app={app.id} />
       </div>
