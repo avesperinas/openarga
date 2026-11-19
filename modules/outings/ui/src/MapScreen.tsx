@@ -14,7 +14,7 @@ type Scope = Zone | "world";
 export const scopes = (area: Area | null): { value: Scope; label: string }[] => [
   ...(area?.map
     ? [
-        { value: "near" as Scope, label: area.near },
+        { value: "near" as Scope, label: area.name },
         { value: "region" as Scope, label: area.region },
       ]
     : []),
