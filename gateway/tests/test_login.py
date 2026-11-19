@@ -148,7 +148,7 @@ async def people() -> dict:
     return {"id": USER}
 
 
-@upstream.api_route("/{path:path}", methods=["GET", "POST", "PUT"])
+@upstream.api_route("/{path:path}", methods=["GET", "POST", "PUT", "PATCH"])
 async def catch_all(request: Request, path: str) -> dict:
     realm.seen.append({"path": request.url.path, "headers": dict(request.headers)})
     return {"saw": request.url.path}
@@ -581,7 +581,7 @@ async def test_the_demo_signs_in_as_one_of_the_cast_without_the_realm(
 ) -> None:
     monkeypatch.setenv("OPENARGA_DEMO", "true")
     start = await browser.get("/login", params={"next": "/money"})
-    assert start.headers["location"] == "/login/demo?next=%2Fmoney"
+    assert start.headers["location"] == "/demo?next=%2Fmoney"
 
     done = await browser.get("/login/demo", params={"as": "sam", "next": "/money"})
     assert done.status_code == 302
@@ -596,10 +596,44 @@ async def test_the_demo_only_knows_its_cast_and_only_sends_home(
     browser, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("OPENARGA_DEMO", "true")
-    done = await browser.get(
+    stranger = await browser.get(
         "/login/demo", params={"as": "admin", "next": "https://elsewhere.test/"}
+    )
+    assert stranger.headers["location"] == "/demo?next=%2F"
+    assert cookie_value(stranger, COOKIE) is None
+
+    done = await browser.get(
+        "/login/demo", params={"as": "alex", "next": "https://elsewhere.test/"}
     )
     assert done.headers["location"] == "/"
 
     await browser.get("/api/kernel/ui/layouts")
     assert realm.seen[-1]["headers"]["x-arga-subject"] == "demo-alex"
+
+
+async def test_the_demo_door_opens_without_a_session_only_in_demo_mode(
+    browser, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    assert (await browser.get("/demo", headers=NAVIGATION)).status_code == 302
+
+    monkeypatch.setenv("OPENARGA_DEMO", "true")
+    door = await browser.get("/demo", params={"next": "/money"}, headers=NAVIGATION)
+    assert door.status_code == 200
+    assert realm.seen[-1]["path"] == "/demo"
+    assert "x-arga-subject" not in realm.seen[-1]["headers"]
+    assert (await browser.get("/_next/static/chunks/door.js")).status_code == 200
+    assert (await browser.get("/wallpapers/dawn.webp")).status_code == 200
+    assert (await browser.get("/_next/data/home.json")).status_code == 401
+
+
+async def test_the_demo_speaks_the_language_chosen_at_the_door(
+    browser, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OPENARGA_DEMO", "true")
+    await browser.get("/login/demo", params={"as": "sam", "locale": "es"})
+    told = [seen for seen in realm.seen if seen["path"] == "/me/preferences"]
+    assert [seen["headers"]["x-arga-subject"] for seen in told] == ["demo-sam"]
+    assert told[0]["headers"]["x-arga-user"] == USER
+
+    await browser.get("/login/demo", params={"as": "sam", "locale": "es-ES"})
+    assert len([seen for seen in realm.seen if seen["path"] == "/me/preferences"]) == 1

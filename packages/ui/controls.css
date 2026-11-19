@@ -2485,3 +2485,97 @@ body:not(:has(.tab-bar)) .toast-host {
   ::view-transition-old(*),
   ::view-transition-new(*) { animation: none !important; }
 }
+
+.demo-door {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6) var(--space-4);
+}
+.demo-door-card {
+  position: relative;
+  width: min(100%, 28rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-8) var(--space-6) var(--space-6);
+  border-radius: var(--radius-surface);
+  text-align: center;
+}
+.demo-door-mark {
+  width: var(--space-12);
+  height: var(--space-12);
+  border-radius: var(--radius-control);
+  box-shadow: var(--glass-shadow);
+}
+.demo-door-title {
+  margin: 0;
+  font-size: var(--text-title1);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  color: var(--fg);
+}
+.demo-door-lead {
+  margin: 0;
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  color: var(--fg-muted);
+}
+.demo-door-people {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.demo-door-person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-3);
+  border-radius: var(--radius-surface);
+  background: var(--fill);
+  color: var(--fg);
+  text-align: start;
+  text-decoration: none;
+  transition: background var(--duration-fast) var(--spring-snappy);
+}
+.demo-door-person:hover {
+  background: var(--fill-strong);
+}
+.demo-door-person:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.demo-door-person > .icon {
+  width: var(--icon-m);
+  height: var(--icon-m);
+  color: var(--fg-faint);
+}
+.demo-door-person-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-half);
+}
+.demo-door-person-name {
+  font-size: var(--text-headline);
+  font-weight: var(--weight-semibold);
+}
+.demo-door-person-about {
+  font-size: var(--text-footnote);
+  color: var(--fg-muted);
+}
+.demo-door-language {
+  width: 100%;
+}
+.demo-door-note {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--fg-faint);
+}
