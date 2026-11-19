@@ -64,9 +64,9 @@ async def test_the_seed_runs_twice_without_duplicates(schema) -> None:
     again = await seed_everyone()
 
     assert first["alex"] == again["alex"] and first["sam"] == again["sam"]
-    assert first["alex"]["money_v1_statement_line"] > 200
+    assert first["alex"]["money_v1_statement_line"] > 400
     assert first["alex"]["money_v1_position"] == 2 and first["sam"]["money_v1_position"] == 1
-    assert first["alex"]["money_v1_entry"] > 60 and first["sam"]["money_v1_entry"] == 0
+    assert first["alex"]["money_v1_entry"] > 60 and first["sam"]["money_v1_entry"] > 60
 
 
 async def test_alex_has_eighteen_months_that_add_up(api) -> None:

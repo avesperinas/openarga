@@ -83,8 +83,4 @@ Write (`money:write`): `categorise_movement`, `mark_transfer`, `record_shared_ex
 ## Demo
 
 [`src/money/demo.py`](../../modules/money/src/money/demo.py) seeds Alex and Sam from
-[`demo/personas.yaml`](../../demo/personas.yaml): eighteen months of an everyday account and a
-savings account (salary, groceries, subscriptions, transport, leisure and a monthly transfer to
-savings), a brokerage product with ETF positions and their classification, and, for Alex, the rent,
-bills and groceries shared with Sam. Dates are relative to today and it can run any number of
-times.
+[`demo/personas.yaml`](../../demo/personas.yaml): eighteen months of an everyday account and a savings account with movements across food, restaurants, health, shopping, sport, phone, travel and subscriptions (flights and hotels match the trips in Travel), a few movements left to label, month-end balances so the net worth curve is smooth, a brokerage account with positions, and shared expenses between Alex and Sam (rent, utilities, groceries, dinners out, home) written from both points of view so the balance shows on both sides.
