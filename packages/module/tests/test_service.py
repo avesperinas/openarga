@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
+from uuid import UUID
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -31,6 +32,14 @@ def demo(tmp_path: Path) -> Service:
         if name == "twin":
             raise Clash("already there")
         return {"name": name}
+
+    @service.app.get("/demo/map/{name}")
+    async def map_piece(name: str) -> dict:
+        return {"piece": name}
+
+    @service.app.get("/demo/{thing_id}")
+    async def by_id(thing_id: UUID) -> dict:
+        return {"id": str(thing_id)}
 
     service.serve_ui()
     return service
@@ -62,10 +71,27 @@ async def test_the_routes_of_the_module_come_before_the_app(client) -> None:
     assert (await client.get("/things/x")).json() == {"name": "x"}
 
 
+async def test_an_app_request_from_the_gateway_is_never_taken_by_an_api_route_of_the_same_name(
+    client, tmp_path: Path
+) -> None:
+    (tmp_path / "icon.svg").write_text("<svg/>")
+    view = {"x-arga-view": "1"}
+    thing = "00000000-0000-0000-0000-000000000001"
+
+    assert (await client.get("/demo/inbox")).status_code == 422
+    assert (await client.get("/demo/inbox", headers=view)).text == "<div id=root></div>"
+    assert (await client.get("/demo/icon.svg", headers=view)).text == "<svg/>"
+    assert (await client.get("/demo", headers=view)).text == "<div id=root></div>"
+    assert (await client.get(f"/demo/{thing}")).json() == {"id": thing}
+    assert (await client.get("/demo/assets/gone.js", headers=view)).status_code == 404
+    assert (await client.get("/demo/map/near.json", headers=view)).json() == {"piece": "near.json"}
+    assert (await client.post("/demo/inbox", headers=view)).status_code == 405
+
+
 async def test_a_missing_file_of_the_app_is_404_and_not_the_page(client) -> None:
     assert (await client.get("/demo/book/1")).status_code == 200
     assert (await client.get("/demo/assets/index-old.js")).status_code == 404
-    assert (await client.get("/demo/icon.svg")).status_code == 404
+    assert (await client.get("/demo/icon.svg", headers={"x-arga-view": "1"})).status_code == 404
 
 
 async def test_it_says_who_is_looking(client) -> None:

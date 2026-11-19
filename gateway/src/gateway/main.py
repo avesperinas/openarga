@@ -22,6 +22,7 @@ from gateway.words import language, say
 
 SERVICE = "gateway"
 SUBJECT_HEADER = "x-arga-subject"
+VIEW_HEADER = "x-arga-view"
 
 HOP_BY_HOP = frozenset(
     {
@@ -40,6 +41,7 @@ HOP_BY_HOP = frozenset(
 
 NEVER_FORWARDED = HOP_BY_HOP | {
     SUBJECT_HEADER,
+    VIEW_HEADER,
     people_module.USER_HEADER,
     people_module.SPACES_HEADER,
     *people_module.PREFERENCE_HEADERS.values(),
@@ -175,6 +177,7 @@ async def forward(
     path: str,
     subject: str | None,
     scopes: tuple[str, ...] | None = None,
+    view: bool = False,
 ) -> Response:
     started = time.perf_counter()
     url = httpx.URL(f"{upstream}/{path.lstrip('/')}", query=request.url.query.encode())
@@ -195,6 +198,8 @@ async def forward(
         person = await request.app.state.people.person_for(subject)
         if person is not None:
             headers.extend(person.headers())
+    if view:
+        headers.append((VIEW_HEADER.encode(), b"1"))
     if scopes is not None:
         headers.append((oauth_module.SCOPES_HEADER.encode(), " ".join(scopes).encode()))
 
@@ -579,10 +584,12 @@ async def shell(request: Request, path: str) -> Response:
 
 
 async def module_app(request: Request, module_id: str, path: str, inner: str) -> Response:
-    if request.method in ("GET", "HEAD") and inner in INSTALL_ASSETS:
-        return await forward(request, module_url(module_id), path, None)
+    view = request.method in ("GET", "HEAD")
+    if view and inner in INSTALL_ASSETS:
+        return await forward(request, module_url(module_id), path, None, view=True)
     try:
         who = await person(request)
     except (NoSession, Unverifiable) as error:
         return refuse(request, error)
-    return with_cookie(await forward(request, module_url(module_id), path, who.subject), who.cookie)
+    response = await forward(request, module_url(module_id), path, who.subject, view=view)
+    return with_cookie(response, who.cookie)
