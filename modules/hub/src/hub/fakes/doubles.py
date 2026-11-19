@@ -5,6 +5,7 @@ import re
 from datetime import date, timedelta
 from functools import cache
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
@@ -12,6 +13,7 @@ from hub.fakes import world
 from hub.fakes.bank import FakeEnableBanking
 from hub.fakes.google import FakeGoogle
 from hub.fakes.markets import markets
+from hub.fakes.photos import landscape
 
 PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
@@ -258,7 +260,7 @@ def commons(request: httpx.Request) -> httpx.Response:
                             "title": title,
                             "imageinfo": [
                                 {
-                                    "url": "https://upload.wikimedia.org/example/view.png",
+                                    "url": f"https://upload.wikimedia.org/example/{quote(title.removeprefix('File:'))}",
                                     "extmetadata": {
                                         "Artist": {"value": "Sample Photographer"},
                                         "LicenseShortName": {"value": "CC BY-SA 4.0"},
@@ -270,12 +272,15 @@ def commons(request: httpx.Request) -> httpx.Response:
                 }
             }
         )
-    hit = {"title": "File:Example view.png"}
+    wanted = params.get("srsearch") or params.get("gscoord") or "Example view"
+    hit = {"title": f"File:{wanted}.png"}
     return json({"query": {"search": [hit], "geosearch": [hit]}})
 
 
-def upload(_request: httpx.Request) -> httpx.Response:
-    return httpx.Response(200, content=PNG, headers={"content-type": "image/png"})
+def upload(request: httpx.Request) -> httpx.Response:
+    return httpx.Response(
+        200, content=landscape(request.url.path), headers={"content-type": "image/png"}
+    )
 
 
 def osm(_request: httpx.Request) -> httpx.Response:
