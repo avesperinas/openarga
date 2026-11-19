@@ -198,6 +198,9 @@ ui:
   widgets:
     - id: steps_today
       title: Steps today
+      titles:
+        en: Steps today
+        es: Pasos hoy
       kind: ring
       sizes: ["1x1", "2x2", "2x1", "4x1", "4x2"]
       endpoint: /api/vitals/widgets/steps_today
@@ -205,6 +208,9 @@ ui:
       link: /vitals/steps
     - id: weight
       title: Weight
+      titles:
+        en: Weight
+        es: Peso
       kind: kpi-delta
       sizes: ["1x1", "2x2", "2x1", "4x1", "4x2", "4x4"]
       endpoint: /api/vitals/widgets/weight
@@ -212,6 +218,9 @@ ui:
       link: /vitals/weight
     - id: ldl
       title: LDL cholesterol
+      titles:
+        en: LDL cholesterol
+        es: Colesterol LDL
       kind: kpi-delta
       sizes: ["1x1", "2x2", "2x1", "4x1", "4x2", "4x4"]
       endpoint: /api/vitals/widgets/ldl
@@ -219,6 +228,9 @@ ui:
       link: /vitals/labs
     - id: steps_week
       title: Steps this week
+      titles:
+        en: Steps this week
+        es: Pasos esta semana
       kind: bars
       sizes: ["4x2", "2x2", "2x1", "4x1", "4x4"]
       endpoint: /api/vitals/widgets/steps_week
@@ -226,6 +238,9 @@ ui:
       link: /vitals/steps
     - id: sleep
       title: Sleep
+      titles:
+        en: Sleep
+        es: Sueño
       kind: kpi-delta
       sizes: ["2x1", "1x1", "2x2", "4x1", "4x2"]
       endpoint: /api/vitals/widgets/sleep
@@ -233,6 +248,9 @@ ui:
       link: /vitals/sleep
     - id: steps_year
       title: Steps this year
+      titles:
+        en: Steps this year
+        es: Pasos este año
       kind: heatmap
       sizes: ["2x2", "4x2", "1x1", "2x1", "4x1", "2x4", "4x4"]
       endpoint: /api/vitals/widgets/steps_year
@@ -240,6 +258,9 @@ ui:
       link: /vitals/steps
     - id: sleep_score
       title: Sleep score
+      titles:
+        en: Sleep score
+        es: Calidad del sueño
       kind: ring
       sizes: ["1x1", "2x2", "2x1", "4x1", "4x2"]
       endpoint: /api/vitals/widgets/sleep_score
@@ -247,6 +268,9 @@ ui:
       link: /vitals/sleep
     - id: sleep_week
       title: Sleep this week
+      titles:
+        en: Sleep this week
+        es: Sueño esta semana
       kind: bars
       sizes: ["4x2", "2x2", "2x1", "4x1", "4x4"]
       endpoint: /api/vitals/widgets/sleep_week
@@ -254,6 +278,9 @@ ui:
       link: /vitals/sleep
     - id: readiness
       title: Readiness
+      titles:
+        en: Readiness
+        es: Disposición
       kind: ring
       sizes: ["1x1", "2x2", "2x1", "4x1", "4x2"]
       endpoint: /api/vitals/widgets/readiness
@@ -261,6 +288,9 @@ ui:
       link: /vitals/
     - id: resting_heart
       title: Resting HR
+      titles:
+        en: Resting HR
+        es: FC en reposo
       kind: kpi-delta
       sizes: ["2x1", "1x1", "2x2", "4x1", "4x2"]
       endpoint: /api/vitals/widgets/resting_heart
@@ -268,6 +298,9 @@ ui:
       link: /vitals/health/figure/resting_heart_rate
     - id: hrv
       title: HRV
+      titles:
+        en: HRV
+        es: VFC
       kind: kpi-delta
       sizes: ["2x1", "1x1", "2x2", "4x1", "4x2"]
       endpoint: /api/vitals/widgets/hrv
@@ -275,6 +308,9 @@ ui:
       link: /vitals/health/figure/hrv_ms
     - id: vo2max
       title: VO₂ max
+      titles:
+        en: VO₂ max
+        es: VO₂ máx
       kind: kpi-delta
       sizes: ["2x1", "1x1", "2x2", "4x1", "4x2"]
       endpoint: /api/vitals/widgets/vo2max
@@ -282,6 +318,9 @@ ui:
       link: /vitals/health/figure/vo2max
     - id: training_load
       title: Load this week
+      titles:
+        en: Load this week
+        es: Carga esta semana
       kind: progress
       sizes: ["2x1", "4x1", "2x2", "4x2"]
       endpoint: /api/vitals/widgets/training_load
@@ -289,6 +328,9 @@ ui:
       link: /vitals/training
     - id: training_week
       title: Training this week
+      titles:
+        en: Training this week
+        es: Entreno esta semana
       kind: stats
       sizes: ["4x1", "2x2", "4x2", "2x1"]
       endpoint: /api/vitals/widgets/training_week
@@ -296,6 +338,9 @@ ui:
       link: /vitals/training
     - id: last_workout
       title: Last workout
+      titles:
+        en: Last workout
+        es: Último entreno
       kind: stats
       sizes: ["4x1", "2x2", "4x2", "2x1"]
       endpoint: /api/vitals/widgets/last_workout
@@ -303,6 +348,9 @@ ui:
       link: /vitals/training
     - id: band
       title: Band
+      titles:
+        en: Band
+        es: Pulsera
       kind: ring
       sizes: ["1x1", "2x1", "2x2"]
       endpoint: /api/vitals/widgets/band

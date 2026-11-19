@@ -159,6 +159,9 @@ ui:
   widgets:
     - id: networth
       title: Net worth
+      titles:
+        en: Net worth
+        es: Patrimonio
       kind: kpi-delta
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/money/widgets/networth
@@ -166,6 +169,9 @@ ui:
       link: /money
     - id: liquid
       title: Liquid
+      titles:
+        en: Liquid
+        es: Liquidez
       kind: kpi-delta
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/money/widgets/liquid
@@ -173,6 +179,9 @@ ui:
       link: /money
     - id: cash
       title: Cash
+      titles:
+        en: Cash
+        es: Efectivo
       kind: kpi
       sizes: ["2x2", "1x1", "2x1", "4x1"]
       endpoint: /api/money/widgets/cash
@@ -180,6 +189,9 @@ ui:
       link: /money
     - id: emergency
       title: Emergency fund
+      titles:
+        en: Emergency fund
+        es: Fondo de emergencia
       kind: progress
       sizes: ["2x2", "1x1", "2x1", "4x1"]
       endpoint: /api/money/widgets/emergency
@@ -187,6 +199,9 @@ ui:
       link: /money
     - id: expense
       title: Monthly spending
+      titles:
+        en: Monthly spending
+        es: Gasto mensual
       kind: kpi-delta
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/money/widgets/expense
@@ -194,6 +209,9 @@ ui:
       link: /money
     - id: basic
       title: Basic spending
+      titles:
+        en: Basic spending
+        es: Gasto básico
       kind: kpi-delta
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/money/widgets/basic
@@ -201,6 +219,9 @@ ui:
       link: /money
     - id: shared
       title: Shared
+      titles:
+        en: Shared
+        es: Compartido
       kind: kpi
       sizes: ["2x2", "1x1", "2x1", "4x1"]
       endpoint: /api/money/widgets/shared
@@ -208,6 +229,9 @@ ui:
       link: /money/shared
     - id: account
       title: Balance
+      titles:
+        en: Balance
+        es: Saldo
       kind: kpi
       sizes: ["2x2", "1x1", "2x1", "4x1"]
       endpoint: /api/money/widgets/account/value

@@ -181,6 +181,9 @@ ui:
   widgets:
     - id: recipes
       title: Recipe book
+      titles:
+        en: Recipe book
+        es: Recetario
       kind: stats
       sizes: ["2x2", "2x1", "4x1", "4x2"]
       endpoint: /api/recipes/widgets/recipes
@@ -188,6 +191,9 @@ ui:
       link: /recipes
     - id: quick
       title: In half an hour
+      titles:
+        en: In half an hour
+        es: En media hora
       kind: list
       sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/recipes/widgets/quick

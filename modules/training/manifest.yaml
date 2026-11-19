@@ -90,6 +90,9 @@ ui:
   widgets:
     - id: week
       title: Training
+      titles:
+        en: Training
+        es: Entrenamiento
       kind: ring
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/training/widgets/week
@@ -97,6 +100,9 @@ ui:
       link: /training/calendar
     - id: next
       title: Next session
+      titles:
+        en: Next session
+        es: Próxima sesión
       kind: kpi
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "4x2"]
       endpoint: /api/training/widgets/next
