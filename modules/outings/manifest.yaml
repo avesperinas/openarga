@@ -157,6 +157,9 @@ ui:
   widgets:
     - id: weekend
       title: This weekend
+      titles:
+        en: This weekend
+        es: Este fin de semana
       kind: upnext
       sizes: ["2x2", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/outings/widgets/weekend
@@ -164,6 +167,9 @@ ui:
       link: /outings
     - id: wishes
       title: Wishes
+      titles:
+        en: Wishes
+        es: Deseos
       kind: list
       sizes: ["2x2", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/outings/widgets/wishes

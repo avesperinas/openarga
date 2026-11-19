@@ -118,6 +118,9 @@ ui:
   widgets:
     - id: recent
       title: Recent notes
+      titles:
+        en: Recent notes
+        es: Notas recientes
       kind: list
       sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/notebook/widgets/recent
@@ -125,6 +128,9 @@ ui:
       link: /notebook
     - id: today
       title: Today's note
+      titles:
+        en: Today's note
+        es: Nota de hoy
       kind: list
       sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/notebook/widgets/today
@@ -132,6 +138,9 @@ ui:
       link: /notebook/today
     - id: review
       title: To review
+      titles:
+        en: To review
+        es: Por repasar
       kind: list
       sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/notebook/widgets/review

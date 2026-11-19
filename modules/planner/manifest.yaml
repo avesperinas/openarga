@@ -134,6 +134,9 @@ ui:
   widgets:
     - id: today
       title: Today
+      titles:
+        en: Today
+        es: Hoy
       kind: agenda
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/planner/widgets/today
@@ -141,6 +144,9 @@ ui:
       link: /planner
     - id: week
       title: Week
+      titles:
+        en: Week
+        es: Semana
       kind: week
       sizes: ["4x2", "2x1", "4x1", "2x2", "2x4", "4x4"]
       endpoint: /api/planner/widgets/week
@@ -148,6 +154,9 @@ ui:
       link: /planner
     - id: upnext
       title: Up next
+      titles:
+        en: Up next
+        es: A continuación
       kind: upnext
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/planner/widgets/upnext
@@ -155,6 +164,9 @@ ui:
       link: /planner
     - id: calendar
       title: This month
+      titles:
+        en: This month
+        es: Este mes
       kind: calendar
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/planner/widgets/calendar

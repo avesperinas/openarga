@@ -197,6 +197,9 @@ ui:
   widgets:
     - id: upnext
       title: Up next in Study
+      titles:
+        en: Up next in Study
+        es: Lo próximo en Estudios
       kind: upnext
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/study/widgets/upnext
@@ -204,6 +207,9 @@ ui:
       link: /study
     - id: progress
       title: Progress
+      titles:
+        en: Progress
+        es: Progreso
       kind: progress
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/study/widgets/progress
@@ -211,6 +217,9 @@ ui:
       link: /study
     - id: average
       title: Average
+      titles:
+        en: Average
+        es: Media
       kind: kpi
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "4x2"]
       endpoint: /api/study/widgets/average

@@ -158,6 +158,9 @@ ui:
   widgets:
     - id: latest
       title: Insights
+      titles:
+        en: Insights
+        es: Perspectivas
       kind: list
       sizes: ["2x2", "4x1", "2x4", "4x2"]
       endpoint: /api/insights/widgets/latest
@@ -165,6 +168,9 @@ ui:
       link: /insights
     - id: today
       title: Your pill
+      titles:
+        en: Your pill
+        es: Tu píldora
       kind: list
       sizes: ["2x2", "4x1", "2x4", "4x2"]
       endpoint: /api/insights/widgets/today
