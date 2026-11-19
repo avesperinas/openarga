@@ -75,7 +75,4 @@ Write (`planner:write`): `create_event`, `update_event`, `cancel_event`, `create
 ## Demo
 
 [`src/planner/demo.py`](../../modules/planner/src/planner/demo.py) seeds Alex and Sam from
-[`demo/personas.yaml`](../../demo/personas.yaml): a Personal layer with a weekly class, a dentist, a
-dinner and a weekend away; a Local holidays layer; a Work background with days off from it; and a
-Home layer Alex shares with the space (rent, the weekly shop, a plumber visit). Dates are relative
-to today. It can run any number of times.
+[`demo/personas.yaml`](../../demo/personas.yaml): a Personal, a Work and a Local layer with a weekly class, work routines, birthdays that repeat every year, appointments around today and a leave in the past, plus the shared Home layer (rent, weekly shop, bins, a plumber visit, movie night) that both of them see.

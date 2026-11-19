@@ -46,8 +46,8 @@ async def test_the_seed_runs_twice_without_duplicates(schema) -> None:
     again = await seed_everyone()
 
     assert first == again
-    assert first["alex"] == {"planner_calendar": 4, "planner_event": 11}
-    assert first["sam"] == {"planner_calendar": 4, "planner_event": 11}
+    assert first["alex"] == {"planner_calendar": 4, "planner_event": 27}
+    assert first["sam"] == {"planner_calendar": 4, "planner_event": 24}
 
 
 async def test_alex_and_sam_share_home_and_their_work_rests_on_local_holidays(api) -> None:
