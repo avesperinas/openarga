@@ -10,7 +10,7 @@ from uuid import UUID
 
 import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from pydantic import ValidationError
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
@@ -25,6 +25,8 @@ from arga_widgets import Act
 INSUFFICIENT_PRIVILEGE = "42501"
 IMMUTABLE = "public, max-age=31536000, immutable"
 REVALIDATE = "no-cache"
+VIEW_HEADER = "x-arga-view"
+REFUSED = frozenset({404, 405, 422})
 WRITES = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
 Renderer = Callable[[AsyncConnection], Awaitable[dict]]
@@ -261,22 +263,44 @@ class Service:
                     ) from error
                 raise
 
+    def _ui_file(self, path: str) -> Response:
+        root = self.ui_dist().resolve()
+        candidate = (root / path).resolve()
+        if path and candidate.is_file() and candidate.is_relative_to(root):
+            immutable = candidate.parent.name == "assets"
+            return FileResponse(
+                candidate, headers={"cache-control": IMMUTABLE if immutable else REVALIDATE}
+            )
+        if path.startswith("assets/") or "." in path.rsplit("/", 1)[-1]:
+            return JSONResponse(status_code=404, content={"detail": f"not found: {path}"})
+        index = root / "index.html"
+        if not index.is_file():
+            return JSONResponse(status_code=503, content={"detail": "the app is not built"})
+        return FileResponse(index, headers={"cache-control": REVALIDATE})
+
     def serve_ui(self) -> None:
+        # The gateway sends the app and the API to the same paths: /insights/inbox would land on
+        # the API route /insights/{id}. It marks app requests, and what the routes of the module
+        # do not take (a file of the app, a path they refuse) is the app.
+        async def ahead_of_the_api(request: Request, call_next):
+            path = request.url.path
+            if not (
+                request.method in ("GET", "HEAD")
+                and request.headers.get(VIEW_HEADER) == "1"
+                and (path == self.ui_root or path.startswith(self.ui_root + "/"))
+            ):
+                return await call_next(request)
+            inner = path[len(self.ui_root) :].lstrip("/")
+            if not inner or (self.ui_dist() / inner).is_file():
+                return self._ui_file(inner)
+            response = await call_next(request)
+            if response.status_code in REFUSED:
+                return self._ui_file(inner)
+            return response
 
-        async def ui(path: str = "") -> FileResponse:
-            root = self.ui_dist().resolve()
-            candidate = (root / path).resolve()
-            if path and candidate.is_file() and candidate.is_relative_to(root):
-                immutable = candidate.parent.name == "assets"
-                return FileResponse(
-                    candidate, headers={"cache-control": IMMUTABLE if immutable else REVALIDATE}
-                )
-            if path.startswith("assets/") or "." in path.rsplit("/", 1)[-1]:
-                raise HTTPException(status_code=404, detail=f"not found: {path}")
-            index = root / "index.html"
-            if not index.is_file():
-                raise HTTPException(status_code=503, detail="the app is not built")
-            return FileResponse(index, headers={"cache-control": REVALIDATE})
+        async def ui(path: str = "") -> Response:
+            return self._ui_file(path)
 
+        self.app.middleware("http")(ahead_of_the_api)
         self.app.get(self.ui_root)(ui)
         self.app.get(self.ui_root + "/{path:path}")(ui)

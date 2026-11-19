@@ -305,3 +305,18 @@ async def test_a_service_that_says_nothing_still_gets_the_gateway_time(api) -> N
     response = await api.get("/api/kernel/readyz")
 
     assert response.headers["server-timing"].startswith("gw;dur=")
+
+
+async def test_only_the_gateway_marks_a_request_for_an_app_and_never_an_api_call(api) -> None:
+    import time
+
+    main.app.state.modules = (time.monotonic(), {"goals"}, {})
+    try:
+        await api.get("/goals/inbox", headers={"x-arga-view": "0"})
+        assert seen[-1]["headers"]["x-arga-view"] == "1"
+        await api.post("/goals/inbox")
+        assert "x-arga-view" not in seen[-1]["headers"]
+        await api.get("/api/goals/goals/1", headers={"x-arga-view": "1"})
+        assert "x-arga-view" not in seen[-1]["headers"]
+    finally:
+        main.app.state.modules = None
