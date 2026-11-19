@@ -592,5 +592,15 @@
   "trips.per_day": "{amount}/day",
   "trips.per_person": "{amount} per person",
   "trips.upcoming": "Upcoming",
-  "weather.rain": "{chance} % rain"
+  "weather.rain": "{chance} % rain",
+  "weather.sky.clear": "clear",
+  "weather.sky.drizzle": "drizzle",
+  "weather.sky.fog": "fog",
+  "weather.sky.mostly_clear": "mostly clear",
+  "weather.sky.overcast": "overcast",
+  "weather.sky.partly_cloudy": "partly cloudy",
+  "weather.sky.rain": "rain",
+  "weather.sky.showers": "showers",
+  "weather.sky.snow": "snow",
+  "weather.sky.storm": "thunderstorm"
 }
