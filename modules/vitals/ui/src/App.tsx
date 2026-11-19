@@ -1,4 +1,4 @@
-import { SETTINGS_TAB, TabBar, useT } from "@openarga/ui";
+import { AppShell, SETTINGS_TAB, useT } from "@openarga/ui";
 import { useCallback, useEffect, useState } from "react";
 
 import { FigureScreen, HeartDayScreen, RhythmScreen } from "./Figure";
@@ -97,7 +97,18 @@ export function App() {
   const toHealth = () => navigate(PATHS.health);
 
   return (
-    <>
+    <AppShell
+      label={t("tabs.label")}
+      active={tabOf(current)}
+      onSelect={(tab) => navigate(PATHS[tab])}
+      tabs={[
+        { id: "today", label: t("tabs.today"), icon: "today" },
+        { id: "training", label: t("tabs.training"), icon: "flame" },
+        { id: "sleep", label: t("tabs.sleep"), icon: "moon" },
+        { id: "health", label: t("tabs.health"), icon: "heart" },
+        SETTINGS_TAB,
+      ]}
+    >
       {current === "today" && <TodayScreen go={(place) => navigate(PATHS[place])} />}
       {current === "training" && <TrainingScreen />}
       {current === "sleep" && <SleepScreen onSettings={() => navigate(PATHS.settings)} />}
@@ -111,18 +122,6 @@ export function App() {
       {current === "rhythm" && <RhythmScreen onBack={toHealth} />}
       {current === "figure" && <FigureScreen id={figureOf(path) ?? ""} onBack={toHealth} />}
       {current === "settings" && <SettingsScreen />}
-      <TabBar
-        label={t("tabs.label")}
-        active={tabOf(current)}
-        onSelect={(tab) => navigate(PATHS[tab])}
-        items={[
-          { id: "today", label: t("tabs.today"), icon: "today" },
-          { id: "training", label: t("tabs.training"), icon: "flame" },
-          { id: "sleep", label: t("tabs.sleep"), icon: "moon" },
-          { id: "health", label: t("tabs.health"), icon: "heart" },
-          SETTINGS_TAB,
-        ]}
-      />
-    </>
+    </AppShell>
   );
 }

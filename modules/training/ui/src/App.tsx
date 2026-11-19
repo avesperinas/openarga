@@ -1,4 +1,4 @@
-import { SETTINGS_TAB, TabBar, useT } from "@openarga/ui";
+import { AppShell, SETTINGS_TAB, useT } from "@openarga/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { signIn } from "./api";
@@ -82,7 +82,18 @@ export function App({ queue: given }: { queue?: SyncQueue }) {
   }
 
   return (
-    <>
+    <AppShell
+      label={t("tabs.label")}
+      active={current.screen}
+      onSelect={(tab) => navigate(PATHS[tab])}
+      tabs={[
+        { id: "today", label: t("tabs.today"), icon: "today" },
+        { id: "history", label: t("tabs.calendar"), icon: "calendar" },
+        { id: "stats", label: t("tabs.stats"), icon: "chart" },
+        { id: "plan", label: t("tabs.plan"), icon: "edit" },
+        SETTINGS_TAB,
+      ]}
+    >
       {current.screen === "today" && (
         <TodayScreen
           onOpenSession={openSession}
@@ -94,18 +105,6 @@ export function App({ queue: given }: { queue?: SyncQueue }) {
       {current.screen === "stats" && <StatsScreen onOpenSession={openSession} />}
       {current.screen === "plan" && <PlanScreen />}
       {current.screen === "settings" && <SettingsScreen />}
-      <TabBar
-        label={t("tabs.label")}
-        active={current.screen}
-        onSelect={(tab) => navigate(PATHS[tab])}
-        items={[
-          { id: "today", label: t("tabs.today"), icon: "today" },
-          { id: "history", label: t("tabs.calendar"), icon: "calendar" },
-          { id: "stats", label: t("tabs.stats"), icon: "chart" },
-          { id: "plan", label: t("tabs.plan"), icon: "edit" },
-          SETTINGS_TAB,
-        ]}
-      />
-    </>
+    </AppShell>
   );
 }

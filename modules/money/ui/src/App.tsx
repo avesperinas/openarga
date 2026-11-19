@@ -1,6 +1,6 @@
 import "./money.css";
 
-import { EmptyState, Notice, SETTINGS_TAB, Screen, Skeleton, TabBar, ToastHost, useT } from "@openarga/ui";
+import { AppShell, EmptyState, Notice, SETTINGS_TAB, Screen, Skeleton, ToastHost, useT } from "@openarga/ui";
 import { useCallback, useEffect, useState } from "react";
 
 import { ScreenHeader } from "./Header";
@@ -111,19 +111,20 @@ export function App() {
 
   return (
     <ToastHost>
-      {body}
-      <TabBar
+      <AppShell
         label={t("tab.label")}
         active={tab}
         onSelect={(next) => go(next)}
-        items={[
+        tabs={[
           { id: "summary", label: t("tab.summary"), icon: "today" },
           { id: "movements", label: t("tab.movements"), icon: "list" },
           { id: "shared", label: t("tab.shared"), icon: "people" },
           { id: "analysis", label: t("tab.analysis"), icon: "chart" },
           SETTINGS_TAB,
         ]}
-      />
+      >
+        {body}
+      </AppShell>
     </ToastHost>
   );
 }
