@@ -12,6 +12,7 @@ from arga_contracts import notify as avisos
 from arga_contracts import records as fichas
 from arga_module.db import engine
 from arga_module.publisher import Publisher
+from arga_tenancy import as_user
 from outings import agenda, foryou, metrics, photos, places, records, weekly
 
 MODULE = "outings"
@@ -24,16 +25,24 @@ METRICS = fichas.Every()
 NOTICES = fichas.Every()
 
 
+async def fill_photos(client: httpx.AsyncClient, user: UUID) -> None:
+    with as_user(user, await fichas.spaces(client)):
+        async with PUBLISHER.as_module() as connection:
+            await photos.fill(connection)
+
+
 async def refresh(client: httpx.AsyncClient, user: UUID, fresh: bool) -> None:
     if fresh:
         for every in (RECORDS, METRICS, NOTICES):
             every.forget(user)
+    located = time.monotonic() - LOCATED.get(user, -LOCATE_EVERY) >= LOCATE_EVERY
     async with PUBLISHER.as_module() as connection:
         await agenda.derive(connection)
-        if time.monotonic() - LOCATED.get(user, -LOCATE_EVERY) >= LOCATE_EVERY:
+        if located:
             LOCATED[user] = time.monotonic()
             await places.locate(connection)
-            await photos.fill(connection)
+    if located:
+        await fill_photos(client, user)
     if weekly.due(user):
         async with PUBLISHER.as_module() as connection:
             asked = await weekly.ask(connection, datetime.now(UTC))
