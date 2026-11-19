@@ -24,6 +24,7 @@ describe("sleep in words", () => {
 
   it("takes the time of the instant in the sleeper's time, without converting it", () => {
     expect(timeOf("2026-10-20T07:15:00+02:00")).toBe("07:15");
+    expect(timeOf("2026-11-19T06:30:00Z")).toBe("07:30");
   });
 
   it("splits the night into stages, over sleep plus awake", () => {

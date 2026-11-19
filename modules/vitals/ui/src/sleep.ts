@@ -1,4 +1,4 @@
-import type { Locale, Translate } from "@openarga/ui";
+import { type Locale, type Translate, zonedDates } from "@openarga/ui";
 
 import type { Night, SleepStage } from "./api";
 
@@ -21,8 +21,11 @@ export function clock(minutes: number | null): string {
   return `${String(Math.floor(day / 60)).padStart(2, "0")}:${String(day % 60).padStart(2, "0")}`;
 }
 
+// A record keeps the wall clock of where it was taken; a UTC instant has none, so it is read on
+// the person's clock.
 export function timeOf(instant: string): string {
-  return instant.slice(11, 16);
+  if (!/(Z|[+-]00:?00)$/.test(instant)) return instant.slice(11, 16);
+  return zonedDates({ hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(instant));
 }
 
 export function stageShares(night: Pick<Night, "stages">): Partial<Record<SleepStage, number>> {
