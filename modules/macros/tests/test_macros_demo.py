@@ -65,3 +65,22 @@ async def test_each_person_has_today_and_a_week_against_the_target(api) -> None:
         assert day.status_code == 200, day.text
         week = await api.get("/week", headers=headers(persona))
         assert week.status_code == 200, week.text
+
+
+async def test_each_person_has_goals_templates_and_training_days(schema) -> None:
+    from macros.main import as_app
+
+    await seed_everyone()
+    for persona in CAST.people:
+        token = current_user.set(persona.id)
+        try:
+            async with as_app() as connection:
+                found = {
+                    table: await connection.scalar(text(f"select count(*) from macros.{table}"))
+                    for table in ("macros_goal", "macros_template", "macros_day_kind")
+                }
+        finally:
+            current_user.reset(token)
+        assert found["macros_goal"] >= 4
+        assert found["macros_template"] == 3
+        assert found["macros_day_kind"] >= 28
