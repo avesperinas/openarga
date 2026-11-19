@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_module.demo import Persona
+from macros import goals, intake, templates
 
 NAMESPACE = UUID("0b7c0de5-0000-4000-8000-0000000ac705")
 DAYS = 18 * 30
@@ -44,10 +45,33 @@ MEALS = (
     ("dinner", time(21, 15), 0.28, (0.30, 0.35, 0.35)),
 )
 NAMES = {
-    "breakfast": ("Oats with milk and fruit", "Toast with olive oil and tomato"),
-    "lunch": ("Lentil stew", "Chicken with rice and salad", "Pasta with tomato"),
-    "snack": ("Yogurt and nuts", "Apple and cheese"),
-    "dinner": ("Salmon with vegetables", "Potato omelette and salad", "Hummus and bread"),
+    "alex": {
+        "breakfast": ("Oats with milk and fruit", "Toast with olive oil and tomato",
+                      "Protein smoothie", "Avocado toast"),
+        "lunch": ("Lentil stew", "Chicken curry", "Greek salad", "Tuna salad", "Pasta with tomato"),
+        "snack": ("Yogurt and nuts", "Apple and cheese", "Hummus and carrots"),
+        "dinner": ("Baked salmon with vegetables", "Lemon chicken traybake", "Beef stew",
+                   "Veggie stir-fry", "Fish tacos"),
+    },
+    "sam": {
+        "breakfast": ("Pancakes", "Shakshuka", "Overnight oats", "Avocado toast"),
+        "lunch": ("Chickpea curry", "Gazpacho", "Spanish lentils with chorizo", "Greek salad"),
+        "snack": ("Yogurt and nuts", "Apple and cheese", "Oat cookies"),
+        "dinner": ("Potato omelette and salad", "Mushroom risotto", "Hake in green sauce",
+                   "Ratatouille", "Pumpkin soup"),
+    },
+}  # fmt: skip
+TEMPLATES = {
+    "alex": (
+        ("Usual breakfast", "Oats with milk and fruit", 520, (28, 70, 14), "08:15"),
+        ("Post-workout shake", "Protein smoothie", 380, (40, 38, 8), None),
+        ("Lunch box", "Chicken curry", 780, (48, 80, 24), None),
+    ),
+    "sam": (
+        ("Usual breakfast", "Overnight oats", 410, (18, 58, 12), "08:00"),
+        ("Afternoon snack", "Yogurt and nuts", 240, (10, 18, 14), None),
+        ("Quick dinner", "Veggie stir-fry", 560, (26, 62, 18), None),
+    ),
 }
 
 
@@ -90,7 +114,7 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
         day = today - timedelta(days=back)
         meals = MEALS if back else MEALS[:2]
         for slot, (meal, at, share, split) in enumerate(meals):
-            options = NAMES[meal]
+            options = NAMES[persona.key][meal]
             name = options[(back + slot + (0 if alex else 1)) % len(options)]
             kcal = daily * share * (0.9 + ((back * 7 + slot) % 5) * 0.05)
             entry = _id(persona, f"entry-{back}-{meal}")
@@ -131,3 +155,44 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
                 COMPLETE,
                 {"day": day, "marked_at": datetime.combine(day, time(22, 30), zone)},
             )
+    await _plan(connection, persona, today)
+
+
+async def _plan(connection: AsyncConnection, persona: Persona, today: date) -> None:
+    alex = persona.key == "alex"
+    for nutrient, low, high in (
+        ("protein", 150 if alex else 100, None),
+        ("fiber", 30, None),
+        ("sodium", None, 2300),
+        ("sugars", None, 50),
+    ):
+        await goals.set_goal(
+            connection,
+            goals.GoalIn(
+                nutrient=nutrient, min=low, max=high, valid_from=today - timedelta(days=DAYS)
+            ),
+        )
+    training = (0, 2, 4) if alex else (1, 3, 5)
+    for back in range(0, 30):
+        day = today - timedelta(days=back)
+        await goals.set_day_kind(
+            connection, day, "training" if day.weekday() in training else "rest"
+        )
+    for name, said, kcal, (protein, carbs, fat), daily_at in TEMPLATES[persona.key]:
+        await templates.save(
+            connection,
+            templates.TemplateIn(
+                name=name,
+                said=said,
+                items=[
+                    intake.ItemIn(
+                        kind="quick",
+                        name=said,
+                        quantity=kcal,
+                        unit="kcal",
+                        quick=intake.QuickMacros(protein=protein, carbs=carbs, fat=fat),
+                    )
+                ],
+                daily_at=time.fromisoformat(daily_at) if daily_at else None,
+            ),
+        )

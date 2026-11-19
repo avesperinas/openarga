@@ -57,5 +57,5 @@ Read (`macros:read`): `find_food`, `get_day`, `get_week`, `get_suggestions`, `ge
 
 [`src/macros/demo.py`](../../modules/macros/src/macros/demo.py) seeds Alex and Sam from
 [`demo/personas.yaml`](../../demo/personas.yaml): a target, meals logged as quick entries every day
-for the last three months and twice a week for the fifteen before, water at lunch, and the past
-days marked complete. It can run any number of times.
+for eighteen months (named after the dishes in their recipe book), nutrient goals, training and rest
+days that follow their training week, and three saved templates, one of them logged every morning.
