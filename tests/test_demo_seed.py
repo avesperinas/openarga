@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib.util
 import os
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -99,6 +99,65 @@ async def test_a_simulated_day_and_a_reset_leave_a_full_demo(empty) -> None:
     counted = await rows(empty)
     assert all(counted[module_id] > 0 for module_id in empty), counted
     assert counted["people"] == len(CAST.people)
+
+
+async def test_the_health_feed_reaches_today_and_never_repeats(empty) -> None:
+    demo = script()
+    engine = create_async_engine(URL)
+    query = text("""
+        select type, count(*) as n, min((payload->>'date')::date) as first,
+               max((payload->>'date')::date) as last
+        from kernel.events where source = 'google_health' and user_id = :user
+        group by type
+    """)
+
+    async def feed() -> dict[str, dict[str, tuple]]:
+        async with engine.connect() as connection:
+            return {
+                person.key: {
+                    row.type: (row.n, row.first, row.last)
+                    for row in await connection.execute(query, {"user": person.id})
+                }
+                for person in CAST.people
+            }
+
+    await demo.run("seed", TODAY, URL)
+    first = await feed()
+    await demo.run("seed", TODAY, URL)
+    await demo.run("day", TODAY, URL)
+    again = await feed()
+    await engine.dispose()
+
+    assert first == again
+    for person in first.values():
+        for kind in ("health.steps", "health.daily", "health.sleep", "health.heart"):
+            assert person[kind][2] == TODAY, kind
+        assert (TODAY - person["health.steps"][1]).days >= 530
+        assert person["health.exercise"][0] >= 40
+
+
+async def test_the_next_day_adds_a_day_and_nothing_breaks(empty) -> None:
+    demo = script()
+    tomorrow = TODAY + timedelta(days=1)
+    await demo.run("seed", TODAY, URL)
+    before = await rows(empty)
+
+    day = await demo.run("day", tomorrow, URL)
+    after = await rows(empty)
+
+    assert day.failed == {}
+    assert sorted(day.seeded) == sorted(empty)
+    assert all(after[module_id] >= before[module_id] for module_id in empty), (before, after)
+    engine = create_async_engine(URL)
+    async with engine.connect() as connection:
+        newest = await connection.scalar(
+            text(
+                "select max((payload->>'date')::date) from kernel.events "
+                "where source = 'google_health' and type = 'health.steps'"
+            )
+        )
+    await engine.dispose()
+    assert newest == tomorrow
 
 
 def test_reset_refuses_outside_a_demo_instance(monkeypatch) -> None:
