@@ -80,6 +80,4 @@ whole course from its syllabus in one call.
 ## Demo
 
 [`src/study/demo.py`](../../modules/study/src/study/demo.py) seeds Alex and Sam from
-[`demo/personas.yaml`](../../demo/personas.yaml): Alex has a master with two subjects, a
-twice-weekly schedule and four assessments, one graded; Sam has a language course with a weekly
-class. Dates are relative to today. It can run any number of times.
+[`demo/personas.yaml`](../../demo/personas.yaml): Alex has a master with a finished semester (graded subjects) and a current one with graded, submitted and pending assessments, a German evening course and a finished certification; Sam has Italian, a nutrition postgraduate certificate with grades and a finished pottery workshop. Timetables fill the week.
