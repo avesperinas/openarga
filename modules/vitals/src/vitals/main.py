@@ -59,6 +59,11 @@ def ui_dist() -> Path:
     return Path(os.environ.get("UI_DIST", default))
 
 
+@app.get("/me")
+async def me() -> dict[str, str]:
+    return {"user_id": str(require_person())}
+
+
 @app.get("/healthz")
 async def healthz() -> dict:
     return {"status": "ok", "module": MODULE_ID}
