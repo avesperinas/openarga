@@ -8,11 +8,13 @@ WORKDIR /src
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/ui/package.json packages/ui/package.json
+COPY packages/app/package.json packages/app/package.json
 COPY modules/money/ui/package.json modules/money/ui/package.json
 RUN pnpm install --frozen-lockfile --filter @openarga/money...
 
 COPY tsconfig.base.json ./
 COPY packages/ui packages/ui
+COPY packages/app packages/app
 COPY modules/money/ui modules/money/ui
 RUN pnpm --filter @openarga/money build
 
