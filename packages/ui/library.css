@@ -1986,6 +1986,24 @@ button.stat-tile-body:focus-visible { outline: 2px solid var(--focus-ring); outl
 
 [data-size="2x1"] .kpi[data-with-series] .kpi-trend { display: none; }
 
+[data-layout="wide"] .progress {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-4);
+  text-align: start;
+}
+[data-layout="wide"] .progress .widget-detail {
+  grid-column: 2;
+  grid-row: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+[data-layout="wide"] .progress .kpi-figure:only-of-type { grid-column: 1 / -1; }
+[data-layout="wide"] .progress-foot { grid-column: 1 / -1; }
 [data-layout="wide"] .kpi[data-with-series] {
   flex-direction: row;
   gap: var(--space-4);

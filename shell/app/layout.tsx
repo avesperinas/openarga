@@ -7,7 +7,7 @@ import { fromHeaders } from "./lib/regional";
 
 export const metadata: Metadata = {
   title: "arga",
-  description: "Tu sistema, tus datos.",
+  description: "Your system, your data.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],

@@ -95,10 +95,12 @@ describe("today by the space available", () => {
 });
 
 describe("the week and the month", () => {
-  it("the week starts today and has seven days", () => {
+  it("the week starts today and has seven days, with a dot per item where titles would not fit", () => {
     const html = card("4x2", <WidgetWeek entries={ENTRIES} now={NOW} />);
     expect(html.match(/class="week-day"/g)).toHaveLength(7);
-    expect(html).toContain("Lisboa");
+    expect(html).toContain("week-dot");
+    expect(html).not.toContain("Lisboa");
+    expect(card("4x4", <WidgetWeek entries={ENTRIES} now={NOW} />)).toContain("Lisboa");
   });
 
   it("in a 1x1, how many items there are in seven days", () => {

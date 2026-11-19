@@ -45,7 +45,7 @@ it("one request to /badges for every companion, and each dot with its own", asyn
   for (let i = 0; i < 5; i++) await act(async () => await Promise.resolve());
 
   expect(asked).toEqual(["/badges"]);
-  expect(container.querySelector('[aria-label="insights, 3 unseen"] .launcher-companion-dot')).not.toBeNull();
-  expect(container.querySelector('[aria-label="other"] .launcher-companion-dot')).toBeNull();
+  expect(container.querySelector('[aria-label="insights, 3 unseen"] .launcher-dot')).not.toBeNull();
+  expect(container.querySelectorAll(".launcher-dot")).toHaveLength(1);
   act(() => root.unmount());
 });

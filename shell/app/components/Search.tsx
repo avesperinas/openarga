@@ -80,10 +80,11 @@ export function SearchField({ onOpen }: { onOpen: () => void }) {
       type="button"
       className="launcher-search"
       onClick={onOpen}
-      aria-label={say("search.label")}
       title={say("search.shortcut")}
     >
       <Icon name="search" />
+      <span className="launcher-search-text">{say("search.label")}</span>
+      <kbd className="launcher-search-key">⌘K</kbd>
     </button>
   );
 }

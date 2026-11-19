@@ -6,6 +6,8 @@
   "agenda.nothing_more_today": "Nothing more today",
   "agenda.now": "Now",
   "agenda.over": "Over",
+  "agenda.things.one": "1 thing",
+  "agenda.things.other": "{n} things",
   "area_map.failed": "The map could not be loaded.",
   "background.app": "Its colour",
   "background.plain": "Plain",

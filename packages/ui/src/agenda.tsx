@@ -300,7 +300,7 @@ export function WidgetWeek({ entries, now: given }: { entries: AgendaEntry[]; no
   }
 
   if (layout === "wide" || layout === "large" || layout === "strip") {
-    const dotsOnly = layout === "strip";
+    const dotsOnly = layout === "strip" || layout === "wide";
     return (
       <ol className="week" data-layout={layout}>
         {days.map(({ day, entries: dayEntries }, index) => (
@@ -308,7 +308,7 @@ export function WidgetWeek({ entries, now: given }: { entries: AgendaEntry[]; no
             <span className="week-day-name">{weekday(day)}</span>
             <span className="week-day-date">{day.getDate()}</span>
             {dotsOnly ? (
-              <span className="week-dots" aria-label={`${dayEntries.length} cosas`}>
+              <span className="week-dots" aria-label={say(dayEntries.length === 1 ? "agenda.things.one" : "agenda.things.other", { n: dayEntries.length })}>
                 {dayEntries.slice(0, 3).map((entry, dot) => (
                   <span key={dot} className="week-dot" data-tone={entry.tone} />
                 ))}

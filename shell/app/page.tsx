@@ -7,7 +7,6 @@ import { HomeProvider } from "./components/Home";
 import { Desktop } from "./components/Desktop";
 import { Inbox } from "./components/Inbox";
 import { TodayDate } from "./components/TodayDate";
-import { PlatformVersion } from "./components/Version";
 import {
   type Device,
   type Envelope,
@@ -111,7 +110,6 @@ export default async function Today() {
           />
         </HomeProvider>
 
-        <PlatformVersion />
       </main>
     </Desktop>
   );

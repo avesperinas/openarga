@@ -3,7 +3,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { AppNames, CLAUDE_CLIENT_ID, ConnectClaude, IconStyles, ShownApps, Versions } from "./Settings";
-import { PlatformVersion } from "./Version";
 
 describe("conectar Claude", () => {
   it("gives what to paste into Claude, and says no secret is needed", () => {
@@ -52,20 +51,6 @@ describe("versiones", () => {
     expect(html).toContain("v1.2.0");
     expect(html).toContain("library");
     expect(html).toContain("v0.4.0");
-  });
-});
-
-describe("arga's version on the desktop", () => {
-  it("renders discreetly, with its name and number", () => {
-    const html = renderToStaticMarkup(<PlatformVersion version="v0.42.0" />);
-
-    expect(html).toContain("arga");
-    expect(html).toContain("v0.42.0");
-    expect(html).toContain("desktop-version");
-  });
-
-  it("with no version yet, it leaves no gap", () => {
-    expect(renderToStaticMarkup(<PlatformVersion version="" />)).toBe("");
   });
 });
 

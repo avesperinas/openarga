@@ -1,59 +1,53 @@
 "use client";
 
-import { EmptyState, type IconStyle, regional, styledIcon, zonedDates } from "@openarga/ui";
+import { EmptyState, type IconStyle, regional, styledIcon } from "@openarga/ui";
 import * as React from "react";
 
 import { appIconOf } from "../lib/app-icons";
 import type { ModuleSummary } from "../lib/kernel";
 import { say } from "../words";
 
-export const FAMILIES = [
-  { id: "health", get label() { return say("launcher.health"); } },
-  { id: "goals", get label() { return say("launcher.goals"); } },
-  { id: "growth", get label() { return say("launcher.growth"); } },
-  { id: "wellbeing", get label() { return say("launcher.wellbeing"); } },
-] as const;
+export const FAMILY_ORDER = ["calendar", "health", "goals", "finance", "growth", "wellbeing", "companion"] as const;
 
-export const FILLERS = ["finance", "system"] as const;
+const LAST = "system";
 
-const byName = (a: ModuleSummary, b: ModuleSummary) => a.name.localeCompare(b.name, regional().locale);
+// Within a family, what people open every day comes first.
+const DAILY = [
+  "planner",
+  "macros",
+  "training",
+  "vitals",
+  "recipes",
+  "goals",
+  "shopping",
+  "money",
+  "notebook",
+  "study",
+  "outings",
+  "library",
+  "travel",
+  "insights",
+  "hub",
+];
 
-export function groupModules(modules: ModuleSummary[]) {
-  const known = new Set<string>(["calendar", "companion", ...FILLERS, ...FAMILIES.map((family) => family.id)]);
-  const of = (id: string) => modules.filter((module) => module.family === id).sort(byName);
-  return {
-    pinned: of("calendar"),
-    companions: of("companion"),
-    families: FAMILIES.map((family) => ({ ...family, modules: of(family.id) })).filter(
-      (family) => family.modules.length > 0,
-    ),
-    fillers: [...FILLERS.flatMap((id) => of(id)), ...modules.filter((module) => !known.has(module.family ?? "")).sort(byName)],
+const rankOf = (module: ModuleSummary) => {
+  const family = module.family ?? "";
+  if (family === LAST) return FAMILY_ORDER.length + 1;
+  const known = (FAMILY_ORDER as readonly string[]).indexOf(family);
+  return known === -1 ? FAMILY_ORDER.length : known;
+};
+
+export function orderModules(modules: ModuleSummary[]): ModuleSummary[] {
+  const daily = (module: ModuleSummary) => {
+    const at = DAILY.indexOf(module.id);
+    return at === -1 ? DAILY.length : at;
   };
-}
-
-export const BLOCK = 4;
-
-export function placeBlocks(main: ModuleSummary[][], fillers: ModuleSummary[]) {
-  const blocks: ModuleSummary[][] = [];
-  for (const family of main) {
-    for (let start = 0; start < family.length; start += BLOCK) blocks.push(family.slice(start, start + BLOCK));
-  }
-  const rest = [...fillers];
-  for (const block of blocks) {
-    while (block.length < BLOCK && rest.length > 0) block.push(rest.shift()!);
-  }
-  while (rest.length > 0) blocks.push(rest.splice(0, BLOCK));
-
-  const placed = new Map<string, { phone: [number, number]; desktop: [number, number] }>();
-  blocks.forEach((block, index) =>
-    block.forEach((module, slot) =>
-      placed.set(module.id, {
-        phone: [slot + 1, index + 1],
-        desktop: [(index % 2) * BLOCK + slot + 1, Math.floor(index / 2) + 1],
-      }),
-    ),
+  return [...modules].sort(
+    (a, b) =>
+      rankOf(a) - rankOf(b) ||
+      daily(a) - daily(b) ||
+      a.name.localeCompare(b.name, regional().locale),
   );
-  return { order: blocks.flat(), placed };
 }
 
 function useUnseen(modules: ModuleSummary[]): Record<string, number> {
@@ -77,30 +71,6 @@ function useUnseen(modules: ModuleSummary[]): Record<string, number> {
   }, [wanted]);
   return unseen;
 }
-
-function Companion({
-  module,
-  unseen,
-  children,
-}: {
-  module: ModuleSummary;
-  unseen: number;
-  children: React.ReactNode;
-}) {
-  return (
-    <a
-      className="launcher-companion"
-      href={module.view ?? module.api_prefix}
-      title={module.name}
-      aria-label={unseen > 0 ? say("launcher.unseen", { name: module.name, n: unseen }) : module.name}
-    >
-      {children}
-      {unseen > 0 && <span className="launcher-companion-dot" aria-hidden="true" />}
-    </a>
-  );
-}
-
-const today = () => zonedDates({ weekday: "long", day: "numeric", month: "long" });
 
 export function Launcher({
   modules,
@@ -141,52 +111,28 @@ export function Launcher({
       </span>
     );
 
-  const { pinned, companions, families, fillers } = groupModules(modules);
-  const { order, placed } = placeBlocks(
-    families.map((family) => family.modules),
-    fillers,
-  );
-
   return (
     <div className="launcher-home">
-      <div className="launcher-top">
-        {pinned.map((module) => (
-          <a key={module.id} className="launcher-band" href={module.view ?? module.api_prefix}>
-            {icon(module)}
-            <span className="launcher-band-text">
-              <span className="launcher-band-name">{module.name}</span>
-              <span className="launcher-band-date" suppressHydrationWarning>
-                {today().format(new Date())}
-              </span>
-            </span>
-          </a>
-        ))}
-        {search}
-        {companions.map((module) => (
-          <Companion key={module.id} module={module} unseen={unseen[module.id] ?? 0}>
-            {icon(module)}
-          </Companion>
-        ))}
-      </div>
+      {search && <div className="launcher-top">{search}</div>}
       <ul className="launcher-all">
-        {order.map((module) => (
-          <li
-            key={module.id}
-            style={
-              {
-                "--launcher-column": placed.get(module.id)?.phone[0],
-                "--launcher-row": placed.get(module.id)?.phone[1],
-                "--launcher-column-wide": placed.get(module.id)?.desktop[0],
-                "--launcher-row-wide": placed.get(module.id)?.desktop[1],
-              } as React.CSSProperties
-            }
-          >
-            <a className="launcher-app" href={module.view ?? module.api_prefix}>
-              {icon(module)}
-              <span className="launcher-name">{module.name}</span>
-            </a>
-          </li>
-        ))}
+        {orderModules(modules).map((module) => {
+          const count = unseen[module.id] ?? 0;
+          return (
+            <li key={module.id} data-family={module.family}>
+              <a
+                className="launcher-app"
+                href={module.view ?? module.api_prefix}
+                aria-label={count > 0 ? say("launcher.unseen", { name: module.name, n: count }) : undefined}
+              >
+                <span className="launcher-tile">
+                  {icon(module)}
+                  {count > 0 && <span className="launcher-dot" aria-hidden="true" />}
+                </span>
+                <span className="launcher-name">{module.name}</span>
+              </a>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

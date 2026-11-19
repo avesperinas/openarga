@@ -65,10 +65,10 @@ describe("global search", () => {
     expect(readFound({ results: many })).toHaveLength(8);
   });
 
-  it("the Modules search glass is only the icon, and is named for what it does", () => {
+  it("the Modules search is a field that says what it does and its shortcut", () => {
     const html = renderToStaticMarkup(<SearchField onOpen={() => undefined} />);
-    expect(html).toContain('aria-label="Search arga"');
     expect(html).toContain("<button");
-    expect(html).not.toMatch(/>Search arga</);
+    expect(html).toMatch(/>Search arga</);
+    expect(html).toContain("⌘K");
   });
 });

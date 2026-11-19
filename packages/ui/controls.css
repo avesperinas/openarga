@@ -1370,12 +1370,17 @@
 .wallpaper-option:focus-visible { outline: 2px solid var(--focus-ring); }
 
 .version-tag {
-  margin: 0;
+  margin: var(--space-8) 0 var(--space-4);
 
   font-size: var(--text-caption);
-  color: var(--fg-muted);
+  color: var(--fg-faint);
   display: flex;
   gap: var(--space-2);
+  justify-content: center;
+}
+.version-list .version-tag {
+  margin: 0;
+  color: var(--fg-muted);
   justify-content: space-between;
 }
 .version-tag-number {
