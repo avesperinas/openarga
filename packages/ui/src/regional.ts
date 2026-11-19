@@ -81,11 +81,26 @@ export const currency = (): string => current.currency;
 const numberCache = new Map<string, Intl.NumberFormat>();
 const dateCache = new Map<string, Intl.DateTimeFormat>();
 
+const decimalOf = (format: Intl.NumberFormat): string | undefined =>
+  format.formatToParts(1.5).find((part) => part.type === "decimal")?.value;
+
+// ICU gives some language-country pairs mixed separators (en-ES: "1.619,4" but "€1,619.40");
+// numbers then follow the language alone, so figures and amounts read the same.
+function numberLocale(tag: string): string {
+  try {
+    const plain = decimalOf(new Intl.NumberFormat(tag));
+    const money = decimalOf(new Intl.NumberFormat(tag, { style: "currency", currency: current.currency }));
+    return plain === money ? tag : (tag.split("-")[0] ?? tag);
+  } catch {
+    return tag;
+  }
+}
+
 export function numbers(options: Intl.NumberFormatOptions = {}): Intl.NumberFormat {
   const key = JSON.stringify(options);
   let found = numberCache.get(key);
   if (!found) {
-    found = new Intl.NumberFormat(current.locale, options);
+    found = new Intl.NumberFormat(numberLocale(current.locale), options);
     numberCache.set(key, found);
   }
   return found;

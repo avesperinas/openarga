@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { clock, longDay, money, plain, todayIso } from "../src/format";
+import { clock, compact, longDay, money, plain, todayIso } from "../src/format";
 import { configureRegional, intlLocale, regional, regionalFrom } from "../src/regional";
 
 const SPAIN = { locale: "es-ES", timeZone: "Europe/Madrid", currency: "EUR" };
@@ -53,5 +53,13 @@ describe("regional settings", () => {
   it("ignore a zone or a currency that does not exist", () => {
     configureRegional({ timeZone: "Mars/Olympus", currency: "euro" });
     expect(regional()).toEqual(SPAIN);
+  });
+});
+
+describe("English in Spain", () => {
+  it("writes figures with the same separators as amounts", () => {
+    configureRegional({ ...SPAIN, locale: "en-ES" });
+    expect(compact(1619.4)).toBe("1,619.4");
+    expect(money(1619.4).replace(/\u00a0/g, " ")).toBe("€1,619.40");
   });
 });
