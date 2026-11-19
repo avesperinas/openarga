@@ -36,8 +36,33 @@ async def test_the_seed_runs_twice_without_duplicates(schema) -> None:
     again = await seed_everyone()
 
     assert first == again
-    for person in first.values():
-        assert person["library_reading"] == 40 and person["library_goal"] == 2
+    assert first["alex"]["library_reading"] == 44
+    assert first["sam"]["library_reading"] == 40
+    assert all(person["library_goal"] == 2 for person in first.values())
+
+
+async def test_no_title_repeats_and_nothing_sounds_like_a_placeholder(schema) -> None:
+    from library.main import service
+
+    await seed_everyone()
+    for persona in CAST.people:
+        token = current_user.set(persona.id)
+        try:
+            async with service.as_app() as connection:
+                rows = (
+                    await connection.execute(
+                        text(
+                            "select title, authors[1] as author from library.library_manual_edition"
+                        )
+                    )
+                ).all()
+        finally:
+            current_user.reset(token)
+        titles = [row.title for row in rows]
+        assert len(titles) == len(set(titles))
+        for row in rows:
+            for word in ("Synthetic", "Example", "Placeholder", "Madeup", "Sample"):
+                assert word not in row.title + row.author
 
 
 async def test_the_seed_covers_eighteen_months_and_every_status(schema) -> None:

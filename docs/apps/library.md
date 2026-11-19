@@ -63,6 +63,4 @@ be resolved in the app.
 ## Demo
 
 [`src/library/demo.py`](../../modules/library/src/library/demo.py) seeds Alex and Sam from
-[`demo/personas.yaml`](../../demo/personas.yaml): about two books a month over eighteen months, one
-abandoned, one in progress, three wanted, and goals for this year and the last. Titles and authors
-are invented. It can run any number of times.
+[`demo/personas.yaml`](../../demo/personas.yaml): about two books a month over eighteen months for each of them, with invented but believable titles and authors (no title repeats), every genre and format, ratings, a note on the favourites, one abandoned book, two in progress, a wish list and a reading goal for this year and the last.
