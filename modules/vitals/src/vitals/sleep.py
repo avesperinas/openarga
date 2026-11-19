@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from vitals.steps import Period, arrived, start_of, today
+from vitals.steps import Period, arrived, start_of, today, zone
 
 Stage = Literal["awake", "light", "deep", "rem", "asleep", "restless"]
 STAGES = ("deep", "rem", "light", "awake")
@@ -200,6 +200,10 @@ def nights_of(payloads: list[dict], since: date, until: date) -> list[NightDetai
 
 
 def clock(moment: datetime) -> int:
+    # A record keeps the wall clock of where it was taken; a UTC instant has none, so it is read
+    # on the person's clock.
+    if moment.utcoffset() == timedelta(0):
+        moment = moment.astimezone(zone())
     minutes = moment.hour * 60 + moment.minute
     return minutes - 1440 if minutes >= 12 * 60 else minutes
 
