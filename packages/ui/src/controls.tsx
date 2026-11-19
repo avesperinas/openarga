@@ -120,6 +120,7 @@ export function SegmentedControl<T extends string>({
     <div
       className="segmented"
       data-icons-narrow={iconsWhenNarrow ? "" : undefined}
+      data-many={options.length > 4 || undefined}
       role="radiogroup"
       aria-label={label}
       onKeyDown={onKeyDown}

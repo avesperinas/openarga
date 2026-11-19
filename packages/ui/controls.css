@@ -211,6 +211,7 @@
     color var(--duration-fast) var(--spring-snappy),
     transform var(--duration-fast) var(--spring-snappy);
 }
+.segmented[data-many] .segmented-option { padding: 0 var(--space-1); }
 .segmented-option .icon {
   width: var(--icon-s);
   height: var(--icon-s);
