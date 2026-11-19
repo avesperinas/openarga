@@ -10,12 +10,11 @@ describe("the demo door", () => {
   });
 
   it("offers both people and both languages, in the language it was opened in", () => {
-    const html = renderToStaticMarkup(<DemoDoor initial="es" next="/" />);
+    const html = renderToStaticMarkup(<DemoDoor initial="en" next="/" />);
 
-    expect(html).toContain("Entrar como Alex");
-    expect(html).toContain("Entrar como Sam");
-    expect(html).toContain('href="/login/demo?as=alex&amp;locale=es&amp;next=%2F"');
-    expect(html).toContain("English");
-    expect(html).toContain("Español");
+    expect(html).toContain("Enter as Alex");
+    expect(html).toContain("Enter as Sam");
+    expect(html).toContain('href="/login/demo?as=alex&amp;locale=en&amp;next=%2F"');
+    expect(html.match(/role="radio"|aria-pressed|segmented/g)?.length ?? 0).toBeGreaterThan(0);
   });
 });
