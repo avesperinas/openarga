@@ -95,6 +95,4 @@ the [manifest](../../modules/notebook/manifest.yaml). Claude does not delete not
 ## Demo
 
 [`src/notebook/demo.py`](../../modules/notebook/src/notebook/demo.py) seeds Alex and Sam from
-[`demo/personas.yaml`](../../demo/personas.yaml): a few linked notes in folders, a week of journal
-entries and the review property, with one note due. Dates are relative to today. It can run any
-number of times.
+[`demo/personas.yaml`](../../demo/personas.yaml): around thirty linked notes each in folders (study, work, travel, health, projects), notes with a review date so the review page has something due, and a journal of the last six weeks that links back to the notes.
