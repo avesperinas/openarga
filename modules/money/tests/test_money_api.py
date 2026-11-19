@@ -496,7 +496,7 @@ async def test_the_summary_and_its_widgets_tell_the_same(book) -> None:
     assert summary["emergency_months"] == 3
     expense = next(k for k in summary["kpis"] if k["key"] == "expense")
     widget = (await book.get("/widgets/expense")).json()
-    assert widget["state"] == "ready" and widget["body"]["value"] == expense["value"]
+    assert widget["state"] == "ready" and widget["body"]["value"] == round(expense["value"])
     assert widget["body"]["previous"] == 0
     fund = (await book.get("/widgets/emergency")).json()
     assert fund["state"] == "empty"
@@ -537,7 +537,7 @@ async def test_the_shared_widget_says_what_the_open_years_owe(book) -> None:
     assert open_years
     widget = (await book.get("/widgets/shared")).json()
     assert widget["state"] == "ready"
-    assert widget["body"]["value"] == pytest.approx(owed, abs=0.01)
+    assert widget["body"]["value"] == round(owed)
     for year in open_years:
         await book.put(f"/shared/years/{year}", json={"settled": True})
     settled = (await book.get("/widgets/shared")).json()

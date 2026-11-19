@@ -53,6 +53,10 @@ async def loaded(connection: AsyncConnection) -> books.Loaded:
     return await books.load(connection, current_user.get(None))
 
 
+def whole(value: Decimal) -> int:
+    return int(round(value))
+
+
 def money(value: Decimal) -> float:
     return float(round(value, 2))
 
@@ -1229,16 +1233,16 @@ def widget_of(k: kpis.Kpi) -> dict:
         return envelope(kind, "empty", {"detail": k.detail or t("widget.no_data")})
     if kind == "progress":
         body = {
-            "value": money(k.value),
-            "target": money(k.target) if k.target else None,
+            "value": whole(k.value),
+            "target": whole(k.target) if k.target else None,
             "unit": texts.symbol(),
             "label": t("widget.of_target"),
         }
     else:
-        body = {"value": money(k.value), "unit": texts.symbol()}
+        body = {"value": whole(k.value), "unit": texts.symbol()}
         if kind == "kpi-delta":
             body |= {
-                "previous": money(k.previous) if k.previous is not None else 0,
+                "previous": whole(k.previous) if k.previous is not None else 0,
                 "since": t("widget.year_ago"),
                 "good_when": good,
             }
@@ -1301,7 +1305,7 @@ async def shared_widget() -> dict:
     else:
         detail = t("widget.you_owe", other=other, years=when)
     return envelope(
-        "kpi", "ready", {"value": money(owed), "unit": texts.symbol(), "detail": detail}
+        "kpi", "ready", {"value": whole(owed), "unit": texts.symbol(), "detail": detail}
     )
 
 
@@ -1345,7 +1349,7 @@ async def account_widget(option: Annotated[str | None, Query(max_length=40)] = N
     elif v.since and (texts.today() - v.since).days > 7:
         detail += " · " + t("widget.as_of", day=f"{v.since.day}/{v.since.month}")
     return envelope(
-        "kpi", "ready", {"value": money(v.amount), "unit": texts.symbol(), "detail": detail}
+        "kpi", "ready", {"value": whole(v.amount), "unit": texts.symbol(), "detail": detail}
     )
 
 
