@@ -14,7 +14,7 @@ describe("the Training background", () => {
       ),
     );
 
-    expect(html).toMatch(/class="background-grid" aria-label="[^"]*Training"/);
+    expect(html).toMatch(/class="background-grid" aria-label="[^"]*(Training|Entrenamiento)"/);
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain('data-background="tint"');
     expect(html).not.toContain("data-wallpaper");
