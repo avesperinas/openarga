@@ -41,6 +41,7 @@
   "pick.want_note": "Recommended by Insights: {why}",
   "pick.where_to_watch": "Where to watch it",
   "pill.not_published": "Your AI finished without publishing it.",
+  "profile.default_name": "Insights",
   "run.fix.no_account": "No AI account can run it now: check your AI settings in Hub.",
   "run.fix.no_room": "Your AI has no room right now: it will be asked again on its own.",
   "run.fix.not_granted": "Allow Insights to use your AI in Hub.",

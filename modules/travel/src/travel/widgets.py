@@ -11,6 +11,10 @@ KINDS = {"countries": "kpi", "last_trip": "upnext", "next_trip": "upnext", "by_y
 YEARS = 8
 
 
+def unit(key: str, count: int) -> str:
+    return say(f"{key}.{'one' if count == 1 else 'other'}")
+
+
 async def countries(connection: AsyncConnection) -> dict:
     trips = travel.lived(await travel.all_trips(connection))
     areas = travel.areas_visited(trips, "country", await travel.other_places(connection))
@@ -22,7 +26,7 @@ async def countries(connection: AsyncConnection) -> dict:
         "ready",
         {
             "value": len(areas),
-            "unit": say("widget.countries_unit"),
+            "unit": unit("widget.countries_unit", len(areas)),
             "icon": "globe",
             "detail": say("widget.of_europe", count=europe, total=len(geo.EUROPE)),
         },
@@ -88,7 +92,7 @@ async def by_year(connection: AsyncConnection) -> dict:
         "ready",
         {
             "value": int(series[-1]),
-            "unit": say("widget.trips_unit"),
+            "unit": unit("widget.trips_unit", int(series[-1])),
             "series": series,
             "labels": [f"’{str(year)[2:]}" for year in years],
             "highlight": len(years) - 1,
