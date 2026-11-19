@@ -57,6 +57,9 @@ ui:
   widgets:
     - id: status
       title: Hub
+      titles:
+        en: Connections
+        es: Conexiones
       kind: list
       sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/hub/widgets/status
