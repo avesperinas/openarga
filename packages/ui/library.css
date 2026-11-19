@@ -2687,6 +2687,7 @@ button.stat-tile-body:focus-visible { outline: 2px solid var(--focus-ring); outl
   flex: 0 0 auto;
   transition: opacity var(--duration-base) var(--spring);
 }
+.task[data-clipped] { visibility: hidden; }
 .task-check {
   --check: var(--widget-tint, var(--accent));
   position: relative;
