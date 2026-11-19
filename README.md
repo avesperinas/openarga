@@ -118,7 +118,9 @@ the Postgres role its scope grants, so a read token cannot write even by mistake
 The platform calls a model itself only where a feature needs it (reading an events page with no
 feed, writing the weekly insights), through one layer with narrow inputs and outputs. Anthropic,
 OpenAI and any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM) work, and each person can bring
-their own key. See `docs/platform/ai.md`.
+their own key. Ollama on the host needs `OLLAMA_HOST=0.0.0.0:11434` so the containers can see it,
+and port 11434 closed in the firewall if you do not want it on the local network; the steps are in
+`docs/platform/ai.md`.
 
 ## Connections
 

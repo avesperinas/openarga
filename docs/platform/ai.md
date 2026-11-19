@@ -53,11 +53,19 @@ their key included, in Connections (`GET/PUT /api/hub/ai/settings`, `PUT/DELETE 
 | `OPENARGA_AI_MONTHLY_TOKENS` | Tokens (input plus output) each person may spend per calendar month. Unset: no limit. |
 | `OPENARGA_AI_KEY` | A shared key, used only by people who have not set their own. Not needed for Ollama. |
 
-With Ollama (or any server) running on the Docker host, use
-`OPENARGA_AI_BASE_URL=http://host.docker.internal:11434/v1`. The generated compose file gives the
-`hub` service `extra_hosts: ["host.docker.internal:host-gateway"]`, so the name resolves on Linux as
-it does on Docker Desktop. The server must listen on an address the bridge can reach (for Ollama,
-`OLLAMA_HOST=0.0.0.0`).
+### Ollama on the host
+
+Ollama on Linux listens only on `127.0.0.1:11434`, which containers cannot reach. To use it from the
+stack:
+
+1. Make it listen on every interface: `sudo systemctl edit ollama` and add
+   `[Service]` / `Environment="OLLAMA_HOST=0.0.0.0:11434"`, then `sudo systemctl restart ollama`.
+2. Point the instance at the host: `OPENARGA_AI_BASE_URL=http://host.docker.internal:11434/v1`. The
+   generated `docker-compose.yml` maps `host.docker.internal` to the host gateway for `hub`, the only
+   service that calls a model (it needs no other service to resolve the name).
+3. If the machine is on a network you do not trust, close port 11434 in the firewall to everything
+   but the Docker bridge, for example `sudo ufw deny in on eth0 to any port 11434`. Ollama has no
+   authentication of its own.
 
 A person's key is stored encrypted with `HUB_CREDENTIALS_KEY` and never returned by the API.
 
