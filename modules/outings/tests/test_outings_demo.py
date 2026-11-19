@@ -46,8 +46,8 @@ async def test_the_seed_runs_twice_without_duplicates(schema) -> None:
 
     assert first == again
     for person in first.values():
-        assert person["outings_wish"] >= 8 and person["outings_event"] >= 8
-        assert person["outings_interest"] == 3
+        assert person["outings_wish"] >= 15 and person["outings_event"] >= 15
+        assert person["outings_interest"] == 6
 
 
 async def test_the_seed_covers_eighteen_months_and_shares_with_the_space(schema) -> None:
@@ -72,4 +72,4 @@ async def test_the_seed_covers_eighteen_months_and_shares_with_the_space(schema)
         current_user.reset(token)
 
     assert (today() - oldest.date()).days > 365
-    assert shared == 2 and saved == 1
+    assert shared == 2 and saved == 5
