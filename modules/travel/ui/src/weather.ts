@@ -13,6 +13,23 @@ export function sky(code: number | null): string {
   return "🌧️";
 }
 
+function skyKind(code: number): string {
+  if (code === 0) return "clear";
+  if (code === 1) return "mostly_clear";
+  if (code === 2) return "partly_cloudy";
+  if (code === 3) return "overcast";
+  if (code === 45 || code === 48) return "fog";
+  if (code >= 51 && code <= 57) return "drizzle";
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "snow";
+  if (code >= 80 && code <= 82) return "showers";
+  if (code >= 95) return "storm";
+  return "rain";
+}
+
+export function skyWords(code: number | null): string {
+  return code === null ? "" : t(`weather.sky.${skyKind(code)}`);
+}
+
 export function dayLine(day: ForecastDay): string {
   const temps = day.max_c !== null && day.min_c !== null ? `${Math.round(day.max_c)}° / ${Math.round(day.min_c)}°` : "";
   const rain = day.rain_chance !== null && day.rain_chance >= 30 ? ` · ${t("weather.rain", { chance: day.rain_chance })}` : "";

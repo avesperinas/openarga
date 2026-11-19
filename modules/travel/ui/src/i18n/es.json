@@ -592,5 +592,15 @@
   "trips.per_day": "{amount}/día",
   "trips.per_person": "{amount} por persona",
   "trips.upcoming": "Próximos",
-  "weather.rain": "{chance} % lluvia"
+  "weather.rain": "{chance} % lluvia",
+  "weather.sky.clear": "despejado",
+  "weather.sky.drizzle": "llovizna",
+  "weather.sky.fog": "niebla",
+  "weather.sky.mostly_clear": "casi despejado",
+  "weather.sky.overcast": "cubierto",
+  "weather.sky.partly_cloudy": "nubes y claros",
+  "weather.sky.rain": "lluvia",
+  "weather.sky.showers": "chubascos",
+  "weather.sky.snow": "nieve",
+  "weather.sky.storm": "tormenta"
 }

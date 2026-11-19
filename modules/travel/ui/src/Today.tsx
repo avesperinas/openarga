@@ -22,7 +22,7 @@ import { ScreenHeader } from "./Header";
 import { lock } from "./tripApp";
 import { TripTabs } from "./TripChrome";
 import { clock, onApple, progress } from "./today";
-import { dayLine } from "./weather";
+import { dayLine, skyWords } from "./weather";
 import { KINDS, MODES, dateRange, dayLabel, hours } from "./words";
 import { t } from "./lang";
 
@@ -52,7 +52,7 @@ export function TodayScreen({ navigate, tripId }: { navigate: Navigate; tripId?:
     readForecast(here[0], here[1])
       .then((answer) => {
         const today = answer.weather?.days.find((one) => one.day === day);
-        setWeather(today ? `${dayLine(today)} · ${today.sky}` : "");
+        setWeather(today ? [dayLine(today), skyWords(today.code)].filter(Boolean).join(" · ") : "");
       })
       .catch(() => setWeather(""));
   }, [found, day]);
