@@ -59,6 +59,9 @@ ui:
   widgets:
     - id: list
       title: Shopping list
+      titles:
+        en: Shopping list
+        es: Lista de la compra
       kind: tasks
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/shopping/widgets/list
@@ -66,6 +69,9 @@ ui:
       link: /shopping
     - id: due
       title: Due
+      titles:
+        en: Due
+        es: Toca comprar
       kind: list
       sizes: ["2x2", "1x1", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/shopping/widgets/due

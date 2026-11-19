@@ -127,6 +127,9 @@ ui:
   widgets:
     - id: today
       title: For today
+      titles:
+        en: For today
+        es: Para hoy
       kind: tasks
       sizes: ["2x2", "1x1", "2x1", "4x1", "1x2", "2x4", "4x2", "4x4"]
       endpoint: /api/goals/widgets/today
@@ -134,6 +137,9 @@ ui:
       link: /goals/
     - id: upcoming
       title: Next days
+      titles:
+        en: Next days
+        es: Próximos días
       kind: tasks
       sizes: ["2x4", "2x2", "4x2", "4x4"]
       endpoint: /api/goals/widgets/upcoming
@@ -141,6 +147,9 @@ ui:
       link: /goals/
     - id: overdue
       title: Overdue
+      titles:
+        en: Overdue
+        es: Vencidas
       kind: tasks
       sizes: ["1x1", "2x1", "4x1", "2x2", "4x2"]
       endpoint: /api/goals/widgets/overdue
@@ -148,6 +157,9 @@ ui:
       link: /goals/
     - id: goals_today
       title: Goals for today
+      titles:
+        en: Goals for today
+        es: Objetivos de hoy
       kind: tasks
       sizes: ["2x2", "1x1", "2x1", "4x1", "2x4", "4x2", "4x4"]
       endpoint: /api/goals/widgets/goals_today
@@ -155,6 +167,9 @@ ui:
       link: /goals/goals
     - id: goals
       title: Goals
+      titles:
+        en: Goals
+        es: Objetivos
       kind: list
       sizes: ["2x2", "4x2", "2x4", "4x4"]
       endpoint: /api/goals/widgets/goals
@@ -162,6 +177,9 @@ ui:
       link: /goals/goals
     - id: goal
       title: Featured goal
+      titles:
+        en: Featured goal
+        es: Objetivo destacado
       kind: progress
       sizes: ["2x2", "1x1", "2x1", "4x1", "4x2"]
       endpoint: /api/goals/widgets/goal

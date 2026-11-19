@@ -215,6 +215,9 @@ ui:
   widgets:
     - id: today
       title: Today
+      titles:
+        en: Today
+        es: Hoy
       kind: ring
       sizes: ["2x2", "1x1", "2x1", "1x2", "4x2"]
       endpoint: /api/macros/widgets/today
@@ -222,6 +225,9 @@ ui:
       link: /macros
     - id: macros_today
       title: Today's macros
+      titles:
+        en: Today's macros
+        es: Macros de hoy
       kind: stats
       sizes: ["2x1", "4x1", "2x2", "4x2"]
       endpoint: /api/macros/widgets/macros_today
@@ -229,6 +235,9 @@ ui:
       link: /macros
     - id: week_short
       title: What is missing this week
+      titles:
+        en: What is missing this week
+        es: Lo que falta esta semana
       kind: list
       sizes: ["2x2", "2x4", "4x2"]
       endpoint: /api/macros/widgets/week_short
@@ -236,6 +245,9 @@ ui:
       link: /macros/week
     - id: goals_today
       title: Today's goals
+      titles:
+        en: Today's goals
+        es: Objetivos de hoy
       kind: list
       sizes: ["2x2", "2x4", "4x2"]
       endpoint: /api/macros/widgets/goals_today
@@ -243,6 +255,9 @@ ui:
       link: /macros
     - id: log
       title: Log
+      titles:
+        en: Log
+        es: Apuntar
       kind: shortcuts
       sizes: ["1x1", "2x1"]
       endpoint: /api/macros/widgets/log
@@ -250,6 +265,9 @@ ui:
       link: /macros/log
     - id: compliance
       title: Compliance
+      titles:
+        en: Compliance
+        es: Cumplimiento
       kind: heatmap
       sizes: ["4x2", "2x2", "4x1"]
       endpoint: /api/macros/widgets/compliance
