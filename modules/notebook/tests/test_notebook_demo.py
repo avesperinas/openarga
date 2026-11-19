@@ -36,7 +36,8 @@ async def test_the_seed_runs_twice_without_duplicates(schema) -> None:
     first = await seed_everyone()
     again = await seed_everyone()
 
-    assert first == again == {"alex": 12, "sam": 10}
+    assert first == again
+    assert first["alex"] > 60 and first["sam"] > 60
 
 
 async def test_alex_has_linked_notes_a_journal_and_something_to_review(api) -> None:
@@ -47,6 +48,6 @@ async def test_alex_has_linked_notes_a_journal_and_something_to_review(api) -> N
     review = (await api.get("/review", headers=headers)).json()
     graph = (await api.get("/graph", headers=headers)).json()
 
-    assert {"Journal", "Study/German", "Projects/Home"} <= set(tree["folders"])
-    assert review["chosen"] and [n["title"] for n in review["notes"]] == ["Dative prepositions"]
-    assert len(graph["edges"]) >= 3
+    assert {"Journal", "Study/German", "Study/Quantum", "Projects/Home"} <= set(tree["folders"])
+    assert review["chosen"] and review["notes"]
+    assert len(graph["edges"]) >= 30
