@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
+import pytest
 from outings_world import IRATI, jpeg, make_wish
 from sqlalchemy import text
+from test_outings_shared import call, people  # noqa: F401
 
 from outings import photos, wishes
 from outings.db import engine
@@ -117,3 +120,38 @@ async def test_a_better_search_looks_again_for_what_was_not_found_but_not_for_wh
     assert (await api.get(f"/wishes/{missing['id']}")).json()["has_photo"]
     assert not (await api.get(f"/wishes/{removed['id']}")).json()["has_photo"]
     assert await fill() == 0
+
+
+async def test_a_shared_wish_photo_needs_the_spaces_of_the_person(
+    call,  # noqa: F811
+    people,  # noqa: F811
+    hub,
+    monkeypatch,
+) -> None:
+    from sqlalchemy.exc import DBAPIError
+
+    from arga_contracts import records as fichas
+    from arga_tenancy import as_user
+    from outings import publisher
+
+    hub.photos = {"Selva Irati": "Irati.jpg"}
+    created = await call(
+        "ana",
+        "POST",
+        "/wishes",
+        json={"kind": "getaway", "name": "Selva de Irati", "place": IRATI_PLACE},
+    )
+    wish = created.json()["id"]
+    await call("ana", "PUT", f"/wishes/{wish}/space", json={"space_id": people["casa"]})
+    ana = UUID(people["ana"])
+
+    with as_user(ana), pytest.raises(DBAPIError):
+        await fill()
+
+    async def spaces(client) -> tuple[UUID, ...]:
+        return (UUID(people["casa"]),)
+
+    monkeypatch.setattr(fichas, "spaces", spaces)
+    await publisher.fill_photos(None, ana)
+
+    assert (await call("luis", "GET", f"/wishes/{wish}")).json()["has_photo"]
