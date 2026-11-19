@@ -94,6 +94,4 @@ unshares or deletes it.
 ## Demo
 
 [`src/outings/demo.py`](../../modules/outings/src/outings/demo.py) seeds Alex and Sam from
-[`demo/personas.yaml`](../../demo/personas.yaml): wishes of every kind, some done over eighteen
-months, interests, and an agenda in their area's towns relative to today. It can run any number of
-times.
+[`demo/personas.yaml`](../../demo/personas.yaml): around twenty wishes each (eat, plan, getaway and trip), many of them done over eighteen months and located on the map, about twenty events over the next weeks and the last few, a handful saved to the agenda and two on the calendar, and likes and mutes that shape the suggestions.
