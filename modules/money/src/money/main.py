@@ -10,7 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 
 from arga_module import preferences
-from arga_tenancy import UserFromHeader
+from arga_tenancy import UserFromHeader, require_person
 from money import api as ledger_api
 from money.db import SCHEMA, engine
 from money.tools import TOOLS, role_for_scopes
@@ -36,6 +36,11 @@ async def person_preferences(request: Request, call_next):
 def ui_dist() -> Path:
     default = Path(__file__).resolve().parents[2] / "ui" / "dist"
     return Path(os.environ.get("UI_DIST", default))
+
+
+@app.get("/me")
+async def me() -> dict[str, str]:
+    return {"user_id": str(require_person())}
 
 
 @app.get("/healthz")
