@@ -79,6 +79,6 @@ Suggested order: A2.4 and outings first (it is the most visible app), then the r
 
 | Id | Task | Status |
 |---|---|---|
-| R1 | Fresh clone, `make demo`, every app opened in both languages, AI layer with a real key and with Ollama, `tests/spanish_baseline.txt` empty | `doing` (first Docker run done, its faults fixed, see P2; rerun the stack, then the rest) |
+| R1 | Fresh clone, `make demo`, every app opened in both languages, AI layer with a real key and with Ollama, `tests/spanish_baseline.txt` empty | `doing` (first Docker run done, its faults fixed, see P2; second run: shared wishes and foods could not be updated by their publishers under RLS, fixed in #205 and #212, and the Ollama steps are in `docs/platform/ai.md`; open: for about 1 s after start `notes.push` and `ai.run` answer 503 until `hub` registers, so `depends_on: hub` healthy for the other modules is the fix, with a shorter `hub` healthcheck interval; rerun the stack, then the rest) |
 | R2 | Tag `v0.1.0`, public images, release notes, README screenshots | `todo` |
 | R3 | Public demo (where it is hosted is the owner's decision) | `todo` |
