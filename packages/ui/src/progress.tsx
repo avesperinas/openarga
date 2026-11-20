@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { figureChars, compact, plain, ratio } from "./format";
+import { figureChars, compact, plain, ratio, share } from "./format";
 import { Icon } from "./icons";
 import { useAnimatedNumber } from "./motion";
 import { fitsUncertaintyLine, isCompact, layoutOf } from "./sizes";
@@ -69,7 +69,7 @@ export function WidgetProgress({
             ? say("goal.met")
             : standing === "over"
               ? say("goal.over", { amount: `${plain(value - target)}${unit ? ` ${unit}` : ""}` })
-              : `${Math.round(ratio(value, target) * 100)} %`}
+              : share(Math.round(ratio(value, target) * 100))}
         </span>
         <span>{`${plain(target)}${unit ? ` ${unit}` : ""}`}</span>
       </p>

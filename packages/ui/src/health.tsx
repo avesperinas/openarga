@@ -5,6 +5,7 @@ import * as React from "react";
 import { Icon } from "./icons";
 import { StatRow, StatTile } from "./reading";
 import { Hint } from "./screen";
+import { share } from "./format";
 import { dates, locale, weekdayLetters } from "./regional";
 import { say } from "./words";
 
@@ -101,7 +102,7 @@ export function BatteryLine({ name, percent, detail }: { name: string; percent: 
       <span className="battery-line-text">
         <span>{name}</span>
         <span className="battery-line-value">
-          {percent} %{detail ? ` · ${detail}` : ""}
+          {share(percent)}{detail ? ` · ${detail}` : ""}
         </span>
       </span>
       <span className="battery-line-track" aria-hidden="true">
