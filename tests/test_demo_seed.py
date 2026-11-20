@@ -166,3 +166,27 @@ def test_reset_refuses_outside_a_demo_instance(monkeypatch) -> None:
     monkeypatch.setattr("sys.argv", ["demo.py", "reset"])
 
     assert demo.main() == 1
+
+
+async def test_what_an_app_names_by_itself_comes_in_each_person_s_language(empty) -> None:
+    from arga_module.i18n import t
+
+    folder = ROOT / "modules" / "insights" / "src" / "insights" / "i18n"
+    engine = create_async_engine(URL)
+    await script().run("seed", TODAY, URL)
+    async with engine.connect() as connection:
+        names = {
+            person.key: await connection.scalar(
+                text(
+                    "select name from insights.insights_family "
+                    "where key = 'history' and user_id = :u"
+                ),
+                {"u": person.id},
+            )
+            for person in CAST.people
+        }
+    await engine.dispose()
+
+    assert names["alex"] == t(folder, "family.history.name", "en")
+    assert names["sam"] == t(folder, "family.history.name", "es")
+    assert names["alex"] != names["sam"]
