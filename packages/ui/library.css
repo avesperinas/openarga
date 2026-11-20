@@ -4120,7 +4120,7 @@ button.coverage-body:focus-visible { outline: 2px solid var(--focus-ring); outli
 
 .area-trend { display: grid; gap: var(--space-1); min-width: 0; }
 .area-trend-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
-.area-trend-label { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-footnote); font-weight: var(--weight-semibold); color: var(--fg-muted); }
+.area-trend-label { flex: 0 0 auto; white-space: nowrap; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-footnote); font-weight: var(--weight-semibold); color: var(--fg-muted); }
 .area-trend-value { margin: 0; font-size: var(--text-display); font-weight: var(--weight-bold); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .area-trend-delta { margin: 0; font-size: var(--text-footnote); font-weight: var(--weight-semibold); color: var(--fg-muted); }
 .area-trend-delta[data-tone="positive"] { color: var(--positive); }
