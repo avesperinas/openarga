@@ -1,104 +1,17 @@
-type Entry = readonly [code: string, en: string, es: string];
+import en from "../i18n/en.json";
+import es from "../i18n/es.json";
 
-const CATALOG: Record<string, readonly Entry[]> = {
-  ES: [
-    ["ES-AN", "Andalusia", "Andalucía"],
-    ["ES-AR", "Aragon", "Aragón"],
-    ["ES-AS", "Asturias", "Asturias"],
-    ["ES-IB", "Balearic Islands", "Islas Baleares"],
-    ["ES-PV", "Basque Country", "País Vasco"],
-    ["ES-CN", "Canary Islands", "Canarias"],
-    ["ES-CB", "Cantabria", "Cantabria"],
-    ["ES-CL", "Castile and León", "Castilla y León"],
-    ["ES-CM", "Castilla-La Mancha", "Castilla-La Mancha"],
-    ["ES-CT", "Catalonia", "Cataluña"],
-    ["ES-CE", "Ceuta", "Ceuta"],
-    ["ES-EX", "Extremadura", "Extremadura"],
-    ["ES-GA", "Galicia", "Galicia"],
-    ["ES-RI", "La Rioja", "La Rioja"],
-    ["ES-MD", "Madrid", "Comunidad de Madrid"],
-    ["ES-ML", "Melilla", "Melilla"],
-    ["ES-MC", "Murcia", "Región de Murcia"],
-    ["ES-NC", "Navarre", "Navarra"],
-    ["ES-VC", "Valencian Community", "Comunidad Valenciana"],
-  ],
-  DE: [
-    ["DE-BW", "Baden-Württemberg", "Baden-Wurtemberg"],
-    ["DE-BY", "Bavaria", "Baviera"],
-    ["DE-BE", "Berlin", "Berlín"],
-    ["DE-BB", "Brandenburg", "Brandeburgo"],
-    ["DE-HB", "Bremen", "Bremen"],
-    ["DE-HH", "Hamburg", "Hamburgo"],
-    ["DE-HE", "Hesse", "Hesse"],
-    ["DE-MV", "Mecklenburg-Western Pomerania", "Mecklemburgo-Pomerania Occidental"],
-    ["DE-NI", "Lower Saxony", "Baja Sajonia"],
-    ["DE-NW", "North Rhine-Westphalia", "Renania del Norte-Westfalia"],
-    ["DE-RP", "Rhineland-Palatinate", "Renania-Palatinado"],
-    ["DE-SL", "Saarland", "Sarre"],
-    ["DE-SN", "Saxony", "Sajonia"],
-    ["DE-ST", "Saxony-Anhalt", "Sajonia-Anhalt"],
-    ["DE-SH", "Schleswig-Holstein", "Schleswig-Holstein"],
-    ["DE-TH", "Thuringia", "Turingia"],
-  ],
-  FR: [
-    ["FR-ARA", "Auvergne-Rhône-Alpes", "Auvernia-Ródano-Alpes"],
-    ["FR-BFC", "Burgundy-Franche-Comté", "Borgoña-Franco Condado"],
-    ["FR-BRE", "Brittany", "Bretaña"],
-    ["FR-CVL", "Centre-Val de Loire", "Centro-Valle del Loira"],
-    ["FR-COR", "Corsica", "Córcega"],
-    ["FR-GES", "Grand Est", "Gran Este"],
-    ["FR-HDF", "Hauts-de-France", "Alta Francia"],
-    ["FR-IDF", "Île-de-France", "Isla de Francia"],
-    ["FR-NOR", "Normandy", "Normandía"],
-    ["FR-NAQ", "Nouvelle-Aquitaine", "Nueva Aquitania"],
-    ["FR-OCC", "Occitania", "Occitania"],
-    ["FR-PDL", "Pays de la Loire", "País del Loira"],
-    ["FR-PAC", "Provence-Alpes-Côte d'Azur", "Provenza-Alpes-Costa Azul"],
-  ],
-  IT: [
-    ["IT-65", "Abruzzo", "Abruzos"],
-    ["IT-23", "Aosta Valley", "Valle de Aosta"],
-    ["IT-75", "Apulia", "Apulia"],
-    ["IT-77", "Basilicata", "Basilicata"],
-    ["IT-78", "Calabria", "Calabria"],
-    ["IT-72", "Campania", "Campania"],
-    ["IT-45", "Emilia-Romagna", "Emilia-Romaña"],
-    ["IT-36", "Friuli Venezia Giulia", "Friuli-Venecia Julia"],
-    ["IT-62", "Lazio", "Lacio"],
-    ["IT-42", "Liguria", "Liguria"],
-    ["IT-25", "Lombardy", "Lombardía"],
-    ["IT-57", "Marche", "Marcas"],
-    ["IT-67", "Molise", "Molise"],
-    ["IT-21", "Piedmont", "Piamonte"],
-    ["IT-88", "Sardinia", "Cerdeña"],
-    ["IT-82", "Sicily", "Sicilia"],
-    ["IT-32", "Trentino-South Tyrol", "Trentino-Alto Adigio"],
-    ["IT-52", "Tuscany", "Toscana"],
-    ["IT-55", "Umbria", "Umbría"],
-    ["IT-34", "Veneto", "Véneto"],
-  ],
-  GB: [
-    ["GB-ENG", "England", "Inglaterra"],
-    ["GB-NIR", "Northern Ireland", "Irlanda del Norte"],
-    ["GB-SCT", "Scotland", "Escocia"],
-    ["GB-WLS", "Wales", "Gales"],
-  ],
-  BE: [
-    ["BE-BRU", "Brussels", "Bruselas"],
-    ["BE-VLG", "Flanders", "Flandes"],
-    ["BE-WAL", "Wallonia", "Valonia"],
-  ],
-  AT: [
-    ["AT-1", "Burgenland", "Burgenland"],
-    ["AT-2", "Carinthia", "Carintia"],
-    ["AT-3", "Lower Austria", "Baja Austria"],
-    ["AT-4", "Upper Austria", "Alta Austria"],
-    ["AT-5", "Salzburg", "Salzburgo"],
-    ["AT-6", "Styria", "Estiria"],
-    ["AT-7", "Tyrol", "Tirol"],
-    ["AT-9", "Vienna", "Viena"],
-    ["AT-8", "Vorarlberg", "Vorarlberg"],
-  ],
+const NAMES: Record<string, Record<string, string>> = { en, es };
+const ENGLISH: Record<string, string> = en;
+
+const CODES: Record<string, readonly string[]> = {
+  ES: ["ES-AN", "ES-AR", "ES-AS", "ES-IB", "ES-PV", "ES-CN", "ES-CB", "ES-CL", "ES-CM", "ES-CT", "ES-CE", "ES-EX", "ES-GA", "ES-RI", "ES-MD", "ES-ML", "ES-MC", "ES-NC", "ES-VC"],
+  DE: ["DE-BW", "DE-BY", "DE-BE", "DE-BB", "DE-HB", "DE-HH", "DE-HE", "DE-MV", "DE-NI", "DE-NW", "DE-RP", "DE-SL", "DE-SN", "DE-ST", "DE-SH", "DE-TH"],
+  FR: ["FR-ARA", "FR-BFC", "FR-BRE", "FR-CVL", "FR-COR", "FR-GES", "FR-HDF", "FR-IDF", "FR-NOR", "FR-NAQ", "FR-OCC", "FR-PDL", "FR-PAC"],
+  IT: ["IT-65", "IT-23", "IT-75", "IT-77", "IT-78", "IT-72", "IT-45", "IT-36", "IT-62", "IT-42", "IT-25", "IT-57", "IT-67", "IT-21", "IT-88", "IT-82", "IT-32", "IT-52", "IT-55", "IT-34"],
+  GB: ["GB-ENG", "GB-NIR", "GB-SCT", "GB-WLS"],
+  BE: ["BE-BRU", "BE-VLG", "BE-WAL"],
+  AT: ["AT-1", "AT-2", "AT-3", "AT-4", "AT-5", "AT-6", "AT-7", "AT-9", "AT-8"],
 };
 
 export interface RegionOption {
@@ -107,13 +20,14 @@ export interface RegionOption {
 }
 
 export function hasRegions(country: string | null): boolean {
-  return country !== null && country in CATALOG;
+  return country !== null && country in CODES;
 }
 
 export function regionsOf(country: string | null, locale: string): RegionOption[] {
-  const found = country ? (CATALOG[country] ?? []) : [];
+  const found = country ? (CODES[country] ?? []) : [];
+  const names = NAMES[locale] ?? ENGLISH;
   return found
-    .map(([code, en, es]) => ({ code, name: locale === "es" ? es : en }))
+    .map((code) => ({ code, name: names[`region.${code}`] ?? ENGLISH[`region.${code}`] ?? code }))
     .sort((a, b) => a.name.localeCompare(b.name, locale));
 }
 
