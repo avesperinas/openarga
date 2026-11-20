@@ -75,6 +75,8 @@ export function onRegionalChange(listener: () => void): () => void {
 
 export const regional = (): Regional => current;
 export const locale = (): string => current.locale;
+export const dateLocale = (language: string): string =>
+  current.locale.split("-")[0] === language.split("-")[0] ? current.locale : language;
 export const timeZone = (): string => current.timeZone;
 export const currency = (): string => current.currency;
 

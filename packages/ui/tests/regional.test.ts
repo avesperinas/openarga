@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import { clock, compact, longDay, money, plain, todayIso } from "../src/format";
-import { configureRegional, intlLocale, regional, regionalFrom } from "../src/regional";
+import { configureRegional, dateLocale, intlLocale, regional, regionalFrom } from "../src/regional";
 
 const SPAIN = { locale: "es-ES", timeZone: "Europe/Madrid", currency: "EUR" };
 const INSTANT = "2026-03-01T23:30:00Z";
@@ -48,6 +48,13 @@ describe("regional settings", () => {
       currency: "GBP",
     });
     expect(intlLocale("es", null)).toBe("es");
+  });
+
+  it("give an app's language its regional dates", () => {
+    configureRegional({ ...SPAIN, locale: "en-ES" });
+    expect(dateLocale("en")).toBe("en-ES");
+    expect(dateLocale("es")).toBe("es");
+    configureRegional(SPAIN);
   });
 
   it("ignore a zone or a currency that does not exist", () => {
