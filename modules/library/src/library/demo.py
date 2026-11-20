@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from pathlib import Path
 from uuid import UUID, uuid5
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_module.demo import Persona
+from arga_module.demo import Persona, localizer
+
+say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 NAMESPACE = UUID("0b7c0de5-0000-4000-8000-0000001b7a1b")
 SPAN = 530
@@ -490,6 +493,9 @@ async def _add(
     note: str | None,
 ) -> None:
     title, author, genre, pages, year, language = book[:6]
+    title = say(persona, title)
+    note = say(persona, note) if note else note
+    language = persona.locale if language == "en" else language
     edition = _id(persona, f"edition-{key}")
     await connection.execute(
         EDITION,

@@ -87,3 +87,25 @@ async def test_the_seed_covers_eighteen_months_and_every_status(schema) -> None:
 
     assert (today() - oldest).days > 500
     assert statuses == {"want", "reading", "read", "abandoned"}
+
+
+async def test_each_person_reads_the_books_in_their_own_language(schema) -> None:
+    from library.main import service
+
+    await seed_everyone()
+    found = {}
+    for persona in CAST.people:
+        token = current_user.set(persona.id)
+        try:
+            async with service.as_app() as connection:
+                found[persona.key] = set(
+                    await connection.scalars(
+                        text("select title from library.library_manual_edition")
+                    )
+                )
+        finally:
+            current_user.reset(token)
+
+    assert {"The Cartographer of Salt Marshes"} <= found["alex"]
+    assert {"La casa de los cipreses"} <= found["sam"]
+    assert not {"The House of Cypress Trees"} & found["sam"]
