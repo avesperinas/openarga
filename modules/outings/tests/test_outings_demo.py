@@ -73,3 +73,23 @@ async def test_the_seed_covers_eighteen_months_and_shares_with_the_space(schema)
 
     assert (today() - oldest.date()).days > 365
     assert shared == 2 and saved == 5
+
+
+async def test_each_person_reads_the_wishes_in_their_own_language(schema) -> None:
+    from outings.main import as_app
+
+    await seed_everyone()
+    found = {}
+    for persona in CAST.people:
+        token = current_user.set(persona.id)
+        try:
+            async with as_app() as connection:
+                found[persona.key] = set(
+                    await connection.scalars(text("select name from outings.outings_wish"))
+                )
+        finally:
+            current_user.reset(token)
+
+    assert {"The new ramen place"} <= found["alex"]
+    assert {demo.say(CAST.people[1], "Saturday farmers' market")} <= found["sam"]
+    assert not {"Saturday farmers' market"} & found["sam"]
