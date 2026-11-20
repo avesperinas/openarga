@@ -7,6 +7,7 @@ import yaml
 from httpx import ASGITransport, AsyncClient
 
 from arga_testing.contract import contract
+from outings import profile
 from outings.main import MODULE_ID, app, service
 from outings.tools import TOOLS, role_for_scopes
 from outings.widgets import RENDERERS
@@ -122,3 +123,16 @@ async def test_the_area_says_its_names_boxes_and_whether_it_has_a_map(
     assert default["map"] is (area.id == "pamplona")
     assert asked["id"] == "munich" and asked["map"] is False and asked["relief"] is None
     assert default["relief"] == (area.map.relief.attribution if area.map.relief else None)
+
+
+async def test_the_areas_a_person_can_choose_from_are_the_profiles_on_disk(bare) -> None:
+    found = (await bare.get("/areas")).json()
+
+    assert {one["id"] for one in found} == set(profile.ids())
+    pamplona = next(one for one in found if one["id"] == "pamplona")
+    assert pamplona == {
+        "id": "pamplona",
+        "name": "Pamplona",
+        "country": "ES",
+        "region_code": "NA",
+    }
