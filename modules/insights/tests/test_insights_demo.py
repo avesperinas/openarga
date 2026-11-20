@@ -51,3 +51,23 @@ async def test_alex_has_advice_a_week_and_today_s_pill(api) -> None:
 
     assert {one["kind"] for one in inbox} == {"alert", "weekly"}
     assert badge["count"] >= 3
+
+
+async def test_each_person_reads_the_pills_in_their_own_language(schema) -> None:
+    from insights.main import as_role
+
+    await seed_everyone()
+    found = {}
+    for persona in CAST.people:
+        token = current_user.set(persona.id)
+        try:
+            async with as_role("mod_insights") as connection:
+                found[persona.key] = set(
+                    await connection.scalars(text("select headline from insights.insights_pill"))
+                )
+        finally:
+            current_user.reset(token)
+
+    assert {"The column that broke Sparta"} <= found["alex"]
+    assert {"Un animal que saborea lo que toca"} <= found["sam"]
+    assert not {"An animal that tastes what it touches"} & found["sam"]
