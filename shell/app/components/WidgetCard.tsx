@@ -20,6 +20,7 @@ import {
   WidgetTasks,
   WidgetUpNext,
   WidgetWeek,
+  useHasMounted,
 } from "@openarga/ui";
 import * as React from "react";
 
@@ -30,7 +31,7 @@ const CONNECTORS = "/hub";
 const entriesOf = (body: EnvelopeBody): AgendaEntry[] | undefined =>
   body.entries?.map(({ all_day, ...entry }) => ({ ...entry, allDay: all_day }));
 
-function Body({
+function Content({
   kind,
   body,
   hue,
@@ -183,6 +184,14 @@ function Body({
         />
       );
   }
+}
+
+const RELATIVE: ReadonlySet<WidgetKind> = new Set(["calendar", "tasks", "agenda", "week", "upnext"]);
+
+function Body(props: Parameters<typeof Content>[0]) {
+  const mounted = useHasMounted();
+  if (RELATIVE.has(props.kind) && !mounted) return null;
+  return <Content {...props} />;
 }
 
 export function WidgetCard({

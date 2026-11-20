@@ -43,3 +43,22 @@ describe("the card's symbol", () => {
     expect(render({ value: "Pull", icon: "pull" })).toContain('class="icon-badge" data-hue="1"');
   });
 });
+
+describe("what depends on today's date", () => {
+  const tasks: CatalogueEntry = { ...NEXT, kind: "tasks", shape: "list" };
+  const envelope: Envelope = {
+    state: "ready",
+    updated_at: "2026-09-18T10:00:00Z",
+    body: { tasks: [{ id: "a", title: "Renew the passport", due: "2026-09-16" }] },
+  };
+
+  it("is left for the browser, so the server and the browser never disagree on the day", () => {
+    const html = renderToStaticMarkup(<WidgetCard item={item} entry={tasks} envelope={envelope} />);
+    expect(html).not.toContain("Renew the passport");
+    expect(html).not.toContain("days ago");
+  });
+
+  it("is not needed for the rest, which the server draws as usual", () => {
+    expect(render({ value: "Pull" })).toContain("Pull");
+  });
+});
