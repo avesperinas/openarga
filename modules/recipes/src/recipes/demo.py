@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 from datetime import date
+from pathlib import Path
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_module.demo import Persona
+from arga_module.demo import Persona, localized, localizer
 from arga_tenancy import current_spaces
 from recipes import recipes
 from recipes.recipes import IngredientIn, RecipeIn, StepIn
+
+say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 EXISTS = text("select id::text from recipes.recipes_recipe where name = :name limit 1")
 
@@ -383,11 +386,14 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
     space = next(iter(current_spaces.get()), None)
     chosen = [recipe for group in PERSONAL[persona.key] for recipe in (EVERYONE[n] for n in group)]
     seen = set()
-    for recipe in (*MINE.get(persona.key, ()), *chosen):
-        if recipe.name in seen:
+    for original in (*MINE.get(persona.key, ()), *chosen):
+        if original.name in seen:
             continue
-        seen.add(recipe.name)
-        found = await connection.scalar(EXISTS, {"name": recipe.name})
+        seen.add(original.name)
+        recipe = localized(say, persona, original)
+        found = await connection.scalar(EXISTS, {"name": original.name}) or await connection.scalar(
+            EXISTS, {"name": recipe.name}
+        )
         recipe_id = found or await recipes.create(connection, recipe)
-        if space is not None and recipe in SHARED.get(persona.key, ()):
+        if space is not None and original in SHARED.get(persona.key, ()):
             await recipes.share(connection, recipe_id, str(space))

@@ -63,6 +63,33 @@ async def test_alex_and_sam_see_their_recipes_and_the_shared_ones(api) -> None:
 
     mine = {one["name"] for one in (await api.get("/recipes", headers=headers(alex))).json()}
     theirs = {one["name"] for one in (await api.get("/recipes", headers=headers(sam))).json()}
-    assert {"Lentil stew", "Baked salmon with vegetables", "Potato omelette"} <= mine
-    assert {"Lentil stew", "Potato omelette", "Hummus"} <= theirs
+    assert {"Lentil stew", "Baked salmon with vegetables", "Tortilla de patata"} <= mine
+    assert {"Lentil stew", "Tortilla de patata", "Hummus"} <= theirs
     assert "Baked salmon with vegetables" not in theirs
+
+
+async def test_each_person_reads_the_recipes_in_their_own_language(schema) -> None:
+    from recipes.main import service
+
+    await seed_everyone()
+    found = {}
+    for persona in CAST.people:
+        token = current_user.set(persona.id)
+        spaces = current_spaces.set((CAST.space_id,))
+        try:
+            async with service.as_app() as connection:
+                found[persona.key] = set(
+                    await connection.scalars(text("select name from recipes.recipes_recipe"))
+                )
+                found[persona.key + "-tags"] = set(
+                    await connection.scalars(text("select name from recipes.recipes_tag"))
+                )
+        finally:
+            current_spaces.reset(spaces)
+            current_user.reset(token)
+
+    assert {"Lentil stew", "Baked salmon with vegetables"} <= found["alex"]
+    assert {"Tortilla de patata", "Tortitas", "Hummus"} <= found["sam"]
+    assert not {"Potato omelette", "Pancakes"} & found["sam"]
+    assert {"weekday", "batch cooking"} <= found["alex-tags"]
+    assert {"vegetariano", "cocina por lotes"} <= found["sam-tags"]
