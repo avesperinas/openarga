@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import json
 from datetime import date, datetime, time, timedelta
+from pathlib import Path
 from uuid import UUID, uuid5
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_module.demo import Persona
+from arga_module.demo import Persona, localizer
 from macros import goals, intake, templates
+
+say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 NAMESPACE = UUID("0b7c0de5-0000-4000-8000-0000000ac705")
 DAYS = 18 * 30
@@ -121,7 +124,13 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
             eaten = datetime.combine(day, at, zone)
             await connection.execute(
                 ENTRY,
-                {"id": entry, "eaten_at": eaten, "tz": persona.timezone, "day": day, "said": name},
+                {
+                    "id": entry,
+                    "eaten_at": eaten,
+                    "tz": persona.timezone,
+                    "day": day,
+                    "said": say(persona, name),
+                },
             )
             await connection.execute(
                 ITEM,
@@ -130,7 +139,7 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
                     "entry": entry,
                     "position": 1,
                     "kind": "quick",
-                    "name": name,
+                    "name": say(persona, name),
                     "quantity": round(kcal),
                     "unit": "kcal",
                     "nutrients": json.dumps(_nutrients(kcal, split)),
@@ -144,7 +153,7 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
                         "entry": entry,
                         "position": 2,
                         "kind": "water",
-                        "name": "Water",
+                        "name": say(persona, "Water"),
                         "quantity": 500,
                         "unit": "ml",
                         "nutrients": json.dumps({"water": 500}),
@@ -182,12 +191,12 @@ async def _plan(connection: AsyncConnection, persona: Persona, today: date) -> N
         await templates.save(
             connection,
             templates.TemplateIn(
-                name=name,
-                said=said,
+                name=say(persona, name),
+                said=say(persona, said),
                 items=[
                     intake.ItemIn(
                         kind="quick",
-                        name=said,
+                        name=say(persona, said),
                         quantity=kcal,
                         unit="kcal",
                         quick=intake.QuickMacros(protein=protein, carbs=carbs, fat=fat),
