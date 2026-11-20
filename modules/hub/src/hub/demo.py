@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, date, datetime, time, timedelta
+from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid5
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_module.demo import Persona
+from arga_module.demo import Persona, localizer
+
+say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 NAMESPACE = UUID("0b7c0de5-0000-4000-8000-000000000b0b")
 
@@ -101,7 +104,7 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
             {
                 "id": identity,
                 "provider": provider,
-                "label": label,
+                "label": say(persona, label),
                 "config": json.dumps(config),
                 "paused": state == PAUSED,
                 "expires": now + timedelta(days=9) if state == EXPIRING else None,
@@ -119,6 +122,6 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
                     "finished": started + timedelta(seconds=4),
                     "outcome": outcome,
                     "emitted": emitted,
-                    "detail": detail,
+                    "detail": say(persona, detail) if detail else None,
                 },
             )

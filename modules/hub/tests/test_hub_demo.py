@@ -52,3 +52,22 @@ def test_every_demo_connection_is_a_valid_one() -> None:
                 known.clean(config)
             if provider == "prices":
                 assert instruments.stored(config)
+
+
+async def test_each_person_reads_the_connections_in_their_own_language(schema) -> None:
+    found = {}
+    await seed_everyone(schema)
+    for persona in CAST.people:
+        token = current_user.set(persona.id)
+        try:
+            async with schema.begin() as connection:
+                await connection.execute(text('set local role "mod_hub"'))
+                found[persona.key] = set(
+                    await connection.scalars(text("select label from hub.hub_connection"))
+                )
+        finally:
+            current_user.reset(token)
+
+    assert {"Football"} <= found["alex"]
+    assert {demo.say(CAST.people[1], "Formula 1")} <= found["sam"]
+    assert not {"Formula 1"} & found["sam"]
