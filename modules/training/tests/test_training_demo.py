@@ -71,3 +71,25 @@ async def test_each_person_sees_their_sessions_and_their_catalogue(schema) -> No
             catalogue = (await api.get("/catalogue", headers=headers(persona))).json()
             names = {one["name"] for one in catalogue["exercises"]}
             assert ("Bench press" if persona.locale == "en" else "Press de banca") in names
+
+
+async def test_each_person_reads_the_activities_in_their_own_language(schema) -> None:
+    from training.main import as_app
+
+    await seed_everyone()
+    found = {}
+    for persona in CAST.people:
+        token = current_user.set(persona.id)
+        try:
+            async with as_app() as connection:
+                found[persona.key] = set(
+                    await connection.scalars(
+                        text("select name from training.training_activity_type")
+                    )
+                )
+        finally:
+            current_user.reset(token)
+
+    assert {"Running"} <= found["alex"]
+    assert {"Yoga"} <= found["sam"]
+    assert not {"Swimming"} & found["sam"]

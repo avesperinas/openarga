@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta
+from pathlib import Path
 from uuid import UUID, uuid5
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_module.demo import Persona
+from arga_module.demo import Persona, localizer
 from training import agenda, workouts
 from training import seed as catalogue
+
+say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 NAMESPACE = UUID("0b7c0de5-0000-4000-8000-000000071a17")
 WEEKS = 78
@@ -213,7 +216,7 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
     gym, variants = await _catalogue(connection, persona)
     start = today - timedelta(weeks=WEEKS, days=today.weekday())
     plan, version = _id(persona, "plan"), _id(persona, "version")
-    await connection.execute(PLAN, {"id": plan, "name": "Push Pull Leg"})
+    await connection.execute(PLAN, {"id": plan, "name": say(persona, "Push Pull Leg")})
     await connection.execute(VERSION, {"id": version, "plan": plan})
     published = await connection.scalar(PUBLISHED, {"id": version})
     days = []
@@ -225,7 +228,7 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
                 {
                     "id": day_id,
                     "version": version,
-                    "name": name,
+                    "name": say(persona, name),
                     "kind": kind,
                     "position": position,
                 },
@@ -360,7 +363,9 @@ async def _activities(connection, persona, zone, start: date, today: date) -> No
     types = {}
     for _, kind, name, _, _, _ in ACTIVITIES[persona.key]:
         types[kind] = _id(persona, f"activity-type-{kind}")
-        await connection.execute(ACTIVITY_TYPE, {"id": types[kind], "name": name, "kinds": [kind]})
+        await connection.execute(
+            ACTIVITY_TYPE, {"id": types[kind], "name": say(persona, name), "kinds": [kind]}
+        )
     day = start
     while day < today:
         for weekday, kind, _name, minute, length, when in ACTIVITIES[persona.key]:
