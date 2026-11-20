@@ -21,10 +21,10 @@ SAVED = {"alex": Decimal("300"), "sam": Decimal("180")}
 PARTNER = {"alex": "Sam", "sam": "Alex"}
 POSITIONS = {
     "alex": (
-        ("IE00B4L5Y983", "Global equity ETF", "42.5", "4200.00", "112.40"),
-        ("IE00BKM4GZ66", "Emerging markets ETF", "60", "1800.00", "32.15"),
+        ("IE00B4L5Y983", "Global equity ETF", "255", "25200.00", "112.40"),
+        ("IE00BKM4GZ66", "Emerging markets ETF", "360", "10800.00", "32.15"),
     ),
-    "sam": (("IE00B4L5Y983", "Global equity ETF", "20", "1900.00", "112.40"),),
+    "sam": (("IE00B4L5Y983", "Global equity ETF", "160", "15200.00", "112.40"),),
 }
 
 CATEGORIES = [
@@ -364,7 +364,9 @@ def _bundle(persona: Persona, today: date) -> importer.Bundle:
             {
                 "account": "brokerage",
                 "on": date(year, month, 1),
-                "value": (cost * (Decimal("0.7") + Decimal("0.3") * share)).quantize(Decimal("1")),
+                "value": (cost * (Decimal("0.97") + Decimal("0.08") * share)).quantize(
+                    Decimal("1")
+                ),
             }
         )
     return importer.Bundle.model_validate(
@@ -470,7 +472,9 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
 def _balances(
     persona: Persona, account: str, rows: list[dict], today: date
 ) -> list[tuple[date, Decimal]]:
-    opening = Decimal("1800") if account == "everyday" else Decimal("2500") + SAVED[persona.key] * 3
+    opening = (
+        Decimal("30000") if account == "everyday" else Decimal("2500") + SAVED[persona.key] * 3
+    )
     ordered = sorted(rows, key=lambda r: r["on"])
     first = _month(today, MONTHS - 1)
     stamps = []
