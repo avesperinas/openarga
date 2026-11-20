@@ -149,6 +149,13 @@
   margin-inline: auto;
 }
 
+@media (min-width: 900px) {
+  .travel-map-top,
+  .travel-map-bottom {
+    left: calc(var(--app-rail, 0px) + var(--space-4) * 2);
+  }
+}
+
 .travel-map-chosen,
 .travel-map-playing {
   margin: 0;
