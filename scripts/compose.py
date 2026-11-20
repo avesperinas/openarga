@@ -84,6 +84,7 @@ def instance_environment(config: dict[str, Any]) -> dict[str, str]:
         for key, name in names.items():
             if values.get(key) not in (None, ""):
                 environment[name] = str(values[key])
+    environment["APP_VERSION"] = "${OPENARGA_VERSION:-0.1.0}"
     environment["OPENARGA_AI_KEY"] = "${OPENARGA_AI_KEY:-}"
     environment["CONNECTIONS_MODE"] = str(config.get("connections", "live"))
     if config.get("demo"):
@@ -130,7 +131,11 @@ CALLS_AI = {"hub"}
 HOST_GATEWAY = ["host.docker.internal:host-gateway"]
 
 
-def configure_module_service(module_id: str, service: dict[str, Any]) -> None:
+def configure_module_service(module_id: str, service: dict[str, Any], hub: bool) -> None:
+    if module_id == "hub":
+        service["healthcheck"] = {"interval": "2s"}
+    elif hub:
+        service["depends_on"]["hub"] = HEALTHY
     for name in MODULE_KEYS.get(module_id, []):
         service["environment"][name] = f"${{{name}}}"
     if module_id in CALLS_AI:
@@ -254,7 +259,11 @@ def generate(config: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
             "environment": {
                 "KERNEL_URL": "http://kernel:8000",
                 "MCP_ALLOWED_SCOPES": "${MCP_ALLOWED_SCOPES:-}",
-                **{key: value for key, value in instance.items() if key == "OPENARGA_DEMO"},
+                **{
+                    key: value
+                    for key, value in instance.items()
+                    if key in ("OPENARGA_DEMO", "APP_VERSION")
+                },
             },
             "depends_on": {"kernel": HEALTHY},
             "restart": "unless-stopped",
@@ -296,7 +305,7 @@ def generate(config: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
     for module_id in modules:
         folder = folders[module_id]
         services[module_id] = module_service(module_id, folder, instance)
-        configure_module_service(module_id, services[module_id])
+        configure_module_service(module_id, services[module_id], "hub" in modules)
         if has_worker(root, folder, module_id):
             services[f"{module_id}-worker"] = worker_service(module_id, folder, instance)
     return {"name": "openarga", "services": services, "volumes": {"pgdata": {}}}

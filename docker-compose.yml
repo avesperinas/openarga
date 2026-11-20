@@ -61,6 +61,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -113,6 +114,7 @@ services:
     environment:
       KERNEL_URL: http://kernel:8000
       MCP_ALLOWED_SCOPES: ${MCP_ALLOWED_SCOPES:-}
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
     depends_on:
       kernel:
         condition: service_healthy
@@ -130,6 +132,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -159,6 +162,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -188,10 +192,13 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
       kernel:
+        condition: service_healthy
+      hub:
         condition: service_healthy
     restart: unless-stopped
   goals-worker:
@@ -206,6 +213,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -234,6 +242,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
       HUB_CREDENTIALS_KEY: ${HUB_CREDENTIALS_KEY}
@@ -241,6 +250,8 @@ services:
       kernel:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      interval: 2s
     extra_hosts:
     - host.docker.internal:host-gateway
   insights:
@@ -258,10 +269,13 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
       kernel:
+        condition: service_healthy
+      hub:
         condition: service_healthy
     restart: unless-stopped
   insights-worker:
@@ -276,6 +290,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -304,10 +319,13 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
       kernel:
+        condition: service_healthy
+      hub:
         condition: service_healthy
     restart: unless-stopped
   library-worker:
@@ -322,6 +340,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -350,10 +369,13 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
       kernel:
+        condition: service_healthy
+      hub:
         condition: service_healthy
     restart: unless-stopped
   macros-worker:
@@ -368,6 +390,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -396,10 +419,13 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
       kernel:
+        condition: service_healthy
+      hub:
         condition: service_healthy
     restart: unless-stopped
   money-worker:
@@ -414,6 +440,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -442,10 +469,13 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
       kernel:
+        condition: service_healthy
+      hub:
         condition: service_healthy
     restart: unless-stopped
   notebook-worker:
@@ -460,6 +490,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -488,10 +519,13 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
       kernel:
+        condition: service_healthy
+      hub:
         condition: service_healthy
     restart: unless-stopped
   outings-worker:
@@ -506,6 +540,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -534,10 +569,13 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
       kernel:
+        condition: service_healthy
+      hub:
         condition: service_healthy
     restart: unless-stopped
   planner-worker:
@@ -552,6 +590,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -580,10 +619,13 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
       kernel:
+        condition: service_healthy
+      hub:
         condition: service_healthy
     restart: unless-stopped
   recipes-worker:
@@ -598,6 +640,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -626,10 +669,13 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
       kernel:
+        condition: service_healthy
+      hub:
         condition: service_healthy
     restart: unless-stopped
   shopping-worker:
@@ -644,6 +690,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -672,10 +719,13 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
       kernel:
+        condition: service_healthy
+      hub:
         condition: service_healthy
     restart: unless-stopped
   study-worker:
@@ -690,6 +740,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -718,10 +769,13 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
       kernel:
+        condition: service_healthy
+      hub:
         condition: service_healthy
     restart: unless-stopped
   training-worker:
@@ -736,6 +790,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -764,10 +819,13 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
       kernel:
+        condition: service_healthy
+      hub:
         condition: service_healthy
     restart: unless-stopped
   travel-worker:
@@ -782,6 +840,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
@@ -810,10 +869,13 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
       kernel:
+        condition: service_healthy
+      hub:
         condition: service_healthy
     restart: unless-stopped
   vitals-worker:
@@ -828,6 +890,7 @@ services:
       OPENARGA_CURRENCY: EUR
       OPENARGA_COUNTRY: ES
       OPENARGA_AI_PROVIDER: none
+      APP_VERSION: ${OPENARGA_VERSION:-0.1.0}
       OPENARGA_AI_KEY: ${OPENARGA_AI_KEY:-}
       CONNECTIONS_MODE: live
     depends_on:
