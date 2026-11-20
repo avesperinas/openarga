@@ -1,6 +1,7 @@
 import type * as React from "react";
 
 import { TabBar, type TabItem } from "./controls";
+import { say } from "./words";
 
 export interface AppShellProps<T extends string> {
   label?: string;
@@ -14,7 +15,7 @@ export interface AppShellProps<T extends string> {
 }
 
 export function AppShell<T extends string>({
-  label = "Secciones",
+  label = say("shell.sections"),
   tabs,
   active,
   onSelect,

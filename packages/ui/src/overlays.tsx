@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { Button, IconButton } from "./controls";
 import { useBodyHost, useBrowserLayoutEffect, useEscape, useFocusTrap } from "./focus";
 import { Icon, type IconName } from "./icons";
+import { say } from "./words";
 
 export interface DialogProps {
   title: string;
@@ -34,7 +35,7 @@ export function Dialog({ title, onClose, children, actions = [], kind = "dialog"
           <h2 id={titleId} className="dialog-title">
             {title}
           </h2>
-          <IconButton icon="close" label="Cerrar" size="small" onClick={onClose} />
+          <IconButton icon="close" label={say("sheet.close")} size="small" onClick={onClose} />
         </header>
         <div className="dialog-body">{children}</div>
         {actions.length > 0 && (

@@ -310,9 +310,9 @@ export function DateRangeField({
     <fieldset className="date-range">
       <legend className="text-field-label">{label}</legend>
       <div className="date-range-fields">
-        <DateField label="Desde" value={value.from} min={min} max={value.to || max} onChange={(from) => onChange({ ...value, from })} />
+        <DateField label={say("range.from")} value={value.from} min={min} max={value.to || max} onChange={(from) => onChange({ ...value, from })} />
         <DateField
-          label="Hasta"
+          label={say("range.to")}
           value={value.to}
           min={value.from || min}
           max={max}

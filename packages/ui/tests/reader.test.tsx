@@ -138,8 +138,8 @@ describe("reading to learn", () => {
     expect(html).toContain('role="listitem"');
     expect(html).toContain("Film");
     expect(html).toContain("pick-card-glyph");
-    expect(html).toContain('aria-label="Anterior"');
-    expect(html).toContain('aria-label="Siguiente"');
+    expect(html).toContain('aria-label="Previous"');
+    expect(html).toContain('aria-label="Next"');
     expect(html).toContain('tabindex="0"');
   });
 
