@@ -1,3 +1,4 @@
+import { dateLocale } from "@openarga/ui";
 import type { Locale, Translate } from "@openarga/ui";
 
 import type { Against, Day, Goal, Source } from "./api";
@@ -73,7 +74,7 @@ export function bandLabel(goal: Goal, t: Translate, locale: Locale): string {
 export const sourceName = (t: Translate, source: Source) => t(`source.${source}`);
 
 export function dayLabel(day: string, locale: Locale, withYear = true): string {
-  return new Date(`${day}T12:00:00Z`).toLocaleDateString(locale, {
+  return new Date(`${day}T12:00:00Z`).toLocaleDateString(dateLocale(locale), {
     weekday: withYear ? undefined : "short",
     day: "numeric",
     month: "short",

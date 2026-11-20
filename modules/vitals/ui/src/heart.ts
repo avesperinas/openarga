@@ -1,3 +1,4 @@
+import { dateLocale } from "@openarga/ui";
 import type { Locale, Translate, TrendPoint } from "@openarga/ui";
 
 import type { BodyPoint, FigureSeries, HeartBucket } from "./api";
@@ -67,6 +68,6 @@ export function heartSummary(
     tone: "neutral",
     best: text(best.value),
     bestLabel: lowerIsBest ? t("heart.your_lowest") : t("heart.your_highest"),
-    bestDay: new Date(`${best.day}T12:00:00`).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" }),
+    bestDay: new Date(`${best.day}T12:00:00`).toLocaleDateString(dateLocale(locale), { day: "numeric", month: "short", year: "numeric" }),
   };
 }

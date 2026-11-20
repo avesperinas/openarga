@@ -1,4 +1,4 @@
-import { type Locale, type Translate, numbers, regional, zonedDates } from "@openarga/ui";
+import { dateLocale, type Locale, type Translate, numbers, regional, zonedDates } from "@openarga/ui";
 
 import type { Drinks, Item, Meal, MealKey } from "./api";
 
@@ -85,7 +85,7 @@ export function drinksLine(drinks: Drinks, t: Translate): string {
 
 export function longDate(day: string, locale: Locale): string {
   const [y, m, d] = day.split("-").map(Number) as [number, number, number];
-  const text = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(locale, {
+  const text = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(dateLocale(locale), {
     weekday: "long",
     day: "numeric",
     month: "long",

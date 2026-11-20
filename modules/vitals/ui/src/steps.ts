@@ -1,3 +1,4 @@
+import { dateLocale } from "@openarga/ui";
 import type { Locale, Translate } from "@openarga/ui";
 
 import type { StepsDay } from "./api";
@@ -42,8 +43,8 @@ export function bucketLabel(start: string, grain: Grain, locale: Locale): string
   const date = new Date(`${start}T12:00:00Z`);
   if (grain === "year") return start.slice(0, 4);
   return grain === "month"
-    ? date.toLocaleDateString(locale, { month: "short", year: "2-digit" })
-    : date.toLocaleDateString(locale, { day: "numeric", month: "short" });
+    ? date.toLocaleDateString(dateLocale(locale), { month: "short", year: "2-digit" })
+    : date.toLocaleDateString(dateLocale(locale), { day: "numeric", month: "short" });
 }
 
 export function stepsTone(value: number | null | undefined, goal: number | null): "positive" | "warning" | "negative" | "neutral" {

@@ -1,3 +1,4 @@
+import { dateLocale } from "@openarga/ui";
 import type { Locale } from "@openarga/ui";
 
 import type { LastTime, LoggedSet, Option, SessionExercise, Slot } from "./api";
@@ -106,7 +107,7 @@ export function describeSets(sets: LoggedSet[], bodyweight: boolean, locale: Loc
 
 export function shortDay(day: string, locale: Locale): string {
   const [year = 1970, month = 1, date = 1] = day.split("-").map(Number);
-  return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" })
+  return new Intl.DateTimeFormat(dateLocale(locale), { day: "numeric", month: "short" })
     .format(new Date(year, month - 1, date))
     .replace(".", "");
 }

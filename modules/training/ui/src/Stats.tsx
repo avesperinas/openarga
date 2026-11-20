@@ -1,4 +1,5 @@
 import {
+  dateLocale,
   BodyMaps,
   Button,
   Card,
@@ -464,7 +465,7 @@ function since(day: string | null, t: Translate, locale: Locale): string {
 
 function month(day: string, locale: Locale): string {
   const [year = 1970, value = 1] = day.split("-").map(Number);
-  return new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" })
+  return new Intl.DateTimeFormat(dateLocale(locale), { month: "short", year: "numeric" })
     .format(new Date(year, value - 1, 1))
     .replace(".", "");
 }

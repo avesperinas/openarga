@@ -1,4 +1,5 @@
 import {
+  dateLocale,
   BatteryLine,
   Heading,
   Hint,
@@ -227,7 +228,7 @@ export function TodayScreen({ go }: { go?: Go } = {}) {
   return (
     <Screen wide>
       <ScreenHeader
-        eyebrow={capital(new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", timeZone: regional().timeZone }).format(now))}
+        eyebrow={capital(new Intl.DateTimeFormat(dateLocale(locale), { weekday: "long", day: "numeric", month: "long", timeZone: regional().timeZone }).format(now))}
         title={t("tabs.today")}
       />
       {problem && <Hint tone="warning">{problem}</Hint>}

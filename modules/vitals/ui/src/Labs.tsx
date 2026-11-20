@@ -1,4 +1,5 @@
 import {
+  dateLocale,
   Button,
   DataTable,
   DateField,
@@ -47,7 +48,7 @@ const SHOWN = 4;
 
 function checkupLabel(day: string, locale: Locale): string {
   const date = new Date(`${day}T12:00:00Z`);
-  const month = date.toLocaleDateString(locale, { month: "short", timeZone: "UTC" }).replace(".", "").slice(0, 3);
+  const month = date.toLocaleDateString(dateLocale(locale), { month: "short", timeZone: "UTC" }).replace(".", "").slice(0, 3);
   return `${month} ${String(date.getUTCFullYear()).slice(2)}`;
 }
 

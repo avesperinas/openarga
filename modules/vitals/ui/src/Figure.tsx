@@ -1,4 +1,4 @@
-import { Hint, InfoHeading, KeyFigures, Screen, Skeleton, useLocale, useT } from "@openarga/ui";
+import { dateLocale, Hint, InfoHeading, KeyFigures, Screen, Skeleton, useLocale, useT } from "@openarga/ui";
 import { useEffect, useState } from "react";
 
 import { AppVersion } from "./AppVersion";
@@ -48,7 +48,7 @@ export function FigureScreen({ id, onBack }: { id: string; onBack: () => void })
               {
                 label: t("figure.last"),
                 value: figure.latest ? figureValue(figure, figure.latest.value, t, locale) : "—",
-                foot: figure.latest ? new Date(`${figure.latest.day}T12:00:00`).toLocaleDateString(locale) : undefined,
+                foot: figure.latest ? new Date(`${figure.latest.day}T12:00:00`).toLocaleDateString(dateLocale(locale)) : undefined,
               },
               ...(summary
                 ? [

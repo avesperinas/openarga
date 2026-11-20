@@ -1,3 +1,4 @@
+import { dateLocale } from "@openarga/ui";
 import type { Locale, StatTone, Translate } from "@openarga/ui";
 
 import type { Baseline, Load, SleepGroup, Workout } from "./api";
@@ -43,7 +44,7 @@ export function clock(iso: string): string {
 
 export function whenLabel(iso: string, locale: Locale): string {
   const moment = new Date(iso);
-  const weekday = moment.toLocaleDateString(locale, { weekday: "short" }).replace(".", "");
+  const weekday = moment.toLocaleDateString(dateLocale(locale), { weekday: "short" }).replace(".", "");
   return `${weekday} ${moment.getDate()}, ${clock(iso)}`;
 }
 
@@ -131,7 +132,7 @@ export function byWeek(
   t: Translate,
   locale: Locale,
 ): { start: string; label: string; items: Workout[] }[] {
-  const short = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
+  const short = new Intl.DateTimeFormat(dateLocale(locale), { day: "numeric", month: "short" });
   const mondayOf = (date: Date) => {
     const monday = new Date(date);
     monday.setHours(12, 0, 0, 0);

@@ -1,4 +1,4 @@
-import { type Locale, type Translate, zonedDates } from "@openarga/ui";
+import { dateLocale, type Locale, type Translate, zonedDates } from "@openarga/ui";
 
 import type { Night, SleepStage } from "./api";
 
@@ -52,5 +52,5 @@ export function against(minutes: number, mean: number | null, t: Translate): str
 
 export function shortDay(day: string, locale: Locale): string {
   const [year = 1970, month = 1, date = 1] = day.split("-").map(Number);
-  return new Date(year, month - 1, date).toLocaleDateString(locale, { day: "numeric", month: "numeric" });
+  return new Date(year, month - 1, date).toLocaleDateString(dateLocale(locale), { day: "numeric", month: "numeric" });
 }
