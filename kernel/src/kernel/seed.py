@@ -80,11 +80,9 @@ async def _run(wipe: bool) -> str:
     try:
         if wipe:
             await clear()
-            return f"seed borrado · cola pendiente: {await pending()}"
+            return f"seed removed · queue pending: {await pending()}"
         sent, created = await load()
-        return (
-            f"seed cargado · {sent} eventos, {created} nuevos · cola pendiente: {await pending()}"
-        )
+        return f"seed loaded · {sent} events, {created} new · queue pending: {await pending()}"
     finally:
         await engine().dispose()
 
@@ -98,7 +96,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         print(asyncio.run(_run(wipe=arguments == ["--clear"])))
     except Exception as error:  # noqa: BLE001 - se traduce a un exit code, no se traga
-        print(f"seed fallido: {type(error).__name__}: {error}", file=sys.stderr)
+        print(f"seed failed: {type(error).__name__}: {error}", file=sys.stderr)
         return 1
     return 0
 

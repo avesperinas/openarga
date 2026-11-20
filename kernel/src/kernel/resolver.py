@@ -162,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         outcome = asyncio.run(_run())
     except Exception as error:  # noqa: BLE001 - turned into an exit code, not swallowed
-        print(f"pasada fallida: {type(error).__name__}: {error}", file=sys.stderr)
+        print(f"pass failed: {type(error).__name__}: {error}", file=sys.stderr)
         return 1
 
     for decision in outcome.merged:

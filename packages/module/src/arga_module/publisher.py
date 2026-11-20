@@ -176,9 +176,7 @@ class Publisher:
                     more = bool(result["more"])
                     if result["pending"]:
                         failures += 1
-                        print(
-                            f"publisher · {result['pending']} pendiente(s), reintento", flush=True
-                        )
+                        print(f"publisher · {result['pending']} pending, retrying", flush=True)
                     else:
                         failures = 0
                         if result["published"]:
