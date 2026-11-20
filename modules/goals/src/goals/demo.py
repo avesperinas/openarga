@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, time, timedelta
+from pathlib import Path
 from uuid import UUID, uuid5
 from zoneinfo import ZoneInfo
 
@@ -8,9 +9,11 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_module import i18n
-from arga_module.demo import Persona
+from arga_module.demo import Persona, localized, localizer
 from arga_tenancy import current_spaces
 from goals.common import CATALOGS
+
+say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 NAMESPACE = UUID("0b7c0de5-0000-4000-8000-00000060a150")
 WEEKS = 78
@@ -369,8 +372,8 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
         )
         tasks += _shared(persona, shared, space, today)
     for one in tasks:
-        await connection.execute(TASK, one)
+        await connection.execute(TASK, localized(say, persona, one))
     for one in _goals(persona, categories, today):
-        await connection.execute(GOAL, one)
+        await connection.execute(GOAL, localized(say, persona, one))
     for one in _checks(persona, today):
         await connection.execute(CHECK, one)

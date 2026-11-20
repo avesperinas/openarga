@@ -70,10 +70,33 @@ async def test_alex_and_sam_see_their_day_their_goals_and_the_shared_category(ap
         statuses = {one["status"] for one in pending}
         assert {"overdue", "today", "upcoming", "someday"} <= statuses
         active = (await api.get("/goals", headers=headers(persona))).json()
-        reading = next(one for one in active if one["title"] == "Read 20 minutes")
+        title = "Read 20 minutes" if persona.locale == "en" else "Leer 20 minutos"
+        reading = next(one for one in active if one["title"] == title)
         assert reading["streak"] or reading["constancy"]
         closed = await api.get("/goals", params={"state": "closed"}, headers=headers(persona))
         assert {one["status"] for one in closed.json()} == {"achieved", "missed"}
 
     spanish = [one["name"] for one in (await api.get("/categories", headers=headers(sam))).json()]
     assert "Trabajo" in spanish
+
+
+async def test_each_person_reads_the_tasks_in_their_own_language(schema) -> None:
+    from goals.main import as_app
+
+    await seed_everyone()
+    found = {}
+    for persona in CAST.people:
+        token = current_user.set(persona.id)
+        try:
+            async with as_app() as connection:
+                found[persona.key] = set(
+                    await connection.scalars(
+                        text("select title from goals.goals_task where space_id is null")
+                    )
+                )
+        finally:
+            current_user.reset(token)
+
+    assert {"Send the weekly report"} <= found["alex"]
+    assert {"Enviar el informe semanal"} <= found["sam"]
+    assert not {"Send the weekly report"} & found["sam"]
