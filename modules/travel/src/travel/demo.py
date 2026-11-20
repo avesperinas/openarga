@@ -3,14 +3,17 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date, time, timedelta
 from decimal import Decimal
+from pathlib import Path
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_module.demo import Persona
+from arga_module.demo import Persona, localized, localizer
 from arga_tenancy import current_spaces
 from travel import ideas, itinerary, journal, lists, money, notes, travel
 from travel.travel.places import PlaceIn, save_place
+
+say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 SAM = UUID("5a305a30-0000-4000-8000-000000005a30")
 
@@ -485,19 +488,27 @@ def _clock(text: str | None) -> time | None:
     return time.fromisoformat(text) if text else None
 
 
-async def _place(connection: AsyncConnection, cache: dict[str, str], key: str) -> str:
+async def _place(
+    connection: AsyncConnection, persona: Persona, cache: dict[str, str], key: str
+) -> str:
     if key not in cache:
         name, lat, lon, country, kind = CITIES[key]
         cache[key] = (
             await save_place(
-                connection, PlaceIn(name=name, lat=lat, lon=lon, country_code=country, kind=kind)
+                connection,
+                PlaceIn(name=say(persona, name), lat=lat, lon=lon, country_code=country, kind=kind),
             )
         ).id
     return cache[key]
 
 
 async def _build(
-    connection: AsyncConnection, today: date, cache: dict[str, str], one: Trip, space: str
+    connection: AsyncConnection,
+    persona: Persona,
+    today: date,
+    cache: dict[str, str],
+    one: Trip,
+    space: str,
 ) -> None:
     start = _day(today, one.start)
     made = await travel.create_trip(
@@ -521,7 +532,7 @@ async def _build(
             connection,
             trip_id,
             travel.StayIn(
-                place_id=await _place(connection, cache, place),
+                place_id=await _place(connection, persona, cache, place),
                 arrives_on=start + timedelta(days=arrive),
                 leaves_on=start + timedelta(days=leave),
                 accommodation=where,
@@ -533,8 +544,8 @@ async def _build(
             connection,
             trip_id,
             travel.LegIn(
-                from_place_id=await _place(connection, cache, origin),
-                to_place_id=await _place(connection, cache, goal),
+                from_place_id=await _place(connection, persona, cache, origin),
+                to_place_id=await _place(connection, persona, cache, goal),
                 mode=mode,
                 travelled_on=start + timedelta(days=offset),
                 carrier=carrier,
@@ -546,7 +557,7 @@ async def _build(
             connection,
             trip_id,
             travel.VisitIn(
-                place_id=await _place(connection, cache, place),
+                place_id=await _place(connection, persona, cache, place),
                 stay_id=stay_ids[min(stay, len(stay_ids) - 1)],
                 visited_on=start + timedelta(days=offset),
                 note=note,
@@ -628,7 +639,11 @@ async def _build(
 
 
 async def _ideas(
-    connection: AsyncConnection, cache: dict[str, str], rows: tuple, space: str | None
+    connection: AsyncConnection,
+    persona: Persona,
+    cache: dict[str, str],
+    rows: tuple,
+    space: str | None,
 ) -> None:
     have = {one.title for one in await ideas.ideas(connection)}
     for title, notes_, budget, low, high, months, tags, places in rows:
@@ -647,7 +662,9 @@ async def _ideas(
             ),
         )
         for key in places:
-            await ideas.add_place(connection, made.id, await _place(connection, cache, key), None)
+            await ideas.add_place(
+                connection, made.id, await _place(connection, persona, cache, key), None
+            )
         if space and title.startswith("Norway"):
             await ideas.share_idea(connection, made.id, space)
 
@@ -657,7 +674,8 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
     cache: dict[str, str] = {}
     have = {one.title for one in await travel.all_trips(connection)}
     mine = ALEX_TRIPS if persona.key == "alex" else SAM_TRIPS
-    for one in mine:
+    for one in localized(say, persona, mine):
         if one.title not in have:
-            await _build(connection, today, cache, one, space)
-    await _ideas(connection, cache, IDEAS_ALEX if persona.key == "alex" else IDEAS_SAM, space)
+            await _build(connection, persona, today, cache, one, space)
+    wanted = IDEAS_ALEX if persona.key == "alex" else IDEAS_SAM
+    await _ideas(connection, persona, cache, localized(say, persona, wanted), space)
