@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import math
 from datetime import date, time, timedelta
+from pathlib import Path
 from uuid import UUID, uuid5
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_module.demo import Persona
+from arga_module.demo import Persona, localizer
+
+say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 NAMESPACE = UUID("0b7c0de5-0000-4000-8000-0000000b17a1")
 DAYS = 18 * 30
@@ -124,8 +127,10 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
             {
                 "id": checkup,
                 "day": today - timedelta(days=back),
-                "center": "Health centre",
-                "notes": "Yearly blood test." if visit % 2 == 0 else "Follow-up of the lipids.",
+                "center": say(persona, "Health centre"),
+                "notes": say(
+                    persona, "Yearly blood test." if visit % 2 == 0 else "Follow-up of the lipids."
+                ),
             },
         )
         for analyte, value in _results(persona, visit):
