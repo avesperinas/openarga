@@ -1,3 +1,4 @@
+import { serviceWorker } from "@openarga/app/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
@@ -7,6 +8,7 @@ export default defineConfig({
   base: "/money/",
   plugins: [
     react(),
+    serviceWorker({ id: "money", dir: import.meta.dirname }),
     {
       name: "money-versioned-assets",
       transformIndexHtml: (html) =>
