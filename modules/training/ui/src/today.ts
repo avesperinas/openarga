@@ -1,7 +1,7 @@
-import { type Locale, regional } from "@openarga/ui";
+import { dateLocale, type Locale, regional } from "@openarga/ui";
 
 export function todayLabel(date: Date, locale: Locale): string {
-  const text = new Intl.DateTimeFormat(locale, {
+  const text = new Intl.DateTimeFormat(dateLocale(locale), {
     weekday: "long",
     day: "numeric",
     month: "long",

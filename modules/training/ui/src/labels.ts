@@ -1,3 +1,4 @@
+import { dateLocale } from "@openarga/ui";
 import type { Locale, Translate } from "@openarga/ui";
 
 import type { DayKind, Implement, Pattern } from "./api";
@@ -75,7 +76,7 @@ export function formatDuration(seconds: number | null): string {
 
 export function shortDate(day: string, locale: Locale): string {
   const [year, month, date] = day.split("-").map(Number) as [number, number, number];
-  return new Date(year, month - 1, date).toLocaleDateString(locale, {
+  return new Date(year, month - 1, date).toLocaleDateString(dateLocale(locale), {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -84,7 +85,7 @@ export function shortDate(day: string, locale: Locale): string {
 
 export function longDate(day: string, locale: Locale): string {
   const [year, month, date] = day.split("-").map(Number) as [number, number, number];
-  return new Date(year, month - 1, date).toLocaleDateString(locale, {
+  return new Date(year, month - 1, date).toLocaleDateString(dateLocale(locale), {
     weekday: "short",
     day: "numeric",
     month: "short",

@@ -1,4 +1,5 @@
 import {
+  dateLocale,
   Button,
   Collapsible,
   EmptyState,
@@ -246,7 +247,7 @@ export function TrainingScreen() {
 }
 
 export function weekLine(code: string, done: number, expected: number | null, t: Translate, locale: Locale): string {
-  const day = new Intl.DateTimeFormat(locale, { weekday: "long" }).format(new Date());
+  const day = new Intl.DateTimeFormat(dateLocale(locale), { weekday: "long" }).format(new Date());
   const head = t(`week_line.${code}`);
   const load = Math.round(done).toLocaleString(locale);
   if (expected === null) return t("week_line.load", { head, load });

@@ -1,4 +1,5 @@
 import {
+  dateLocale,
   Card,
   type DayMark,
   Figures,
@@ -284,7 +285,7 @@ export function weekBelow(monday: string, sessions: SessionSummary[], goal: numb
 
 function dayTitle(day: string, locale: Locale): string {
   const [year, month, date] = day.split("-").map(Number) as [number, number, number];
-  const text = new Date(year, month - 1, date).toLocaleDateString(locale, {
+  const text = new Date(year, month - 1, date).toLocaleDateString(dateLocale(locale), {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -294,7 +295,7 @@ function dayTitle(day: string, locale: Locale): string {
 
 function monthTitle(day: string, locale: Locale): string {
   const [year, month] = day.split("-").map(Number) as [number, number];
-  const text = new Date(year, month - 1, 1).toLocaleDateString(locale, { month: "long", year: "numeric" });
+  const text = new Date(year, month - 1, 1).toLocaleDateString(dateLocale(locale), { month: "long", year: "numeric" });
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 

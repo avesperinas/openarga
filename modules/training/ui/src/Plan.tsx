@@ -1,4 +1,5 @@
 import {
+  dateLocale,
   Button,
   ChoiceChips,
   ConfirmDelete,
@@ -175,7 +176,7 @@ function PublishedPlan({ editor, onEdit }: { editor: Editor; onEdit: () => void 
           <p className="training-eyebrow">
             {editor.plan?.name}
             {version ? ` · ${t("plan.version", { number: version.number })}` : ""}
-            {since ? ` · ${t("plan.since", { day: since.toLocaleDateString(locale, { day: "numeric", month: "long" }) })}` : ""}
+            {since ? ` · ${t("plan.since", { day: since.toLocaleDateString(dateLocale(locale), { day: "numeric", month: "long" }) })}` : ""}
           </p>
           {!version && <Hint>{t("plan.no_published")}</Hint>}
           {version && editor.rotation_version !== null && editor.rotation_version !== version.number && (
