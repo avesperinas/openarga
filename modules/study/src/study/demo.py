@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from datetime import date, time, timedelta
+from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_module.demo import Persona
+from arga_module.demo import Persona, localized, localizer
 from arga_recurrence import Day, Rule
 from study import studies, timetable
 from study.studies import AssessmentIn, CourseIn, SubjectIn
+
+say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 PAST = (
     ("Linear algebra", 6, 8.4, "Dr Moreau"),
@@ -242,24 +245,26 @@ def _schedule(
 
 async def seed(connection: AsyncConnection, persona: Persona, today: date) -> None:
     existing = {one.name for one in await studies.courses(connection, "all")}
-    for wanted in _courses(persona, today):
+    for english in _courses(persona, today):
+        wanted = localized(say, persona, english)
         if wanted.name in existing:
             continue
         created = await studies.create_course(connection, wanted)
         course_id = created.course.id
-        subjects = {one.name: one.id for one in created.subjects}
-        for item in _assessments(persona, today, wanted.name, subjects):
-            await studies.add_assessment(connection, course_id, item)
+        local = {one.name: one.id for one in created.subjects}
+        subjects = {one.name: local[say(persona, one.name)] for one in english.subjects}
+        for item in _assessments(persona, today, english.name, subjects):
+            await studies.add_assessment(connection, course_id, localized(say, persona, item))
         finals = {**{name: grade for name, _, grade, _ in (*PAST, *NUTRITION)}}
         for name, subject_id in subjects.items():
             if finals.get(name) is not None:
                 await studies.record_grade(
                     connection, subject_id, studies.RecordIn(final_grade=finals[name])
                 )
-        for block in _schedule(persona, today, wanted.name, subjects):
+        for block in _schedule(persona, today, english.name, subjects):
             until = wanted.ends_on or today + timedelta(days=120)
             block.rule = block.rule.model_copy(update={"until": until})
-            await timetable.add_schedule(connection, course_id, block)
+            await timetable.add_schedule(connection, course_id, localized(say, persona, block))
         if wanted.ends_on and wanted.ends_on < today:
             await studies.close_course(
                 connection,
