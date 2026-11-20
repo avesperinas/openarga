@@ -11,7 +11,7 @@ AUTH_PASSWORD=auth-test
 ADMIN_PASSWORD=admin-test
 WEB_SECRET=test-arga-web-secret
 SESSION_SECRET=fake-session-secret-long-enough-to-pass
-CONTAINERS=(e2e-postgres e2e-kernel e2e-auth e2e-gateway)
+CONTAINERS=(e2e-postgres e2e-kernel e2e-auth e2e-gateway e2e-gateway-local)
 
 cleanup() {
   [[ -n ${E2E_KEEP:-} ]] && return 0
@@ -62,7 +62,7 @@ docker run -d --name e2e-kernel --network "$NET" --network-alias kernel \
 docker run -d --name e2e-auth --network "$NET" --network-alias auth \
   -e KC_DB_URL=jdbc:postgresql://postgres:5432/arga -e KC_DB_USERNAME=arga_auth \
   -e KC_DB_PASSWORD=$AUTH_PASSWORD -e KC_DB_SCHEMA=auth -e KC_HTTP_ENABLED=true \
-  -e KC_HOSTNAME_STRICT=false \
+  -e KC_HOSTNAME_STRICT=false -e PUBLIC_URL=http://gateway:8000 \
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=$ADMIN_PASSWORD \
   "arga-auth:$TAG" >/dev/null
 wait_healthy e2e-kernel
@@ -109,6 +109,7 @@ docker run --rm --network "$NET" --entrypoint /bin/bash \
   -e KC_ADMIN_PASSWORD=$ADMIN_PASSWORD -e ARGA_WEB_CLIENT_SECRET=$WEB_SECRET \
   -e GOOGLE_CLIENT_ID=test-google-id -e GOOGLE_CLIENT_SECRET=test-google-secret \
   -e ARGA_ALLOWED_EMAILS="Owner@Example.com=owner" \
+  -e PUBLIC_URL=http://gateway:8000 \
   -e OPENARGA_ADMIN_USERNAME=first-admin -e OPENARGA_ADMIN_PASSWORD=first-admin-password-1 \
   "arga-auth:$TAG" /opt/arga/sync.sh
 
@@ -134,7 +135,7 @@ gateway_env=(
   -e KERNEL_URL=http://kernel:8000 -e SHELL_URL=http://kernel:8000 -e AUTH_URL=http://auth:8080
   -e OAUTH_ISSUER=http://auth:8080/auth/realms/arga
   -e OAUTH_JWKS_URL=http://auth:8080/auth/realms/arga/protocol/openid-connect/certs
-  -e MCP_RESOURCE_URL=http://localhost:8000/mcp
+  -e MCP_RESOURCE_URL=http://gateway:8000/mcp
   -e OIDC_INTERNAL_URL=http://auth:8080/auth/realms/arga -e OIDC_CLIENT_ID=arga-web
   -e OIDC_CLIENT_SECRET=$WEB_SECRET -e PUBLIC_URL=http://gateway:8000 -e OIDC_IDP_HINT=fake
 )
@@ -168,7 +169,7 @@ owner_row=$(docker exec e2e-postgres psql -At -U arga -d arga -c \
 [[ $owner_row == 1 ]] && echo "ok    what they write from the browser carries their person (x-arga-user → GUC → user_id)" \
   || { echo "FAIL: the written arrangement does not carry the person of sub $owner_id" >&2; exit 1; }
 people=$(kc get users -r arga --fields username --format csv --noquotes | sort | tr '\n' ' ')
-[[ $people == "owner " ]] && echo "ok    the intruder has created nobody in the realm" \
+[[ $people == "first-admin owner " ]] && echo "ok    the intruder has created nobody in the realm" \
   || { echo "FAIL: the realm has: $people" >&2; exit 1; }
 for path in /auth/admin/master/console/ /auth/realms/master/.well-known/openid-configuration; do
   status=$(docker run --rm --network "$NET" "arga-gateway:$TAG" python -c \
@@ -190,7 +191,7 @@ docker run -d --name e2e-gateway-local --network "$NET" --network-alias gateway-
   -e OAUTH_JWKS_URL=http://auth:8080/auth/realms/arga/protocol/openid-connect/certs \
   -e MCP_RESOURCE_URL=http://localhost:8000/mcp \
   -e OIDC_INTERNAL_URL=http://auth:8080/auth/realms/arga -e OIDC_CLIENT_ID=arga-web \
-  -e OIDC_CLIENT_SECRET=$WEB_SECRET -e PUBLIC_URL=http://gateway-local:8000 \
+  -e OIDC_CLIENT_SECRET=$WEB_SECRET -e PUBLIC_URL=http://gateway-local:8000 -e OIDC_IDP_HINT= \
   -e SESSION_SECRET=$SESSION_SECRET "arga-gateway:$TAG" >/dev/null
 wait_healthy e2e-gateway-local
 drive local
