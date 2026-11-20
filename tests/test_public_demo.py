@@ -51,9 +51,12 @@ def test_the_token_is_never_printed_nor_logged():
 
 def test_the_cron_runs_a_day_and_a_nightly_reset_on_madrid_time():
     result = run("--dry-run", DOMAIN, token=TOKEN)
-    assert "CRON_TZ=Europe/Madrid" in result.stdout
-    assert "30 4 * * *" in result.stdout and "demo reset" in result.stdout
-    assert "0 8 * * *" in result.stdout and "demo day" in result.stdout
+    madrid = '[ "$(TZ=Europe/Madrid date +\\%H)" = {hour} ]'
+    reset = next(line for line in result.stdout.splitlines() if "demo reset" in line)
+    day = next(line for line in result.stdout.splitlines() if "demo day" in line)
+    assert reset.strip().startswith("30 * * * *") and madrid.format(hour="04") in reset
+    assert day.strip().startswith("0 * * * *") and madrid.format(hour="08") in day
+    assert "/scripts/public-demo.sh" in day and "CRON_TZ" not in result.stdout
 
 
 def test_it_asks_for_what_it_needs():
