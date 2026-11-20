@@ -30,13 +30,13 @@ VOICES = {
 
 def fetch(url: str, target: Path, sha256: str) -> None:
     digest = hashlib.sha256()
-    with urllib.request.urlopen(url, timeout=120) as response, target.open("wb") as out:  # noqa: S310 - URL fija de arriba
+    with urllib.request.urlopen(url, timeout=120) as response, target.open("wb") as out:  # noqa: S310 - fixed URL above
         while block := response.read(1 << 20):
             digest.update(block)
             out.write(block)
     if digest.hexdigest() != sha256:
         target.unlink()
-        raise SystemExit(f"{target.name}: sha256 {digest.hexdigest()} y se esperaba {sha256}")
+        raise SystemExit(f"{target.name}: sha256 {digest.hexdigest()}, expected {sha256}")
 
 
 def main(argv: list[str]) -> int:
@@ -45,7 +45,7 @@ def main(argv: list[str]) -> int:
     for name, (path, model, config) in VOICES.items():
         fetch(f"{BASE}/{path}/{name}.onnx", folder / f"{name}.onnx", model)
         fetch(f"{BASE}/{path}/{name}.onnx.json", folder / f"{name}.onnx.json", config)
-        print(f"voz · {name}", flush=True)
+        print(f"voice · {name}", flush=True)
     return 0
 
 
