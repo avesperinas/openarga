@@ -79,6 +79,18 @@ export function currencies(current: string): string[] {
   return found.includes(current) ? found : [current, ...found];
 }
 
+export interface AreaChoice {
+  id: string;
+  name: string;
+  country: string;
+}
+
+export async function readAreas(): Promise<AreaChoice[]> {
+  const response = await request("/api/outings/areas", { headers: { accept: "application/json" } });
+  if (!response.ok) return [];
+  return (await response.json()) as AreaChoice[];
+}
+
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const NOT_COUNTRIES = new Set(["EU", "EZ", "QO", "UN", "XA", "XB", "ZZ"]);
 

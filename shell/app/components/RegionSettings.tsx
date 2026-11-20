@@ -19,14 +19,17 @@ import en from "../i18n/en.json";
 import es from "../i18n/es.json";
 import {
   AREA,
+  type AreaChoice,
   type PersonPreferences,
   REGION,
   changePersonPreferences,
   countries,
   currencies,
+  readAreas,
   readPersonPreferences,
   timeZones,
 } from "../lib/regional";
+import { hasRegions, regionsOf } from "../lib/regions";
 
 const CATALOGS = { en, es };
 
@@ -71,8 +74,15 @@ export function RegionForm({
     setDraft((current) => ({ ...current, ...change }));
   };
   const problems = problemsOf(draft);
-  const example = "ES-NA";
+  const example = "ES-NC";
   const countryList = React.useMemo(() => countries(draft.locale), [draft.locale]);
+  const regionList = React.useMemo(() => regionsOf(draft.country, draft.locale), [draft.country, draft.locale]);
+  const [areas, setAreas] = React.useState<AreaChoice[]>([]);
+  React.useEffect(() => {
+    readAreas()
+      .then(setAreas)
+      .catch(() => setAreas([]));
+  }, []);
 
   const save = async () => {
     setStatus("saving");
@@ -116,19 +126,55 @@ export function RegionForm({
             })
           }
         />
-        <TextField
-          label={t("region.region")}
-          value={draft.region ?? ""}
-          placeholder={example}
-          onChange={(value) => set({ region: value.trim().toUpperCase() || null })}
-        />
-        <Hint>{problems.region ? t("region.invalid.region", { example }) : t("region.region.hint", { example })}</Hint>
-        <TextField
-          label={t("region.area")}
-          value={draft.area ?? ""}
-          onChange={(value) => set({ area: value.trim().toLowerCase() || null })}
-        />
-        <Hint>{problems.area ? t("region.invalid.area") : t("region.area.hint")}</Hint>
+        {hasRegions(draft.country) ? (
+          <>
+            <SelectField
+              label={t("region.region")}
+              options={[
+                { value: "", label: t("region.region.none") },
+                ...regionList.map((one) => ({ value: one.code, label: one.name })),
+                ...(draft.region && !regionList.some((one) => one.code === draft.region) ? [{ value: draft.region, label: draft.region }] : []),
+              ]}
+              value={draft.region ?? ""}
+              onChange={(region) => set({ region: region || null })}
+            />
+            <Hint>{t("region.region.hint")}</Hint>
+          </>
+        ) : (
+          <>
+            <TextField
+              label={t("region.region")}
+              value={draft.region ?? ""}
+              placeholder={example}
+              onChange={(value) => set({ region: value.trim().toUpperCase() || null })}
+            />
+            <Hint>{problems.region ? t("region.invalid.region", { example }) : t("region.region.code", { example })}</Hint>
+          </>
+        )}
+        {areas.length > 0 ? (
+          <>
+            <SelectField
+              label={t("region.area")}
+              options={[
+                { value: "", label: t("region.area.none") },
+                ...areas.map((one) => ({ value: one.id, label: one.name })),
+                ...(draft.area && !areas.some((one) => one.id === draft.area) ? [{ value: draft.area, label: draft.area }] : []),
+              ]}
+              value={draft.area ?? ""}
+              onChange={(area) => set({ area: area || null })}
+            />
+            <Hint>{t("region.area.hint")}</Hint>
+          </>
+        ) : (
+          <>
+            <TextField
+              label={t("region.area")}
+              value={draft.area ?? ""}
+              onChange={(value) => set({ area: value.trim().toLowerCase() || null })}
+            />
+            <Hint>{problems.area ? t("region.invalid.area") : t("region.area.hint")}</Hint>
+          </>
+        )}
       </div>
       <Hint>{t("region.preview", { sample: sampleOf(draft) })}</Hint>
       <Button onClick={() => void save()} disabled={status === "saving" || Object.keys(problems).length > 0}>

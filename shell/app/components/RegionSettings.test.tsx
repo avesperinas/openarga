@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { type PersonPreferences, countries, fromHeaders, instanceDefaults } from "../lib/regional";
+import { regionName, regionsOf } from "../lib/regions";
 import { RegionForm, nativeName, problemsOf, sampleOf } from "./RegionSettings";
 
 const ALEX: PersonPreferences = {
@@ -18,7 +19,7 @@ const SAM: PersonPreferences = {
   timezone: "Europe/Madrid",
   currency: "EUR",
   country: "ES",
-  region: "ES-NA",
+  region: "ES-NC",
   area: "pamplona",
 };
 const INSTANT = new Date("2026-03-01T23:30:00Z");
@@ -43,6 +44,17 @@ describe("region settings", () => {
     expect(problemsOf(SAM)).toEqual({});
     expect(problemsOf({ ...SAM, region: "DE-BY" })).toEqual({ region: true });
     expect(problemsOf({ ...SAM, area: "Old Town" })).toEqual({ area: true });
+  });
+
+  it("offer a country's regions by name, in the person's language, and keep the code for the rest", () => {
+    const sam = renderToStaticMarkup(<RegionForm initial={SAM} onSave={async () => undefined} />);
+    expect(sam).toContain("Navarra");
+    expect(sam).not.toContain("ES-NC</option>");
+    const alex = renderToStaticMarkup(<RegionForm initial={ALEX} onSave={async () => undefined} />);
+    expect(alex).toContain("US-NY");
+    expect(regionName("ES-NC", "en")).toBe("Navarre");
+    expect(regionsOf("DE", "es").find((one) => one.code === "DE-BY")?.name).toBe("Baviera");
+    expect(regionsOf("US", "en")).toEqual([]);
   });
 
   it("list countries by their name in the person's language", () => {
