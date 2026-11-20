@@ -97,10 +97,10 @@ def main(argv: list[str] | None = None) -> int:
         except httpx.HTTPError as error:
             last = f"{type(error).__name__}: {error}"
         else:
-            applied = ", ".join(done.applied) or "nada nuevo"
-            print(f"registrado  {done.module_id} {done.version}  schema: {applied}")
+            applied = ", ".join(done.applied) or "nothing new"
+            print(f"registered  {done.module_id} {done.version}  schema: {applied}")
             return 0
-        print(f"registro fallido (intento {attempt}): {last}", file=sys.stderr)
+        print(f"registration failed (attempt {attempt}): {last}", file=sys.stderr)
         time.sleep(attempt * 2)
 
     print(f"could not register with {kernel_url}: {last}", file=sys.stderr)

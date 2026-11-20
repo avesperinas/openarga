@@ -42,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         asyncio.run(_run(arguments[0]))
     except Exception as error:  # noqa: BLE001 - se traduce a un exit code, no se traga
-        print(f"aprovisionamiento fallido: {type(error).__name__}: {error}", file=sys.stderr)
+        print(f"provisioning failed: {type(error).__name__}: {error}", file=sys.stderr)
         return 1
     return 0
 
