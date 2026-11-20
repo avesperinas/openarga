@@ -377,9 +377,28 @@ def _bundle(persona: Persona, today: date) -> importer.Bundle:
                 },
             ],
             "valuations": valuations,
+            "history_flow": _contributions(persona, today),
             "funds": FUNDS,
         }
     )
+
+
+def _contributions(persona: Persona, today: date) -> list[dict]:
+    cost = sum(Decimal(p[3]) for p in POSITIONS[persona.key])
+    monthly = (cost / 12).quantize(Decimal("0.01"))
+    flows = []
+    for back in range(MONTHS + 12, MONTHS, -1):
+        year, month = _month(today, back)
+        flows.append(
+            {
+                "year": year,
+                "month": month,
+                "kind": "contribution",
+                "amount": monthly,
+                "account": "brokerage",
+            }
+        )
+    return flows
 
 
 async def seed(connection: AsyncConnection, persona: Persona, today: date) -> None:
