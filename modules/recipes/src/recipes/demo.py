@@ -7,13 +7,90 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from arga_module.demo import Persona, localized, localizer
-from arga_tenancy import current_spaces
-from recipes import recipes
+from arga_tenancy import CURRENT_USER_SQL, current_spaces
+from recipes import foods, recipes
 from recipes.recipes import IngredientIn, RecipeIn, StepIn
 
 say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 EXISTS = text("select id::text from recipes.recipes_recipe where name = :name limit 1")
+FOOD_EXISTS = text("select 1 from recipes.recipes_food where lower(name) = lower(:name) limit 1")
+FOODS_TO_SPACE = text(
+    f"update recipes.recipes_food set space_id = cast(:space as uuid) "
+    f"where space_id is null and user_id = {CURRENT_USER_SQL}"
+)
+
+PANTRY = (
+    ('Arborio rice', 'grain', 350, 6.7, 0.6, 79, 1.0, None, None),
+    ('Aubergine', 'vegetable', 25, 1.0, 0.2, 5.9, 3.0, 250, None),
+    ('Avocado', 'fruit', 160, 2.0, 14.7, 8.5, 6.7, 170, None),
+    ('Banana', 'fruit', 89, 1.1, 0.3, 23, 2.6, 120, None),
+    ('Basmati rice', 'grain', 350, 7.5, 0.6, 78, 1.3, None, None),
+    ('Beef', 'protein', 190, 20, 12, 0, 0, None, None),
+    ('Black olives', 'vegetable', 115, 0.8, 10.7, 6.3, 3.2, None, None),
+    ('Bread slice', 'grain', 265, 9, 3.2, 49, 2.7, 30, None),
+    ('Broccoli', 'vegetable', 34, 2.8, 0.4, 6.6, 2.6, None, None),
+    ('Brown lentils', 'legume', 353, 25, 1.1, 60, 10.7, None, None),
+    ('Butter', 'fat', 717, 0.9, 81, 0.1, 0, None, None),
+    ('Carrot', 'vegetable', 41, 0.9, 0.2, 9.6, 2.8, 80, None),
+    ('Cherry tomato', 'vegetable', 18, 0.9, 0.2, 3.9, 1.2, None, None),
+    ('Chicken breast', 'protein', 120, 22.5, 2.6, 0, 0, None, None),
+    ('Chicken thigh', 'protein', 177, 18, 11, 0, 0, 110, None),
+    ('Chorizo', 'protein', 455, 24, 38, 1.9, 0, None, None),
+    ('Coconut milk', 'liquid', 197, 2.0, 21, 2.8, 0, None, None),
+    ('Cod', 'fish', 82, 18, 0.7, 0, 0, None, None),
+    ('Cooked chickpeas', 'legume', 164, 8.9, 2.6, 27, 7.6, None, None),
+    ('Corn tortilla', 'grain', 218, 5.7, 2.9, 44, 6.3, 30, None),
+    ('Courgette', 'vegetable', 17, 1.2, 0.3, 3.1, 1.0, 200, None),
+    ('Cream', 'dairy', 340, 2.1, 36, 2.8, 0, None, None),
+    ('Crushed tomato', 'vegetable', 32, 1.6, 0.3, 7.3, 1.9, None, None),
+    ('Cucumber', 'vegetable', 15, 0.7, 0.1, 3.6, 0.5, 300, None),
+    ('Curry powder', 'spice', 325, 14, 14, 58, 53, None, None),
+    ('Dark chocolate', 'sweet', 546, 5, 31, 61, 7, None, None),
+    ('Egg', 'protein', 143, 12.6, 9.5, 0.7, 0, 60, None),
+    ('Feta cheese', 'dairy', 264, 14, 21, 4.1, 0, None, None),
+    ('Fish stock', 'liquid', 8, 1.0, 0.2, 0.5, 0, None, None),
+    ('Flour', 'grain', 364, 10, 1.0, 76, 2.7, None, None),
+    ('Garlic clove', 'vegetable', 149, 6.4, 0.5, 33, 2.1, 4, None),
+    ('Gnocchi', 'grain', 133, 3.4, 0.4, 29, 1.6, None, None),
+    ('Grated cheese', 'dairy', 402, 25, 33, 1.3, 0, None, None),
+    ('Ground cumin', 'spice', 375, 18, 22, 44, 10, None, None),
+    ('Hake', 'fish', 71, 16, 0.6, 0, 0, None, None),
+    ('Lemon', 'fruit', 29, 1.1, 0.3, 9.3, 2.8, 90, None),
+    ('Lime', 'fruit', 30, 0.7, 0.2, 10.5, 2.8, 70, None),
+    ('Milk', 'dairy', 47, 3.4, 1.6, 4.8, 0, None, None),
+    ('Mushrooms', 'vegetable', 22, 3.1, 0.3, 3.3, 1.0, None, None),
+    ('Noodles', 'grain', 138, 4.5, 2.1, 25, 1.2, None, None),
+    ('Olive oil', 'fat', 884, 0, 100, 0, 0, None, None),
+    ('Onion', 'vegetable', 40, 1.1, 0.1, 9.3, 1.7, 110, None),
+    ('Parmesan', 'dairy', 431, 38, 29, 4.1, 0, None, None),
+    ('Parsley', 'vegetable', 36, 3.0, 0.8, 6.3, 3.3, 10, None),
+    ('Peanut butter', 'fat', 588, 25, 50, 20, 6.0, None, None),
+    ('Pesto', 'fat', 420, 5, 40, 6, 2, None, None),
+    ('Plain yogurt', 'dairy', 61, 3.5, 3.3, 4.7, 0, None, None),
+    ('Potato', 'vegetable', 77, 2.0, 0.1, 17, 2.2, None, None),
+    ('Pumpkin', 'vegetable', 26, 1.0, 0.1, 6.5, 0.5, None, None),
+    ('Red cabbage', 'vegetable', 31, 1.4, 0.2, 7.4, 2.1, None, None),
+    ('Red onion', 'vegetable', 40, 1.1, 0.1, 9.3, 1.7, 110, None),
+    ('Red pepper', 'vegetable', 31, 1.0, 0.3, 6.0, 2.1, 150, None),
+    ('Red wine', 'liquid', 85, 0.1, 0, 2.6, 0, None, None),
+    ('Rolled oats', 'grain', 379, 13, 6.5, 68, 10, None, None),
+    ('Salmon fillet', 'fish', 208, 20, 13, 0, 0, None, None),
+    ('Sesame oil', 'fat', 884, 0, 100, 0, 0, None, None),
+    ('Sherry vinegar', 'liquid', 19, 0, 0, 0.9, 0, None, None),
+    ('Soy sauce', 'liquid', 53, 8.1, 0.6, 4.9, 0.8, None, None),
+    ('Spaghetti', 'grain', 371, 13, 1.5, 75, 3.2, None, None),
+    ('Spinach', 'vegetable', 23, 2.9, 0.4, 3.6, 2.2, None, None),
+    ('Sugar', 'sweet', 387, 0, 0, 100, 0, None, None),
+    ('Sweet paprika', 'spice', 282, 14, 13, 54, 35, None, None),
+    ('Tahini', 'fat', 595, 17, 54, 21, 9.3, None, None),
+    ('Tofu', 'protein', 76, 8.1, 4.8, 1.9, 0.3, None, None),
+    ('Tomato', 'vegetable', 18, 0.9, 0.2, 3.9, 1.2, 120, None),
+    ('Tomato paste', 'vegetable', 82, 4.3, 0.5, 19, 4.1, None, None),
+    ('Tuna can', 'fish', 116, 26, 1.0, 0, 0, 80, None),
+    ('Vegetable stock', 'liquid', 6, 0.3, 0.1, 1.0, 0, None, None),
+    ('Whey protein', 'supplement', 400, 80, 6, 8, 0, None, None),
+)  # fmt: skip
 
 
 def _g(name: str, grams: float, **fields) -> IngredientIn:
@@ -382,8 +459,29 @@ SHARED = {
 }
 
 
+async def _pantry(connection: AsyncConnection, space) -> None:
+    for name, category, kcal, protein, fat, carbs, fiber, grams, density in PANTRY:
+        if await connection.scalar(FOOD_EXISTS, {"name": name}):
+            continue
+        await foods.create_manual(
+            connection,
+            foods.ManualIn(
+                name=name,
+                category_id=category,
+                macros=foods.MacrosIn(
+                    kcal=kcal, protein=protein, fat=fat, carbs=carbs, fiber=fiber
+                ),
+                grams_per_unit=grams,
+                density_g_ml=density,
+            ),
+        )
+    if space is not None:
+        await connection.execute(FOODS_TO_SPACE, {"space": str(space)})
+
+
 async def seed(connection: AsyncConnection, persona: Persona, today: date) -> None:
     space = next(iter(current_spaces.get()), None)
+    await _pantry(connection, space)
     chosen = [recipe for group in PERSONAL[persona.key] for recipe in (EVERYONE[n] for n in group)]
     seen = set()
     for original in (*MINE.get(persona.key, ()), *chosen):

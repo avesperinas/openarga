@@ -68,6 +68,35 @@ async def test_alex_and_sam_see_their_recipes_and_the_shared_ones(api) -> None:
     assert "Baked salmon with vegetables" not in theirs
 
 
+async def test_the_pantry_is_stocked_for_the_space_and_the_ingredients_resolve(schema) -> None:
+    from recipes.main import service
+
+    await seed_everyone()
+    seen = {}
+    for persona in CAST.people:
+        token = current_user.set(persona.id)
+        spaces = current_spaces.set((CAST.space_id,))
+        try:
+            async with service.as_app() as connection:
+                seen[persona.key] = {
+                    "foods": await connection.scalar(
+                        text("select count(*) from recipes.recipes_food")
+                    ),
+                    "unresolved": await connection.scalar(
+                        text(
+                            "select count(*) from recipes.recipes_recipe_ingredient "
+                            "where food_id is null"
+                        )
+                    ),
+                }
+        finally:
+            current_spaces.reset(spaces)
+            current_user.reset(token)
+
+    assert seen["alex"]["foods"] == seen["sam"]["foods"] >= 60
+    assert seen["alex"]["unresolved"] == seen["sam"]["unresolved"] == 0
+
+
 async def test_each_person_reads_the_recipes_in_their_own_language(schema) -> None:
     from recipes.main import service
 
