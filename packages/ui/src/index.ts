@@ -510,6 +510,7 @@ export {
   type Regional,
   type RegionalPreferences,
   configureRegional,
+  dateLocale,
   dates,
   intlLocale,
   numbers,
