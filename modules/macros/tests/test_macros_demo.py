@@ -84,3 +84,23 @@ async def test_each_person_has_goals_templates_and_training_days(schema) -> None
         assert found["macros_goal"] >= 4
         assert found["macros_template"] == 3
         assert found["macros_day_kind"] >= 28
+
+
+async def test_each_person_eats_in_their_own_language(schema) -> None:
+    from macros.main import as_app
+
+    await seed_everyone()
+    said = {}
+    for persona in CAST.people:
+        token = current_user.set(persona.id)
+        try:
+            async with as_app() as connection:
+                said[persona.key] = set(
+                    await connection.scalars(text("select distinct said from macros.macros_entry"))
+                )
+        finally:
+            current_user.reset(token)
+
+    assert "Pancakes" not in said["alex"] and "Tortitas" not in said["alex"]
+    assert "Tortitas" in said["sam"] and "Pancakes" not in said["sam"]
+    assert "Oats with milk and fruit" in said["alex"]
