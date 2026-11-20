@@ -51,3 +51,23 @@ async def test_alex_has_linked_notes_a_journal_and_something_to_review(api) -> N
     assert {"Journal", "Study/German", "Study/Quantum", "Projects/Home"} <= set(tree["folders"])
     assert review["chosen"] and review["notes"]
     assert len(graph["edges"]) >= 30
+
+
+async def test_each_person_reads_the_notes_in_their_own_language(schema) -> None:
+    from notebook.main import as_app
+
+    await seed_everyone()
+    found = {}
+    for persona in CAST.people:
+        token = current_user.set(persona.id)
+        try:
+            async with as_app() as connection:
+                found[persona.key] = set(
+                    await connection.scalars(text("select title from notebook.notebook_note"))
+                )
+        finally:
+            current_user.reset(token)
+
+    assert {"Home"} <= found["alex"]
+    assert {"Inicio"} <= found["sam"]
+    assert not {"Home"} & found["sam"]
