@@ -301,7 +301,14 @@ export function WidgetWeek({ entries, now: given }: { entries: AgendaEntry[]; no
 
   if (layout === "wide" || layout === "large" || layout === "strip") {
     const dotsOnly = layout === "strip" || layout === "wide";
-    return (
+    const next =
+      layout === "wide"
+        ? all
+            .filter((entry) => entry.to.getTime() > now.getTime() && entry.from.getTime() < addDays(now, 7).getTime())
+            .sort((a, b) => a.from.getTime() - b.from.getTime())
+            .slice(0, 3)
+        : [];
+    const strip = (
       <ol className="week" data-layout={layout}>
         {days.map(({ day, entries: dayEntries }, index) => (
           <li key={index} className="week-day" data-today={index === 0 || undefined}>
@@ -331,6 +338,23 @@ export function WidgetWeek({ entries, now: given }: { entries: AgendaEntry[]; no
           </li>
         ))}
       </ol>
+    );
+    if (!next.length) return strip;
+    return (
+      <div className="week-wide">
+        {strip}
+        <ul className="week-next">
+          {next.map((entry, index) => (
+            <li key={index} className="week-next-item" data-tone={entry.tone}>
+              <span className="week-next-when">
+                {weekday(entry.from)}
+                {entry.allDay ? "" : ` · ${clock(entry.from)}`}
+              </span>
+              <span className="week-next-title">{entry.title}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     );
   }
 
