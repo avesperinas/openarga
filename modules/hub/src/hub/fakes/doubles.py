@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import math
 import re
 from datetime import date, timedelta
 from functools import cache
@@ -103,6 +104,14 @@ def overpass(request: httpx.Request) -> httpx.Response:
     )
 
 
+def _typical_high(day: date, latitude: float) -> float:
+    summer = math.cos((day.timetuple().tm_yday - 200) / 365 * 2 * math.pi)
+    if latitude < 0:
+        summer = -summer
+    north = abs(latitude)
+    return 30 - 0.42 * max(north - 15, 0) + 8 * min(north / 45, 1) * summer
+
+
 def open_meteo(request: httpx.Request) -> httpx.Response:
     params = request.url.params
     first, last = params.get("start_date"), params.get("end_date")
@@ -110,15 +119,16 @@ def open_meteo(request: httpx.Request) -> httpx.Response:
     count = int(params.get("forecast_days") or 7)
     end = date.fromisoformat(last) if last else start + timedelta(days=count - 1)
     days = [start + timedelta(days=n) for n in range((end - start).days + 1)]
-    swing = [(d.toordinal() % 7) - 3 for d in days]
+    latitude = float(params.get("latitude") or 42.8)
+    highs = [_typical_high(d, latitude) + (d.toordinal() % 5) - 2 for d in days]
     return json(
         {
             "timezone": params.get("timezone") or "UTC",
             "daily": {
                 "time": [d.isoformat() for d in days],
                 "weather_code": [(0, 1, 2, 3, 61, 2, 1)[d.toordinal() % 7] for d in days],
-                "temperature_2m_max": [18.0 + s for s in swing],
-                "temperature_2m_min": [8.0 + s for s in swing],
+                "temperature_2m_max": [round(high, 1) for high in highs],
+                "temperature_2m_min": [round(high - 7, 1) for high in highs],
                 "precipitation_probability_max": [(d.toordinal() * 13) % 80 for d in days],
                 "precipitation_sum": [((d.toordinal() * 7) % 5) * 0.8 for d in days],
             },
