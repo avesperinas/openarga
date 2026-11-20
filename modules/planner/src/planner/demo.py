@@ -2,14 +2,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
+from pathlib import Path
 from uuid import UUID, uuid5
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_module.demo import Persona
+from arga_module.demo import Persona, localizer
 from arga_tenancy import current_spaces
+
+say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 NAMESPACE = UUID("0b7c0de5-0000-4000-8000-0000000b1a77")
 WORKDAYS = "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"
@@ -274,7 +277,7 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
             LAYER,
             {
                 "id": layers[key],
-                "name": name,
+                "name": say(persona, name),
                 "tone": tone,
                 "display": display,
                 "position": position,
@@ -310,14 +313,14 @@ def _row(
     return {
         "id": _id(persona, f"event-{one.key}"),
         "calendar_id": layers[one.layer],
-        "title": one.title,
+        "title": say(persona, one.title),
         "all_day": not timed,
         "start_at": start,
         "end_at": start + timedelta(hours=one.hours) if start else None,
         "start_date": None if timed else one.day,
         "end_date": None if timed else one.day + timedelta(days=one.days),
         "tz": persona.timezone,
-        "location": one.location,
+        "location": say(persona, one.location) if one.location else None,
         "notes": None,
         "rrule": one.rrule,
         "space_id": space if one.layer == "home" else None,

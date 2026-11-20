@@ -63,10 +63,44 @@ async def test_alex_and_sam_share_home_and_their_work_rests_on_local_holidays(ap
         found = (await api.get("/occurrences", params=window, headers=headers)).json()
         titles = {one["title"] for one in found}
 
-        assert {"Personal", "Work", "Local holidays", "Home"} <= set(layers)
-        assert layers["Work"]["days_off_from"] == [layers["Local holidays"]["id"]]
-        assert {"Dentist", "Town festival", "Plumber visit", "Weekly shop"} <= titles
+        work, local, workday, dentist, festival_title = (
+            ("Work", "Local holidays", "Workday", "Dentist", "Town festival")
+            if persona.locale == "en"
+            else (
+                "Trabajo",
+                "Festivos locales",
+                "Jornada de trabajo",
+                "Dentista",
+                "Fiestas del pueblo",
+            )
+        )
+
+        assert {"Personal", work, local, "Home"} <= set(layers)
+        assert layers[work]["days_off_from"] == [layers[local]["id"]]
+        assert {dentist, festival_title, "Plumber visit", "Weekly shop"} <= titles
         festival = TODAY + timedelta(days=20)
-        work_days = {one["start"][:10] for one in found if one["title"] == "Workday"}
+        work_days = {one["start"][:10] for one in found if one["title"] == workday}
         assert len(work_days) >= 15
         assert festival.isoformat() not in work_days
+
+
+async def test_each_person_reads_the_events_in_their_own_language(schema) -> None:
+    from planner.main import as_app
+
+    await seed_everyone()
+    found = {}
+    for persona in CAST.people:
+        token = current_user.set(persona.id)
+        try:
+            async with as_app() as connection:
+                found[persona.key] = set(
+                    await connection.scalars(
+                        text("select title from planner.planner_event where space_id is null")
+                    )
+                )
+        finally:
+            current_user.reset(token)
+
+    assert {"Workday"} <= found["alex"]
+    assert {"Jornada de trabajo"} <= found["sam"]
+    assert not {"Workday"} & found["sam"]
