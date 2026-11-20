@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta
+from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid5
 from zoneinfo import ZoneInfo
@@ -8,9 +9,11 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_module.demo import Persona
+from arga_module.demo import Persona, localizer
 from arga_tenancy import current_spaces
 from outings import agenda, by_hand, explore, profile
+
+say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 NAMESPACE = UUID("0b7c0de5-0000-4000-8000-0000000a7e5d")
 
@@ -206,7 +209,9 @@ def _wishes(persona: Persona, area: profile.Profile) -> list[dict[str, Any]]:
     return out
 
 
-def _events(area: profile.Profile, today: date) -> list[tuple[by_hand.EventIn, str | None]]:
+def _events(
+    persona: Persona, area: profile.Profile, today: date
+) -> list[tuple[by_hand.EventIn, str | None]]:
     plan = [
         ("Jazz in the square", "stage", "Pamplona", "Castle Square", 2, 0, "21:00", False),
         ("Farmers' market", "festival", "Pamplona", "Plaza Santo Domingo", 3, 0, "10:00", False),
@@ -251,15 +256,17 @@ def _events(area: profile.Profile, today: date) -> list[tuple[by_hand.EventIn, s
     return [
         (
             by_hand.EventIn(
-                title=title,
+                title=say(persona, title),
                 category=category,
                 town=town,
-                venue=venue,
+                venue=say(persona, venue),
                 starts_on=today + timedelta(days=start),
                 ends_on=today + timedelta(days=start + length),
                 time=clock,
                 highlight=big,
-                summary=f"{title} in {town}.",
+                summary=say(persona, "{title} in {town}.").format(
+                    title=say(persona, title), town=town
+                ),
                 link=f"https://agenda.example/demo/{start}-{n}",
             ),
             venue,
@@ -282,9 +289,9 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
             {
                 "id": _id(persona, one["key"]),
                 "kind": one["kind"],
-                "name": one["name"],
-                "body": one["body"],
-                "place": one["venue"] or one["town"],
+                "name": say(persona, one["name"]),
+                "body": say(persona, one["body"]) if one["body"] else None,
+                "place": say(persona, one["venue"] or one["town"]),
                 "town": one["town"],
                 "country": area.country if one["town"] else None,
                 "done_at": moment,
@@ -311,8 +318,10 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
         ("mute", "conference"),
         ("mute", "bingo"),
     ):
-        await explore.add_interest(connection, explore.InterestIn(kind=kind, term=term))
-    planned = _events(area, today)
+        await explore.add_interest(
+            connection, explore.InterestIn(kind=kind, term=say(persona, term))
+        )
+    planned = _events(persona, area, today)
     added = await by_hand.add(connection, [one for one, _ in planned])
     for index, (_, venue) in enumerate(planned):
         town = planned[index][0].town or ""
