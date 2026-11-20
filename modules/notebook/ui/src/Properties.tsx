@@ -1,6 +1,6 @@
 import { IconButton } from "@openarga/ui";
 import * as React from "react";
-import { t } from "./lang";
+import { propertyLabel, t } from "./lang";
 
 export function toText(value: unknown): string {
   if (Array.isArray(value)) return value.map(toText).join(", ");
@@ -36,7 +36,7 @@ export function Properties({ values, onSet, onRemove, locked = [], lockedBy = ""
       {entries.map(([name, value]) =>
         locked.includes(name) ? (
           <div className="mn-prop-row" data-app="" key={name} title={t("props.locked", { app: lockedBy })}>
-            <span className="mn-prop-name">{name}</span>
+            <span className="mn-prop-name">{propertyLabel(name)}</span>
             <span className="mn-prop-value mn-prop-locked">{toText(value)}</span>
             <span className="mn-prop-owner">{lockedBy}</span>
           </div>
@@ -64,7 +64,7 @@ export function Properties({ values, onSet, onRemove, locked = [], lockedBy = ""
         <input
           className="mn-prop-value"
           value={adding.value}
-          placeholder="Valor"
+          placeholder={t("props.value")}
           aria-label={t("props.new_value")}
           onChange={(event) => setAdding({ ...adding, value: event.target.value })}
         />
@@ -94,7 +94,7 @@ function PropertyRow({
   };
   return (
     <div className="mn-prop-row">
-      <span className="mn-prop-name">{name}</span>
+      <span className="mn-prop-name">{propertyLabel(name)}</span>
       {typeof value === "boolean" ? (
         <input
           type="checkbox"
@@ -115,7 +115,7 @@ function PropertyRow({
           }}
         />
       )}
-      <IconButton icon="close" label={`Quitar ${name}`} variant="plain" size="small" onClick={() => onRemove(name)} />
+      <IconButton icon="close" label={t("props.remove", { name: propertyLabel(name) })} variant="plain" size="small" onClick={() => onRemove(name)} />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { type Linkable, type Links, type Note, type NoteSummary, fileUrl } from 
 import { argaBlock, render, slug } from "@openarga/ui/notes/markdown";
 import { APP } from "./identity";
 import { ago, who } from "./when";
-import { t } from "./lang";
+import { propertyLabel, t } from "./lang";
 
 interface Props {
   note: Note;
@@ -113,14 +113,14 @@ export function NoteView({ note, links, linkables = [], onOpen, onMissing, onTag
             const locked = note.arga?.properties.includes(key) ?? false;
             return (
               <div className="mn-property" key={key} data-app={locked || undefined}>
-                <dt title={locked ? t("props.locked", { app: owners(note) }) : undefined}>{key}</dt>
+                <dt title={locked ? t("props.locked", { app: owners(note) }) : undefined}>{propertyLabel(key)}</dt>
                 <dd>{show(value)}</dd>
               </div>
             );
           })}
           {note.tags.length > 0 && (
             <div className="mn-property">
-              <dt>tags</dt>
+              <dt>{propertyLabel("tags")}</dt>
               <dd className="mn-tags">
                 {note.tags.map((tag) => (
                   <button key={tag} type="button" className="mn-tag" onClick={() => onTag(tag)}>
