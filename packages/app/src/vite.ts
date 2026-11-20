@@ -41,7 +41,7 @@ export function precacheOf(id: string, bundle: OutputBundle, loose: string[]): s
   return [`/${id}/`, ...[...initial].sort().map((name) => `/${id}/${name}`), ...loose.map((name) => `/${id}/${name}`)];
 }
 
-function serviceWorker({ id, dir }: AppOptions): Plugin {
+export function serviceWorker({ id, dir }: Pick<AppOptions, "id" | "dir">): Plugin {
   const template = readFileSync(new URL("../sw.template.js", import.meta.url), "utf8");
   return {
     name: "arga-app-sw",
