@@ -97,6 +97,13 @@ if [ -z "$web_id" ]; then
   changes=$((changes + 1))
 fi
 "$KCADM" update "clients/$web_id" -r "$REALM" -s "secret=$ARGA_WEB_CLIENT_SECRET"
+web_redirect="${PUBLIC_URL%/}/login/callback"
+if [ "$("$KCADM" get "clients/$web_id" -r "$REALM" --fields redirectUris --format csv --noquotes)" != "$web_redirect" ]; then
+  "$KCADM" update "clients/$web_id" -r "$REALM" -s "redirectUris=[\"$web_redirect\"]" \
+    -s "attributes.\"post.logout.redirect.uris\"=${PUBLIC_URL%/}/"
+  echo "sync  updated   $WEB_CLIENT returns to ${PUBLIC_URL%/}"
+  changes=$((changes + 1))
+fi
 web_defaults=$("$KCADM" get "clients/$web_id/default-client-scopes" -r "$REALM" --fields name --format csv --noquotes)
 for name in basic email; do
   if ! grep -qxF "$name" <<<"$web_defaults"; then

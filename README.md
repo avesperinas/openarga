@@ -124,6 +124,9 @@ uv run python scripts/demo.py day     # one more simulated day
 uv run python scripts/demo.py reset   # wipe the apps' data and seed again (demo instances only)
 ```
 
+To put the demo on a small Ubuntu machine behind a Cloudflare Tunnel, with nothing open to the
+internet, see `docs/platform/public-demo.md`.
+
 ## AI
 
 The AI does not use the apps; it uses tools. Every module declares its tools in its manifest with a
