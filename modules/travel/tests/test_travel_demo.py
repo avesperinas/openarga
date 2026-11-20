@@ -44,7 +44,7 @@ async def test_the_seed_runs_twice_without_duplicates(schema) -> None:
     assert first["alex"][0] == 10 and first["sam"][0] == 12
 
 
-async def test_alex_has_a_past_a_present_and_a_plan_ahead(api) -> None:
+async def test_alex_has_a_past_and_trips_ahead(api) -> None:
     await seed_everyone()
     headers = {"x-arga-user": str(CAST.people[0].id), "x-arga-spaces": str(CAST.space_id)}
 
@@ -52,7 +52,7 @@ async def test_alex_has_a_past_a_present_and_a_plan_ahead(api) -> None:
 
     phases = {one["title"]: one["phase"] for one in atlas["trips"]}
     assert phases["Flanders in September"] == "done"
-    assert phases["Copenhagen long weekend"] == "ongoing"
+    assert phases["Copenhagen long weekend"] == "upcoming"
     assert phases["A long weekend in Lisbon"] == "plan"
     countries = {code for one in atlas["trips"] for code in one["countries"]}
     assert {"ES", "IT", "DE", "BE", "DK", "NL", "GB", "PT"} <= countries
