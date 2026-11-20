@@ -55,8 +55,8 @@ export function DemoDoor({ initial, next }: { initial: DemoLanguage; next: strin
             value={language}
             onChange={setLanguage}
             options={[
-              { value: "en", label: t("demo.english") },
-              { value: "es", label: t("demo.spanish") },
+              { value: "en", label: ownName("en") },
+              { value: "es", label: ownName("es") },
             ]}
           />
         </div>
@@ -64,4 +64,9 @@ export function DemoDoor({ initial, next }: { initial: DemoLanguage; next: strin
       </section>
     </main>
   );
+}
+
+function ownName(language: "en" | "es"): string {
+  const name = new Intl.DisplayNames([language], { type: "language" }).of(language) ?? language;
+  return name.charAt(0).toLocaleUpperCase(language) + name.slice(1);
 }
