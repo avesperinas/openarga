@@ -44,7 +44,7 @@ test("each recipe opens its card and says how many people it serves", () => {
 });
 
 test("the tile says how long you are there; a recipe that makes itself says so, not with a zero", () => {
-  expect(face({ total_minutes: 55, active_minutes: 25 }, t)).toEqual({ figure: "25 min", caption: "you there" });
+  expect(face({ total_minutes: 55, active_minutes: 25 }, t)).toEqual({ figure: "25 min", caption: "hands-on" });
   expect(face({ total_minutes: 180, active_minutes: 0 }, t)).toEqual({ figure: "no work", caption: "3 h in all" });
   expect(face({ total_minutes: 30, active_minutes: 30 }, t)).toEqual({ figure: "30 min", caption: "in all" });
   expect(face({ total_minutes: null, active_minutes: null }, t)).toEqual({});
