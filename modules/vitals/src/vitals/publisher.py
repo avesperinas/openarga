@@ -116,7 +116,7 @@ async def loop() -> None:
                 else:
                     failures = 0
                     if result["published"]:
-                        print(f"publisher · {result['published']} publicado(s)", flush=True)
+                        print(f"publisher · {result['published']} published", flush=True)
             except Exception as error:  # noqa: BLE001 - a database failure does not bring the process down
                 failures += 1
                 print(f"publisher · {type(error).__name__}: {error}", file=sys.stderr, flush=True)

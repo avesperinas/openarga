@@ -73,7 +73,7 @@ async def test_recipes_get_a_new_version_and_the_old_food_is_archived(api, hub) 
     ]
     ids = [one["food_id"] for group in recipe["groups"] for one in group["ingredients"]]
     assert new["food_id"] in ids and old["food_id"] not in ids
-    assert "sustituido" in recipe["note"]
+    assert "replaced with" in recipe["note"]
     assert [step["uses"] for step in recipe["kitchen"]["steps"]] == [[1], []]
     assert [tag["name"] for tag in recipe["tags"]] == ["postre"]
     assert "Canela" in [one["name"] for group in recipe["groups"] for one in group["ingredients"]]

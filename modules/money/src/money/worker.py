@@ -65,7 +65,7 @@ async def loop() -> None:  # pragma: no cover -- the usual loop
             try:
                 result = await run_once(client)
                 if result["published"]:
-                    print(f"money worker · {result['published']} publicado(s)", flush=True)
+                    print(f"money worker · {result['published']} published", flush=True)
             except Exception as error:  # noqa: BLE001 - one failure does not bring the process down
                 print(
                     f"money worker · {type(error).__name__}: {error}", file=sys.stderr, flush=True
