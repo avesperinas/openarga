@@ -9,7 +9,15 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 SOURCE=${1:-$ROOT/.env.example}
 EXTERNAL=" OPENARGA_AI_KEY OPENARGA_BRAVE_KEY GOOGLE_CLIENT_SECRET OPENARGA_OIDC_CLIENT_SECRET "
 
+version=$(git -C "$ROOT" describe --tags 2>/dev/null || true)
+version=${version#v}
+[[ "$version" =~ ^[0-9] ]] || version=""
+
 while IFS= read -r line; do
+  if [[ "$line" == "OPENARGA_VERSION=" && -n "$version" ]]; then
+    echo "OPENARGA_VERSION=$version"
+    continue
+  fi
   if [[ "$line" =~ ^([A-Z0-9_]+)=$ ]]; then
     name=${BASH_REMATCH[1]}
     if [[ "$name" =~ (PASSWORD|SECRET|TOKEN|KEY)$ ]] && [[ "$EXTERNAL" != *" $name "* ]]; then

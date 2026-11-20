@@ -129,3 +129,23 @@ def test_the_services_that_call_the_ai_can_reach_a_model_on_the_docker_host():
     services = compose.generate(EXAMPLE)["services"]
     assert services["hub"]["extra_hosts"] == ["host.docker.internal:host-gateway"]
     assert "extra_hosts" not in services["kernel"]
+
+
+def test_every_service_reports_the_release_it_runs():
+    services = compose.generate(EXAMPLE)["services"]
+    for name in ("kernel", "gateway", "shell", "mcp", "money", "money-worker"):
+        assert services[name]["environment"]["APP_VERSION"] == "${OPENARGA_VERSION:-0.1.0}"
+
+
+def test_the_apps_wait_for_the_hub_so_its_capabilities_answer_from_the_first_call():
+    services = compose.generate(EXAMPLE)["services"]
+    assert services["money"]["depends_on"]["hub"] == {"condition": "service_healthy"}
+    assert "hub" not in services["hub"]["depends_on"]
+    assert services["hub"]["healthcheck"] == {"interval": "2s"}
+
+
+def test_without_the_hub_nothing_waits_for_it():
+    config = with_changes(modules={"disabled": ["hub"]})
+    services = compose.generate(config)["services"]
+    assert "hub" not in services
+    assert all("hub" not in service.get("depends_on", {}) for service in services.values())

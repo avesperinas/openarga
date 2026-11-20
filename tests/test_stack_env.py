@@ -65,3 +65,8 @@ def test_every_variable_the_compose_file_requires_ends_up_with_a_value():
     required = set(re.findall(r"\$\{([A-Z0-9_]+)\}", text))
     assert required
     assert [name for name in sorted(required) if not values.get(name)] == []
+
+
+def test_the_version_comes_from_the_git_tag_or_stays_empty_for_the_default():
+    value = filled()["OPENARGA_VERSION"]
+    assert value == "" or value[0].isdigit()
