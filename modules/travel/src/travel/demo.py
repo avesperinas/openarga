@@ -257,7 +257,7 @@ ALEX_TRIPS = (
     ),
     Trip(
         "Copenhagen long weekend",
-        -1,
+        6,
         4,
         [("copenhagen", 0, 4, "Canal-side apartment", 135)],
         2,
@@ -272,9 +272,7 @@ ALEX_TRIPS = (
         spending=[
             ("transport", "Flights", "342", 0, 0),
             ("lodging", "Apartment", "540", 0, 1),
-            ("other", "Cash", "60", 1, 0),
         ],
-        diary=[(0, "Landed late, walked the harbour with a hot dog in hand.")],
         packing=[
             ("Passport", True),
             ("Warm layers", True),

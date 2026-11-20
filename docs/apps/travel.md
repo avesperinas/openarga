@@ -92,4 +92,4 @@ in the [manifest](../../modules/travel/manifest.yaml).
 ## Demo
 
 [`src/travel/demo.py`](../../modules/travel/src/travel/demo.py) seeds Alex and Sam from
-[`demo/personas.yaml`](../../demo/personas.yaml): Alex and Sam travel together and apart: trips over eighteen months across Spain, Italy, Germany, Belgium, the Netherlands, Britain, Denmark, France, Morocco and Portugal, one trip in progress (Copenhagen, with the day's plan, a packing list and a journal), plans ahead with budgets, ideas for far trips, shared trips with expenses and a settlement between the two of them, and a diary and notes where it fits.
+[`demo/personas.yaml`](../../demo/personas.yaml): Alex and Sam travel together and apart: trips over eighteen months across Spain, Italy, Germany, Belgium, the Netherlands, Britain, Denmark, France, Morocco and Portugal, the next trip a week away (Copenhagen, with a day-by-day plan, a packing list and things to book), so the week at home in the other apps stays coherent, plans ahead with budgets, ideas for far trips, shared trips with expenses and a settlement between the two of them, and a diary and notes where it fits.
