@@ -82,7 +82,7 @@ async def _recipes(
     connection: AsyncConnection, old: foods.Food, new: foods.Food, source: str
 ) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
     rows = (await connection.execute(RECIPES_USING, {"old": old.id})).all()
-    note = f"«{old.label}» sustituido por «{new.label}»"
+    note = f"{old.label} replaced with {new.label}"
     done: list[dict[str, Any]] = []
     skipped: list[dict[str, str]] = []
     for row in rows:

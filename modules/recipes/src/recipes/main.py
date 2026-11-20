@@ -304,7 +304,7 @@ async def capability(
         contracts.RECIPES_NUTRIENTS: pantry.recipe_nutrients,
     }[capability]
     answer = await _edit(handler, asked)
-    print(f"despensa   {capability} para {x_arga_module}", flush=True)
+    print(f"pantry     {capability} for {x_arga_module}", flush=True)
     return answer
 
 

@@ -506,7 +506,7 @@ async def capability(
     except (ValidationError, ValueError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
     answer = await _edit(intake.replace_food, client(), asked)
-    print(f"sustituido  {asked.old_id} → {asked.new_id} para {x_arga_module}", flush=True)
+    print(f"replaced    {asked.old_id} → {asked.new_id} for {x_arga_module}", flush=True)
     return answer
 
 

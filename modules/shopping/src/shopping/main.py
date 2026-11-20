@@ -79,7 +79,7 @@ async def capability(
         )
 
     answer = await _edit(add)
-    print(f"lista      {len(asked.items)} cosa(s) pedidas por {x_arga_module}", flush=True)
+    print(f"list       {len(asked.items)} item(s) asked by {x_arga_module}", flush=True)
     return answer
 
 
