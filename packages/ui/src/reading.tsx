@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { OTHERS, SERIES_COLORS } from "./analysis";
 import { Icon } from "./icons";
+import { share } from "./format";
 import { locale } from "./regional";
 import { say } from "./words";
 
@@ -149,7 +150,7 @@ export function foldShares(items: ShareItem[], order: string[] = [], max = SERIE
 export function percentOf(value: number, total: number): string {
   if (total <= 0) return "—";
   const percent = (value / total) * 100;
-  return percent > 0 && percent < 1 ? "<1 %" : `${Math.round(percent)} %`;
+  return percent > 0 && percent < 1 ? `<${share(1)}` : share(Math.round(percent));
 }
 
 function arc(start: number, end: number, outer: number, inner: number): string {

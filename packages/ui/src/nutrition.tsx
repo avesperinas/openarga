@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { Sparkline } from "./charts";
+import { share } from "./format";
 import { Icon } from "./icons";
 import { say } from "./words";
 
@@ -192,7 +193,7 @@ export function CoverageList({ items, label }: { items: CoverageItem[]; label: s
               <span className="coverage-name">{item.label}</span>
               <span className="coverage-value">
                 {way && <Icon name={way === "up" ? "chevron-up" : "chevron-down"} />}
-                {pct === null ? "—" : `${pct} %`} · {item.value}
+                {pct === null ? "—" : share(pct)} · {item.value}
               </span>
             </span>
             <span className="coverage-track" aria-hidden="true">

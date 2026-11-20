@@ -324,6 +324,7 @@ export {
   percent,
   plain,
   ratio,
+  share,
   shortDay,
   signed,
   todayIso,

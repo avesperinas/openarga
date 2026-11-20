@@ -28,6 +28,9 @@ export function signed(value: number, maximumFractionDigits = 1): string {
 export const percent = (value: number, maximumFractionDigits = 0): string =>
   Number.isFinite(value) ? `${signed(value, maximumFractionDigits)}%` : "—";
 
+export const share = (value: number, maximumFractionDigits = 0): string =>
+  Number.isFinite(value) ? numbers({ style: "percent", maximumFractionDigits }).format(value / 100) : "—";
+
 export const change = (current: number, previous: number): number | null =>
   previous === 0 ? null : ((current - previous) / Math.abs(previous)) * 100;
 

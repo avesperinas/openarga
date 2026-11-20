@@ -69,7 +69,7 @@ describe("the pie", () => {
     const folded = foldShares([...items, { key: "loan", name: "Loan", value: -50 }]);
     expect(folded).toHaveLength(6);
     expect(folded.at(-1)).toMatchObject({ name: "Others", value: 9 });
-    expect(percentOf(0.5, 100)).toBe("<1 %");
+    expect(percentOf(0.5, 100)).toBe("<1%");
   });
 
   it("says each part with its weight", () => {
@@ -83,8 +83,8 @@ describe("the pie", () => {
       />,
     );
     expect(html).toContain("Liquidez");
-    expect(html).toContain("25 %");
-    expect(html).toContain("75 %");
+    expect(html).toContain("25%");
+    expect(html).toContain("75%");
   });
 });
 

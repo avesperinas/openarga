@@ -6,6 +6,7 @@ import type { AgendaEntry } from "./agenda";
 import { WidgetCalendar } from "./calendar";
 import { SplitBar } from "./nutrition";
 import { Treemap } from "./money";
+import { share } from "./format";
 import { currency, locale, numbers } from "./regional";
 import { say } from "./words";
 
@@ -100,7 +101,7 @@ export function panelValue(value: number, unit: PanelUnit = "number"): string {
       .format(value)
       .replace(/\u00a0/g, " ");
   if (unit === "kg") return `${oneDecimal().format(value)} kg`;
-  if (unit === "percent") return `${whole().format(value)} %`;
+  if (unit === "percent") return share(value);
   if (unit === "hours") {
     const hours = Math.floor(value);
     const minutes = Math.round((value - hours) * 60);
