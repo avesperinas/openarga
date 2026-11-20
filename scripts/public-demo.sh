@@ -149,6 +149,11 @@ preflight() {
     ((DRY)) || die "needs sudo without a password prompt, or run it as root"
   fi
   ARCH=$(dpkg --print-architecture 2>/dev/null || echo arm64)
+  local memory
+  memory=$(awk '/^(MemTotal|SwapTotal):/ {kb += $2} END {print int(kb / 1048576)}' /proc/meminfo 2>/dev/null || echo 0)
+  if ((memory < 7)); then
+    printf 'warning: %s GiB of memory and swap; building and running the stack wants 8 (add swap first)\n' "$memory" >&2
+  fi
   CODENAME=${UBUNTU_CODENAME:-${VERSION_CODENAME:-noble}}
 }
 
@@ -280,17 +285,23 @@ seed_demo() {
   demo_command seed
 }
 
+madrid_job() {
+  local minute hour
+  read -r minute hour <<<"$1"
+  # shellcheck disable=SC2016
+  printf '%s * * * * [ "$(TZ=Europe/Madrid date +\\%%H)" = %02d ] && "%s" demo %s >>"%s" 2>&1\n' \
+    "$minute" "$((10#$hour))" "$2" "$3" "$LOG"
+}
+
 install_cron() {
   say "cron: a new simulated day, and the nightly reset (Europe/Madrid time)"
-  local script
-  script=$(cd "$(dirname "$0")" && pwd)/$(basename "$0")
-  local block
+  # Ubuntu's cron ignores CRON_TZ: each job runs hourly and only goes on in its Madrid hour.
+  local script=$DIR/scripts/public-demo.sh block
   block=$(
     cat <<EOF
 $MARK_BEGIN
-CRON_TZ=Europe/Madrid
-$DAY_AT * * * "$script" demo day >>"$LOG" 2>&1
-$RESET_AT * * * "$script" demo reset >>"$LOG" 2>&1
+$(madrid_job "$DAY_AT" "$script" day)
+$(madrid_job "$RESET_AT" "$script" reset)
 $MARK_END
 EOF
   )

@@ -64,12 +64,13 @@ what changed, applies the new schema and keeps the secrets of the existing `.env
 ## The schedule
 
 ```
-CRON_TZ=Europe/Madrid
-0 8 * * *  public-demo.sh demo day     a new simulated day
-30 4 * * * public-demo.sh demo reset   wipe the apps' data and seed again
+0 8 (Madrid)   public-demo.sh demo day     a new simulated day
+30 4 (Madrid)  public-demo.sh demo reset   wipe the apps' data and seed again
 ```
 
-Times are Madrid time. `DEMO_DAY_AT` and `DEMO_RESET_AT` change them (`"minute hour"`). Output goes to
+Times are Madrid time whatever the machine's time zone: Ubuntu's cron ignores `CRON_TZ`, so each line
+runs every hour at its minute and goes on only when the hour in Madrid matches. The crontab calls the
+script inside `~/openarga`, so an update of the checkout is what the next run uses. `DEMO_DAY_AT` and `DEMO_RESET_AT` change them (`"minute hour"`). Output goes to
 `~/openarga-demo.log` (`DEMO_LOG`). `public-demo.sh demo seed|day|reset` runs the same command by hand,
 with the owner's connection to Postgres on `127.0.0.1:5433`. `reset` only runs on a demo instance.
 
