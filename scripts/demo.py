@@ -13,7 +13,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
-from arga_module import demo
+from arga_module import demo, preferences
 from arga_tenancy import as_user, install
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -101,6 +101,17 @@ async def cast_in_kernel(engine: AsyncEngine, cast: demo.Cast) -> None:
                 )
 
 
+def _preferences_of(person: demo.Persona) -> preferences.Preferences:
+    return preferences.Preferences(
+        locale=person.locale,
+        timezone=person.timezone,
+        currency=person.currency,
+        country=person.country,
+        region=person.region,
+        area=person.area,
+    )
+
+
 async def run_seeds(
     engine: AsyncEngine,
     cast: demo.Cast,
@@ -111,10 +122,14 @@ async def run_seeds(
     for module_id, seed in seeds.items():
         try:
             for person in cast.people:
-                with as_user(person.id, (cast.space_id,)):
-                    async with engine.begin() as connection:
-                        await connection.execute(text(f'set local role "mod_{module_id}"'))
-                        await seed(connection, person, today)
+                token = preferences.use(_preferences_of(person))
+                try:
+                    with as_user(person.id, (cast.space_id,)):
+                        async with engine.begin() as connection:
+                            await connection.execute(text(f'set local role "mod_{module_id}"'))
+                            await seed(connection, person, today)
+                finally:
+                    preferences.reset(token)
         except Exception as error:  # noqa: BLE001
             report.failed[module_id] = f"{type(error).__name__}: {error}"
         else:
