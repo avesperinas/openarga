@@ -213,6 +213,9 @@ body {
     backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   }
 }
+@media (pointer: coarse) {
+  .pages-dots::before { opacity: 1; }
+}
 .pages-dots[data-scrubbing] { transform: scale(1.15); }
 .pages-dots[data-scrubbing]::before { opacity: 1; }
 
