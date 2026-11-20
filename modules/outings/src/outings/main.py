@@ -257,6 +257,22 @@ class AreaOut(BaseModel):
     relief: str | None
 
 
+class AreaChoice(BaseModel):
+    id: str
+    name: str
+    country: str
+    region_code: str | None
+
+
+@app.get("/areas")
+async def read_areas() -> list[AreaChoice]:
+    found = (profile.load(one) for one in profile.ids())
+    return [
+        AreaChoice(id=one.id, name=one.name, country=one.country, region_code=one.region_code)
+        for one in found
+    ]
+
+
 @app.get("/area")
 async def read_area() -> AreaOut:
     found = profile.current()
