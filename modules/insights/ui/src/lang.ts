@@ -1,4 +1,4 @@
-import { type Catalogs, type Locale, type Translate, createT } from "@openarga/ui";
+import { type Catalogs, type Locale, type Translate, createT, dateLocale } from "@openarga/ui";
 
 import en from "./i18n/en.json";
 import es from "./i18n/es.json";
@@ -25,7 +25,10 @@ export const dayIn = (moment: Date, zone: string = timeZone): string =>
 
 export const t: Translate = (key, vars) => translate(key, vars);
 
-export const intl = (): string => (locale === "es" ? "es-ES" : "en-GB");
+export const intl = (): string => {
+  const tag = dateLocale(locale);
+  return tag.includes("-") ? tag : locale === "es" ? "es-ES" : "en-GB";
+};
 
 export const dateFormat = (options: Intl.DateTimeFormatOptions) => ({
   format: (date: Date) => new Intl.DateTimeFormat(intl(), options).format(date),
