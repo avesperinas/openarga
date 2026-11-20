@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, date, datetime, time, timedelta
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_module.demo import Persona
+from arga_module.demo import Persona, localized, localizer
 from insights import insights, tastes
 from insights.insights import Figure, InsightIn, Proposal
+
+say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 ABOUT = {
     "alex": "I work in an office, run twice a week and I am learning German.",
@@ -266,7 +269,9 @@ async def _publish(connection: AsyncConnection, insight: InsightIn, when: dateti
     )
 
 
-async def _pill(connection: AsyncConnection, day: date, pill: dict[str, Any], read: bool) -> None:
+async def _pill(
+    connection: AsyncConnection, persona: Persona, day: date, pill: dict[str, Any], read: bool
+) -> None:
     exists = await connection.scalar(
         text("select 1 from insights.insights_pill where day = :day and origin = 'daily'"),
         {"day": day},
@@ -279,18 +284,19 @@ async def _pill(connection: AsyncConnection, day: date, pill: dict[str, Any], re
             insert into insights.insights_pill
                 (day, origin, family_key, topic, language, minutes, headline, lead, sections,
                  to_tell, sources, read_at)
-            values (:day, 'daily', :family_key, :topic, 'en', 5, :headline, :lead,
+            values (:day, 'daily', :family_key, :topic, :language, 5, :headline, :lead,
                     cast(:sections as jsonb), :to_tell, cast(:sources as jsonb), :read_at)
         """),
         {
             "day": day,
+            "language": persona.locale,
             "family_key": pill["family_key"],
             "topic": pill["topic"],
             "headline": pill["headline"],
             "lead": pill["lead"],
             "sections": json.dumps([{"title": t, "text": body} for t, body in pill["sections"]]),
             "to_tell": pill["to_tell"],
-            "sources": json.dumps([{"title": title, "url": url, "language": "en"}]),
+            "sources": json.dumps([{"title": title, "url": url, "language": persona.locale}]),
             "read_at": datetime.combine(day, time(9, 30), UTC) if read else None,
         },
     )
@@ -298,13 +304,23 @@ async def _pill(connection: AsyncConnection, day: date, pill: dict[str, Any], re
 
 async def seed(connection: AsyncConnection, persona: Persona, today: date) -> None:
     await tastes.ensure_defaults(connection)
-    await insights.save_profile(connection, insights.ProfileIn(about=ABOUT[persona.key]))
+    await insights.save_profile(
+        connection, insights.ProfileIn(about=say(persona, ABOUT[persona.key]))
+    )
     await tastes.mark_started(connection)
     for facet, label, stance in TRAITS[persona.key]:
-        await tastes.remember(connection, facet, label, stance, "said", confirmed=True)
+        await tastes.remember(
+            connection, facet, say(persona, label), stance, "said", confirmed=True
+        )
     sunday = today - timedelta(days=today.isoweekday() % 7)
-    await _publish(connection, _weekly(persona, sunday), datetime.combine(sunday, time(19), UTC))
-    await _publish(connection, _alert(persona), datetime.combine(today, time(8), UTC))
-    earlier, latest = _pills(persona)
-    await _pill(connection, today - timedelta(days=1), earlier, read=True)
-    await _pill(connection, today, latest, read=False)
+    await _publish(
+        connection,
+        localized(say, persona, _weekly(persona, sunday)),
+        datetime.combine(sunday, time(19), UTC),
+    )
+    await _publish(
+        connection, localized(say, persona, _alert(persona)), datetime.combine(today, time(8), UTC)
+    )
+    earlier, latest = localized(say, persona, _pills(persona))
+    await _pill(connection, persona, today - timedelta(days=1), earlier, read=True)
+    await _pill(connection, persona, today, latest, read=False)
