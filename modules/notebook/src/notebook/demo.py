@@ -1,14 +1,24 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_module.demo import Persona
+from arga_module.demo import Persona, localizer
 from notebook import notes
+
+say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 REVIEW = "next_review"
 JOURNAL = "Journal"
+
+
+def _say_note(persona: Persona, content: str) -> str:
+    if not content.startswith("---\n"):
+        return say(persona, content)
+    end = content.index("---\n", 4) + 4
+    return content[:end] + say(persona, content[end:])
 
 
 def _review(day: date, tags: str) -> str:
@@ -277,7 +287,10 @@ def _days(persona: Persona, today: date) -> list[tuple[date, str]]:
             "Weeded the garden: [[Garden plan]].",
             "Lunch at the parents'.",
         ]
-    return [(today - timedelta(days=n), f"- {lines[n % len(lines)]}\n") for n in range(0, 45)]
+    return [
+        (today - timedelta(days=n), f"- {say(persona, lines[n % len(lines)])}\n")
+        for n in range(0, 45)
+    ]
 
 
 async def _create(connection: AsyncConnection, folder: str, title: str, content: str) -> None:
@@ -289,9 +302,11 @@ async def _create(connection: AsyncConnection, folder: str, title: str, content:
 
 async def seed(connection: AsyncConnection, persona: Persona, today: date) -> None:
     await notes.save_settings(
-        connection, notes.Settings(daily_folder=JOURNAL, review_property=REVIEW)
+        connection, notes.Settings(daily_folder=say(persona, JOURNAL), review_property=REVIEW)
     )
     for folder, title, content in _notes(persona, today):
-        await _create(connection, folder, title, content)
+        await _create(
+            connection, say(persona, folder), say(persona, title), _say_note(persona, content)
+        )
     for day, content in _days(persona, today):
-        await _create(connection, JOURNAL, day.isoformat(), content)
+        await _create(connection, say(persona, JOURNAL), day.isoformat(), content)
