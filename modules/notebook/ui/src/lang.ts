@@ -14,6 +14,12 @@ export function setLocale(next: Locale): void {
   translate = createT(CATALOGS, next);
 }
 
+export function propertyLabel(name: string): string {
+  const key = `prop.${name}`;
+  const label = translate(key);
+  return label === key ? name : label;
+}
+
 export const currentLocale = (): Locale => locale;
 
 export function setTimeZone(next: string): void {
