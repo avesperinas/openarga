@@ -8,6 +8,22 @@ stays in your own Postgres, and your AI can read and act on it only through tool
 > for months; this repository is its open edition, being generalised for anyone to run. See
 > `ROADMAP.md` and `TASKS.md`.
 
+## A look
+
+The demo's Alex, in English: the home screen and the launcher.
+
+![Today: the home screen with the day, the week, the tasks, the shopping list and the insights](docs/screenshots/home.png)
+
+![The launcher with the fifteen apps](docs/screenshots/launcher.png)
+
+Some of the apps:
+
+| | |
+|---|---|
+| ![Health: sleep, recovery, movement and the week](docs/screenshots/health.png) | ![Finance: net worth, cushion and spending a month](docs/screenshots/money.png) |
+| ![Travel: the figures of the trips made](docs/screenshots/travel.png) | ![Calendar: a week with the shared home calendar](docs/screenshots/planner.png) |
+| ![Training: the next session, the week and the latest workouts](docs/screenshots/training.png) | |
+
 ## What is inside
 
 | App | What it does |
