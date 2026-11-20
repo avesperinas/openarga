@@ -4,9 +4,13 @@ A self-hosted personal operating system. One place for your training, health, fo
 calendar, trips, books, notes and plans, where every app is a module on a small kernel, your data
 stays in your own Postgres, and your AI can read and act on it only through tools you allow.
 
-> **Status: v0.1 in progress.** The code comes from a private system that has been in daily use
-> for months; this repository is its open edition, being generalised for anyone to run. See
-> `ROADMAP.md` and `TASKS.md`.
+**Try it now:** [the public demo](https://openarga-demo.avesperinas.com), as Alex or Sam, two
+made-up people who share a home (nothing to install, every number is synthetic, it resets every
+night). **Run your own:** [install it](#run-it) with Docker in a few commands.
+
+> **Status: v0.1, the first public release.** The code comes from a private system that has been in
+> daily use for months; this repository is its open edition, generalised for anyone to run. What
+> comes next is in `ROADMAP.md` and `TASKS.md`.
 
 ## A look
 
@@ -21,7 +25,7 @@ Some of the apps:
 | | |
 |---|---|
 | ![Health: sleep, recovery, movement and the week](docs/screenshots/health.png) | ![Finance: net worth, cushion and spending a month](docs/screenshots/money.png) |
-| ![Travel: the figures of the trips made](docs/screenshots/travel.png) | ![Calendar: a week with the shared home calendar](docs/screenshots/planner.png) |
+| ![Travel: the countries visited, on a globe](docs/screenshots/travel.png) | ![Calendar: a week with the shared home calendar](docs/screenshots/planner.png) |
 | ![Training: the next session, the week and the latest workouts](docs/screenshots/training.png) | |
 
 ## What is inside
