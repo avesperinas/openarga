@@ -3,13 +3,16 @@ from __future__ import annotations
 import hashlib
 from datetime import date, timedelta
 from decimal import Decimal
+from pathlib import Path
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from arga_module.demo import Persona
+from arga_module.demo import Persona, localizer
 from money import book as books
 from money import importer
+
+say = localizer(Path(__file__).parent / "seed" / "i18n")
 
 MONTHS = 18
 HOLDERS = {"alex": "Alex Demo", "sam": "Sam Demo"}
@@ -100,6 +103,44 @@ def _line(year: int, month: int, account: str, kind: str, day: int, amount: Deci
         "on": date(year, month, day),
         "amount": amount,
         "description": what,
+    }
+
+
+BANK_WORDS = (
+    "Savings transfer", "Supermarket", "Bakery", "Greengrocer", "Trattoria", "Cafe", "Burger",
+    "Tapas", "Streaming", "Music", "Cloud storage", "Metro", "Fuel", "Taxi", "Cinema", "Concert",
+    "Bookshop", "Pharmacy", "Dentist", "Optician", "Clothes", "Sports shop", "Electronics",
+    "Gym", "Climbing", "Mobile plan", "Fibre", "Hotel booking", "flights", "tickets", "Paris",
+    "Salary",
+)  # fmt: skip
+
+
+def _bank(persona: Persona, what: str) -> str:
+    whole = say(persona, what)
+    if whole != what:
+        return whole
+    for word in sorted(BANK_WORDS, key=len, reverse=True):
+        what = what.replace(word, say(persona, word))
+    return what
+
+
+def _path(persona: Persona, path: str) -> str:
+    head, _, name = path.rpartition("/")
+    return f"{head}/{say(persona, name)}"
+
+
+def _rule(persona: Persona, rule: dict) -> dict:
+    found = {**rule, "text": "|".join(say(persona, word) for word in rule["text"].split("|"))}
+    if "category" in rule:
+        found["category"] = _path(persona, rule["category"])
+    return found
+
+
+def _entry_text(persona: Persona, entry: dict) -> dict:
+    return {
+        **entry,
+        "description": say(persona, entry["description"]),
+        "category": _path(persona, entry["category"]),
     }
 
 
@@ -338,14 +379,14 @@ def _bundle(persona: Persona, today: date) -> importer.Bundle:
             "accounts": [
                 {
                     "key": "everyday",
-                    "name": "Everyday",
+                    "name": say(persona, "Everyday"),
                     "institution": "Demo Bank",
                     "type": "current",
                     "movements": "statement",
                 },
                 {
                     "key": "savings",
-                    "name": "Savings",
+                    "name": say(persona, "Savings"),
                     "institution": "Demo Bank",
                     "type": "savings",
                     "movements": "statement",
@@ -353,15 +394,15 @@ def _bundle(persona: Persona, today: date) -> importer.Bundle:
                 },
                 {
                     "key": "brokerage",
-                    "name": "Brokerage",
+                    "name": say(persona, "Brokerage"),
                     "institution": "Demo Broker",
                     "type": "etf",
                     "movements": "manual",
                 },
             ],
-            "categories": CATEGORIES,
-            "rules": RULES,
-            "entries": _entries(persona, today),
+            "categories": [{**one, "name": say(persona, one["name"])} for one in CATEGORIES],
+            "rules": [_rule(persona, rule) for rule in RULES],
+            "entries": [_entry_text(persona, entry) for entry in _entries(persona, today)],
             "incomes": [
                 {
                     "person": "me",
@@ -405,7 +446,7 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
     await importer.apply(connection, _bundle(persona, today))
     current, savings = _lines(persona, today)
     for line in current + savings:
-        await connection.execute(LINE, line)
+        await connection.execute(LINE, {**line, "description": _bank(persona, line["description"])})
     for account, rows in (("everyday", current), ("savings", savings)):
         for stamp, amount in _balances(persona, account, rows, today):
             await connection.execute(BALANCE, {"account": account, "on": stamp, "amount": amount})
@@ -416,7 +457,7 @@ async def seed(connection: AsyncConnection, persona: Persona, today: date) -> No
             {
                 "account": "brokerage",
                 "symbol": symbol,
-                "name": name,
+                "name": say(persona, name),
                 "units": Decimal(units),
                 "cost": Decimal(cost),
                 "price": Decimal(price),
