@@ -65,4 +65,24 @@ async def test_sam_sees_the_trips_alex_shared_and_their_own(api) -> None:
     atlas = (await api.get("/atlas", headers=headers)).json()
 
     titles = {one["title"] for one in atlas["trips"]}
-    assert {"Flanders in September", "Tenerife in July", "Prague weekend"} <= titles
+    assert {"Flanders in September", "Tenerife en julio", "Fin de semana en Praga"} <= titles
+
+
+async def test_each_person_reads_the_trips_in_their_own_language(schema) -> None:
+    from travel.main import as_app
+
+    await seed_everyone()
+    found = {}
+    for persona in CAST.people:
+        token = current_user.set(persona.id)
+        try:
+            async with as_app() as connection:
+                found[persona.key] = set(
+                    await connection.scalars(text("select title from travel.travel_trip"))
+                )
+        finally:
+            current_user.reset(token)
+
+    assert {"Flanders in September"} <= found["alex"]
+    assert {"Fin de semana en Praga"} <= found["sam"]
+    assert not {"Prague weekend"} & found["sam"]
