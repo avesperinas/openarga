@@ -147,12 +147,16 @@ def _night(persona: Persona, day: date, back: int) -> dict[str, Any] | None:
 def _heart(persona: Persona, day: date, back: int, upto: int) -> dict[str, Any]:
     buckets = []
     resting = 58 + _spread(persona, f"hr-base-{back}", -3, 3)
+    efforts = _efforts(persona, day, back)
     for minute in range(0, upto, 5):
         hour = minute / 60
         asleep = hour < 6.5
         beat = resting - (6 if asleep else 0) + 14 * math.sin(hour / 24 * math.pi * 2 - 1.2) ** 2
         walking = 8 <= hour < 9 or 13.5 <= hour < 14.2 or 18 <= hour < 19.3
         beat += 28 * _noise(persona, f"w-{back}-{minute}") if walking else 0
+        if any(start <= minute < end for start, end in efforts):
+            walking = False
+            beat = 112 + 38 * _noise(persona, f"e-{back}-{minute}")
         beat += _spread(persona, f"b-{back}-{minute}", -2.5, 2.5)
         steps = round(_noise(persona, f"s-{back}-{minute}") * 260) if walking else None
         buckets.append(
@@ -165,6 +169,22 @@ def _heart(persona: Persona, day: date, back: int, upto: int) -> dict[str, Any]:
             }
         )
     return {"date": day.isoformat(), "step": 5, "buckets": buckets}
+
+
+# The training app's gym sessions: weekdays and start minute (modules/training demo).
+GYM = {"alex": ((0, 2, 4), 19 * 60, 55), "sam": ((1, 3, 5), 8 * 60, 55)}
+
+
+def _efforts(persona: Persona, day: date, back: int) -> list[tuple[int, int]]:
+    found = []
+    weekdays, start, length = GYM[persona.key]
+    if day.weekday() in weekdays:
+        found.append((start, start + length))
+    for one in _exercises(persona, day, back):
+        begin = datetime.fromisoformat(one["start"])
+        first = begin.hour * 60 + begin.minute
+        found.append((first, first + round(one["minutes"])))
+    return found
 
 
 EXERCISES = {
