@@ -73,7 +73,7 @@ export function KeyFigures({ items, label }: { items: KeyFigure[]; label: string
           </dt>
           <dd>
             {one.onOpen ? (
-              <button type="button" className="key-figure-open" onClick={one.onOpen} aria-label={`${one.label}: ${one.value}. Ver el detalle`}>
+              <button type="button" className="key-figure-open" onClick={one.onOpen} aria-label={say("key_figure.open", { label: one.label, value: one.value })}>
                 <span className="key-figure-text">
                   <span className="key-figure-value">{one.value}</span>
                   {one.foot && <span className="key-figure-foot">{one.foot}</span>}

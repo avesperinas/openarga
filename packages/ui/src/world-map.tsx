@@ -715,7 +715,7 @@ export function TimeBar({ min, max, value, onChange, playing, onPlay, onPause }:
       >
         <input
           type="range"
-          aria-label="Desde"
+          aria-label={say("range.from")}
           min={min}
           max={max}
           step={1}
@@ -725,7 +725,7 @@ export function TimeBar({ min, max, value, onChange, playing, onPlay, onPause }:
         />
         <input
           type="range"
-          aria-label="Hasta"
+          aria-label={say("range.to")}
           min={min}
           max={max}
           step={1}

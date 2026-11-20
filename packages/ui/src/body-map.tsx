@@ -134,7 +134,7 @@ export function BodyMaps({
             names={names}
             onSelect={onSelect}
           />
-          <figcaption>{side === "front" ? "Frente" : "Espalda"}</figcaption>
+          <figcaption>{side === "front" ? say("body.front_caption") : say("body.back_caption")}</figcaption>
         </figure>
       ))}
     </div>

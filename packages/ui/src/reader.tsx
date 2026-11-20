@@ -337,7 +337,7 @@ export interface ResourceRowProps {
   action?: React.ReactNode;
 }
 
-export function ResourceRow({ cover, icon, hue = 8, title, href, detail, why, saved, onSave, saveLabel = "Guardar", action }: ResourceRowProps) {
+export function ResourceRow({ cover, icon, hue = 8, title, href, detail, why, saved, onSave, saveLabel = say("resource.save"), action }: ResourceRowProps) {
   return (
     <div className="resource-row">
       {cover ? (
@@ -440,7 +440,7 @@ export function Carousel({ label, children }: { label: string; children: React.R
 
   return (
     <div className="carousel-frame">
-      <button type="button" className="carousel-arrow" data-side="start" aria-label="Anterior" hidden={edges.start} onClick={() => step(-1)}>
+      <button type="button" className="carousel-arrow" data-side="start" aria-label={say("carousel.previous")} hidden={edges.start} onClick={() => step(-1)}>
         <Icon name="chevron-left" />
       </button>
       <div
@@ -467,7 +467,7 @@ export function Carousel({ label, children }: { label: string; children: React.R
           ) : null,
         )}
       </div>
-      <button type="button" className="carousel-arrow" data-side="end" aria-label="Siguiente" hidden={edges.end} onClick={() => step(1)}>
+      <button type="button" className="carousel-arrow" data-side="end" aria-label={say("carousel.next")} hidden={edges.end} onClick={() => step(1)}>
         <Icon name="chevron-right" />
       </button>
     </div>

@@ -25,8 +25,8 @@ it("the arrows and the keyboard move the track one card, and at the edge its arr
       </Carousel>,
     ),
   );
-  const start = host.querySelector<HTMLButtonElement>('[aria-label="Anterior"]')!;
-  const end = host.querySelector<HTMLButtonElement>('[aria-label="Siguiente"]')!;
+  const start = host.querySelector<HTMLButtonElement>('[aria-label="Previous"]')!;
+  const end = host.querySelector<HTMLButtonElement>('[aria-label="Next"]')!;
   expect(start.hidden).toBe(true);
   expect(end.hidden).toBe(false);
 

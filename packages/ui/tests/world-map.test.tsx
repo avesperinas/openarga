@@ -14,8 +14,8 @@ describe("the time bar", () => {
   it("they are two named handles with the chosen span drawn between them", () => {
     const html = markup([2018, 2023]);
 
-    expect(html).toContain('aria-label="Desde"');
-    expect(html).toContain('aria-label="Hasta"');
+    expect(html).toContain('aria-label="From"');
+    expect(html).toContain('aria-label="To"');
     expect(html).toContain("--from:20%");
     expect(html).toContain("--to:70%");
   });
@@ -29,7 +29,7 @@ describe("the time bar", () => {
     const html = renderToStaticMarkup(<TimeBar min={2016} max={2026} value={[2016, 2026]} onChange={() => {}} />);
 
     expect(html).not.toContain("time-bar-play");
-    expect(html).toContain('aria-label="Desde"');
+    expect(html).toContain('aria-label="From"');
   });
 
   it("with a single year there is no range to move", () => {
