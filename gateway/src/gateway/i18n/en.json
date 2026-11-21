@@ -1,4 +1,7 @@
 {
+  "demo.busy.again": "Try again",
+  "demo.busy.body": "Every visitor gets a demo of their own, and they are all taken. A new one will be ready in a minute; this page tries again by itself.",
+  "demo.busy.title": "The demo is full right now",
   "login.again": "Sign in again",
   "login.expired": "The sign-in expired or started in another window.",
   "login.failed": "Could not finish signing in",
