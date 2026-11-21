@@ -52,7 +52,7 @@ describe("the field", () => {
     const onChange = vi.fn();
     mount(<DateField label="From" value="" onChange={onChange} />);
     const input = document.querySelector("input")!;
-    expect(input.placeholder).toBe("dd/mm/aaaa");
+    expect(input.placeholder).toBe("dd/mm/yyyy");
     typeInto(input, "05/10/2026");
     expect(onChange).toHaveBeenLastCalledWith("2026-10-05");
   });
