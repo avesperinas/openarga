@@ -4,6 +4,7 @@ import os
 import re
 import time
 from contextlib import asynccontextmanager
+from datetime import datetime
 
 import httpx
 from fastapi import FastAPI, Query, Request, Response
@@ -128,7 +129,14 @@ async def privacy(request: Request) -> HTMLResponse:
 
 
 async def person(request: Request) -> Resolved:
-    return await request.app.state.sessions.resolve(request.cookies.get(COOKIE))
+    resolved = await request.app.state.sessions.resolve(request.cookies.get(COOKIE))
+    if (
+        demo_copies()
+        and copy_tag(resolved.subject) is not None
+        and await request.app.state.people.person_for(resolved.subject) is None
+    ):
+        raise NoSession("this demo copy is gone")
+    return resolved
 
 
 def navigating(request: Request) -> bool:
@@ -389,6 +397,8 @@ def page(
 
 DEMO_SECONDS = 12 * 3600
 DEMO_SUBJECT = "demo-{person}"
+DEMO_COPY = "demo-{tag}-{person}"
+DEMO_COPY_SUBJECT = re.compile(r"^demo-([a-z0-9]{6,16})-[a-z]+$")
 DEMO_DOOR = "/demo"
 DEMO_ASSETS = ("/_next/static/", "/wallpapers/")
 
@@ -416,14 +426,70 @@ async def demo_login(
     if who not in people:
         door = httpx.URL("/demo", params={"next": session_module.safe_next(next)})
         return RedirectResponse(str(door), status_code=302)
-    subject = DEMO_SUBJECT.format(person=who)
-    if locale in DEMO_LOCALES:
-        await speak(request, subject, locale)
     until = int(time.time()) + DEMO_SECONDS
+    if demo_copies():
+        chosen = await copy_for(request, who, locale if locale in DEMO_LOCALES else "en")
+        if chosen is None:
+            again = f"/login/demo?{request.url.query}"
+            return page(
+                request,
+                "demo.busy.title",
+                "demo.busy.body",
+                again,
+                "demo.busy.again",
+                status_code=503,
+                script="setTimeout(function(){location.reload()},15000)",
+            )
+        subject, ends = chosen
+        until = min(until, ends)
+    else:
+        subject = DEMO_SUBJECT.format(person=who)
+        if locale in DEMO_LOCALES:
+            await speak(request, subject, locale)
     session = Session(subject, until, "", until)
     response = RedirectResponse(session_module.safe_next(next), status_code=302)
     response.headers["cache-control"] = "no-store"
     return with_cookie(response, request.app.state.sessions.issue(session))
+
+
+def demo_copies() -> bool:
+    return bool(demo_people()) and os.environ.get("OPENARGA_DEMO_COPIES", "").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
+
+def copy_tag(subject: str) -> str | None:
+    found = DEMO_COPY_SUBJECT.match(subject)
+    return found.group(1) if found else None
+
+
+async def copy_for(request: Request, who: str, locale: str) -> tuple[str, int] | None:
+    # Switching between Alex and Sam stays in the visitor's own copy, where both live; a new
+    # visitor gets a fresh copy, already written in the language they chose.
+    current = request.app.state.sessions.read(request.cookies.get(COOKIE))
+    tag = copy_tag(current.subject) if current is not None else None
+    if tag is not None and current is not None and current.expires_at > time.time():
+        subject = DEMO_COPY.format(tag=tag, person=who)
+        if await request.app.state.people.person_for(subject) is not None:
+            await speak(request, subject, locale)
+            return subject, current.expires_at
+    try:
+        answer = await client().post(
+            f"{kernel_url()}/internal/demo/claim", json={"locale": locale}, timeout=10.0
+        )
+        if answer.status_code != 200:
+            return None
+        body = answer.json()
+        ends = int(datetime.fromisoformat(body["until"]).timestamp())
+        subject = DEMO_COPY.format(tag=body["tag"], person=who)
+    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+        return None
+    if body.get("locale") not in (None, locale):
+        # No copy was ready in that language: the visitor still gets in, in the language they chose.
+        await speak(request, subject, locale)
+    return subject, ends
 
 
 async def speak(request: Request, subject: str, locale: str) -> None:
