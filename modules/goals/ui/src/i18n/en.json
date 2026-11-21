@@ -80,6 +80,7 @@
   "goal.log_failed": "Could not log it",
   "goal.log_where": "Log where you are",
   "goal.logged": "What was logged",
+  "goal.logged_by_hand": "Logged by hand",
   "goal.mark_achieved": "Mark as achieved",
   "goal.met": "met",
   "goal.milestone_done": "Milestone achieved",

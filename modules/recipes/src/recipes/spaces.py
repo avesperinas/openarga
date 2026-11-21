@@ -22,5 +22,5 @@ async def of_caller() -> list[dict]:
     except httpx.HTTPError as error:
         raise Unavailable("the kernel is not answering") from error
     if response.status_code != 200:
-        raise Unavailable(f"el kernel contesta {response.status_code}")
+        raise Unavailable(f"the kernel answers {response.status_code}")
     return response.json()

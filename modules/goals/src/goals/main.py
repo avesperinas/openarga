@@ -240,7 +240,7 @@ async def ask_kernel(request: Request, method: str, path: str, body: dict | None
     except httpx.HTTPError as error:
         raise HTTPException(status_code=503, detail="the kernel does not answer") from error
     if response.status_code >= 500:
-        raise HTTPException(status_code=503, detail=f"el kernel contesta {response.status_code}")
+        raise HTTPException(status_code=503, detail=f"the kernel answers {response.status_code}")
     if response.status_code >= 400:
         detail = response.json().get("detail", "not allowed") if response.content else "not allowed"
         raise HTTPException(status_code=response.status_code, detail=detail)

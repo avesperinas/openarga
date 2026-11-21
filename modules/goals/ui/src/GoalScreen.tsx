@@ -243,7 +243,7 @@ export function GoalScreen({ id, onBack }: { id: string; onBack: () => void }) {
       )}
 
       {manual.length > 0 && (
-        <Section title="Apuntado a mano">
+        <Section title={t("goal.logged_by_hand")}>
           <List>
             {manual.map((point) => (
               <ListRow
