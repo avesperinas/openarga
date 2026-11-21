@@ -197,3 +197,162 @@ def test_today_is_the_cast_s_day_not_the_server_s() -> None:
 
     late_in_utc = datetime(2026, 11, 20, 23, 30, tzinfo=UTC)
     assert script().cast_today(CAST, late_in_utc) == date(2026, 11, 21)
+
+
+async def owned_rows(engine, cast) -> dict[str, int]:
+    demo = script()
+    values = {"people": [person.id for person in cast.people], "space": cast.space_id}
+    found = {}
+    async with engine.connect() as connection:
+        owned = {row.name: row.shared for row in await connection.execute(demo.OWNED)}
+        for name, shared in sorted(owned.items()):
+            mine = "user_id = any(:people)" + (" or space_id = :space" if shared else "")
+            found[name] = await connection.scalar(
+                text(f"select count(*) from {name} where {mine}"), values
+            )
+    return found
+
+
+async def test_copies_sit_beside_the_cast_whole_and_one_drops_alone(empty) -> None:
+    demo = script()
+    await demo.run("seed", TODAY, URL)
+    engine = install(create_async_engine(URL))
+    first = second = None
+    try:
+        first, made = await demo.make_copy(engine, "copyaaa1", "es", TODAY)
+        second, other = await demo.make_copy(engine, "copybbb2", "en", TODAY)
+        base = await owned_rows(engine, CAST)
+
+        assert made.failed == {} and other.failed == {}
+        assert await owned_rows(engine, first) == base
+        assert await owned_rows(engine, second) == base
+
+        await demo.drop_copy(engine, first)
+
+        assert sum((await owned_rows(engine, first)).values()) == 0
+        assert await owned_rows(engine, second) == base
+        assert await owned_rows(engine, CAST) == base
+        async with engine.connect() as connection:
+            left = await connection.scalar(
+                text("select count(*) from kernel.users where id = any(:ids)"),
+                {"ids": [person.id for person in first.people]},
+            )
+        assert left == 0
+    finally:
+        for cast in (first, second):
+            if cast is not None:
+                await demo.drop_copy(engine, cast)
+        await engine.dispose()
+
+
+async def test_a_copy_speaks_the_language_it_was_made_in(empty) -> None:
+    from arga_module.i18n import t
+
+    folder = ROOT / "modules" / "insights" / "src" / "insights" / "i18n"
+    demo = script()
+    engine = install(create_async_engine(URL))
+    try:
+        cast, report = await demo.make_copy(engine, "copyccc3", "es", TODAY)
+        alex = cast.people[0]
+        async with engine.connect() as connection:
+            name = await connection.scalar(
+                text(
+                    "select name from insights.insights_family "
+                    "where key = 'history' and user_id = :u"
+                ),
+                {"u": alex.id},
+            )
+        await demo.drop_copy(engine, cast)
+    finally:
+        await engine.dispose()
+
+    assert report.failed == {}
+    assert alex.key == "alex" and alex.locale == "es"
+    assert name == t(folder, "family.history.name", "es")
+
+
+async def test_the_cast_itself_is_never_dropped_as_a_copy() -> None:
+    with pytest.raises(ValueError):
+        await script().drop_copy(None, CAST)
+
+
+async def registry(engine) -> dict[str, tuple[str, str]]:
+    async with engine.connect() as connection:
+        rows = await connection.execute(text("select tag, locale, status from kernel.demo_copies"))
+        return {row.tag: (row.locale, row.status) for row in rows}
+
+
+async def test_the_keeper_fills_the_pool_and_drops_what_nobody_uses(empty, monkeypatch) -> None:
+    demo = script()
+    monkeypatch.setenv("OPENARGA_DEMO_POOL", "1")
+    monkeypatch.setenv("OPENARGA_DEMO_COPIES_MAX", "4")
+    engine = install(create_async_engine(URL))
+    try:
+        first = await demo.keep(engine, TODAY)
+        made = await registry(engine)
+
+        assert first.failed == {} and len(first.made) == 2
+        assert sorted(made.values()) == [("en", "ready"), ("es", "ready")]
+
+        old = next(tag for tag, (locale, _) in made.items() if locale == "en")
+        async with engine.begin() as connection:
+            await connection.execute(
+                text(
+                    "update kernel.demo_copies set status = 'claimed', "
+                    "claimed_at = now() - interval '3 hours' where tag = :tag"
+                ),
+                {"tag": old},
+            )
+        stray, _ = await demo.make_copy(engine, "strayzz9", "en", TODAY)
+
+        second = await demo.keep(engine, TODAY)
+        after = await registry(engine)
+
+        assert sorted(second.dropped) == sorted([old, "strayzz9"])
+        assert len(second.made) == 1 and second.failed == {}
+        assert old not in after and "strayzz9" not in after
+        assert sorted(after.values()) == [("en", "ready"), ("es", "ready")]
+        assert sum((await owned_rows(engine, cast_of.copy_of(CAST, old))).values()) == 0
+        assert sum((await owned_rows(engine, stray)).values()) == 0
+    finally:
+        for tag in await registry(engine):
+            await demo.drop_copy(engine, cast_of.copy_of(CAST, tag))
+        async with engine.begin() as connection:
+            await connection.execute(text("delete from kernel.demo_copies"))
+        await engine.dispose()
+
+
+async def test_the_keeper_stops_at_the_cap(empty, monkeypatch) -> None:
+    demo = script()
+    monkeypatch.setenv("OPENARGA_DEMO_POOL", "3")
+    monkeypatch.setenv("OPENARGA_DEMO_COPIES_MAX", "1")
+    engine = install(create_async_engine(URL))
+    try:
+        kept = await demo.keep(engine, TODAY)
+
+        assert len(kept.made) == 1
+        assert len(await registry(engine)) == 1
+    finally:
+        for tag in await registry(engine):
+            await demo.drop_copy(engine, cast_of.copy_of(CAST, tag))
+        async with engine.begin() as connection:
+            await connection.execute(text("delete from kernel.demo_copies"))
+        await engine.dispose()
+
+
+def test_reset_refuses_while_visitors_have_copies(monkeypatch) -> None:
+    demo = script()
+    monkeypatch.setenv("OPENARGA_DEMO", "true")
+    monkeypatch.setenv("OPENARGA_DEMO_COPIES", "true")
+    monkeypatch.setattr("sys.argv", ["demo.py", "reset"])
+
+    assert demo.main() == 1
+
+
+def test_keep_refuses_without_copies(monkeypatch) -> None:
+    demo = script()
+    monkeypatch.setenv("OPENARGA_DEMO", "true")
+    monkeypatch.delenv("OPENARGA_DEMO_COPIES", raising=False)
+    monkeypatch.setattr("sys.argv", ["demo.py", "keep"])
+
+    assert demo.main() == 1
