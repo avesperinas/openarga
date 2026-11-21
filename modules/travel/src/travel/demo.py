@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from datetime import date, time, timedelta
 from decimal import Decimal
 from pathlib import Path
-from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncConnection
 
@@ -14,8 +13,6 @@ from travel import ideas, itinerary, journal, lists, money, notes, travel
 from travel.travel.places import PlaceIn, save_place
 
 say = localizer(Path(__file__).parent / "seed" / "i18n")
-
-SAM = UUID("5a305a30-0000-4000-8000-000000005a30")
 
 CITIES = {
     "pamplona": ("Pamplona", 42.8125, -1.6458, "ES", "city"),
@@ -565,12 +562,13 @@ async def _build(
         await travel.share_trip(connection, trip_id, space)
         for person in await money.ensure_travellers(connection, trip_id):
             if person.name == "Sam":
+                sam = persona.id_of("sam")
                 await money.update_traveller(
                     connection,
                     trip_id,
                     person.id,
-                    money.TravellerChange(member_user_id=SAM),
-                    {space: {str(SAM)}},
+                    money.TravellerChange(member_user_id=sam),
+                    {space: {str(sam)}},
                 )
     people = await money.ensure_travellers(connection, trip_id)
     for category, concept, amount, offset, payer in one.spending:

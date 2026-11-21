@@ -8,6 +8,7 @@ import secrets
 import subprocess
 import sys
 import time
+from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qs, urlparse
 
 import httpx
@@ -46,6 +47,9 @@ class Realm:
         self.revoked: list[str] = []
         self.seen: list[dict] = []
         self.id_token_overrides: dict = {}
+        self.copies: list[str] = []
+        self.claims: list[str] = []
+        self.gone: set[str] = set()
 
     def authorize(self, location: str, **identity) -> str:
         query = parse_qs(urlparse(location).query)
@@ -144,8 +148,22 @@ async def modules() -> list[dict]:
 
 
 @upstream.post("/internal/users")
-async def people() -> dict:
-    return {"id": USER}
+async def people(request: Request) -> Response:
+    subject = (await request.json())["subject"]
+    if any(subject.startswith(f"demo-{tag}-") for tag in realm.gone):
+        return JSONResponse(status_code=404, content={"detail": "this demo copy is gone"})
+    return JSONResponse({"id": USER})
+
+
+@upstream.post("/internal/demo/claim")
+async def claim(request: Request) -> Response:
+    realm.claims.append((await request.json())["locale"])
+    if not realm.copies:
+        return JSONResponse(status_code=409, content={"detail": "no demo copy is free right now"})
+    until = datetime.now(UTC) + timedelta(minutes=90)
+    tag, _, locale = realm.copies.pop(0).partition(":")
+    answer = {"tag": tag, "until": until.isoformat()}
+    return JSONResponse(answer | {"locale": locale} if locale else answer)
 
 
 @upstream.api_route("/{path:path}", methods=["GET", "POST", "PUT", "PATCH"])
@@ -637,3 +655,102 @@ async def test_the_demo_speaks_the_language_chosen_at_the_door(
 
     await browser.get("/login/demo", params={"as": "sam", "locale": "es-ES"})
     assert len([seen for seen in realm.seen if seen["path"] == "/me/preferences"]) == 1
+
+
+def copies_on(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENARGA_DEMO", "true")
+    monkeypatch.setenv("OPENARGA_DEMO_COPIES", "true")
+
+
+async def test_with_copies_each_visitor_gets_a_copy_of_their_own(
+    browser, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    copies_on(monkeypatch)
+    realm.copies = ["copyone1", "copytwo2"]
+
+    first = await browser.get(
+        "/login/demo", params={"as": "alex", "locale": "es", "next": "/money"}
+    )
+    await browser.get("/api/kernel/ui/layouts")
+    mine = realm.seen[-1]["headers"]["x-arga-subject"]
+    browser.cookies.clear()
+    other = await browser.get("/login/demo", params={"as": "alex", "locale": "en"})
+    await browser.get("/api/kernel/ui/layouts")
+
+    assert first.status_code == 302 and first.headers["location"] == "/money"
+    assert mine == "demo-copyone1-alex"
+    assert realm.seen[-1]["headers"]["x-arga-subject"] == "demo-copytwo2-alex"
+    assert realm.claims == ["es", "en"]
+    assert other.status_code == 302
+
+
+async def test_switching_person_stays_in_the_visitor_s_copy(
+    browser, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    copies_on(monkeypatch)
+    realm.copies = ["copyone1", "copytwo2"]
+
+    await browser.get("/login/demo", params={"as": "alex", "locale": "en"})
+    await browser.get("/login/demo", params={"as": "sam", "locale": "es"})
+    await browser.get("/api/kernel/ui/layouts")
+
+    assert realm.seen[-1]["headers"]["x-arga-subject"] == "demo-copyone1-sam"
+    assert realm.claims == ["en"]
+    told = [seen for seen in realm.seen if seen["path"] == "/me/preferences"]
+    assert [seen["headers"]["x-arga-subject"] for seen in told] == ["demo-copyone1-sam"]
+
+
+async def test_a_copy_session_ends_with_the_copy(browser, monkeypatch: pytest.MonkeyPatch) -> None:
+    copies_on(monkeypatch)
+    realm.copies = ["copyone1"]
+
+    done = await browser.get("/login/demo", params={"as": "alex", "locale": "en"})
+    sealed = main.app.state.sessions.read(cookie_value(done, COOKIE))
+
+    assert sealed is not None
+    assert sealed.expires_at <= time.time() + 90 * 60 + 5
+
+
+async def test_when_every_copy_is_taken_the_door_says_so_and_tries_again(
+    browser, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    copies_on(monkeypatch)
+
+    full = await browser.get(
+        "/login/demo", params={"as": "sam", "locale": "es"}, headers={"accept-language": "es"}
+    )
+
+    assert full.status_code == 503
+    assert cookie_value(full, COOKIE) is None
+    assert '<html lang="es">' in full.text and "location.reload" in full.text
+    assert "/login/demo?as=sam" in full.text
+
+
+async def test_a_visitor_whose_copy_is_gone_goes_back_to_the_door(
+    browser, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    copies_on(monkeypatch)
+    realm.copies = ["copyone1"]
+    await browser.get("/login/demo", params={"as": "alex", "locale": "en"})
+    realm.gone.add("copyone1")
+    main.app.state.people.forget("demo-copyone1-alex")
+
+    page_view = await browser.get("/money", headers=NAVIGATION)
+    api_call = await browser.get("/api/kernel/ui/layouts")
+
+    assert page_view.status_code == 302
+    assert page_view.headers["location"].startswith("/login")
+    assert api_call.status_code == 401
+
+
+async def test_a_copy_in_the_other_language_still_speaks_the_visitor_s(
+    browser, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    copies_on(monkeypatch)
+    realm.copies = ["copyone1:en"]
+
+    done = await browser.get("/login/demo", params={"as": "sam", "locale": "es"})
+
+    assert done.status_code == 302
+    told = [seen for seen in realm.seen if seen["path"] == "/me/preferences"]
+    assert [seen["headers"]["x-arga-subject"] for seen in told] == ["demo-copyone1-sam"]

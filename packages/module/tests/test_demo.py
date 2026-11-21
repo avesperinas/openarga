@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from arga_module import demo
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -46,3 +48,38 @@ def test_localizing_reaches_into_dataclasses_and_nested_tuples(tmp_path) -> None
     sam = demo.load(ROOT / "demo" / "personas.yaml").people[1]
 
     assert demo.localized(say, sam, Trip("Beach", [("Beach", 2)])) == Trip("Playa", [("Playa", 2)])
+
+
+def test_a_copy_of_the_cast_has_its_own_ids_names_and_language() -> None:
+    cast = demo.load(ROOT / "demo" / "personas.yaml")
+    copy = demo.copy_of(cast, "k3x9q2m7", "es")
+    again = demo.copy_of(cast, "k3x9q2m7", "es")
+    other = demo.copy_of(cast, "z8w1v4b6")
+
+    assert copy == again
+    assert copy.copy == "k3x9q2m7" and cast.copy is None
+    assert {person.id for person in copy.people}.isdisjoint(person.id for person in cast.people)
+    assert {person.id for person in copy.people}.isdisjoint(person.id for person in other.people)
+    assert copy.space_id not in (cast.space_id, other.space_id)
+    assert [person.key for person in copy.people] == ["alex", "sam"]
+    assert [person.username for person in copy.people] == ["k3x9q2m7-alex", "k3x9q2m7-sam"]
+    assert {person.locale for person in copy.people} == {"es"}
+    assert [person.locale for person in other.people] == ["en", "es"]
+
+
+def test_seed_keys_stay_as_they_were_for_the_cast_and_differ_per_copy() -> None:
+    cast = demo.load(ROOT / "demo" / "personas.yaml")
+    alex = cast.people[0]
+    copied = demo.copy_of(cast, "k3x9q2m7").people[0]
+
+    assert alex.seed_key == "alex"
+    assert copied.seed_key == "k3x9q2m7:alex"
+    assert alex.id_of("sam") == cast.people[1].id
+    assert copied.id_of("sam") == demo.copy_of(cast, "k3x9q2m7").people[1].id
+
+
+def test_a_copy_tag_is_short_lowercase_letters_and_digits() -> None:
+    cast = demo.load(ROOT / "demo" / "personas.yaml")
+    for bad in ("", "abc", "UPPER123", "has-dash1", "a" * 17, "x'; drop"):
+        with pytest.raises(ValueError):
+            demo.copy_of(cast, bad)

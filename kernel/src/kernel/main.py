@@ -8,6 +8,7 @@ from sqlalchemy import text
 from arga_tenancy import UserFromHeader
 from kernel.capabilities import router as capabilities_router
 from kernel.db import engine
+from kernel.demo_copies import router as demo_copies_router
 from kernel.desktop import router as desktop_router
 from kernel.entities import router as entities_router
 from kernel.events import router as events_router
@@ -49,6 +50,7 @@ app.include_router(desktop_router)
 app.include_router(tools_router)
 app.include_router(wallpapers_router)
 app.include_router(users_router)
+app.include_router(demo_copies_router)
 app.include_router(preferences_router)
 app.include_router(spaces_router)
 app.include_router(capabilities_router)

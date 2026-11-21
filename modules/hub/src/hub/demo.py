@@ -95,9 +95,9 @@ def _runs(state: str, today: date, zone_now: datetime) -> list[tuple[int, str, i
 async def seed(connection: AsyncConnection, persona: Persona, today: date) -> None:
     now = datetime.combine(today, time(8, 0), UTC)
     for provider, label, config in connections(persona, today):
-        identity = uuid5(NAMESPACE, f"{persona.key}:{provider}")
+        identity = uuid5(NAMESPACE, f"{persona.seed_key}:{provider}")
         if provider == "ical":
-            identity = uuid5(NAMESPACE, f"{persona.key}:{provider}:{label}")
+            identity = uuid5(NAMESPACE, f"{persona.seed_key}:{provider}:{label}")
         state = STATES.get(label, HEALTHY)
         await connection.execute(
             CONNECTION,

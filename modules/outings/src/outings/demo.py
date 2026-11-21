@@ -26,7 +26,7 @@ WISH = text("""
 
 
 def _id(persona: Persona, key: str) -> UUID:
-    return uuid5(NAMESPACE, f"{persona.key}:{key}")
+    return uuid5(NAMESPACE, f"{persona.seed_key}:{key}")
 
 
 COORDS = {
