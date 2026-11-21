@@ -168,7 +168,7 @@ def _search_links(wanted: PickIn) -> list[dict[str, str]]:
                 "url": f"https://www.youtube.com/results?search_query={quote_plus(query)}",
             }
         ]
-    return [{"label": "Buscar", "url": f"https://www.google.com/search?q={quote_plus(query)}"}]
+    return [{"label": say("pick.search"), "url": f"https://www.google.com/search?q={quote_plus(query)}"}]
 
 
 async def _book(wanted: PickIn) -> Checked | None:

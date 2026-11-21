@@ -523,9 +523,9 @@ def _timing(all_day: bool, start: datetime | date, end: datetime | date, tz: str
             raise Invalid("all day, the end is the day after the last: it goes after the start")
         return {"start_at": None, "end_at": None, "start_date": start, "end_date": end}
     if not isinstance(start, datetime) or not isinstance(end, datetime):
-        raise Invalid("con hora, inicio y fin son horas")
+        raise Invalid("with a time, start and end are date-times")
     if start.tzinfo is None or end.tzinfo is None:
-        raise Invalid("con hora, inicio y fin van con su zona")
+        raise Invalid("with a time, start and end carry their time zone")
     if end < start:
         raise Invalid("the end goes after the start")
     return {"start_at": start, "end_at": end, "start_date": None, "end_date": None}

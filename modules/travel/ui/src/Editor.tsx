@@ -631,7 +631,7 @@ function ExpensesStep({
               value={eurosExact(expense.amount_eur)}
               detail={expense.note ?? undefined}
               accessory="trash"
-              onClick={() => onRemove({ part: "expenses", id: expense.id, subject: expense.concept, what: "gasto" })}
+              onClick={() => onRemove({ part: "expenses", id: expense.id, subject: expense.concept, what: t("editor.what.expense") })}
             />
           ))}
         </List>

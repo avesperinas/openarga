@@ -470,7 +470,7 @@ export function App() {
   );
 
   return (
-    <AppShell fill detailLabel="Evento" detail={!mobile && opened ? <div className="cr-detail">{panel}</div> : null}>
+    <AppShell fill detailLabel={t("event.event")} detail={!mobile && opened ? <div className="cr-detail">{panel}</div> : null}>
       <div className="cr-app" data-sidebar={sidebarOpen || undefined} data-mobile={mobile || undefined}>
         {sidebarOpen && (
           <aside className="cr-sidebar">
@@ -507,8 +507,8 @@ export function App() {
                   {t("day.today")}
                 </Button>
                 <div className="cr-arrows">
-                  <IconButton icon="chevron-left" label="Anterior" size="small" variant="plain" onClick={() => go(step(shown, -1))} />
-                  <IconButton icon="chevron-right" label="Siguiente" size="small" variant="plain" onClick={() => go(step(shown, 1))} />
+                  <IconButton icon="chevron-left" label={t("action.previous")} size="small" variant="plain" onClick={() => go(step(shown, -1))} />
+                  <IconButton icon="chevron-right" label={t("action.next")} size="small" variant="plain" onClick={() => go(step(shown, 1))} />
                 </div>
               </>
             )}
