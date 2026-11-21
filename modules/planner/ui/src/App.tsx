@@ -492,7 +492,7 @@ export function App() {
         <main className="cr-main">
           <header className="cr-toolbar">
             {mobile ? (
-              <IconButton icon="layers" label="Capas" variant="plain" onClick={() => setMobileLayers(true)} />
+              <IconButton icon="layers" label={t("app.layers")} variant="plain" onClick={() => setMobileLayers(true)} />
             ) : (
               <IconButton
                 icon="sidebar"

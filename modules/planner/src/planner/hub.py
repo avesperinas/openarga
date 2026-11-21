@@ -33,7 +33,7 @@ async def ask(capability: str, body: dict[str, Any]) -> dict[str, Any]:
                 headers={**user_headers(), "x-arga-module": MODULE},
             )
     except httpx.HTTPError as error:
-        raise Refused(f"Hub no contesta ({type(error).__name__})", 503) from error
+        raise Refused(f"Hub does not answer ({type(error).__name__})", 503) from error
     if response.status_code == 200:
         return response.json()
     try:
@@ -42,7 +42,7 @@ async def ask(capability: str, body: dict[str, Any]) -> dict[str, Any]:
         detail = None
     if response.status_code in (409, 422) and isinstance(detail, str):
         raise Refused(detail, response.status_code)
-    raise Refused(f"Hub contesta {response.status_code}", 502)
+    raise Refused(f"Hub answers {response.status_code}", 502)
 
 
 INLET = f"{MODULE}.calendar"

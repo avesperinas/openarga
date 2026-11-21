@@ -291,7 +291,7 @@ class NotFound(LookupError):
 async def hide(connection: AsyncConnection, feed_id: str) -> None:
     row = (await connection.execute(FIND, {"id": feed_id})).one_or_none()
     if row is None:
-        raise NotFound(f"lo suscrito {feed_id}")
+        raise NotFound(f"the subscribed feed {feed_id}")
     raw = row.payload["start"]
     start = (
         datetime.combine(date.fromisoformat(raw), datetime.min.time())
