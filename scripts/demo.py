@@ -6,9 +6,10 @@ import os
 import sys
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
@@ -179,6 +180,11 @@ async def run(command: str, today: date, url: str, root: Path = ROOT) -> Report:
     return report
 
 
+def cast_today(cast: demo.Cast, now: datetime | None = None) -> date:
+    zone = ZoneInfo(cast.people[0].timezone)
+    return (now or datetime.now(zone)).astimezone(zone).date()
+
+
 def demo_instance() -> bool:
     return os.environ.get("OPENARGA_DEMO", "").strip().lower() in ("1", "true", "yes")
 
@@ -205,7 +211,7 @@ def main() -> int:
     if arguments.command == "reset" and not demo_instance():
         print("reset wipes the apps' data: it only runs with OPENARGA_DEMO=true", file=sys.stderr)
         return 1
-    today = arguments.today or date.today()
+    today = arguments.today or cast_today(cast)
     report = asyncio.run(run(arguments.command, today, database_url()))
     print(f"seeded on {today}: {', '.join(report.seeded) or 'nothing'}")
     for module_id, problem in report.failed.items():
