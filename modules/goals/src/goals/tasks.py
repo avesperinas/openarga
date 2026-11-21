@@ -140,7 +140,7 @@ async def find_category(connection: AsyncConnection, name: str) -> Category:
     for one in all_of_them:
         if fold(one.name) == wanted:
             return one
-    known = ", ".join(one.name for one in all_of_them) or "ninguna"
+    known = ", ".join(one.name for one in all_of_them) or "none"
     raise NotFound(f"there is no category '{name}'. The ones there are: {known}")
 
 
