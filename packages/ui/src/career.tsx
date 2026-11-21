@@ -249,7 +249,7 @@ export function PeriodBars({
           ) : null,
         )}
       </ul>
-      {spans && spans.length > 0 && <SpanRibbon spans={spans} months={months} label="Contratos" onSelect={onSpan} />}
+      {spans && spans.length > 0 && <SpanRibbon spans={spans} months={months} label={say("career.contracts")} onSelect={onSpan} />}
       {used.length > 0 && (
         <ul className="period-bars-legend">
           {used.map((group) => (

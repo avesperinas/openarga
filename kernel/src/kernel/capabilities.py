@@ -21,6 +21,9 @@ from kernel.provision import MODULE_ID_PATTERN
 router = APIRouter(tags=["capabilities"])
 
 MODULE_HEADER = "x-arga-module"
+PREFERENCE_HEADERS = tuple(
+    f"x-arga-{name}" for name in ("locale", "timezone", "currency", "country", "region", "area")
+)
 TOKEN_HEADER = "x-module-token"
 
 DECLARES = text("""
@@ -98,10 +101,12 @@ async def ask_for(
     if not declared:
         raise HTTPException(
             status_code=403,
-            detail=f"'{x_arga_module}' no declara '{capability}' en `uses` de su manifiesto",
+            detail=f"'{x_arga_module}' does not declare '{capability}' in `uses` of its manifest",
         )
     if addressed and provider is None:
-        raise HTTPException(status_code=404, detail=f"'{x_arga_target}' no sirve '{capability}'")
+        raise HTTPException(
+            status_code=404, detail=f"'{x_arga_target}' does not serve '{capability}'"
+        )
     if capability in PLATFORM_SERVICES:
         try:
             payload = json.loads(await request.body() or b"{}")
@@ -125,6 +130,7 @@ async def ask_for(
             TOKEN_HEADER: token,
             MODULE_HEADER: x_arga_module,
             **user_headers(),
+            **{name: value for name in PREFERENCE_HEADERS if (value := request.headers.get(name))},
         },
     }
     try:

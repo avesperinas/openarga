@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import os
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextvars import ContextVar
 from uuid import UUID
 
@@ -159,12 +159,24 @@ def require_person() -> UUID:
     return user
 
 
+_also_sent: Callable[[], dict[str, str]] = dict
+
+
+def also_send(provider: Callable[[], dict[str, str]]) -> None:
+    global _also_sent
+    _also_sent = provider
+
+
 def user_headers() -> dict[str, str]:
     user = current_user.get()
     if user is None:
         return {}
     spaces = current_spaces.get()
-    return {USER_HEADER: str(user), **({SPACES_HEADER: format_spaces(spaces)} if spaces else {})}
+    return {
+        USER_HEADER: str(user),
+        **({SPACES_HEADER: format_spaces(spaces)} if spaces else {}),
+        **_also_sent(),
+    }
 
 
 def kernel_url() -> str:

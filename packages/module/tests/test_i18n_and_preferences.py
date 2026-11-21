@@ -44,3 +44,23 @@ async def test_a_request_sees_its_own_preferences() -> None:
 
     assert spanish.json() == {"locale": "es"}
     assert plain.json() == {"locale": "en"}
+
+
+def test_calls_to_the_kernel_carry_the_person_preferences() -> None:
+    from uuid import uuid4
+
+    from arga_tenancy import current_user, user_headers
+
+    person = preferences.from_headers({preferences.HEADERS["locale"]: "es"})
+    who = current_user.set(uuid4())
+    token = preferences.use(person)
+    try:
+        assert user_headers()[preferences.HEADERS["locale"]] == "es"
+    finally:
+        preferences.reset(token)
+        current_user.reset(who)
+    who = current_user.set(uuid4())
+    try:
+        assert preferences.HEADERS["locale"] not in user_headers()
+    finally:
+        current_user.reset(who)
