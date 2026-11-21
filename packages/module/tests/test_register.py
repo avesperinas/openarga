@@ -6,7 +6,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from arga_module import RegistrationFailed, main, register
+from arga_module import Registration, RegistrationFailed, main, register
 
 
 @pytest.fixture
@@ -76,3 +76,24 @@ def test_without_the_secret_the_container_does_not_start(
 
     assert main([]) == 1
     assert "MODULE_REGISTRATION_TOKEN" in capsys.readouterr().err
+
+
+def test_main_keeps_trying_until_the_kernel_answers(monkeypatch, capsys) -> None:
+    import arga_module
+
+    answers = [httpx.ConnectError("refused")] * 20
+    waits: list[float] = []
+
+    def register(*_args, **_kwargs):
+        if answers:
+            raise answers.pop()
+        return Registration("demo", "0.1.0", [])
+
+    monkeypatch.setenv("MODULE_REGISTRATION_TOKEN", "token")
+    monkeypatch.setattr(arga_module, "register", register)
+    monkeypatch.setattr(arga_module.time, "sleep", waits.append)
+
+    assert arga_module.main() == 0
+    assert len(waits) == 20
+    assert waits[:3] == [2, 4, 6] and max(waits) == arga_module.MAX_WAIT_SECONDS
+    assert "registered  demo 0.1.0" in capsys.readouterr().out
