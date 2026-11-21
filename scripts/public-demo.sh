@@ -276,13 +276,34 @@ start_stack() {
   (cd "$DIR" && "${DOCKER[@]}" compose up -d --build --wait --wait-timeout 1800)
 }
 
+wait_healthy() {
+  local waiting
+  for _ in $(seq 1 60); do
+    waiting=$(cd "$DIR" && "${DOCKER[@]}" compose ps --format '{{.Service}} {{.Health}}' |
+      awk '$2 != "" && $2 != "healthy" {print $1}')
+    [[ -z $waiting ]] && return 0
+    sleep 10
+  done
+  die "services still not healthy after ten minutes: $(echo "$waiting" | tr '\n' ' ')"
+}
+
 seed_demo() {
   say "seeding the cast"
   if ((DRY)); then
+    printf '    wait until every service is healthy, then up to 3 tries of:\n'
     printf '    $ %s demo seed\n' "$0"
     return
   fi
-  demo_command seed
+  local attempt
+  for attempt in 1 2 3; do
+    wait_healthy
+    if demo_command seed; then
+      return 0
+    fi
+    printf 'seeding failed (attempt %s of 3), trying again in 30 s\n' "$attempt" >&2
+    sleep 30
+  done
+  die "seeding failed three times; see the output above"
 }
 
 madrid_job() {

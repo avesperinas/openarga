@@ -54,7 +54,8 @@ what changed, applies the new schema and keeps the secrets of the existing `.env
    `https://<domain>`.
 5. Writes `docker-compose.override.yml` so the gateway and Postgres bind `127.0.0.1` only, then runs
    `scripts/compose.py` and `docker compose up -d --build --wait`.
-6. Seeds the cast with `scripts/demo.py`.
+6. Waits until every service reports healthy, then seeds the cast with `scripts/demo.py`, trying up
+   to three times, since a fresh machine runs this step only once.
 7. Installs the user's crontab block below.
 8. Installs `cloudflared` from Cloudflare's apt repository and runs it as the `cloudflared` systemd
    service. The token goes into `/etc/cloudflared/tunnel.env` (root only, mode 600), and the unit
