@@ -249,7 +249,7 @@ async def test_what_is_subscribed_is_not_edited_but_can_be_hidden(api, kernel) -
         f"/events/{match['event_id']}", json={"changes": {"title": "Otro"}, "scope": "all"}
     )
     assert edit.status_code == 422
-    assert "no se edita" in edit.json()["detail"]
+    assert "is not edited" in edit.json()["detail"]
 
     hidden = await api.post(f"/feed/{match['id'].removeprefix('feed:')}/hide")
     assert hidden.status_code == 204

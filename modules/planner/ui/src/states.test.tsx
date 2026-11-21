@@ -178,7 +178,7 @@ describe("the agenda", () => {
 describe("an event", () => {
   it("opens alongside, from the address", async () => {
     await open(`/planner/semana?event=${DINNER.event_id}`);
-    const detail = host.querySelector('[role="region"][aria-label="Evento"]');
+    const detail = host.querySelector('[role="region"][aria-label="Event"]');
     expect(detail?.textContent).toContain("Synthetic dinner");
     expect(detail?.textContent).toContain("Casa");
   });
