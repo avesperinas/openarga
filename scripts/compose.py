@@ -89,6 +89,9 @@ def instance_environment(config: dict[str, Any]) -> dict[str, str]:
     environment["CONNECTIONS_MODE"] = str(config.get("connections", "live"))
     if config.get("demo"):
         environment["OPENARGA_DEMO"] = "true"
+        environment["OPENARGA_DEMO_COPIES"] = "${OPENARGA_DEMO_COPIES:-false}"
+        environment["OPENARGA_DEMO_COPY_MINUTES"] = "${OPENARGA_DEMO_COPY_MINUTES:-120}"
+        environment["OPENARGA_DEMO_IDLE_MINUTES"] = "${OPENARGA_DEMO_IDLE_MINUTES:-30}"
     return environment
 
 
