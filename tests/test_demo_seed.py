@@ -190,3 +190,10 @@ async def test_what_an_app_names_by_itself_comes_in_each_person_s_language(empty
     assert names["alex"] == t(folder, "family.history.name", "en")
     assert names["sam"] == t(folder, "family.history.name", "es")
     assert names["alex"] != names["sam"]
+
+
+def test_today_is_the_cast_s_day_not_the_server_s() -> None:
+    from datetime import UTC, datetime
+
+    late_in_utc = datetime(2026, 11, 20, 23, 30, tzinfo=UTC)
+    assert script().cast_today(CAST, late_in_utc) == date(2026, 11, 21)
