@@ -13,9 +13,12 @@ DOMAIN = "openarga-demo.example.org"
 TOKEN = "synthetic-tunnel-token-for-the-test"
 
 
-def run(*arguments: str, token: str | None = None) -> subprocess.CompletedProcess[str]:
+def run(
+    *arguments: str, token: str | None = None, **extra: str
+) -> subprocess.CompletedProcess[str]:
     environment = {key: value for key, value in os.environ.items() if key != "TUNNEL_TOKEN"}
     environment["HOME"] = "/nonexistent-home"
+    environment.update(extra)
     if token:
         environment["TUNNEL_TOKEN"] = token
     return subprocess.run(
@@ -49,8 +52,17 @@ def test_the_token_is_never_printed_nor_logged():
         assert TOKEN not in result.stdout + result.stderr
 
 
-def test_the_cron_runs_a_day_and_a_nightly_reset_on_madrid_time():
+def test_with_copies_the_cron_looks_after_them_every_minute():
     result = run("--dry-run", DOMAIN, token=TOKEN)
+    keep = next(line for line in result.stdout.splitlines() if "flock" in line)
+
+    assert keep.strip().startswith("* * * * * flock -n") and "demo keep" in keep
+    assert "set OPENARGA_DEMO_COPIES=true" in result.stdout
+    assert "demo reset" not in result.stdout and "demo day" not in result.stdout
+
+
+def test_without_copies_the_cron_runs_a_day_and_a_nightly_reset_on_madrid_time():
+    result = run("--dry-run", DOMAIN, token=TOKEN, DEMO_COPIES="false")
     madrid = '[ "$(TZ=Europe/Madrid date +\\%H)" = {hour} ]'
     reset = next(line for line in result.stdout.splitlines() if "demo reset" in line)
     day = next(line for line in result.stdout.splitlines() if "demo day" in line)
@@ -66,7 +78,9 @@ def test_it_asks_for_what_it_needs():
     bad_domain = run("not a domain", "token")
     assert bad_domain.returncode != 0 and "not a host name" in bad_domain.stderr
     bad_command = run("demo", "explode")
-    assert bad_command.returncode != 0 and "seed|day|reset" in bad_command.stderr
+    assert bad_command.returncode != 0 and "seed|day|reset|keep" in bad_command.stderr
+    bad_copies = run("--dry-run", DOMAIN, token=TOKEN, DEMO_COPIES="maybe")
+    assert bad_copies.returncode != 0 and "DEMO_COPIES" in bad_copies.stderr
 
 
 @pytest.mark.skipif(shutil.which("shellcheck") is None, reason="shellcheck is not installed")

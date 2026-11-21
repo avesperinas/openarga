@@ -62,7 +62,33 @@ what changed, applies the new schema and keeps the secrets of the existing `.env
    reads it from there, so it is in no command line, no repository file and no log.
 9. Checks `http://127.0.0.1:8000/healthz` and `https://<domain>/healthz`.
 
+## A copy of the cast per visitor
+
+With `DEMO_COPIES=true` (the default) every visitor gets an Alex and a Sam of their own, made in the
+language chosen at the door, so nobody sees or undoes what another visitor does. Switching between
+Alex and Sam stays in the same copy. `OPENARGA_DEMO_COPIES=true` in `.env` turns it on for the kernel
+and the gateway, and `scripts/demo.py keep` looks after the copies:
+
+- it keeps `OPENARGA_DEMO_POOL` ready copies per language (default 2), so the door answers at once;
+- a copy goes when nobody has used it for `OPENARGA_DEMO_IDLE_MINUTES` (default 30) or
+  `OPENARGA_DEMO_COPY_MINUTES` after it was handed out (default 120), and the visitor's session ends
+  with it;
+- never more than `OPENARGA_DEMO_COPIES_MAX` copies at once (default 20). When all are taken the door
+  says so and tries again by itself;
+- the workers only keep up the people someone used in the last 30 minutes.
+
+Making a copy takes about ten seconds. While copies are on, `demo reset` refuses to run: it would
+wipe every visitor's copy.
+
 ## The schedule
+
+With copies:
+
+```
+every minute   public-demo.sh demo keep    drop the copies nobody uses, make ready ones
+```
+
+Without copies (`DEMO_COPIES=false`), everyone shares the cast:
 
 ```
 0 8 (Madrid)   public-demo.sh demo day     a new simulated day
@@ -71,9 +97,20 @@ what changed, applies the new schema and keeps the secrets of the existing `.env
 
 Times are Madrid time whatever the machine's time zone: Ubuntu's cron ignores `CRON_TZ`, so each line
 runs every hour at its minute and goes on only when the hour in Madrid matches. The crontab calls the
-script inside `~/openarga`, so an update of the checkout is what the next run uses. `DEMO_DAY_AT` and `DEMO_RESET_AT` change them (`"minute hour"`). Output goes to
-`~/openarga-demo.log` (`DEMO_LOG`). `public-demo.sh demo seed|day|reset` runs the same command by hand,
-with the owner's connection to Postgres on `127.0.0.1:5433`. `reset` only runs on a demo instance.
+script inside `~/openarga`, so an update of the checkout is what the next run uses. `DEMO_DAY_AT` and
+`DEMO_RESET_AT` change them (`"minute hour"`). Output goes to `~/openarga-demo.log` (`DEMO_LOG`).
+`public-demo.sh demo seed|day|reset|keep` runs the same command by hand, with the owner's connection to
+Postgres on `127.0.0.1:5433`. `reset` only runs on a demo instance.
+
+## Updating it
+
+Run the script again without a token: it keeps the tunnel the machine already has, pulls `main`,
+rebuilds what changed and restarts it, so the demo is only away for the seconds a container takes to
+come back.
+
+```bash
+cd ~/openarga && scripts/public-demo.sh <domain>
+```
 
 ## Behind a proxy that ends TLS
 

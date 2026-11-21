@@ -5,15 +5,17 @@
 #   TUNNEL_TOKEN=<token> scripts/public-demo.sh <domain>
 #   scripts/public-demo.sh <domain> <tunnel-token>
 #   scripts/public-demo.sh --dry-run <domain>      print the steps, change nothing
-#   scripts/public-demo.sh demo seed|day|reset     what the cron jobs run
+#   scripts/public-demo.sh demo seed|day|reset|keep  what the cron jobs run
 #
 # The token is read from TUNNEL_TOKEN or the second argument (the environment keeps it out of the
-# process list). It ends up only in a root-only file for the service, never in the repository or a log.
+# process list). Once the machine has a tunnel, running it again without a token keeps that one. It ends up only in a root-only file for the service, never in the repository or a log.
 # Run it as a user with sudo. Nothing listens outside the machine: the gateway and Postgres bind
 # 127.0.0.1 and the tunnel connects out.
 #
 # Variables: OPENARGA_DIR (default ~/openarga), OPENARGA_REPO, OPENARGA_REF (default main),
-# DEMO_RESET_AT (default "30 4"), DEMO_DAY_AT (default "0 8"), both in Europe/Madrid time.
+# DEMO_COPIES (default true: a copy of the cast per visitor, looked after every minute by
+# `demo keep`; false: everyone shares the cast, with a new day at DEMO_DAY_AT and a reset at
+# DEMO_RESET_AT, defaults "0 8" and "30 4", in Europe/Madrid time).
 set -euo pipefail
 
 DRY=0
@@ -27,6 +29,7 @@ REPO=${OPENARGA_REPO:-https://github.com/avesperinas/openarga.git}
 REF=${OPENARGA_REF:-main}
 RESET_AT=${DEMO_RESET_AT:-30 4}
 DAY_AT=${DEMO_DAY_AT:-0 8}
+COPIES=${DEMO_COPIES:-true}
 LOG=${DEMO_LOG:-$HOME/openarga-demo.log}
 TUNNEL_ENV=/etc/cloudflared/tunnel.env
 MARK_BEGIN="# openarga public demo: begin"
@@ -108,8 +111,8 @@ compose_env() {
 demo_command() {
   local command=${1:-}
   case $command in
-    seed | day | reset) ;;
-    *) die "usage: public-demo.sh demo seed|day|reset" ;;
+    seed | day | reset | keep) ;;
+    *) die "usage: public-demo.sh demo seed|day|reset|keep" ;;
   esac
   export PATH="$HOME/.local/bin:$PATH"
   compose_env uv run python scripts/demo.py "$command"
@@ -124,7 +127,13 @@ DOMAIN=${1:-}
 TOKEN=${TUNNEL_TOKEN:-${2:-}}
 [[ -n $DOMAIN ]] || die "usage: [TUNNEL_TOKEN=...] public-demo.sh [--dry-run] <domain> [tunnel-token]"
 [[ $DOMAIN =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$ ]] || die "not a host name: $DOMAIN"
-[[ -n $TOKEN || $DRY -eq 1 ]] || die "no tunnel token: set TUNNEL_TOKEN or pass it as the second argument"
+[[ $COPIES == true || $COPIES == false ]] || die "DEMO_COPIES is true or false, not $COPIES"
+tunnel_kept() {
+  if [[ $EUID -eq 0 ]]; then test -s "$TUNNEL_ENV"; else sudo -n test -s "$TUNNEL_ENV" 2>/dev/null; fi
+}
+if [[ -z $TOKEN && $DRY -eq 0 ]] && ! tunnel_kept; then
+  die "no tunnel token: set TUNNEL_TOKEN or pass it as the second argument"
+fi
 unset TUNNEL_TOKEN
 
 preflight() {
@@ -245,6 +254,7 @@ configure_instance() {
   fi
   local env=$DIR/.env
   set_key "$env" OPENARGA_DEMO true
+  set_key "$env" OPENARGA_DEMO_COPIES "$COPIES"
   set_key "$env" PUBLIC_URL "https://$DOMAIN"
   set_key "$env" AUTH_ISSUER "https://$DOMAIN/auth/realms/arga"
   set_key "$env" MCP_PUBLIC_URL "https://$DOMAIN/mcp"
@@ -292,12 +302,15 @@ seed_demo() {
   if ((DRY)); then
     printf '    wait until every service is healthy, then up to 3 tries of:\n'
     printf '    $ %s demo seed\n' "$0"
+    if [[ $COPIES == true ]]; then
+      printf '    $ %s demo keep    (the first copies for visitors)\n' "$0"
+    fi
     return
   fi
   local attempt
   for attempt in 1 2 3; do
     wait_healthy
-    if demo_command seed; then
+    if demo_command seed && { [[ $COPIES == false ]] || demo_command keep; }; then
       return 0
     fi
     printf 'seeding failed (attempt %s of 3), trying again in 30 s\n' "$attempt" >&2
@@ -315,17 +328,28 @@ madrid_job() {
 }
 
 install_cron() {
-  say "cron: a new simulated day, and the nightly reset (Europe/Madrid time)"
-  # Ubuntu's cron ignores CRON_TZ: each job runs hourly and only goes on in its Madrid hour.
   local script=$DIR/scripts/public-demo.sh block
-  block=$(
-    cat <<EOF
+  if [[ $COPIES == true ]]; then
+    say "cron: every minute, drop the copies nobody uses and make ready ones"
+    block=$(
+      cat <<EOF
+$MARK_BEGIN
+* * * * * flock -n /tmp/openarga-demo-keep.lock "$script" demo keep >>"$LOG" 2>&1
+$MARK_END
+EOF
+    )
+  else
+    say "cron: a new simulated day, and the nightly reset (Europe/Madrid time)"
+    # Ubuntu's cron ignores CRON_TZ: each job runs hourly and only goes on in its Madrid hour.
+    block=$(
+      cat <<EOF
 $MARK_BEGIN
 $(madrid_job "$DAY_AT" "$script" day)
 $(madrid_job "$RESET_AT" "$script" reset)
 $MARK_END
 EOF
-  )
+    )
+  fi
   if ((DRY)); then
     printf '    crontab block:\n%s\n' "$block" | sed 's/^/      /'
     return
@@ -353,7 +377,9 @@ EOF
 
   say "tunnel service"
   asroot install -m 0755 -d /etc/cloudflared
-  if ((DRY)); then
+  if [[ -z $TOKEN ]]; then
+    printf '    keeping the tunnel token already in %s\n' "$TUNNEL_ENV"
+  elif ((DRY)); then
     printf '    write %s (mode 600, owner root) with the token\n' "$TUNNEL_ENV"
   else
     printf 'TUNNEL_TOKEN=%s\n' "$TOKEN" | write_file "$TUNNEL_ENV" 0600 root:root

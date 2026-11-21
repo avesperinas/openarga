@@ -108,6 +108,17 @@ def test_a_demo_instance_tells_the_gateway_and_mcp():
         assert services[name]["environment"].get("OPENARGA_DEMO") == "true", name
 
 
+def test_copies_per_visitor_are_switched_on_from_the_env_file():
+    plain = compose.generate(EXAMPLE)["services"]
+    services = compose.generate(with_changes(demo=True))["services"]
+
+    assert "OPENARGA_DEMO_COPIES" not in plain["kernel"]["environment"]
+    for name in ("gateway", "kernel"):
+        environment = services[name]["environment"]
+        assert environment["OPENARGA_DEMO_COPIES"] == "${OPENARGA_DEMO_COPIES:-false}", name
+        assert environment["OPENARGA_DEMO_COPY_MINUTES"] == "${OPENARGA_DEMO_COPY_MINUTES:-120}"
+
+
 def test_keycloak_gets_the_public_url_the_realm_import_needs():
     services = compose.generate(EXAMPLE)["services"]
     assert services["auth"]["environment"]["PUBLIC_URL"] == "http://localhost:8000"
