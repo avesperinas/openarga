@@ -60,5 +60,5 @@ async def send(client: httpx.AsyncClient, body: dict[str, Any]) -> dict[str, Any
             detail = response.json().get("detail")
         except ValueError:
             detail = None
-        raise Unavailable(detail or f"la lista contesta {response.status_code}")
+        raise Unavailable(detail or f"the list answers {response.status_code}")
     return contracts.shopping_added(**response.json())

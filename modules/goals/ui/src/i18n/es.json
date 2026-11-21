@@ -80,6 +80,7 @@
   "goal.log_failed": "No se ha podido apuntar",
   "goal.log_where": "Apuntar dónde vas",
   "goal.logged": "Lo apuntado",
+  "goal.logged_by_hand": "Apuntado a mano",
   "goal.mark_achieved": "Dar por cumplida",
   "goal.met": "cumplido",
   "goal.milestone_done": "Hito cumplido",

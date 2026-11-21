@@ -113,7 +113,7 @@ async def macros(client: httpx.AsyncClient, old: foods.Food, new: foods.Food) ->
             detail = response.json().get("detail")
         except ValueError:
             detail = None
-        return {"done": False, "note": detail or f"Macros contesta {response.status_code}"}
+        return {"done": False, "note": detail or f"Macros answers {response.status_code}"}
     return {"done": True, **contracts.intake_replaced(**response.json())}
 
 
