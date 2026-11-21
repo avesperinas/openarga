@@ -125,7 +125,7 @@ describe("variants of what already existed", () => {
   it("the disabled cards and the shared one", () => {
     expect(renderToStaticMarkup(<Tile title="X" hue={1} muted />)).toContain("data-muted");
     const photo = renderToStaticMarkup(<PhotoTile title="Y" hue={2} icon="paw" shared badge="Vencido" badgeTone="warning" />);
-    expect(photo).toContain("Compartido");
+    expect(photo).toContain("Shared");
     expect(photo).toContain('data-tone="warning"');
   });
 
