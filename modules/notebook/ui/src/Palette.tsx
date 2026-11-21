@@ -80,7 +80,7 @@ export function Palette({ mode, notes, commands, onOpen, onSearch, onClose }: Pr
             ref={input}
             value={query}
             placeholder={mode === "notes" ? t("palette.note_placeholder") : t("palette.command_placeholder")}
-            aria-label="Buscar"
+            aria-label={t("nav.search")}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "ArrowDown") {

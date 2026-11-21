@@ -61,6 +61,7 @@
   "graph.highlight": "Highlight",
   "graph.highlight_placeholder": "Highlight by title or folder",
   "graph.hint": "{notes} notes · {links} links. Drag to move, wheel or two fingers to zoom.",
+  "graph.label": "Graph of {notes} notes and {links} links",
   "graph.orphans": "Notes without links",
   "graph.show_orphans": "Show notes without links",
   "history.before": "Before",

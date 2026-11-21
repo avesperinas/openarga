@@ -61,6 +61,7 @@
   "graph.highlight": "Resaltar",
   "graph.highlight_placeholder": "Resaltar por título o carpeta",
   "graph.hint": "{notes} notas · {links} enlaces. Arrastra para moverte, rueda o dos dedos para acercarte.",
+  "graph.label": "Grafo de {notes} notas y {links} enlaces",
   "graph.orphans": "Notas sin enlaces",
   "graph.show_orphans": "Enseñar las notas sin enlaces",
   "history.before": "Antes",

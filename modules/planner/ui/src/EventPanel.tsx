@@ -216,8 +216,8 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
           {layer?.origin === "app" && <Badge>App</Badge>}
         </span>
         <div className="cr-panel-actions">
-          {own && <IconButton icon="edit" label="Editar" size="small" variant="plain" onClick={() => setEditing(true)} />}
-          {presentation === "panel" && <IconButton icon="close" label="Cerrar" size="small" variant="plain" onClick={onClose} />}
+          {own && <IconButton icon="edit" label={t("action.edit")} size="small" variant="plain" onClick={() => setEditing(true)} />}
+          {presentation === "panel" && <IconButton icon="close" label={t("action.close")} size="small" variant="plain" onClick={onClose} />}
         </div>
       </header>
 
@@ -324,7 +324,7 @@ export function EventPanel({ opened, layers, onClose, onDone, askScope, presenta
             {t("action.edit")}
           </Button>
           <Button variant="plain" onClick={cancel} disabled={busy}>
-            <span className="cr-danger">Cancelar evento</span>
+            <span className="cr-danger">{t("action.cancel_event")}</span>
           </Button>
         </footer>
       )}
@@ -382,9 +382,9 @@ function Editor({ opened, layers, busy, error, presentation, onCancel, onSave }:
     >
       {presentation === "panel" && (
         <header className="cr-panel-head">
-          <span className="cr-panel-kicker">{opened.kind === "new" ? "Nuevo evento" : "Editar"}</span>
+          <span className="cr-panel-kicker">{opened.kind === "new" ? t("event.new") : t("action.edit")}</span>
           <div className="cr-panel-actions">
-            <IconButton icon="close" label="Cerrar" size="small" variant="plain" onClick={onCancel} />
+            <IconButton icon="close" label={t("action.close")} size="small" variant="plain" onClick={onCancel} />
           </div>
         </header>
       )}

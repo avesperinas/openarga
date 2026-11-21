@@ -1,6 +1,10 @@
 {
   "action.add": "Añadir",
   "action.cancel": "Cancelar",
+  "action.close": "Cerrar",
+  "action.cancel_event": "Cancelar evento",
+  "action.previous": "Anterior",
+  "action.next": "Siguiente",
   "action.create": "Crear",
   "action.edit": "Editar",
   "action.edit_named": "Editar {name}",

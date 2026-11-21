@@ -2,6 +2,7 @@ import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation, f
 import * as React from "react";
 
 import type { Graph } from "./api";
+import { t } from "./lang";
 
 interface Node extends SimulationNodeDatum {
   id: string;
@@ -329,7 +330,7 @@ export function GraphView({ graph, focus = null, onOpen, highlight, compact = fa
 
   return (
     <div className="mn-graph" data-compact={compact || undefined}>
-      <canvas ref={canvas} className="mn-graph-canvas" role="img" aria-label={`Grafo de ${graph.nodes.length} notas y ${graph.edges.length} enlaces`} />
+      <canvas ref={canvas} className="mn-graph-canvas" role="img" aria-label={t("graph.label", { notes: graph.nodes.length, links: graph.edges.length })} />
       {hover && !compact && (
         <p className="mn-graph-hover">
           {hover.title}

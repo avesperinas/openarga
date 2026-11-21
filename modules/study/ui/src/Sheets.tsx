@@ -103,7 +103,7 @@ export function SubjectSheet({
 
   return (
     <Sheet
-      title={subject ? "Editar asignatura" : "Nueva asignatura"}
+      title={subject ? t("subject.edit") : t("subject.new")}
       onClose={onClose}
       action={{ label: subject ? t("action.save") : t("subject.add"), onClick: () => void save(), disabled: saving }}
     >
@@ -175,7 +175,7 @@ export function AssessmentSheet({
 
   return (
     <Sheet
-      title={assessment ? assessment.title : "Nuevo evaluable"}
+      title={assessment ? assessment.title : t("assessment.new")}
       onClose={onClose}
       action={{ label: assessment ? t("action.save") : t("action.add"), onClick: () => void save(), disabled: saving }}
     >

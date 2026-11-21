@@ -16,9 +16,9 @@ export const KINDS: Record<PickKind, { label: string; icon: IconName; hue: Hue }
 };
 
 export const LISTS: { value: Recommendation["list"]; label: string; icon: IconName }[] = [
-  { value: "read", label: "Leer", icon: "book" },
-  { value: "watch", label: "Ver", icon: "film" },
-  { value: "listen", label: "Escuchar", icon: "headphones" },
+  { value: "read", get label() { return t("list.read"); }, icon: "book" },
+  { value: "watch", get label() { return t("list.watch"); }, icon: "film" },
+  { value: "listen", get label() { return t("list.listen"); }, icon: "headphones" },
 ];
 
 export const STATES: Record<PickState, string> = {
