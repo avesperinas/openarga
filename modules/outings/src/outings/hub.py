@@ -35,9 +35,9 @@ async def search(query: str, limit: int = 6) -> dict[str, Any]:
         response = await ask("places.search", {"query": query, "limit": limit})
         if response.status_code == 200:
             return response.json()
-        reason = f"Hub contesta {response.status_code}"
+        reason = f"Hub answers {response.status_code}"
     except httpx.HTTPError as error:
-        reason = f"Hub no contesta ({type(error).__name__})"
+        reason = f"Hub does not answer ({type(error).__name__})"
     return {"candidates": [], "failed": [{"source": "nominatim", "reason": reason}]}
 
 
@@ -51,7 +51,7 @@ async def capability(name: str, body: dict[str, Any]) -> dict[str, Any]:
     try:
         response = await ask(name, body)
     except httpx.HTTPError as error:
-        raise Refused(f"Hub no contesta ({type(error).__name__})", 503) from error
+        raise Refused(f"Hub does not answer ({type(error).__name__})", 503) from error
     if response.status_code == 200:
         return response.json()
     try:
@@ -60,7 +60,7 @@ async def capability(name: str, body: dict[str, Any]) -> dict[str, Any]:
         detail = None
     if response.status_code in (409, 422) and isinstance(detail, str):
         raise Refused(detail, response.status_code)
-    raise Refused(f"Hub contesta {response.status_code}", 502)
+    raise Refused(f"Hub answers {response.status_code}", 502)
 
 
 async def catalogue() -> dict[str, Any]:
@@ -85,9 +85,9 @@ async def place_photo(body: dict[str, Any]) -> dict[str, Any]:
     try:
         response = await ask("places.photo", body, photo_timeout())
     except httpx.HTTPError as error:
-        raise Refused(f"Hub no contesta ({type(error).__name__})", 503) from error
+        raise Refused(f"Hub does not answer ({type(error).__name__})", 503) from error
     if response.status_code != 200:
-        raise Refused(f"Hub contesta {response.status_code}", 502)
+        raise Refused(f"Hub answers {response.status_code}", 502)
     answer = response.json()
     if answer.get("failed"):
         raise Refused(str(answer["failed"]), 502)

@@ -267,7 +267,7 @@ async def move(
                 headers={**user_headers(), "x-arga-module": MODULE, "x-arga-target": row.app},
             )
     except httpx.HTTPError as error:
-        raise Refused(f"{row.app} no contesta ({type(error).__name__})", 503) from error
+        raise Refused(f"{row.app} does not answer ({type(error).__name__})", 503) from error
     try:
         detail = response.json().get("detail") if response.status_code != 200 else None
     except ValueError:
@@ -276,7 +276,7 @@ async def move(
         raise Refused(detail, 409)
     if response.status_code != 200:
         raise Refused(
-            detail if isinstance(detail, str) else f"{row.app} contesta {response.status_code}"
+            detail if isinstance(detail, str) else f"{row.app} answers {response.status_code}"
         )
     item = _valid(response.json().get(arga_agenda.KEY))
     if item is None or item["uid"] != row.uid:

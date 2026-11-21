@@ -400,7 +400,7 @@ function Editor({ opened, layers, busy, error, presentation, onCancel, onSave }:
         onChange={(event) => set("title", event.target.value)}
       />
 
-      <div className="cr-layers-pick" role="radiogroup" aria-label="Capa">
+      <div className="cr-layers-pick" role="radiogroup" aria-label={t("event.layer")}>
         {own.map((layer) => (
           <button
             key={layer.id}

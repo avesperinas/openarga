@@ -128,7 +128,7 @@ export function SubscriptionsSheet({ onClose, onSubscribed, onUnsubscribed }: Pr
             </section>
           ))}
         {menu && menu.others.length > 0 && (
-          <section className="cr-subscribe-field" aria-label="Desde Hub">
+          <section className="cr-subscribe-field" aria-label={t("subs.from_hub")}>
             <GroupLabel>Desde Hub</GroupLabel>
             <List>
               {menu.others.map((layer) => (

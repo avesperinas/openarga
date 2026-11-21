@@ -473,7 +473,7 @@ def _event(row: Row) -> Event:
 
 async def _row(connection: AsyncConnection, event_id: str) -> Row:
     if event_id.startswith("feed:"):
-        raise Invalid("lo suscrito no se edita: se puede ocultar en la app")
+        raise Invalid("a subscribed event is not edited: it can be hidden in the app")
     try:
         UUID(event_id)
     except ValueError as error:
@@ -1103,7 +1103,7 @@ async def update(
     else:
         own = await calendar(connection, row.calendar_id)
         if own.origin != "own":
-            raise Invalid("lo suscrito no se edita")
+            raise Invalid("a subscribed event is not edited")
 
     rule_given = "rrule" in patch.model_fields_set
 
@@ -1285,7 +1285,7 @@ async def cancel(
     row = await _row(connection, event_id)
     own = await calendar(connection, row.calendar_id)
     if own.origin != "own":
-        raise Invalid("lo suscrito no se cancela: se oculta")
+        raise Invalid("a subscribed event is not cancelled: it is hidden")
     if row.rrule is None or scope == "all":
         await _write(connection, row.id, {"status": "cancelled"})
         return await _publish_event(connection, row.id, "cancelled")

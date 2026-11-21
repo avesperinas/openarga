@@ -25,9 +25,9 @@ async def search(client: httpx.AsyncClient, query: str) -> dict[str, Any]:
         response = await ask(client, "books.search", {"query": query})
         if response.status_code == 200:
             return response.json()
-        reason = f"Hub contesta {response.status_code}"
+        reason = f"Hub answers {response.status_code}"
     except httpx.HTTPError as error:
-        reason = f"Hub no contesta ({type(error).__name__})"
+        reason = f"Hub does not answer ({type(error).__name__})"
     return {"candidates": [], "failed": [{"source": name, "reason": reason} for name in SOURCES]}
 
 

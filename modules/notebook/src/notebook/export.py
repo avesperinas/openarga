@@ -249,7 +249,7 @@ async def push(begin, client: httpx.AsyncClient) -> dict[str, Any]:
         return {"outcome": "unconnected"}
     if response.status_code != 200:
         async with begin() as connection:
-            await _record(connection, "error", f"Hub contesta {response.status_code}", None, False)
+            await _record(connection, "error", f"Hub answers {response.status_code}", None, False)
         return {"outcome": "error"}
     answer = response.json()
     outcome = answer.get("outcome")
