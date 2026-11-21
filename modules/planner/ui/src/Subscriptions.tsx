@@ -129,7 +129,7 @@ export function SubscriptionsSheet({ onClose, onSubscribed, onUnsubscribed }: Pr
           ))}
         {menu && menu.others.length > 0 && (
           <section className="cr-subscribe-field" aria-label={t("subs.from_hub")}>
-            <GroupLabel>Desde Hub</GroupLabel>
+            <GroupLabel>{t("subs.from_hub")}</GroupLabel>
             <List>
               {menu.others.map((layer) => (
                 <ListRow key={layer.id} title={layer.name} subtitle={statusLine(layer, now)} hue={layer.tone} />
