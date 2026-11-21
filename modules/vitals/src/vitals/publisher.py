@@ -13,68 +13,37 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from arga_contracts import metrics as cifras
 from arga_contracts import notify as avisos
 from arga_contracts import records as fichas
-from arga_tenancy import USER_HEADER, as_user, current_user, users
+from arga_module.publisher import BATCH as SHARED_BATCH
+from arga_module.publisher import Publisher
+from arga_tenancy import as_user, users
 from vitals import metrics, notices, records, weight
 from vitals.db import engine
 
 MODULE = "vitals"
 SOURCE = "app"
-BATCH = 50
 INTERVAL_SECONDS = float(os.environ.get("PUBLISH_INTERVAL_SECONDS", "5"))
 HEARTBEAT = Path(os.environ.get("WORKER_HEARTBEAT", "/tmp/worker.alive"))
-
-PENDING = text("""
-    select id, type, ts, payload, dedup_hash, user_id
-    from vitals.vitals_outbox
-    where published_at is null
-    order by id
-    limit :batch
-    for update skip locked
-""")
 
 
 def kernel_url() -> str:
     return os.environ.get("KERNEL_URL", "http://kernel:8000").rstrip("/")
 
 
+SHARED = Publisher(MODULE, engine)
+DRAIN = 10
+
+
 async def publish_pending(connection: AsyncConnection, client: httpx.AsyncClient) -> dict[str, int]:
-    rows = (await connection.execute(PENDING, {"batch": BATCH})).all()
-    published = 0
-    for row in rows:
-        event = {
-            "ts": row.ts.isoformat(),
-            "module": MODULE,
-            "source": SOURCE,
-            "type": row.type,
-            "payload": row.payload,
-            "dedup_hash": row.dedup_hash,
-        }
-        owner = row.user_id or current_user.get()
-        headers = {USER_HEADER: str(owner)} if owner else {}
-        try:
-            response = await client.post(
-                f"{kernel_url()}/events", json=event, headers=headers, timeout=10.0
-            )
-            response.raise_for_status()
-        except httpx.HTTPError as error:
-            await connection.execute(
-                text(
-                    "update vitals.vitals_outbox "
-                    "set attempts = attempts + 1, last_error = :error where id = :id"
-                ),
-                {"error": f"{type(error).__name__}: {error}"[:500], "id": row.id},
-            )
-            return {"published": published, "pending": len(rows) - published}
-        await connection.execute(
-            text(
-                "update vitals.vitals_outbox "
-                "set published_at = now(), attempts = attempts + 1, last_error = null "
-                "where id = :id"
-            ),
-            {"id": row.id},
-        )
-        published += 1
-    return {"published": published, "pending": len(rows) - published}
+    # The shared publisher sends a batch in one request; a person's first pass can queue thousands
+    # of points, so it drains several batches instead of one every few seconds.
+    total = {"published": 0, "pending": 0}
+    for _ in range(DRAIN):
+        result = await SHARED.publish_pending(connection, client)
+        total["published"] += result["published"]
+        total["pending"] += result["pending"]
+        if result["pending"] or result["published"] < SHARED_BATCH:
+            break
+    return total
 
 
 BACKFILLED: set = set()

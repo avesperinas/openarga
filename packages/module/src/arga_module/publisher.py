@@ -17,7 +17,7 @@ from arga_module.db import database_url
 from arga_tenancy import USER_HEADER, as_user, current_user, kernel_url, users
 
 SOURCE = "app"
-BATCH = 50
+BATCH = 200
 BATCHES = 10
 TICK_SECONDS = float(os.environ.get("PUBLISH_TICK_SECONDS", "30"))
 SETTLE_SECONDS = 0.2
@@ -61,6 +61,10 @@ class Publisher:
             f"update {outbox} set published_at = now(), attempts = attempts + 1, "
             "last_error = null where id = :id"
         )
+        self._all_done = text(
+            f"update {outbox} set published_at = now(), attempts = attempts + 1, "
+            "last_error = null where id = any(:ids)"
+        )
         self._fresh = text(
             f"select exists (select 1 from {outbox} where published_at is null "
             "and type not in :derived)"
@@ -81,20 +85,41 @@ class Publisher:
             await connection.execute(text(f'set local role "{self.role}"'))
             yield connection
 
+    def _event(self, row) -> dict:
+        return {
+            "ts": row.ts.isoformat(),
+            "module": self.module,
+            "source": SOURCE,
+            "type": row.type,
+            "payload": row.payload,
+            "dedup_hash": row.dedup_hash,
+        }
+
     async def publish_pending(
         self, connection: AsyncConnection, client: httpx.AsyncClient
     ) -> dict[str, int]:
         rows = (await connection.execute(self._pending, {"batch": BATCH})).all()
+        owners = {row.user_id or current_user.get() for row in rows}
+        if len(rows) > 1 and len(owners) == 1:
+            # One request and one transaction for the whole batch: a person's first refresh can
+            # queue thousands of points. If the batch is refused, one by one finds the culprit.
+            owner = owners.pop()
+            try:
+                response = await client.post(
+                    f"{kernel_url()}/events/batch",
+                    json={"events": [self._event(row) for row in rows]},
+                    headers={USER_HEADER: str(owner)} if owner else {},
+                    timeout=30.0,
+                )
+                response.raise_for_status()
+            except httpx.HTTPError:
+                pass
+            else:
+                await connection.execute(self._all_done, {"ids": [row.id for row in rows]})
+                return {"published": len(rows), "pending": 0}
         published = 0
         for row in rows:
-            event = {
-                "ts": row.ts.isoformat(),
-                "module": self.module,
-                "source": SOURCE,
-                "type": row.type,
-                "payload": row.payload,
-                "dedup_hash": row.dedup_hash,
-            }
+            event = self._event(row)
             owner = row.user_id or current_user.get()
             headers = {USER_HEADER: str(owner)} if owner else {}
             try:
