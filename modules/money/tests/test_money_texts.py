@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
 from arga_module import i18n, preferences
 from money import texts
 
@@ -61,3 +63,18 @@ def test_today_is_the_person_day() -> None:
         finally:
             preferences.reset(token)
     assert (days[0] - days[1]).days == 1
+
+
+def test_uncategorised_history_is_named_in_the_interface_language():
+    from money.shared import HistoryRow, from_history
+
+    rows = [HistoryRow(2026, 3, "expense", Decimal("10"), None, None, "me")]
+    names = {}
+    for locale in ("en", "es"):
+        token = preferences.use(person(locale=locale))
+        try:
+            names[locale] = list(from_history(rows, 2026, 3).by_category)
+        finally:
+            preferences.reset(token)
+    assert names["en"] == ["No category"]
+    assert names["es"] != names["en"]

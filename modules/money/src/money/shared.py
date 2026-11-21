@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 
+from money import texts
 from money.model import Book
 
 ZERO = Decimal(0)
@@ -102,7 +103,7 @@ def from_history(rows: list[HistoryRow], year: int, month: int) -> Month:
             else:
                 m.deposits_other += r.amount
             continue
-        name = r.category or "Otros"
+        name = r.category or texts.t("category.none")
         m.by_category[name] = m.by_category.get(name, ZERO) + r.amount
         if r.split:
             m.split_of[name] = r.split
