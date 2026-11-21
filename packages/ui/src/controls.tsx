@@ -1205,9 +1205,9 @@ export function WallpaperPicker({ label, options, value, onChange, inherit }: Wa
   );
 }
 
-export function Skeleton({ rows = 3, label = "Cargando" }: { rows?: number; label?: string }) {
+export function Skeleton({ rows = 3, label }: { rows?: number; label?: string }) {
   return (
-    <div className="surface skeleton" role="status" aria-label={label} aria-busy="true">
+    <div className="surface skeleton" role="status" aria-label={label ?? say("loading")} aria-busy="true">
       {Array.from({ length: rows }, (_, index) => (
         <span key={index} className="skeleton-row" data-index={index % 3} />
       ))}

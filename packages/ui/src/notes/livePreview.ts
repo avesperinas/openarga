@@ -9,6 +9,7 @@ import {
   WidgetType,
 } from "@codemirror/view";
 
+import { say } from "../words";
 import { wikilink } from "./markdown";
 
 const HIDDEN_MARKS = new Set(["HeaderMark", "EmphasisMark", "CodeMark", "StrikethroughMark", "LinkMark", "URL"]);
@@ -42,7 +43,7 @@ class CheckboxWidget extends WidgetType {
     box.type = "checkbox";
     box.checked = this.done;
     box.className = "cm-mn-check";
-    box.setAttribute("aria-label", this.done ? "Hecha" : "Por hacer");
+    box.setAttribute("aria-label", say(this.done ? "task.check.done" : "task.check.todo"));
     box.addEventListener("mousedown", (event) => {
       event.preventDefault();
       view.dispatch({ changes: { from: this.at + 1, to: this.at + 2, insert: this.done ? " " : "x" } });

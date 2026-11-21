@@ -241,7 +241,7 @@ export function WidgetAgenda({ entries, now: given }: { entries: AgendaEntry[]; 
       <div className="agenda" data-layout={layout}>
         <section className="agenda-day">
           <h3 className="agenda-day-label" data-today="">
-            Hoy
+            {say("day.today")}
           </h3>
           <Timeline entries={today} now={now} />
         </section>

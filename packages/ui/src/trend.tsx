@@ -246,7 +246,7 @@ export function TrendChart({
         </ul>
       )}
       <details className="series-chart-table">
-        <summary>Ver como tabla</summary>
+        <summary>{say("chart.as_table")}</summary>
         <div className="series-chart-scroll">
           <table>
             <thead>
