@@ -153,6 +153,7 @@ async def test_the_system_has_no_owner(every_table) -> None:
         "kernel.module_migrations",
         "kernel.users",
         "kernel.spaces",
+        "kernel.demo_copies",
         "kernel.space_members",
         "kernel.space_invites",
         "public.alembic_version",
