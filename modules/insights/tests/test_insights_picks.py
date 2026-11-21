@@ -198,7 +198,6 @@ async def test_books_you_already_have_are_not_recommended(shelf, api, kernel) ->
 
 def test_search_link_is_labelled_in_the_interface_language():
     from arga_module import preferences
-
     from insights.picks import PickIn, _search_links
 
     wanted = PickIn(kind="film", title="Stalker", creators=[], why="a slow film about waiting")
