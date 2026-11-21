@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import dataclasses
 import importlib
+import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid5
 
 import yaml
 
@@ -24,6 +25,16 @@ class Persona:
     country: str | None
     region: str | None
     area: str | None
+    copy: str | None = None
+    roster: tuple[tuple[str, UUID], ...] = ()
+
+    @property
+    def seed_key(self) -> str:
+        # Seeds derive their row ids from this, so two copies of the cast never share an id.
+        return self.key if self.copy is None else f"{self.copy}:{self.key}"
+
+    def id_of(self, key: str) -> UUID:
+        return dict(self.roster)[key]
 
 
 @dataclass(frozen=True)
@@ -31,9 +42,13 @@ class Cast:
     space_id: UUID
     space_name: str
     people: tuple[Persona, ...]
+    copy: str | None = None
 
 
 Seed = Callable[[Any, Persona, date], Awaitable[None]]
+
+COPIES = UUID("0b7c0de5-0000-4000-8000-00000000c0b1")
+COPY_TAG = re.compile(r"^[a-z0-9]{6,16}$")
 
 
 def load(path: Path) -> Cast:
@@ -41,7 +56,28 @@ def load(path: Path) -> Cast:
     people = tuple(
         Persona(**{**person, "id": UUID(str(person["id"]))}) for person in data["people"]
     )
+    roster = tuple((person.key, person.id) for person in people)
+    people = tuple(dataclasses.replace(person, roster=roster) for person in people)
     return Cast(UUID(str(data["space"]["id"])), data["space"]["name"], people)
+
+
+def copy_of(cast: Cast, tag: str, locale: str | None = None) -> Cast:
+    if not COPY_TAG.match(tag):
+        raise ValueError(f"not a copy tag: {tag!r}")
+    ids = {person.key: uuid5(COPIES, f"{tag}:{person.key}") for person in cast.people}
+    roster = tuple(ids.items())
+    people = tuple(
+        dataclasses.replace(
+            person,
+            id=ids[person.key],
+            username=f"{tag}-{person.username}",
+            locale=locale or person.locale,
+            copy=tag,
+            roster=roster,
+        )
+        for person in cast.people
+    )
+    return Cast(uuid5(COPIES, f"{tag}:space"), cast.space_name, people, tag)
 
 
 def seeds(modules: Path) -> dict[str, Seed]:

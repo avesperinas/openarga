@@ -157,7 +157,7 @@ WEIGHTED = {"weighted_dips", "weighted_pull_ups"}
 
 
 def _id(persona: Persona, key: str) -> UUID:
-    return uuid5(NAMESPACE, f"{persona.key}:{key}")
+    return uuid5(NAMESPACE, f"{persona.seed_key}:{key}")
 
 
 def _load(key: str, week: int, persona: Persona, increment: float) -> float:
