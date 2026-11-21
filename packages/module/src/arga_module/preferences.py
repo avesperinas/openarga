@@ -7,6 +7,7 @@ from dataclasses import dataclass, replace
 from zoneinfo import ZoneInfo
 
 from arga_module.i18n import LOCALES, SOURCE
+from arga_tenancy import also_send
 from arga_widgets.panel import language_from
 
 HEADERS = {
@@ -75,3 +76,13 @@ def reset(token: Token[Preferences | None]) -> None:
 
 
 language_from(lambda: current().locale)
+
+
+def _as_headers() -> dict[str, str]:
+    chosen = _current.get()
+    if chosen is None:
+        return {}
+    return {header: value for field, header in HEADERS.items() if (value := getattr(chosen, field))}
+
+
+also_send(_as_headers)

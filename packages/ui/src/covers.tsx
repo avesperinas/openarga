@@ -240,7 +240,7 @@ export function PhotoTile({ title, detail, href, onOpen, shared = false, muted =
       <span className="tile-text">
         <span className="tile-title">
           {title}
-          {shared && <Icon name="people" label="Compartido" />}
+          {shared && <Icon name="people" label={say("covers.shared")} />}
         </span>
         {detail && <span className="tile-detail">{detail}</span>}
       </span>

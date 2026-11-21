@@ -46,12 +46,14 @@ async def declared(database_url: str, monkeypatch):
     await engine().dispose()
 
 
-async def ask(module: str, capability: str = "usda.handoff") -> httpx.Response:
+async def ask(
+    module: str, capability: str = "usda.handoff", extra: dict[str, str] | None = None
+) -> httpx.Response:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://kernel") as kernel:
         return await kernel.post(
             f"/internal/capabilities/{capability}",
             json={"secrets": {}},
-            headers={"x-arga-module": module},
+            headers={"x-arga-module": module, **(extra or {})},
         )
 
 
@@ -64,6 +66,15 @@ async def test_what_the_manifest_declares_goes_to_the_hub_with_who_asks(declared
     assert request.headers["x-module-token"] == "probe-token"
     assert request.headers["x-arga-module"] == ASKS
     assert request.headers["x-arga-user"]
+
+
+async def test_the_language_of_the_person_goes_on_to_the_hub(declared) -> None:
+    response = await ask(ASKS, extra={"x-arga-locale": "es", "x-arga-timezone": "Europe/Madrid"})
+
+    assert response.status_code == 200
+    [request] = declared
+    assert request.headers["x-arga-locale"] == "es"
+    assert request.headers["x-arga-timezone"] == "Europe/Madrid"
 
 
 async def test_what_it_does_not_declare_never_reaches_the_hub(declared) -> None:

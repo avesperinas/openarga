@@ -86,9 +86,9 @@ UI_WORDS = frozenset(
     "mostrar ocultar nuevo nueva cargando semana año gasto gastos ingreso ingresos tabla leer escuchar "
     "hecha hecho todos todas ninguno ninguna más sí volver siguiente anterior aceptar enviar abrir "
     "copiar pegar deshacer rehacer ajustes inicio ayuda salir entrar continuar listo vacío "
-    "desconocido varios resumen detalle grafo evento eventos".split()
+    "desconocido varios resumen detalle grafo evento eventos capa capas contratos compartido apuntado".split()
 )
-UI_PHRASES = re.compile(r"^(sin|ver|por|no hay|de|para|con) [a-záéíóúñ]+", re.IGNORECASE)
+UI_PHRASES = re.compile(r"^(sin|ver|por|no hay|de|desde|para|con) [a-záéíóúñ]+", re.IGNORECASE)
 LITERAL_SKIP = ("/i18n/", "/tests/", "/stories/", "/demo", "/areas/", "/geo/", "/catalogs/")
 LITERAL_ALLOWED = {
     ("kernel/src/kernel/desktop.py", "hoy"),
