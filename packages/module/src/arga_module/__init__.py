@@ -73,6 +73,9 @@ def register(
     return Registration(module_id, str(payload["version"]), list(payload.get("applied", [])))
 
 
+MAX_WAIT_SECONDS = 30
+
+
 def main(argv: list[str] | None = None) -> int:
     del argv
     kernel_url = os.environ.get("KERNEL_URL", DEFAULT_KERNEL)
@@ -88,8 +91,11 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    last = ""
-    for attempt in range(1, 6):
+    # After a machine restart Docker starts every container at once, ignoring depends_on, and the
+    # kernel can wait a minute or more for Postgres to recover: keep trying until it answers.
+    attempt = 0
+    while True:
+        attempt += 1
         try:
             done = register(kernel_url, manifest_path, schema_dir, version, token)
         except RegistrationFailed as error:
@@ -100,11 +106,9 @@ def main(argv: list[str] | None = None) -> int:
             applied = ", ".join(done.applied) or "nothing new"
             print(f"registered  {done.module_id} {done.version}  schema: {applied}")
             return 0
-        print(f"registration failed (attempt {attempt}): {last}", file=sys.stderr)
-        time.sleep(attempt * 2)
-
-    print(f"could not register with {kernel_url}: {last}", file=sys.stderr)
-    return 1
+        wait = min(2 * attempt, MAX_WAIT_SECONDS)
+        print(f"registration failed (attempt {attempt}, next in {wait} s): {last}", file=sys.stderr)
+        time.sleep(wait)
 
 
 if __name__ == "__main__":
