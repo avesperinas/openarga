@@ -553,7 +553,7 @@ def blocks_of(
                         "rows": [
                             {
                                 "label": str(t["title"])[:200],
-                                "value": "hecho" if t.get("done") else "·",
+                                "value": _words()["task_done"] if t.get("done") else "·",
                             }
                             for t in tasks[:12]
                         ],

@@ -138,7 +138,7 @@ export function FlowMap({
       onSelect?.(pick);
     }
   };
-  if (nodes.length === 0 || links.length === 0) return <p className="widget-note">Sin movimientos en este tramo</p>;
+  if (nodes.length === 0 || links.length === 0) return <p className="widget-note">{say("flow.empty")}</p>;
   const { placed, width, height: boxes } = placeBoxes(nodes, links);
   const at = new Map(placed.map((one) => [one.id, one]));
   const colours = groupColours(nodes);

@@ -234,3 +234,18 @@ def test_panel_words_follow_the_language() -> None:
         assert later["rows"][0]["value"].startswith("12 nov")
     finally:
         language_from(lambda: "en")
+
+
+def test_a_done_task_in_a_list_is_said_in_the_language() -> None:
+    from arga_widgets.panel import language_from
+
+    envelope = {"state": "ready", "body": {"tasks": [{"title": "Pay", "done": True}]}}
+    try:
+        language_from(lambda: "en")
+        (english,) = blocks_of("tasks", envelope, label="Tasks")
+        language_from(lambda: "es")
+        (spanish,) = blocks_of("tasks", envelope, label="Tasks")
+    finally:
+        language_from(lambda: "en")
+    assert english["rows"][0]["value"] == "done"
+    assert spanish["rows"][0]["value"] != "done"

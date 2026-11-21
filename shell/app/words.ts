@@ -8,3 +8,7 @@ export const CATALOGS: Catalogs = { en, es };
 export function say(key: string, vars?: Vars): string {
   return createT(CATALOGS, resolveLocale(regional().locale))(key, vars);
 }
+
+export function sayFor(locale: string, key: string, vars?: Vars): string {
+  return createT(CATALOGS, resolveLocale(locale))(key, vars);
+}

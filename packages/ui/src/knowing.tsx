@@ -220,7 +220,7 @@ export function Composer({
   onSend,
   placeholder,
   disabled = false,
-  sendLabel = "Enviar",
+  sendLabel,
   inputRef,
 }: {
   label: string;
@@ -250,7 +250,7 @@ export function Composer({
         }}
       />
       <Button variant="primary" icon="arrow-right" disabled={disabled || !value.trim()} onClick={onSend}>
-        {sendLabel}
+        {sendLabel ?? say("knowing.send")}
       </Button>
     </div>
   );

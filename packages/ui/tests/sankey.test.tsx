@@ -40,7 +40,7 @@ describe("the flow diagram", () => {
   it("each band says from where to where and how much, and there is a table", () => {
     const html = renderToStaticMarkup(<Sankey label="Flujo" nodes={nodes} links={links} format={(v) => `${v} €`} />);
     expect(html).toContain("<title>You → Rent: 1500 €</title>");
-    expect(html).toContain("<summary>Ver como tabla</summary>");
+    expect(html).toContain("<summary>See as a table</summary>");
     expect(html).toContain('data-kind="income"');
   });
 

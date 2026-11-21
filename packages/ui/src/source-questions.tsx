@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { TONES, type Tone } from "./calendar-layout";
 import { CheckChips, ChoiceChips, List, ListRow, TextField } from "./controls";
+import { locale } from "./regional";
 import { say } from "./words";
 
 export interface SourceChoice {
@@ -100,7 +101,7 @@ export function proposedSourceName(source: { name: string; title: string; asks: 
 
 export function countryName(code: string, fallback: string): string {
   try {
-    return new Intl.DisplayNames(["es"], { type: "region" }).of(code) ?? fallback;
+    return new Intl.DisplayNames([locale()], { type: "region" }).of(code) ?? fallback;
   } catch {
     return fallback;
   }
@@ -241,7 +242,7 @@ function Question({
         if (found.failed) onError(say("source.read_failed", { reason: found.failed }));
         const named =
           ask.display === "country"
-            ? found.results.map((one) => ({ ...one, name: countryName(one.code, one.name) })).sort((a, b) => a.name.localeCompare(b.name, "es"))
+            ? found.results.map((one) => ({ ...one, name: countryName(one.code, one.name) })).sort((a, b) => a.name.localeCompare(b.name, locale()))
             : found.results;
         setOptions(named);
         change.current({ choice: named.find((one) => one.code === ask.default) ?? null });

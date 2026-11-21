@@ -30,7 +30,7 @@ export function foldSeries(series: Series[], order: string[] = [], max = SERIES_
   const others = Array.from({ length }, (_, index) =>
     rest.reduce((sum, one) => sum + (one.values[index] ?? 0), 0),
   );
-  return [...kept, { key: OTHERS, name: "Otros", values: others }];
+  return [...kept, { key: OTHERS, name: say("chart.others"), values: others }];
 }
 
 export function niceCeiling(value: number): number {
